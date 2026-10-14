@@ -1,5 +1,4 @@
-0.10.2
+0.10.4
 
 Fixed
-- At Hudson City University, the classroom doors offered the business school's own courses, such as Office Businesses, instead of the room's course. Each door now opens the study panel for its room's course, to attend its class or to say when the next one is, and its mark shows a class soon, enrolled or completed. The room signs read once, from the corridor, and are never mirrored.
-- The Persona app's education box listed only the game's five courses. It now lists every course of the mod's too, grouped by where it is taught, each with where you stand on it.
+- Professional jobs are worked at your own desk, as the game's own job at El Gato Food Market is. Go to work, click your desk and press Start working on the game's work panel, with its fast forward and skip. Where a building has no desk for the job, one is set up, and days from home are worked at your home computer. The Career app's My job page says where your desk is.

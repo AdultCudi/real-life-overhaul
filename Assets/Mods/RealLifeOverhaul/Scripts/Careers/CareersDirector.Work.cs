@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Careers
     /// and the rivals' ads on the jobs board the city shares), applications, interviews and offers, the job and its working
     /// days, notice and leaving (Careers/Work). On the hour a working day that is over is counted and the next is reminded
     /// of; on the day the vacancies are renewed, employers answer, a job that was accepted starts and one being left ends.
-    /// A working day is one of the game's activities, left to its clock at the place of work or at home.
+    /// A working day is worked at the player's own desk at the employer (or their computer at home on a day from home), on
+    /// the game's own work panel, as the game's own job is (Careers/CareersDirector.Desk.cs).
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -63,6 +64,8 @@ namespace RealLifeOverhaul.Careers
             {
                 CloseSitting();
             }
+            DeskRelease("the working life stopped");
+            DeskGame.Remove();
             _employers.Clear();
             _offices.Clear();
             if (!unloading && _careerApp != null)
@@ -87,6 +90,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     SettleDay(j, day);
                 }
+                DeskHour(j, day, hour);
                 if (ProRules.WorkDay(p, day) && p.Hour == hour + 1 && day >= j.Hired && j.SettledDay < day && _workReminded != day)
                 {
                     _workReminded = day;
@@ -155,14 +159,15 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             j.Warnings++;
+            // (said by the boss, in a text of the game's own employer kind; a notification as before if it cannot be sent)
             if (j.Warnings >= WarningsToGo)
             {
-                Tell2(NotificationType.Error, "reallife_work_note_sacked", Data("employer", CareersText.Employer(j.Post.Employer), "count", WarningsToGo.ToString()), TabCv, null);
+                BossSays(j, "reallife_work_text_sacked", Data("employer", CareersText.Employer(j.Post.Employer), "count", WarningsToGo.ToString()), NotificationType.Error, "reallife_work_note_sacked", TabCv);
                 EndJob(LeaveReason.Dismissed, day, false);
                 return;
             }
-            Tell2(NotificationType.Warning, "reallife_work_note_missed",
-                Data("employer", CareersText.Employer(j.Post.Employer), "count", j.Warnings.ToString(), "most", WarningsToGo.ToString()), TabJob, null);
+            BossSays(j, "reallife_work_text_warning", Data("employer", CareersText.Employer(j.Post.Employer), "count", j.Warnings.ToString(), "most", WarningsToGo.ToString()),
+                NotificationType.Warning, "reallife_work_note_missed", TabJob);
         }
 
         /// <summary>A day off sick is excused: the mod's own sickness, as the careers of the street count it.</summary>
@@ -693,10 +698,11 @@ namespace RealLifeOverhaul.Careers
                 TabApplications, CareerApp.ApplicationRow + a.Post.Id);
         }
 
-        /// <summary>Where an interview is held: at the employer, or by video from home for a post worked from home.</summary>
+        /// <summary>Where an interview is held: at the employer's entrance, or by video from home for a post worked from home.</summary>
         internal string InterviewPlace(Application a)
         {
-            return a.Post.Work == (int)WorkMode.Remote ? CareersText.T("reallife_work_interview_video") : WorkGame.Address(a.Post.Street, a.Post.Number);
+            return a.Post.Work == (int)WorkMode.Remote ? CareersText.T("reallife_work_interview_video")
+                : CareersText.T("reallife_work_interview_entrance", "address", WorkGame.Address(a.Post.Street, a.Post.Number));
         }
 
         public string CanInterview(Application a, out int minutes)
@@ -891,6 +897,7 @@ namespace RealLifeOverhaul.Careers
             {
                 CloseSitting();
             }
+            DeskRelease("the job ended");
             Spell s = ProRules.Spell(j, day, why);
             w.Remember(s);
             w.Job = null;
@@ -940,6 +947,10 @@ namespace RealLifeOverhaul.Careers
             return WorkGame.AtWork(p, j.Post) ? null : "reallife_work_why_not_at_work";
         }
 
+        /// <summary>
+        /// The working day started from the Career app: only where no desk could be had (Careers/CareersDirector.Desk.cs:
+        /// DeskFallback); everywhere else a day is started at the desk.
+        /// </summary>
         public string StartWorkDay()
         {
             int minutes;
@@ -950,22 +961,8 @@ namespace RealLifeOverhaul.Careers
                 return why;
             }
             Job j = Work.Job;
-            Profession p = j.Def;
-            int day = Save.Day;
-            if (j.TodayDay != day)
-            {
-                j.TodayDay = day;
-                j.TodayMinutes = 0;
-                j.ClockIn = CareersGame.MinuteOfDay;
-                if (late)
-                {
-                    j.Late++;
-                }
-            }
-            return Offer(new Sitting(this, SittingKind.Work, 0, minutes, CareersText.Fill("reallife_work_skip_title", "title", CareersText.Title(j.Post.Prof, j.Post.Rank),
-                    "employer", CareersText.Employer(j.Post.Employer)), true,
-                CareersText.T("reallife_work_skip_until", "time", CareersText.Hour((p.Hour + p.Hours) % 24)),
-                CareersText.T("reallife_work_skip_pay", "pay", CareersText.Rate(Prices.At(j.Pay)))));
+            ClockIn(j, Save.Day, late);
+            return Offer(DaySitting(j, minutes));
         }
 
         private void WorkEnded(Sitting s, int minutes, bool whole)

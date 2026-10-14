@@ -18,8 +18,9 @@ namespace RealLifeOverhaul.Careers
 
     /// <summary>
     /// What the working life reads of the city: its employers (every business of a type a profession works in that is not
-    /// the player's, a rival's among them; the office buildings the city's tech companies are given; the hospitals, the
-    /// school and the council's offices), a rival's name, and whether the player is at their place of work. The lists are
+    /// the player's or, in a Going Public session, another player's, a rival's among them; the office buildings the city's
+    /// tech companies are given; the hospitals, the school and the council's offices), a rival's name, and whether the
+    /// player is at their place of work. The lists are
     /// made once a game day (one pass over the save's buildings) and on the first look of a city (one walk over its
     /// buildings for the public ones); nothing here runs by itself.
     /// </summary>
@@ -43,9 +44,9 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.HasValidAddress || GoingPublic.Mine(reg))
+                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer)
                 {
-                    continue;
+                    continue;   // (the player's own, and in a session another player's, which Going Public shows as rented by the player: never an employer)
                 }
                 string type = reg.businessTypeName ?? string.Empty;
                 bool office = SafeType(reg) == Office;
@@ -188,18 +189,18 @@ namespace RealLifeOverhaul.Careers
 
         // ---------------------------------------------------------------- at work
 
-        /// <summary>True if the player is at their place of work: inside it, or by its door; at any hospital or clinic for the hospitals.</summary>
+        /// <summary>
+        /// True if the player is at their place of work: inside it, or by its door. A hospital's or the school's job is the
+        /// post's own building too, where the player's desk is (Careers/CareersDirector.Desk.cs); for a post of one written
+        /// without an address, any hospital or the school.
+        /// </summary>
         public static bool AtWork(Profession p, Opening post)
         {
             try
             {
-                if (p.Place == Workplace.Hospital)
+                if (string.IsNullOrEmpty(post.Street))
                 {
-                    return CareersGame.InHospital();
-                }
-                if (p.Place == Workplace.School)
-                {
-                    return CareersGame.InSchool();
+                    return p.Place == Workplace.Hospital ? CareersGame.InHospital() : p.Place == Workplace.School && CareersGame.InSchool();
                 }
                 return CareersGame.InsideAt(post.Street, post.Number) || Near(post.Street, post.Number);
             }

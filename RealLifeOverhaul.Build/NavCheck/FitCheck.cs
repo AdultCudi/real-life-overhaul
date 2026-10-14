@@ -522,6 +522,7 @@ internal static partial class Program
         var floor = new FitPlan();
         FitPlanner.Plan(dc, centre, null, floor);
         DrawFit(dc, centre, floor, "a data centre's floor of 30 x 24 m: " + floor.Zones + " rooms");
+        DrawPresets();
     }
 
     private static void DrawFit(RoomGrid g, FitSite site, FitPlan plan, string title)

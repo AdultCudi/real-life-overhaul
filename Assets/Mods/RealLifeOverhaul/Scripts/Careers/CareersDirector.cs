@@ -124,6 +124,10 @@ namespace RealLifeOverhaul.Careers
                 StopWork(false);
             }
             CampusTick();
+            if (_workOn)
+            {
+                WorkDesks();
+            }
             if (_skip != null && !_skip.Open)
             {
                 _skip = null;
@@ -322,9 +326,12 @@ namespace RealLifeOverhaul.Careers
         private void CloseSitting()
         {
             ShiftSkip skip = _skip;
+            DeskWork desk = _deskWork;
             _skip = null;
             _sitting = null;
+            _deskWork = null;
             skip?.Close();
+            desk?.Close();
             CareersGame.Tiring(false);
         }
 

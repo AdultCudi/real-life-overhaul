@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Careers
                 box.Line(CareersText.T("reallife_career_post_self_taught", "extra", ProRules.SelfTaughtExtra.ToString()));
             }
             box.Line(CareersText.Fill("reallife_career_post_at", "employer", CareersText.Employer(o.Employer), "kind", CareersText.Kind((EmployerKind)o.Kind),
-                "place", p.Place == Workplace.Hospital ? CareersText.T("reallife_career_place_hospitals") : WorkGame.Address(o.Street, o.Number)));
+                "place", WorkGame.Address(o.Street, o.Number)));   // (a nurse works at the one hospital, at a desk there, as every job is)
             box.Line(CareersText.Fill("reallife_career_post_terms", "pay", CareersText.Rate(Prices.At(o.Pay)), "hours", CareersText.Hours(p), "mode", CareersText.WorkWay(o.Work),
                 "closes", CareersText.Day(o.To)));
             int a, b;
@@ -520,8 +520,7 @@ namespace RealLifeOverhaul.Careers
                 row.Pick = false;
                 row.Set(0, CareersText.Day(d));
                 row.Set(1, CareersText.T("reallife_career_row_hours", "from", CareersText.Hour(p.Hour), "to", CareersText.Hour((p.Hour + p.Hours) % 24)));
-                row.Set(2, ProRules.FromHome((WorkMode)j.Work, d) ? CareersText.T("reallife_career_row_home") : p.Place == Workplace.Hospital ? CareersText.T("reallife_career_place_hospitals")
-                    : WorkGame.Address(j.Post.Street, j.Post.Number));
+                row.Set(2, ProRules.FromHome((WorkMode)j.Work, d) ? CareersText.T("reallife_career_row_home") : WorkGame.Address(j.Post.Street, j.Post.Number));
                 bool today = d == day;
                 string state = today && j.SettledDay >= day ? CareersText.T("reallife_career_row_done")
                     : today && j.TodayDay == day && j.TodayMinutes > 0 ? CareersText.T("reallife_career_row_part", "time", CareersText.Minutes(j.TodayMinutes))
@@ -539,19 +538,38 @@ namespace RealLifeOverhaul.Careers
                 "most", CareersDirector.WarningsToGo.ToString()));
             box.Line(CareersText.Fill("reallife_career_job_at", "employer", CareersText.Employer(j.Post.Employer), "since", CareersText.Day(j.Hired), "mode", CareersText.WorkWay(j.Work)));
             JobMore(box, w, f, j, day);
-            int minutes;
-            bool late;
-            string why = _director.CanWork(out minutes, out late);
-            bool canStart = why == null || (why != "reallife_work_why_not_today" && why != "reallife_work_why_done_today");
-            if (canStart && why != null)
+            // Where the desk is and what to do today: the working day is started at the desk (Careers/CareersDirector.Desk.cs),
+            // from here only where no desk could be had.
+            box.Headline("reallife_career_desk_title");
+            box.Line(_director.DeskLine(j));
+            string fallback = _director.DeskFallbackWhy(j);
+            bool canStart = false;
+            if (fallback != null)
             {
-                box.Line(CareersText.T(why));
+                int minutes;
+                bool late;
+                string why = _director.CanWork(out minutes, out late);
+                canStart = why == null || (why != "reallife_work_why_not_today" && why != "reallife_work_why_done_today");
+                box.Line(CareersText.T(fallback));
+                if (canStart && why != null)
+                {
+                    box.Line(CareersText.T(why));
+                }
+            }
+            else
+            {
+                string today = _director.DeskToday(j);
+                if (today != null)
+                {
+                    box.Line(today);
+                }
             }
             Transform buttons = box.ButtonRow();
             if (canStart)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_work", () => Do(_director.StartWorkDay));
             }
+            InfoBox.Button(buttons, InfoBox.Additional, "common_setdestination", () => Do(_director.DeskRoute));
             JobButtons(buttons, j, day);
             Transform leave = box.ButtonRow();
             if (j.NoticeEnd <= 0)
