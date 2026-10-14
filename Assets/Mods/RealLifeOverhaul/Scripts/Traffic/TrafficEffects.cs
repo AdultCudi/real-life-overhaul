@@ -92,6 +92,21 @@ namespace RealLifeOverhaul
             return _smokeGenuine || _smokeTries >= SmokeTries;
         }
 
+        /// <summary>
+        /// Behind the loading screen (Core/ScenePrewarm): both sirens' sounds, which the first ambulance or patrol car of a
+        /// city otherwise made in the frame it was sent (some 100 000 samples, three sines each). With sirens off they are
+        /// made when first needed, as before. Always done in one go.
+        /// </summary>
+        public static bool PrewarmSirens()
+        {
+            if (Settings.Siren && (Settings.TrafficAccidents || Settings.PolicePursuit || Settings.CityFires))
+            {
+                GetSirenClip(SirenTone.Wail);
+                GetSirenClip(SirenTone.Yelp);
+            }
+            return true;
+        }
+
         // Templates live under an inactive object, so no game script on a copy ever wakes up.
         private static Transform Holder
         {
@@ -224,8 +239,10 @@ namespace RealLifeOverhaul
             return _wailClip;
         }
 
+        private static readonly int HotBuildSiren = HotSpots.Slot("Traffic: TrafficEffects.BuildSiren");
         private static AudioClip BuildSiren(string clipName, SirenTone tone, float seconds, int cycles)
         {
+            using var hotSpot = HotSpots.Time(HotBuildSiren);
             const int rate = 22050;
             var samples = new float[(int)(rate * seconds)];
 
@@ -471,6 +488,7 @@ namespace RealLifeOverhaul
             return fire;
         }
 
+        private static readonly int HotCreateSmoke = HotSpots.Slot("Traffic: TrafficEffects.CreateSmoke");
         /// <summary>
         /// A column of smoke rising straight up from a car's engine bay, wherever the car has ended up
         /// (on its wheels, its side or its roof); null if the game has no smoke effect loaded. Heavy is
@@ -478,6 +496,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public static GameObject CreateSmoke(VehicleComponent car, bool heavy)
         {
+            using var hotSpot = HotSpots.Time(HotCreateSmoke);
             GameObject template = GetSmokeTemplate();
             if (template == null)
             {
@@ -703,12 +722,14 @@ namespace RealLifeOverhaul
             return _smokeTemplate;
         }
 
+        private static readonly int HotCreateDebris = HotSpots.Slot("Traffic: TrafficEffects.CreateDebris");
         /// <summary>
         /// Broken bodywork: flat shards in the car's own paint, scattered on the road around a
         /// point. No colliders, no shadows. Null if the car has no material to borrow.
         /// </summary>
         public static GameObject CreateDebris(VehicleComponent car, Vector3 centre, int pieces)
         {
+            using var hotSpot = HotSpots.Time(HotCreateDebris);
             Material paint = BorrowMaterial(car);
             if (paint == null)
             {

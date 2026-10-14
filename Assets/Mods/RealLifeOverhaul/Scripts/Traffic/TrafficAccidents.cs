@@ -595,11 +595,13 @@ namespace RealLifeOverhaul
                    + (moving > 0 ? ", the nearest " + nearest.ToString("F0") + " m away" : string.Empty);
         }
 
+        private static readonly int HotRecheck = HotSpots.Slot("Traffic: TrafficAccidents.Recheck");   // (inside its Update: names the stage that took a long frame)
         // Once after every scene, on the first tick out of doors with traffic running: the road points the
         // cordon switched off must all be open and none of the scene's cars may still be held out of traffic.
         // Whatever is not as it was found is put right, and said in the log.
         private void Recheck()
         {
+            using var hotSpot = HotSpots.Time(HotRecheck);
             _recheck = false;
             int points = _cordon.Recheck();
             int cars = 0;
@@ -629,6 +631,7 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotStage = HotSpots.Slot("Traffic: TrafficAccidents.StageCasualty");   // (inside its Update: names the stage that took a long frame)
         /// <summary>
         /// Starts a scene around someone lying in the road: an ambulance and (with police on) a
         /// patrol car are sent, their crews attend, and the casualty is told when the ambulance
@@ -642,6 +645,7 @@ namespace RealLifeOverhaul
         /// <returns>False if a scene is already running or traffic is not.</returns>
         public bool StageCasualty(ICasualty casualty, Vector3 scene, VehicleComponent car, bool fatal, bool byPlayer, bool asItStands = false)
         {
+            using var hotSpot = HotSpots.Time(HotStage);
             try
             {
                 if (_lacking || _phase != Phase.None || casualty == null || !ModState.Loaded || !TrafficTools.Ready)
@@ -752,6 +756,7 @@ namespace RealLifeOverhaul
             return roll < 0.40f ? Severity.Minor : roll < 0.78f ? Severity.Moderate : Severity.Severe;
         }
 
+        private static readonly int HotBegin = HotSpots.Slot("Traffic: TrafficAccidents.BeginAt");   // (inside its Update: names the stage that took a long frame)
         /// <summary>
         /// A collision that has just happened on the road, in front of whoever is looking: the scene starts
         /// round the two cars where they met. Nothing is moved into place by hand (the old staging puts its
@@ -775,6 +780,7 @@ namespace RealLifeOverhaul
         /// <returns>False if no scene could start (another is on, traffic is not running): the caller still has the car to let go.</returns>
         public bool BeginAt(VehicleComponent first, VehicleComponent second, float closingSpeed, string noticeKey, Vector3 firstVelocity = default, Vector3 secondVelocity = default)
         {
+            using var hotSpot = HotSpots.Time(HotBegin);
             try
             {
                 if (_lacking || _phase != Phase.None || first == null || !first.gameObject.activeInHierarchy || !ModState.Loaded || !TrafficTools.Ready
@@ -847,8 +853,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotTry = HotSpots.Slot("Traffic: TrafficAccidents.TryStageAccident");   // (inside its Update: names the stage that took a long frame)
         private void TryStageAccident()
         {
+            using var hotSpot = HotSpots.Time(HotTry);
             _inPlace = false;
             _causeKey = null;
             Vector3 player = PlayerHelper.GetPosition();
@@ -1615,11 +1623,13 @@ namespace RealLifeOverhaul
         private bool _sweepSaid;
         private const float SweepWithin = 90f;   // metres round a scene in which no ordinary ambulance is left in traffic
 
+        private static readonly int HotSweep = HotSpots.Slot("Traffic: TrafficAccidents.SweepAmbulances");   // (inside its Update: names the stage that took a long frame)
         // One ambulance at a scene: the scene's own. An ordinary one from the traffic pool that comes near (it ends up in
         // the queue held at the tape, a second ambulance standing beside the first) is taken off the road, but only where
         // nobody can see it go. Every three seconds while a scene is on; a walk of the traffic list, nothing else.
         private void SweepAmbulances()
         {
+            using var hotSpot = HotSpots.Time(HotSweep);
             if (!TrafficTools.Ready)
             {
                 return;
@@ -1988,10 +1998,12 @@ namespace RealLifeOverhaul
             _mark.Show(_scene, _markerLabel);   // the game's destination marker
         }
 
+        private static readonly int HotAttend = HotSpots.Slot("Traffic: TrafficAccidents.TickAttendance");   // (inside its Update: names the stage that took a long frame)
         // One unit's visit: wait to be sent, drive there, pull up, stay while its crew works, drive away.
         // Every stage ends on a clock as well as on what it is waiting for, and says so in the log once.
         private void TickAttendance(Attendance attendance, float now)
         {
+            using var hotSpot = HotSpots.Time(HotAttend);
             ResponseUnit unit = attendance.Unit;
             switch (attendance.Stage)
             {
@@ -2606,10 +2618,12 @@ namespace RealLifeOverhaul
             BoxedOut(attendance, Time.time, "the traffic watch found it standing");
         }
 
+        private static readonly int HotDepart = HotSpots.Slot("Traffic: TrafficAccidents.TickDepartures");   // (inside its Update: names the stage that took a long frame)
         // After a scene has ended: a unit that is still driving away from it (or looking for a way to) is carried on
         // until traffic has it back, moving, or it is taken off the road. Nothing else of the scene is left by then.
         private void TickDepartures(float now)
         {
+            using var hotSpot = HotSpots.Time(HotDepart);
             try
             {
                 if (!TrafficTools.Ready)
@@ -2825,6 +2839,7 @@ namespace RealLifeOverhaul
             return _severity == Severity.Severe ? Random.Range(45f, 70f) : Random.Range(25f, 45f);
         }
 
+        private static readonly int HotParked = HotSpots.Slot("Traffic: TrafficAccidents.OnUnitParked");   // (inside its Update: names the stage that took a long frame)
         /// <summary>
         /// A unit has stopped and parked. This is the one place that knows it, so this is where
         /// its crew gets out (and walks in, however far short of the scene it stopped), and
@@ -2833,6 +2848,7 @@ namespace RealLifeOverhaul
         /// <param name="crew">False only if it stopped too far away for anyone to walk in.</param>
         private void OnUnitParked(Attendance attendance, bool crew, float now)
         {
+            using var hotSpot = HotSpots.Time(HotParked);
             // (No tape once the ambulance has loaded and gone, or is going: it would be put up across the lane it is driving out by.)
             bool ambulanceGone = _ambulance.Stage == Stage.Ready || _ambulance.Stage == Stage.Leaving || _ambulance.Stage == Stage.Done;
             if (attendance.Police && _cordon.Closed && !_cordon.Up && !ambulanceGone)
@@ -2863,8 +2879,10 @@ namespace RealLifeOverhaul
             attendance.At = Mathf.Min(limit - 6f, Mathf.Max(attendance.At, busyUntil));
         }
 
+        private static readonly int HotDispatch = HotSpots.Slot("Traffic: TrafficAccidents.Dispatch");   // (inside its Update: names the stage that took a long frame)
         private void Dispatch(Attendance attendance, float now)
         {
+            using var hotSpot = HotSpots.Time(HotDispatch);
             ResponseUnit unit = attendance.Unit;
             TrafficManager traffic = TrafficManager.Instance;
 
@@ -3056,9 +3074,11 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- clearing up
 
+        private static readonly int HotClear = HotSpots.Slot("Traffic: TrafficAccidents.Clear");   // (inside its Update: names the stage that took a long frame)
         // AI cars are pooled and reused, so everything added to them has to come off again.
         private void Clear(bool resumeTraffic, bool announce, string why = "other")
         {
+            using var hotSpot = HotSpots.Time(HotClear);
             if (_phase != Phase.None)
             {
                 Logger?.Info("Accident: scene ended (" + why + ").");

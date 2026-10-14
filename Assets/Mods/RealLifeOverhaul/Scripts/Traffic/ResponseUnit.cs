@@ -163,9 +163,11 @@ namespace RealLifeOverhaul
             TrafficTools.Touch(car, "taken out of traffic as a unit");
         }
 
+        private static readonly int HotDress = HotSpots.Slot("Traffic: ResponseUnit.Dress");
         // Lights, siren and (police) the body. False if the vehicle cannot be made to look its part.
         private bool Dress()
         {
+            using var hotSpot = HotSpots.Time(HotDress);
             if (Kind == UnitKind.Ambulance)
             {
                 _kit = TrafficEffects.CreateFlasher(Car, "RealLifeOverhaul Emergency Lights", TrafficEffects.BeaconHeight(Car),

@@ -27,6 +27,11 @@ internal static partial class Program
         Handed(scripts, @"Garage\GarageDirector.cs", "_bikes.Places.PrewarmStands", "the scooter stands of the bike-share docks");
         Handed(scripts, @"Performance\PerfDirector.cs", "PerfTweaks.Prewarm", "the performance tweaks' looks at the scene");
         Handed(scripts, @"Camera\ChaseCamera.cs", "EmpireView.Prewarm", "Empire Motors' view from the driver's seat");
+        Handed(scripts, @"Core\RealLifeOverhaulMod.cs", "TrafficEffects.PrewarmSirens", "the sirens' sounds (made in the frame the first ambulance or patrol car was sent)");
+        string effects = Source(scripts, @"Traffic\TrafficEffects.cs");
+        string sirens = Body(effects, "public static bool PrewarmSirens()");
+        Check(sirens.Contains("GetSirenClip(SirenTone.Wail)") && sirens.Contains("GetSirenClip(SirenTone.Yelp)") && Body(effects, "private static AudioClip GetSirenClip(").Contains("_wailClip == null"),
+            "prewarm: both sirens are made behind the loading screen, and a siren made already is used as it is");
 
         string venues = Source(scripts, @"Leisure\LeisureVenues.cs");
         string find = Body(venues, "public static void FindLandmarks()");

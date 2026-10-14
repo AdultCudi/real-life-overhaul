@@ -403,12 +403,14 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Traffic: SceneCordon.Tick");
         /// <summary>
         /// Works the gate. Returns true at the moment waiting traffic is waved through, so that
         /// whoever is directing it can be seen to. Two comparisons when nothing is due.
         /// </summary>
         public bool Tick(float now)
         {
+            using var hotSpot = HotSpots.Time(HotTick);
             if (_carveAt > 0f && now >= _carveAt)
             {
                 CheckWalls(now);

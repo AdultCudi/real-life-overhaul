@@ -387,6 +387,7 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotLoad = HotSpots.Slot("Traffic: TrafficTools.Load");
         /// <summary>
         /// Puts an idle car of the pool, of that very prefab, on the road at a lane point: the game's own
         /// TrafficManager.LoadVehicle, asked only when it will take an idle car. Given a prefab with no idle car of it, the
@@ -397,6 +398,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public static VehicleComponent Load(GameObject prefab, Waypoint at)
         {
+            using var hotSpot = HotSpots.Time(HotLoad);
             if (prefab == null || at == null || !TrafficManager.HasInstance)
             {
                 return null;
