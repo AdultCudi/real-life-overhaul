@@ -1,4 +1,4 @@
-0.15.1
+0.15.2
 
 Fixed
-- In the Car Showroom, visitors no longer stop to look over a car that is in the workshop or out on a test drive.
+- The Stocks app's Companies tab showed 0% for every company's day move, while the Market tab showed the market moving.
