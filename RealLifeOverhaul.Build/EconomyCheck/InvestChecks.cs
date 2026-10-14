@@ -41,6 +41,18 @@ internal static partial class Program
         InvestStore();
         InvestCost();
         InvestWords();
+        InvestHoldingRoom();
+        InvestTwoWorked();
+        InvestFillGuard();
+        InvestPutBackRoom();
+        InvestDayMoney();
+        InvestGuestLines();
+        InvestOptionOffOpen();
+        InvestRollTexts();
+        InvestBondCount();
+        InvestPieces();
+        InvestTestRefuses();
+        InvestWorthWiring();
         Console.WriteLine("  a large investor's tools: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -1011,14 +1023,17 @@ internal static partial class Program
         "reallife_mkt_inv_note_back_refused", "reallife_mkt_bond_box_most", "reallife_mkt_bond_set_roll_no", "reallife_mkt_bond_set_roll_yes", "reallife_mkt_bond_confirm_roll",
         "reallife_mkt_bond_note_rolled", "reallife_mkt_bond_ladder", "reallife_mkt_bond_ladder_terms", "reallife_mkt_bond_ladder_pays", "reallife_mkt_bond_ladder_about", "reallife_mkt_bond_ladder_piece",
         "reallife_mkt_bond_ladder_limits", "reallife_mkt_bond_ladder_buy", "reallife_mkt_bond_ladder_confirm", "reallife_mkt_bond_ladder_confirm_body", "reallife_mkt_bond_ladder_confirm_roll",
-        "reallife_mkt_bond_note_ladder"
+        "reallife_mkt_bond_note_ladder", "reallife_transaction_shares_worked_held", "reallife_transaction_shares_worked_held_label", "reallife_transaction_shares_worked_back",
+        "reallife_transaction_shares_worked_back_label", "reallife_transaction_shares_worked_sold", "reallife_transaction_shares_worked_sold_label", "reallife_mkt_inv_ticket_hold",
+        "reallife_mkt_inv_ticket_due", "reallife_mkt_inv_held_money", "reallife_mkt_inv_due_money", "reallife_mkt_inv_row_held", "reallife_mkt_inv_row_due", "reallife_mkt_inv_note_back_part",
+        "reallife_mkt_inv_test_no_share", "reallife_mkt_inv_next_roll", "reallife_mkt_bond_held_last_roll", "reallife_mkt_plan_bond_roll_title", "reallife_mkt_plan_bond_roll_what"
     };
 
     private static readonly string[] InvestNotes =
     {
         "reallife_mkt_inv_note_placed", "reallife_mkt_inv_note_day_buy", "reallife_mkt_inv_note_day_sell", "reallife_mkt_inv_note_done_buy", "reallife_mkt_inv_note_done_sell", "reallife_mkt_inv_note_stopped",
         "reallife_mkt_inv_note_back", "reallife_mkt_inv_note_back_refused", "reallife_mkt_bond_note_rolled", "reallife_mkt_bond_note_ladder", "reallife_mkt_inv_test_shut", "reallife_mkt_inv_test_no_worked",
-        "reallife_mkt_inv_test_no_due"
+        "reallife_mkt_inv_test_no_due", "reallife_mkt_inv_note_back_part", "reallife_mkt_inv_test_no_share"
     };
 
     private static void InvestWords()
@@ -1041,11 +1056,19 @@ internal static partial class Program
         bool inOrder = kinds.All(k => (at = code.IndexOf("\"" + k + "\"", at, StringComparison.Ordinal)) >= 0);
         Check(kinds.All(en.ContainsKey) && kinds.Length == (int)HoldingKind.Count && inOrder, "invest: a name for each kind of holding, in the kinds' order (InvestText.KindKeys)");
         Check(InvestNotes.All(k => en.ContainsKey(k) && en[k].Length <= 200), "invest: every notification is short (240 characters with its names at most)");
+        // A part put back says so with its reason: with realistic names and its longest reason, 240 characters at most in each language.
+        string[] whys = { "reallife_mkt_why_too_large", "reallife_mkt_why_holding_limit", "reallife_mkt_why_no_money" };
+        bool fits = new[] { en, pt, zh }.All(w => whys.All(y => w["reallife_mkt_inv_note_back_part"].Replace("{count}", "1,234,567").Replace("{name}", "Harbourview Property Trust")
+            .Replace("{price}", "$1,234.56").Replace("{why}", w[y]).Length <= 240));
+        Check(fits, "invest: a dividend put back in part says so, with its reason and realistic names, in 240 characters at most in each language");
         string guide = en.TryGetValue("reallife_guide_markets", out string g) ? g : string.Empty, bots = en.TryGetValue("reallife_guide_markets_bots", out string b) ? b : string.Empty;
         Check(guide.Contains("{bond_most_share}") && guide.Contains("{bond_most_cap}") && guide.Contains("{bond_ladder_terms}") && guide.Contains("- Portfolio:") && guide.Contains("roll over")
               && pt["reallife_guide_markets"].Contains("{bond_most_share}") && zh["reallife_guide_markets"].Contains("{bond_ladder_terms}") && bots.Contains("is worked:")
-              && pt["reallife_guide_markets_bots"].Contains("fracionada") && zh["reallife_guide_markets_bots"].Contains("分批执行"),
-            "invest: the Stocks pages of the Guide tell of the portfolio, worked orders, the most of a bond purchase, rollovers and ladders, with their figures, in each language");
+              && pt["reallife_guide_markets_bots"].Contains("fracionada") && zh["reallife_guide_markets_bots"].Contains("分批执行")
+              && guide.Contains("{bond_holdings_large}") && pt["reallife_guide_markets"].Contains("{bond_holdings_large}") && zh["reallife_guide_markets"].Contains("{bond_holdings_large}")
+              && bots.Contains("what is not spent comes back at the close") && pt["reallife_guide_markets_bots"].Contains("volta no fechamento") && zh["reallife_guide_markets_bots"].Contains("收盘时退回")
+              && en["reallife_opt_tip_markets_large"].Contains("held until the close") && en["reallife_mkt_inv_ticket_hold"].Contains("comes back at the close"),
+            "invest: the Stocks pages of the Guide tell of the portfolio, worked orders and their day's money, the most of a bond purchase, the bonds held, rollovers and ladders, with their figures, in each language");
         bool line = false;
         foreach (KeyValuePair<string, string> row in en)
         {
@@ -1056,5 +1079,587 @@ internal static partial class Program
             }
         }
         Check(line, "invest: What's new has the feature's line, with no prefix (in the next row, or its version's row once it is made)");
+    }
+
+    // ---------------------------------------------------------------- the review: the holding limit, the day's money,
+    // a guest's lines, the options at the open, a rolling bond's payments, the bonds held, large sums, the test, the worth
+
+    /// <summary>The player's cash with every transaction kept: what it was for, its money (taken: under nothing) and the market's day.</summary>
+    private sealed class LogWallet : IMarketWallet
+    {
+        public long Money;
+        public long Low = long.MaxValue;   // the least the cash came to after a transaction
+        public Func<int> Day = () => 0;
+        public readonly List<(string Why, long Amount, int Day)> Moves = new List<(string Why, long Amount, int Day)>();
+
+        public long Cash => Math.Max(0, Money);
+
+        public bool Take(long amount, string why, string name)
+        {
+            if (amount <= 0)
+            {
+                return true;
+            }
+            if (Money < amount)
+            {
+                return false;
+            }
+            Money -= amount;
+            Log(why, -amount);
+            return true;
+        }
+
+        public void Force(long amount, string why, string name)
+        {
+            if (amount > 0)
+            {
+                Money -= amount;
+                Log(why, -amount);
+            }
+        }
+
+        public void Give(long amount, string why, string name)
+        {
+            if (amount > 0)
+            {
+                Money += amount;
+                Log(why, amount);
+            }
+        }
+
+        private void Log(string why, long amount)
+        {
+            Moves.Add((why, amount, Day()));
+            Low = Math.Min(Low, Money);
+        }
+
+        public int Count(string why, int day = -1) => Moves.Count(x => x.Why == why && (day < 0 || x.Day == day));
+
+        public long Sum(string why) => Moves.Where(x => x.Why == why).Sum(x => x.Amount);
+    }
+
+    /// <summary>The checks' city and secrets with a wallet that keeps every transaction, and every order told of (refusals too, with their reason then).</summary>
+    private sealed class LogWorld : IMarketWorld
+    {
+        public readonly MarketWorld Inner;
+        public readonly LogWallet Purse = new LogWallet();
+        public readonly List<(Order Order, long Qty, OrderWhy Why)> Told = new List<(Order Order, long Qty, OrderWhy Why)>();
+
+        public LogWorld(ulong seed)
+        {
+            Inner = new MarketWorld(seed);
+        }
+
+        public ulong NewSecret() => Inner.NewSecret();
+        public MarketEnv Env(int day) => Inner.Env(day);
+        public IMarketWallet Wallet => Purse;
+        public int CommissionLeast => Inner.CommissionLeast;
+        public void Said(in MarketNews news) => Inner.Said(news);
+        public void Paid(TradeKind kind, Stock stock, long amount) => Inner.Paid(kind, stock, amount);
+        public void Called(long amount, int byDay) => Inner.Called(amount, byDay);
+
+        public void Filled(Order order, Stock stock, long qty, int cents)
+        {
+            Told.Add((order, qty, order.Why));
+            Inner.Filled(order, stock, qty, cents);
+        }
+    }
+
+    // A market on a market day at a step of its session, with so much cash in a wallet that keeps every transaction.
+    private static MarketEngine LogMarket(ulong seed, long money, out LogWorld world, int from = 3, int step = 5)
+    {
+        world = new LogWorld(seed);
+        world.Purse.Money = money;
+        MarketState state = MarketSetup.Open(seed, 1, 0, 60, world.Env(1), seed, null, null, null);
+        var m = new MarketEngine(state, new MarketTape(seed), world);
+        world.Purse.Day = () => m.State.Day;
+        SessionDay(m, from, step);
+        return m;
+    }
+
+    // A holding put straight into the market (as a load would bring it), at the offer's price.
+    private static Position PutHolding(MarketEngine m, Stock s, long shares, int reinvest = 0)
+    {
+        Quote q = MarketTrading.QuoteOf(m.State, s, m.State.Phase);
+        var p = new Position { StockId = s.Id, Shares = shares, Cost = MarketTrading.Value(shares, q.Ask, true), OpenedDay = m.State.Day, Reinvest = reinvest };
+        m.State.Positions.Add(p);
+        return p;
+    }
+
+    // A dividend put back, waiting for the next open with so much money (as a payout makes it: MarketEngine.Invest's PutBack).
+    private static Order WaitingBack(MarketEngine m, Stock s, long budget)
+    {
+        var o = new Order
+        {
+            Id = m.State.NextOrderId++, StockId = s.Id, Side = OrderSide.Buy, Type = OrderType.Market, Life = OrderLife.Day, Back = true, Budget = budget, PlacedDay = m.State.Day,
+            PlacedPhase = MarketCatalogue.PhaseClose, ExpireDay = MarketTrading.NextTradingDay(m.State.Day), State = OrderState.Open
+        };
+        m.State.Orders.Add(o);
+        return o;
+    }
+
+    private static string ModSource(string relative)
+    {
+        string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts", relative));
+        return System.IO.File.Exists(path) ? System.IO.File.ReadAllText(path) : string.Empty;
+    }
+
+    // The reviewer's case (seed 332): a worked purchase filled to the holding limit, then an earlier limit purchase filled on
+    // top of it, 92,626 shares over. Now a worked purchase leaves other open purchases the room they were placed with: it
+    // fills to the rest and waits, open; the limit fills when the market comes to it; the holding comes to the most and never
+    // past it; then the worked order stops at the limit.
+    private static void InvestHoldingRoom()
+    {
+        MarketEngine m = InvestMarket(332, 500000000000L, out MarketWorld world, 3, 5);
+        Stock s = Liquid(m, MarketSize.Mid);
+        long most = MarketTrading.MostHeld(s), per = MarketTrading.MostPerOrder(s);
+        PutHolding(m, s, most - per * 3);
+        Quote q = MarketTrading.QuoteOf(m.State, s, m.State.Phase);
+        Order limit = Trade(m, s, OrderSide.Buy, per / 2, OrderType.Limit, Math.Max(1, q.Bid / 2), 0, OrderLife.UntilCancelled);
+        Order w = Worked(m, s, OrderSide.Buy, per * 5, out OrderWhy why);
+        long high = 0;
+        int day = m.State.Day;
+        for (int i = 0; i < 6; i++)
+        {
+            day = TradingOnOrAfter(day + 1);
+            RunTo(m, day);
+            high = Math.Max(high, m.State.Held(s.Id));
+        }
+        bool waited = limit != null && limit.IsOpen && w != null && w.IsOpen && m.State.Held(s.Id) == most - limit.Left;
+        Check(waited, "worked: a worked purchase leaves an earlier limit purchase its room: it fills to the rest and waits, open (" + (w != null ? w.Filled : -1) + " bought, "
+                      + (most - m.State.Held(s.Id)) + " left under the most for the limit's " + (limit != null ? limit.Left : -1) + ")");
+        if (limit == null || w == null)
+        {
+            return;
+        }
+        limit.LimitCents = int.MaxValue / 2;   // (the market comes to it)
+        for (int i = 0; i < 6 && (limit.IsOpen || w.IsOpen); i++)
+        {
+            day = TradingOnOrAfter(day + 1);
+            RunTo(m, day);
+            high = Math.Max(high, m.State.Held(s.Id));
+        }
+        Console.WriteLine("  worked: room left to an earlier limit (seed 332): the worked order bought " + w.Filled + ", the limit " + limit.Filled + "; the holding " + m.State.Held(s.Id)
+                          + " of the most " + most + " (at most " + high + " on the way); the worked order " + (w.IsOpen ? "open" : w.Why.ToString()));
+        Check(limit.State == OrderState.Filled && limit.Filled == per / 2 && m.State.Held(s.Id) == most && high <= most && !w.IsOpen && w.Why == OrderWhy.HoldingLimit,
+            "worked: then the limit fills when the market comes to it, the holding comes to the most and never past it (the seed that went 92,626 over), and the worked order stops there");
+    }
+
+    // Two worked purchases of one company never wait for each other: the earlier one is served first, and the later one
+    // takes the room left beside it and stops at the limit. (Each waiting for the room the other is still for, they would
+    // stand for ever with room unused.)
+    private static void InvestTwoWorked()
+    {
+        MarketEngine m = InvestMarket(336, 500000000000L, out MarketWorld world, 3, 5);
+        Stock s = Liquid(m, MarketSize.Mid, 2);
+        long most = MarketTrading.MostHeld(s), per = MarketTrading.MostPerOrder(s);
+        PutHolding(m, s, most - per * 4);
+        Order a = Worked(m, s, OrderSide.Buy, per * 3, out _);
+        Order b = Worked(m, s, OrderSide.Buy, per * 3, out _);
+        if (a == null || b == null)
+        {
+            Check(false, "worked: two worked purchases of one company are placed");
+            return;
+        }
+        UntilDone(m, b, 12);
+        Check(a.State == OrderState.Filled && !b.IsOpen && b.Why == OrderWhy.HoldingLimit && b.Filled == per && m.State.Held(s.Id) == most,
+            "worked: two worked purchases of one company never wait for each other: the earlier is served first, the later takes the room left and stops at the limit ("
+            + a.Filled + " and " + b.Filled + ")");
+    }
+
+    // No purchase of the player's own takes a holding past the most, whatever changed after it was placed: a limit within
+    // the most, then a twentieth of the company's shares bought back, so the holding is over the new most; the limit is
+    // refused at its fill with the reason, and nothing is bought. (Every other check of the market's runs with this guard:
+    // none of them comes to it.)
+    private static void InvestFillGuard()
+    {
+        MarketEngine m = InvestMarket(333, 500000000000L, out MarketWorld world, 3, 5);
+        Stock s = Liquid(m, MarketSize.Mid, 1);
+        long most = MarketTrading.MostHeld(s), per = MarketTrading.MostPerOrder(s);
+        PutHolding(m, s, most - per);
+        Quote q = MarketTrading.QuoteOf(m.State, s, m.State.Phase);
+        Order limit = Trade(m, s, OrderSide.Buy, per / 2, OrderType.Limit, Math.Max(1, q.Bid / 2), 0, OrderLife.UntilCancelled);
+        long held = m.State.Held(s.Id), cash = world.Purse.Money;
+        s.Shares -= s.Shares / 20;
+        limit.LimitCents = int.MaxValue / 2;
+        RunTo(m, TradingOnOrAfter(m.State.Day + 1));
+        Check(limit != null && limit.State == OrderState.Refused && limit.Why == OrderWhy.HoldingLimit && limit.Filled == 0 && m.State.Held(s.Id) == held && world.Purse.Money == cash,
+            "market: no purchase of the player's own takes a holding past the most, whatever changed after it was placed (refused at its fill, with the reason)");
+    }
+
+    // A trust at the most the player may hold, putting all of each payout back, buys none of it: each is refused with the
+    // reason and stays in the cash (the reviewer's case: over at every payout). One payout put back with money for twice
+    // one order's most buys one order's most (the reviewer's: 348,168 shares where one order's most was 158,431), the rest
+    // left in the cash, and the player is told it was in part and why.
+    private static void InvestPutBackRoom()
+    {
+        MarketEngine m = LogMarket(334, 1000000000L, out LogWorld world, 3, 5);
+        Stock t = Trusts(m).OrderByDescending(x => x.DpsCents).First();
+        long most = MarketTrading.MostHeld(t);
+        PutHolding(m, t, most, 100);
+        long high = 0;
+        int day = m.State.Day;
+        for (int i = 0; i < 12; i++)
+        {
+            day = TradingOnOrAfter(day + 1);
+            RunTo(m, day);
+            high = Math.Max(high, m.State.Held(t.Id));
+        }
+        int refused = world.Told.Count(x => x.Order.Back && x.Qty <= 0 && x.Why == OrderWhy.HoldingLimit), bought = world.Told.Count(x => x.Order.Back && x.Qty > 0);
+        Check(refused >= 2 && bought == 0 && high == most && world.Purse.Sum(MarketMoney.Dividend) > 0,
+            "put back: a trust at the most you may hold, putting all of each payout back, buys none of it: each is refused with the reason and stays in the cash (" + refused + " payouts)");
+        MarketEngine n = LogMarket(335, 50000000000L, out LogWorld w2, 3, 5);
+        Stock s = Liquid(n, MarketSize.Large);
+        long per = MarketTrading.MostPerOrder(s);
+        Quote q = MarketTrading.QuoteOf(n.State, s, n.State.Phase);
+        Order back = WaitingBack(n, s, MarketTrading.Value(per * 2, q.Ask, true) * 2);
+        long cash = w2.Purse.Money;
+        RunTo(n, MarketTrading.NextTradingDay(n.State.Day), MarketCatalogue.PhaseOpen + 1);
+        Trade line = n.State.Trades.LastOrDefault(x => x.Back && x.StockId == s.Id);
+        per = MarketTrading.MostPerOrder(s);   // (as the open had it: a day's usual volume moves at each close)
+        Console.WriteLine("  put back: a trust at the most, all of each payout put back: " + refused + " payouts refused, " + bought + " bought; money for twice one order's most bought "
+                          + back.Filled + " (one order's most " + per + "), " + (back.Budget - (line != null ? -line.Value + line.Fee : 0)) + " left in the cash");
+        Check(back.State == OrderState.Filled && back.Filled == per && back.Why == OrderWhy.TooLarge && w2.Told.Any(x => x.Order == back && x.Qty == per && x.Why == OrderWhy.TooLarge)
+              && line != null && cash - w2.Purse.Money == -line.Value + line.Fee && back.Budget - (-line.Value + line.Fee) > 0,
+            "put back: one payout put back buys one order's most at the most, the rest of its money left in the cash, and the player told it was in part and why ("
+            + back.Filled + " of one order's most " + per + ")");
+    }
+
+    // A worked order on a cash account settles its money once a market day: one transaction holds a purchase's day of money
+    // at its first slice and one gives back what is left at the close or its end, none for a slice; a sale's takings after
+    // the commission come in one at each close and one at its end; the money held is what the slices cost and what came
+    // back, to the unit; the cash never goes under nothing; one that runs short buys what the cash pays for, a day at a
+    // time, and stops; a margin account moves none of the game's cash; a save in the middle of a day keeps both.
+    private static void InvestDayMoney()
+    {
+        MarketEngine m = LogMarket(341, 50000000000L, out LogWorld world, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large);
+        long per = MarketTrading.MostPerOrder(s);
+        Order o = m.PlaceWorked(s.Id, OrderSide.Buy, per * 3, m.Held, false, out _);
+        UntilDone(m, o, 10);
+        LogWallet purse = world.Purse;
+        List<Trade> lines = m.State.Trades.Where(t => t.Order == o.Id).ToList();
+        List<int> days = lines.Select(t => t.Day).Distinct().ToList();
+        int holds = purse.Count(MarketMoney.WorkedHeld), backs = purse.Count(MarketMoney.WorkedBack);
+        bool daily = days.All(d => purse.Count(MarketMoney.WorkedHeld, d) == 1 && purse.Count(MarketMoney.WorkedBack, d) <= 1);
+        Check(o.State == OrderState.Filled && daily && holds == days.Count && backs <= days.Count && purse.Count(MarketMoney.Bought) == 0 && purse.Count(MarketMoney.Commission) == 0,
+            "worked: a purchase's money is held in one transaction a market day and what is left given back in one, none for a slice (" + holds + " held and " + backs + " back over "
+            + days.Count + " days, for " + world.Inner.Fills + " slices)");
+        long spent = lines.Sum(t => -t.Value) + lines.Sum(t => t.Fee);
+        Check(-purse.Sum(MarketMoney.WorkedHeld) == spent + purse.Sum(MarketMoney.WorkedBack) && o.Held == 0 && purse.Low >= 0,
+            "worked: what was held is what its slices cost with the commission and what came back, to the unit, and the cash never went under nothing");
+
+        MarketEngine n = LogMarket(342, 1000L, out LogWorld w2, 3, 5);
+        Stock s2 = Liquid(n, MarketSize.Large);
+        long qty = MarketTrading.MostPerOrder(s2) * 2 + 777;
+        PutHolding(n, s2, qty);
+        Order sale = n.PlaceWorked(s2.Id, OrderSide.Sell, qty, n.Held, false, out _);
+        UntilDone(n, sale, 10);
+        List<Trade> sold = n.State.Trades.Where(t => t.Order == sale.Id).ToList();
+        List<int> saleDays = sold.Select(t => t.Day).Distinct().ToList();
+        bool eachDay = saleDays.All(d => w2.Purse.Count(MarketMoney.WorkedSold, d) == 1);
+        Check(sale.State == OrderState.Filled && eachDay && w2.Purse.Count(MarketMoney.WorkedSold) == saleDays.Count && w2.Purse.Sum(MarketMoney.WorkedSold) == sold.Sum(t => t.Value) - sold.Sum(t => t.Fee)
+              && w2.Purse.Count(MarketMoney.Sold) == 0 && w2.Purse.Count(MarketMoney.Commission) == 0 && sale.Due == 0,
+            "worked: a sale's takings after the commission come in one transaction at each close and one at its end, none for a slice (" + w2.Purse.Count(MarketMoney.WorkedSold) + " over "
+            + saleDays.Count + " days)");
+
+        Console.WriteLine("  worked: its money on a cash account: a purchase " + holds + " held and " + backs + " given back over " + days.Count + " market days for " + world.Inner.Fills
+                          + " slices; a sale's takings in " + w2.Purse.Count(MarketMoney.WorkedSold) + " over " + saleDays.Count + " days");
+        MarketEngine r = LogMarket(343, 0L, out LogWorld w3, 3, 5);
+        Stock s3 = Liquid(r, MarketSize.Large);
+        long per3 = MarketTrading.MostPerOrder(s3);
+        long start = MarketTrading.Value(per3, MarketTrading.QuoteOf(r.State, s3, r.State.Phase).Ask, true) * 3 / 2;
+        w3.Purse.Money = start;
+        Order o3 = r.PlaceWorked(s3.Id, OrderSide.Buy, per3 * 5, r.Held, false, out _);
+        UntilDone(r, o3, 12);
+        List<Trade> lines3 = r.State.Trades.Where(t => t.Order == o3.Id).ToList();
+        bool daily3 = lines3.Select(t => t.Day).Distinct().All(d => w3.Purse.Count(MarketMoney.WorkedHeld, d) == 1 && w3.Purse.Count(MarketMoney.WorkedBack, d) <= 1);
+        Check(o3 != null && !o3.IsOpen && o3.Why == OrderWhy.NoMoney && o3.Filled > per3 && daily3 && w3.Purse.Low >= 0 && o3.Held == 0
+              && start - w3.Purse.Money == lines3.Sum(t => -t.Value) + lines3.Sum(t => t.Fee),
+            "worked: short of cash it holds what there is, buys what that pays for a day at a time, and stops when the cash runs out, nothing lost (" + (o3 != null ? o3.Filled : -1) + " bought)");
+
+        MarketEngine g = LogMarket(344, 50000000000L, out LogWorld w4, 3, 5);
+        Stock s4 = Liquid(g, MarketSize.Large);
+        g.State.Account.Margin = true;
+        g.State.Account.Cash = 50000000000L;
+        Order o4 = g.PlaceWorked(s4.Id, OrderSide.Buy, MarketTrading.MostPerOrder(s4) * 2, g.Held, false, out _);
+        UntilDone(g, o4, 6);
+        Check(o4 != null && o4.Filled > 0 && w4.Purse.Moves.Count == 0 && o4.Held == 0, "worked: in a margin account it moves none of the game's cash: no transaction at all");
+
+        MarketEngine k = LogMarket(345, 50000000000L, out LogWorld w5, 3, 5);
+        Stock buy = Liquid(k, MarketSize.Large), sell = Liquid(k, MarketSize.Large, 1);
+        PutHolding(k, sell, MarketTrading.MostPerOrder(sell) * 3);
+        Order b5 = k.PlaceWorked(buy.Id, OrderSide.Buy, MarketTrading.MostPerOrder(buy) * 3, k.Held, false, out _);
+        Order s5 = k.PlaceWorked(sell.Id, OrderSide.Sell, MarketTrading.MostPerOrder(sell) * 3, k.Held, false, out _);
+        RunTo(k, k.State.Day, MarketCatalogue.PhaseOpen + 30);
+        string text = MarketStore.Write(k.State);
+        MarketState back = MarketStore.Read(text, out _);
+        Order rb = back != null ? back.Order(b5.Id) : null, rs = back != null ? back.Order(s5.Id) : null;
+        Check(b5.Held > 0 && s5.Due > 0 && rb != null && rs != null && rb.Held == b5.Held && rb.HeldDay == b5.HeldDay && rs.Due == s5.Due && MarketStore.Write(back) == text,
+            "worked: a save in the middle of a market day keeps the money held for its purchases and the takings due from its sales, and writes them again the same");
+        int g0 = text.IndexOf("~g:", StringComparison.Ordinal), g1 = text.IndexOf('~', g0 + 3);
+        string part = text.Substring(g0 + 3, (g1 < 0 ? text.Length : g1) - g0 - 3);
+        string shorter = string.Join(";", part.Split(';').Select(x => string.Join("|", x.Split('|').Take(26))));
+        MarketState older = MarketStore.Read(text.Replace("~g:" + part, "~g:" + shorter), out _);
+        Check(older != null && older.Orders.Where(x => x.Worked).All(x => x.Held == 0 && x.Due == 0 && x.HeldDay == 0) && older.Orders.Count(x => x.Worked) == 2,
+            "worked: a record of part g without them reads nothing held and nothing due");
+    }
+
+    // A guest's trades by company: the same moves and shares on the host as one line a fill (the host's moves only add up);
+    // a sum over what a line's move may be goes over several lines with none of it clamped away; a catch-up of many slices
+    // (the reviewer's: 92 of 156 lines dropped, 911,831 of 1,640,666 shares never moving the city's price) loses nothing,
+    // at most 64 lines a request and the rest at the next.
+    private static void InvestGuestLines()
+    {
+        var rng = new Random(156);
+        MarketEngine a = InvestMarket(377, 1000, out _, 3, 5), b = InvestMarket(377, 1000, out _, 3, 5);
+        Stock[] three = { Liquid(a, MarketSize.Large), Liquid(a, MarketSize.Large, 1), Liquid(a, MarketSize.Mid) };
+        var fills = new List<(int Stock, int Micros, long Shares)>();
+        for (int i = 0; i < 156; i++)
+        {
+            fills.Add((three[i % 3].Id, rng.Next(-150000, 150001), rng.Next(1000, 20000)));
+        }
+        foreach ((int Stock, int Micros, long Shares) f in fills)
+        {
+            a.GuestTrade(f.Stock, f.Micros, f.Shares);   // (one line a fill, all of it taken: none over a line's most)
+        }
+        var lines = new GuestTrades();
+        foreach ((int Stock, int Micros, long Shares) f in fills)
+        {
+            lines.Add(f.Stock, f.Micros, f.Shares);
+        }
+        int requests = 0, sent = 0, widest = 0;
+        while (!lines.Empty && requests < 50)
+        {
+            var request = new List<string>();
+            lines.Send(request.Add, GuestTrades.LinesMost);
+            requests++;
+            sent += request.Count;
+            widest = Math.Max(widest, request.Count);
+            foreach (string line in request)
+            {
+                string[] f = line.Split('|');
+                b.GuestTrade(int.Parse(f[1]), int.Parse(f[2]), long.Parse(f[3]));
+            }
+        }
+        RunTo(a, a.State.Day, a.State.Phase + 1);
+        RunTo(b, b.State.Day, b.State.Phase + 1);
+        bool same = three.All(s => Math.Abs(a.State.Stock(s.Id).Mis - b.State.Stock(s.Id).Mis) < 1e-9 && a.State.Stock(s.Id).DayVolume == b.State.Stock(s.Id).DayVolume);
+        Check(same && sent <= fills.Count / 10 && requests == 1 && widest <= GuestTrades.LinesMost,
+            "guest: a guest's trades sent by company move the host's prices and volume as one line a fill would (" + fills.Count + " fills in " + sent + " lines)");
+        // Large moves: over several lines, none clamped; what does not fit in a request waits for the next.
+        var big = new GuestTrades();
+        int stock = three[0].Id;
+        long micros = 0, shares = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            int m = i % 5 == 4 ? -150000 : 1000000;
+            big.Add(stock, m, 10 + i);
+            micros += m;
+            shares += 10 + i;
+        }
+        long gotMicros = 0, gotShares = 0;
+        int calls = 0, over = 0, total = 0;
+        while (!big.Empty && calls < 100)
+        {
+            var request = new List<string>();
+            big.Send(request.Add, 4);
+            calls++;
+            total += request.Count;
+            foreach (string line in request)
+            {
+                string[] f = line.Split('|');
+                long lm = long.Parse(f[2]), ls = long.Parse(f[3]);
+                gotMicros += lm;
+                gotShares += ls;
+                over += Math.Abs(lm) > GuestTrades.MicrosMost || ls < 1 ? 1 : 0;
+            }
+        }
+        Check(gotMicros == micros && gotShares == shares && over == 0 && total == (int)((micros + GuestTrades.MicrosMost - 1) / GuestTrades.MicrosMost) && calls == (total + 3) / 4,
+            "guest: a sum of moves over a line's most goes over several lines, none clamped and no share lost, and what a request cannot take waits for the next (" + total + " lines)");
+        // The catch-up: 156 slices of two companies in one second, all of them taken by a host that reads 64 lines of a request.
+        var catchUp = new GuestTrades();
+        long all = 0, oneLineAFill = 0;
+        for (int i = 0; i < 156; i++)
+        {
+            long q = 10000 + i * 7;
+            catchUp.Add(i % 2 == 0 ? 11 : 12, 900, q);
+            all += q;
+            oneLineAFill += i < GuestTrades.LinesMost ? q : 0;   // (as before: a line a fill, the host reading the first 64)
+        }
+        long taken = 0;
+        int asked = 0;
+        while (!catchUp.Empty && asked < 10)
+        {
+            var request = new List<string>();
+            catchUp.Send(request.Add, GuestTrades.LinesMost);
+            asked++;
+            foreach (string line in request.Take(GuestTrades.LinesMost))
+            {
+                taken += long.Parse(line.Split('|')[3]);
+            }
+        }
+        Console.WriteLine("  guest: " + fills.Count + " fills of three companies in " + sent + " line(s); 40 large moves in " + total + " lines of at most " + GuestTrades.MicrosMost
+                          + " micros; a catch-up of 156 slices: " + taken + " of " + all + " shares taken (a line a fill: " + oneLineAFill + ")");
+        Check(taken == all && asked == 1 && oneLineAFill < all,
+            "guest: a catch-up of 156 slices in one second loses none of them on the host (" + all + " shares; a line a fill lost " + (all - oneLineAFill) + ")");
+    }
+
+    // The options switched off while the market catches up (the second's look has not come): at the next open a dividend
+    // waiting to be put back is refused there with the reason, its money left in the cash, and a worked order takes no
+    // slice and holds no money; the look then cancels it with its money back.
+    private static void InvestOptionOffOpen()
+    {
+        MarketEngine m = LogMarket(351, 50000000000L, out LogWorld world, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large), t = Liquid(m, MarketSize.Large, 1);
+        Order w = m.PlaceWorked(s.Id, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 4, m.Held, false, out _);
+        RunTo(m, m.State.Day);
+        Order back = WaitingBack(m, t, 5000000L);
+        m.ReinvestOn = false;
+        m.LargeOn = false;
+        long filled = w.Filled, held = m.State.Held(t.Id), cash = world.Purse.Money;
+        int holds = world.Purse.Count(MarketMoney.WorkedHeld);
+        RunTo(m, MarketTrading.NextTradingDay(m.State.Day), MarketCatalogue.PhaseOpen + 20);
+        Check(back.State == OrderState.Refused && back.Why == OrderWhy.Switched && back.Filled == 0 && m.State.Held(t.Id) == held && world.Told.Any(x => x.Order == back && x.Qty == 0 && x.Why == OrderWhy.Switched),
+            "put back: a dividend waiting while the option was switched off is refused at the open with the reason, its money left in the cash");
+        Check(w.IsOpen && w.Filled == filled && world.Purse.Count(MarketMoney.WorkedHeld) == holds && world.Purse.Money == cash && w.Held == 0,
+            "worked: with the option off at the open a worked order takes no slice and holds no money");
+        Check(m.StopAllOf(false, OrderWhy.Switched) == 1 && !w.IsOpen && w.Why == OrderWhy.Switched, "worked: and the option's look cancels it with its reason");
+    }
+
+    // A bond set to roll over repays nothing into the cash at its end: its last payment is its interest alone, marked as
+    // rolling over, wherever what is coming is shown (the Portfolio, the Bonds tab, the Planner), and as before with bonds
+    // switched off or the rollover not set.
+    private static void InvestRollTexts()
+    {
+        MarketEngine m = BondMarket(361, 60, 1000000000L, out MarketWorld world);
+        BondHolding h = m.BuyBond(OfferOf(m, 2), 100000, 0, true, true, out BondWhy why, 0, true);
+        if (h == null)
+        {
+            Check(false, "rollover: a bond to roll over is bought (" + why + ")");
+            return;
+        }
+        h.Paid = h.Payments - 1;
+        BondDef d = BondCatalogue.Find(h.Def);
+        long interest = BondRules.InterestCents(h, d);
+        var rows = new List<PortfolioRow>();
+        InvestRules.Holdings(m.State, m.State.Phase, rows, true);
+        ComingPayment rolls = rows.First(x => x.Bond == h.Id).Next;
+        InvestRules.Holdings(m.State, m.State.Phase, rows, false);
+        ComingPayment off = rows.First(x => x.Bond == h.Id).Next;
+        h.Rollover = false;
+        InvestRules.Holdings(m.State, m.State.Phase, rows, true);
+        ComingPayment ends = rows.First(x => x.Bond == h.Id).Next;
+        Check(rolls.Rolls && !rolls.Ends && rolls.Cents == interest && off.Ends && !off.Rolls && off.Cents == interest + h.Face && ends.Ends && ends.Cents == interest + h.Face
+              && InvestRules.Rolls(null, true) == false,
+            "rollover: a bond set to roll over shows its last payment without what it repays, marked as rolling over; with bonds off or no rollover, with it");
+        string bonds = ModSource(@"Markets\MarketApp.Bonds.cs"), portfolio = ModSource(@"Markets\MarketApp.Portfolio.cs"), planner = ModSource(@"Wiring\MarketLinks.cs");
+        Check(bonds.Contains("\"reallife_mkt_bond_held_last_roll\"") && bonds.Contains("\"reallife_mkt_inv_next_roll\"") && bonds.Contains("InvestRules.Rolls(h, Settings.MarketsBonds)")
+              && portfolio.Contains("InvestRules.Holdings(s, s.Phase, _holdings, Settings.MarketsBonds)") && portfolio.Contains("\"reallife_mkt_inv_next_roll\"")
+              && planner.Contains("\"reallife_mkt_plan_bond_roll_title\"") && planner.Contains("\"reallife_mkt_plan_bond_roll_what\"") && planner.Contains("InvestRules.Rolls(h, Settings.MarketsBonds)"),
+            "rollover: the Bonds tab, the Portfolio and the Planner say a rolling bond rolls over and count none of what it repays");
+    }
+
+    // The bonds held at once: 24, and 48 with the option on. One who holds more than 24 and switches it off keeps them and
+    // buys none (a ladder neither) until under 24.
+    private static void InvestBondCount()
+    {
+        MarketEngine m = BondMarket(362, 60, 100000000000L, out MarketWorld world);
+        BondOffer o = OfferOf(m, 2);
+        long least = BondRules.Least(m.State.Env.PriceLevel);
+        m.LargeOn = true;
+        while (m.State.Bonds.Holdings.Count < 30 && m.BuyBond(o, least, 0, true, true, out _) != null)
+        {
+        }
+        bool large = m.State.Bonds.Holdings.Count == 30 && m.CanBuyBond(o, least, true, true) == BondWhy.None;
+        m.LargeOn = false;
+        bool kept = m.State.Bonds.Holdings.Count == 30 && m.CanBuyBond(o, least, true, true) == BondWhy.Full && m.LadderWhy(least * 4, true, true) == BondWhy.Full;
+        while (m.State.Bonds.Holdings.Count > 23 && m.SellBond(m.State.Bonds.Holdings[0].Id, true, out _, out _))
+        {
+        }
+        bool again = m.State.Bonds.Holdings.Count == 23 && m.CanBuyBond(o, least, true, true) == BondWhy.None && m.LadderWhy(least * 4, true, true) == BondWhy.Full;
+        while (m.State.Bonds.Holdings.Count > 20 && m.SellBond(m.State.Bonds.Holdings[0].Id, true, out _, out _))
+        {
+        }
+        bool ladder = m.LadderWhy(least * 4, true, true) == BondWhy.None;
+        Check(large && kept && again && ladder,
+            "bonds: 48 held at once with the option on, 24 with it off: one holding 30 keeps them and buys none, a bond again under 24, a ladder of four under 21");
+    }
+
+    // A sum larger than the game moves in one transaction is moved in pieces of int.MaxValue at most, none of it lost; the
+    // game's wallet does so for taking, forcing and giving alike.
+    private static void InvestPieces()
+    {
+        long left = 5000000000L;
+        var pieces = new List<long>();
+        while (left > 0 && pieces.Count < 10)
+        {
+            pieces.Add(InvestRules.Piece(ref left));
+        }
+        long one = int.MaxValue, two = (long)int.MaxValue + 1, none = 0, under = -5;
+        long p1 = InvestRules.Piece(ref one), p2 = InvestRules.Piece(ref two);
+        Check(pieces.SequenceEqual(new[] { 2147483647L, 2147483647L, 705032706L }) && left == 0 && p1 == int.MaxValue && one == 0 && p2 == int.MaxValue && two == 1
+              && InvestRules.Piece(ref none) == 0 && none == 0 && InvestRules.Piece(ref under) == 0 && under == -5,
+            "money: a sum over what the game moves at once goes in pieces of int.MaxValue at most, to the unit; nothing of nothing");
+        string game = ModSource(@"Markets\MarketGame.cs");
+        int at = game.IndexOf("public sealed class MarketWallet", StringComparison.Ordinal), end = at >= 0 ? game.IndexOf("public static long Wealth()", at, StringComparison.Ordinal) : -1;
+        string wallet = at >= 0 && end > at ? game.Substring(at, end - at) : string.Empty;
+        Check(wallet.Contains("InvestRules.Piece(ref left)") && !wallet.Contains("Math.Min(amount, int.MaxValue)") && !wallet.Contains("amount <= int.MaxValue") && wallet.Contains("Move(-1, amount")
+              && wallet.Contains("Move(1, amount"),
+            "money: the game's wallet takes, forces and gives a large sum in pieces, never cut at int.MaxValue");
+    }
+
+    // The put-back test pays nothing early when the dividend owed is on a holding that puts none back (nor with the option
+    // off): it is refused with its own notice; with a share set it pays and puts it back; with none owed it says so.
+    private static void InvestTestRefuses()
+    {
+        MarketEngine m = LogMarket(371, 1000000000L, out LogWorld world, 3, 5);
+        Stock t = Trusts(m).OrderByDescending(x => x.DpsCents).First();
+        Position p = PutHolding(m, t, 50000);
+        int day = m.State.Day;
+        for (int i = 0; i < 15 && !m.State.Dues.Any(x => x.StockId == t.Id && x.Bot == 0 && x.Cents > 0); i++)
+        {
+            day = TradingOnOrAfter(day + 1);
+            RunTo(m, day, MarketCatalogue.PhaseOpen + 5);
+        }
+        long cash = world.Purse.Money;
+        int dues = m.State.Dues.Count;
+        bool none = dues > 0 && m.PayNextDueNow() == -1 && world.Purse.Money == cash && m.State.Dues.Count == dues;
+        p.Reinvest = 50;
+        m.ReinvestOn = false;
+        bool off = m.PayNextDueNow() == -1 && world.Purse.Money == cash;
+        m.ReinvestOn = true;
+        bool paid = m.PayNextDueNow() == t.Id && world.Purse.Money > cash && m.State.Dues.Count == dues - 1;
+        m.State.Dues.Clear();
+        bool owedNone = m.PayNextDueNow() == 0;
+        string director = ModSource(@"Markets\MarketDirector.Invest.cs");
+        Check(none && off && paid && owedNone && director.Contains("TestRefusals.TellKey(Logger, Test, \"reallife_mkt_inv_test_no_share\")"),
+            "put back: the test refuses with its own notice, paying nothing early, when the dividend owed is on a holding that puts none back or the option is off; with a share set it pays");
+    }
+
+    // The most of one bond purchase counts what the player is worth as the Finance app does (the game's figure less the
+    // mod's own debts), through the wiring, with what the market holds and the money with the broker added once; the day's
+    // money of worked orders counts in what the market holds; the new transactions are filed under investments.
+    private static void InvestWorthWiring()
+    {
+        MarketEngine m = InvestMarket(381, 50000000000L, out MarketWorld world, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large);
+        long before = InvestRules.MarketWorth(m.State, m.State.Phase);
+        Order o = Worked(m, s, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 3, out _);
+        o.Held = 1234;
+        o.Due = 567;
+        long with = InvestRules.MarketWorth(m.State, m.State.Phase), broker = InvestRules.WithBroker(m.State, out long held, out long due);
+        Check(with - before == 1801 && broker == 1801 && held == 1234 && due == 567, "invest: the money with the broker for worked orders counts in what the player holds on the market");
+        Check(RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedHeld) == RealLifeOverhaul.Economy.CashCategory.Investments && RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedBack) == RealLifeOverhaul.Economy.CashCategory.Investments
+              && RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedSold) == RealLifeOverhaul.Economy.CashCategory.Investments,
+            "invest: the worked orders' transactions are filed under investments in the Finance app, with the other shares");
+        string director = ModSource(@"Markets\MarketDirector.Invest.cs"), bridges = ModSource(@"Markets\MarketBridges.cs"), links = ModSource(@"Wiring\MarketLinks.cs");
+        string books = ModSource(@"Economy\Finance\Books.cs"), accounts = ModSource(@"Economy\Finance\FinanceApp.Accounts.cs"), overview = ModSource(@"Economy\Finance\FinanceApp.cs");
+        Check(director.Contains("Func<long> net = MarketBridges.NetWorth;") && director.Contains("(net != null ? net() : MarketWallet.Wealth()) + InvestRules.MarketWorth(")
+              && bridges.Contains("public static Func<long> NetWorth;") && bridges.Contains("NetWorth = null;") && links.Contains("MarketBridges.NetWorth = Books.NetWorth;")
+              && books.Contains("public static long NetWorth()") && books.Contains("Owing(file.Accounts[i])") && books.Contains("EconomyBridges.OtherDebts?.Invoke(Debts);")
+              && books.Contains("file.Shark.Active") && accounts.Contains("if (!Books.Owing(a))") && overview.Contains("wealth.CurrentWealth - owedOther - owedAccounts")
+              && !ModSource(@"Markets\MarketEngine.cs").Contains("RealLifeOverhaul.Economy"),
+            "invest: the most of one bond purchase reads the Finance app's net worth through the wiring (the same accounts, the same debts), the market adding its own once, and no feature calls the other");
     }
 }
