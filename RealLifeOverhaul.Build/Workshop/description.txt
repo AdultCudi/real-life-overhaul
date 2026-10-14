@@ -36,7 +36,7 @@ No frame rate figures are claimed. Apart from the cameras, buses in view and hai
 
 [h1]Compatibility[/h1]
 [list]
-[*]Built against the Steam version of Big Ambitions as of October 2026 (Steam build 25482473, Unity 2022.3.62f2). Windows only.
+[*]Made for the current build of Big Ambitions on Steam's public branch. On an older build the mod says so, and how to update the game. Windows only.
 [*]English, Brazilian Portuguese and Simplified Chinese. The mod follows the language the game is set to; in any other language it is in English.
 [*]One DLL, a text file for each language and three asset files. No game files are replaced. It can be added to an existing save.
 [*]Made to work with Going Public, the multiplayer mod: what would put players out of step, such as fast forward, is set aside in a session.
