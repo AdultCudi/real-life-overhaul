@@ -357,21 +357,16 @@ namespace RealLifeOverhaul.Meta
 
         // ---------------------------------------------------------------- the controls
 
-        // The game's own font, so the panels match its menus. Looked for when a panel is shown, until one is found.
+        // The game's own font, so the panels match its menus: the one Core/GameUi/GameFont found behind the loading screen
+        // (the font's prewarm), asked for when a panel is shown, until there is one. It used to be looked for here by going
+        // through every text of the interface (FindObjectsOfType), a long frame the first time a panel of the mod opened.
         private void FindFont()
         {
             if (_font != null)
             {
                 return;
             }
-            foreach (TextMeshProUGUI sample in FindObjectsOfType<TextMeshProUGUI>())
-            {
-                if (sample != null && sample.font != null && !sample.transform.IsChildOf(transform))
-                {
-                    _font = sample.font;
-                    break;
-                }
-            }
+            _font = GameUi.GameFont.Asset;
             if (_font != null)
             {
                 foreach (TextMeshProUGUI text in GetComponentsInChildren<TextMeshProUGUI>(true))

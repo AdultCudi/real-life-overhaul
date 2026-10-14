@@ -26,6 +26,13 @@ namespace RealLifeOverhaul
         /// <summary>True while a long frame is not seen as one: the loading screen, a pause, or the game's own black screen at a door.</summary>
         public static bool Hidden => Looks.Hidden || UI.UiFader.isFading;
 
+        /// <summary>
+        /// True while the screen is dark: the loading screen, or the game's own black screen (a door, sleep, fast travel).
+        /// Not a plain pause: its menu stays on the screen, and a search of some 80 ms there is a hitch the player sees in
+        /// the menu. Work that comes back again and again (a search after every door) waits for this, never <see cref="Hidden"/>.
+        /// </summary>
+        public static bool Dark => UI.Load.LoadScene.isLoading || UI.UiFader.isFading;
+
         /// <summary>Every object of a kind in the loaded scenes, in no particular order. <paramref name="what"/> is a constant text.</summary>
         public static T[] All<T>(string what, FindObjectsInactive inactive = FindObjectsInactive.Exclude) where T : UnityEngine.Object
         {
@@ -177,9 +184,9 @@ namespace RealLifeOverhaul
                 enabled = false;
                 return;
             }
-            if (BuildingManager.IsInsideBuilding || !SceneFinds.Hidden)
+            if (BuildingManager.IsInsideBuilding || !SceneFinds.Dark)
             {
-                _tried = false;
+                _tried = false;   // (a plain pause is not the walk out of a door: its menu would show the work as a hitch)
                 return;
             }
             if (!_tried)

@@ -33,6 +33,21 @@ internal static partial class Program
         Check(sirens.Contains("GetSirenClip(SirenTone.Wail)") && sirens.Contains("GetSirenClip(SirenTone.Yelp)") && Body(effects, "private static AudioClip GetSirenClip(").Contains("_wailClip == null"),
             "prewarm: both sirens are made behind the loading screen, and a siren made already is used as it is");
 
+        // Searches that come back after every door wait for a dark screen, never a plain pause (its menu shows the search as a
+        // hitch): the hair finish's search of the whole scene, and the loading screen's pieces tried again out of doors.
+        string finds = Source(scripts, @"Core\SceneFinds.cs");
+        Check(finds.Contains("public static bool Dark => UI.Load.LoadScene.isLoading || UI.UiFader.isFading;"), "prewarm: a dark screen is the loading screen or the game's black screen, not a plain pause");
+        Check(Body(finds, "private void OnUpdate()").Contains("!SceneFinds.Dark") && !Body(finds, "private void OnUpdate()").Contains("SceneFinds.Hidden"),
+            "prewarm: a piece of the loading screen's work is tried again only behind a dark screen out of doors, never on a pause");
+        string quality = Source(scripts, @"Character\CharacterQuality.cs");
+        Check(quality.Contains("_othersPace.Due(SceneFinds.Dark, ") && !quality.Contains("_othersPace.Due(SceneFinds.Hidden"),
+            "prewarm: the hair finish searches the whole scene only behind a dark screen, never on a pause");
+        string metaUi = Source(scripts, @"Meta\MetaUi.cs");
+        string gameFont = Source(scripts, @"Core\GameUi\GameFont.cs");
+        Check(metaUi.Length > 0 && !metaUi.Contains("FindObjectsOfType") && Body(metaUi, "private void FindFont()").Contains("GameUi.GameFont.Asset")
+              && gameFont.Contains("SceneFinds.Any(") && !gameFont.Contains("FindObjectOfType"),
+            "prewarm: the mod's panels take the game's font found behind the loading screen, and a look for it in play goes through SceneFinds");
+
         string venues = Source(scripts, @"Leisure\LeisureVenues.cs");
         string find = Body(venues, "public static void FindLandmarks()");
         Check(find.Length > 0 && !find.Contains("SceneFinds.") && find.Contains("SceneLandmarks()"), "prewarm: the landmarks found on the street make no search of the scene of their own (the searches are SceneLandmarks')");

@@ -129,7 +129,7 @@ namespace RealLifeOverhaul
         // Everyone else drawn here in the game's strand hair (another player's character in a Going Public session, or
         // anyone the game builds from the detailed set): the hair finish only, on the materials of this machine's renderers.
         private readonly List<Managed> _others = new List<Managed>(4);
-        private readonly SearchPace _othersPace = new SearchPace();   // the whole scene, only behind the black screen (Core/SearchPace)
+        private readonly SearchPace _othersPace = new SearchPace();   // the whole scene, only behind the loading screen or the black screen at a door (Core/SearchPace, SceneFinds.Dark)
         private readonly List<Transform> _remotes = new List<Transform>(4);
         private readonly List<AppearanceSetter> _remoteLooks = new List<AppearanceSetter>(4);
         private int _othersFound;
@@ -245,8 +245,9 @@ namespace RealLifeOverhaul
 
                 if (!CreationScene && _hairOn && !_hairSuspended && !_stopped)
                 {
-                    // The whole scene only where a long frame is not seen; in play, Going Public's other players alone.
-                    if (_othersPace.Due(SceneFinds.Hidden, Time.unscaledTime))
+                    // The whole scene only while the screen is dark (never on a plain pause, whose menu would show the
+                    // search as a hitch); in play, Going Public's other players alone.
+                    if (_othersPace.Due(SceneFinds.Dark, Time.unscaledTime))
                     {
                         FindOthers(SceneFinds.All<AppearanceSetter>("character: everyone in the game's strand hair being looked for (a search of the whole scene, behind the black screen)"));
                     }
@@ -360,8 +361,10 @@ namespace RealLifeOverhaul
         // swapped: the character's appearance data (what a save keeps and what Going Public sends to the other players) is
         // neither read for this nor written.
         //
-        // Where they are found: every character of the scene, behind the game's black screen at a door, a loading screen or
-        // a pause (Core/SearchPace: at most twice in one); and in play, every five seconds, the other players' figures of a
+        // Where they are found: every character of the scene, behind the game's black screen at a door or a loading screen
+        // (Core/SearchPace: at most twice in one; never on a plain pause, whose menu would show each search, some 80 ms, as
+        // a hitch: it was made 14 times in two short sessions of 14 October, at doors, loading screens and pauses); and in
+        // play, every five seconds, the other players' figures of a
         // Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game played alone the search
         // found nobody in the street. The search of the whole scene used to be made every five seconds of play: a frame of
         // some 90 ms each time in the city (Player.log of 13 October, 0.9.4). The finish itself only on a change of look.
