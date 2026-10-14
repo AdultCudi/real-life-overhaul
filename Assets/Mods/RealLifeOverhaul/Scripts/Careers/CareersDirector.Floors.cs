@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Careers
         {
             CourseDef c = e != null ? e.Def : null;
             return c != null && c.Campus == Campus.University && (StudyMode)e.Mode != StudyMode.Distance && CampusRules.FloorOf(c.Id) > 0
-                   && _interior != null && _interior.Available;
+                   && _interior != null && _interior.Available && !_roomDesksOff && !_watchOff && SchoolDesk.Works;
         }
 
         /// <summary>
@@ -165,12 +165,20 @@ namespace RealLifeOverhaul.Careers
                 return new SchoolDesk.DeskOffer
                 {
                     Course = -1, Only = true, Can = false, Key = "reallife_study_why_no_class",
-                    Title = CareersText.T("reallife_campus_room_sign_free", "room", room.ToString()), Lines = new[] { where }
+                    Title = CareersText.T("reallife_campus_room_sign_free", "room", room.ToString()), Lines = new[] { where, CareersText.T("reallife_campus_room_free") }
                 };
             }
             string name = CareersText.Course(course);
             Enrolment e = _studyOn ? _study.Live(course) : null;
             var offer = new SchoolDesk.DeskOffer { Course = course, Only = true, Title = name };
+            int grade = e == null && _studyOn ? _study.GradeOf(course) : -1;
+            if (grade >= 0)
+            {
+                offer.Can = false;
+                offer.Key = "reallife_campus_room_done";
+                offer.Lines = new[] { where, CareersText.T("reallife_persona_edu_passed", "grade", CareersText.Grade(StudyCatalogue.Find(course), grade)) };
+                return offer;
+            }
             if (e == null || !InRooms(e))
             {
                 offer.Can = false;
@@ -213,6 +221,35 @@ namespace RealLifeOverhaul.Careers
             }
             offer.Lines = new[] { where, CareersText.T(e.FeeLate ? "reallife_study_why_fee_owed" : examWhy != "reallife_study_why_no_exam" ? examWhy : classWhy) };
             return offer;
+        }
+
+        /// <summary>
+        /// The game's mark over a classroom door for the course of its room (CampusRules.MarkOf): an action when its class
+        /// or exam can be begun now or its next class is within the hour, enrolled, completed, or none. Once a second, five
+        /// rooms, while the player is on a floor.
+        /// </summary>
+        internal RoomMark RoomMarkOf(int course)
+        {
+            if (course < 0 || !_studyOn || _study == null || Save == null)
+            {
+                return RoomMark.None;
+            }
+            Enrolment e = _study.Live(course);
+            CourseDef c = e != null ? e.Def : null;
+            bool inPerson = c != null && InRooms(e);
+            bool can = false;
+            int soon = -1;
+            if (inPerson)
+            {
+                can = CanAttend(e, out _) == null || CanSit(e) == null;
+                if (!can && e.Stage == (int)EnrolStage.Studying && c.Timetabled && !e.FeeLate)
+                {
+                    int now = Save.Day * 24 * 60 + CareersGame.MinuteOfDay;
+                    int at = StudyRules.NextClass(c, (StudyMode)e.Mode, Save.Day, CareersGame.MinuteOfDay, Math.Max(e.Start, e.SettledDay + 1));
+                    soon = at >= 0 ? at - now : -1;
+                }
+            }
+            return CampusRules.MarkOf(true, e != null, inPerson, _study.Holds(course), can, soon);
         }
 
         // ---------------------------------------------------------------- from the Campus app

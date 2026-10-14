@@ -4,6 +4,19 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
+    /// The game's mark over a classroom door of the university (the icon the game puts over its own classroom doors):
+    /// an action (a class or an exam of the room's course to begin now, or its next class within the hour), enrolled
+    /// (on it in person, nothing soon), completed (passed), or none (a free room, a course not taken, one followed online).
+    /// </summary>
+    public enum RoomMark
+    {
+        None = 0,
+        Enrolled = 1,
+        Soon = 2,
+        Completed = 3
+    }
+
+    /// <summary>
     /// Hudson City University's building as numbers (Careers/CampusBuilding and Careers/CampusInterior hold the game's side),
     /// game-free: EconomyCheck runs every rule.
     ///
@@ -93,6 +106,56 @@ namespace RealLifeOverhaul.Careers
         public static int RoomOfDoor(string customValue)
         {
             return customValue == null ? 0 : Array.IndexOf(RoomDoors, customValue) + 1;
+        }
+
+        /// <summary>The course behind a classroom door of a floor, from the door's custom value; -1 for a free room or a door that is none.</summary>
+        public static int CourseOfDoor(int floor, string customValue)
+        {
+            int room = RoomOfDoor(customValue);
+            return room > 0 ? CourseAt(floor, room) : -1;
+        }
+
+        /// <summary>
+        /// Which way a room's sign faces, along the door's own forward (x, z): +1 forward, -1 back. Out of the room: away
+        /// from the room's chair (the game's school puts each classroom's chair, named like its door, inside the room).
+        /// With no chair the door's forward, which in the game's school layout is out of the room.
+        /// </summary>
+        public static int SignSide(float forwardX, float forwardZ, float doorX, float doorZ, float chairX, float chairZ, bool chair)
+        {
+            if (!chair)
+            {
+                return 1;
+            }
+            float along = forwardX * (doorX - chairX) + forwardZ * (doorZ - chairZ);
+            return along < 0f ? -1 : 1;
+        }
+
+        // ---------------------------------------------------------------- the mark over a classroom door
+
+        public const int SoonMinutes = 60;   // a class this close is marked as an action, as the game marks a course to study
+
+        /// <summary>The game's mark over a classroom door, as the mod's course of the room has it (<see cref="RoomMark"/>).</summary>
+        /// <param name="course">The room holds a course.</param>
+        /// <param name="live">The player is on it now.</param>
+        /// <param name="inPerson">...in person, in its classroom (not online from home).</param>
+        /// <param name="held">The player has passed it.</param>
+        /// <param name="canNow">Its class can be joined, or its exam sat, now.</param>
+        /// <param name="minutesToNext">Minutes until its next class begins; negative for none.</param>
+        public static RoomMark MarkOf(bool course, bool live, bool inPerson, bool held, bool canNow, int minutesToNext)
+        {
+            if (!course)
+            {
+                return RoomMark.None;
+            }
+            if (live)
+            {
+                if (!inPerson)
+                {
+                    return RoomMark.None;
+                }
+                return canNow || (minutesToNext >= 0 && minutesToNext <= SoonMinutes) ? RoomMark.Soon : RoomMark.Enrolled;
+            }
+            return held ? RoomMark.Completed : RoomMark.None;
         }
 
         // ---------------------------------------------------------------- the building

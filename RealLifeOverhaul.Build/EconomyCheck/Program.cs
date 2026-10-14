@@ -105,6 +105,7 @@ internal static partial class Program
         SpecialNames();
         StudyPrompts();
         CampusRulesChecks();
+        ClassDoors();
         Internet();
         Broadband();
         Empire();

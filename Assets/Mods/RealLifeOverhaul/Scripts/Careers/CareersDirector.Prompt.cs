@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Careers
         private bool _deskWatch;           // inside the school, on a course there: the game's study panel is looked at each frame
         private IPlayerActivity _deskSeen; // the game's activity last looked at
         private PlayerActivityUI _activityUi;
+        private bool _roomDesksOff;        // a classroom door's panel could not be taken: the university's classes are attended in place
 
         /// <summary>True while the class panel is up, and in the frame its button ran.</summary>
         public static bool TakesInteractKey => Instance != null && (Instance._classDoor != null && Instance._classDoor.TakesKey || Instance._interior != null && Instance._interior.TakesKey);
@@ -253,31 +254,64 @@ namespace RealLifeOverhaul.Careers
             _deskSeen = now;
             if (now is StudyActivity game && game.GetState() == PlayerActivityState.NotStarted)
             {
+                bool onFloor = _interior != null && _interior.Floor > 0;
                 try
                 {
                     SchoolDesk.DeskOffer offer;
-                    if (_interior != null && _interior.Floor > 0)
+                    int room = 0;
+                    if (onFloor)
                     {
-                        int room = _interior.RoomOf(SchoolDesk.DoorOf(game));
-                        offer = RoomOffer(room > 0 ? room : 1);
-                        Logger?.Info("Careers: a classroom door of the university, floor " + _interior.Floor + " room " + room + ": " + (offer.Course >= 0 ? StudyCatalogue.Find(offer.Course).Key : "no course")
-                                     + (offer.Can ? ", " + (offer.Exam ? "the exam" : "the class") + " can be begun." : ", nothing to begin now (" + offer.Key + ")."));
+                        room = _interior.RoomOf(SchoolDesk.DoorOf(game));
+                        offer = room > 0 && !_roomDesksOff ? RoomOffer(room) : null;
+                        Logger?.Info("Careers: a classroom door of the university, floor " + _interior.Floor + " room " + room + ": " + (offer == null ? "not one of the floor's five rooms"
+                                     : (offer.Course >= 0 ? StudyCatalogue.Find(offer.Course).Key : "no course")
+                                       + (offer.Can ? ", " + (offer.Exam ? "the exam" : "the class") + " can be begun." : ", nothing to begin now (" + offer.Key + ").")));
                     }
                     else
                     {
                         offer = DeskOfferNow();
                     }
-                    SchoolDesk desk = SchoolDesk.Take(_activityUi, game, this, offer);
+                    SchoolDesk desk = offer != null ? SchoolDesk.Take(_activityUi, game, this, offer) : null;
                     if (desk != null)
                     {
                         _deskSeen = desk;
                         _desk = desk;
                     }
+                    else if (onFloor)
+                    {
+                        RoomPanelOff(game, room);
+                    }
                 }
                 catch (Exception e)
                 {
                     Logger?.Error(e);
+                    if (onFloor)
+                    {
+                        RoomPanelOff(game, 0);
+                    }
                 }
+            }
+        }
+
+        // A classroom door of the university whose panel could not be the room's course's: the game's own course is never
+        // offered there. Its panel is closed at once, and from now on the university's classes are attended with the Attend
+        // button where the player stands (InRooms is false), as they are when the floors are not there.
+        private void RoomPanelOff(StudyActivity game, int room)
+        {
+            try
+            {
+                game.ChangeState(PlayerActivityState.Finished);   // (the game's panel closes on its next frame, nothing studied)
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            if (!_roomDesksOff)
+            {
+                _roomDesksOff = true;
+                Logger?.Warn("Careers: the classroom door of floor " + (_interior != null ? _interior.Floor : 0) + " room " + room + " could not show its course on the game's study panel; "
+                             + "the game's panel there is closed, and the university's classes are attended with the Attend button where the player stands.");
+                Tell(NotificationType.Info, "reallife_campus_note_room_panel", null, TabStudying, null);
             }
         }
 

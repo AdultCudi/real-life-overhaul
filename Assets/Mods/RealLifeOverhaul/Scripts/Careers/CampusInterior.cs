@@ -9,6 +9,7 @@ using BigAmbitions.Items;
 using Blueprints;
 using Buildings;
 using BusinessLayoutSets;
+using Controllers;
 using LayoutItem = BusinessLayoutSets.Item;
 using Helpers;
 using Localizor;
@@ -54,8 +55,12 @@ namespace RealLifeOverhaul.Careers
     /// lift: the screen goes dark, the rooms are given the other floor's courses, and the player is at the entrance of that
     /// floor. The game's own click on the building goes in too while it is open (its doors are "always open" then, as the
     /// game's own walk-in places are), to the floor of a class of the player's or the first. Each classroom door is named
-    /// with its course where the game names what is under the pointer, and a sign over the door says the room and course.
-    /// A classroom door opens the game's study panel with the mod's class in place of the game's courses (Careers/SchoolDesk).
+    /// with its course where the game names what is under the pointer, and a sign over the door, read from the corridor,
+    /// says the room and course. The game's mark over the door is the course's (Careers/CampusMarks): a class soon,
+    /// enrolled, completed. A classroom door opens the game's study panel with the room's course alone, in place of the
+    /// game's courses (Careers/SchoolDesk): its class or exam to begin, or when its next class is. The game's own five
+    /// courses are never offered here; they are the business school's. Each door keeps the game's custom value, so the
+    /// game's door still finds its own room's chair, where the class is sat.
     ///
     /// CLOSED. The building card, the panel at the door and the Campus app say when it closes or when it opens again. A
     /// press of a floor while it is closed, and the game's own refusal at its door, are told to the player with the hour it
@@ -66,7 +71,7 @@ namespace RealLifeOverhaul.Careers
     ///
     /// THE COST. Nothing per frame but, while the player stands within a few metres of the door outside and it is open, one
     /// flag of the building manager read each frame (so the game's own click is seen before the game loads the structure);
-    /// once a second the panels and the doors; the furniture over four frames when a floor is entered.
+    /// once a second the panels, the doors and the five rooms' marks; the furniture over four frames when a floor is entered.
     /// </summary>
     internal sealed class CampusInterior
     {
@@ -88,7 +93,11 @@ namespace RealLifeOverhaul.Careers
         private readonly int[] _liftFloor = new int[4];
         private readonly Dictionary<string, object> _args = new Dictionary<string, object>(16);
         private readonly EducationDoorController[] _rooms = new EducationDoorController[CampusRules.RoomsPerFloor];
+        private readonly Transform[] _chairs = new Transform[CampusRules.RoomsPerFloor];   // each room's chair, found as the game's door finds it
         private readonly GameObject[] _signs = new GameObject[CampusRules.RoomsPerFloor];
+        private readonly CampusMarks _marks;
+        private static Material _signLook;    // the game's font's material, drawn from the front only (one for every sign)
+        private static TMP_FontAsset _signFont;
 
         private BusinessLayoutSet _set;
         private bool _checked, _available;
@@ -126,6 +135,7 @@ namespace RealLifeOverhaul.Careers
             _onEnter = Entered;
             _onExit = Left;
             _onNotice = Noticed;
+            _marks = new CampusMarks(logger);
         }
 
         /// <summary>The floor the player is on, from 1; 0 when not inside the university's floors.</summary>
@@ -228,6 +238,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     _logger?.Info("Careers check (university floor): the classrooms are " + (open ? "open" : "closed") + " now: PASS");
                 }
+                Marks();
                 LiftPanel(player);
                 return;
             }
@@ -624,8 +635,10 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < _rooms.Length; i++)
             {
                 _rooms[i] = null;
+                _chairs[i] = null;
                 _signs[i] = null;   // (destroyed with the game's indoor items)
             }
+            _marks.Forget();       // (the game let its icons go with the building)
             _lift.Hide("left the building");
         }
 
@@ -824,9 +837,12 @@ namespace RealLifeOverhaul.Careers
             return c;
         }
 
+        // The floor's five classroom doors by room, and each room's chair as the game's door finds its own (the first seat
+        // named like the door: EducationDoorController.SetStudyDiploma), so the sign and the class are the room's own.
         private void Rooms(BuildingManager manager)
         {
             Array.Clear(_rooms, 0, _rooms.Length);
+            Array.Clear(_chairs, 0, _chairs.Length);
             List<ItemController> all = manager.allItemControllers;
             for (int i = 0; all != null && i < all.Count; i++)
             {
@@ -836,6 +852,14 @@ namespace RealLifeOverhaul.Careers
                     if (room > 0)
                     {
                         _rooms[room - 1] = door;
+                    }
+                }
+                else if (all[i] is SeatController seat)
+                {
+                    int room = CampusRules.RoomOfDoor(seat.customValue);
+                    if (room > 0 && _chairs[room - 1] == null)
+                    {
+                        _chairs[room - 1] = seat.transform;
                     }
                 }
             }
@@ -856,51 +880,108 @@ namespace RealLifeOverhaul.Careers
                 door.customOverlayHeaderKey = course >= 0 ? "reallife" + "_study_course_" + StudyCatalogue.Find(course).Key : "reallife_campus_room_free";
                 string words = course >= 0
                     ? CareersText.T("reallife_campus_room_sign", "room", (r + 1).ToString(), "course", CareersText.Course(course))
-                    : CareersText.T("reallife_campus_room_sign_free", "room", (r + 1).ToString());
+                    : CareersText.T("reallife_campus_room_sign", "room", (r + 1).ToString(), "course", CareersText.T("reallife_campus_room_free"));   // ("Room 3: Free classroom")
                 if (_signs[r] == null && font != null)
                 {
-                    _signs[r] = Sign(door.transform, font);
+                    _signs[r] = Sign(door.transform, _chairs[r], font, r + 1, _logger);
                 }
-                if (_signs[r] != null)
+                TextMeshPro text = _signs[r] != null ? _signs[r].GetComponentInChildren<TextMeshPro>() : null;
+                if (text != null)
                 {
-                    TextMeshPro[] texts = _signs[r].GetComponentsInChildren<TextMeshPro>();
-                    for (int i = 0; i < texts.Length; i++)
-                    {
-                        texts[i].text = words;
-                    }
+                    text.text = words;
+                }
+            }
+            Marks();
+        }
+
+        // Once a second on a floor, and when a floor is laid or changed: the game's mark over each classroom door.
+        private void Marks()
+        {
+            for (int r = 0; r < _rooms.Length; r++)
+            {
+                if (_rooms[r] != null)
+                {
+                    _marks.Set(r, _rooms[r], _director.RoomMarkOf(CampusRules.CourseAt(Floor, r + 1)));
                 }
             }
         }
 
-        // Two faces of lettering over a classroom door, one each way, parented to the game's indoor items (they go with them).
-        private static GameObject Sign(Transform door, TMP_FontAsset font)
+        private const float SignHeight = 2.45f;   // metres over the door's foot: above the doorway
+        private const float SignOut = 0.2f;       // metres out from the door's plane, clear of its frame
+        private static readonly int CullId = Shader.PropertyToID("_CullMode");
+
+        // The room's sign over its door: one face of lettering on a plaque, facing out of the room (away from the room's
+        // chair, CampusRules.SignSide), so it reads from the corridor and shows nothing from inside. The plaque stands
+        // between the lettering and the room, and the lettering is drawn from its front only, so it is never seen
+        // mirrored. (It was two faces back to back, and the game's lettering is drawn from both sides: through the
+        // doorway the room's face showed behind the corridor's, mirrored.) Parented to the game's door: it goes with it.
+        private static GameObject Sign(Transform door, Transform chair, TMP_FontAsset font, int room, IModLogger logger)
         {
+            Vector3 forward = door.forward;
+            forward.y = 0f;
+            forward = forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.forward;
+            Vector3 at = door.position, from = chair != null ? chair.position : at;
+            int side = CampusRules.SignSide(forward.x, forward.z, at.x, at.z, from.x, from.z, chair != null);
+            Vector3 outward = forward * side;
             var root = new GameObject("RealLifeOverhaul University Room Sign");
-            root.transform.SetParent(door, false);
-            root.transform.localPosition = new Vector3(0f, 2.45f, 0f);
-            for (int side = 0; side < 2; side++)
+            Transform place = root.transform;
+            place.SetParent(door, false);
+            place.SetPositionAndRotation(at + Vector3.up * SignHeight + outward * SignOut, Quaternion.LookRotation(outward, Vector3.up));
+            Material plaque = Shapes.Paint(new Color(0.93f, 0.92f, 0.89f));
+            if (plaque != null)
             {
-                var face = new GameObject("Lettering");
-                face.transform.SetParent(root.transform, false);
-                face.transform.localRotation = Quaternion.Euler(0f, side * 180f, 0f);
-                face.transform.localPosition = new Vector3(0f, 0f, side == 0 ? -0.2f : 0.2f);   // (clear of the door frame on either side)
-                var text = face.AddComponent<TextMeshPro>();
-                text.font = font;
-                text.color = new Color(0.12f, 0.12f, 0.14f);
-                text.fontStyle = FontStyles.Bold;
-                text.alignment = TextAlignmentOptions.Center;
-                text.rectTransform.sizeDelta = new Vector2(1.5f, 0.3f);
-                text.enableAutoSizing = true;
-                text.fontSizeMin = 0.05f;
-                text.fontSizeMax = 1.6f;
-                var renderer = face.GetComponent<MeshRenderer>();
-                if (renderer != null)
-                {
-                    renderer.shadowCastingMode = ShadowCastingMode.Off;
-                    renderer.receiveShadows = false;
-                }
+                Shapes.Piece("Plaque", place, Shapes.Cube, plaque, new Vector3(0f, 0f, -0.015f), new Vector3(1.62f, 0.36f, 0.02f));
+            }
+            var label = new GameObject("Lettering");
+            Transform letters = label.transform;
+            letters.SetParent(place, false);
+            letters.localPosition = Vector3.zero;
+            letters.localRotation = Quaternion.Euler(0f, 180f, 0f);   // lettering is read from behind its own forward: from outside the room
+            var text = label.AddComponent<TextMeshPro>();
+            text.font = font;
+            Material look = SignLook(font);
+            if (look != null)
+            {
+                text.fontSharedMaterial = look;
+            }
+            text.color = new Color(0.12f, 0.12f, 0.14f);
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
+            text.rectTransform.sizeDelta = new Vector2(1.5f, 0.3f);
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 0.05f;
+            text.fontSizeMax = 1.6f;
+            var renderer = label.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                logger?.Info("Careers check (university room sign): room " + room + ": one face, out of the room ("
+                             + (chair != null ? "the room's chair " + new Vector2(from.x - at.x, from.z - at.z).magnitude.ToString("0.0") + " m away on the other side" : "no chair found, the door's own forward")
+                             + "), " + (plaque != null ? "on its plaque" : "no plaque") + ", " + (look != null ? "drawn from the front only" : "the font's own material") + ": PASS");
             }
             return root;
+        }
+
+        // The game's font's material with its back faces left out (TextMeshPro's own cull setting), made once for every sign.
+        private static Material SignLook(TMP_FontAsset font)
+        {
+            if (_signLook != null && ReferenceEquals(_signFont, font))
+            {
+                return _signLook;
+            }
+            Material source = font != null ? font.material : null;
+            if (source == null || !source.HasProperty(CullId))
+            {
+                return null;
+            }
+            _signFont = font;
+            _signLook = new Material(source) { name = "RealLifeOverhaul Room Sign" };
+            _signLook.SetFloat(CullId, (float)CullMode.Back);
+            return _signLook;
         }
 
         private string RoomsWords()
@@ -1181,6 +1262,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The city goes, or the part is switched off.</summary>
         public void Dispose()
         {
+            _marks.Clear();
             Gone("the university's part went");
             GlobalEvents.onEnterBuilding -= _onEnter;
             GlobalEvents.onExitBuilding -= _onExit;
