@@ -181,6 +181,7 @@ namespace RealLifeOverhaul.Interiors
                 InfoBox box = InfoBox.Into(parts.transform, dormant, content);
                 if (box != null)
                 {
+                    box.SetAccent(LookRules.Accent("Interior"));
                     UnityEngine.Object.DestroyImmediate(parts);
                     Place(scroll.transform, column);
                     scrolls = rect;
@@ -195,6 +196,7 @@ namespace RealLifeOverhaul.Interiors
             InfoBox plain = InfoBox.From(parts.transform, dormant);
             if (plain != null)
             {
+                plain.SetAccent(LookRules.Accent("Interior"));
                 Place(parts.transform, column);
             }
             return plain;
@@ -399,7 +401,7 @@ namespace RealLifeOverhaul.Interiors
             b.Title(InteriorText.Page(1));
             if (s.Placed.Count == 0)
             {
-                b.Line("reallife_interior_items_none".GetLocalization());
+                b.Note("reallife_interior_items_none".GetLocalization());
             }
             for (int c = 0; c < InteriorRules.Categories; c++)
             {
@@ -438,7 +440,7 @@ namespace RealLifeOverhaul.Interiors
             CustomerCount c;
             if (d == null || !InteriorGame.Count(reg, d.Ours, out c))
             {
-                b.Line("reallife_interior_cust_none".GetLocalization());
+                b.Note("reallife_interior_cust_none".GetLocalization());
                 return;
             }
             CustomerSplit split = InteriorRules.Split(c.Drawn, c.Booked, c.OtherMod, c.BaseMille, c.Traffic, c.Own, c.Written, BusinessCatalogue.ClampInterior(s.Footfall), c.OtherPercent);
@@ -457,7 +459,7 @@ namespace RealLifeOverhaul.Interiors
             }
             if (s.Stop != SaleStop.None)
             {
-                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)));
+                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)), CellTone.Red);
             }
             b.Note(InteriorText.T("reallife_interior_cust_note", "traffic", InteriorText.N(c.Traffic), "marketing", InteriorText.N(c.Marketing), "figure", InteriorText.N(c.Written)));
         }
@@ -480,7 +482,7 @@ namespace RealLifeOverhaul.Interiors
             }
             if (demands == 0)
             {
-                b.Line("reallife_interior_rules_none".GetLocalization());
+                b.Note("reallife_interior_rules_none".GetLocalization());
             }
             b.Headline("reallife_interior_rules_needs_head");
             for (int i = 0; i < GameRules.Count; i++)
@@ -493,9 +495,9 @@ namespace RealLifeOverhaul.Interiors
             }
             if (needs == 0)
             {
-                b.Line("reallife_interior_rules_none".GetLocalization());
+                b.Note("reallife_interior_rules_none".GetLocalization());
             }
-            b.Line("reallife_interior_rules_note".GetLocalization());
+            b.Note("reallife_interior_rules_note".GetLocalization());
             GameRules.Clear();
         }
 
@@ -617,7 +619,7 @@ namespace RealLifeOverhaul.Interiors
             b.Title(InteriorText.Page(0));
             if (s.Stop != SaleStop.None)
             {
-                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)));
+                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)), CellTone.Red);
             }
             if (s.Kind == InteriorKind.Shop)
             {
@@ -637,7 +639,7 @@ namespace RealLifeOverhaul.Interiors
             }
             else
             {
-                b.Line("reallife_interior_line_office".GetLocalization());
+                b.Note("reallife_interior_line_office".GetLocalization());
                 if (s.OfficeBoost > 0)
                 {
                     int standing;
@@ -660,18 +662,18 @@ namespace RealLifeOverhaul.Interiors
             }
             if (OtherMods.MeaningfulInteriors.Loaded)
             {
-                b.Line(InteriorText.T("reallife_interior_line_other_interiors", "mod", OtherMods.MeaningfulInteriors.Name));
+                b.Note(InteriorText.T("reallife_interior_line_other_interiors", "mod", OtherMods.MeaningfulInteriors.Name));
             }
             if (OtherMods.MeaningfulAmbience.Loaded)
             {
-                b.Line(InteriorText.T("reallife_interior_line_other_ambience", "mod", OtherMods.MeaningfulAmbience.Name));
+                b.Note(InteriorText.T("reallife_interior_line_other_ambience", "mod", OtherMods.MeaningfulAmbience.Name));
             }
             b.Headline("reallife_interior_head_next");
             int next = InteriorRules.Next(s);
             b.Line(InteriorText.Next(next));
             if (s.Kind == InteriorKind.Shop && InteriorDirector.StandardOn && s.Overall < s.Standard && s.InteriorNow < s.Standard)
             {
-                b.Line("reallife_interior_next_walls".GetLocalization());
+                b.Note("reallife_interior_next_walls".GetLocalization());
             }
             if (Settings.InteriorsStaff && !s.RestCorner)
             {

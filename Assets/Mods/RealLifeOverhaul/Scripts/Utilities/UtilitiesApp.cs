@@ -296,8 +296,8 @@ namespace RealLifeOverhaul.Utilities
         private void WriteAccount(InfoBox box, Account a, int today)
         {
             box.Title(_director.NameOf(a));
+            box.Chip(UtilitiesText.State(a, today), a.State == SupplyState.Cut ? CellTone.Red : a.State == SupplyState.Temporary ? CellTone.Yellow : CellTone.Green);
             box.Section("reallife_look_sec_now");
-            box.Row("reallife_util_box_state", UtilitiesText.State(a, today));
             if (a.Service != Service.Internet && (a.State == SupplyState.Temporary || a.State == SupplyState.Cut))
             {
                 box.Line(UtilitiesText.T(a.State == SupplyState.Temporary ? "reallife_util_box_apply_temporary" : "reallife_util_box_apply_cut", "office", _director.OfficeName()));

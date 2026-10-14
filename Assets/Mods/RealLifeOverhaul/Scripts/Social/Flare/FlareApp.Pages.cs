@@ -121,7 +121,8 @@ namespace RealLifeOverhaul.Flare
         // A post in the box: its words, how far it went and what the friends said.
         private void WritePost(InfoBox box, FlareFile file, FlarePost p)
         {
-            box.Title(AuthorName(p, file) + ", " + FlareText.When(p.Day, p.Hour));
+            box.Title(AuthorName(p, file));
+            box.Subtitle(FlareText.When(p.Day, p.Hour));
             box.Line(Words(p));
             if (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie)
             {
@@ -376,8 +377,8 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Business;
             }
             box.Title(FlareText.T("reallife_flare_tab_business"));
-            box.Line(FlareText.T(shops.Count > 0 ? "reallife_flare_business_intro" : "reallife_flare_business_none"));
-            box.Line(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
+            box.Note(FlareText.T(shops.Count > 0 ? "reallife_flare_business_intro" : "reallife_flare_business_none"));
+            box.Note(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
             Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Business;
         }

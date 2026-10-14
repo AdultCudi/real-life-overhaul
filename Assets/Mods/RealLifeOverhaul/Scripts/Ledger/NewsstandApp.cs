@@ -505,7 +505,7 @@ namespace RealLifeOverhaul.Ledger
             box.Title(LedgerText.T("reallife_ledger_online_app"));
             if (!NewsstandRules.Works(net))
             {
-                box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"));
+                box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"), CellTone.Yellow);
             }
             box.Row("reallife_ledger_online_box_net", LedgerPage.Plain(LedgerDirector.NetWords(net, home)));
             box.Note(LedgerText.T("reallife_ledger_online_box_pick"));
@@ -556,7 +556,7 @@ namespace RealLifeOverhaul.Ledger
                 if (!NewsstandRules.Works(net))
                 {
                     box.Line(LedgerDirector.NetWords(net, home));
-                    box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"));
+                    box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"), CellTone.Yellow);
                 }
             }
             box.Row("reallife_ledger_online_box_price", LedgerPage.Plain(LedgerText.Money(price)));

@@ -150,12 +150,15 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>
         /// An old line of the form "Label <b>value</b>" (or "Label: <b>value</b>"), as FinanceText.Pair and the game's own
         /// box write one, read as a row: true with the label (without its colon) and the value when the line is a label
-        /// with no mark-up of its own followed by one bold value that ends it; false for a sentence.
+        /// with no mark-up of its own followed by one bold value that ends it. A label that ends in a colon may have a few
+        /// plain words after its value ("Overall: <b>68</b> of 100", "Floor area: <b>120</b> square metres"): they are part
+        /// of the value. False for a sentence: a second bold part, mark-up in the label, a label of many words, or more
+        /// than a few words after the value (another sentence).
         /// </summary>
         public static bool SplitPair(string words, out string label, out string value)
         {
             label = value = null;
-            if (string.IsNullOrEmpty(words) || !words.EndsWith("</b>", System.StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(words))
             {
                 return false;
             }
@@ -164,15 +167,31 @@ namespace RealLifeOverhaul.GameUi
             {
                 return false;
             }
+            int shut = words.IndexOf("</b>", open, System.StringComparison.Ordinal);
+            if (shut < 0 || shut != words.LastIndexOf("</b>", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
             string head = words.Substring(0, open);
             if (head.IndexOf('<') >= 0 || head.IndexOf('\n') >= 0)
             {
                 return false;
             }
-            string body = words.Substring(open + 3, words.Length - open - 3 - 4);
-            if (body.Length == 0 || body.IndexOf("</b>", System.StringComparison.Ordinal) >= 0)
+            string body = words.Substring(open + 3, shut - open - 3);
+            string tail = words.Substring(shut + 4);
+            if (body.Length == 0)
             {
                 return false;
+            }
+            if (tail.Length > 0)
+            {
+                string end = head.TrimEnd();
+                bool colon = end.Length > 0 && (end[end.Length - 1] == ':' || end[end.Length - 1] == '：');
+                if (!colon || tail.IndexOf('<') >= 0 || tail.IndexOf('\n') >= 0 || tail.IndexOf(". ", System.StringComparison.Ordinal) >= 0
+                    || tail.IndexOf('。') >= 0 || Units(tail) > 24)
+                {
+                    return false;   // more than a few words after the value: a sentence that holds a figure
+                }
             }
             string trimmed = Label(head);
             if (trimmed.Length == 0 || Units(trimmed) > 90)
@@ -180,7 +199,7 @@ namespace RealLifeOverhaul.GameUi
                 return false;   // a long run of words before a figure is a sentence, not a label
             }
             label = trimmed;
-            value = body;
+            value = tail.Length > 0 ? body + tail.TrimEnd('.', '。') : body;
             return true;
         }
 

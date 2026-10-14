@@ -149,10 +149,12 @@ namespace RealLifeOverhaul.Fame
         {
             box.Title(FameText.T("reallife_fame_title"));
             int day = FameGame.Day;
+            box.Chip(FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall)));
             if (FameCity.InScandal(f, day))
             {
-                box.Line(FameText.Fill("reallife_fame_scandal_line", "day", FameText.N(f.ScandalUntil)));
+                box.Line(FameText.Fill("reallife_fame_scandal_line", "day", FameText.N(f.ScandalUntil)), CellTone.Red);
             }
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_fame_label_profile", FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall)));
             box.Row("reallife_fame_label_reputation", FameText.Rep(f.Overall));
             box.Row("reallife_fame_label_wealth", FameText.N(f.Wealth));
