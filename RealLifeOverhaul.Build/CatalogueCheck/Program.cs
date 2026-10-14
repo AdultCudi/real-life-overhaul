@@ -36,7 +36,7 @@ namespace RealLifeOverhaul
                 {
                     if (p.Value.ValueKind != JsonValueKind.String) Fail($"{p.Name}: value is not a string");
                     else if (!locale.TryAdd(p.Name, p.Value.GetString())) Fail($"{p.Name}: key appears twice");
-                    if (!p.Name.StartsWith("reallife", StringComparison.Ordinal)) Fail($"{p.Name}: key lacks the reallife prefix");
+                    if (!p.Name.StartsWith("reallife", StringComparison.Ordinal) && !TypeNameCheck.OtherModsKeys.Contains(p.Name)) Fail($"{p.Name}: key lacks the reallife prefix");
                 }
             }
             Console.WriteLine($"  parsed OK, {locale.Count} keys");
@@ -294,6 +294,7 @@ namespace RealLifeOverhaul
             SavedShiftCheck.Run(Fail, locale, src);
             OptionsCheck.Run(Fail, locale, src);
             NoticeCheck.Run(Fail, locale, src);
+            TypeNameCheck.Run(Fail, locale, src);
 
             Console.WriteLine(_failures == 0 ? "\nALL CHECKS PASSED" : $"\n{_failures} CHECK(S) FAILED");
             return _failures == 0 ? 0 : 1;
