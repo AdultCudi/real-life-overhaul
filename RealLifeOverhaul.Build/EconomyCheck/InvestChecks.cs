@@ -53,6 +53,15 @@ internal static partial class Program
         InvestPieces();
         InvestTestRefuses();
         InvestWorthWiring();
+        InvestCashRunsOut();
+        InvestBrokerStaysYours();
+        InvestTakeBack();
+        InvestForceTakesBack();
+        InvestBusyList();
+        InvestBackGivesWay();
+        InvestBackReason();
+        InvestSaveTools();
+        InvestStandDown();
         Console.WriteLine("  a large investor's tools: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -1092,6 +1101,8 @@ internal static partial class Program
         public long Money;
         public long Low = long.MaxValue;   // the least the cash came to after a transaction
         public Func<int> Day = () => 0;
+        public Func<long> Broker = () => 0L;   // the money worked orders have with the broker at the moment (LogMarket sets it)
+        public int ShortWhileBroker;           // transactions that left the cash under nothing by a worked order's own money, or while money was with the broker
         public readonly List<(string Why, long Amount, int Day)> Moves = new List<(string Why, long Amount, int Day)>();
 
         public long Cash => Math.Max(0, Money);
@@ -1135,6 +1146,10 @@ internal static partial class Program
         {
             Moves.Add((why, amount, Day()));
             Low = Math.Min(Low, Money);
+            if (Money < 0 && (why == MarketMoney.WorkedHeld || Broker() > 0))
+            {
+                ShortWhileBroker++;
+            }
         }
 
         public int Count(string why, int day = -1) => Moves.Count(x => x.Why == why && (day < 0 || x.Day == day));
@@ -1177,6 +1192,7 @@ internal static partial class Program
         MarketState state = MarketSetup.Open(seed, 1, 0, 60, world.Env(1), seed, null, null, null);
         var m = new MarketEngine(state, new MarketTape(seed), world);
         world.Purse.Day = () => m.State.Day;
+        world.Purse.Broker = () => InvestRules.WithBroker(m.State, out _, out _);
         SessionDay(m, from, step);
         return m;
     }
@@ -1670,5 +1686,267 @@ internal static partial class Program
               && books.Contains("file.Shark.Active") && accounts.Contains("if (!Books.Owing(a))") && overview.Contains("wealth.CurrentWealth - owedOther - owedAccounts")
               && !ModSource(@"Markets\MarketEngine.cs").Contains("RealLifeOverhaul.Economy"),
             "invest: the most of one bond purchase reads the Finance app's net worth through the wiring (the same accounts, the same debts), the market adding its own once, and no feature calls the other");
+    }
+
+    // ---------------------------------------------------------------- the second review: the cash running out, the money
+    // with the broker still the player's, a busy list on load, a payout giving way, the save tools, the market stopping
+
+    // The reviewer's case, seed 691: a worked purchase of ten days' most with half a day's cost in cash and a fifth of it
+    // coming in each night. It buys what the cash pays for and stops when the cash runs out, as before the day's money was
+    // parked (450,850 shares, stopped on its first market day), and every night's takings after stay in the cash: it never
+    // parks them, day after day.
+    private static void InvestCashRunsOut()
+    {
+        MarketEngine m = InvestMarket(691, 0L, out MarketWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large);
+        long per = MarketTrading.MostPerOrder(s);
+        long dayCost = MarketTrading.Value(per, MarketTrading.QuoteOf(m.State, s, m.State.Phase).Ask, true);
+        w.Purse.Money = dayCost / 2;
+        Order o = m.PlaceWorked(s.Id, OrderSide.Buy, per * 10, m.Held, false, out _);
+        int first = m.State.Day, day = first;
+        long close = -1;
+        bool kept = true;
+        for (int i = 0; i < 6; i++)
+        {
+            RunTo(m, day);
+            if (close >= 0 && o != null && !o.IsOpen)
+            {
+                kept &= w.Purse.Money >= close + dayCost / 5;   // (the night's takings are still there at the next close)
+            }
+            close = w.Purse.Money;
+            w.Purse.Give(dayCost / 5, "takings", string.Empty);
+            day = TradingOnOrAfter(day + 1);
+        }
+        Check(o != null && !o.IsOpen && o.Why == OrderWhy.NoMoney && o.Filled == 450850 && o.EndDay == first && kept && o.Parked == 0,
+            "worked: far over the cash, it buys what the cash pays for and stops when it runs out, as before its money was parked (seed 691: "
+            + (o != null ? o.Filled + " shares, stopped on day " + o.EndDay : "none") + "), and leaves every night's takings after in the cash");
+    }
+
+    // The money a worked order has with the broker stays the player's for everything else in the market: the reviewer's
+    // case, seed 661, where a worked purchase parks the whole cash and a resting limit and a ticket purchase of another
+    // company then still fill (both did before the money was parked); seed 681, where four trading bots buy about as often
+    // beside a worked purchase over the cash as before (21 times in 12 days); and the cash never goes under nothing by a
+    // worked order's own money, nor while any money is still with the broker.
+    private static void InvestBrokerStaysYours()
+    {
+        MarketEngine m = InvestMarket(661, 0L, out MarketWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large), t = Liquid(m, MarketSize.Large, 1);
+        long per = MarketTrading.MostPerOrder(s);
+        w.Purse.Money = MarketTrading.Value(per, MarketTrading.QuoteOf(m.State, s, m.State.Phase).Ask, true);
+        Quote qt = MarketTrading.QuoteOf(m.State, t, m.State.Phase);
+        Order limit = Trade(m, t, OrderSide.Buy, 2000, OrderType.Limit, Math.Max(1, qt.Bid / 2), 0, OrderLife.UntilCancelled);
+        Order o = m.PlaceWorked(s.Id, OrderSide.Buy, per * 3, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 20);
+        long cash20 = w.Purse.Money;
+        limit.LimitCents = int.MaxValue / 2;
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 24);
+        Order now = Trade(m, t, OrderSide.Buy, 1000);
+        Check(cash20 == 0 && o != null && o.Parked > 0 && limit.State == OrderState.Filled && limit.Filled == 2000 && now != null && now.State == OrderState.Filled && now.Filled == 1000,
+            "worked: with all the cash parked for the day, a resting limit and a ticket purchase of another company still fill, from the worked order's money (seed 661)");
+        int[] buys = new int[2];
+        int shortWhile = 0;
+        for (int with = 0; with < 2; with++)
+        {
+            MarketEngine b = LogMarket(681, 0L, out LogWorld lw, 3, 5);
+            Stock bs = Liquid(b, MarketSize.Large);
+            long bper = MarketTrading.MostPerOrder(bs);
+            long dayCost = MarketTrading.Value(bper, MarketTrading.QuoteOf(b.State, bs, b.State.Phase).Ask, true);
+            lw.Purse.Money = dayCost * 3;
+            foreach (BotFirm f in MarketBots.All)
+            {
+                b.Hire(f.Id, dayCost / 2, f.Size, f.Stop, f.Loss, out _);
+            }
+            if (with == 1)
+            {
+                b.PlaceWorked(bs.Id, OrderSide.Buy, bper * 40, b.Held, false, out _);
+            }
+            RunTo(b, TradingOnOrAfter(b.State.Day + 12));
+            buys[with] = b.State.Trades.Count(x => x.Bot != 0 && x.Kind == TradeKind.Bought);
+            shortWhile += lw.Purse.ShortWhileBroker;
+        }
+        Console.WriteLine("  worked: four bots bought " + buys[0] + " times in 12 days alone and " + buys[1] + " beside a worked purchase over the cash (seed 681; 21 before its money was parked)");
+        Check(buys[1] * 5 >= buys[0] * 4 && shortWhile == 0,
+            "worked: trading bots buy about as often beside a worked purchase over the cash as without it, and the cash never goes under nothing by its money or while money is with the broker");
+    }
+
+    // A purchase or a charge in the market that needs more than the cash in hand takes back what it needs of the money with
+    // the broker, and no more: a worked sale's takings first, then the parked money of the worked purchase placed last, one
+    // transaction for each order; what it took back the order goes on without, and the money is conserved to the unit.
+    private static void InvestTakeBack()
+    {
+        MarketEngine m = LogMarket(662, 0L, out LogWorld w, 3, 5);
+        Stock a = Liquid(m, MarketSize.Mid), b = Liquid(m, MarketSize.Mid, 1), sold = Liquid(m, MarketSize.Mid, 2), c = Liquid(m, MarketSize.Large);
+        long perA = MarketTrading.MostPerOrder(a), perB = MarketTrading.MostPerOrder(b);
+        PutHolding(m, sold, MarketTrading.MostPerOrder(sold) * 2);
+        w.Purse.Money = MarketTrading.Value(perA, MarketTrading.QuoteOf(m.State, a, m.State.Phase).Ask, true)
+                        + MarketTrading.Value(perB, MarketTrading.QuoteOf(m.State, b, m.State.Phase).Ask, true);
+        Order first = m.PlaceWorked(a.Id, OrderSide.Buy, perA * 3, m.Held, false, out _);
+        Order last = m.PlaceWorked(b.Id, OrderSide.Buy, perB * 3, m.Held, false, out _);
+        Order sale = m.PlaceWorked(sold.Id, OrderSide.Sell, MarketTrading.MostPerOrder(sold) * 2, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 30);
+        long free = w.Purse.Money, due = sale.Due, lastParked = last.Parked, firstParked = first.Parked;
+        Quote qc = MarketTrading.QuoteOf(m.State, c, m.State.Phase);
+        long qty = Math.Max(1L, (free + due + lastParked / 2) * 100L / Math.Max(1, qc.Ask));   // (more than the cash in hand and the takings: some of the parked money too)
+        int movesBefore = w.Purse.Moves.Count;
+        Order buy = Trade(m, c, OrderSide.Buy, Math.Min(qty, MarketTrading.MostPerOrder(c)));
+        var taken = w.Purse.Moves.Skip(movesBefore).ToList();
+        int fromSale = taken.Count(x => x.Why == MarketMoney.WorkedSold), fromParked = taken.Count(x => x.Why == MarketMoney.WorkedBack);
+        bool order = buy != null && buy.State == OrderState.Filled && due > 0 && lastParked > 0 && sale.Due == 0 && fromSale == 1 && fromParked == 1 && first.Parked == firstParked
+                     && last.Parked < lastParked && last.Parked > 0 && w.Purse.Money >= 0 && qty <= MarketTrading.MostPerOrder(c);
+        Check(order, "worked: a purchase short of cash takes back what it needs: a worked sale's takings first, then the parked money of the worked purchase placed last, one transaction each ("
+                     + fromSale + " and " + fromParked + ")");
+        UntilDone(m, first, 10);
+        UntilDone(m, last, 10);
+        RunTo(m, TradingOnOrAfter(m.State.Day + 1));
+        long held = -w.Purse.Sum(MarketMoney.WorkedHeld), back = w.Purse.Sum(MarketMoney.WorkedBack);
+        long cost = m.State.Trades.Where(x => x.Order == first.Id || x.Order == last.Id).Sum(x => -x.Value + x.Fee);
+        long takings = m.State.Trades.Where(x => x.Order == sale.Id).Sum(x => x.Value - x.Fee);
+        Check(held == cost + back && w.Purse.Sum(MarketMoney.WorkedSold) == takings && first.Parked == 0 && last.Parked == 0 && sale.Due == 0 && w.Purse.Low >= 0
+              && w.Purse.ShortWhileBroker == 0,
+            "worked: with money taken back in the middle of a day, what was parked is still what the slices cost and what came back, to the unit, and a sale's takings what its slices brought");
+    }
+
+    // A charge the market forces (a bot's fee, a listing's fee, a margin call's shortfall) takes what it needs of the money
+    // with the broker before it takes the cash in hand under nothing: one transaction back from the order, the cash never
+    // under nothing while money is still with the broker. A ladder's pieces are one purchase: what is short comes back once.
+    private static void InvestForceTakesBack()
+    {
+        MarketEngine m = LogMarket(663, 0L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large);
+        long per = MarketTrading.MostPerOrder(s);
+        w.Purse.Money = MarketTrading.Value(per, MarketTrading.QuoteOf(m.State, s, m.State.Phase).Ask, true);
+        Order o = m.PlaceWorked(s.Id, OrderSide.Buy, per * 3, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 10);
+        long free = w.Purse.Money, parked = o != null ? o.Parked : 0, fee = free + parked / 3;
+        int before = w.Purse.Moves.Count;
+        m.Wallet.Force(fee, MarketMoney.BotFee, "a bot");
+        int backs = w.Purse.Moves.Skip(before).Count(x => x.Why == MarketMoney.WorkedBack);
+        Check(o != null && parked > 0 && w.Purse.Money == 0 && o.Parked == parked - (fee - free) && backs == 1 && w.Purse.ShortWhileBroker == 0,
+            "worked: a charge the market forces takes what it needs of the money with the broker first, in one transaction, and never takes the cash under nothing while any is there");
+        long least = BondRules.Least(m.State.Env.PriceLevel), most = BondRules.Most(m.State.Env.PriceLevel);
+        long sum = o != null ? Math.Min(o.Parked / 2, most * 4) / 4 * 4 : 0L;
+        before = w.Purse.Moves.Count;
+        int bought = sum >= least * 4 ? m.BuyLadder(sum, 0, false, true, true, out BondWhy why) : 0;
+        int ladderBacks = w.Purse.Moves.Skip(before).Count(x => x.Why == MarketMoney.WorkedBack);
+        Check(bought == 4 && ladderBacks == 1 && w.Purse.Money >= 0, "bonds: a ladder bought with the money with the broker takes it back once for its four pieces (" + bought + " bought, " + ladderBacks + " back)");
+    }
+
+    // The reviewer's case, seed 701: an active trader's list of orders (141, most of them done and kept a while) and a worked
+    // order with money parked at the save. Read back, the worked order is there with its money: part g has a limit of its
+    // own, and an open worked order or one with money with the broker is never dropped.
+    private static void InvestBusyList()
+    {
+        MarketEngine m = LogMarket(701, 90000000000L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large), t = Liquid(m, MarketSize.Large, 1);
+        for (int d = 0; d < 10; d++)
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 5 + i * 2);
+                Trade(m, t, OrderSide.Buy, 10);
+            }
+            RunTo(m, m.State.Day);
+            RunTo(m, TradingOnOrAfter(m.State.Day + 1), MarketCatalogue.PhaseOpen + 2);
+        }
+        Order o = m.PlaceWorked(s.Id, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 3, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 50);
+        long before = InvestRules.WithBroker(m.State, out _, out _);
+        MarketState back = MarketStore.Read(MarketStore.Write(m.State), out _);
+        Order r = back != null && o != null ? back.Order(o.Id) : null;
+        Check(m.State.Orders.Count > MarketCatalogue.OrdersMost * 2 && o != null && o.Parked > 0 && r != null && r.Parked == o.Parked && r.IsOpen
+              && InvestRules.WithBroker(back, out _, out _) == before,
+            "store: with a busy list of orders (" + m.State.Orders.Count + "), a worked order with money parked comes back whole with its money (seed 701)");
+    }
+
+    // The reviewer's case, seed 721: a limit purchase placed after the close, when a dividend put back already waits for the
+    // open. The payout gives way to it as to every open purchase of the company: it buys only the room left beside the
+    // limit, the limit is not refused and fills, and the holding never passes the most.
+    private static void InvestBackGivesWay()
+    {
+        MarketEngine m = LogMarket(721, 90000000000L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large);
+        long most = MarketTrading.MostHeld(s), per = MarketTrading.MostPerOrder(s);
+        PutHolding(m, s, most - per, 100);
+        RunTo(m, m.State.Day);
+        Quote q = MarketTrading.QuoteOf(m.State, s, MarketCatalogue.PhaseOpen);
+        Order back = WaitingBack(m, s, MarketTrading.Value(per, q.Ask, true) * 3);
+        Order limit = m.Place(s.Id, OrderSide.Buy, OrderType.Limit, OrderLife.UntilCancelled, per / 2, q.Ask * 2, 0, m.Trading, m.Held, false, out OrderWhy why);
+        long high = 0;
+        int day = MarketTrading.NextTradingDay(m.State.Day);
+        for (int i = 0; i < 3; i++)
+        {
+            RunTo(m, day);
+            high = Math.Max(high, m.State.Held(s.Id));
+            day = TradingOnOrAfter(day + 1);
+        }
+        Check(limit != null && limit.State == OrderState.Filled && limit.Filled == per / 2 && back.Filled <= per - per / 2 && high <= most,
+            "put back: a dividend waiting for the open gives way to a limit placed after the close: it buys only the room left beside it, the limit fills whole, the holding never passes the most (seed 721: "
+            + back.Filled + " put back, the limit " + (limit != null ? limit.Filled.ToString() : why.ToString()) + ")");
+    }
+
+    // The reviewer's case, seed 671: a worked purchase whose rest is over the room, and a dividend put back on the same
+    // company: refused for the holding limit while the holding itself is far from it. The reason says so: it is the holding
+    // with the open orders for it, in each language. (OrderWhy is unchanged: a saved reason reads as ever.)
+    private static void InvestBackReason()
+    {
+        MarketEngine m = LogMarket(671, 90000000000L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large);
+        long most = MarketTrading.MostHeld(s);
+        PutHolding(m, s, 1000);
+        Order o = m.PlaceWorked(s.Id, OrderSide.Buy, most * 2, m.Held, false, out _);
+        Order back = WaitingBack(m, s, 5000000L);
+        RunTo(m, MarketTrading.NextTradingDay(m.State.Day), MarketCatalogue.PhaseOpen + 1);
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
+        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json")), pt = LoadWords(System.IO.Path.Combine(folder, "pt.json")),
+            zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
+        bool words = en != null && pt != null && zh != null && en["reallife_mkt_why_holding_limit"].Contains("with your open orders for it")
+                     && pt["reallife_mkt_why_holding_limit"].Contains("com suas ordens abertas") && zh["reallife_mkt_why_holding_limit"].Contains("未成交订单");
+        Check(o != null && back.State == OrderState.Refused && back.Why == OrderWhy.HoldingLimit && m.State.Held(s.Id) * 100 < most && words && (int)OrderWhy.HoldingLimit == 7,
+            "put back: refused for the room the open orders hold, its reason says it is the holding with the open orders for it, in each language (seed 671)");
+    }
+
+    // The save tools settle everything for one sum: the money worked orders have with the broker is in it, taken off them
+    // first, so nothing they do after gives it back a second time (MarketDirector.StopAll).
+    private static void InvestSaveTools()
+    {
+        MarketEngine m = LogMarket(731, 90000000000L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large), t = Liquid(m, MarketSize.Large, 1);
+        PutHolding(m, t, MarketTrading.MostPerOrder(t) * 2);
+        Order buy = m.PlaceWorked(s.Id, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 3, m.Held, false, out _);
+        Order sale = m.PlaceWorked(t.Id, OrderSide.Sell, MarketTrading.MostPerOrder(t) * 2, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 30);
+        long parkedThen = buy.Parked, dueThen = sale.Due;
+        long all = InvestRules.EmptyBroker(m.State, out long parked, out long due);
+        string tools = ModSource(@"Markets\MarketDirector.Tests.cs");
+        int at = tools.IndexOf("public void StopAll()", StringComparison.Ordinal);
+        int empty = tools.IndexOf("long total = InvestRules.EmptyBroker(s,", at, StringComparison.Ordinal), settle = tools.IndexOf("OwnSettled(log)", at, StringComparison.Ordinal),
+            give = tools.IndexOf("_world.Wallet.Give(total", at, StringComparison.Ordinal), clear = tools.IndexOf("s.Orders.Clear()", at, StringComparison.Ordinal);
+        Check(parkedThen > 0 && dueThen > 0 && all == parkedThen + dueThen && parked == parkedThen && due == dueThen && buy.Parked == 0 && sale.Due == 0
+              && InvestRules.WithBroker(m.State, out _, out _) == 0 && at > 0 && empty > at && empty < settle && settle < give && give < clear,
+            "save tools: the money with the broker is in the one sum everything is settled for, taken off the worked orders before anything else, and never given back twice");
+    }
+
+    // The market stopping (its option switched off in the middle of a day): every worked order's money with the broker is
+    // settled into the cash first, so it is not short while the market is off, and the order parks again when it runs. A
+    // guest's trades not yet sent are dropped as the market stands down, never reaching the next host.
+    private static void InvestStandDown()
+    {
+        MarketEngine m = LogMarket(741, 90000000000L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large), t = Liquid(m, MarketSize.Large, 1);
+        PutHolding(m, t, MarketTrading.MostPerOrder(t) * 2);
+        Order buy = m.PlaceWorked(s.Id, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 3, m.Held, false, out _);
+        Order sale = m.PlaceWorked(t.Id, OrderSide.Sell, MarketTrading.MostPerOrder(t) * 2, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 30);
+        long cash = w.Purse.Money, parked = buy.Parked, due = sale.Due;
+        long back = m.SettleAll();
+        bool settled = parked > 0 && due > 0 && back == parked + due && w.Purse.Money == cash + back && buy.Parked == 0 && sale.Due == 0 && buy.ParkedDay == 0 && buy.IsOpen;
+        long filled = buy.Filled;
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 40);
+        string director = ModSource(@"Markets\MarketDirector.cs");
+        int at = director.IndexOf("private void StandDown(bool keep)", StringComparison.Ordinal), end = at >= 0 ? director.IndexOf("private void KeepTape()", at, StringComparison.Ordinal) : -1;
+        string body = at >= 0 && end > at ? director.Substring(at, end - at) : string.Empty;
+        int settleAt = body.IndexOf("_engine.SettleAll()", StringComparison.Ordinal), saveAt = body.IndexOf("MarketStore.Save(", StringComparison.Ordinal);
+        Check(settled && buy.Filled > filled && buy.Parked > 0 && settleAt > 0 && settleAt < saveAt && body.Contains("_guestTrades.Clear()"),
+            "market: stopping, every worked order's money with the broker is settled into the cash before the market is saved, the order parks again when it runs, and a guest's unsent trades are dropped");
     }
 }
