@@ -266,6 +266,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerReport.cs" Link="Mod\DealerReport.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RedrawRules.cs" Link="Mod\RedrawRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LookupRules.cs" Link="Mod\LookupRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerPageStamp.cs" Link="Mod\LedgerPageStamp.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PhotoThumbs.cs" Link="Mod\PhotoThumbs.cs" />
   </ItemGroup>
 
 </Project>

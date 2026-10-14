@@ -66,6 +66,7 @@ internal static partial class Program
         Sightseeing();
         PointGrids();
         LoadPace();
+        AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();
