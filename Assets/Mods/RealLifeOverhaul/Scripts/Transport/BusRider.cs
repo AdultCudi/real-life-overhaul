@@ -235,7 +235,7 @@ namespace RealLifeOverhaul
             _reached = false;
             _step = Step.ToDoor;
             _until = Time.time + ToDoorFor;
-            player.SetGoal(door, _onReached ?? (_onReached = Reached));
+            player.SetGoal(door, Guard.Listener(_onReached ?? (_onReached = Reached)));
             if (!player.hasOnGoalReachedAction && !_reached)
             {
                 Finish("the game would not walk the player to the door", put: false);

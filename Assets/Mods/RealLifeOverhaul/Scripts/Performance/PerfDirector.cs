@@ -40,8 +40,8 @@ namespace RealLifeOverhaul
             _bench = new PerfBench(_sampler, _loop, Logger);
             _settledAt = Time.unscaledTime + SettleSeconds;
             PerfTweaks.Dirty = true;
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            SceneManager.sceneUnloaded += OnSceneUnloaded;
+            SceneManager.sceneLoaded += SceneLoadedCall;
+            SceneManager.sceneUnloaded += SceneUnloadedCall;
         }
 
         /// <summary>Starts the ten-second capture, or arms it to start once the menus are closed.</summary>
@@ -211,6 +211,12 @@ namespace RealLifeOverhaul
         }
 
         // The tweaks only note it: they look again on their own timers, a slice at a time, never in this frame.
+        // The scene's events, through the guard (a handler that throws would stop the engine's other handlers of it).
+        private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> _loaded;
+        private static UnityEngine.Events.UnityAction<Scene> _unloaded;
+        private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> SceneLoadedCall => _loaded ?? (_loaded = Guard.Listener<Scene, LoadSceneMode>(OnSceneLoaded));
+        private static UnityEngine.Events.UnityAction<Scene> SceneUnloadedCall => _unloaded ?? (_unloaded = Guard.Listener<Scene>(OnSceneUnloaded));
+
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => PerfTweaks.WorldChanged(true);
 
         private static void OnSceneUnloaded(Scene scene) => PerfTweaks.WorldChanged(false);
@@ -223,8 +229,8 @@ namespace RealLifeOverhaul
 
         private void OnDestroy()
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            SceneManager.sceneLoaded -= SceneLoadedCall;
+            SceneManager.sceneUnloaded -= SceneUnloadedCall;
             _probe.Cancel();
             _bench.Cancel();
             _loop.Close();   // the game's own frame loop back, whatever happened

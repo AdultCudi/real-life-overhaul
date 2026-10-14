@@ -50,6 +50,8 @@ namespace RealLifeOverhaul.GameUi
     /// </summary>
     public sealed class PhoneGridPager : MonoBehaviour, IScrollHandler
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneGridPager", typeof(PhoneGridPager));   // the game's calls of it (Core/Guard)
+
         public const int PerPage = 8;
         private const float DotSize = 14f, DotGap = 14f, DotsFromBottom = 22f;
         private const float StripRightGap = 60f, StripDotsGap = 34f;
@@ -127,7 +129,7 @@ namespace RealLifeOverhaul.GameUi
 
         private void Awake()
         {
-            _late = LatePass;   // (one delegate for good: asking for a pass allocates nothing)
+            _late = new Canvas.WillRenderCanvases(Guard.Way(LatePass));   // (one delegate for good, through the guard: asking for a pass allocates nothing)
         }
 
         private void OnEnable()
@@ -238,12 +240,23 @@ namespace RealLifeOverhaul.GameUi
 
         public void OnScroll(PointerEventData eventData)
         {
-            if (_aside || Pages < 2 || Time.unscaledTime - _lastTurn < 0.15f || Mathf.Abs(eventData.scrollDelta.y) < 0.01f)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            _lastTurn = Time.unscaledTime;
-            Turn(_page + (eventData.scrollDelta.y < 0f ? 1 : -1));
+            try
+            {
+                if (_aside || Pages < 2 || Time.unscaledTime - _lastTurn < 0.15f || Mathf.Abs(eventData.scrollDelta.y) < 0.01f)
+                {
+                    return;
+                }
+                _lastTurn = Time.unscaledTime;
+                Turn(_page + (eventData.scrollDelta.y < 0f ? 1 : -1));
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         private void Turn(int page)

@@ -301,7 +301,7 @@ namespace RealLifeOverhaul
 
         private static void Show(DialogEntry entry)
         {
-            DialogController.current.ShowEntry(entry);
+            DialogController.current.ShowEntry(Guard.Entry(entry));
         }
 
         // ------------------------------------------------------------------ building blocks
@@ -860,11 +860,11 @@ namespace RealLifeOverhaul
             _p = _talk != null ? _talk.Person : null;
             if (_p == null)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_social_call_off"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_social_call_off")));
                 return;
             }
             npcNameKey = SocialPhone.IdOf(_p);
-            DialogController.current.ShowEntry(_talk.Mode == SceneTalk.Introduction ? Introduced() : _talk.Mode == SceneTalk.Meet ? MeetFirst() : Greeting());
+            DialogController.current.ShowEntry(Guard.Entry(_talk.Mode == SceneTalk.Introduction ? Introduced() : _talk.Mode == SceneTalk.Meet ? MeetFirst() : Greeting()));
         }
 
         private static void Leave()
@@ -1015,7 +1015,7 @@ namespace RealLifeOverhaul
             npcNameKey = SocialPhone.PeopleId;
             if (!SocialState.Loaded || !Settings.Social)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_social_call_off"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_social_call_off")));
                 return;
             }
             // Closest first.
@@ -1028,7 +1028,7 @@ namespace RealLifeOverhaul
                 }
             }
             _known.Sort((a, b) => b.Closeness.CompareTo(a.Closeness));
-            DialogController.current.ShowEntry(Overview());
+            DialogController.current.ShowEntry(Guard.Entry(Overview()));
         }
 
         private DialogEntry Overview()
@@ -1138,7 +1138,7 @@ namespace RealLifeOverhaul
             {
                 SocialDirector.Logger?.Error(e);
             }
-            DialogController.current.ShowEntry(first ?? PhoneContacts.Closing("reallife_ledger_desk_later"));
+            DialogController.current.ShowEntry(Guard.Entry(first ?? PhoneContacts.Closing("reallife_ledger_desk_later")));
         }
     }
 }

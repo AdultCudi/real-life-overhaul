@@ -128,7 +128,7 @@ namespace RealLifeOverhaul
                 }
                 _state = State.Loading;
                 AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(path);
-                opening.completed += _ => Opened(opening);
+                opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening));
             }
             catch (Exception e)
             {
@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 AssetBundleRequest reading = bundle.LoadAllAssetsAsync();
-                reading.completed += _ => Loaded(reading);
+                reading.completed += Guard.Way<AsyncOperation>(_ => Loaded(reading));
             }
             catch (Exception e)
             {

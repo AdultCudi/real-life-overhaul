@@ -12,6 +12,8 @@
             the game on disk: what the running mod would find missing, and the features it would switch off; the same
             against a game that lacks what a player's Build 3675 lacked; every method that reads such a member called
             inside a try; every Update, LateUpdate, FixedUpdate and OnGUI guarded; every coroutine run inside the guard;
+            every method the game calls through its interfaces and base classes, every delegate of the mod's handed to
+            the game, every page of a dialog, maker of a dialog and options page given to it, behind the guard;
          5. every key of the game's own texts and data the mod's code names (GameKeys.txt) against the game's en.json,
             and that the list is complete;
        and runs the checks of the contract's logic: a missing piece switches off the right parts and only those, a run

@@ -53,8 +53,8 @@ namespace RealLifeOverhaul.Roommates
             }
             _first = Next;
             var type = (CallDialogType)ModEnumHash.GetSafeHash(InPersonType);
-            CallDialogFactory.RegisterDialog(type, () => new RoommateDialog());
-            uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, closed, with);
+            CallDialogFactory.RegisterDialog(type, Guard.Maker(() => new RoommateDialog()));
+            uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(closed), with);
             return true;
         }
 
@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Roommates
         public RoommateDialog()
         {
             npcNameKey = RoommatePhone.ContactId;
-            DialogController.current.ShowEntry(RoommateTalk.TakeFirst());
+            DialogController.current.ShowEntry(Guard.Entry(RoommateTalk.TakeFirst()));
         }
     }
 }

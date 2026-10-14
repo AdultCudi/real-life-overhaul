@@ -36,23 +36,36 @@ namespace RealLifeOverhaul.Meta
         /// <summary>The row that makes the box. The game has no text field on this page, so it is built here.</summary>
         private sealed class SearchRow : ModOption
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.SearchRow", typeof(SearchRow));   // the game's calls of it (Core/Guard)
+
             public SearchRow() : base(null, string.Empty)
             {
             }
 
             public override void SpawnUi(Transform parent, string modId)
             {
-                if (_searchFailed || parent == null)
+                if (FrameGuard.Off)
                 {
                     return;
                 }
                 try
                 {
-                    _box = SearchBox.Make(parent, Last(parent));
+                    if (_searchFailed || parent == null)
+                    {
+                        return;
+                    }
+                    try
+                    {
+                        _box = SearchBox.Make(parent, Last(parent));
+                    }
+                    catch (Exception e)
+                    {
+                        SearchFailed(e);
+                    }
                 }
-                catch (Exception e)
+                catch (Exception fault)
                 {
-                    SearchFailed(e);
+                    Guard.Fail(FrameGuard, fault);
                 }
             }
         }

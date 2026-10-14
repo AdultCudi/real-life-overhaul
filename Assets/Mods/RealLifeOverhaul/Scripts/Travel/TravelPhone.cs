@@ -55,7 +55,7 @@ namespace RealLifeOverhaul
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, descriptionKey, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-            CallDialogFactory.RegisterDialog(dialogType, dialog);
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(dialog));
             if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
             {
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
@@ -70,7 +70,7 @@ namespace RealLifeOverhaul
         public TripsDialog()
         {
             npcNameKey = TravelPhone.TripsId;
-            DialogController.current.ShowEntry(Now());
+            DialogController.current.ShowEntry(Guard.Entry(Now()));
         }
 
         private static DialogEntry Say(string text)

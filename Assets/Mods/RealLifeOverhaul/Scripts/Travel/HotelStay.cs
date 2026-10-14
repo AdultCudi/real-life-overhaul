@@ -1011,8 +1011,8 @@ namespace RealLifeOverhaul
             HotelDeskDialog.Stay = this;
             HotelDeskDialog.Booked = false;
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_hoteldesk_calldialogtype");
-            CallDialogFactory.RegisterDialog(dialogType, () => new HotelDeskDialog());
-            InstanceBehavior<UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog, null, AfterDesk);
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new HotelDeskDialog()));
+            InstanceBehavior<UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(AfterDesk));
         }
 
         // The conversation is over: with a room just taken, straight up to it.
@@ -1053,17 +1053,17 @@ namespace RealLifeOverhaul
             npcNameKey = Site != null ? Site.Slot.NameKey : "reallife_travel_desk_name";
             if (Site == null || Stay == null || !Settings.Hotels)
             {
-                DialogController.current.ShowEntry(Say(TravelText.T("reallife_travel_desk_closed")));
+                DialogController.current.ShowEntry(Guard.Entry(Say(TravelText.T("reallife_travel_desk_closed"))));
                 return;
             }
             if (TravelState.HasRoom)
             {
                 HotelSlot other = TravelCatalogue.Hotel(TravelState.HotelId);
-                DialogController.current.ShowEntry(Say(TravelText.T("reallife_travel_desk_has_room", "hotel", TravelText.T(other.NameKey))));
+                DialogController.current.ShowEntry(Guard.Entry(Say(TravelText.T("reallife_travel_desk_has_room", "hotel", TravelText.T(other.NameKey)))));
                 return;
             }
             string greeting = TravelText.T(TravelText.Pick(Site.Slot.Tier == HotelTier.Budget ? TravelCatalogue.HostelGreetings : TravelCatalogue.DeskGreetings), "hotel", Site.Name);
-            DialogController.current.ShowEntry(Room(0, greeting + " "));
+            DialogController.current.ShowEntry(Guard.Entry(Room(0, greeting + " ")));
         }
 
         private static DialogEntry Say(string text)

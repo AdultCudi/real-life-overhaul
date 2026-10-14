@@ -33,21 +33,45 @@ namespace RealLifeOverhaul
 
         private sealed class HomeCta : ICtaBehavior
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("home", "HomeOffers.HomeCta", typeof(HomeCta));   // the game's calls of it (Core/Guard)
+
             public override bool ShouldShow(EntityController entityController)
             {
-                return Offers(entityController);
+                if (FrameGuard.Off)
+                {
+                    return false;
+                }
+                try
+                {
+                    return Offers(entityController);
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(FrameGuard, fault, false);
+                }
             }
 
             public override (string, Action) GetCta(EntityController entityController)
             {
-                var item = entityController as ItemController;
-                bool coffee;
-                if (item == null || !Kinds.TryGetValue(item, out coffee))
+                if (FrameGuard.Off)
                 {
-                    return ("", null);
+                    return (string.Empty, (Action)null);
                 }
-                _pointed = item;
-                return (coffee ? CoffeeKey : CookKey, Click);
+                try
+                {
+                    var item = entityController as ItemController;
+                    bool coffee;
+                    if (item == null || !Kinds.TryGetValue(item, out coffee))
+                    {
+                        return ("", null);
+                    }
+                    _pointed = item;
+                    return (coffee ? CoffeeKey : CookKey, Click);
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(FrameGuard, fault, (string.Empty, (Action)null));
+                }
             }
         }
 

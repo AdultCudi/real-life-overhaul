@@ -11,6 +11,8 @@ namespace RealLifeOverhaul.Ledger
     /// </summary>
     public sealed class LedgerSpark : MaskableGraphic
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerSpark", typeof(LedgerSpark));   // the game's calls of it (Core/Guard)
+
         private readonly List<int> _closes = new List<int>(LedgerCatalogue.ChartDays);
         private Color _rule = new Color(0f, 0f, 0f, 0.15f);
         private float _thickness = 2f;
@@ -40,38 +42,49 @@ namespace RealLifeOverhaul.Ledger
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
-            vh.Clear();
-            Rect r = GetPixelAdjustedRect();
-            if (r.width < 4f || r.height < 4f)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            for (int i = 0; i < 3; i++)
+            try
             {
-                float y = r.yMin + r.height * (0.1f + 0.4f * i);
-                Box(vh, new Rect(r.xMin, y - 0.5f, r.width, 1f), _rule);
+                vh.Clear();
+                Rect r = GetPixelAdjustedRect();
+                if (r.width < 4f || r.height < 4f)
+                {
+                    return;
+                }
+                for (int i = 0; i < 3; i++)
+                {
+                    float y = r.yMin + r.height * (0.1f + 0.4f * i);
+                    Box(vh, new Rect(r.xMin, y - 0.5f, r.width, 1f), _rule);
+                }
+                if (_closes.Count < 2)
+                {
+                    return;
+                }
+                int low = int.MaxValue, high = int.MinValue;
+                for (int i = 0; i < _closes.Count; i++)
+                {
+                    low = Mathf.Min(low, _closes[i]);
+                    high = Mathf.Max(high, _closes[i]);
+                }
+                float span = Mathf.Max(1f, high - low);
+                float step = r.width / (_closes.Count - 1);
+                Vector2 last = Point(r, 0, step, low, span);
+                for (int i = 1; i < _closes.Count; i++)
+                {
+                    Vector2 next = Point(r, i, step, low, span);
+                    Segment(vh, last, next, _thickness, color);
+                    last = next;
+                }
+                float dot = _thickness * 2.2f;
+                Box(vh, new Rect(last.x - dot, last.y - dot, dot * 2f, dot * 2f), color);
             }
-            if (_closes.Count < 2)
+            catch (System.Exception fault)
             {
-                return;
+                Guard.FailMesh(FrameGuard, fault, vh);   // (half a mesh is not drawn)
             }
-            int low = int.MaxValue, high = int.MinValue;
-            for (int i = 0; i < _closes.Count; i++)
-            {
-                low = Mathf.Min(low, _closes[i]);
-                high = Mathf.Max(high, _closes[i]);
-            }
-            float span = Mathf.Max(1f, high - low);
-            float step = r.width / (_closes.Count - 1);
-            Vector2 last = Point(r, 0, step, low, span);
-            for (int i = 1; i < _closes.Count; i++)
-            {
-                Vector2 next = Point(r, i, step, low, span);
-                Segment(vh, last, next, _thickness, color);
-                last = next;
-            }
-            float dot = _thickness * 2.2f;
-            Box(vh, new Rect(last.x - dot, last.y - dot, dot * 2f, dot * 2f), color);
         }
 
         private Vector2 Point(Rect r, int i, float step, int low, float span)

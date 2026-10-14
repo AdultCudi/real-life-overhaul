@@ -46,7 +46,7 @@ namespace RealLifeOverhaul
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_jobs_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_jobs_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new JobLineDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new JobLineDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_jobs_welcome"), notify: false);
@@ -66,7 +66,7 @@ namespace RealLifeOverhaul
         public static void OpenInPerson()
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_jobs_calldialogtype");
-            CallDialogFactory.RegisterDialog(dialogType, () => new JobLineDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new JobLineDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -103,15 +103,15 @@ namespace RealLifeOverhaul
             JobDirector director = JobDirector.Instance;
             if (director == null || !Settings.Jobs)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_job_no_off"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_job_no_off")));
             }
             else if (director.HasJob)
             {
-                DialogController.current.ShowEntry(OnJob(director));
+                DialogController.current.ShowEntry(Guard.Entry(OnJob(director)));
             }
             else
             {
-                DialogController.current.ShowEntry(Offer(0));
+                DialogController.current.ShowEntry(Guard.Entry(Offer(0)));
             }
         }
 

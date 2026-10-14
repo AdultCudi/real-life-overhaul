@@ -956,7 +956,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddPerformance());
 
             // Meta puts the finished page in order (sections, presets, guide, test tools); rows are still added above.
-            OptionsService.Register(context.ModId, Guard.Organised(context, options));   // (the page as it was added, if putting it in order fails)
+            OptionsService.Register(context.ModId, Guard.Rows(Guard.Organised(context, options)));   // (the page as it was added, if putting it in order fails)
             log.Info("Real Life Overhaul " + Meta.Changelog.Version + " initialised.");
             return Task.CompletedTask;
         }

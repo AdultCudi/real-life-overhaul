@@ -48,6 +48,11 @@ internal static partial class Program
             Isolation(image, md, pe);
             EntryPoints(image, md, pe);
             Coroutines(image, md, pe);
+            Section("the game's calls into the mod: what it asks through its interfaces and base classes, the delegates it is given, the dialogs and the options page (Core/GuardCalls)");
+            var self = new GameAssembly("RealLifeOverhaul", mod);
+            GameCalls(md, pe, files, self);
+            Callbacks(md, pe, files);
+            Handovers(md, pe, files);
         }
     }
 

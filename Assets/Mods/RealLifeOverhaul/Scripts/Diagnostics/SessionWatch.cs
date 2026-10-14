@@ -126,6 +126,8 @@ namespace RealLifeOverhaul
         private bool _sceneLoaded;
         private string _sceneName;
         private bool _scenesHooked;
+        private UnityEngine.Events.UnityAction<Scene, LoadSceneMode> _loaded;
+        private UnityEngine.Events.UnityAction<Scene> _unloaded;
         private int _cuts, _looked, _putBack;  // the counts as they stood when the minute began
         private int _searches, _searchesInPlay;
         private bool _exact;                   // the runtime counts what the main thread allocates (ExactCount)
@@ -256,8 +258,10 @@ namespace RealLifeOverhaul
                 if (!_scenesHooked)
                 {
                     _scenesHooked = true;
-                    SceneManager.sceneLoaded += OnSceneLoaded;
-                    SceneManager.sceneUnloaded += OnSceneUnloaded;
+                    _loaded = _loaded ?? Guard.Listener<Scene, LoadSceneMode>(OnSceneLoaded);   // (made once, through the guard: Core/Guard)
+                    _unloaded = _unloaded ?? Guard.Listener<Scene>(OnSceneUnloaded);
+                    SceneManager.sceneLoaded += _loaded;
+                    SceneManager.sceneUnloaded += _unloaded;
                 }
                 FrameSteps.Want(true);
             }
@@ -300,8 +304,8 @@ namespace RealLifeOverhaul
             if (_scenesHooked)
             {
                 _scenesHooked = false;
-                SceneManager.sceneLoaded -= OnSceneLoaded;
-                SceneManager.sceneUnloaded -= OnSceneUnloaded;
+                SceneManager.sceneLoaded -= _loaded;
+                SceneManager.sceneUnloaded -= _unloaded;
             }
         }
 

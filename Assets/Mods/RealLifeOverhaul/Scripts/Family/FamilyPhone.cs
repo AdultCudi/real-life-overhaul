@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Family
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, descriptionKey, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-            CallDialogFactory.RegisterDialog(dialogType, dialog);
+            CallDialogFactory.RegisterDialog(dialogType, RealLifeOverhaul.Guard.Maker(dialog));
             if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
             {
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
@@ -659,7 +659,7 @@ namespace RealLifeOverhaul.Family
         public FamilyPageDialog()
         {
             npcNameKey = FamilyPhone.FamilyId;
-            DialogController.current.ShowEntry(Guard(() => FamilyPage.Page(0)));
+            DialogController.current.ShowEntry(RealLifeOverhaul.Guard.Entry(Guard(() => FamilyPage.Page(0))));
         }
 
         internal static DialogEntry Guard(Func<DialogEntry> first)
@@ -685,7 +685,7 @@ namespace RealLifeOverhaul.Family
         public PartnerDialog()
         {
             npcNameKey = FamilyPhone.PartnerId;
-            DialogController.current.ShowEntry(FamilyPageDialog.Guard(FamilyPhone.PartnerFirst));
+            DialogController.current.ShowEntry(RealLifeOverhaul.Guard.Entry(FamilyPageDialog.Guard(FamilyPhone.PartnerFirst)));
         }
     }
 
@@ -694,12 +694,12 @@ namespace RealLifeOverhaul.Family
         public InLawDialog()
         {
             npcNameKey = FamilyPhone.InLawId;
-            DialogController.current.ShowEntry(FamilyPageDialog.Guard(() =>
+            DialogController.current.ShowEntry(RealLifeOverhaul.Guard.Entry(FamilyPageDialog.Guard(() =>
                 !FamilyState.S.InLaws || !FamilyState.HasPartner
                     ? FamilyTalk.Close("reallife_family_inlaws_gone")
                     : FamilyTalk.Either(FamilyText.Say(Relatives.InLawFavourOpen ? "reallife_family_inlaws_hello_favour" : "reallife_family_inlaws_hello"),
                         Relatives.InLawFavourOpen ? "reallife_family_inlaws_help" : "reallife_family_inlaws_chat", Relatives.InLawFavourOpen ? (Func<DialogEntry>)Relatives.InLawFavour : Relatives.InLawChat,
-                        "reallife_family_inlaws_advice", Relatives.InLawAdvice)));
+                        "reallife_family_inlaws_advice", Relatives.InLawAdvice))));
         }
     }
 }

@@ -1102,7 +1102,7 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_game_busy";
             }
             _logger?.Info("Careers: the player walks to floor " + floor + ", room " + room + " for " + StudyCatalogue.Find(course).Key + ".");
-            player.SetGoal(door, () =>
+            player.SetGoal(door, Guard.Listener(() =>
             {
                 try
                 {
@@ -1115,7 +1115,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     _logger?.Error(e);
                 }
-            });
+            }));
             return null;
         }
 

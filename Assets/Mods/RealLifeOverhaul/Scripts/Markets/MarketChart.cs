@@ -23,6 +23,8 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     internal sealed class ChartMesh : MaskableGraphic
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("markets", "ChartMesh", typeof(ChartMesh));   // the game's calls of it (Core/Guard)
+
         private struct Shape
         {
             public Vector2 A, B, C, D;
@@ -72,23 +74,34 @@ namespace RealLifeOverhaul.Markets
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
-            vh.Clear();
-            UIVertex v = UIVertex.simpleVert;
-            for (int i = 0; i < _shapes.Count; i++)
+            if (FrameGuard.Off)
             {
-                Shape s = _shapes[i];
-                int at = vh.currentVertCount;
-                v.color = s.Colour;
-                v.position = s.A;
-                vh.AddVert(v);
-                v.position = s.B;
-                vh.AddVert(v);
-                v.position = s.C;
-                vh.AddVert(v);
-                v.position = s.D;
-                vh.AddVert(v);
-                vh.AddTriangle(at, at + 1, at + 2);
-                vh.AddTriangle(at + 2, at + 3, at);
+                return;
+            }
+            try
+            {
+                vh.Clear();
+                UIVertex v = UIVertex.simpleVert;
+                for (int i = 0; i < _shapes.Count; i++)
+                {
+                    Shape s = _shapes[i];
+                    int at = vh.currentVertCount;
+                    v.color = s.Colour;
+                    v.position = s.A;
+                    vh.AddVert(v);
+                    v.position = s.B;
+                    vh.AddVert(v);
+                    v.position = s.C;
+                    vh.AddVert(v);
+                    v.position = s.D;
+                    vh.AddVert(v);
+                    vh.AddTriangle(at, at + 1, at + 2);
+                    vh.AddTriangle(at + 2, at + 3, at);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.FailMesh(FrameGuard, fault, vh);   // (half a mesh is not drawn)
             }
         }
     }
@@ -102,6 +115,8 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public sealed class MarketChart : MonoBehaviour, IScrollHandler, IBeginDragHandler, IDragHandler, IPointerMoveHandler, IPointerExitHandler
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("markets", "MarketChart", typeof(MarketChart));   // the game's calls of it (Core/Guard)
+
         private const float ScaleWidth = 96f, DateHeight = 30f, LegendHeight = 30f, Gap = 6f;
         private const int Grid = 5, Dates = 5, LeastShown = 8;
 
@@ -271,16 +286,27 @@ namespace RealLifeOverhaul.Markets
 
         public void OnScroll(PointerEventData e)
         {
-            int n = _candles.Count;
-            if (n <= LeastShown || _intraday)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            int was = _shown;
-            _shown = Mathf.Clamp(e.scrollDelta.y > 0f ? Mathf.RoundToInt(_shown * 0.8f) : Mathf.RoundToInt(_shown * 1.25f) + 1, LeastShown, n);
-            if (_shown != was)
+            try
             {
-                UiSafe(Draw);
+                int n = _candles.Count;
+                if (n <= LeastShown || _intraday)
+                {
+                    return;
+                }
+                int was = _shown;
+                _shown = Mathf.Clamp(e.scrollDelta.y > 0f ? Mathf.RoundToInt(_shown * 0.8f) : Mathf.RoundToInt(_shown * 1.25f) + 1, LeastShown, n);
+                if (_shown != was)
+                {
+                    UiSafe(Draw);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
@@ -291,51 +317,80 @@ namespace RealLifeOverhaul.Markets
 
         public void OnDrag(PointerEventData e)
         {
-            int n = _candles.Count;
-            if (n <= _shown || _intraday)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            float step = PlotWidth() / Math.Max(1, _shown);
-            _dragCarry += e.delta.x;
-            int move = (int)(_dragCarry / step);
-            if (move != 0)
+            try
             {
-                _dragCarry -= move * step;
-                int end = Mathf.Clamp(_end - move, _shown, n);
-                if (end != _end)
+                int n = _candles.Count;
+                if (n <= _shown || _intraday)
                 {
-                    _end = end;
-                    UiSafe(Draw);
+                    return;
                 }
+                float step = PlotWidth() / Math.Max(1, _shown);
+                _dragCarry += e.delta.x;
+                int move = (int)(_dragCarry / step);
+                if (move != 0)
+                {
+                    _dragCarry -= move * step;
+                    int end = Mathf.Clamp(_end - move, _shown, n);
+                    if (end != _end)
+                    {
+                        _end = end;
+                        UiSafe(Draw);
+                    }
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         public void OnPointerMove(PointerEventData e)
         {
-            Vector2 local;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_area, e.position, e.pressEventCamera ?? e.enterEventCamera, out local))
+            if (FrameGuard.Off)
             {
                 return;
             }
-            Rect r = _area.rect;
-            float x = local.x - r.xMin;
-            int first = Math.Max(0, _end - _shown);
-            int at = first + (int)(x / (PlotWidth() / Math.Max(1, _shown)));
-            int hover = x >= 0f && x < PlotWidth() && at < _end ? at : -1;
-            if (hover != _hover)
+            try
             {
-                _hover = hover;
-                UiSafe(Draw);
+                Vector2 local;
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_area, e.position, e.pressEventCamera ?? e.enterEventCamera, out local))
+                {
+                    return;
+                }
+                Rect r = _area.rect;
+                float x = local.x - r.xMin;
+                int first = Math.Max(0, _end - _shown);
+                int at = first + (int)(x / (PlotWidth() / Math.Max(1, _shown)));
+                int hover = x >= 0f && x < PlotWidth() && at < _end ? at : -1;
+                if (hover != _hover)
+                {
+                    _hover = hover;
+                    UiSafe(Draw);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         public void OnPointerExit(PointerEventData e)
         {
-            if (_hover >= 0)
+            try
             {
-                _hover = -1;
-                UiSafe(Draw);
+                if (_hover >= 0)
+                {
+                    _hover = -1;
+                    UiSafe(Draw);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 

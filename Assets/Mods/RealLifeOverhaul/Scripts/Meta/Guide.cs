@@ -354,7 +354,7 @@ namespace RealLifeOverhaul.Meta
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_guide_desc", null, false, true);
                 var dialogType = (CallDialogType)BAModAPI.ModEnumHash.GetSafeHash("reallife_guide_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new GuideDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new GuideDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_guide_welcome"), notify: false);
@@ -377,7 +377,7 @@ namespace RealLifeOverhaul.Meta
         public GuideDialog()
         {
             npcNameKey = "reallife-guide";
-            DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_guide_call"));
+            DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_guide_call")));
             Guide.OpenSoon();
         }
     }

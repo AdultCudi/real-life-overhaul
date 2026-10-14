@@ -24,6 +24,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class RepairBayOverlay : GasStationOverlay, IOverlay
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "RepairBayOverlay", typeof(RepairBayOverlay));   // the game's calls of it (Core/Guard)
+
         private int _frame = -1;
         private bool _atBay;
         private ButtonInfo[] _own;
@@ -42,20 +44,53 @@ namespace RealLifeOverhaul
 
         public new ButtonInfo[] GetButtons()
         {
-            ButtonInfo[] own = Own();
-            return _atBay ? GarageBay.With(own) : own;
+            if (FrameGuard.Off)
+            {
+                return (ButtonInfo[])null;
+            }
+            try
+            {
+                ButtonInfo[] own = Own();
+                return _atBay ? GarageBay.With(own) : own;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
+            }
         }
 
         public new LabelInfo GetSecondLineLeftLabel()
         {
-            Own();
-            return _atBay ? GarageBay.Line(false) : null;
+            if (FrameGuard.Off)
+            {
+                return Guard.Blank();
+            }
+            try
+            {
+                Own();
+                return _atBay ? GarageBay.Line(false) : null;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
 
         public new LabelInfo GetSecondLineRightLabel()
         {
-            Own();
-            return _atBay ? GarageBay.Line(true) : null;
+            if (FrameGuard.Off)
+            {
+                return Guard.Blank();
+            }
+            try
+            {
+                Own();
+                return _atBay ? GarageBay.Line(true) : null;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
     }
 
@@ -147,8 +182,8 @@ namespace RealLifeOverhaul
                 _theirs = box.gasStation;
                 _ours = new RepairBayOverlay();
                 box.gasStation = _ours;
-                _button = new ButtonInfo("RealLifeWorkshop", ButtonKey, "gray", OnButton, PlayerAction.Confirm, true);
-                _buttonOff = new ButtonInfo("RealLifeWorkshop", ButtonKey, "gray", OnButton, PlayerAction.Confirm, false);
+                _button = new ButtonInfo("RealLifeWorkshop", ButtonKey, "gray", Guard.Wrap(OnButton), PlayerAction.Confirm, true);
+                _buttonOff = new ButtonInfo("RealLifeWorkshop", ButtonKey, "gray", Guard.Wrap(OnButton), PlayerAction.Confirm, false);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Garage check (bay): the game's panel for filling stations and repair bays is extended (the game's own object is kept to be put back): PASS.");

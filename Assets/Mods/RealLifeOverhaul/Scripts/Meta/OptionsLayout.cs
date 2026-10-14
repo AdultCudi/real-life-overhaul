@@ -1112,7 +1112,7 @@ namespace RealLifeOverhaul.Meta
                 if (_plain != null && OptionsService.RegisteredEntries.ContainsKey(_modId))
                 {
                     _testsShown = Settings.ShowTestTools;
-                    OptionsService.Register(_modId, _testsShown ? _withTests : _plain);
+                    OptionsService.Register(_modId, Guard.Rows(_testsShown ? _withTests : _plain));
                 }
             });
         }

@@ -620,8 +620,8 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     string name = Pref + category.Id;
-                    var data = new CityMapFilterData { isAvailable = () => category.Offered };
-                    Func<Vector3?> focus = () => Nearest(category);
+                    var data = new CityMapFilterData { isAvailable = Guard.Asked(() => category.Offered, false) };   // (asked by the game's map: Core/Guard)
+                    Func<Vector3?> focus = Guard.Asked<Vector3?>(() => Nearest(category), null);
                     object languageData = Activator.CreateInstance(parameters[4].ParameterType);
                     var row = create.Invoke(filters, new object[] { name, category.Icon, data, under, languageData, null, focus }) as CityMapFilter;
                     if (row == null || row.Toggle == null)
@@ -633,7 +633,7 @@ namespace RealLifeOverhaul
                     // into the save's list of ticked filters), set up again not to write it there itself, and labelled.
                     toggles.Remove(name);
                     entries.Remove(name);
-                    row.SetUp(category.TitleKey, on => Ticked(category, on), category.Icon, data, true, default, null, focus);
+                    row.SetUp(category.TitleKey, Guard.Wrap<bool>(on => Ticked(category, on)), category.Icon, data, true, default, null, focus);
                     row.name = name;
                     row.Toggle.SetIsOnWithoutNotify(category.On);
                     category.Row = row;
@@ -725,14 +725,15 @@ namespace RealLifeOverhaul
                         line.transform.SetSiblingIndex(at);
                     }
                     choice.Line = line;
-                    var data = new CityMapFilterData { isAvailable = () => choice.Offered };
+                    var data = new CityMapFilterData { isAvailable = Guard.Asked(() => choice.Offered, false) };   // (asked by the game's map: Core/Guard)
                     for (int i = 0; i < choice.Rows.Count; i++)
                     {
                         ChoiceRow entry = choice.Rows[i];
                         int index = i;
                         string name = Pref + choice.Id + "_" + entry.Id;
                         object languageData = Activator.CreateInstance(parameters[4].ParameterType);
-                        var row = create.Invoke(filters, new object[] { name, entry.Icon, data, line, languageData, null, entry.Focus }) as CityMapFilter;
+                        Func<Vector3?> focus = Guard.Asked(entry.Focus, null);
+                        var row = create.Invoke(filters, new object[] { name, entry.Icon, data, line, languageData, null, focus }) as CityMapFilter;
                         if (row == null || row.Toggle == null)
                         {
                             ChoiceFail("a row came back empty");
@@ -740,7 +741,7 @@ namespace RealLifeOverhaul
                         }
                         toggles.Remove(name);
                         entries.Remove(name);
-                        row.SetUp(entry.TitleKey, on => choice.Ticked(index, on), entry.Icon, data, true, default, null, entry.Focus);
+                        row.SetUp(entry.TitleKey, Guard.Wrap<bool>(on => choice.Ticked(index, on)), entry.Icon, data, true, default, null, focus);
                         row.name = name;
                         entry.Row = row;
                         if (at >= 0)

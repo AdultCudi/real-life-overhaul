@@ -24,6 +24,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public abstract class HomeActivity : IPlayerActivity
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("home", "HomeActivity", typeof(HomeActivity));   // the game's calls of it (Core/Guard)
+
         private const float SkipAfter = 6f;      // seconds of a routine that are watched before the game's time skip takes the rest
         private const int WatchedWhole = 14;     // a routine no longer than this many game minutes is watched to the end
 
@@ -77,53 +79,96 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the game's contract
 
         public virtual bool RequiresEnergy() => false;
-        public PlayerActivityState GetState() => State;
+        public PlayerActivityState GetState()
+        {
+            if (FrameGuard.Off)
+            {
+                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+            }
+            try
+            {
+                return State;
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+                return Guard.Ended(this);
+            }
+        }
         public PlayerActivityState GetStateBeforeFinishing() => _before;
-        public void ChangeState(PlayerActivityState state) { State = state; }
+        public void ChangeState(PlayerActivityState state)
+        {
+            try
+            {
+                State = state;
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
 
         public void Perform(int minutes)
         {
-            if (State == PlayerActivityState.Finished)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            Done += minutes;
-            if (Done >= Total)
+            try
             {
-                Finish();
-                return;
+                if (State == PlayerActivityState.Finished)
+                {
+                    return;
+                }
+                Done += minutes;
+                if (Done >= Total)
+                {
+                    Finish();
+                    return;
+                }
+                Minute(PlayerHelper.PlayerController, minutes);
             }
-            Minute(PlayerHelper.PlayerController, minutes);
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public void Finish()
         {
-            if (State == PlayerActivityState.Finished)
+            try
             {
-                return;
-            }
-            PlayerController player = PlayerHelper.PlayerController;
-            if (State == PlayerActivityState.MovingTowardsActivity && player != null)
-            {
-                player.ResetNavigation();
-            }
-            _before = State;
-            State = PlayerActivityState.Finished;
-            SkipAt = -1f;
-            if (_begun)
-            {
-                _begun = false;
-                Host.Body.Release();
-                try
+                if (State == PlayerActivityState.Finished)
                 {
-                    End(player, Done >= Total, Mathf.Min(Done, Total));
+                    return;
                 }
-                catch (System.Exception e)
+                PlayerController player = PlayerHelper.PlayerController;
+                if (State == PlayerActivityState.MovingTowardsActivity && player != null)
                 {
-                    HomeDirector.Logger?.Error(e);
+                    player.ResetNavigation();
                 }
+                _before = State;
+                State = PlayerActivityState.Finished;
+                SkipAt = -1f;
+                if (_begun)
+                {
+                    _begun = false;
+                    Host.Body.Release();
+                    try
+                    {
+                        End(player, Done >= Total, Mathf.Min(Done, Total));
+                    }
+                    catch (System.Exception e)
+                    {
+                        HomeDirector.Logger?.Error(e);
+                    }
+                }
+                Done = 0;
             }
-            Done = 0;
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         private void Cancel()
@@ -234,7 +279,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _goal = target;
-            player.SetGoal(target, Arrived);
+            player.SetGoal(target, Guard.Listener(Arrived));
             if (State == PlayerActivityState.NotStarted)
             {
                 // The game's panel took the order for a click elsewhere after all and has dropped the routine and closed.
@@ -312,7 +357,18 @@ namespace RealLifeOverhaul
 
         public LabelInfo GetHeadlineLabel()
         {
-            return Headline();
+            if (FrameGuard.Off)
+            {
+                return Guard.Blank();
+            }
+            try
+            {
+                return Headline();
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
 
         /// <summary>The line at the top of the game's panel: the routine's name unless it has a better one.</summary>
@@ -323,50 +379,234 @@ namespace RealLifeOverhaul
 
         public LabelInfo[] GetLabels()
         {
-            return State == PlayerActivityState.NotStarted ? Labels() : null;
+            if (FrameGuard.Off)
+            {
+                return (LabelInfo[])null;
+            }
+            try
+            {
+                return State == PlayerActivityState.NotStarted ? Labels() : null;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (LabelInfo[])null);
+            }
         }
 
         public ButtonInfo[] GetButtons()
         {
-            switch (State)
+            if (FrameGuard.Off)
             {
-                case PlayerActivityState.NotStarted:
-                    return new[]
-                    {
-                        new ButtonInfo("CancelHomeRoutine", "common_cancel", "gray", Cancel, PlayerAction.Cancel),
-                        new ButtonInfo("StartHomeRoutine", StartKey, "blue", Start, PlayerAction.Confirm)
-                    };
-                case PlayerActivityState.Running:
-                    return new[] { new ButtonInfo("StopHomeRoutine", "reallife_home_stop", "gray", Finish, PlayerAction.Cancel) };
-                default:
-                    return null;
+                return (ButtonInfo[])null;
+            }
+            try
+            {
+                switch (State)
+                {
+                    case PlayerActivityState.NotStarted:
+                        return new[]
+                        {
+                            new ButtonInfo("CancelHomeRoutine", "common_cancel", "gray", Guard.Way(Cancel), PlayerAction.Cancel),
+                            new ButtonInfo("StartHomeRoutine", StartKey, "blue", Guard.Wrap(Start), PlayerAction.Confirm)
+                        };
+                    case PlayerActivityState.Running:
+                        return new[] { new ButtonInfo("StopHomeRoutine", "reallife_home_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) };
+                    default:
+                        return null;
+                }
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
             }
         }
 
-        public bool HasFastForward() => State == PlayerActivityState.Running;
-        public bool HasTimeMachine() => State == PlayerActivityState.Running;
-        public int GetRemainingMinutesForTimeMachine() => Mathf.Max(0, Total - Done);
-        public bool HasProgressBar() => State == PlayerActivityState.Running;
-        public float GetProgressBarPercentageValue() => 100f * Done / Mathf.Max(1, Total);
+        public bool HasFastForward()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return State == PlayerActivityState.Running;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+        public bool HasTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return State == PlayerActivityState.Running;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+        public int GetRemainingMinutesForTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return Mathf.Max(0, Total - Done);
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
+        public bool HasProgressBar()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return State == PlayerActivityState.Running;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+        public float GetProgressBarPercentageValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0f;
+            }
+            try
+            {
+                return 100f * Done / Mathf.Max(1, Total);
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
 
         public (string key, object arguments) GetProgressBarLabel()
         {
-            int left = Mathf.Max(0, Total - Done);
-            return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
-        }
-
-        public bool HasSlider() => State == PlayerActivityState.NotStarted && SliderHigh > SliderLow;
-        public int GetMinSliderValue() => SliderLow;
-        public int GetMaxSliderValue() => SliderHigh;
-        public float GetCurrentSliderValue() => SliderNow;
-        public void OnSliderValueChanged(int value)
-        {
-            if (SliderHigh > SliderLow)   // the panel sets its slider up for every activity, with or without one
+            if (FrameGuard.Off)
             {
-                Slide(Mathf.Clamp(value, SliderLow, SliderHigh));
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                int left = Mathf.Max(0, Total - Done);
+                return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
             }
         }
-        public (string key, object arguments) GetSliderInfo() => SliderText();
+
+        public bool HasSlider()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return State == PlayerActivityState.NotStarted && SliderHigh > SliderLow;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+        public int GetMinSliderValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return SliderLow;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
+        public int GetMaxSliderValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return SliderHigh;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
+        public float GetCurrentSliderValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0f;
+            }
+            try
+            {
+                return SliderNow;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
+        public void OnSliderValueChanged(int value)
+        {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                if (SliderHigh > SliderLow)   // the panel sets its slider up for every activity, with or without one
+                {
+                    Slide(Mathf.Clamp(value, SliderLow, SliderHigh));
+                }
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
+        public (string key, object arguments) GetSliderInfo()
+        {
+            if (FrameGuard.Off)
+            {
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                return SliderText();
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
 
         // ---------------------------------------------------------------- what routines share
 

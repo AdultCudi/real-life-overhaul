@@ -116,7 +116,7 @@ namespace RealLifeOverhaul
                 ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_health_desc", null, false, true);
                 contact.callDialogTypeOverride = DialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(DialogType, () => new WellbeingDialog());
+                CallDialogFactory.RegisterDialog(DialogType, Guard.Maker(() => new WellbeingDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_health_welcome"), notify: false);
@@ -132,7 +132,7 @@ namespace RealLifeOverhaul
         /// <summary>The same page face to face: for the options-page button.</summary>
         public static void OpenInPerson()
         {
-            CallDialogFactory.RegisterDialog(DialogType, () => new WellbeingDialog());
+            CallDialogFactory.RegisterDialog(DialogType, Guard.Maker(() => new WellbeingDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(DialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -145,11 +145,11 @@ namespace RealLifeOverhaul
             npcNameKey = HomePhone.ContactId;
             if (!HomeState.Loaded || !Settings.HomeLife)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_health_page_off"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_health_page_off")));
                 return;
             }
             bool running = HomeDirector.Instance != null && HomeDirector.Instance.Jogging;
-            DialogController.current.ShowEntry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
             {
                 messageData = HomeReport.Page(),
                 ConfirmTextOverride = "reallife_health_menu_routines".Localize(),
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = running ? "reallife_health_menu_stop_run" : "reallife_health_menu_run",
                 OnSecondOption = () => Ask(running ? HomeWish.StopRun : HomeWish.Run),
                 OnCancel = PhoneContacts.HangUp
-            });
+            }));
         }
 
         private static DialogEntry Routines()
@@ -211,7 +211,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                CallDialogFactory.RegisterDialog(DialogType, () => new ClinicDialog());
+                CallDialogFactory.RegisterDialog(DialogType, Guard.Maker(() => new ClinicDialog()));
                 InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(DialogType, NavigationBlocker.SpecialEmployeeDialog);
             }
             catch (Exception e)
@@ -233,34 +233,34 @@ namespace RealLifeOverhaul
             npcNameKey = "reallife-clinic";
             if (!DoctorVisit.Pay(HomeBalance.ConsultationFee, "reallife_transaction_consultation"))
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_doctor_no_money"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_doctor_no_money")));
                 return;
             }
             bool hurt = Hurt();
             if (!HomeHealth.Ill && !hurt)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_doctor_checkup", new
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_doctor_checkup", new
                 {
                     fitness = Mathf.RoundToInt(HomeState.Fitness),
                     diet = JobText.T(HomeReport.DietWord),
                     debt = HomeState.SleepDebt.ToString("F1"),
                     tip = JobText.T(HomeReport.Tip())
-                }));
+                })));
                 return;
             }
             if (HomeHealth.Ill && HomeState.IllTreated && !hurt)
             {
-                DialogController.current.ShowEntry(new DialogEntry
+                DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
                 {
                     messageData = "reallife_doctor_already".Localize(new { illness = JobText.T(HomeHealth.NameKey(HomeState.Ill)), days = HomeHealth.Days(HomeState.IllUntil - TimeHelper.NowInMinutes()) }),
                     ConfirmTextOverride = "reallife_doctor_note_only".Localize(new { amount = JobText.Money(HomeBalance.SickNoteFee) }),
                     OnConfirm = () => Prescribe(false, true),
                     OnCancel = PhoneContacts.HangUp
-                });
+                }));
                 return;
             }
             string key = HomeHealth.Ill ? "reallife_doctor_diagnosis" : "reallife_doctor_diagnosis_hurt";
-            DialogController.current.ShowEntry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
             {
                 messageData = key.Localize(new
                 {
@@ -275,7 +275,7 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_doctor_prescription_note",
                 OnSecondOption = () => Prescribe(true, true),
                 OnCancel = PhoneContacts.HangUp
-            });
+            }));
         }
 
         private static bool Hurt()

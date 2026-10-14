@@ -351,12 +351,15 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the options page
 
         /// <summary>The "Controls" group: the reset button, then one rebind button per action.</summary>
+        private static Action _reset;
+
         public static ModOptions AddControls(this ModOptions options)
         {
             if (!_hooked)
             {
                 _hooked = true;
-                OptionsService.OnReset += ResetAll;   // the game's own "reset all options"
+                _reset = _reset ?? Guard.Way(ResetAll);   // (made once, through the guard: Core/Guard)
+                OptionsService.OnReset += _reset;   // the game's own "reset all options"
             }
             options.AddHeader("reallife_keys_header");
             // A plain button first: the rebind buttons below are copies of it.
@@ -374,7 +377,7 @@ namespace RealLifeOverhaul
             if (_hooked)
             {
                 _hooked = false;
-                OptionsService.OnReset -= ResetAll;
+                OptionsService.OnReset -= _reset;
             }
             KeyCapture.Cancel();
         }
@@ -385,6 +388,8 @@ namespace RealLifeOverhaul
         /// </summary>
         private sealed class RebindOption : ModOption
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("keys", "Keys.RebindOption", typeof(RebindOption));   // the game's calls of it (Core/Guard)
+
             private readonly KeyAction _action;
 
             public RebindOption(KeyAction action, string labelKey) : base(null, labelKey)
@@ -394,22 +399,33 @@ namespace RealLifeOverhaul
 
             public override void SpawnUi(Transform parent, string modId)
             {
-                var template = parent != null ? parent.GetComponentInChildren<ModOptionsButtonControl>(true) : null;
-                if (template == null)
+                if (FrameGuard.Off)
                 {
-                    if (!_warned)
-                    {
-                        _warned = true;
-                        Logger?.Warn("Keys: the options page has no button to copy, so the keys cannot be changed there (they keep working).");
-                    }
                     return;
                 }
-                GameObject row = UnityEngine.Object.Instantiate(template.gameObject, parent);
-                row.SetActive(true);
-                KeyAction action = _action;
-                row.GetComponent<ModOptionsButtonControl>().Initialize(new ButtonOption(Label, () => KeyCapture.Begin(action)));
-                Rows[(int)action] = row.GetComponentInChildren<TextLocalizationComponent>(true);
-                ShowRow(action, false);
+                try
+                {
+                    var template = parent != null ? parent.GetComponentInChildren<ModOptionsButtonControl>(true) : null;
+                    if (template == null)
+                    {
+                        if (!_warned)
+                        {
+                            _warned = true;
+                            Logger?.Warn("Keys: the options page has no button to copy, so the keys cannot be changed there (they keep working).");
+                        }
+                        return;
+                    }
+                    GameObject row = UnityEngine.Object.Instantiate(template.gameObject, parent);
+                    row.SetActive(true);
+                    KeyAction action = _action;
+                    row.GetComponent<ModOptionsButtonControl>().Initialize(new ButtonOption(Label, () => KeyCapture.Begin(action)));
+                    Rows[(int)action] = row.GetComponentInChildren<TextLocalizationComponent>(true);
+                    ShowRow(action, false);
+                }
+                catch (Exception fault)
+                {
+                    Guard.Fail(FrameGuard, fault);
+                }
             }
         }
 

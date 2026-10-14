@@ -693,6 +693,21 @@ the one it was made for, newer or older.
   member stops that entry point's class at once, with one line, instead of failing every frame. A part inside an entry
   point that can stop alone uses `Guard.StandsDown(e, part)`; a step that is done without, `Guard.DoesWithout`. Any
   other fault is written in full; five within thirty seconds switch the feature off for the session.
+- **The game's own calls into the mod** (`Core/GuardCalls.cs`), past those entry points, are behind the same guard:
+  - what the game asks of an object of the mod's through an interface or a base class of its own (an activity of the
+    game's work panel, an overlay, a call to action, a pointer, a table and its cells, a mesh, a drag or a scroll, a row
+    of the options page): the method's body is a try whose catch is the guard's, and the game is given an answer instead
+    (`Guard.Failed`). An activity whose feature is off ends as its own Finish ends it, so the panel closes
+    (`Guard.Ended`);
+  - the delegates of the mod's the game keeps and calls later: a UnityEvent's listener (`Guard.Listener`), a button of
+    the work panel, the walk's arrival, the end of a dialog, an asset bundle's load done, the interface's late pass, the
+    scene's events, the save event and the notification event (`Guard.Wrap`, or `Guard.Way` for a way out, which is never
+    skipped), a question the city map asks (`Guard.Asked`);
+  - every page of the mod's dialogs as it goes to the game (`Guard.Entry`) and every dialog the game makes for a contact
+    of the mod's (`Guard.Maker`): an answer that fails, or whose feature is off, ends the conversation with the game's
+    own closing, so no dialog is left that cannot go on or be left;
+  - the options page as it is registered (`Guard.Rows`): every row's callback caught and never skipped, since the game
+    calls a row's callback while it draws the page too.
 - **Saves**: a line no store can read is kept in the save as it was read (`Core/SaveLines`), however the feature starts.
 - **Going Public**: a session refuses a player whose game build differs from the host's, so every machine meets the
   same game, finds the same pieces missing and switches off the same parts; nothing of this is sent over the network.
@@ -725,6 +740,11 @@ gets, and a question asked the way the mod asks on an older game.
      touches are printed.
    - **isolated members, guarded entry points, guarded coroutines**: a never-inlined method that names a game member
      called outside a try, an Update without the guard, a coroutine started outside `Guard.Routine`.
+   - **the game's calls into the mod**: a method the game calls through its interfaces or base classes whose body is
+     not behind the guard (and cannot be shown not to fail); a delegate of the mod's handed to the game, straight, kept in
+     a field first or passed on, that the guard did not make; a page of a dialog, a maker of a dialog or an options page
+     given to the game outside `Guard.Entry`, `Guard.Maker` or `Guard.Rows`. The few left as they are on purpose are
+     listed with the reason (the characters' own, the options page's own catches, the frame's timestamps).
    - **the game's keys** (`ContractCheck/GameKeys.txt`): keys of the game's own texts and data (business types, items,
      skills, districts, transactions, vehicles) the mod's code names, against the game's `StreamingAssets/locale/en.json`,
      and that the list holds every one the code names.

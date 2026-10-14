@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Roommates
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_roommate_desc", null, false, true);
                 var type = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
                 contact.callDialogTypeOverride = type;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(type, () => new RoommateCallDialog());
+                CallDialogFactory.RegisterDialog(type, Guard.Maker(() => new RoommateCallDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_roommate_welcome"), notify: false);
@@ -279,7 +279,7 @@ namespace RealLifeOverhaul.Roommates
         public RoommateCallDialog()
         {
             npcNameKey = RoommatePhone.ContactId;
-            DialogController.current.ShowEntry(RoommateTalk.Safe(RoommatePhone.Menu)());
+            DialogController.current.ShowEntry(Guard.Entry(RoommateTalk.Safe(RoommatePhone.Menu)()));
         }
     }
 }

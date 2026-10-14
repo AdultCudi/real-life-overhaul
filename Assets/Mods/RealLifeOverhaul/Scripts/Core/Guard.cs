@@ -34,7 +34,9 @@ namespace RealLifeOverhaul
     /// s) switches the whole feature off for the session: its components stop, what it has in the street is taken away
     /// (its Cleanup in Meta/FeatureList), its save line is left as it last wrote it (Core/SaveHook skips its writer), and
     /// one line and one notice say so. A part inside an entry point that can stop alone stands down with
-    /// <see cref="StandsDown"/>, a step done without with <see cref="DoesWithout"/>.
+    /// <see cref="StandsDown"/>, a step done without with <see cref="DoesWithout"/>. The game's own calls into the mod
+    /// past its entry points (what it asks through its interfaces and base classes, the delegates it keeps, the pages of
+    /// the mod's dialogs and the options page) are behind the same guard: Core/GuardCalls.
     ///
     /// SAVES. A line a store could not read is kept as it was (Core/SaveLines), with one line and one notice per save.
     ///
@@ -42,7 +44,7 @@ namespace RealLifeOverhaul
     /// the game, about twenty milliseconds); nothing per frame beyond the try round each entry point; the notices'
     /// component is switched off while it has nothing to say.
     /// </summary>
-    public static class Guard
+    public static partial class Guard
     {
         private const int MostDetailed = 3;   // faults of one entry point written in full; after that one short line each up to MostShort
         private const int MostShort = 12;
@@ -755,17 +757,17 @@ namespace RealLifeOverhaul
         /// <summary>As <see cref="Wrap(FeatureGuard, Action)"/>, with the guard of the handler's class.</summary>
         public static Action Wrap(Action handler)
         {
-            return Wrap(OfHandler(handler), handler);
+            return handler == null ? null : Wrap(OfHandler(handler), handler);
         }
 
         public static Action<T> Wrap<T>(Action<T> handler)
         {
-            return Wrap(OfHandler(handler), handler);
+            return handler == null ? null : Wrap(OfHandler(handler), handler);
         }
 
         public static Action<T1, T2> Wrap<T1, T2>(Action<T1, T2> handler)
         {
-            return Wrap(OfHandler(handler), handler);
+            return handler == null ? null : Wrap(OfHandler(handler), handler);
         }
 
         /// <summary>As <see cref="Wrap(Action)"/>, for the game's notification event (Notifications.onShow, eight arguments).</summary>
@@ -854,6 +856,10 @@ namespace RealLifeOverhaul
         /// </summary>
         public static UnityAction Listener(UnityAction handler)
         {
+            if (handler == null)
+            {
+                return null;
+            }
             FeatureGuard guard = OfHandler(handler);
             return () =>
             {
@@ -874,6 +880,10 @@ namespace RealLifeOverhaul
 
         public static UnityAction<T> Listener<T>(UnityAction<T> handler)
         {
+            if (handler == null)
+            {
+                return null;
+            }
             FeatureGuard guard = OfHandler(handler);
             return value =>
             {

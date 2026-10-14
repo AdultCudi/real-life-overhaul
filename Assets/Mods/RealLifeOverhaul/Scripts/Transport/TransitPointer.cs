@@ -27,6 +27,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TransitPointer : EntityController
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitPointer", typeof(TransitPointer));   // the game's calls of it (Core/Guard)
+
         public enum Kind { Stop, Bench, Bus }
 
         public const string HeaderStop = "reallife_transit_cta_header_stop";
@@ -106,26 +108,44 @@ namespace RealLifeOverhaul
 
         public override bool ShouldReactToIoEnter()
         {
-            return primaryInteractionEnabled && TransitDirector.Offer(this) != null;
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return primaryInteractionEnabled && TransitDirector.Offer(this) != null;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
         }
 
         // As the game's, and then the outlined pieces go back to the layers they came from (the game's own puts them on
         // the layer for interactive items, which these pieces were never on).
         public override void OnIoExit()
         {
-            onIoExitEvent.Invoke();
-            onIoExitEvent.RemoveAllListeners();
-            OverlayManager overlays = InstanceBehavior<OverlayManager>.Instance;
-            if (overlays != null && overlays.IsShowingOverlayOverItem(this))
+            try
             {
-                overlays.HideSimpleOverlayAndClearCta();
-            }
-            for (int i = 0; renderers != null && i < renderers.Length; i++)
-            {
-                if (renderers[i] != null)
+                onIoExitEvent.Invoke();
+                onIoExitEvent.RemoveAllListeners();
+                OverlayManager overlays = InstanceBehavior<OverlayManager>.Instance;
+                if (overlays != null && overlays.IsShowingOverlayOverItem(this))
                 {
-                    renderers[i].gameObject.layer = _layers[i];
+                    overlays.HideSimpleOverlayAndClearCta();
                 }
+                for (int i = 0; renderers != null && i < renderers.Length; i++)
+                {
+                    if (renderers[i] != null)
+                    {
+                        renderers[i].gameObject.layer = _layers[i];
+                    }
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
@@ -154,21 +174,45 @@ namespace RealLifeOverhaul
 
         private sealed class Behaviour : ICtaBehavior
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitCta.Behaviour", typeof(Behaviour));   // the game's calls of it (Core/Guard)
+
             public override bool ShouldShow(EntityController entityController)
             {
-                return entityController is TransitPointer;
+                if (FrameGuard.Off)
+                {
+                    return false;
+                }
+                try
+                {
+                    return entityController is TransitPointer;
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(FrameGuard, fault, false);
+                }
             }
 
             public override (string, Action) GetCta(EntityController entityController)
             {
-                var pointer = entityController as TransitPointer;
-                string key = pointer != null ? TransitDirector.Offer(pointer) : null;
-                if (key == null)
+                if (FrameGuard.Off)
                 {
-                    return ("", null);
+                    return (string.Empty, (Action)null);
                 }
-                _pointed = pointer;
-                return (key, Click);
+                try
+                {
+                    var pointer = entityController as TransitPointer;
+                    string key = pointer != null ? TransitDirector.Offer(pointer) : null;
+                    if (key == null)
+                    {
+                        return ("", null);
+                    }
+                    _pointed = pointer;
+                    return (key, Click);
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(FrameGuard, fault, (string.Empty, (Action)null));
+                }
             }
         }
 

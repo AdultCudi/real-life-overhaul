@@ -17481,5 +17481,6 @@
   "reallife_career_desk_no_computer": "这处住所没有带椅子的电脑，所以今天的工作日从本页开始。放一台电脑就可以在电脑前工作。",
   "reallife_changes_010_4_title": "0.10.4",
   "reallife_changes_010_4": "已修复：专业工作现在在你自己的办公桌上完成，就像游戏自带的 El Gato Food Market 工作一样。去上班，点击你的办公桌，在游戏的工作面板上按“开始工作”，可快进和跳过时间。如果建筑里没有适合这份工作的办公桌，会为你布置一张；在家工作的日子在家里的电脑上完成。职业应用的“我的工作”页面会告诉你办公桌在哪里。",
-  "reallife_contract_part_click_desk": "点击你在工作单位的办公桌"
+  "reallife_contract_part_click_desk": "点击你在工作单位的办公桌",
+  "reallife_guard_dialog_closed": "抱歉，我现在没法继续了。我们改天再聊。"
 }

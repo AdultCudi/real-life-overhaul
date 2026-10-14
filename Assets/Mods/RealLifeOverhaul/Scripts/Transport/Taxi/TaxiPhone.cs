@@ -64,7 +64,7 @@ namespace RealLifeOverhaul
         private static CallDialogType Register()
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
-            CallDialogFactory.RegisterDialog(dialogType, () => new TaxiDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new TaxiDialog()));
             return dialogType;
         }
     }
@@ -75,7 +75,7 @@ namespace RealLifeOverhaul
         public TaxiDialog()
         {
             npcNameKey = TaxiPhone.ContactId;
-            DialogController.current.ShowEntry(First());
+            DialogController.current.ShowEntry(Guard.Entry(First()));
         }
 
         private static DialogEntry First()

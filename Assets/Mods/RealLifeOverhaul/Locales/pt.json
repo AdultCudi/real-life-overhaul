@@ -17481,5 +17481,6 @@
   "reallife_career_desk_no_computer": "Não há computador com cadeira nesta casa, então o dia de trabalho de hoje começa por esta página. Coloque um para trabalhar nele.",
   "reallife_changes_010_4_title": "0.10.4",
   "reallife_changes_010_4": "Corrigido: os empregos profissionais são feitos na sua própria mesa, como o emprego do próprio jogo no El Gato Food Market. Vá ao trabalho, clique na sua mesa e aperte Começar a trabalhar no painel de trabalho do jogo, com avançar e pular o tempo. Onde o prédio não tem mesa para o emprego, uma é montada, e os dias de casa são feitos no computador de casa. A página Meu emprego do app Carreira diz onde fica a sua mesa.",
-  "reallife_contract_part_click_desk": "clicar na sua mesa no trabalho"
+  "reallife_contract_part_click_desk": "clicar na sua mesa no trabalho",
+  "reallife_guard_dialog_closed": "Desculpe, não consigo continuar com isso agora. Falamos outra hora."
 }

@@ -113,8 +113,8 @@ namespace RealLifeOverhaul.GameUi
         private void Awake()
         {
             Instance = this;
-            _onShow = Shown;
-            _onRow = RowShown;
+            _onShow = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(Shown);   // (the game's own events: Core/Guard)
+            _onRow = new CellViewVisibilityChangedDelegate(Guard.Wrap<EnhancedScrollerCellView>(RowShown));
         }
 
         private void OnDestroy()

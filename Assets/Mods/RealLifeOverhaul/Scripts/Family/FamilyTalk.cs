@@ -68,8 +68,8 @@ namespace RealLifeOverhaul.Family
             }
             _first = first;
             var type = (CallDialogType)ModEnumHash.GetSafeHash(InPersonType);
-            CallDialogFactory.RegisterDialog(type, () => new FamilyDialog());
-            uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, closed, with);
+            CallDialogFactory.RegisterDialog(type, Guard.Maker(() => new FamilyDialog()));
+            uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(closed), with);
             return true;
         }
 
@@ -220,7 +220,7 @@ namespace RealLifeOverhaul.Family
         public FamilyDialog()
         {
             npcNameKey = FamilyPhone.FamilyId;
-            DialogController.current.ShowEntry(FamilyTalk.TakeFirst());
+            DialogController.current.ShowEntry(Guard.Entry(FamilyTalk.TakeFirst()));
         }
     }
 }

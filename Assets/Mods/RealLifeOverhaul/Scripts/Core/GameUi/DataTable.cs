@@ -94,6 +94,8 @@ namespace RealLifeOverhaul.GameUi
     /// </summary>
     public sealed class DataTable : BaTable<DataCellView, TableRow>
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DataTable", typeof(DataTable));   // the game's calls of it (Core/Guard)
+
         /// <summary>How the totals line writes an amount: the app's own way of writing money.</summary>
         public Func<double, string> Money = amount => ((float)amount).ToShortCurrencyFormat();
         /// <summary>
@@ -158,7 +160,18 @@ namespace RealLifeOverhaul.GameUi
 
         protected override string GetDataId(TableRow model)
         {
-            return model.Id;
+            if (FrameGuard.Off)
+            {
+                return string.Empty;
+            }
+            try
+            {
+                return model.Id;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, string.Empty);
+            }
         }
 
         /// <summary>
@@ -341,6 +354,8 @@ namespace RealLifeOverhaul.GameUi
     /// </summary>
     public sealed class DataCellView : BaTableCellView<TableRow>
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DataCellView", typeof(DataCellView));   // the game's calls of it (Core/Guard)
+
         private readonly TMP_Text[] _cells = new TMP_Text[TableSpec.MaxColumns];
         private readonly LayoutElement[] _widths = new LayoutElement[TableSpec.MaxColumns];
         private int _count;
@@ -379,36 +394,47 @@ namespace RealLifeOverhaul.GameUi
 
         public override void SetData(TableRow row)
         {
-            if (!gameObject.activeSelf)
+            if (FrameGuard.Off)
             {
-                gameObject.SetActive(true);   // a new row is a copy of a template that sleeps
+                return;
             }
-            Bind();
-            if (_table == null)
+            try
             {
-                _table = GetComponentInParent<DataTable>();
-                if (_table != null)
+                if (!gameObject.activeSelf)
                 {
-                    selectedBackgroundColor = _table.RowSelected;
+                    gameObject.SetActive(true);   // a new row is a copy of a template that sleeps
                 }
-            }
-            _row = row;
-            TableSpec spec = _table != null ? _table.Spec : null;
-            int shown = row.Info || spec == null ? 1 : Mathf.Min(spec.Count, _count);
-            int stamp = (_table != null ? _table.Layout : 0) * 2 + (row.Info ? 1 : 0);
-            if (stamp != _laidOut)
-            {
-                _laidOut = stamp;
-                LayOut(spec, shown, row.Info);
-            }
-            for (int i = 0; i < shown; i++)
-            {
-                if (_cells[i] != null)
+                Bind();
+                if (_table == null)
                 {
-                    _cells[i].text = row.Text[i] ?? string.Empty;
+                    _table = GetComponentInParent<DataTable>();
+                    if (_table != null)
+                    {
+                        selectedBackgroundColor = _table.RowSelected;
+                    }
                 }
+                _row = row;
+                TableSpec spec = _table != null ? _table.Spec : null;
+                int shown = row.Info || spec == null ? 1 : Mathf.Min(spec.Count, _count);
+                int stamp = (_table != null ? _table.Layout : 0) * 2 + (row.Info ? 1 : 0);
+                if (stamp != _laidOut)
+                {
+                    _laidOut = stamp;
+                    LayOut(spec, shown, row.Info);
+                }
+                for (int i = 0; i < shown; i++)
+                {
+                    if (_cells[i] != null)
+                    {
+                        _cells[i].text = row.Text[i] ?? string.Empty;
+                    }
+                }
+                Look(false);
             }
-            Look(false);
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         // The cells this table uses, each as wide as its column's header; a line of words has the whole row.
@@ -442,18 +468,36 @@ namespace RealLifeOverhaul.GameUi
 
         public override void ResetVisuals()
         {
-            Look(false);
+            try
+            {
+                Look(false);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public override void VisualizeSelected(bool selected)
         {
-            if (_row == null || !_row.Pick || backgroundImage == null)
+            if (FrameGuard.Off)
             {
-                Look(false);   // only a row that means something is selected
                 return;
             }
-            base.VisualizeSelected(selected);
-            Look(selected);
+            try
+            {
+                if (_row == null || !_row.Pick || backgroundImage == null)
+                {
+                    Look(false);   // only a row that means something is selected
+                    return;
+                }
+                base.VisualizeSelected(selected);
+                Look(selected);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         private void Look(bool selected)

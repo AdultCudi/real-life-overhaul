@@ -641,7 +641,7 @@ namespace RealLifeOverhaul
                         _goStop = null;
                         _goShelter = shelter;
                         _goSeat = seat;
-                        player.SetGoal(feet, _sitOnArrival);
+                        player.SetGoal(feet, Guard.Listener(_sitOnArrival));
                     }
                     return;
                 }
@@ -662,7 +662,7 @@ namespace RealLifeOverhaul
                 {
                     _goShelter = null;
                     _goStop = stop;
-                    player.SetGoal(stop.Wait, _chooseOnArrival);
+                    player.SetGoal(stop.Wait, Guard.Listener(_chooseOnArrival));
                 }
             }
             catch (Exception e)

@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, descriptionKey, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-            CallDialogFactory.RegisterDialog(dialogType, dialog);
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(dialog));
             if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
             {
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
@@ -62,7 +62,7 @@ namespace RealLifeOverhaul
         public static void OpenGarage()
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_garage_calldialogtype");
-            CallDialogFactory.RegisterDialog(dialogType, () => new GarageDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new GarageDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -138,7 +138,7 @@ namespace RealLifeOverhaul
         public GarageDialog()
         {
             npcNameKey = CarPhone.GarageId;
-            DialogController.current.ShowEntry(Settings.CarOwnership ? Page(0) : PhoneContacts.Closing("reallife_garage_off"));
+            DialogController.current.ShowEntry(Guard.Entry(Settings.CarOwnership ? Page(0) : PhoneContacts.Closing("reallife_garage_off")));
         }
 
         private static DialogEntry Page(int index)
@@ -217,7 +217,7 @@ namespace RealLifeOverhaul
         public RoadsideDialog()
         {
             npcNameKey = CarPhone.RoadsideId;
-            DialogController.current.ShowEntry(First());
+            DialogController.current.ShowEntry(Guard.Entry(First()));
         }
 
         private static DialogEntry First()

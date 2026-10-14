@@ -50,6 +50,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ShiftSkip : IPlayerActivity
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("jobs", "ShiftSkip", typeof(ShiftSkip));   // the game's calls of it (Core/Guard)
+
         private readonly MonoBehaviour _host;
         private ISkippableShift _shift;
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
@@ -134,53 +136,96 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the game's contract
 
         public bool RequiresEnergy() => false;
-        public PlayerActivityState GetState() => _state;
+        public PlayerActivityState GetState()
+        {
+            if (FrameGuard.Off)
+            {
+                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+            }
+            try
+            {
+                return _state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+                return Guard.Ended(this);
+            }
+        }
         public PlayerActivityState GetStateBeforeFinishing() => _before;
-        public void ChangeState(PlayerActivityState state) { _state = state; }
+        public void ChangeState(PlayerActivityState state)
+        {
+            try
+            {
+                _state = state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
 
         public void Perform(int minutes)
         {
-            if (_state == PlayerActivityState.Finished || !_begun)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            _done += minutes;
             try
             {
-                _shift?.SkipWorked(_done < _total ? _done : _total);
+                if (_state == PlayerActivityState.Finished || !_begun)
+                {
+                    return;
+                }
+                _done += minutes;
+                try
+                {
+                    _shift?.SkipWorked(_done < _total ? _done : _total);
+                }
+                catch (Exception e)
+                {
+                    JobDirector.Logger?.Error(e);
+                }
+                if (_done >= _total)
+                {
+                    Finish();
+                }
             }
-            catch (Exception e)
+            catch (Exception fault)
             {
-                JobDirector.Logger?.Error(e);
-            }
-            if (_done >= _total)
-            {
-                Finish();
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         public void Finish()
         {
-            if (_state == PlayerActivityState.Finished)
-            {
-                return;
-            }
-            _before = _state;
-            _state = PlayerActivityState.Finished;
-            if (!_begun)
-            {
-                return;
-            }
-            _begun = false;
-            ISkippableShift shift = _shift;
-            _shift = null;
             try
             {
-                shift?.SkipEnded(_done < _total ? _done : _total, _done >= _total);
+                if (_state == PlayerActivityState.Finished)
+                {
+                    return;
+                }
+                _before = _state;
+                _state = PlayerActivityState.Finished;
+                if (!_begun)
+                {
+                    return;
+                }
+                _begun = false;
+                ISkippableShift shift = _shift;
+                _shift = null;
+                try
+                {
+                    shift?.SkipEnded(_done < _total ? _done : _total, _done >= _total);
+                }
+                catch (Exception e)
+                {
+                    JobDirector.Logger?.Error(e);
+                }
             }
-            catch (Exception e)
+            catch (Exception fault)
             {
-                JobDirector.Logger?.Error(e);
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
@@ -238,7 +283,18 @@ namespace RealLifeOverhaul
 
         public LabelInfo GetHeadlineLabel()
         {
-            return new LabelInfo(_shift != null ? _shift.SkipTitle : string.Empty, WorldPanelWhite(), false);
+            if (FrameGuard.Off)
+            {
+                return Guard.Blank();
+            }
+            try
+            {
+                return new LabelInfo(_shift != null ? _shift.SkipTitle : string.Empty, WorldPanelWhite(), false);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
 
         public LabelInfo[] GetLabels()
@@ -248,18 +304,29 @@ namespace RealLifeOverhaul
 
         public ButtonInfo[] GetButtons()
         {
-            switch (_state)
+            if (FrameGuard.Off)
             {
-                case PlayerActivityState.NotStarted:
-                    return _offer ?? (_offer = new[]
-                    {
-                        new ButtonInfo("CancelShiftSkip", "common_cancel", "gray", Cancel, PlayerAction.Cancel),
-                        new ButtonInfo("StartShiftSkip", "reallife_job_skip_start", "blue", Start, PlayerAction.Confirm)
-                    });
-                case PlayerActivityState.Running:
-                    return _running ?? (_running = new[] { new ButtonInfo("StopShiftSkip", "reallife_job_skip_stop", "gray", Finish, PlayerAction.Cancel) });
-                default:
-                    return null;
+                return (ButtonInfo[])null;
+            }
+            try
+            {
+                switch (_state)
+                {
+                    case PlayerActivityState.NotStarted:
+                        return _offer ?? (_offer = new[]
+                        {
+                            new ButtonInfo("CancelShiftSkip", "common_cancel", "gray", Guard.Way(Cancel), PlayerAction.Cancel),
+                            new ButtonInfo("StartShiftSkip", "reallife_job_skip_start", "blue", Guard.Wrap(Start), PlayerAction.Confirm)
+                        });
+                    case PlayerActivityState.Running:
+                        return _running ?? (_running = new[] { new ButtonInfo("StopShiftSkip", "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) });
+                    default:
+                        return null;
+                }
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
             }
         }
 
@@ -271,8 +338,19 @@ namespace RealLifeOverhaul
 
         public (string key, object arguments) GetProgressBarLabel()
         {
-            int left = Mathf.Max(0, _total - _done);
-            return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            if (FrameGuard.Off)
+            {
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                int left = Mathf.Max(0, _total - _done);
+                return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
         }
 
         public bool HasSlider() => false;

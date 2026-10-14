@@ -43,15 +43,18 @@ namespace RealLifeOverhaul
         private bool _lookedUp;
         private bool _failed;
 
+        private Canvas.WillRenderCanvases _correct;   // (made once, through the guard: Core/Guard)
+
         private void OnEnable()
         {
             // After every LateUpdate (the game places its markers in one) and before the interface is drawn.
-            Canvas.willRenderCanvases += Correct;
+            _correct = _correct ?? new Canvas.WillRenderCanvases(Guard.Wrap(Correct));
+            Canvas.willRenderCanvases += _correct;
         }
 
         private void OnDisable()
         {
-            Canvas.willRenderCanvases -= Correct;
+            Canvas.willRenderCanvases -= _correct;
         }
 
         private void Correct()

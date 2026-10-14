@@ -84,6 +84,7 @@ namespace RealLifeOverhaul
         private long _layoutTotal, _graphicTotal;
         private int _uiFrames;
         private bool _uiHooked;
+        private Canvas.WillRenderCanvases _countUi;
         private string _uiNote;
 
         public bool Running { get; private set; }
@@ -323,7 +324,8 @@ namespace RealLifeOverhaul
                     _uiNote = "the UI system's rebuild queues could not be reached in this version";
                     return;
                 }
-                Canvas.preWillRenderCanvases += CountUi;
+                _countUi = _countUi ?? new Canvas.WillRenderCanvases(Guard.Wrap(CountUi));   // (made once, through the guard: Core/Guard)
+                Canvas.preWillRenderCanvases += _countUi;
                 _uiHooked = true;
             }
             catch (Exception e)
@@ -337,7 +339,7 @@ namespace RealLifeOverhaul
             if (_uiHooked)
             {
                 _uiHooked = false;
-                Canvas.preWillRenderCanvases -= CountUi;
+                Canvas.preWillRenderCanvases -= _countUi;
             }
         }
 

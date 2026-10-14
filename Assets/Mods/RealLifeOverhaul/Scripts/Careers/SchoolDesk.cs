@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "SchoolDesk", typeof(SchoolDesk));   // the game's calls of it (Core/Guard)
+
         private static FieldInfo _doorField, _placeField;
         private static MethodInfo _setActivity;
         private static bool _failed;
@@ -197,7 +199,7 @@ namespace RealLifeOverhaul.Careers
                 Off();
                 yield break;
             }
-            player.SetGoal(_door, () =>
+            player.SetGoal(_door, Guard.Listener(() =>
             {
                 if (_state != PlayerActivityState.MovingTowardsActivity)
                 {
@@ -216,7 +218,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     CareersDirector.Logger?.Error(e);
                 }
-            });
+            }));
         }
 
         // Called off before the class began: the sitting goes with nothing counted.
@@ -235,96 +237,150 @@ namespace RealLifeOverhaul.Careers
 
         public bool BlocksAutoSave() => true;
 
-        public PlayerActivityState GetState() => _mine ? _state : _inner.GetState();
+        public PlayerActivityState GetState()
+        {
+            if (FrameGuard.Off)
+            {
+                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+            }
+            try
+            {
+                return _mine ? _state : _inner.GetState();
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+                return Guard.Ended(this);
+            }
+        }
 
-        public PlayerActivityState GetStateBeforeFinishing() => _mine ? _before : _inner.GetStateBeforeFinishing();
+        public PlayerActivityState GetStateBeforeFinishing()
+        {
+            if (FrameGuard.Off)
+            {
+                return PlayerActivityState.NotStarted;
+            }
+            try
+            {
+                return _mine ? _before : _inner.GetStateBeforeFinishing();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, PlayerActivityState.NotStarted);
+            }
+        }
 
         public void ChangeState(PlayerActivityState state)
         {
-            if (_mine)
+            try
             {
-                _state = state;
+                if (_mine)
+                {
+                    _state = state;
+                }
+                else
+                {
+                    _inner.ChangeState(state);
+                }
             }
-            else
+            catch (Exception fault)
             {
-                _inner.ChangeState(state);
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         public void Perform(int minutes)
         {
-            if (!_mine)
-            {
-                _inner.Perform(minutes);
-                return;
-            }
-            if (_state != PlayerActivityState.Running)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            _done += minutes;
-            _sitting?.SkipWorked(Math.Min(_done, _length));
-            if (_done >= _length)
+            try
             {
-                Finish();
+                if (!_mine)
+                {
+                    _inner.Perform(minutes);
+                    return;
+                }
+                if (_state != PlayerActivityState.Running)
+                {
+                    return;
+                }
+                _done += minutes;
+                _sitting?.SkipWorked(Math.Min(_done, _length));
+                if (_done >= _length)
+                {
+                    Finish();
+                }
+                else if (Time.time >= _nextType)
+                {
+                    try
+                    {
+                        PlayerHelper.GetAnimator().SetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
+                    }
+                    catch (Exception)
+                    {
+                        // the animation is a nicety
+                    }
+                    _nextType = Time.time + UnityEngine.Random.Range(5f, 10f);
+                }
             }
-            else if (Time.time >= _nextType)
+            catch (Exception fault)
             {
-                try
-                {
-                    PlayerHelper.GetAnimator().SetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
-                }
-                catch (Exception)
-                {
-                    // the animation is a nicety
-                }
-                _nextType = Time.time + UnityEngine.Random.Range(5f, 10f);
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         public void Finish()
         {
-            if (!_mine)
-            {
-                _inner.Finish();
-                return;
-            }
-            if (_state == PlayerActivityState.Finished)
-            {
-                return;
-            }
-            PlayerActivityState was = _state;
             try
             {
-                PlayerController player = InstanceBehavior<GameManager>.Instance.playerController;
+                if (!_mine)
+                {
+                    _inner.Finish();
+                    return;
+                }
+                if (_state == PlayerActivityState.Finished)
+                {
+                    return;
+                }
+                PlayerActivityState was = _state;
+                try
+                {
+                    PlayerController player = InstanceBehavior<GameManager>.Instance.playerController;
+                    if (was == PlayerActivityState.MovingTowardsActivity)
+                    {
+                        player.ResetNavigation();
+                    }
+                    else
+                    {
+                        player.Character.Reset();
+                        player.Character.navmeshAgent.Warp(_place.exitPosition.position);
+                        player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
+                        PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
+                        _place.computer?.StopVideoOnScreen();
+                    }
+                }
+                catch (Exception e)
+                {
+                    CareersDirector.Logger?.Error(e);
+                }
+                _before = was;
+                _state = PlayerActivityState.Finished;
+                Sitting sitting = _sitting;
+                _sitting = null;
                 if (was == PlayerActivityState.MovingTowardsActivity)
                 {
-                    player.ResetNavigation();
+                    sitting?.SkipEnded(0, false);
                 }
                 else
                 {
-                    player.Character.Reset();
-                    player.Character.navmeshAgent.Warp(_place.exitPosition.position);
-                    player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
-                    PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
-                    _place.computer?.StopVideoOnScreen();
+                    sitting?.SkipEnded(Math.Min(_done, _length), _done >= _length);
                 }
             }
-            catch (Exception e)
+            catch (Exception fault)
             {
-                CareersDirector.Logger?.Error(e);
-            }
-            _before = was;
-            _state = PlayerActivityState.Finished;
-            Sitting sitting = _sitting;
-            _sitting = null;
-            if (was == PlayerActivityState.MovingTowardsActivity)
-            {
-                sitting?.SkipEnded(0, false);
-            }
-            else
-            {
-                sitting?.SkipEnded(Math.Min(_done, _length), _done >= _length);
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
@@ -339,107 +395,316 @@ namespace RealLifeOverhaul.Careers
 
         public LabelInfo GetHeadlineLabel()
         {
-            if (_mine && _sitting != null)
+            if (FrameGuard.Off)
             {
-                return new LabelInfo(_sitting.SkipTitle, GameUi.WorldPanel.White(), false);
+                return Guard.Blank();
             }
-            return _offer.Only && !_mine ? new LabelInfo(_offer.Title ?? string.Empty, GameUi.WorldPanel.White(), false) : _inner.GetHeadlineLabel();
+            try
+            {
+                if (_mine && _sitting != null)
+                {
+                    return new LabelInfo(_sitting.SkipTitle, GameUi.WorldPanel.White(), false);
+                }
+                return _offer.Only && !_mine ? new LabelInfo(_offer.Title ?? string.Empty, GameUi.WorldPanel.White(), false) : _inner.GetHeadlineLabel();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
 
         public LabelInfo[] GetLabels()
         {
-            if (!_mine && _offer.Only)
+            if (FrameGuard.Off)
             {
-                if (_labels == null)
+                return (LabelInfo[])null;
+            }
+            try
+            {
+                if (!_mine && _offer.Only)
                 {
-                    int n = _offer.Lines != null ? _offer.Lines.Length : 0;
-                    _labels = new LabelInfo[n];
-                    for (int i = 0; i < n; i++)
+                    if (_labels == null)
                     {
-                        _labels[i] = new LabelInfo(_offer.Lines[i] ?? string.Empty, GameUi.WorldPanel.White(), false);
+                        int n = _offer.Lines != null ? _offer.Lines.Length : 0;
+                        _labels = new LabelInfo[n];
+                        for (int i = 0; i < n; i++)
+                        {
+                            _labels[i] = new LabelInfo(_offer.Lines[i] ?? string.Empty, GameUi.WorldPanel.White(), false);
+                        }
                     }
+                    return _labels;
                 }
-                return _labels;
+                if (!_mine)
+                {
+                    return _inner.GetLabels();
+                }
+                return _sitting != null && _state == PlayerActivityState.Running ? _sitting.SkipLabels() : null;
             }
-            if (!_mine)
+            catch (Exception fault)
             {
-                return _inner.GetLabels();
+                return Guard.Failed(FrameGuard, fault, (LabelInfo[])null);
             }
-            return _sitting != null && _state == PlayerActivityState.Running ? _sitting.SkipLabels() : null;
         }
 
         public ButtonInfo[] GetButtons()
         {
-            if (_mine)
+            if (FrameGuard.Off)
             {
-                return _state == PlayerActivityState.Running
-                    ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Finish, PlayerAction.Cancel) })
-                    : null;
+                return (ButtonInfo[])null;
             }
-            if (_offer.Only)
+            try
             {
-                return _buttons ?? (_buttons = new[]
+                if (_mine)
                 {
-                    new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Close, PlayerAction.Cancel),
-                    new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Press, PlayerAction.SecondaryInteract, _offer.Can)
-                });
-            }
-            ButtonInfo[] game = _inner.GetButtons();
-            if (_inner.GetState() != PlayerActivityState.NotStarted)
-            {
-                return game;
-            }
-            if (_buttons == null)
-            {
-                int n = game != null ? game.Length : 0;
-                _buttons = new ButtonInfo[n + 1];
-                for (int i = 0; i < n; i++)
-                {
-                    _buttons[i] = game[i];
+                    return _state == PlayerActivityState.Running
+                        ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                        : null;
                 }
-                _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Press, PlayerAction.SecondaryInteract, _offer.Can);
+                if (_offer.Only)
+                {
+                    return _buttons ?? (_buttons = new[]
+                    {
+                        new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel),
+                        new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), PlayerAction.SecondaryInteract, _offer.Can)
+                    });
+                }
+                ButtonInfo[] game = _inner.GetButtons();
+                if (_inner.GetState() != PlayerActivityState.NotStarted)
+                {
+                    return game;
+                }
+                if (_buttons == null)
+                {
+                    int n = game != null ? game.Length : 0;
+                    _buttons = new ButtonInfo[n + 1];
+                    for (int i = 0; i < n; i++)
+                    {
+                        _buttons[i] = game[i];
+                    }
+                    _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), PlayerAction.SecondaryInteract, _offer.Can);
+                }
+                return _buttons;
             }
-            return _buttons;
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
+            }
         }
 
-        public bool HasFastForward() => _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasFastForward();
+        public bool HasFastForward()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasFastForward();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
 
-        public bool HasTimeMachine() => _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasTimeMachine();
+        public bool HasTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasTimeMachine();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
 
-        public int GetRemainingMinutesForTimeMachine() => _mine ? Math.Max(0, _length - _done) : _inner.GetRemainingMinutesForTimeMachine();
+        public int GetRemainingMinutesForTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return _mine ? Math.Max(0, _length - _done) : _inner.GetRemainingMinutesForTimeMachine();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
 
-        public Timestamp GetTimeMachineGoal() => _mine ? TimeHelper.Now().AddMinutes(GetRemainingMinutesForTimeMachine()) : _inner.GetTimeMachineGoal();
+        public Timestamp GetTimeMachineGoal()
+        {
+            if (FrameGuard.Off)
+            {
+                return TimeHelper.Now();
+            }
+            try
+            {
+                return _mine ? TimeHelper.Now().AddMinutes(GetRemainingMinutesForTimeMachine()) : _inner.GetTimeMachineGoal();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, TimeHelper.Now());
+            }
+        }
 
-        public bool HasProgressBar() => _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasProgressBar();
+        public bool HasProgressBar()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasProgressBar();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
 
-        public float GetProgressBarPercentageValue() => _mine ? 100f * _done / Math.Max(1, _length) : _inner.GetProgressBarPercentageValue();
+        public float GetProgressBarPercentageValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0f;
+            }
+            try
+            {
+                return _mine ? 100f * _done / Math.Max(1, _length) : _inner.GetProgressBarPercentageValue();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
 
         public (string key, object arguments) GetProgressBarLabel()
         {
-            if (!_mine)
+            if (FrameGuard.Off)
             {
-                return _inner.GetProgressBarLabel();
+                return (string.Empty, (object)null);
             }
-            int left = Math.Max(0, _length - _done);
-            return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            try
+            {
+                if (!_mine)
+                {
+                    return _inner.GetProgressBarLabel();
+                }
+                int left = Math.Max(0, _length - _done);
+                return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
         }
 
-        public bool HasSlider() => !_mine && !_offer.Only && _inner.HasSlider();
+        public bool HasSlider()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return !_mine && !_offer.Only && _inner.HasSlider();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
 
-        public int GetMinSliderValue() => _inner.GetMinSliderValue();
+        public int GetMinSliderValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return _inner.GetMinSliderValue();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
 
-        public int GetMaxSliderValue() => _inner.GetMaxSliderValue();
+        public int GetMaxSliderValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return _inner.GetMaxSliderValue();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
 
-        public float GetCurrentSliderValue() => _inner.GetCurrentSliderValue();
+        public float GetCurrentSliderValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0f;
+            }
+            try
+            {
+                return _inner.GetCurrentSliderValue();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
 
         public void OnSliderValueChanged(int value)
         {
-            if (!_mine)
+            if (FrameGuard.Off)
             {
-                _inner.OnSliderValueChanged(value);
+                return;
+            }
+            try
+            {
+                if (!_mine)
+                {
+                    _inner.OnSliderValueChanged(value);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
-        public (string key, object arguments) GetSliderInfo() => _inner.GetSliderInfo();
+        public (string key, object arguments) GetSliderInfo()
+        {
+            if (FrameGuard.Off)
+            {
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                return _inner.GetSliderInfo();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
     }
 }
