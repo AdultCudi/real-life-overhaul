@@ -1,4 +1,4 @@
-0.9.11
+0.9.12
 
 Fixed
-- Flare said only that a business had a campaign running or booked when you tried to hire for it. It now says which campaign, how it was booked and until which day, and the Business tab lists the company's campaigns beside the influencer deals. Ending an influencer's deal now ends its campaign too, so the business is free again by the next day.
+- A new player could not see how to get a professional job offer, and no employer could make one before a course. The Career app now opens on a Professions page that says how offers come, what each profession still needs (the course and where it is taught, more skill or a vacancy), and what you can apply for now. Vacancies are there from the first day, a vacancy is marked open to you only where an offer can come, and the first time nothing is open a notification names your first step.
