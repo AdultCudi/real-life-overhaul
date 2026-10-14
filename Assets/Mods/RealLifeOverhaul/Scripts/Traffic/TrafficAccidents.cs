@@ -2322,7 +2322,7 @@ namespace RealLifeOverhaul
                 {
                     float tried = i == 0 ? -1f : 1f;   // the left first: in most streets the lane running the other way
                     Vector3 over = right * (tried * LaneAcross);
-                    if (TrafficManager.Instance.GetClosestWaypoint(centre + forward * (halfLength + 6f) + over, 1.7f) != null
+                    if (TrafficTools.ClosestWaypoint(centre + forward * (halfLength + 6f) + over, 1.7f) != null
                         && SceneParking.InStrip(centre - forward * halfLength + over, centre + forward * reach + over, halfWidth + ExitMargin, car.rb) == null)
                     {
                         side = tried;
@@ -2898,7 +2898,7 @@ namespace RealLifeOverhaul
             bool hasStand = !chasing && _cordon.Stand(attendance.FarEnd, back, out anchor, out stand);
             if (!hasStand)
             {
-                anchor = chasing ? _fleeAnchor : traffic.GetClosestWaypoint(_scene, 40f);
+                anchor = chasing ? _fleeAnchor : TrafficTools.ClosestWaypoint(_scene, 40f);
             }
             bool spawned = attendance.Police
                 ? unit.Spawn(UnitKind.Police, anchor, Random.Range(140f, 200f), attendance.Retried ? 25f : 50f)

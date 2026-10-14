@@ -891,7 +891,7 @@ namespace RealLifeOverhaul
         private void Measure(Vector3 scene, Vector3 heading, List<Footprint> footprints)
         {
             _scene = scene;
-            Waypoint nearest = TrafficManager.Instance.GetClosestWaypoint(scene, 40f);
+            Waypoint nearest = TrafficTools.ClosestWaypoint(scene, 40f);
             Vector3 lane = nearest != null ? LaneDirection(nearest) : Vector3.zero;
             if (lane == Vector3.zero)
             {
@@ -939,7 +939,7 @@ namespace RealLifeOverhaul
             TrafficManager traffic = TrafficManager.Instance;
             float reach = Mathf.Max(-_alongMin, _alongMax) + Apron + Mathf.Max(-_acrossMin, _acrossMax) + RoadWidth;
             Found.Clear();
-            traffic.GetClosestWaypoint(_scene, reach, Collect);
+            TrafficTools.ClosestWaypoint(_scene, reach, Collect);
 
             // First what the wrecks block: each lane from the start of its apron to just past them.
             _bothWays = false;
@@ -1064,7 +1064,7 @@ namespace RealLifeOverhaul
             }
             float reach = Mathf.Max(-_alongMin + back, _alongMax) + Mathf.Max(-_acrossMin, _acrossMax) + RoadWidth;
             Crossing.Clear();
-            traffic.GetClosestWaypoint(_scene, reach, CollectCrossing);
+            TrafficTools.ClosestWaypoint(_scene, reach, CollectCrossing);
             for (int i = 0; i < Crossing.Count; i++)
             {
                 Waypoint point = Crossing[i];

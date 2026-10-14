@@ -64,6 +64,7 @@ internal static partial class Program
         Frames();
         Starts();
         Sightseeing();
+        PointGrids();
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

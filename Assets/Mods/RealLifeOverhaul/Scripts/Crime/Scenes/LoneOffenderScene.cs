@@ -72,7 +72,7 @@ namespace RealLifeOverhaul
 
                 case OffenderStyle.AtWall:
                     // Away from the road is, near enough, towards the buildings.
-                    Waypoint lane = TrafficTools.Ready ? TrafficManager.Instance.GetClosestWaypoint(spot, 30f) : null;
+                    Waypoint lane = TrafficTools.Ready ? TrafficTools.ClosestWaypoint(spot, 30f) : null;
                     if (lane != null)
                     {
                         Vector3 away = spot - lane.position;

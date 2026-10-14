@@ -551,11 +551,11 @@ namespace RealLifeOverhaul
             // or on a crossing. Its route ends on that road point and it stops there; the officer walks the
             // suspect to the kerb beside it. Only where the scene has no such stretch nearby does it stop
             // wherever it gets within reach.
-            Waypoint anchor = TrafficManager.Instance.GetClosestWaypoint(scene, 45f, PlainLane);
+            Waypoint anchor = TrafficTools.ClosestWaypoint(scene, 45f, PlainLane);
             bool plain = anchor != null;
             if (!plain)
             {
-                anchor = TrafficManager.Instance.GetClosestWaypoint(scene, 40f);
+                anchor = TrafficTools.ClosestWaypoint(scene, 40f);
             }
             if (!car.Spawn(UnitKind.Police, anchor, Random.Range(80f, 130f), 40f))
             {

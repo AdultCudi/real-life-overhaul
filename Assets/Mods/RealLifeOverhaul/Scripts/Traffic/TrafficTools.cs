@@ -279,20 +279,132 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The waypoint nearest a position whose lane runs roughly the given way, or simply the
-        /// nearest one if no lane does (or no direction is given). Scans the whole road graph:
-        /// for one-off use only.
+        /// nearest one if no lane does (or no direction is given). Two questions to the lane grid
+        /// (<see cref="ClosestWaypoint"/>).
         /// </summary>
         public static Waypoint ClosestWaypointAlong(Vector3 position, Vector3 direction, float maxDistance)
         {
-            TrafficManager traffic = TrafficManager.Instance;
             direction.y = 0f;
             Waypoint found = null;
             if (direction.sqrMagnitude > 1f)
             {
                 _laneDirection = direction.normalized;
-                found = traffic.GetClosestWaypoint(position, maxDistance, RunsAlongLane);
+                found = ClosestWaypoint(position, maxDistance, RunsAlongLane);
             }
-            return found ?? traffic.GetClosestWaypoint(position, maxDistance);
+            return found ?? ClosestWaypoint(position, maxDistance);
+        }
+
+        // ---------------------------------------------------------------- the nearest lane point
+
+        private const float LaneCell = 20f;   // metres a cell of the lane grid is wide: a question within 40 m covers some 25 cells
+        private static readonly List<int> NearScratch = new List<int>(512);
+        private static Waypoint[] _laneGridOf;   // the lane points the grid was made over (the city's road data), null before
+        private static PointGrid _laneGrid;
+        private static bool _laneAsking;         // a question is under way (a filter asking again is answered by the traffic system itself)
+
+        /// <summary>
+        /// The lane point nearest a position, closer than <paramref name="maxDistance"/>, that <paramref name="filter"/>
+        /// accepts: exactly what the traffic system's own GetClosestWaypoint answers, which goes through every lane point of
+        /// the city (some 19,000, a fifth of a millisecond or more each time; a police station's frontage asked it some
+        /// ninety times in one frame). Here only the points in the cells of a grid round the position are gone through
+        /// (<see cref="PointGrid"/>), in the traffic system's own order, with its own test: the same point comes back, and the
+        /// filter is asked of the same points in the same order, so a filter that collects what it is shown collects the
+        /// same. The grid is made once a city behind the loading screen (<see cref="PrewarmLaneGrid"/>); until then, for
+        /// another city's road data, or for a question asked from inside a filter, the traffic system answers itself.
+        /// </summary>
+        public static Waypoint ClosestWaypoint(Vector3 position, float maxDistance = 50f, Predicate<Waypoint> filter = null)
+        {
+            if (!TrafficManager.HasInstance)
+            {
+                return null;
+            }
+            TrafficManager traffic = TrafficManager.Instance;
+            Waypoint[] all = _laneGridOf;
+            if (all != null && !_laneAsking && TrafficManager.IsInitialized && !SameLanes(traffic, all))
+            {
+                _laneGridOf = null;   // another city's lane points: the traffic system answers until the next grid is made
+                _laneGrid = null;
+                all = null;
+            }
+            if (all == null || _laneAsking || !TrafficManager.IsInitialized)
+            {
+                return traffic.GetClosestWaypoint(position, maxDistance, filter);
+            }
+            _laneAsking = true;
+            try
+            {
+                _laneGrid.Candidates(position.x, position.z, Mathf.Abs(maxDistance), NearScratch);   // (the traffic system squares the distance, so its sign is nothing)
+                // The traffic system's own loop (GleyTrafficSystem.DensityManager.GetClosestWaypoint), over the grid's points.
+                float nearest = maxDistance * maxDistance;
+                Waypoint result = null;
+                for (int k = 0; k < NearScratch.Count; k++)
+                {
+                    Waypoint waypoint = all[NearScratch[k]];
+                    float distance = Vector3.SqrMagnitude(position - waypoint.position);
+                    if (distance >= nearest || (filter != null && !filter(waypoint)))
+                    {
+                        continue;
+                    }
+                    result = waypoint;
+                    nearest = distance;
+                }
+                return result;
+            }
+            finally
+            {
+                NearScratch.Clear();
+                _laneAsking = false;
+            }
+        }
+
+        // The grid's points are the traffic system's: its first and last lane points are the very objects the grid was made
+        // over. (Its list of another length answers out of range: then they are not.)
+        private static bool SameLanes(TrafficManager traffic, Waypoint[] all)
+        {
+            try
+            {
+                return all.Length > 0 && ReferenceEquals(traffic.GetWaypoint(0), all[0]) && ReferenceEquals(traffic.GetWaypoint(all.Length - 1), all[all.Length - 1]);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Behind the loading screen (Core/ScenePrewarm): the lane grid made over this city's lane points, about half a
+        /// millisecond. False, to be tried again at the next black screen out of doors, while the city has no road data
+        /// or the traffic system is not set up yet.
+        /// </summary>
+        public static bool PrewarmLaneGrid()
+        {
+            Waypoint[] all = RoadData.Points;
+            if (all == null || all.Length == 0 || !TrafficManager.HasInstance || !TrafficManager.IsInitialized)
+            {
+                return false;
+            }
+            if (ReferenceEquals(all, _laneGridOf))
+            {
+                return true;
+            }
+            if (!SameLanes(TrafficManager.Instance, all))
+            {
+                _laneGridOf = null;
+                _laneGrid = null;
+                Logger?.Warn("Traffic: the road data the mod found is not the traffic system's own; the nearest lane point is asked of the traffic system itself.");
+                return true;
+            }
+            var xs = new float[all.Length];
+            var zs = new float[all.Length];
+            for (int i = 0; i < all.Length; i++)
+            {
+                Vector3 at = all[i].position;
+                xs[i] = at.x;
+                zs[i] = at.z;
+            }
+            _laneGrid = new PointGrid(xs, zs, LaneCell);
+            _laneGridOf = all;
+            return true;
         }
 
         // Kept as a field with its argument beside it, so asking does not allocate a closure.
@@ -340,7 +452,7 @@ namespace RealLifeOverhaul
                 Free(car);
 
                 // The car was moved by hand, so point it at the road ahead of where it is now.
-                Waypoint closest = traffic.GetClosestWaypoint(car.transform.position, 40f);
+                Waypoint closest = ClosestWaypoint(car.transform.position, 40f);
                 if (closest != null)
                 {
                     Waypoint ahead = closest.neighbors != null && closest.neighbors.Count > 0

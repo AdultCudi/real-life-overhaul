@@ -179,7 +179,7 @@ namespace RealLifeOverhaul
             _points = TrafficManager.HasInstance;
             if (_points)
             {
-                TrafficManager.Instance.GetClosestWaypoint(new Vector3(midX, _lookY, midZ), half * 1.4143f + LaneReach + 3f, CollectNear);
+                TrafficTools.ClosestWaypoint(new Vector3(midX, _lookY, midZ), half * 1.4143f + LaneReach + 3f, CollectNear);
             }
         }
 
@@ -484,7 +484,7 @@ namespace RealLifeOverhaul
         {
             if (!_points)
             {
-                return TrafficManager.HasInstance ? TrafficManager.Instance.GetClosestWaypoint(place, LaneReach) : null;
+                return TrafficManager.HasInstance ? TrafficTools.ClosestWaypoint(place, LaneReach) : null;
             }
             float best = LaneReach * LaneReach;
             Waypoint found = null;

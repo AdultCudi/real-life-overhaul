@@ -928,7 +928,7 @@ namespace RealLifeOverhaul
         // so that a pavement beside a kerb lane (2 m and more from that line) is not taken for the road.
         private static bool InLane(Vector3 point)
         {
-            return TrafficManager.HasInstance && InLane(point, TrafficManager.Instance.GetClosestWaypoint(point, LaneReach));
+            return TrafficManager.HasInstance && InLane(point, TrafficTools.ClosestWaypoint(point, LaneReach));
         }
 
         private static bool InLane(Vector3 point, Waypoint nearest)

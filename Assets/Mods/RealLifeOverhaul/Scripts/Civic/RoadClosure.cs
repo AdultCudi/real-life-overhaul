@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             TrafficManager traffic = TrafficManager.Instance;
-            Waypoint nearest = traffic.GetClosestWaypoint(place, reach);
+            Waypoint nearest = TrafficTools.ClosestWaypoint(place, reach);
             if (nearest == null || Forked(nearest))
             {
                 return false;
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul
                 _across = Vector3.Cross(Vector3.up, _lane);
                 _half = halfLength;
                 Found.Clear();
-                traffic.GetClosestWaypoint(laneCentre, halfLength + 6f, Collect);
+                TrafficTools.ClosestWaypoint(laneCentre, halfLength + 6f, Collect);
                 for (int i = Found.Count - 1; i >= 0; i--)
                 {
                     Waypoint point = Found[i];
