@@ -63,7 +63,6 @@ namespace RealLifeOverhaul.GameUi
             box.PrepareSwitch();
             box.MakeLook(templates);
             box.Space(whiteBox);
-            box._into = whiteBox;
             return box;
         }
 
@@ -78,7 +77,6 @@ namespace RealLifeOverhaul.GameUi
             if (made != null)
             {
                 made._box = box;
-                made._into = box;
                 made.Space(box);
             }
             return made;
@@ -214,10 +212,10 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // A copy of a template, where the page is being written (the open section's rows, or the box) unless a parent is given.
+        // A copy of a template, in the box unless a parent is given.
         private GameObject Add(GameObject template, Transform parent = null)
         {
-            GameObject made = UnityEngine.Object.Instantiate(template, parent ?? _into ?? _box, false);
+            GameObject made = UnityEngine.Object.Instantiate(template, parent ?? _box, false);
             made.name = template.name;
             made.SetActive(true);
             _parts++;
@@ -256,7 +254,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return RowWords(label, value, CellTone.Plain);
             }
-            return Text(_bodyT, words, null);
+            return Line(words, CellTone.Plain);
         }
 
         /// <summary>A line of text in the box, or (with a parent) anywhere else: the copy of the box's own, in its font and colour.</summary>
@@ -282,7 +280,7 @@ namespace RealLifeOverhaul.GameUi
                 return null;
             }
             var row = new GameObject("Picture", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
-            row.transform.SetParent(_into ?? _box, false);
+            row.transform.SetParent(_box, false);
             _parts++;
             var image = row.GetComponent<RawImage>();
             image.texture = texture;

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using Localizor;
 using TMPro;
 using UnityEngine;
@@ -8,28 +9,33 @@ namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
     /// The parts of the box's own look, as a page writes them: Header (Title), Subtitle and Chip; Section and EndSection;
-    /// Row, Meter and Check; Line in a tone, Note and GuideLink. A part is one copy of its template (InfoBox.Look.cs)
-    /// and its words, written where the page is being written: the rows of the section last opened, or the box. A row
-    /// of buttons closes the section. Written on a click; nothing runs per frame. With Developer diagnostics on, each
-    /// page says in Player.log how many parts it was and how long it took to write.
+    /// Row, RowPair, Meter and Check; Line in a tone, Note and GuideLink. A part is one copy of its template
+    /// (InfoBox.Look.cs) and its words, written in order into the box; what follows a section's heading stands in from it
+    /// until the next heading, a row of buttons, the foot or EndSection. Written on a click; nothing runs per frame. With
+    /// Developer diagnostics on, each page says in Player.log how many parts it was and how long it took to write.
     /// </summary>
     public sealed partial class InfoBox
     {
-        /// <summary>Over this long to write a page is said as a fault in the self-check (milliseconds).</summary>
-        public const double FillBudgetMs = 4.0;   // a big page (40 parts) writes in about 1.5 ms on the build machine's Unity, measured offline
+        /// <summary>Over this long to write a page is said as slow in the self-check (milliseconds).</summary>
+        public const double FillBudgetMs = 3.0;   // a page of the old box with as many parts took about as long: the look adds no objects of its own
 
-        private Transform _into;          // where the next part goes: the open section's rows, or the box
-        private Transform _header;        // the page's header, while nothing but its subtitle and chips follow it
-        private Transform _titleRow, _chips;
-        private Transform _foot;
+        private TMP_Text _headerText;     // the page's header, while it is the last thing written
+        private Transform _chips;
+        private float _chipsWidth;
+        private bool _inSection;          // what is written now stands in under a heading
+        private bool _footMade;
         private int _capacity;            // letters a row of the box holds (LookRules.Capacity)
         private int _parts;
         private long _began;
+        private readonly StringBuilder _words = new StringBuilder(160);
 
         private void Begin()
         {
-            _into = _box;
-            _header = _titleRow = _chips = _foot = null;
+            _headerText = null;
+            _chips = null;
+            _chipsWidth = 0f;
+            _inSection = false;
+            _footMade = false;
             _parts = 0;
             _began = Stopwatch.GetTimestamp();
         }
@@ -46,96 +52,119 @@ namespace RealLifeOverhaul.GameUi
             _began = 0;
         }
 
+        // How far what is written now stands in: a section's indent, or nothing.
+        private float Indent => _inSection ? LookRules.Indent : 0f;
+
         // ---------------------------------------------------------------- the header
 
         /// <summary>
-        /// The page's header: the app's colour in a short bar, then the title. Subtitle and Chip that follow add to it.
-        /// A second header on a page starts a new one, as a sub-page's title does.
+        /// The page's header: the title, with the app's colour in a short bar over it. Subtitle and Chip that follow add
+        /// to it. A second header on a page starts a new one, as a sub-page's title does.
         /// </summary>
         public TMP_Text Header(string words)
         {
             EndSection();
-            GameObject header = Add(_headerT, _box);
-            Transform accent = header.transform.Find("Accent");
-            if (accent != null)
-            {
-                accent.GetComponent<Image>().color = _accent;
-            }
-            _header = header.transform;
-            _titleRow = header.transform.Find("TitleRow");
+            GameObject header = Add(_headerT);
+            header.transform.GetChild(0).GetComponent<Image>().color = _accent;
+            var title = header.GetComponent<TMP_Text>();
+            title.text = words ?? string.Empty;
+            _headerText = title;
             _chips = null;
-            Transform title = _titleRow.Find("Title");
-            UiClone.Words(title, words);
-            return title.GetComponent<TMP_Text>();
+            _chipsWidth = 0f;
+            return title;
         }
 
-        /// <summary>A line under the title, muted: who and where ("BlueStone Imports, at 4 Pier"). Without a header, a muted line where the page is.</summary>
+        /// <summary>A line under the title, muted: who and where ("BlueStone Imports, at 4 Pier").</summary>
         public TMP_Text Subtitle(string words)
         {
-            return Text(_subT, words, _header);
+            TMP_Text text = Text(_subT, words, false);
+            text.margin = new Vector4(Indent, 0f, 0f, 6f);
+            return text;
         }
 
         /// <summary>
-        /// A status chip beside the title: a short word in capitals on a pill of its tone (Plain is the app's colour).
-        /// Without a header, the chip stands on a line of its own where the page is.
+        /// A status chip at the right of the title: a short word in capitals on a pill of its tone (Plain is the app's
+        /// colour). The title wraps short of the chips. Without a header the chip stands on a line of its own.
         /// </summary>
         public TMP_Text Chip(string words, CellTone tone = CellTone.Plain)
         {
+            words = words ?? string.Empty;
             if (_chips == null)
             {
-                _chips = Add(_chipsT, _titleRow != null ? _titleRow : (_into ?? _box)).transform;
+                Transform under = _headerText != null ? _headerText.transform : null;
+                GameObject chips = Add(_chipsT, under);
+                if (under != null)
+                {
+                    var rect = (RectTransform)chips.transform;
+                    rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
+                    rect.anchoredPosition = new Vector2(0f, -(LookRules.AccentHeight + 16f) - 11f);   // level with the title's first line
+                }
+                else
+                {
+                    chips.GetComponent<LayoutElement>().ignoreLayout = false;
+                    chips.GetComponent<ContentSizeFitter>().enabled = false;
+                    chips.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.UpperLeft;
+                }
+                _chips = chips.transform;
             }
             GameObject chip = Add(_chipT, _chips);
             Color paint = Paint(tone);
             chip.GetComponent<Image>().color = new Color(paint.r, paint.g, paint.b, 0.16f);
-            var text = chip.transform.Find("Text").GetComponent<TMP_Text>();
+            var text = chip.transform.GetChild(0).GetComponent<TMP_Text>();
             text.color = tone == CellTone.Plain ? _accent : Ink(tone);
-            text.text = words ?? string.Empty;
+            text.text = words;
+            if (_headerText != null && _chips.parent == _headerText.transform)
+            {
+                _chipsWidth += LookRules.ChipWidth(words) + (_chipsWidth > 0f ? 10f : 0f);
+                Vector4 margin = _headerText.margin;
+                margin.z = _chipsWidth + 24f;
+                _headerText.margin = margin;
+            }
             return text;
         }
 
         // ---------------------------------------------------------------- sections
 
         /// <summary>
-        /// A section: its heading (a locale key) in small capitals over a hairline, with room above it. Every part that
-        /// follows goes into it, indented, until the next section, a row of buttons, the foot or EndSection.
+        /// A section: its heading (a locale key) in small capitals over a hairline, with room above it. What follows stands
+        /// in under it until the next section, a row of buttons, the foot or EndSection.
         /// </summary>
         public Transform Section(string key)
         {
-            Transform section = OpenSection();
-            UiClone.Key(section.Find("Heading"), key);
-            return section;
+            GameObject heading = OpenSection();
+            UiClone.Key(heading.transform, key);
+            return heading.transform;
         }
 
         /// <summary>The same with the heading in final words (a name and a figure).</summary>
         public Transform SectionWords(string words)
         {
-            Transform section = OpenSection();
-            UiClone.Words(section.Find("Heading"), words);
-            return section;
+            GameObject heading = OpenSection();
+            UiClone.Words(heading.transform, words);
+            return heading.transform;
         }
 
-        private Transform OpenSection()
+        private GameObject OpenSection()
         {
             EndSection();
-            GameObject section = Add(_sectionT, _box);
-            _into = section.transform.Find("Rows");
-            return section.transform;
+            GameObject heading = Add(_headingT);
+            _inSection = true;
+            return heading;
         }
 
-        /// <summary>Back to the box itself: what follows is not part of the last section.</summary>
+        /// <summary>Back to the box itself: what follows does not stand in under the last section's heading.</summary>
         public void EndSection()
         {
-            _into = _box;
-            _header = null;
+            _inSection = false;
+            _headerText = null;
         }
 
         // ---------------------------------------------------------------- rows
 
         /// <summary>
         /// A row: the label (a locale key; a colon it ends in is left off) at the left in the muted grey, the value at the
-        /// right in the body's colour, in a tone if given. A row whose label and value do not fit one line has the
-        /// value under its label. Returns the value's text.
+        /// right in the body's colour, in a tone if given. A row whose label and value do not fit one line has the value
+        /// under its label. Returns the row's text.
         /// </summary>
         public TMP_Text Row(string labelKey, string value, CellTone tone = CellTone.Plain)
         {
@@ -153,17 +182,24 @@ namespace RealLifeOverhaul.GameUi
         {
             label = LookRules.Label(label);
             value = value ?? string.Empty;
-            _header = null;
-            GameObject row = Add(LookRules.Stack(label, value, _capacity) ? _stackT : _rowT);
-            Transform t = row.transform;
-            t.GetChild(0).GetComponent<TMP_Text>().text = label;
-            var shown = t.GetChild(1).GetComponent<TMP_Text>();
-            shown.text = value;
+            TMP_Text text = Text(_bodyT, RowMarkup(label, value, tone, LookRules.Stack(label, value, _capacity)));
+            text.margin = new Vector4(Indent, 0f, 0f, 0f);
+            return text;
+        }
+
+        // A row's words in one text: the label in its size and grey, then the value; beside it, the value is set on the
+        // label's own line (a line height of nought) and aligned right; stacked, it is the next line.
+        private string RowMarkup(string label, string value, CellTone tone, bool stacked)
+        {
+            _words.Length = 0;
+            _words.Append(_labelOpen).Append(label).Append("</color></size>");
+            _words.Append(stacked ? "\n" : "<line-height=0>\n</line-height><align=right>");
+            _words.Append(_toneOpen[(int)tone]).Append(_valueOpen).Append(value).Append(_valueClose);
             if (tone != CellTone.Plain)
             {
-                shown.color = Ink(tone);
+                _words.Append("</color>");
             }
-            return shown;
+            return _words.ToString();
         }
 
         /// <summary>
@@ -182,21 +218,17 @@ namespace RealLifeOverhaul.GameUi
                 RowWords(label2, value2, CellTone.Plain);
                 return;
             }
-            _header = null;
-            Transform pair = Add(_pairT).transform;
-            Half(pair.GetChild(0), label, value);
-            Half(pair.GetChild(1), label2, value2);
-        }
-
-        private static void Half(Transform half, string label, string value)
-        {
-            half.GetChild(0).GetComponent<TMP_Text>().text = label;
-            half.GetChild(1).GetComponent<TMP_Text>().text = value;
+            GameObject pair = Add(_pairT);
+            var group = pair.GetComponent<HorizontalLayoutGroup>();
+            group.padding = new RectOffset((int)Indent, 0, 0, 0);
+            pair.transform.GetChild(0).GetComponent<TMP_Text>().text = RowMarkup(label, value, CellTone.Plain, false);
+            pair.transform.GetChild(1).GetComponent<TMP_Text>().text = RowMarkup(label2, value2, CellTone.Plain, false);
+            _headerText = null;
         }
 
         /// <summary>
-        /// A meter: the label at the left, a short bar filled to a share (0 to 1) in a tone, and the figure at the right
-        /// ("11 of 10", "45%"). Returns the figure's text.
+        /// A meter: a row of its label and figure ("11 of 10", "about 45%"), with a short bar under the figure filled to a
+        /// share (0 to 1) in a tone (Plain fills it green). Returns the row's text.
         /// </summary>
         public TMP_Text Meter(string labelKey, float share, string figure, CellTone tone)
         {
@@ -206,53 +238,44 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The same with the label in final words.</summary>
         public TMP_Text MeterWords(string label, float share, string figure, CellTone tone)
         {
-            _header = null;
-            GameObject meter = Add(_meterT);
-            Transform t = meter.transform;
-            t.GetChild(0).GetComponent<TMP_Text>().text = LookRules.Label(label);
-            Transform bar = t.GetChild(1);
-            var fill = (RectTransform)bar.GetChild(0);
+            TMP_Text text = Text(_meterT, RowMarkup(LookRules.Label(label), figure ?? string.Empty, tone, false));
+            Vector4 margin = text.margin;
+            margin.x = Indent;
+            text.margin = margin;
+            var fill = (RectTransform)text.transform.GetChild(0).GetChild(0);
             float f = LookRules.Clamp(share);
             fill.anchorMax = new Vector2(f, 1f);
             fill.offsetMin = fill.offsetMax = Vector2.zero;
             var paint = fill.GetComponent<Image>();
             paint.color = Paint(tone == CellTone.Plain ? CellTone.Green : tone);
             paint.enabled = f > 0f;
-            var shown = t.GetChild(2).GetComponent<TMP_Text>();
-            shown.text = figure ?? string.Empty;
-            if (tone != CellTone.Plain)
-            {
-                shown.color = Ink(tone);
-            }
-            return shown;
+            return text;
         }
 
         /// <summary>A need and whether it is met: the game's tick in green before it, or a red dot and the words in red.</summary>
         public TMP_Text Check(string words, bool met)
         {
-            _header = null;
-            GameObject check = Add(_checkT);
-            Transform t = check.transform;
-            var mark = t.GetChild(0).GetComponent<Image>();
-            var text = t.GetChild(1).GetComponent<TMP_Text>();
-            text.text = words ?? string.Empty;
+            TMP_Text text = Text(_checkT, words);
+            float indent = Indent;
+            Vector4 margin = text.margin;
+            margin.x = indent + LookRules.MarkSize + 14f;
+            text.margin = margin;
+            var mark = text.transform.GetChild(0).GetComponent<Image>();
+            var rect = (RectTransform)mark.transform;
+            rect.anchoredPosition = new Vector2(indent, rect.anchoredPosition.y);
             if (met && _tick != null)
             {
-                mark.sprite = _tick;
                 mark.color = Ink(CellTone.Green);
+                return text;
             }
-            else
+            // no tick: a dot of the round sprite, half the size, in the tone that says whether it is met
+            mark.sprite = _round;
+            mark.color = met ? Ink(CellTone.Green) : _bad;
+            rect.sizeDelta = new Vector2(LookRules.MarkSize * 0.5f, LookRules.MarkSize * 0.5f);
+            rect.anchoredPosition = new Vector2(indent + LookRules.MarkSize * 0.25f, -LookRules.MarkSize * 0.35f);
+            if (!met)
             {
-                // no tick: a dot of the round sprite, small, in the tone that says whether it is met
-                mark.sprite = _round;
-                mark.color = met ? Ink(CellTone.Green) : _bad;
-                var layout = mark.GetComponent<LayoutElement>();
-                layout.minWidth = layout.preferredWidth = LookRules.MarkSize;
-                layout.minHeight = layout.preferredHeight = LookRules.MarkSize * 0.5f;
-                if (!met)
-                {
-                    text.color = _bad;
-                }
+                text.color = _bad;
             }
             return text;
         }
@@ -262,7 +285,8 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A sentence in a tone: green for good news, orange for a warning, red for what is wrong or refused.</summary>
         public TMP_Text Line(string words, CellTone tone)
         {
-            TMP_Text text = Text(_bodyT, words, null);
+            TMP_Text text = Text(_bodyT, words);
+            text.margin = new Vector4(Indent, 0f, 0f, 0f);
             if (tone != CellTone.Plain)
             {
                 text.color = Ink(tone);
@@ -270,36 +294,38 @@ namespace RealLifeOverhaul.GameUi
             return text;
         }
 
-        /// <summary>A note: a smaller, muted sentence where the page is (what a figure means, what to do next).</summary>
+        /// <summary>A note: a smaller, muted sentence (what a figure means, what to do next).</summary>
         public TMP_Text Note(string words)
         {
-            return Text(_noteT, words, null);
+            TMP_Text text = Text(_noteT, words);
+            text.margin = new Vector4(Indent, 0f, 0f, 0f);
+            return text;
         }
 
         /// <summary>
         /// The Guide's page that explains the app, at the foot of the page under a hairline, small and muted:
-        /// "Guide: Professional jobs". Notes written after it go into the foot as well.
+        /// "Guide: Professional jobs". A note written after it stands with it.
         /// </summary>
         public TMP_Text GuideLink(string pageWords)
         {
-            if (_foot == null)
-            {
-                _foot = Add(_footT, _box).transform;
-            }
-            _into = _foot;
-            _header = null;
+            EndSection();
             string label = "reallife_guide_app".GetLocalization();
-            return Text(_noteT, label + LookRules.Colon(label) + "<b>" + pageWords + "</b>", _foot);
+            if (_footMade)
+            {
+                return Note(label + LookRules.Colon(label) + "<b>" + pageWords + "</b>");
+            }
+            _footMade = true;
+            return Text(_footT, label + LookRules.Colon(label) + "<b>" + pageWords + "</b>");
         }
 
-        // A copy of one of the text templates with its words, under a parent or where the page is being written.
-        private TMP_Text Text(GameObject template, string words, Transform parent)
+        // A copy of one of the text templates with its words, in the box. Anything but a subtitle ends the header.
+        private TMP_Text Text(GameObject template, string words, bool endsHeader = true)
         {
-            if (parent == null)
+            if (endsHeader)
             {
-                _header = null;
+                _headerText = null;
             }
-            GameObject made = Add(template, parent);
+            GameObject made = Add(template);
             var text = made.GetComponent<TMP_Text>();
             text.text = words ?? string.Empty;
             return text;

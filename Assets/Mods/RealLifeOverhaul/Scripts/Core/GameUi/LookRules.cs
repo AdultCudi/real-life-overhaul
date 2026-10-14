@@ -33,8 +33,11 @@ namespace RealLifeOverhaul.GameUi
         public const float HeadingTracking = 6f;  // letter spacing of a heading (TextMeshPro's em/100)
         public const float ChipTracking = 4f;
 
-        /// <summary>The share of an em an average letter of the game's body font takes: how many letters a row holds.</summary>
-        public const float LetterEm = 0.5f;
+        /// <summary>The share of an em an average letter of the game's body font (Rubik) takes, a little over: how many letters a row holds.</summary>
+        public const float LetterEm = 0.55f;
+
+        /// <summary>The width of a row in the phone apps' box (MyEmployees' 949 less its padding of 80 a side and a section's indent): for a box not yet laid out.</summary>
+        public const float DefaultWidth = 761f;
 
         // ---------------------------------------------------------------- widths
 
@@ -87,7 +90,7 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>
         /// Whether a row's value goes under its label rather than beside it: when the two and the gap between them do not
-        /// fit one line of the box. A box of no known width (0) keeps them side by side, and the layout shares the line.
+        /// fit one line of the box, with a gap of four letters between them. A box of no known width (0) keeps them side by side.
         /// </summary>
         public static bool Stack(string label, string value, int capacity)
         {
@@ -95,7 +98,30 @@ namespace RealLifeOverhaul.GameUi
             {
                 return false;
             }
-            return Units(label) + Units(value) + 3 > capacity;
+            if ((label != null && label.IndexOf('\n') >= 0) || (value != null && value.IndexOf('\n') >= 0))
+            {
+                return true;   // a value of several lines (or a label) stands under its label
+            }
+            return Units(label) + Units(value) + 4 > capacity;
+        }
+
+        /// <summary>
+        /// How wide a chip is, in canvas pixels: its word in capitals (a capital about two thirds of an em, a square
+        /// character a whole one), its letter spacing and its padding. The title leaves this much room at its right.
+        /// </summary>
+        public static float ChipWidth(string words)
+        {
+            float em = 0f;
+            int letters = 0;
+            if (!string.IsNullOrEmpty(words))
+            {
+                for (int i = 0; i < words.Length; i++)
+                {
+                    em += Wide(words[i]) ? 1f : 0.68f;
+                    letters++;
+                }
+            }
+            return em * ChipSize + letters * ChipSize * ChipTracking / 100f + 36f;
         }
 
         // ---------------------------------------------------------------- labels
