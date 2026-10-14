@@ -1,5 +1,4 @@
-0.11.2
+0.11.3
 
-Fixed
-- The mod's buildings took every empty office in the city, so there was none left to rent. The 12 tech companies now share 3 office towers, a floor each, so the mod holds 3 office buildings for them where it held 12, and the rest are to let. Choose a floor at a tower's door, or take the lift inside; a job at one of them is on its company's floor. A building the mod holds is on the market again as soon as its feature is switched off, on a page already open too.
-- Where a district with offices has fewer than two to let, some of its empty shops are offices while the mod runs, so there are always at least two to choose from.
+New
+- Developer diagnostics: a stutter's line in Player.log now says how long the game waited for the graphics card, how long its own thread ran and how busy the processor was, so a pause caused by another program shows as one.
