@@ -196,7 +196,7 @@ namespace RealLifeOverhaul
                     || OnPavement(place) || OnPavement(place + along * halfLength + right * halfWidth) || OnPavement(place + along * halfLength - right * halfWidth)
                     || OnPavement(place - along * halfLength + right * halfWidth) || OnPavement(place - along * halfLength - right * halfWidth)
                     || !SceneParking.IsFree(place, facing, halfWidth, halfLength, 0.25f)
-                    || traffic.GetClosestWaypoint(place, 2.1f) != null)
+                    || TrafficTools.ClosestWaypoint(place, 2.1f) != null)
                 {
                     continue;
                 }

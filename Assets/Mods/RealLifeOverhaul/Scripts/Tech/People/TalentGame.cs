@@ -163,20 +163,60 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A business by its address, written as the company writes a place.</summary>
+        /// <summary>
+        /// A business by its address, written as the company writes a place. Made once for each building and kept with the
+        /// street and number it was made from (a dictionary hit and two compares after that, no string made): it is asked
+        /// for every second while the player is indoors (Tech/Sites, FitOut, Careers' desk) and for every professional
+        /// and firm each day. The keys go with the save.
+        /// </summary>
         public static string Place(BuildingRegistration reg)
         {
-            return reg == null ? string.Empty : Uri.EscapeDataString(reg.StreetName ?? string.Empty) + "~" + reg.StreetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (reg == null)
+            {
+                return string.Empty;
+            }
+            if (!ReferenceEquals(_keysOf, Save) || Keys.Count >= KeysMost)
+            {
+                Keys.Clear();
+                _keysOf = Save;
+            }
+            if (Keys.TryGetValue(reg, out PlaceKey kept) && ReferenceEquals(kept.Street, reg.StreetName) && kept.Number == reg.StreetNumber)
+            {
+                return kept.Text;
+            }
+            string text = PlaceRules.Key(reg.StreetName, reg.StreetNumber);
+            Keys[reg] = new PlaceKey { Street = reg.StreetName, Number = reg.StreetNumber, Text = text };
+            return text;
         }
 
-        /// <summary>One of the player's buildings by its place key; null if it is no longer theirs.</summary>
+        private sealed class PlaceKey
+        {
+            public string Street;
+            public int Number;
+            public string Text;
+        }
+
+        private const int KeysMost = 8192;   // buildings whose keys are kept at most (the city has about 2,000; more means another city's are in it)
+        private static readonly Dictionary<BuildingRegistration, PlaceKey> Keys = new Dictionary<BuildingRegistration, PlaceKey>(256);
+        private static GameInstance _keysOf;
+
+        /// <summary>
+        /// One of the player's buildings by its place key; null if it is no longer theirs. The first of the save's buildings
+        /// with that key, as always; a building whose number is not the key's is passed over on an int compare (the key's
+        /// number read once), so a look-up costs a pass of compares over the buildings and makes no string.
+        /// </summary>
         public static BuildingRegistration Find(string place)
         {
             List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
-            for (int i = 0; all != null && !string.IsNullOrEmpty(place) && i < all.Count; i++)
+            if (all == null || string.IsNullOrEmpty(place))
+            {
+                return null;
+            }
+            bool numbered = PlaceRules.Number(place, out int number);
+            for (int i = 0; i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && Place(reg) == place)
+                if (reg != null && (!numbered || reg.StreetNumber == number) && GoingPublic.Mine(reg) && reg.HasValidAddress && Place(reg) == place)
                 {
                     return reg;
                 }

@@ -8,6 +8,7 @@ using Character;
 using Character.Customization;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -24,17 +25,27 @@ namespace RealLifeOverhaul
     ///             as the mod's own people are (Social/SocialCast.Dress). The face is kept as a JPEG under the game's
     ///             data folder (RealLifeOverhaul/Portraits) and read from there on every later load
     ///
-    /// COST. Nothing while there is nothing to paint: the component switches itself off. While there is: one picture
-    /// every PaceSeconds of real time; a logo is 65,536 samples of the shape once; a face read from the cache is one
-    /// JPEG decode; a face drawn is one render of the game's portrait camera with its own read-back (the game's own
-    /// cost, the same as drawing a rival) and is done at most once per look, ever, with the session watch told first.
+    /// A logo is kept there too, once painted, as its picture's own bytes (256 KB, nothing to decode), named by the shape,
+    /// the colour, and the size and date of the game's shape file (or the game's own picture and the game's build), so a
+    /// shape the game changes is painted again. Every picture is written into the texture's own memory
+    /// (Texture2D.GetPixelData) or through one buffer kept for the session: no array per picture, where each picture made
+    /// some 0.5 to 1.3 MB of garbage (the owner's log of 14 Oct 2026: 561 KB a second under this in the first minute).
+    ///
+    /// COST. Nothing while there is nothing to paint: the component switches itself off. While there is: pictures one after
+    /// another for about a millisecond of a frame (<see cref="WorkSlice"/>; eight behind a black screen), the first of a frame
+    /// always; a picture not in the cache (a logo's 65,536 samples of the shape, once ever; a face drawn by the game's
+    /// portrait camera with its own read-back, once per look, ever, with the session watch told first) only as the first of
+    /// a frame, alone. A logo from the cache is one read of a file and one upload; a face from the cache one JPEG decode.
     /// </summary>
     public sealed class ContactPainter : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactPainter", typeof(ContactPainter));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
-        private const float PaceSeconds = 0.4f;     // between two pictures: never two in one frame
+        private const double SliceMs = 1.0;         // milliseconds of a frame in play the painting may take (the first picture of a frame always)
+        private const double HiddenSliceMs = 8.0;   // ...and of a frame behind the game's black screen
         private const float FacePaceSeconds = 2f;   // after a face drawn by the portrait camera
+        private const int LogoBytes = ContactPictures.Size * ContactPictures.Size * 4;   // a logo's picture as it is kept: RGBA, a byte each
+        private const string LogoVersion = "logo_v1_";   // the painting's own version in a kept logo's name: a new way of painting paints them all again
         private const float FaceTimeout = 15f;      // seconds to wait for the camera's read-back before trying again
         private const int TriesMost = 3;
         private const float GlyphShare = 0.62f;     // of the square's height the shape takes, as the game's own logos leave a margin
@@ -46,6 +57,8 @@ namespace RealLifeOverhaul
         private static readonly Queue<ContactPictures.Picture> Wanted = new Queue<ContactPictures.Picture>(32);
         private static FieldInfo _generator, _setter;
         private static bool _reflected, _toldFallback;
+
+        private static byte[] _logoBuffer;          // one for the session, made the first time a logo is read or kept: what a kept logo passes through
 
         private ContactPictures.Picture _drawing;   // a face waiting for the portrait camera's read-back
         private float _drawingSince, _next;
@@ -115,28 +128,126 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            _next = Time.realtimeSinceStartup + PaceSeconds;
-            ContactPictures.Picture p = Wanted.Dequeue();
-            p.Queued = false;
-            if (p.Drawn)
+            WorkSlice slice = WorkSlice.Of(SceneFinds.Hidden ? HiddenSliceMs : SliceMs, 1);
+            while (Wanted.Count > 0 && _drawing == null && Time.realtimeSinceStartup >= _next)
+            {
+                ContactPictures.Picture p = Wanted.Peek();
+                bool heavy = !p.Drawn && !Kept(p);
+                if (!slice.More(heavy))
+                {
+                    return;
+                }
+                Wanted.Dequeue();
+                p.Queued = false;
+                if (p.Drawn)
+                {
+                    continue;
+                }
+                try
+                {
+                    if (p.Look.Kind == PictureKind.Logo)
+                    {
+                        PaintLogo(p);
+                    }
+                    else
+                    {
+                        PaintFace(p);
+                    }
+                }
+                catch (Exception e)
+                {
+                    ContactPictures.Logger?.Error(e);
+                    Requeue(p);
+                }
+                if (heavy)
+                {
+                    slice.End();   // a picture made from nothing has the frame to itself
+                }
+            }
+        }
+
+        // True if the picture is in the cache: a face's JPEG, a logo's own bytes.
+        private static bool Kept(ContactPictures.Picture p)
+        {
+            if (p.Look.Kind != PictureKind.Logo)
+            {
+                return File.Exists(Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed)));
+            }
+            string game = p.Look.LikeGame != null ? GameLogoFile(p.Look.LikeGame) : null;
+            string shape = ShapeLogoFile(p.Look);
+            return (game != null && File.Exists(game)) || (shape != null && File.Exists(shape));
+        }
+
+        // A kept logo copied from one of the game's own pictures: by its name and the game's build.
+        private static string GameLogoFile(string name)
+        {
+            return Path.Combine(Folder, LogoVersion + "game_" + name + "_" + Nav.NavBaseGame.Build() + ".raw");
+        }
+
+        // A kept logo painted from one of the game's shapes: by the shape, the colour, and the shape file's size and date. Null if the game has no such file.
+        private static string ShapeLogoFile(ContactLook look)
+        {
+            var shape = new FileInfo(Path.Combine(LogoHelper.GetBuildInIconsFolder(), look.Shape + ".png"));
+            if (!shape.Exists)
+            {
+                return null;
+            }
+            return Path.Combine(Folder, LogoVersion + look.Shape + "_" + look.R.ToString("X2") + look.G.ToString("X2") + look.B.ToString("X2")
+                                        + "_" + shape.Length + "_" + shape.LastWriteTimeUtc.Ticks + ".raw");
+        }
+
+        // A kept logo into the picture: one read through the session's buffer, one upload. False if there is none (or it is not whole).
+        private static bool ReadLogo(ContactPictures.Picture p, string file)
+        {
+            if (file == null || !File.Exists(file))
+            {
+                return false;
+            }
+            _logoBuffer ??= new byte[LogoBytes];
+            using (var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 1))
+            {
+                if (stream.Length != LogoBytes)
+                {
+                    return false;
+                }
+                int read = 0;
+                while (read < LogoBytes)
+                {
+                    int got = stream.Read(_logoBuffer, read, LogoBytes - read);
+                    if (got <= 0)
+                    {
+                        return false;
+                    }
+                    read += got;
+                }
+            }
+            p.Texture.SetPixelData(_logoBuffer, 0);
+            p.Texture.Apply(false, false);
+            return true;
+        }
+
+        // The picture just painted, kept for every later load. A logo that cannot be kept is painted again next time.
+        private static void KeepLogo(ContactPictures.Picture p, string file)
+        {
+            if (file == null)
             {
                 return;
             }
             try
             {
-                if (p.Look.Kind == PictureKind.Logo)
+                _logoBuffer ??= new byte[LogoBytes];
+                NativeArray<byte> bytes = p.Texture.GetPixelData<byte>(0);
+                if (bytes.Length != LogoBytes)
                 {
-                    PaintLogo(p);
+                    return;
                 }
-                else
-                {
-                    PaintFace(p);
-                }
+                bytes.CopyTo(_logoBuffer);
+                Directory.CreateDirectory(Folder);
+                File.WriteAllBytes(file, _logoBuffer);
             }
             catch (Exception e)
             {
-                ContactPictures.Logger?.Error(e);
-                Requeue(p);
+                ContactPictures.Logger?.Warn("Contacts: a logo could not be kept in the portrait cache (" + e.Message + "); it is painted again on the next load.");
             }
         }
 
@@ -158,9 +269,25 @@ namespace RealLifeOverhaul
 
         private static void PaintLogo(ContactPictures.Picture p)
         {
-            if (p.Look.LikeGame != null && CopyGamePicture(p, p.Look.LikeGame))
+            if (p.Look.LikeGame != null)
             {
-                Done(p, "the game's own picture '" + p.Look.LikeGame + "'");
+                string game = GameLogoFile(p.Look.LikeGame);
+                if (ReadLogo(p, game))
+                {
+                    Done(p, "the game's own picture '" + p.Look.LikeGame + "', kept");
+                    return;
+                }
+                if (CopyGamePicture(p, p.Look.LikeGame))
+                {
+                    KeepLogo(p, game);
+                    Done(p, "the game's own picture '" + p.Look.LikeGame + "'");
+                    return;
+                }
+            }
+            string kept = ShapeLogoFile(p.Look);
+            if (ReadLogo(p, kept))
+            {
+                Done(p, "the game's logo shape '" + p.Look.Shape + "', kept");
                 return;
             }
             string path = Path.Combine(LogoHelper.GetBuildInIconsFolder(), p.Look.Shape + ".png");
@@ -172,7 +299,7 @@ namespace RealLifeOverhaul
             var back = new Color32(p.Look.R, p.Look.G, p.Look.B, 255);
             var white = new Color32(255, 255, 255, 255);
             int size = ContactPictures.Size;
-            var pixels = new Color32[size * size];
+            NativeArray<Color32> pixels = p.Texture.GetPixelData<Color32>(0);   // the picture's own memory: no array of our own
             // The shape is fitted by what is drawn of it, not by its canvas: as high as GlyphShare of the square, and a wide
             // one (a car) as wide as WideShare, centred. One pass over the shape's pixels to find its bounds, and the same
             // pixels then sampled here (Ink), not through the engine one call a pixel: some 30,000 calls, most of a frame
@@ -203,8 +330,11 @@ namespace RealLifeOverhaul
             {
                 Destroy(shape);
             }
-            p.Texture.SetPixels32(pixels);
             p.Texture.Apply(false, false);
+            if (shape != null)
+            {
+                KeepLogo(p, kept);   // (the game's 'not found' shape stands in for a missing one: that is never kept)
+            }
             Done(p, "the game's logo shape '" + p.Look.Shape + "'" + (shape == null ? " (not found: the game's own 'not found' shape)" : string.Empty));
         }
 
@@ -388,18 +518,41 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A readable texture into a picture's own, scaled to its size if it is not already.
+        // A readable texture into a picture's own, scaled to its size if it is not already: written into the picture's own memory,
+        // the source read in its own (a JPEG of the cache is RGB24, a picture of the camera RGBA32 or ARGB32), with no array made.
         private static void Copy(Texture2D source, Texture2D into)
         {
             int size = ContactPictures.Size;
-            Color32[] pixels;
-            if (source.width == size && source.height == size)
+            NativeArray<Color32> pixels = into.GetPixelData<Color32>(0);
+            bool same = source.width == size && source.height == size;
+            if (same && source.format == TextureFormat.RGBA32)
             {
-                pixels = source.GetPixels32();
+                pixels.CopyFrom(source.GetPixelData<Color32>(0));
+            }
+            else if (same && (source.format == TextureFormat.RGB24 || source.format == TextureFormat.ARGB32))
+            {
+                NativeArray<byte> from = source.GetPixelData<byte>(0);
+                bool rgb = source.format == TextureFormat.RGB24;
+                for (int i = 0, b = 0; i < pixels.Length; i++)
+                {
+                    if (rgb)
+                    {
+                        pixels[i] = new Color32(from[b], from[b + 1], from[b + 2], 255);
+                        b += 3;
+                    }
+                    else
+                    {
+                        pixels[i] = new Color32(from[b + 1], from[b + 2], from[b + 3], from[b]);
+                        b += 4;
+                    }
+                }
+            }
+            else if (same)
+            {
+                into.SetPixels32(source.GetPixels32());   // (a format the camera has never given: the engine converts it, as before)
             }
             else
             {
-                pixels = new Color32[size * size];
                 for (int y = 0; y < size; y++)
                 {
                     for (int x = 0; x < size; x++)
@@ -408,7 +561,6 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            into.SetPixels32(pixels);
             into.Apply(false, false);
         }
 

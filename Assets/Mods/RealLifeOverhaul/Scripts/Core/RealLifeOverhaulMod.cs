@@ -1115,8 +1115,10 @@ namespace RealLifeOverhaul
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
+            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));   // (pieces run last added first: this one after the road data below is found)
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
+            Guard.Step("the sirens' prewarm", () => ScenePrewarm.Add("traffic: the sirens' sounds being made", TrafficEffects.PrewarmSirens));
             Guard.Step("the font's prewarm", () => ScenePrewarm.Add("game UI: the game's font being found", FindFont));
             Guard.Step("the bus stops' prewarm", () => ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm));
             Guard.Step("GameUi.NoticeLook", () => GameUi.NoticeLook.Logger = context.Logger);

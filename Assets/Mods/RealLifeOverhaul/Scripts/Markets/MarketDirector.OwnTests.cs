@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public void TestListing()
         {
+            FinishMoment();
             const string Test = "My company on the market";
             if (!TestReady(Test, true))
             {
@@ -60,6 +61,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: the player's company's results for the quarter so far, out the next market morning.</summary>
         public void TestOwnResults()
         {
+            FinishMoment();
             const string Test = "My company's results";
             Stock own = TestOwn(Test);
             if (own == null)
@@ -82,6 +84,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: the player's company's yearly meeting at today's close (the next market day's if the market does not trade today).</summary>
         public void TestOwnMeeting()
         {
+            FinishMoment();
             const string Test = "My company's yearly meeting";
             Stock own = TestOwn(Test);
             if (own == null)
@@ -96,6 +99,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: an investor buys into the player's company to press the board, for the demand its figures give them (a payout if none).</summary>
         public void TestOwnActivist()
         {
+            FinishMoment();
             const string Test = "An investor presses my company's board";
             Stock own = TestOwn(Test);
             if (own == null)
@@ -111,6 +115,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: a bid for the player's company, made as one would be (it wins only while they hold under the threshold).</summary>
         public void TestOwnBid()
         {
+            FinishMoment();
             const string Test = "A bid for my company";
             Stock own = TestOwn(Test);
             if (own == null)
@@ -130,6 +135,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: the test tools' company off the market, with nothing paid (only the test's).</summary>
         public void TestOwnOff()
         {
+            FinishMoment();
             const string Test = "Take my test company off the market";
             Stock own = TestOwn(Test);
             if (own == null)

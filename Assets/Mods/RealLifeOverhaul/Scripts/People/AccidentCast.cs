@@ -294,6 +294,7 @@ namespace RealLifeOverhaul
                 _standMask, QueryTriggerInteraction.Ignore);
         }
 
+        private static readonly int HotOnRoadClosed = HotSpots.Slot("Traffic: AccidentCast.OnRoadClosed");
         /// <summary>
         /// The road round the scene has been measured (and, unless it is a minor bump, closed): from
         /// now on everyone who works beside the casualty is kept inside the rectangle the tape runs
@@ -301,6 +302,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public void OnRoadClosed(SceneCordon cordon)
         {
+            using var hotSpot = HotSpots.Time(HotOnRoadClosed);
             _plan = cordon;
         }
 
@@ -353,9 +355,11 @@ namespace RealLifeOverhaul
             _officers = Crew.Away;
         }
 
+        private static readonly int HotOnCordonRaised = HotSpots.Slot("Traffic: AccidentCast.OnCordonRaised");
         /// <summary>The road has been taped off: from now on there is a traffic post and an edge for the officers to work.</summary>
         public void OnCordonRaised(SceneCordon cordon)
         {
+            using var hotSpot = HotSpots.Time(HotOnCordonRaised);
             _cordon = cordon;
         }
 
@@ -424,6 +428,7 @@ namespace RealLifeOverhaul
             _officerB.PassDone(now);
         }
 
+        private static readonly int HotOnUnitParked = HotSpots.Slot("Traffic: AccidentCast.OnUnitParked");
         /// <summary>
         /// A unit has stopped and parked: its crew gets out and goes to work, walking in from
         /// wherever that is.
@@ -432,6 +437,7 @@ namespace RealLifeOverhaul
         /// <returns>When the crew expects to be back aboard, or 0 if nobody got out. The unit should wait at least that long.</returns>
         public float OnUnitParked(bool police, VehicleComponent car, float latest, float now)
         {
+            using var hotSpot = HotSpots.Time(HotOnUnitParked);
             if (!_active || !Settings.People || car == null
                 || (car.transform.position - _scene).sqrMagnitude > CrewRange * CrewRange)
             {
@@ -550,8 +556,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Traffic: AccidentCast.Tick");
         public void Tick(float now)
         {
+            using var hotSpot = HotSpots.Time(HotTick);
             if (!_active || now < _nextTick)
             {
                 return;

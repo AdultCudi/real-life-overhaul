@@ -6,15 +6,70 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The game's road graph (the traffic system's lane points) as <see cref="RouteSearch"/> wants it:
     /// a lane's own next points, and the changes of lane the graph offers between two lanes that run
-    /// the same way side by side. One pass over the lane points, twice (count, then fill); whoever
-    /// calls it names the work for the session record and does it once per city.
+    /// the same way side by side. One pass over the lane points, twice (count, then fill).
     ///
-    /// Used by the bus network (<see cref="TransitMap"/>) and by the GPS (Scripts/Navigation). Each
-    /// builds a search of its own, because a search keeps its state in the object and the two may
-    /// be searching in the same frames.
+    /// ONE GRAPH A CITY (<see cref="Shared"/>). The GPS (Scripts/Navigation), the bus network
+    /// (<see cref="TransitMap"/>), the taxi and the online shops' delivery all search the same roads,
+    /// with the same price for a change of lane: the graph is built once, behind the loading screen
+    /// (the late prewarm of Core/SceneFinds), and each takes a search of its own over it
+    /// (<see cref="RouteSearch.Over"/>), because a search keeps its state in the object and they may
+    /// be searching in the same frames. The GPS and the buses each used to build their own, some
+    /// 1.2 MB and 10 to 20 ms each, in the frames the loading screen went (the owner's log of 14 Oct
+    /// 2026: 1284 KB and 1188 KB of a frame of 394 ms). It is built only once the traffic system has
+    /// started (TrafficManager.IsInitialized): that is when the lane points at junctions are marked
+    /// (enter, exit, give way: GenericIntersection.Initialize), and a change of lane is offered only
+    /// between plain lane points, so a graph built before would not be the one the buses and the GPS
+    /// were always laid out on.
+    ///
+    /// Cost: nothing per frame; the build once a city (about 10 ms and 1 MB, behind the loading screen).
     /// </summary>
     public static class RoadGraph
     {
+        /// <summary>The price of a change of lane, in metres of road, for the shared graph (the GPS's and the buses' own figure).</summary>
+        public const float LaneChangeCost = 30f;
+
+        private static Waypoint[] _sharedFor;   // the lane points the shared graph was built from (the city's road data)
+        private static RouteSearch _shared;
+
+        /// <summary>Changes of lane the shared graph offers, for the logs.</summary>
+        public static int SharedLaneChanges { get; private set; }
+
+        /// <summary>
+        /// The city's road graph over these lane points, built the first time it is asked for once the traffic system has
+        /// started, and kept for the city; null before that (or with no lane points). Take a search of your own over it
+        /// (<see cref="RouteSearch.Over"/>); never change its arrays.
+        /// </summary>
+        public static RouteSearch Shared(Waypoint[] points)
+        {
+            if (points == null || points.Length == 0)
+            {
+                return null;
+            }
+            if (_shared != null && ReferenceEquals(points, _sharedFor))
+            {
+                return _shared;
+            }
+            if (!TrafficManager.IsInitialized)
+            {
+                return null;   // the junctions are not marked yet
+            }
+            using (SessionWatch.Piece("roads: the city's road graph, built once for the GPS, the buses, the taxi and the deliveries"))
+            {
+                _shared = Build(points, LaneChangeCost, out int laneChanges);
+                SharedLaneChanges = laneChanges;
+                _sharedFor = points;
+            }
+            return _shared;
+        }
+
+        /// <summary>The city is going: its graph (and with it its lane points) is let go.</summary>
+        public static void Forget()
+        {
+            _shared = null;
+            _sharedFor = null;
+            SharedLaneChanges = 0;
+        }
+
         /// <summary>A lane point cars may use.</summary>
         public static bool Drivable(Waypoint point)
         {

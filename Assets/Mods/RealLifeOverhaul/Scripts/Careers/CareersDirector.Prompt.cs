@@ -25,8 +25,10 @@ namespace RealLifeOverhaul.Careers
     /// When a class's hour comes, a notice: where the player is right, how to join it (press the key; at the school,
     /// press Study at a desk); where not, why, where it is held and how long it runs. One line goes to the log with how far
     /// the player is from the university's door, so that "no prompt" can be read from Player.log. Looked at once a
-    /// second; per frame one flag test, and one reference comparison while the player is inside the school on a course there
-    /// (the director is never disabled: the game's activity panel needs it running for the mod's sittings, Jobs/ShiftSkip).
+    /// second; per frame, while the university's floors are there, the game's building card's target read and compared
+    /// with the last (CampusInterior.Card, the card kept), then one flag test, and one reference comparison while the
+    /// player is inside the school on a course there: well under a microsecond, nothing allocated (the director is never
+    /// disabled: the game's activity panel needs it running for the mod's sittings, Jobs/ShiftSkip).
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -38,6 +40,9 @@ namespace RealLifeOverhaul.Careers
         private int _classOffered = -1;    // the same, offered this second
         private int _classDue = -1;        // day * 100 + course of the last class whose start was looked at
         private readonly Dictionary<int, object> _courseArgs = new Dictionary<int, object>(4);
+        private Func<string> _classWhat;   // the panel's words for the log, made once (ClassWhat)...
+        private bool _classWhatExam, _classWhatSign;
+        private string _classWhatKey;      // ...from what it is up for this second
 
         private SchoolDesk _desk;          // a class at the school's desk, from its button until it is over
         private bool _deskWatch;           // inside the school, on a course there: the game's study panel is looked at each frame
@@ -120,8 +125,16 @@ namespace RealLifeOverhaul.Careers
             }
             Vector3 standing = player.transform.position;
             bool atSign = c.Campus == Campus.University && (StudyMode)live.Mode != StudyMode.Distance && _campus != null && _campus.Usable && !BuildingManager.IsInsideBuilding;
-            _classDoor.Show(atSign ? _campus.Front : standing, standing, atSign ? 2.3f : 2.1f,
-                () => (exam ? "exam of " : "class of ") + c.Key + (atSign ? " at the university's " + (_campus.HasSign ? "sign" : "door") : " where the player is"));
+            _classWhatExam = exam;
+            _classWhatKey = c.Key;
+            _classWhatSign = atSign;
+            _classDoor.Show(atSign ? _campus.Front : standing, standing, atSign ? 2.3f : 2.1f, _classWhat ?? (_classWhat = ClassWhat));
+        }
+
+        // What the class panel is up for, for its log line (made only when it is written).
+        private string ClassWhat()
+        {
+            return (_classWhatExam ? "exam of " : "class of ") + _classWhatKey + (_classWhatSign ? " at the university's " + (_campus != null && _campus.HasSign ? "sign" : "door") : " where the player is");
         }
 
         // True if this course's class (or exam) is held at the game's school, where its desks offer it instead of a panel.

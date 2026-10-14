@@ -33,8 +33,9 @@ namespace RealLifeOverhaul
         /// footfall answer it wrapped is put back as it was found.
         ///
         /// COST: nothing per frame and nothing allocated. An adapter runs when the feature that owns the bridge asks:
-        /// the footfall answer is a walk over the player's businesses each time a figure is written (once an hour for
-        /// a business with something asked for), the price answer one over the city's economy's list once a day.
+        /// the footfall answer is a look-up among the player's businesses each time a figure is written (once an hour for
+        /// a business with something asked for: BrandsDirector.FootfallOf), the price answer a walk over the city's
+        /// economy's list once a day.
         /// </summary>
         public static class BrandLinks
         {

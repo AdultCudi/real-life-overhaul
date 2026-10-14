@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Events
         public static bool Lane(Vector3 near, float within, out Waypoint point, out Vector3 direction)
         {
             direction = default;
-            point = TrafficTools.Ready ? TrafficManager.Instance.GetClosestWaypoint(near, within, PlainLane) : null;
+            point = TrafficTools.Ready ? TrafficTools.ClosestWaypoint(near, within, PlainLane) : null;
             return point != null && Direction(point, out direction);
         }
 
@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Events
         {
             middle = default;
             _against = direction;
-            Waypoint other = TrafficManager.Instance.GetClosestWaypoint(lane.position, 9f, PlainLaneAgainst);
+            Waypoint other = TrafficTools.ClosestWaypoint(lane.position, 9f, PlainLaneAgainst);
             if (other == null)
             {
                 return false;
@@ -574,7 +574,7 @@ namespace RealLifeOverhaul.Events
             bool hasStand = cordon != null && cordon.Stand(false, back, out anchor, out stand);
             if (!hasStand)
             {
-                anchor = TrafficManager.Instance.GetClosestWaypoint(scene, 40f);
+                anchor = TrafficTools.ClosestWaypoint(scene, 40f);
             }
             GameObject prefab = EventRoad.PickTruck(out bool van);
             VehicleComponent car = EventRoad.Bring(_unit, prefab, anchor, Random.Range(150f, 210f), 45f, out string refusal);

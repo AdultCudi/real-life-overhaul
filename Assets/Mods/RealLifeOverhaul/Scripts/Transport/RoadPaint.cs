@@ -15,8 +15,10 @@ namespace RealLifeOverhaul
     /// in the build. The paint is laid by a DecalProjector pointing down at the road, which follows
     /// a road that is cambered or falls away where a flat model would sink into it or float.
     ///
-    /// Nothing is made until a stop with a bay is first dressed: one look through the materials the
-    /// city has loaded, then two materials for the rest of the session.
+    /// The game's road paint to copy is found behind the loading screen (<see cref="Prewarm"/>, Core/SceneFinds:
+    /// one look through every material in memory, which was a frame of 5 to 30 ms in play the first time a bay
+    /// was dressed after each load), and kept for the session: a city loaded again looks only if the one it had
+    /// is gone. The two copies are made when a stop with a bay is first dressed, and go with the city.
     /// </summary>
     public static class RoadPaint
     {
@@ -83,7 +85,23 @@ namespace RealLifeOverhaul
             return made;
         }
 
-        // One of the game's own road paints: a decal that colours from a map and does nothing else, as its lines do.
+        /// <summary>
+        /// Behind the loading screen (a piece of Core/SceneFinds' ScenePrewarm): the game's road paint found, unless the one
+        /// found at an earlier load is still there. Always done with: where none is found the bays are marked with strips,
+        /// and nothing is looked for in play.
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if (_template == null)
+            {
+                _looked = false;   // (the one kept went with its city, or none was found then: looked for again)
+            }
+            FindTemplate();
+            return true;
+        }
+
+        // One of the game's own road paints: a decal that colours from a map and does nothing else, as its lines do. Looked for
+        // once, behind the loading screen (Prewarm); a question in play before that, or after it found none, searches nothing.
         private static Material FindTemplate()
         {
             if (_template != null || _looked)
@@ -91,12 +109,17 @@ namespace RealLifeOverhaul
                 return _template;
             }
             _looked = true;
-            Material another = null;
-            foreach (Material material in Resources.FindObjectsOfTypeAll<Material>())
+            if (!SceneFinds.Hidden)
             {
-                if (material == null || material.shader == null || material.shader.name != DecalShader
+                return null;   // never a search of everything in memory in play: the bays are marked with strips until the next load
+            }
+            Material another = null;
+            // The keywords first (no text made): only decals have these, so the names (each a new string) are read of a handful.
+            foreach (Material material in SceneFinds.InMemory<Material>("transit: the game's road paint being looked for (everything in memory gone through)"))
+            {
+                if (material == null || material.shader == null
                     || !material.IsKeywordEnabled("_COLORMAP") || !material.IsKeywordEnabled("_MATERIAL_AFFECTS_ALBEDO")
-                    || material.IsKeywordEnabled("_NORMALMAP") || material.IsKeywordEnabled("_MASKMAP"))
+                    || material.IsKeywordEnabled("_NORMALMAP") || material.IsKeywordEnabled("_MASKMAP") || material.shader.name != DecalShader)
                 {
                     continue;
                 }
@@ -160,7 +183,7 @@ namespace RealLifeOverhaul
             piece.SetActive(true);
         }
 
-        /// <summary>The city is being left: the copies go, and the next city is looked through again.</summary>
+        /// <summary>The city is being left: the copies go. The game's paint found is kept (Prewarm looks again only if it has gone).</summary>
         public static void Dispose()
         {
             foreach (Material made in Paints.Values)
@@ -171,8 +194,6 @@ namespace RealLifeOverhaul
                 }
             }
             Paints.Clear();
-            _template = null;
-            _looked = false;
             _missingSaid = false;
             Missing = null;
         }

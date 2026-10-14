@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
     /// WHERE IT STARTS. Some 170 m back along the lane beside (as near that as can be had, from 70 to 280 m), on a plain
     /// lane point where nobody can see it and not within TransitSight.NearKeep of the player, with nothing standing there.
     ///
-    /// The search is once per truck sent: one GetClosestWaypoint (a pass over the city's lane points), walks along lanes,
+    /// The search is once per truck sent: one question for the nearest lane point (the lane grid: TrafficTools.ClosestWaypoint), walks along lanes,
     /// a few boxes and a few dozen rays for the start. Nothing per frame.
     /// </summary>
     public static class TowRoads
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul
             plan.Onward = null;
             plan.Refusal = null;
             TrafficManager traffic = TrafficManager.Instance;
-            Waypoint own = traffic.GetClosestWaypoint(centre, WreckReach);
+            Waypoint own = TrafficTools.ClosestWaypoint(centre, WreckReach);
             if (own == null || !Usable(own) || own.neighbors == null || own.neighbors.Count == 0)
             {
                 plan.Refusal = "the wreck is on no plain lane";

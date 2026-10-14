@@ -39,7 +39,7 @@ namespace RealLifeOverhaul
         private const float OtherLane = 2.2f;        // no other lane's road point may be this near the car's middle
         private const float Room = 0.45f;            // metres clear of every vehicle and all street furniture, all round
         private const float SecondOfficerChance = 0.6f;
-        private const int Attempts = 2;              // places tried per look (each asks the whole road graph for its nearest point); the next look tries again
+        private const int Attempts = 2;              // places tried per look (each asks the lane grid for its nearest point: TrafficTools.ClosestWaypoint); the next look tries again
 
         private const PermanentAnimationType RadioPose = PermanentAnimationType.TalkingPhone;
         private const string RadioProp = "PhoneOff";
@@ -248,7 +248,7 @@ namespace RealLifeOverhaul
                 float angle = Random.value * Mathf.PI * 2f;
                 float distance = Random.Range(MinDistance, MaxDistance);
                 Vector3 probe = origin + new Vector3(Mathf.Cos(angle) * distance, 0f, Mathf.Sin(angle) * distance);
-                Waypoint point = traffic.GetClosestWaypoint(probe, 14f);
+                Waypoint point = TrafficTools.ClosestWaypoint(probe, 14f);
                 if (point == null || !IsPlainLane(point) || !FindKerbPlace(traffic, point, out Vector3 at, out Quaternion facing, out Vector3 kerb))
                 {
                     continue;
@@ -336,7 +336,7 @@ namespace RealLifeOverhaul
                     || OnPavement(place) || OnPavement(place + along * _halfLength + right * _halfWidth) || OnPavement(place + along * _halfLength - right * _halfWidth)
                     || OnPavement(place - along * _halfLength + right * _halfWidth) || OnPavement(place - along * _halfLength - right * _halfWidth)
                     || !SceneParking.IsFree(place, facing, _halfWidth, _halfLength, Room)
-                    || traffic.GetClosestWaypoint(place, OtherLane) != null)
+                    || TrafficTools.ClosestWaypoint(place, OtherLane) != null)
                 {
                     continue;
                 }
@@ -421,7 +421,7 @@ namespace RealLifeOverhaul
                 float angle = Random.value * Mathf.PI * 2f;
                 float distance = Random.Range(MinDistance * 0.8f, MaxDistance * 0.85f);
                 Vector3 probe = origin + new Vector3(Mathf.Cos(angle) * distance, 0f, Mathf.Sin(angle) * distance);
-                Waypoint point = traffic.GetClosestWaypoint(probe, 25f, InJunction);
+                Waypoint point = TrafficTools.ClosestWaypoint(probe, 25f, InJunction);
                 // A corner of the junction: the pavement nearest a point a few metres out from its middle, towards the player's side.
                 if (point == null)
                 {

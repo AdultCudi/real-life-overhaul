@@ -108,8 +108,10 @@ namespace RealLifeOverhaul
             _step = Step.None;
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Traffic: RoadsideStop.Tick");
         public void Tick(float now)
         {
+            using var hotSpot = HotSpots.Time(HotTick);
             if (_step == Step.None || now < _nextTick)
             {
                 return;

@@ -32,6 +32,11 @@ namespace RealLifeOverhaul
     /// player's own businesses). A visitor in the shop is ticked four times a second, only while
     /// there is one. A fault is logged once, everything the mod changed is put back, and the
     /// feature stays off for the session.
+    ///
+    /// It also hosts the pace of every feature's customer redraws (Core/CustomerDraw, CustomerDrawPace:
+    /// switched off while none waits) and keeps the two handlers of the game's that pace needs, once a
+    /// second, whether or not business pressure is on: business pressure's writer is the mod's one
+    /// writer of a business's footfall, whoever asks.
     /// </summary>
     public sealed class BusinessDirector : MonoBehaviour
     {
@@ -89,6 +94,7 @@ namespace RealLifeOverhaul
             BusinessGame.Logger = Logger;
             _onSave = OnSaveGame;   // one delegate for the session: hooking it again each second allocates nothing
             BusinessState.Reset();
+            gameObject.AddComponent<CustomerDrawPace>();   // the customers' redraws, a little a frame (off while none waits)
         }
 
         private void OnDestroy()
@@ -194,6 +200,7 @@ namespace RealLifeOverhaul
 
             // The game clears its event hub on every load, so the save hook is kept attached.
             SaveHook.Keep(_onSave);   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+            CustomerDraw.Keep();      // the redraws waiting are made before a save and before the game's time skip
 
             bool turned = hour != _lastHour || day != _lastDay, newDay = day != _lastDay;
             _lastHour = hour;
@@ -226,7 +233,15 @@ namespace RealLifeOverhaul
             }
             if (turned)
             {
-                Hourly(day, hour, newDay);
+                CustomerDraw.Hold("business pressure's hour");
+                try
+                {
+                    Hourly(day, hour, newDay);
+                }
+                finally
+                {
+                    CustomerDraw.Release();
+                }
             }
         }
 
@@ -315,11 +330,14 @@ namespace RealLifeOverhaul
                 else if (day >= effect.UntilDay)
                 {
                     BusinessState.Effects.RemoveAt(i);
-                    BusinessGame.Footfall(reg, 0, true);
+                    if (BusinessGame.Footfall(reg, 0, true))
+                    {
+                        BusinessGame.Said(reg, 0);
+                    }
                 }
-                else
+                else if (BusinessGame.Footfall(reg, effect.Percent, newDay) && newDay)
                 {
-                    BusinessGame.Footfall(reg, effect.Percent, newDay);
+                    BusinessGame.Said(reg, effect.Percent);
                 }
             }
 
@@ -536,7 +554,10 @@ namespace RealLifeOverhaul
         {
             percent = days > 0 ? BusinessCatalogue.ClampFootfall(percent) : 0;
             BusinessState.SetEffect(BusinessGame.Place(reg), percent, TimeHelper.CurrentDay + days);
-            BusinessGame.Footfall(reg, percent, true);
+            if (BusinessGame.Footfall(reg, percent, true))
+            {
+                BusinessGame.Said(reg, percent);
+            }
         }
 
         /// <summary>
@@ -618,14 +639,15 @@ namespace RealLifeOverhaul
         {
             int day = TimeHelper.CurrentDay;
             BusinessState.EndOf(ClosureSource.Issue, everything, _opening);
+            CustomerDraw.Hold("business pressure stood down");
             try
             {
                 for (int i = BusinessState.Effects.Count - 1; i >= 0; i--)
                 {
                     BuildingRegistration reg = BusinessGame.Find(BusinessState.Effects[i].Place);
-                    if (reg != null)
+                    if (reg != null && BusinessGame.Footfall(reg, 0, true))
                     {
-                        BusinessGame.Footfall(reg, 0, true);
+                        BusinessGame.Said(reg, 0);
                     }
                 }
                 ReopenListed();
@@ -633,6 +655,10 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             BusinessState.Effects.Clear();
             for (int i = BusinessState.Issues.Count - 1; i >= 0; i--)

@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Markets
         private readonly List<MarketEvent> _events = new List<MarketEvent>(32);
         private readonly HashSet<int> _traded = new HashSet<int>();   // the days on which a player's trade is an event (a Going Public session)
         private readonly StringBuilder _pending = new StringBuilder(256);
+        private readonly StringBuilder _whole = new StringBuilder(4096);   // the whole tape as it is written at a save, kept for the next (its room grows once)
+        private readonly List<int> _days = new List<int>(64);              // its days in order, as it is written
 
         public ulong Id { get; private set; }
         public int FrontierDay { get; private set; }
@@ -217,15 +219,20 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The whole tape as a file, compacted: header, secrets, cities, events, the frontier.</summary>
         public string Whole()
         {
-            var t = new StringBuilder(64 + _secrets.Count * 120);
+            StringBuilder t = _whole;
+            t.Length = 0;
             t.Append("T1 ").Append(Id.ToString("X16", Inv)).Append('\n');
-            var days = new List<int>(_secrets.Keys);
+            List<int> days = _days;
+            days.Clear();
+            days.AddRange(_secrets.Keys);
             days.Sort();
             for (int i = 0; i < days.Count; i++)
             {
                 t.Append("D ").Append(days[i].ToString(Inv)).Append(' ').Append(_secrets[days[i]].ToString("X16", Inv)).Append('\n');
             }
-            var envDays = new List<int>(_envs.Keys);
+            List<int> envDays = _days;
+            envDays.Clear();
+            envDays.AddRange(_envs.Keys);
             envDays.Sort();
             for (int i = 0; i < envDays.Count; i++)
             {

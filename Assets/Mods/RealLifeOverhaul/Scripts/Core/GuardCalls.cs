@@ -167,8 +167,10 @@ namespace RealLifeOverhaul
                 return way;
             }
             FeatureGuard guard = OfHandler(way);
+            int slot = HandlerSlot(way, "Callback");
             return value =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 try
                 {
                     way(value);
@@ -191,8 +193,10 @@ namespace RealLifeOverhaul
                 return ask;
             }
             FeatureGuard guard = OfHandler(ask);
+            int slot = HandlerSlot(ask, "Asked");
             return () =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return otherwise;
@@ -362,8 +366,10 @@ namespace RealLifeOverhaul
                 return null;
             }
             FeatureGuard guard = OfHandler(handler);
+            int slot = HandlerSlot(handler, "Listener");
             return (a, b) =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;

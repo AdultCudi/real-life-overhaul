@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Careers
         public string Name = string.Empty, Street = string.Empty, Type = string.Empty, Rival = string.Empty;
         public int Number;
         public EmployerKind Kind;
+        public long Professions;   // the professions its type employs (ProCatalogue.EmployedBy), read once a day
     }
 
     /// <summary>
@@ -35,11 +36,16 @@ namespace RealLifeOverhaul.Careers
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        /// <summary>The city's businesses that employ a profession, not the player's own. One pass over the save's buildings.</summary>
+        /// <summary>
+        /// The city's businesses that employ a profession, not the player's own. One pass over the save's buildings; whether
+        /// a type employs anyone is a dictionary hit (ProCatalogue.AnyEmploys), and the employers are the same objects every
+        /// day, filled again (they are good until the next call).
+        /// </summary>
         public static void Employers(List<EmployerRef> into, List<EmployerRef> offices)
         {
             into.Clear();
             offices.Clear();
+            _made = 0;
             List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
@@ -54,7 +60,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     offices.Add(Ref(reg, EmployerKind.TechFirm));
                 }
-                if (!reg.HasEstablishedBusiness || type.Length == 0 || type == "ba:businesstype_empty" || !AnyEmploys(type))
+                if (!reg.HasEstablishedBusiness || type.Length == 0 || type == "ba:businesstype_empty" || !ProCatalogue.AnyEmploys(type))
                 {
                     continue;
                 }
@@ -74,25 +80,24 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private static bool AnyEmploys(string type)
-        {
-            for (int p = 0; p < ProCatalogue.Count; p++)
-            {
-                if (ProCatalogue.Employs(ProCatalogue.All[p], type))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        private static readonly List<EmployerRef> Made = new List<EmployerRef>(256);   // the employers of the last call, used again by the next
+        private static int _made;
 
         private static EmployerRef Ref(BuildingRegistration reg, EmployerKind kind)
         {
-            return new EmployerRef
+            if (_made == Made.Count)
             {
-                Name = TalentGame.NameOf(reg), Street = reg.StreetName ?? string.Empty, Number = reg.StreetNumber, Type = reg.businessTypeName ?? string.Empty,
-                Rival = kind == EmployerKind.Rival ? reg.businessOwnerRivalId ?? string.Empty : string.Empty, Kind = kind
-            };
+                Made.Add(new EmployerRef());
+            }
+            EmployerRef e = Made[_made++];
+            e.Name = TalentGame.NameOf(reg);
+            e.Street = reg.StreetName ?? string.Empty;
+            e.Number = reg.StreetNumber;
+            e.Type = reg.businessTypeName ?? string.Empty;
+            e.Rival = kind == EmployerKind.Rival ? reg.businessOwnerRivalId ?? string.Empty : string.Empty;
+            e.Kind = kind;
+            e.Professions = ProCatalogue.EmployedBy(e.Type);
+            return e;
         }
 
         /// <summary>The public sector's buildings: each hospital and clinic, the school and the council's offices. One walk over the city's buildings, once a city.</summary>

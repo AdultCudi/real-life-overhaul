@@ -231,8 +231,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        private static readonly int HotSave = HotSpots.Slot("Tech: TechDirector.OnSave");
         private void OnSave()
         {
+            using var hotSpot = HotSpots.Time(HotSave);   // every part's line written (Core/HotSpots)
             try
             {
                 if (Save == null)

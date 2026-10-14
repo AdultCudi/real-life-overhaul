@@ -10,22 +10,35 @@ namespace RealLifeOverhaul.Tech
     /// colon; records inside a part by ';', fields by '|'. Text fields have the four dividers taken out. A reader takes
     /// the fields it knows and leaves out what it does not, so a later version's line with more fields at the end of a
     /// record still loads. Game-free.
+    ///
+    /// THE COST. A save writes every line (600 professionals, the firms, the hiring, the startups, the careers) on the
+    /// game's autosave in play: the writer takes a builder kept from the last line (one per writer alive at once, its room
+    /// grown once), and writes numbers, texts and place keys into it in place, so a line costs the one string it is and
+    /// nothing besides (it made a string of every number and a builder and a string of every text). The text is
+    /// character for character what it was (EconomyCheck, TechWriterChecks).
     /// </summary>
     public sealed class TechWriter
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        private readonly StringBuilder _t = new StringBuilder(4096);
+        [ThreadStatic] private static Stack<StringBuilder> _kept;   // builders of finished lines, for the next writers
+        private StringBuilder _t;
+        private string _written;
         private bool _first;
+        private readonly char[] _digits = new char[20];
 
         public TechWriter(int version)
         {
-            _t.Append("v=").Append(version.ToString(Inv));
+            Stack<StringBuilder> kept = _kept ?? (_kept = new Stack<StringBuilder>(4));
+            _t = kept.Count > 0 ? kept.Pop() : new StringBuilder(4096);
+            _t.Length = 0;
+            _t.Append("v=");
+            Number(version);
         }
 
         /// <summary>Starts a part.</summary>
         public TechWriter Part(char letter)
         {
-            _t.Append('~').Append(letter).Append(':');
+            Builder.Append('~').Append(letter).Append(':');
             _first = true;
             return this;
         }
@@ -35,7 +48,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (!_first)
             {
-                _t.Append(';');
+                Builder.Append(';');
             }
             _first = false;
             _fields = 0;
@@ -47,7 +60,7 @@ namespace RealLifeOverhaul.Tech
         public TechWriter Add(long value)
         {
             Sep();
-            _t.Append(value.ToString(Inv));
+            Number(value);
             return this;
         }
 
@@ -59,7 +72,12 @@ namespace RealLifeOverhaul.Tech
         public TechWriter Add(string text)
         {
             Sep();
-            _t.Append(Clean(text));
+            StringBuilder t = Builder;
+            for (int i = 0; text != null && i < text.Length; i++)
+            {
+                char c = text[i];
+                t.Append(c == '~' || c == ';' || c == '|' ? ' ' : c);   // (as Clean)
+            }
             return this;
         }
 
@@ -67,7 +85,19 @@ namespace RealLifeOverhaul.Tech
         public TechWriter Place(string key)
         {
             Sep();
-            _t.Append((key ?? string.Empty).Replace("~", "%7E").Replace(";", " ").Replace("|", " "));
+            StringBuilder t = Builder;
+            for (int i = 0; key != null && i < key.Length; i++)
+            {
+                char c = key[i];
+                if (c == '~')
+                {
+                    t.Append("%7E");
+                }
+                else
+                {
+                    t.Append(c == ';' || c == '|' ? ' ' : c);
+                }
+            }
             return this;
         }
 
@@ -75,14 +105,55 @@ namespace RealLifeOverhaul.Tech
         {
             if (_fields++ > 0)
             {
-                _t.Append('|');
+                Builder.Append('|');
             }
         }
 
+        // A whole number as the invariant culture writes it ("-" and the digits), with no string made.
+        private void Number(long value)
+        {
+            StringBuilder t = Builder;
+            if (value == long.MinValue)
+            {
+                t.Append("-9223372036854775808");
+                return;
+            }
+            if (value < 0)
+            {
+                t.Append('-');
+                value = -value;
+            }
+            int n = 0;
+            do
+            {
+                _digits[n++] = (char)('0' + (int)(value % 10));
+                value /= 10;
+            }
+            while (value > 0);
+            while (n > 0)
+            {
+                t.Append(_digits[--n]);
+            }
+        }
+
+        private StringBuilder Builder => _t ?? throw new InvalidOperationException("the line has been written");
+
+        /// <summary>The line; the writer's builder goes back for the next writer (the line is kept: asked again, the same string).</summary>
         public override string ToString()
         {
-            return _t.ToString();
+            if (_t != null)
+            {
+                _written = _t.ToString();
+                if (_t.Capacity <= KeptMost)
+                {
+                    (_kept ?? (_kept = new Stack<StringBuilder>(4))).Push(_t);
+                }
+                _t = null;
+            }
+            return _written;
         }
+
+        private const int KeptMost = 4 * 1024 * 1024;   // characters a kept builder may hold (a line of 600 professionals is about 100 thousand)
 
         /// <summary>A text with the three dividers taken out (an id of the game's may hold '=', '+' and '/', which are kept).</summary>
         public static string Clean(string text)

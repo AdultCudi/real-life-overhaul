@@ -203,10 +203,10 @@ namespace RealLifeOverhaul.Flare
         public static int Hour => SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0;
         public static int MinuteOfDay => SaveGameManager.Current != null ? SaveGameManager.Current.Hour * 60 + Mathf.FloorToInt(SaveGameManager.Current.Minute) : 0;
 
-        /// <summary>A business's place as the company and the brands write it ("street~number").</summary>
+        /// <summary>A business's place as the company and the brands write it ("street~number"): the key kept for the building (Tech/People/TalentGame.Place, the same text).</summary>
         public static string Place(BuildingRegistration reg)
         {
-            return reg == null ? null : Uri.EscapeDataString(reg.StreetName ?? string.Empty) + "~" + reg.StreetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return reg == null ? null : Tech.TalentGame.Place(reg);
         }
 
         public static string Name(BuildingRegistration reg)

@@ -1199,7 +1199,7 @@ namespace RealLifeOverhaul.Law
             {
                 return;
             }
-            Waypoint start = traffic.GetClosestWaypoint(_front, 22f);
+            Waypoint start = TrafficTools.ClosestWaypoint(_front, 22f);
             if (start == null)
             {
                 return;
@@ -1307,7 +1307,7 @@ namespace RealLifeOverhaul.Law
                     || OnPavement(place) || OnPavement(place + along * _halfLength + right * _halfWidth) || OnPavement(place + along * _halfLength - right * _halfWidth)
                     || OnPavement(place - along * _halfLength + right * _halfWidth) || OnPavement(place - along * _halfLength - right * _halfWidth)
                     || !SceneParking.IsFree(place, facing, _halfWidth, _halfLength, Room)
-                    || traffic.GetClosestWaypoint(place, OtherLane) != null
+                    || TrafficTools.ClosestWaypoint(place, OtherLane) != null
                     || !StreetSpots.OnPavement(place + right * (_halfWidth + 1.3f), 1.6f, out _)
                     || NearKerbPiece(place, along, right))
                 {

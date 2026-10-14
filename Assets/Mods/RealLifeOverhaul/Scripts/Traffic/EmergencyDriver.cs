@@ -181,7 +181,7 @@ namespace RealLifeOverhaul
         /// (and plans to, so they brake late), takes in only that share of the road ahead, may not see people on
         /// foot at all, and plans every bend with the grip given (more than the road has: they arrive too fast).
         /// It also takes hard turns and passes at whatever that grip allows instead of at a careful pace, and looks
-        /// for a lane to pass in in RoadMap's grid (a handful of points) instead of asking the whole road graph.
+        /// for a lane to pass in in RoadMap's grid (a handful of points) instead of asking for the nearest lane point.
         /// The mod's own people, bodies in the road and the player on foot are always seen. Call after Begin, which undoes it.
         /// </summary>
         public void Careless(float stopping, float foresight, bool seesPeople, float bendGrip)
@@ -877,10 +877,10 @@ namespace RealLifeOverhaul
             }
             if (_gridLanes && RoadMap.Usable)
             {
-                // The squares of RoadMap's grid round the place: a handful of points, where the call below walks every one in the city.
+                // The squares of RoadMap's grid round the place: a handful of points, whatever the lane; the call below finds the nearest lane point.
                 return RoadMap.NearestLane(lane, out float off, out _, out _) && off < LaneSnap;
             }
-            return TrafficManager.HasInstance && TrafficManager.Instance.GetClosestWaypoint(lane, LaneSnap) != null;
+            return TrafficManager.HasInstance && TrafficTools.ClosestWaypoint(lane, LaneSnap) != null;
         }
 
         // True if a lane beside the vehicle (or its own, seen from out of it) has anything in it, alongside or ahead.

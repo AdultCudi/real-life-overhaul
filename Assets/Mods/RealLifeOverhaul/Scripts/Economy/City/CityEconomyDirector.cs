@@ -54,7 +54,9 @@ namespace RealLifeOverhaul.Economy
         private readonly List<CityShop> _shops = new List<CityShop>(16);
         private readonly List<CityShop> _pool = new List<CityShop>(16);
         private readonly List<CityNews> _picked = new List<CityNews>(MacroCatalogue.NewsADay);
-        private readonly List<BuildingRegistration> _was = new List<BuildingRegistration>(16);   // the businesses whose figure carried something before it was worked out again
+        private readonly HashSet<BuildingRegistration> _was = new HashSet<BuildingRegistration>(ReferenceComparer<BuildingRegistration>.Instance);   // the businesses whose figure carried something before it was worked out again
+        private readonly Dictionary<BuildingRegistration, CityShop> _byReg = new Dictionary<BuildingRegistration, CityShop>(16, ReferenceComparer<BuildingRegistration>.Instance);   // each business's shop of _shops, for FootfallOf
+        private readonly ProfitRuns<Address> _runs = new ProfitRuns<Address>();
 
         private CityState _state;
         private string _beforeTests;   // the state's line as it was before the first test tool changed it; null with no test change in place
@@ -262,13 +264,21 @@ namespace RealLifeOverhaul.Economy
                 {
                     EconomyDirector.Instance.TermsChanged("the bank rate is the banks' own again");
                 }
-                for (int i = 0; i < _shops.Count; i++)
+                CustomerDraw.Hold("the city's economy stood down");
+                try
                 {
-                    if (_shops[i].Applied)
+                    for (int i = 0; i < _shops.Count; i++)
                     {
-                        WriteFootfall(_shops[i], true, false);   // (nothing is live, so nothing is added: the figure is the game's own, and the business feature's)
-                        shops++;
+                        if (_shops[i].Applied)
+                        {
+                            WriteFootfall(_shops[i], true, false);   // (nothing is live, so nothing is added: the figure is the game's own, and the business feature's)
+                            shops++;
+                        }
                     }
+                }
+                finally
+                {
+                    CustomerDraw.Release();
                 }
             }
             for (int i = 0; i < _shops.Count; i++)
@@ -276,6 +286,7 @@ namespace RealLifeOverhaul.Economy
                 _pool.Add(_shops[i]);
             }
             _shops.Clear();
+            _byReg.Clear();
             if (was && (tell || Verbose))
             {
                 string detail;
@@ -519,7 +530,8 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- applying the model
 
-        // Everything the model says is put in place: the rate, the wholesale prices, each business's footfall.
+        // Everything the model says is put in place: the rate, the wholesale prices, each business's footfall. The writes are
+        // one batch: each business asked to be drawn again once, spread over the frames that follow (Core/CustomerDraw).
         private void ApplyAll(int day, bool redraw, bool newDay, string when)
         {
             float started = Time.realtimeSinceStartup;
@@ -534,25 +546,41 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             CityGame.ReadShops(_state, _level, _shops, _pool);
-            int written = 0, redrawn = 0;
-            StringBuilder log = Verbose ? new StringBuilder(160) : null;
+            _byReg.Clear();
             for (int i = 0; i < _shops.Count; i++)
             {
-                CityShop shop = _shops[i];
-                // A figure is written where something is to be added, or where something was and no longer is. (On a
-                // new day the game has just written every figure afresh, so nothing is left from before.)
-                if (shop.Wanted != 0 || _was.Contains(shop.Reg))
+                if (_shops[i].Reg != null && !_byReg.ContainsKey(_shops[i].Reg))
                 {
-                    WriteFootfall(shop, redraw, newDay);
-                    written++;
-                    redrawn += redraw && shop.HasFigure ? 1 : 0;
+                    _byReg.Add(_shops[i].Reg, _shops[i]);
                 }
-                if (log != null && i < 6)
+            }
+            int written = 0, redrawn = 0;
+            StringBuilder log = Verbose ? new StringBuilder(160) : null;
+            CustomerDraw.Hold("the city's economy: " + when);
+            try
+            {
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    log.Append(i > 0 ? "; " : string.Empty).Append(shop.Reg.BusinessName).Append(' ').Append(CityText.Percent(shop.Wanted)).Append(" (cycle ").Append(shop.Cycle).Append(", district ")
-                        .Append(shop.Area).Append(", prices ").Append(shop.Price).Append(shop.Against > 0 ? " at " + (shop.Against / 10f).ToString("0.#") + "% of what the district bears" : ", none to judge by")
-                        .Append(shop.HasFigure ? ", promotion " + shop.Own + " to " + shop.Written : ", no promotion figure").Append(')');
+                    CityShop shop = _shops[i];
+                    // A figure is written where something is to be added, or where something was and no longer is. (On a
+                    // new day the game has just written every figure afresh, so nothing is left from before.)
+                    if (shop.Wanted != 0 || _was.Contains(shop.Reg))
+                    {
+                        WriteFootfall(shop, redraw, newDay);
+                        written++;
+                        redrawn += redraw && shop.HasFigure ? 1 : 0;
+                    }
+                    if (log != null && i < 6)
+                    {
+                        log.Append(i > 0 ? "; " : string.Empty).Append(shop.Reg.BusinessName).Append(' ').Append(CityText.Percent(shop.Wanted)).Append(" (cycle ").Append(shop.Cycle).Append(", district ")
+                            .Append(shop.Area).Append(", prices ").Append(shop.Price).Append(shop.Against > 0 ? " at " + (shop.Against / 10f).ToString("0.#") + "% of what the district bears" : ", none to judge by")
+                            .Append(shop.HasFigure ? ", promotion " + shop.Own + " to " + shop.Written : ", no promotion figure").Append(')');
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             _was.Clear();
             if (log != null)
@@ -565,7 +593,7 @@ namespace RealLifeOverhaul.Economy
                     factors.Append(k > 0 ? ", " : string.Empty).Append(CityText.KindKeys[k].Substring(CityText.KindKeys[k].LastIndexOf('_') + 1)).Append(' ').Append((CityModel.Wholesale(_state, k) / 1000f).ToString("0.000"));
                 }
                 Logger?.Info("Economy check (city, applied, " + when + ", day " + day + "): the rate " + Quarters(_state.Base) + (rate ? " (changed)" : string.Empty) + ", " + prices
-                             + " wholesale price(s) written (" + factors + "), " + written + " footfall figure(s) written, " + redrawn + " with the day's customers drawn again"
+                             + " wholesale price(s) written (" + factors + "), " + written + " footfall figure(s) written, " + redrawn + " with the day's customers asked to be drawn again (the customers' line says how many were)"
                              + (log.Length > 0 ? ": " + log : string.Empty) + (_shops.Count > 6 ? "; and " + (_shops.Count - 6) + " more" : string.Empty) + ". " + detail + "; "
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: " + (ok ? "PASS" : "FAIL"));
             }
@@ -608,19 +636,11 @@ namespace RealLifeOverhaul.Economy
         public static int FootfallOf(BuildingRegistration reg)
         {
             CityEconomyDirector d = Instance;
-            if (d == null || !d._running || d._holding || d._broken)
+            if (d == null || !d._running || d._holding || d._broken || reg == null)
             {
                 return 0;
             }
-            List<CityShop> shops = d._shops;
-            for (int i = 0; i < shops.Count; i++)
-            {
-                if (ReferenceEquals(shops[i].Reg, reg))
-                {
-                    return shops[i].Wanted;
-                }
-            }
-            return 0;
+            return d._byReg.TryGetValue(reg, out CityShop shop) ? shop.Wanted : 0;   // (each business's shop as the morning read it: a look-up, asked on every figure written)
         }
 
         /// <summary>What the morning's chance of a business trouble is multiplied by; one while this is not running.</summary>
@@ -699,7 +719,7 @@ namespace RealLifeOverhaul.Economy
             int booked = 0;
             for (int i = 0; i < parts.Length; i++)
             {
-                if (parts[i] != 0 && CityGame.Book(parts[i], key, day, percent, line.Addresses[i], line.Categories[i], line.Deductible[i]))
+                if (parts[i] != 0 && CityGame.Book(parts[i], key, day, percent, line.AddressAt(i), line.CategoryAt(i), line.DeductibleAt(i)))
                 {
                     booked += parts[i];
                 }
@@ -725,6 +745,7 @@ namespace RealLifeOverhaul.Economy
             }
             CityShop best = null;
             float most = 0f;
+            Runs(day);
             for (int i = 0; i < _shops.Count; i++)
             {
                 float total;
@@ -751,8 +772,41 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // True if the game's daily statements show a profit at this business on each of the last so-many days.
-        private static bool ProfitRun(BuildingRegistration reg, int today, out float total)
+        // Every business's run of profit over the last so-many days of the game's statements, in one pass over them (newest
+        // first, as a walk for one business goes): a look-up a business afterwards, instead of a walk of every day's
+        // statements for each.
+        private void Runs(int today)
+        {
+            _runs.Begin();
+            GameInstance save = Save;
+            List<FinancialSummary> summaries = save != null ? save.financialSummaries : null;
+            int from = today - MacroCatalogue.CopycatDays;
+            for (int i = summaries != null ? summaries.Count - 1 : -1; i >= 0; i--)
+            {
+                FinancialSummary summary = summaries[i];
+                if (summary == null || summary.businessIncomeStatements == null || summary.dayNumber >= today)
+                {
+                    continue;
+                }
+                if (summary.dayNumber < from)
+                {
+                    break;   // (the game keeps them oldest first)
+                }
+                _runs.Day();
+                for (int b = 0; b < summary.businessIncomeStatements.Count; b++)
+                {
+                    FinancialSummary.BusinessIncomeStatement statement = summary.businessIncomeStatements[b];
+                    if (statement != null && !ReferenceEquals(statement.Address, null))
+                    {
+                        _runs.Add(statement.Address, statement.TotalProfit);
+                    }
+                }
+            }
+        }
+
+        // True if the game's daily statements show a profit at this business on each of the last so-many days: from the
+        // morning's runs (Runs). An address that is the game's "no address" is walked for as it always was.
+        private bool ProfitRun(BuildingRegistration reg, int today, out float total)
         {
             total = 0f;
             GameInstance save = Save;
@@ -760,6 +814,19 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
+            Address address = reg.Address;
+            if (!ReferenceEquals(address, null) && !(string.IsNullOrEmpty(address.streetName) && address.streetNumber == 0))
+            {
+                return _runs.Ran(address, MacroCatalogue.CopycatDays, out total);
+            }
+            return ProfitRunWalk(reg, today, out total);
+        }
+
+        // The walk for one business, for an address equal to the game's "no address" (a statement with none matches it).
+        private static bool ProfitRunWalk(BuildingRegistration reg, int today, out float total)
+        {
+            total = 0f;
+            GameInstance save = Save;
             int days = 0;
             int from = today - MacroCatalogue.CopycatDays;
             List<FinancialSummary> summaries = save.financialSummaries;

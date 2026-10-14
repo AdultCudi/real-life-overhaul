@@ -348,18 +348,6 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        public static CompanyShop ShopAt(List<CompanyShop> shops, string place)
-        {
-            for (int i = 0; i < shops.Count; i++)
-            {
-                if (string.Equals(shops[i].File.Place, place, StringComparison.Ordinal))
-                {
-                    return shops[i];
-                }
-            }
-            return null;
-        }
-
         // ---------------------------------------------------------------- the game's books
 
         /// <summary>
@@ -375,6 +363,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             int from = today - 7, looked = 0;
+            IndexShops(shops);
             for (int i = summaries.Count - 1; i >= 0 && looked < CompanyCatalogue.BooksDays; i--, looked++)
             {
                 FinancialSummary summary = summaries[i];
@@ -389,7 +378,7 @@ namespace RealLifeOverhaul.Economy
                 for (int b = 0; b < summary.businessIncomeStatements.Count; b++)
                 {
                     FinancialSummary.BusinessIncomeStatement statement = summary.businessIncomeStatements[b];
-                    CompanyShop shop = statement != null ? ShopOf(shops, statement.Address) : null;
+                    CompanyShop shop = statement != null ? ShopOf(statement.Address) : null;
                     if (shop == null)
                     {
                         continue;
@@ -409,16 +398,27 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private static CompanyShop ShopOf(List<CompanyShop> shops, Address address)
+        // The businesses of a read by their address (the first at each, as a walk finds it; one with no address, or the
+        // game's "no address", is found by none): made at the start of each read, so that a statement or an employee is a
+        // look-up, not a walk of the businesses.
+        private static readonly Dictionary<Address, CompanyShop> ByAddress = new Dictionary<Address, CompanyShop>(64);
+
+        private static void IndexShops(List<CompanyShop> shops)
         {
-            for (int i = 0; address != null && i < shops.Count; i++)
+            ByAddress.Clear();
+            for (int i = 0; i < shops.Count; i++)
             {
-                if (shops[i].Address != null && shops[i].Address == address)
+                Address a = shops[i].Address;
+                if (a != null && !ByAddress.ContainsKey(a))   // (Address != null: neither none nor the game's "no address")
                 {
-                    return shops[i];
+                    ByAddress.Add(a, shops[i]);
                 }
             }
-            return null;
+        }
+
+        private static CompanyShop ShopOf(Address address)
+        {
+            return !ReferenceEquals(address, null) && ByAddress.TryGetValue(address, out CompanyShop shop) ? shop : null;
         }
 
         /// <summary>One day of a business in the game's books: its customers (the order history), its takings and its profit (the daily statement). False if the game has no statement for that day.</summary>
@@ -522,6 +522,7 @@ namespace RealLifeOverhaul.Economy
             }
             List<EmployeeInstance> all = Save != null ? Save.EmployeeInstances : null;
             EmployeeInstance self = Self();
+            IndexShops(shops);
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance e = all[i];
@@ -529,7 +530,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                CompanyShop shop = ShopOf(shops, e.assignedAddress);
+                CompanyShop shop = ShopOf(e.assignedAddress);
                 if (shop == null)
                 {
                     continue;   // not at a business that takes money (a headquarters, a warehouse): outside the wage market

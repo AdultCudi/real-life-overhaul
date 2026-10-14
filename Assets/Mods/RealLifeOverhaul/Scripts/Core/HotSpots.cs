@@ -17,7 +17,10 @@ namespace RealLifeOverhaul
     ///
     /// The directors' one-second timers open one in the method their tick calls ("Tech: TechDirector.Tick", and each
     /// follower of the credit side's second, "Economy: EstateDirector.Second"), never round a yield, so that the time
-    /// the engine counts under "coroutines and timers" has the mod's names too.
+    /// the engine counts under "coroutines and timers" has the mod's names too. Every step of a coroutine started through
+    /// Core/Guard.Routine, and every handler Core/Guard wraps (the game's events, UnityEvent listeners, the questions the
+    /// game asks the mod), is timed by the guard itself under "Coroutine: Class.Method", "Event: ...", "Listener: ...",
+    /// "Asked: ..." and "Callback: ..." (Guard.RoutineSlot, Guard.HandlerSlot): nothing the mod runs is left out.
     ///
     /// While the session record is off (as the mod ships) a scope is one flag test and nothing else. While it is
     /// on, a scope is two reads of the clock and one of the frame count, and a few additions into fixed arrays:
@@ -39,7 +42,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class HotSpots
     {
-        public const int Most = 384;       // names that can be told apart; any more share the last one
+        public const int Most = 768;       // names that can be told apart (the Updates, and every coroutine and handler the guard wraps); any more share the last one
         public const int AllocEvery = 8;   // one frame in this many is a sample of the heap, where only its size can be read
 
         /// <summary>One frame in this many is a sample of the heap: <see cref="AllocEvery"/>, or 1 where the reads are exact.</summary>
@@ -114,6 +117,37 @@ namespace RealLifeOverhaul
 
         /// <summary>The name a number was given.</summary>
         public static string Name(int slot) => slot >= 0 && slot < Most && Names[slot] != null ? Names[slot] : "unnamed";
+
+        /// <summary>
+        /// "Class.Method" as the code is written, for a slot of a coroutine or a handler (Core/Guard.RoutineSlot and
+        /// HandlerSlot): out of the classes the compiler makes for lambdas and coroutines ("&lt;&gt;c", "&lt;&gt;c__DisplayClass4_0",
+        /// "&lt;Tick&gt;d__12") to the class they are written in, and a method the compiler made ("&lt;Awake&gt;b__12_0") by the method
+        /// it is written in. A coroutine (no method given) is named by the method its class was made from; a class written by
+        /// hand as an IEnumerator by its MoveNext. Asked once per coroutine or handler method, never per frame.
+        /// </summary>
+        public static string Written(Type type, string method)
+        {
+            string inside = null;
+            while (type != null && type.Name.IndexOf('<') >= 0)
+            {
+                inside = inside ?? Between(type.Name);
+                if (type.DeclaringType == null)
+                {
+                    break;
+                }
+                type = type.DeclaringType;
+            }
+            string name = method != null && method.IndexOf('<') >= 0 ? Between(method) : method;
+            return (type != null ? type.Name : "a handler") + "." + (name ?? inside ?? "MoveNext");
+        }
+
+        // The name between the compiler's angle brackets ("Tick" of "<Tick>d__12"); null when there is none ("<>c").
+        private static string Between(string compiled)
+        {
+            int open = compiled.IndexOf('<');
+            int close = compiled.IndexOf('>', open + 1);
+            return open >= 0 && close > open + 1 ? compiled.Substring(open + 1, close - open - 1) : null;
+        }
 
         /// <summary>One scope: what <see cref="Time"/> returns, closed at the end of its using block.</summary>
         public readonly struct Scope : IDisposable

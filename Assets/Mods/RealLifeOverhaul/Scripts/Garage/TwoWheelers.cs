@@ -52,6 +52,7 @@ namespace RealLifeOverhaul
         private int _helmetFineDay = -1;
         private float _nextPoliceLook;
         private bool _failed;
+        private bool _offBare;          // with the option off, the last walk over the player's scooters left none dressed
 
         // the stand's list of what is for sale
         private readonly List<Action> _acts = new List<Action>(8);
@@ -633,9 +634,11 @@ namespace RealLifeOverhaul
                     _places.Tick(gm.playerController.transform.position, on && !BuildingManager.IsInsideBuilding);
                 }
 
-                // Scooters the game has spawned that are ours: dressed when the option is on, undressed when it is off.
-                List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
-                for (int i = 0; i < all.Count; i++)
+                // Scooters the game has spawned that are ours: dressed when the option is on, undressed when it is off. Off, once
+                // a walk has left none dressed, the game's later scooters have nothing of the mod's on them: no walk after that.
+                List<VehicleController> all = on || !_offBare ? VehicleHelper.AllPlayerVehicles : null;
+                bool dressed = false;
+                for (int i = 0; all != null && i < all.Count; i++)
                 {
                     var scooter = all[i] as ScooterController;
                     if (scooter == null || scooter.vehicleInstance == null)
@@ -665,6 +668,14 @@ namespace RealLifeOverhaul
                     {
                         mount.Detach();
                     }
+                    else if (!on && mount != null)
+                    {
+                        dressed = true;   // (ridden: undressed at a later second)
+                    }
+                }
+                if (all != null)
+                {
+                    _offBare = !on && !dressed;
                 }
                 if (!on || save == null)
                 {

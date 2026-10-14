@@ -351,10 +351,11 @@ namespace RealLifeOverhaul.Flare
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {
-                FlareSource news = FlareRules.ShopDay(_file, FlareGame.Place(shops[i]), FlareGame.Takings(shops[i]), day);
+                string place = FlareGame.Place(shops[i]);
+                FlareSource news = FlareRules.ShopDay(_file, place, FlareGame.Takings(shops[i]), day);
                 if (news != FlareSource.None)
                 {
-                    Made(FlareRules.Draft(_file, news, day, 8, -1, FlareGame.Place(shops[i]), FlareGame.Name(shops[i]), 0));
+                    Made(FlareRules.Draft(_file, news, day, 8, -1, place, FlareGame.Name(shops[i]), 0));
                 }
             }
             if (r.FollowersAfter != r.FollowersBefore || r.ReputationAfter != r.ReputationBefore)

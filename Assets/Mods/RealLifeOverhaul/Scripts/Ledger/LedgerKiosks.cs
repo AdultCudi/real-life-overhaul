@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Ledger
                 Clear();
                 return;
             }
-            string key = Place(home.StreetName, home.StreetNumber);
+            string key = HomeKey(home.StreetName, home.StreetNumber);
             if (state.KiosksFor != key)
             {
                 Clear();
@@ -644,6 +644,21 @@ namespace RealLifeOverhaul.Ledger
                 _root = null;
             }
         }
+
+        // The home's place key, asked every second: made again only when the home changed (no string otherwise).
+        private string HomeKey(string street, int number)
+        {
+            if (_homeKey == null || !ReferenceEquals(street, _homeKeyStreet) || number != _homeKeyNumber)
+            {
+                _homeKeyStreet = street;
+                _homeKeyNumber = number;
+                _homeKey = Place(street, number);
+            }
+            return _homeKey;
+        }
+
+        private string _homeKey, _homeKeyStreet;   // the home's key, and the street and number it was made from
+        private int _homeKeyNumber;
 
         /// <summary>A building by its address, as the mod's other features write a place: the street, a tilde, the number.</summary>
         public static string Place(string street, int number)

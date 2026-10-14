@@ -276,7 +276,7 @@ namespace RealLifeOverhaul
             Vector3 at = body.position;
             float halfWidth = Mathf.Max(0.8f, car.colliderWidth * 0.5f);
             // A lane running beside it on that side is somebody's lane, not the roadside.
-            if (TrafficManager.Instance.GetClosestWaypoint(at + forward * 6f + right * 3.3f, 1.7f) != null)
+            if (TrafficTools.ClosestWaypoint(at + forward * 6f + right * 3.3f, 1.7f) != null)
             {
                 return 0f;
             }

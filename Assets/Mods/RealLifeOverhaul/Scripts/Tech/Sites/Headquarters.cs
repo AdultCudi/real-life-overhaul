@@ -31,7 +31,9 @@ namespace RealLifeOverhaul.Tech
     /// and inside, that company's lobby is furnished (LobbyView) and the rest of its floor fitted out round it (FitOut/
     /// FitView, from TechSites). Careers sends the player there for a job at a company (CareersBridges.Headquarters), and
     /// the player's desk is on that company's floor. Nothing of it is saved. Nothing here runs by itself: TechSites ticks
-    /// it once a second.
+    /// it once a second. A choice (once a game day, and when a tower's building is let) looks at the city's office
+    /// buildings that can ever be a tower, listed once a city in the city's order (about 60 of some 2,000 buildings: the
+    /// type, the fence, the DLC and the doors never change), so it costs tens of microseconds.
     /// </summary>
     internal sealed class Headquarters
     {
@@ -81,6 +83,8 @@ namespace RealLifeOverhaul.Tech
         private readonly List<Tower> _towers = new List<Tower>(4);
         private readonly List<CityBuildingController> _candidates = new List<CityBuildingController>(64);
         private readonly List<HqCandidate> _rows = new List<HqCandidate>(64);
+        private readonly List<CityBuildingController> _offices = new List<CityBuildingController>(96);   // the city's buildings that can ever be a tower, in its order
+        private CityBuildingController[] _officesOf;                                                       // the city's list they were read from
         private int _waited;
         private int _day = -1;
         private int _look;
@@ -197,6 +201,33 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The same for a company's floor.</summary>
         public static bool Open(Hq hq) => hq != null && Open(hq.Tower);
 
+        // The city's buildings that can ever be a tower, in the city's order: an office of the base game, outside any
+        // private fence, with a door and a floor. None of that changes in a city, so they are listed once for it (a
+        // building not yet read is kept in the list and looked at again with every choice).
+        private void OfficesOf(CityBuildingController[] buildings)
+        {
+            if (ReferenceEquals(buildings, _officesOf))
+            {
+                return;
+            }
+            _officesOf = buildings;
+            _offices.Clear();
+            for (int i = 0; i < buildings.Length; i++)
+            {
+                CityBuildingController b = buildings[i];
+                if (b != null && (b.building == null || CanEverBe(b)))
+                {
+                    _offices.Add(b);
+                }
+            }
+        }
+
+        private static bool CanEverBe(CityBuildingController b)
+        {
+            return b.building.BuildingType == Office && !GameMembers.Fenced(b.building) && (int)b.building.requiredDLC == 0 && !b.building.IsHamptonsHouse() && b.entranceDoors != null
+                   && b.entranceDoors.Length > 0 && b.building.totalSqm > 0;
+        }
+
         // The choice, made again from the city as it is now. Only what changed is put in the book again.
         private void Pick()
         {
@@ -207,13 +238,13 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             Picked = true;
+            OfficesOf(buildings);
             _candidates.Clear();
             _rows.Clear();
-            for (int i = 0; i < buildings.Length; i++)
+            for (int i = 0; i < _offices.Count; i++)
             {
-                CityBuildingController b = buildings[i];
-                if (b == null || b.building == null || b.building.BuildingType != Office || Offices.Conversions.Holds(b.building) || b.building.SpecialService != null || GameMembers.Fenced(b.building)
-                    || (int)b.building.requiredDLC != 0 || b.building.IsHamptonsHouse() || b.entranceDoors == null || b.entranceDoors.Length == 0 || b.building.totalSqm <= 0)
+                CityBuildingController b = _offices[i];
+                if (b == null || b.building == null || !CanEverBe(b) || Offices.Conversions.Holds(b.building) || b.building.SpecialService != null)
                 {
                     continue;
                 }

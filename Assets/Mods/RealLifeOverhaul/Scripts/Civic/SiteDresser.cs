@@ -46,7 +46,8 @@ namespace RealLifeOverhaul
     /// (working hours, a weekday, no rain, nothing else going on beside it).
     ///
     /// Budget: at most 3 sites set out, at most about 60 prop objects for the three (a scaffold
-    /// of five bays and four lifts is 43), 3 people. Nothing per frame.
+    /// of five bays and four lifts is 43), 3 people. Nothing per frame; at most one site set out
+    /// a tick (each is some tens of physics and navigation queries and its props).
     /// </summary>
     public sealed class SiteDresser
     {
@@ -233,6 +234,7 @@ namespace RealLifeOverhaul
                 {
                     _retry[site.Id] = now + 45f;
                 }
+                break;   // one site a tick: each is some tens of physics and navigation queries and its props, and none is set out in view
             }
 
             Crew(now, player, day, hour, crewAllowed);

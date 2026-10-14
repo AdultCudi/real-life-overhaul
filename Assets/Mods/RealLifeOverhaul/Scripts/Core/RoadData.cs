@@ -12,7 +12,11 @@ namespace RealLifeOverhaul
     /// call (Object.FindObjectsOfType), and each of the five used to call it for itself: the road map the first time
     /// it was wanted in a city and the driving school at the start of every lesson and every test, both in the
     /// middle of play, a frame of over 100 ms each time. Now there is one search per city, made behind the loading
-    /// screen (Core/SceneFinds, ScenePrewarm), and every later question is one comparison.
+    /// screen (Core/SceneFinds, ScenePrewarm), and every later question is one comparison. Whoever asks first behind
+    /// the loading screen (ScenePrewarm goes through its pieces last handed over first) makes that search; the city's own
+    /// piece (<see cref="Prewarm"/>) then finds it made and searches nothing. In play the scene is never searched: a city
+    /// without road data is asked again only behind the next black screen, loading screen or pause (it used to be a frame
+    /// of some 75 ms every five seconds of play while none was found).
     /// </summary>
     public static class RoadData
     {
@@ -26,7 +30,7 @@ namespace RealLifeOverhaul
         {
             get
             {
-                if (_scene == null && Time.unscaledTime >= _retryAt)
+                if (_scene == null && SceneFinds.Hidden && Time.unscaledTime >= _retryAt)
                 {
                     CurrentSceneData[] found = SceneFinds.All<CurrentSceneData>("roads: the traffic system's road data being looked for (a search of the whole scene, once a city)", FindObjectsInactive.Include);
                     // The one the traffic system itself takes is the one that is switched on; a spare without lane points is no use to anyone.
@@ -59,12 +63,18 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Behind the loading screen: the one search of this city. Always done with (a later question asks again if nothing was there).</summary>
+        /// <summary>
+        /// Behind the loading screen: the one search of this city, unless a piece that ran before this one has made it already
+        /// (what it found is this city's: the last city's object went with its scene). Always done with (a later question
+        /// behind a black screen asks again if nothing was there).
+        /// </summary>
         public static bool Prewarm()
         {
-            _retryAt = 0f;
-            _scene = null;
-            _ = Scene;
+            if (_scene == null)
+            {
+                _retryAt = 0f;
+                _ = Scene;
+            }
             return true;
         }
     }

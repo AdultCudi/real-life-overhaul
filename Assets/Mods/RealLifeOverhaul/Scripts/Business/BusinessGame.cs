@@ -15,11 +15,14 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Everything business pressure reads from or does to the game, in one place. Each change is to
     /// a field or through a method the game itself uses for the same thing, is bounded by the
-    /// catalogue, and writes one line to the log saying what was changed from what to what:
+    /// catalogue, and writes one line to the log saying what was changed from what to what (the
+    /// footfall of every feature's writes: one line a round, Core/CustomerDraw, and one for an
+    /// issue's own change, <see cref="Said"/>):
     ///   money        GameManager.ChangeMoneySafe with the business's address, never forced;
     ///   footfall     the business's promotion figure (recomputed by the game daily and whenever
     ///                marketing changes, so it heals itself), then the game's own regeneration
-    ///                of the customers still to come today;
+    ///                of the customers still to come today (Core/CustomerDraw: once, spread over
+    ///                frames within the hour, and not where they are drawn with the figure already);
     ///   closure      BuildingRegistration.TemporarilyClose, the switch on the business's own page;
     ///   theft        stolenItemsCost, which the game books as Theft and clears each night;
     ///   wages        EmployeeInstance.hourlyWage, as the game's own poach counter-offer writes it;
@@ -120,10 +123,28 @@ namespace RealLifeOverhaul
             return count;
         }
 
+        /// <summary>A business's place, as the save keeps it (BusinessState.PlaceKey). Made once a registration and kept while its street and number are the same: asked on every footfall write and look-up, it builds nothing then.</summary>
         public static string Place(BuildingRegistration reg)
         {
-            return BusinessState.PlaceKey(reg.StreetName, reg.StreetNumber);
+            string street = reg.StreetName;
+            int number = reg.StreetNumber;
+            Fresh();
+            if (Places.TryGetValue(reg, out PlaceKey known) && known.Number == number && (ReferenceEquals(known.Street, street) || string.Equals(known.Street, street, StringComparison.Ordinal)))
+            {
+                return known.Key;
+            }
+            string key = BusinessState.PlaceKey(street, number);
+            Places[reg] = new PlaceKey { Street = street, Number = number, Key = key };
+            return key;
         }
+
+        private sealed class PlaceKey
+        {
+            public string Street, Key;
+            public int Number;
+        }
+
+        private static readonly Dictionary<BuildingRegistration, PlaceKey> Places = new Dictionary<BuildingRegistration, PlaceKey>(64);
 
         /// <summary>The player's business at a remembered place, or null if it is no longer theirs (sold, closed down).</summary>
         public static BuildingRegistration Find(string place)
@@ -366,10 +387,27 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- footfall
 
+        // What was last written into a business's figure, and from what: while the game has not recomputed the figure (it
+        // makes a new Promotion each time, BusinessHelper.UpdatePromotion) and nothing it was worked out from has moved,
+        // writing it again would give the very same figure.
+        private sealed class Wrote
+        {
+            public Promotion Promotion;
+            public int Total, Own, Percent, Ambient, Interior;
+            public float Multiplier;
+        }
+
+        private static readonly Dictionary<BuildingRegistration, Wrote> Written = new Dictionary<BuildingRegistration, Wrote>(64);
+        private static GameInstance _writtenSave;   // the save those are of: another one starts afresh
+
         /// <summary>
-        /// Puts a business's promotion at what its own figure would be, changed by so many percent of
-        /// customers (zero: exactly its own). The game's figure is recomputed first, so repeated calls never
-        /// add up. With <paramref name="regenerate"/> the customers still to come today are drawn again.
+        /// Puts a business's promotion at what its own figure would be, changed by so many percent of customers (zero:
+        /// exactly its own), with whatever <see cref="Ambient"/> and <see cref="Interior"/> add. The game's figure is
+        /// recomputed first, so repeated calls never add up, unless the figure is still the one this wrote last time, the
+        /// game having recomputed nothing since, and every part is as it was then: then it is left as it stands (the hourly
+        /// round over every business, which only has to put the figure back where the game wrote its own over it, costs a
+        /// few look-ups a business). With <paramref name="regenerate"/> the customers still to come today are drawn again
+        /// with the figure (Core/CustomerDraw: once, spread, within the hour; not at all if they are drawn with it already).
         /// </summary>
         public static bool Footfall(BuildingRegistration reg, int percent, bool regenerate)
         {
@@ -379,24 +417,34 @@ namespace RealLifeOverhaul
                 {
                     return false;   // the game would never recompute it: left alone
                 }
-                BusinessHelper.UpdatePromotion(reg);
-                if (reg.promotion == null)
-                {
-                    return false;
-                }
-                int own = reg.promotion.total;
                 int ambient = Ambient != null ? Ambient(reg) : 0;
                 int interior = Interior != null ? Interior(reg) : 0;
-                reg.promotion.total = BusinessCatalogue.Written(own, percent, ambient, interior, SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier);
-                LastOwn = own;
-                LastWritten = reg.promotion.total;
+                float multiplier = SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier;
+                Wrote w = Last(reg);
+                if (w.Promotion == null || !ReferenceEquals(w.Promotion, reg.promotion) || reg.promotion.total != w.Total || w.Percent != percent || w.Ambient != ambient
+                    || w.Interior != interior || w.Multiplier != multiplier)
+                {
+                    CustomerDraw.Writing(reg);
+                    BusinessHelper.UpdatePromotion(reg);
+                    if (reg.promotion == null)
+                    {
+                        w.Promotion = null;
+                        return false;
+                    }
+                    w.Own = reg.promotion.total;
+                    reg.promotion.total = BusinessCatalogue.Written(w.Own, percent, ambient, interior, multiplier);
+                    w.Promotion = reg.promotion;
+                    w.Total = reg.promotion.total;
+                    w.Percent = percent;
+                    w.Ambient = ambient;
+                    w.Interior = interior;
+                    w.Multiplier = multiplier;
+                }
+                LastOwn = w.Own;
+                LastWritten = w.Total;
                 if (regenerate)
                 {
-                    CustomerDraw.Redraw(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
-                    Logger?.Info("Business: footfall at " + Name(reg) + " " + (percent >= 0 ? "+" : string.Empty) + percent + " %"
-                                 + (ambient != 0 ? " and " + (ambient > 0 ? "+" : string.Empty) + ambient + " % from the city's economy" : string.Empty)
-                                 + (interior != 0 ? " and " + (interior > 0 ? "+" : string.Empty) + interior + " % from its interior" : string.Empty) + ": promotion " + own + " -> "
-                                 + reg.promotion.total + ".");
+                    CustomerDraw.Rewritten(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
                 }
                 return true;
             }
@@ -405,6 +453,43 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
                 return false;
             }
+        }
+
+        // Another save (a load): what was kept of the last one's registrations is dropped.
+        private static void Fresh()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (!ReferenceEquals(save, _writtenSave))
+            {
+                Written.Clear();
+                Places.Clear();
+                _writtenSave = save;
+            }
+        }
+
+        private static Wrote Last(BuildingRegistration reg)
+        {
+            Fresh();
+            if (!Written.TryGetValue(reg, out Wrote w))
+            {
+                w = new Wrote();
+                Written[reg] = w;
+            }
+            return w;
+        }
+
+        /// <summary>One line for a change of business pressure's own at a business (an issue's footfall begun or ended): what was written, from what.</summary>
+        public static void Said(BuildingRegistration reg, int percent)
+        {
+            Wrote w = reg != null && Written.TryGetValue(reg, out Wrote known) ? known : null;
+            if (w == null || w.Promotion == null)
+            {
+                return;
+            }
+            Logger?.Info("Business: footfall at " + Name(reg) + " " + (percent >= 0 ? "+" : string.Empty) + percent + " %"
+                         + (w.Ambient != 0 ? " and " + (w.Ambient > 0 ? "+" : string.Empty) + w.Ambient + " % from the city's economy" : string.Empty)
+                         + (w.Interior != 0 ? " and " + (w.Interior > 0 ? "+" : string.Empty) + w.Interior + " % from its interior" : string.Empty) + ": promotion " + w.Own + " -> "
+                         + w.Total + ".");
         }
 
         // ---------------------------------------------------------------- closure

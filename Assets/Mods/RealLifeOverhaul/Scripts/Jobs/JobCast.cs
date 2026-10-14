@@ -18,9 +18,14 @@ namespace RealLifeOverhaul
     /// Two characters at most, the jobs' own (never the accident pool's, which scenes must be
     /// able to count on), built the first time a job needs somebody and reused after that.
     /// One costs what one of the game's pedestrians costs while drawn and nothing on the shelf.
-    /// A person who has been seen gets a new look while shelved, a moment after leaving, so the
-    /// next fare is not the same face. Nothing here runs by itself: the director calls
-    /// <see cref="Cull"/> a few times a second while somebody is out.
+    /// A person who has been seen gets a new look while shelved, a moment after leaving and when
+    /// People/Looks says one may be built (one every few seconds over all the mod's people, or at
+    /// once behind the loading screen or a pause: a look is a mesh merge, a few milliseconds), so the
+    /// next fare is not the same face; only a person wanted before that is dressed on the spot, as
+    /// before. A seeded person (an employer's boss, a colleague) keeps their look on the shelf and is
+    /// not dressed again while it is still theirs. Nothing here runs by itself: the director calls
+    /// <see cref="Cull"/> a few times a second while somebody is out, and the new looks' coroutine
+    /// tests a flag a frame while it waits for its turn.
     /// </summary>
     public sealed class JobCast
     {
@@ -37,6 +42,8 @@ namespace RealLifeOverhaul
         private readonly bool[] _stale = new bool[Size];
         private readonly bool[] _fixed = new bool[Size];    // wearing a seeded look: rolled anew for whoever is put out next
         private readonly bool[] _seated = new bool[Size];   // riding in a car: off the street, still the same person, still held
+        private readonly int[] _wears = new int[Size];      // the seed of the look each wears (0: a look of the game's random sequence)...
+        private readonly int[] _wearsHow = new int[Size];   // ...and how it was rolled: bit 0 a woman, bit 1 formal wear
         private readonly MonoBehaviour _host;
         private readonly IModLogger _logger;
         private Coroutine _refresh;
@@ -67,6 +74,7 @@ namespace RealLifeOverhaul
                     {
                         _people[i] = Create(_host.transform.position);
                         Shelve(_people[i]);
+                        Wear(i, 0, false, false);
                     }
                 }
             }
@@ -75,6 +83,18 @@ namespace RealLifeOverhaul
                 _logger?.Error(e);
             }
             return true;
+        }
+
+        // The look a slot's person wears now: rolled from a seed (and how), or 0 for one of the game's random sequence.
+        private void Wear(int slot, int seed, bool female, bool formal)
+        {
+            _wears[slot] = seed;
+            _wearsHow[slot] = seed == 0 ? 0 : (female ? 1 : 0) | (formal ? 2 : 0);
+        }
+
+        private bool Wears(int slot, int seed, bool female, bool formal)
+        {
+            return seed != 0 && _wears[slot] == seed && _wearsHow[slot] == ((female ? 1 : 0) | (formal ? 2 : 0));
         }
 
         /// <summary>True while somebody is out on the street.</summary>
@@ -113,11 +133,14 @@ namespace RealLifeOverhaul
                 {
                     person = Create(spot, seed, female, formal);
                     _people[slot] = person;
+                    Wear(slot, seed, female, formal);
                 }
-                else if (_stale[slot] || seed != 0 || _fixed[slot])
+                else if (seed != 0 ? !Wears(slot, seed, female, formal) : _stale[slot] || _fixed[slot])
                 {
+                    // (a seeded person still in their own look on the shelf is put out as they are: the same seed, the same look)
                     person.Character.gameObject.SetActive(true);
                     Dress(person, seed, female, formal);
+                    Wear(slot, seed, female, formal);
                 }
                 _stale[slot] = false;
                 _fixed[slot] = seed != 0;
@@ -369,33 +392,60 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A new look for whoever left the street, one at a time, while hidden and nothing is going on.
+        private const float RefreshAfter = 0.75f;   // seconds after leaving before a new look is thought of
+        private static readonly int HotRefresh = HotSpots.Slot("Jobs: JobCast.Refresh");
+
+        // A new look for whoever left the street, one at a time, while shelved: a moment after leaving, then each when
+        // People/Looks says one may be built (Looks.Free: one every few seconds over all the pools, or at once while hidden).
         private IEnumerator Refresh()
         {
-            var wait = new WaitForSeconds(0.75f);
-            yield return wait;
+            yield return new WaitForSeconds(RefreshAfter);
+            while (true)
+            {
+                int slot = StaleSlot();
+                if (slot < 0)
+                {
+                    break;
+                }
+                if (!Looks.Free)
+                {
+                    yield return null;   // (a flag a frame while it waits its turn)
+                    continue;
+                }
+                using (HotSpots.Time(HotRefresh))
+                {
+                    StreetActor person = _people[slot];
+                    try
+                    {
+                        GameObject body = person.Character.gameObject;
+                        body.SetActive(true);
+                        Dress(person);
+                        Wear(slot, 0, false, false);
+                        body.SetActive(false);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger?.Error(e);
+                    }
+                    _stale[slot] = false;
+                }
+                yield return null;
+            }
+            _refresh = null;
+        }
+
+        // A person on the shelf who has been seen and wants a new look, or -1.
+        private int StaleSlot()
+        {
             for (int i = 0; i < Size; i++)
             {
                 StreetActor person = _people[i];
-                if (!_stale[i] || _out[i] || person == null || !person.IsValid)
+                if (_stale[i] && !_out[i] && person != null && person.IsValid)
                 {
-                    continue;
+                    return i;
                 }
-                try
-                {
-                    GameObject body = person.Character.gameObject;
-                    body.SetActive(true);
-                    Dress(person);
-                    body.SetActive(false);
-                }
-                catch (Exception e)
-                {
-                    _logger?.Error(e);
-                }
-                _stale[i] = false;
-                yield return wait;
             }
-            _refresh = null;
+            return -1;
         }
     }
 }

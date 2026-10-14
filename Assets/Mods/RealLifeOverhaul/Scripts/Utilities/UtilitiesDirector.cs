@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.Utilities
         private Action _onSave;
         private Action _onDesk;
         private readonly List<PlaceInfo> _places = new List<PlaceInfo>(16);
+        private readonly AccountIndex _index = new AccountIndex();   // the accounts by place and service, for the day's and the hour's passes
         private readonly StringBuilder _text = new StringBuilder(256);
         private UtilitiesOffice _office;
         private DoorPanel _door;
@@ -360,13 +361,14 @@ namespace RealLifeOverhaul.Utilities
         {
             UtilitiesGame.Places(_places);
             int newOwned = 0;
+            _index.Build(_state);
             for (int p = 0; p < _places.Count; p++)
             {
                 PlaceInfo place = _places[p];
                 for (int s = 0; s < UtilitiesCatalogue.Services; s++)
                 {
                     var service = (Service)s;
-                    Account a = _state.Find(place.Place, service);
+                    Account a = _index.Find(_state, place.Place, service);
                     if (a == null || a.State == SupplyState.Closed)
                     {
                         if (a != null)
@@ -375,6 +377,7 @@ namespace RealLifeOverhaul.Utilities
                         }
                         a = place.Owned ? UtilitiesRules.Temporary(place.Place, service, place.Kind, today) : UtilitiesRules.Rented(place.Place, service, place.Kind, today);
                         _state.Accounts.Add(a);
+                        _index.Put(_state, a);
                         if (place.Owned && s == 0)
                         {
                             newOwned++;
@@ -493,6 +496,7 @@ namespace RealLifeOverhaul.Utilities
             for (int d = from; d < today; d++)
             {
                 int season = CalendarRules.Season(d, GameCalendar.DaysPerYear);
+                _index.Build(_state);   // (the use of the day changes no account's place or service)
                 for (int p = 0; p < _places.Count; p++)
                 {
                     PlaceInfo place = _places[p];
@@ -501,7 +505,7 @@ namespace RealLifeOverhaul.Utilities
                     for (int s = 0; s < UtilitiesCatalogue.Services; s++)
                     {
                         var service = (Service)s;
-                        Account a = _state.Find(place.Place, service);
+                        Account a = _index.Find(_state, place.Place, service);
                         if (a != null)
                         {
                             UtilitiesRules.AddDay(a, UtilitiesRules.Use(service, place.Kind, place.Sqm, people, open, season), level, d);
@@ -620,12 +624,14 @@ namespace RealLifeOverhaul.Utilities
         private void Unconnected()
         {
             int today = UtilitiesGame.Today, graced = 0;
+            _index.Build(_state);
             for (int p = 0; p < _places.Count; p++)
             {
                 PlaceInfo place = _places[p];
-                if (NeedsNet(place) && !Online(place, today * 24 + 12))
+                bool needs = NeedsNet(place);
+                Account a = needs ? _index.Find(_state, place.Place, Service.Internet) : null;
+                if (needs && !Online(a, today * 24 + 12))
                 {
-                    Account a = _state.Find(place.Place, Service.Internet);
                     if (a == null || a.State == SupplyState.Closed || a.State == SupplyState.Cut)
                     {
                         if (InternetRules.InGrace(_state, place.Place, today))
@@ -694,7 +700,11 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>True if a place has a connection that works at an hour (hours from the save's first day).</summary>
         public bool Online(PlaceInfo place, int hour)
         {
-            Account a = _state.Find(place.Place, Service.Internet);
+            return Online(_state.Find(place.Place, Service.Internet), hour);
+        }
+
+        private static bool Online(Account a, int hour)
+        {
             return a != null && a.State == SupplyState.Active && !InternetRules.InOutage(a, hour);
         }
 
@@ -1047,10 +1057,11 @@ namespace RealLifeOverhaul.Utilities
             int hour = today * 24 + (SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0);
             bool homeDark = false, homeDry = false;
             BuildingRegistration inHome = HomeIn();
+            _index.Build(_state);
             for (int p = 0; p < _places.Count; p++)
             {
                 PlaceInfo place = _places[p];
-                Account power = _state.Find(place.Place, Service.Power), water = _state.Find(place.Place, Service.Water);
+                Account power = _index.Find(_state, place.Place, Service.Power), water = _index.Find(_state, place.Place, Service.Water);
                 bool dark = power != null && !UtilitiesRules.Supplied(power, today);
                 bool dry = water != null && !UtilitiesRules.Supplied(water, today);
                 if (place.Kind == PlaceKind.Home)
@@ -1063,7 +1074,7 @@ namespace RealLifeOverhaul.Utilities
                     continue;
                 }
                 bool needsWater = place.Kind == PlaceKind.FoodAndDrink || place.Kind == PlaceKind.Salon || place.Kind == PlaceKind.Gym;
-                bool offline = NeedsNet(place) && !Online(place, hour) && !InternetRules.InGrace(_state, place.Place, today);
+                bool offline = NeedsNet(place) && !Online(_index.Find(_state, place.Place, Service.Internet), hour) && !InternetRules.InGrace(_state, place.Place, today);
                 if (dark || (dry && needsWater) || offline)
                 {
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
