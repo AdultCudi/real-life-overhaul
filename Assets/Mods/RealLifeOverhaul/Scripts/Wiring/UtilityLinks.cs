@@ -155,7 +155,7 @@ namespace RealLifeOverhaul
                     e.What = UtilitiesText.T(what, "place", d.NameOf(a), "amount", amount);
                     if (a.Owed > 0 && kind <= 2)
                     {
-                        e.Money = PlannerText.T("reallife_planner_costs", "amount", amount);
+                        PlannerText.Costs(e, a.Owed, amount);
                     }
                     if (missed != null)
                     {

@@ -504,6 +504,8 @@ namespace RealLifeOverhaul
                             e.Start = p.Hour * 60;
                             e.End = ((p.Hour + p.Hours) % 24) * 60;
                             e.Attend = true;
+                            // a working day can be begun until a while after its hour (ProRules.CanStart); once begun it runs to its end
+                            e.JoinBy = j.TodayDay == day && j.ClockIn >= 0 ? -1 : p.Hour * 60 + ProRules.ClockLateMinutes;
                             bool home = ProRules.FromHome((WorkMode)j.Work, day);
                             if (!home && p.Place != Workplace.Hospital)
                             {
@@ -539,6 +541,7 @@ namespace RealLifeOverhaul
                             e.Start = a.InterviewHour * 60;
                             e.End = (a.InterviewHour + 1) * 60;
                             e.Attend = true;
+                            e.JoinBy = a.InterviewHour * 60 + ProRules.InterviewLateMinutes;   // the last minute it can be joined (CareersDirector.CanInterview)
                             if (a.Post.Work != (int)WorkMode.Remote && a.Post.Def.Place != Workplace.Hospital)
                             {
                                 e.Street = a.Post.Street;

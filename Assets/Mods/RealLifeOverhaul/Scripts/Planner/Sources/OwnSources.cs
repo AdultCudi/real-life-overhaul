@@ -2,10 +2,13 @@ using Helpers;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>The player's own notes (PlannerStore.Notes).</summary>
+    /// <summary>
+    /// The player's own entries (PlannerStore.Notes): one that is once on its day, one that repeats on each day of the
+    /// look it falls on, as (note, its number, the day).
+    /// </summary>
     public sealed class NoteSource : IPlannerSource
     {
-        public const string SourceId = "note";
+        public const string SourceId = PlannerStore.NoteSourceId;
 
         public string Id => SourceId;
         public bool Available => PlannerStore.Loaded;
@@ -15,21 +18,35 @@ namespace RealLifeOverhaul.Planner
             for (int i = 0; i < PlannerStore.Notes.Count; i++)
             {
                 PlannerNote note = PlannerStore.Notes[i];
-                PlannerEntry e = into.Add(SourceId, note.Id, 0, PlannerCategory.Note, note.Day);
-                if (e == null)
+                for (int day = PlannerStore.NextTime(note, fromDay); day >= 0 && day <= toDay; day = PlannerStore.NextTime(note, day + 1))
                 {
-                    continue;
+                    Add(note, day, into);
                 }
-                e.Own = true;
-                e.Done = note.Done;
-                e.Start = note.Start;
-                e.Street = note.Street;
-                e.Number = note.Number;
-                if (into.WantText)
-                {
-                    e.Title = note.Title;
-                    e.Where = note.Place;
-                }
+            }
+        }
+
+        private static void Add(PlannerNote note, int day, PlannerList into)
+        {
+            bool done;
+            if (!PlannerStore.Falls(note, day, out done))
+            {
+                return;
+            }
+            EntryId id = PlannerStore.NoteEntry(note, day);
+            PlannerEntry e = into.Add(SourceId, id.A, id.B, PlannerCategory.Note, day);
+            if (e == null)
+            {
+                return;
+            }
+            e.Own = true;
+            e.Done = done;
+            e.Start = note.Start;
+            e.Street = note.Street;
+            e.Number = note.Number;
+            if (into.WantText)
+            {
+                e.Title = note.Title;
+                e.Where = note.Place;
             }
         }
     }
@@ -100,7 +117,8 @@ namespace RealLifeOverhaul.Planner
             {
                 e.Title = PlannerText.T("reallife_planner_tax_title");
                 e.What = PlannerText.T("reallife_planner_tax_what");
-                e.Money = PlannerText.T("reallife_planner_costs", "amount", PlannerText.Money(TaxHelper.GetCurrentTaxesToPay()));
+                float owed = TaxHelper.GetCurrentTaxesToPay();
+                PlannerText.Costs(e, owed, PlannerText.Money(owed));
                 e.IfMissed = PlannerText.T("reallife_planner_tax_missed");
             }
         }

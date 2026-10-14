@@ -139,11 +139,18 @@ namespace RealLifeOverhaul.Planner
         public float X, Y, Z;
         public string Street;        // or one of the game's own addresses (street name and number)
         public int Number;
+        public float Owes;           // whole money the player has to pay on it, given with the texts where the source knows it; 0: nothing known
+
+        // where it is in the city: the point it has, or its address's door, found by the director when the texts are filled
+        public bool Placed;
+        public float PlaceX, PlaceZ;
 
         // worked out by PlannerLogic
         public PlannerState State;
         public bool Clash;
         public bool Next;
+        public PlannerEntry ClashWith;   // the entry it clashes with (the nearest in time; an overlap before a way too long)
+        public bool ClashReach;          // the clash is the way between the two places: longer than the time between them
 
         /// <summary>When it begins, in game minutes; an all-day entry begins with its day, a deadline at its last moment.</summary>
         public int Begins => Day * PlannerTime.MinutesPerDay + (Start >= 0 ? Start : Deadline && End >= 0 ? End : 0);
@@ -172,11 +179,12 @@ namespace RealLifeOverhaul.Planner
             Start = End = JoinBy = -1;
             Deadline = Attend = Done = Own = false;
             Title = Where = What = Money = IfMissed = Street = null;
-            HasPlace = false;
-            X = Y = Z = 0f;
+            HasPlace = Placed = false;
+            X = Y = Z = PlaceX = PlaceZ = Owes = 0f;
             Number = 0;
             State = PlannerState.Upcoming;
-            Clash = Next = false;
+            Clash = Next = ClashReach = false;
+            ClashWith = null;
         }
     }
 
@@ -246,7 +254,8 @@ namespace RealLifeOverhaul.Planner
         /// <summary>A look never holds more than this: a source gone wrong cannot fill the phone.</summary>
         public const int MostEntries = 400;
 
-        private static readonly Comparison<PlannerEntry> ByTime = Compare;
+        /// <summary>The agenda's order (made once): by day, then all day first, then by the clock, ties by who an entry is.</summary>
+        public static readonly Comparison<PlannerEntry> ByTime = Compare;
 
         /// <summary>A number for a word that is the same in every session and every version of the runtime: part of who an entry is, kept in the save with its reminder.</summary>
         public static int Stable(string text)
@@ -287,8 +296,17 @@ namespace RealLifeOverhaul.Planner
             return a.Id.A != b.Id.A ? (a.Id.A < b.Id.A ? -1 : 1) : a.Id.B.CompareTo(b.Id.B);
         }
 
-        /// <summary>Puts the list in order and works out every entry's state, the clashes and the one that is next.</summary>
+        /// <summary>Puts the list in order and works out every entry's state, the clashes (overlaps only) and the one that is next.</summary>
         public static void Arrange(PlannerList list, int nowMinutes)
+        {
+            Arrange(list, nowMinutes, 0);
+        }
+
+        /// <summary>
+        /// The same, and with a pace (hundredths of a metre a game minute, PlannerRules) two entries at places also
+        /// clash when the way from the one to the other is longer than the time between them. With 0 only overlaps count.
+        /// </summary>
+        public static void Arrange(PlannerList list, int nowMinutes, int pace)
         {
             List<PlannerEntry> items = list.Items;
             items.Sort(ByTime);
@@ -297,6 +315,8 @@ namespace RealLifeOverhaul.Planner
             {
                 PlannerEntry e = items[i];
                 e.Clash = false;
+                e.ClashReach = false;
+                e.ClashWith = null;
                 e.Next = false;
                 e.State = StateOf(e, nowMinutes);
             }
@@ -307,13 +327,15 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                for (int j = i + 1; j < items.Count && items[j].Day == a.Day; j++)
+                // In order, so only those after it: the same day and the next (a night shift runs past midnight).
+                for (int j = i + 1; j < items.Count && items[j].Day <= a.Day + 1; j++)
                 {
                     PlannerEntry b = items[j];
-                    if (Blocks(b) && a.Begins < b.Ends && b.Begins < a.Ends)
+                    bool reach;
+                    if (Blocks(b) && Clashing(a, b, pace, out reach))
                     {
-                        a.Clash = true;
-                        b.Clash = true;
+                        Mark(a, b, reach);
+                        Mark(b, a, reach);
                     }
                 }
             }
@@ -340,6 +362,63 @@ namespace RealLifeOverhaul.Planner
         private static bool Blocks(PlannerEntry e)
         {
             return e.Attend && e.Start >= 0 && !e.Done && e.State != PlannerState.Missed && e.State != PlannerState.Over;
+        }
+
+        /// <summary>
+        /// Whether two entries the player has to attend cannot both be kept: their hours overlap, or (with a pace, both
+        /// at known places) the later one begins sooner after the earlier ends than the way between them takes.
+        /// 'reach' says it is the way.
+        /// </summary>
+        public static bool Clashing(PlannerEntry a, PlannerEntry b, int pace, out bool reach)
+        {
+            reach = false;
+            if (a.Begins < b.Ends && b.Begins < a.Ends)
+            {
+                return true;
+            }
+            if (pace <= 0 || !a.Placed || !b.Placed)
+            {
+                return false;
+            }
+            PlannerEntry first = a.Begins <= b.Begins ? a : b, second = first == a ? b : a;
+            int travel = PlannerRules.TravelMinutes(PlannerRules.Metres(first.PlaceX, first.PlaceZ, second.PlaceX, second.PlaceZ), pace);
+            reach = travel > second.Begins - first.Ends;
+            return reach;
+        }
+
+        // An entry keeps the clash nearest in kind: an overlap is said before a way that is too long.
+        private static void Mark(PlannerEntry e, PlannerEntry with, bool reach)
+        {
+            if (!e.Clash || (e.ClashReach && !reach))
+            {
+                e.ClashWith = with;
+                e.ClashReach = reach;
+            }
+            e.Clash = true;
+        }
+
+        /// <summary>How many pairs of the day's entries clash, as Arrange found them with the same pace: the day's box counts them.</summary>
+        public static int ClashPairs(List<PlannerEntry> items, int day, int pace)
+        {
+            int pairs = 0;
+            for (int i = 0; i < items.Count; i++)
+            {
+                PlannerEntry a = items[i];
+                if (a.Day != day || !a.Clash || !Blocks(a))
+                {
+                    continue;
+                }
+                for (int j = i + 1; j < items.Count && items[j].Day <= day + 1; j++)
+                {
+                    PlannerEntry b = items[j];
+                    bool reach;
+                    if (b.Clash && Blocks(b) && Clashing(a, b, pace, out reach))
+                    {
+                        pairs++;
+                    }
+                }
+            }
+            return pairs;
         }
 
         public static PlannerState StateOf(PlannerEntry e, int nowMinutes)

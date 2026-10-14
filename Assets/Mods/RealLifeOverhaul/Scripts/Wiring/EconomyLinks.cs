@@ -177,7 +177,7 @@ namespace RealLifeOverhaul
                         {
                             e.Title = PlannerText.T("reallife_econ_plan_due_title");
                             e.What = PlannerText.T("reallife_econ_plan_due_what");
-                            e.Money = PlannerText.T("reallife_planner_costs", "amount", FinanceText.Money(due));
+                            PlannerText.Costs(e, due, FinanceText.Money(due));
                             e.IfMissed = PlannerText.T("reallife_econ_plan_due_missed");
                         }
                     }
@@ -197,8 +197,9 @@ namespace RealLifeOverhaul
                         {
                             e.Title = PlannerText.T("reallife_econ_plan_lender_title");
                             e.What = PlannerText.T("reallife_econ_plan_lender_what", "day", file.Shark.DueDay.ToString());
-                            e.Money = PlannerText.T("reallife_planner_costs", "amount", FinanceText.Money(SharkRules.OwedOnDueDay(file.Shark.Borrowed) > file.Shark.Owed && today < file.Shark.DueDay
-                                ? file.Shark.Owed + SharkRules.ADay(file.Shark.Borrowed) * (file.Shark.DueDay - today) : file.Shark.Owed));
+                            float owed = SharkRules.OwedOnDueDay(file.Shark.Borrowed) > file.Shark.Owed && today < file.Shark.DueDay
+                                ? file.Shark.Owed + SharkRules.ADay(file.Shark.Borrowed) * (file.Shark.DueDay - today) : file.Shark.Owed;
+                            PlannerText.Costs(e, owed, FinanceText.Money(owed));
                             e.IfMissed = PlannerText.T("reallife_econ_plan_lender_missed");
                         }
                     }
@@ -240,7 +241,7 @@ namespace RealLifeOverhaul
                             {
                                 e.Title = CreditDesk.Name(a);
                                 e.What = PlannerText.T("reallife_econ_plan_account_what", "lender", CreditDesk.LenderName(a));
-                                e.Money = PlannerText.T("reallife_planner_costs", "amount", FinanceText.Money(tomorrow));
+                                PlannerText.Costs(e, tomorrow, FinanceText.Money(tomorrow));
                                 e.IfMissed = PlannerText.T("reallife_econ_plan_account_missed");
                             }
                         }
@@ -255,7 +256,7 @@ namespace RealLifeOverhaul
                             {
                                 e.Title = PlannerText.T("reallife_econ_plan_minimum_title");
                                 e.What = PlannerText.T("reallife_econ_plan_minimum_what", "amount", FinanceText.Money(a.StatementLeft));
-                                e.Money = PlannerText.T("reallife_planner_costs", "amount", FinanceText.Money(a.MinimumLeft));
+                                PlannerText.Costs(e, a.MinimumLeft, FinanceText.Money(a.MinimumLeft));
                                 e.IfMissed = PlannerText.T("reallife_econ_plan_account_missed");
                             }
                         }

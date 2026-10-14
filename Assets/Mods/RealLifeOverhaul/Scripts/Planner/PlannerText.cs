@@ -101,6 +101,64 @@ namespace RealLifeOverhaul.Planner
             return amount.ToCurrencyFormat();
         }
 
+        /// <summary>An entry's "Costs $120", with the sum kept for the day's box (PlannerEntry.Owes). Words: the sum as its feature writes it.</summary>
+        public static void Costs(PlannerEntry entry, float amount, string words)
+        {
+            entry.Owes = amount > 0f ? amount : 0f;
+            entry.Money = T("reallife_planner_costs", "amount", words);
+        }
+
+        // ---------------------------------------------------------------- kinds, groups, tags
+
+        private static readonly string[] GroupKeys =
+        {
+            "reallife_planner_group_work", "reallife_planner_group_money", "reallife_planner_group_life", "reallife_planner_group_business"
+        };
+
+        /// <summary>The filter's words for the four groups (PlannerGroup), in their order.</summary>
+        public static string[] GroupKeyList => GroupKeys;
+
+        // The short word on an entry in the Week tab: the kind's own where it is short, a shorter one where it is not.
+        private static readonly string[] TagKeys =
+        {
+            "reallife_planner_cat_work", "reallife_planner_tag_court", "reallife_planner_tag_licence", "reallife_planner_cat_family",
+            "reallife_planner_cat_social", "reallife_planner_cat_travel", "reallife_planner_cat_city", "reallife_planner_cat_business",
+            "reallife_planner_cat_health", "reallife_planner_cat_money", "reallife_planner_cat_note"
+        };
+
+        public static string TagKey(PlannerCategory category)
+        {
+            int index = (int)category;
+            return index >= 0 && index < TagKeys.Length ? TagKeys[index] : TagKeys[TagKeys.Length - 1];
+        }
+
+        /// <summary>The tone a kind's tag is written in (the mod's tones, GameUi.CellTone): work and study yellow, money green, the rest plain; red is kept for a clash or a miss.</summary>
+        public static GameUi.CellTone TagTone(PlannerCategory category)
+        {
+            switch (PlannerRules.GroupOf(category))
+            {
+                case PlannerGroup.Work: return GameUi.CellTone.Yellow;
+                case PlannerGroup.Money: return GameUi.CellTone.Green;
+                default: return GameUi.CellTone.Plain;
+            }
+        }
+
+        /// <summary>"3 hours 20 minutes", "45 minutes": a stretch of game time.</summary>
+        public static string Span(int minutes)
+        {
+            minutes = minutes < 0 ? 0 : minutes;
+            int hours = minutes / 60, rest = minutes % 60;
+            if (hours == 0)
+            {
+                return T("reallife_planner_span_minutes", "minutes", rest.ToString());
+            }
+            if (rest == 0)
+            {
+                return T("reallife_planner_span_hours", "hours", hours.ToString());
+            }
+            return T("reallife_planner_span_both", "hours", hours.ToString(), "minutes", rest.ToString());
+        }
+
         /// <summary>A time of day as the game writes it, in the 12 or 24 hours of the game's own option (TimeHelper.GetFormattedTime).</summary>
         public static string Clock(int minutesOfDay)
         {
@@ -180,10 +238,30 @@ namespace RealLifeOverhaul.Planner
             switch (lead)
             {
                 case ReminderLead.AtTheTime: return "reallife_planner_lead_at";
+                case ReminderLead.QuarterBefore: return "reallife_planner_lead_quarter";
+                case ReminderLead.HalfHourBefore: return "reallife_planner_lead_half";
                 case ReminderLead.HourBefore: return "reallife_planner_lead_hour";
                 case ReminderLead.EveningBefore: return "reallife_planner_lead_evening";
+                case ReminderLead.LeaveBy: return "reallife_planner_lead_leave";
                 default: return "reallife_planner_lead_none";
             }
+        }
+
+        /// <summary>
+        /// The reminders an entry's box offers, in this order: none, 15, 30 and 60 minutes before, at the time, the
+        /// evening before, and (for one at a place) when to leave.
+        /// </summary>
+        public static readonly ReminderLead[] Leads =
+        {
+            ReminderLead.None, ReminderLead.QuarterBefore, ReminderLead.HalfHourBefore, ReminderLead.HourBefore,
+            ReminderLead.AtTheTime, ReminderLead.EveningBefore, ReminderLead.LeaveBy
+        };
+
+        /// <summary>The place of a reminder in Leads; 0 (none) for one not there.</summary>
+        public static int LeadIndex(ReminderLead lead)
+        {
+            int index = System.Array.IndexOf(Leads, lead);
+            return index < 0 ? 0 : index;
         }
     }
 }

@@ -1,6 +1,4 @@
-0.17.1
+0.18.0
 
-Fixed
-- After a night's sleep the city map could throw an error every frame, which lowered the frame rate, once the mod's places on the map had changed during the night.
-- The Campus app named a class that could no longer be joined as the next one, and did not count it as held until the next hour; it now names the next class you can still join, and so does every other place that names it.
-- Dates no longer read "since day Day 2" in the Campus, Career and Planner apps and their notices.
+New
+- The Planner has a Week tab with a column for each day, a filter over its tabs, clashes when two things overlap or are too far apart to reach in time, a time to leave by for anything at a place with a reminder for it, a day at a glance with its free time and the money due, and your own entries that come back every day or every week.
