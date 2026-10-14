@@ -504,6 +504,11 @@ namespace RealLifeOverhaul.Careers
             box.Subtitle(CareersText.Fill("reallife_ibox_course_sub", "kind", CareersText.Mode(mode), "place", _director.PlaceOf(c, mode)));
             box.Chip(e.FeeLate ? CareersText.T("reallife_campus_state_fee") : CareersText.Stage(e.At),
                 e.FeeLate ? CellTone.Red : StudyRules.ExamDay(e, day) ? CellTone.Green : e.Stage == (int)EnrolStage.Retake ? CellTone.Yellow : CellTone.Plain);
+            if (c.Timetabled)
+            {
+                // How far through its classes the course is: those held so far (StudyRules.Held, as the attendance meter counts them).
+                box.Chip(CareersText.Fill("reallife_ibox_chip_classes", "held", StudyRules.Held(e, day, CareersGame.MinuteOfDay, _director.SittingClass).ToString(), "of", c.Sessions.ToString()));
+            }
             if (e.FeeLate)
             {
                 box.Line(CareersText.T("reallife_campus_on_owed", "amount", CareersText.Money(_director.Owed(e))), CellTone.Red);

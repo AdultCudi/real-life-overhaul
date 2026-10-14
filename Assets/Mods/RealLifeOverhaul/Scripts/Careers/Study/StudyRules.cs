@@ -257,6 +257,23 @@ namespace RealLifeOverhaul.Careers
             return NextClass(c, (StudyMode)e.Mode, today, minuteOfDay, sitting == e.Course ? Math.Max(from, today + 1) : from);
         }
 
+        /// <summary>
+        /// True if "your class starts now" is due for an enrolment at this minute: its next class (<see cref="NextClass(Enrolment, int, int, int)"/>,
+        /// so a class beyond the course's last, or one being sat, never) begins now, and it has not been told for that class
+        /// (<paramref name="told"/>: <see cref="Enrolment.StartTold"/>, kept in the save, so a reload does not tell it again).
+        /// </summary>
+        public static bool StartsNow(Enrolment e, int today, int minuteOfDay, int sitting, int told)
+        {
+            int next = NextClass(e, today, minuteOfDay, sitting);
+            return next >= 0 && next == today * 24 * 60 + minuteOfDay && next > told;
+        }
+
+        /// <summary>True if the reason a class cannot be joined is only that the player is not inside the place that holds it (the school, the university, a ward).</summary>
+        public static bool Elsewhere(string why)
+        {
+            return why == "reallife_study_why_not_school" || why == "reallife_study_why_not_university" || why == "reallife_study_why_not_hospital";
+        }
+
         /// <summary>The next day on or after a day with a class of the course; -1 for none.</summary>
         public static int Next(CourseDef c, StudyMode mode, int from)
         {

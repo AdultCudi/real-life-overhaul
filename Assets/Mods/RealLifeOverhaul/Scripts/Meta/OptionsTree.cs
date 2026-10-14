@@ -287,22 +287,22 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
-                S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
+                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study").Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
                 S("familystudy").For("careers_family").Opt("careers_family", "careers_study").Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
-                S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
+                S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Opt("careers_reject_reason", "careers_jobs").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs").Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire retirement options shares conflict interest"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
-                S("planner").For("planner").Main("planner").Opts("planner_reminders").Also("diary calendar notes to do")),
+                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
 
             G("money",
                 S("credit").For("economy").Opts("economy").Also("bank borrow score finance"),
                 S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
-                S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
+                S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market").Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds")
+                S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market").Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings")),

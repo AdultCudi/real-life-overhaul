@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Careers
         public int Ended;           // the day it ended
         public bool Graduated;      // a degree's graduation day has been held (or let pass)
         public bool FeeLate;        // an instalment fell due and could not be paid: the classes wait for it
+        public int StartTold;       // the class whose start was last told ("your class starts now"), day * 1440 + its minute; 0 none (StudyRules.StartsNow)
 
         public EnrolStage At => (EnrolStage)Stage;
 

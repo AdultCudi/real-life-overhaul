@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Careers
         public const int OpeningDaysLeast = 7, OpeningDaysMost = 14;
         public static readonly int[] RankWeights = { 450, 300, 150, 70, 30 };   // thousandths: the share of vacancies at each rung (the top rungs are found by search firms)
         public const int AgencyDays = 14;         // a registration with the recruitment office lasts this long
+        public const int AgencyNoteHour = 7;      // hour of the game's day: the reminder on a registration's last day comes from then (or at the first hour seen after it)
         public const int BossKinds = 4;           // the manners a boss can have (Careers/Work/LifeRules)
         public const int FriendsForReferral = 3;  // friends it takes for a referral to come now and then
         public const int ReferralShare = 150;     // thousandths of vacancies a friend can put the player forward for
@@ -193,6 +194,16 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>True if the interview brings an offer.</summary>
         public static bool Offered(int score, int luck) => score > 0 && score + TalentCatalogue.Clamp(luck, -InterviewLuck, InterviewLuck) >= OfferPass;
+
+        /// <summary>
+        /// The points of score an application was short of what the employer wanted at the step that turned it down
+        /// (<see cref="ScreenPass"/> at the screening, <see cref="OfferPass"/> after the interview), before luck: 0 when the
+        /// score was enough on average and the day's luck turned it down (it was close).
+        /// </summary>
+        public static int ScoreShort(int score, bool interview)
+        {
+            return Math.Max(0, (interview ? OfferPass : ScreenPass) - Math.Max(0, score));
+        }
 
         /// <summary>The luck of a step of an application, the same on a reload.</summary>
         public static int Luck(int seed, int id, int step, int most) => TechRandom.Range(seed, 8101, id, step, -most, most);
@@ -378,6 +389,16 @@ namespace RealLifeOverhaul.Careers
                 good += w.History[i].Reference == 3 ? 1 : 0;
                 poor += w.History[i].Reference == 1 ? 1 : 0;
             }
+        }
+
+        /// <summary>
+        /// True if the reminder that the registration with the recruitment office ends today is due: on its last day
+        /// (<paramref name="until"/>), from <see cref="AgencyNoteHour"/>, and not yet sent for that registration
+        /// (<paramref name="told"/>: the last day it was sent for, kept in the save, so a reload does not send it again).
+        /// </summary>
+        public static bool AgencyEnds(int until, int told, int day, int hour)
+        {
+            return until > 0 && until == day && told != until && hour >= AgencyNoteHour;
         }
 
         // ---------------------------------------------------------------- the city's vacancies
