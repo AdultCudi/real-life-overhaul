@@ -43,6 +43,12 @@ namespace RealLifeOverhaul.Markets
         private ChartOverlay _overlay = ChartOverlay.Sma20And50;
         private ChartLower _lower = ChartLower.Rsi;
 
+        // What the selectors under the page were made for and show (Controls): made again only when that is not what the page
+        // asks for now. A selector clicked shows its new choice itself; its click writes it here as well.
+        private bool _madeFor, _madeCompany, _madeChart;
+        private string _madeLanguage;
+        private int _showsView, _showsFrame, _showsOverlay, _showsLower;
+
         private MarketPage(MarketApp app)
         {
             _app = app;
@@ -248,9 +254,27 @@ namespace RealLifeOverhaul.Markets
             return "<color=" + colour + ">" + MarketText.Change(bp) + "</color>";
         }
 
-        // The choices under the page: the view, then (for the chart) the stretch of time, the line and the pane.
+        // The choices under the page: the view, then (for the chart) the stretch of time, the line and the pane. The selectors
+        // already there are kept when they are the ones the page asks for and show its choices (every click in the app
+        // writes the page again; the selectors were destroyed and copied again each time, four of the game's parts).
         private void Controls(MarketState s, Stock k)
         {
+            bool company = k != null, chart = _viewMode == ViewChart || k == null;
+            string language = Localizor.LocalizorManager.LoadedLocale;
+            if (_madeFor && _controls.childCount > 0 && company == _madeCompany && chart == _madeChart && string.Equals(language, _madeLanguage, StringComparison.Ordinal)
+                && (!company || _showsView == _viewMode)
+                && (!chart || (_showsFrame == (int)_frame && _showsOverlay == (int)_overlay && _showsLower == (int)_lower)))
+            {
+                return;   // the same selectors, showing what new ones would show
+            }
+            _madeFor = true;
+            _madeCompany = company;
+            _madeChart = chart;
+            _madeLanguage = language;
+            _showsView = _viewMode;
+            _showsFrame = (int)_frame;
+            _showsOverlay = (int)_overlay;
+            _showsLower = (int)_lower;
             for (int i = _controls.childCount - 1; i >= 0; i--)
             {
                 GameObject child = _controls.GetChild(i).gameObject;
@@ -263,6 +287,7 @@ namespace RealLifeOverhaul.Markets
                 box.Selector(ViewKeys.Length, _viewMode, i => MarketText.T(ViewKeys[i]), i => UiClone.Safe(() =>
                 {
                     _viewMode = i;
+                    _showsView = i;
                     _app.Refresh();
                 }), _controls);
             }
@@ -271,16 +296,19 @@ namespace RealLifeOverhaul.Markets
                 box.Selector(FrameKeys.Length, (int)_frame, i => MarketText.T(FrameKeys[i]), i => UiClone.Safe(() =>
                 {
                     _frame = (ChartFrame)i;
+                    _showsFrame = i;
                     _app.Refresh();
                 }), _controls);
                 box.Selector(OverlayKeys.Length, (int)_overlay, i => MarketText.T(OverlayKeys[i]), i => UiClone.Safe(() =>
                 {
                     _overlay = (ChartOverlay)i;
+                    _showsOverlay = i;
                     _app.Refresh();
                 }), _controls);
                 box.Selector(LowerKeys.Length, (int)_lower, i => MarketText.T(LowerKeys[i]), i => UiClone.Safe(() =>
                 {
                     _lower = (ChartLower)i;
+                    _showsLower = i;
                     _app.Refresh();
                 }), _controls);
             }
