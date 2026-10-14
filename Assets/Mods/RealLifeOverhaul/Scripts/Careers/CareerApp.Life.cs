@@ -20,14 +20,14 @@ namespace RealLifeOverhaul.Careers
             int next = j.ReviewDay + LifeRules.ReviewEvery(GameCalendar.DaysPerYear);
             if (j.Rating > 0)
             {
-                box.Row("reallife_look_review", CareersText.Fill("reallife_look_review_value", "rating", j.Rating.ToString(), "day", CareersText.Day(j.ReviewDay)),
+                box.Row("reallife_ibox_review", CareersText.Fill("reallife_ibox_review_value", "rating", j.Rating.ToString(), "day", CareersText.Day(j.ReviewDay)),
                     j.Rating >= 4 ? CellTone.Green : j.Rating <= 2 ? CellTone.Yellow : CellTone.Plain);
             }
-            box.Row("reallife_look_next_review", CareersText.Day(next));
-            box.Row("reallife_look_boss", CareersText.Boss((BossKind)j.Boss));
-            box.Row("reallife_look_colleagues", j.Favour.ToString(), j.Favour > 0 ? CellTone.Green : j.Favour < 0 ? CellTone.Yellow : CellTone.Plain);
-            box.Meter("reallife_look_burnout", j.Burnout / 1000f, CareersText.Mille(j.Burnout), j.Burnout >= 700 ? CellTone.Red : j.Burnout >= 400 ? CellTone.Yellow : CellTone.Green);
-            box.Row("reallife_look_overtime", CareersText.Minutes(j.Overtime));
+            box.Row("reallife_ibox_next_review", CareersText.Day(next));
+            box.Row("reallife_ibox_boss", CareersText.Boss((BossKind)j.Boss));
+            box.Row("reallife_ibox_colleagues", j.Favour.ToString(), j.Favour > 0 ? CellTone.Green : j.Favour < 0 ? CellTone.Yellow : CellTone.Plain);
+            box.Meter("reallife_ibox_burnout", j.Burnout / 1000f, CareersText.Mille(j.Burnout), j.Burnout >= 700 ? CellTone.Red : j.Burnout >= 400 ? CellTone.Yellow : CellTone.Green);
+            box.Row("reallife_ibox_overtime", CareersText.Minutes(j.Overtime));
             if (j.Politics >= 0)
             {
                 Matter m = LifeRules.Matters[TalentCatalogue.Clamp(j.Politics, 0, LifeRules.Matters.Length - 1)];
@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Careers
 
         partial void NoJobMore(InfoBox box, WorkFile w, int day)
         {
-            box.Section("reallife_look_sec_money");
+            box.Section("reallife_ibox_sec_money");
             if (w.BenefitUntil >= day && w.BenefitWeek > 0)
             {
                 box.Line(CareersText.T("reallife_life_benefit_line", "amount", CareersText.Money(Prices.At(w.BenefitWeek)), "day", CareersText.Day(w.BenefitUntil)), CellTone.Green);

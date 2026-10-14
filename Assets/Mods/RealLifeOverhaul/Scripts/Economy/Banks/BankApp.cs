@@ -359,7 +359,7 @@ namespace RealLifeOverhaul.Economy
             box.Subtitle(Bank.Name);
             if (IsHouse)
             {
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_bank_balance", FinanceText.Money(save.Money), save.Money < 0f ? CellTone.Red : CellTone.Plain);
                 box.Note(FinanceText.T("reallife_bank_current_here"));
             }
@@ -383,7 +383,7 @@ namespace RealLifeOverhaul.Economy
                 if (a.Agreed > 0)
                 {
                     float used = a.Owed / (float)a.Agreed;
-                    box.Meter("reallife_look_used", used, Mathf.RoundToInt(used * 100f) + "%", used >= 0.9f ? CellTone.Red : used >= 0.5f ? CellTone.Yellow : CellTone.Green);
+                    box.Meter("reallife_ibox_used", used, Mathf.RoundToInt(used * 100f) + "%", used >= 0.9f ? CellTone.Red : used >= 0.5f ? CellTone.Yellow : CellTone.Green);
                 }
                 box.Row("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow));
                 box.Note(FinanceText.T("reallife_econ_account_overdraft", "free", FinanceText.Money(a.Free), "float", FinanceText.Money(ProductCatalogue.OverdraftFloat)));

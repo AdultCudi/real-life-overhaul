@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(CompanyText.T("reallife_co_tab_cover"));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_co_cover_premiums", CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(premiums)));
                 box.Row("reallife_co_cover_open", open.ToString());
                 box.Headline("reallife_co_cover_what");
@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Economy
         {
             int id = c.Id;
             box.Title(CompanyText.T("reallife_co_claim_title", "cover", CompanyText.Cover(c.Kind), "business", c.Name));
-            box.Chip(CompanyText.T(c.Stage == ClaimStage.Open ? "reallife_look_chip_open" : c.Stage == ClaimStage.Filed ? "reallife_look_chip_filed" : c.Stage == ClaimStage.Paid ? "reallife_look_chip_paid" : "reallife_look_chip_lapsed"),
+            box.Chip(CompanyText.T(c.Stage == ClaimStage.Open ? "reallife_ibox_chip_open" : c.Stage == ClaimStage.Filed ? "reallife_ibox_chip_filed" : c.Stage == ClaimStage.Paid ? "reallife_ibox_chip_paid" : "reallife_ibox_chip_lapsed"),
                 c.Stage == ClaimStage.Open ? CellTone.Yellow : c.Stage == ClaimStage.Paid ? CellTone.Green : c.Stage == ClaimStage.Filed ? CellTone.Plain : CellTone.Red);
             switch (c.Stage)
             {
@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Economy
             }
             box.Note(CompanyText.T(c.Kind == (int)CoverKind.Fire ? "reallife_co_claim_what_fire" : c.Kind == (int)CoverKind.Theft ? "reallife_co_claim_what_theft" : "reallife_co_claim_what_liability",
                 "day", c.Day.ToString(), "amount", CompanyText.Money(c.Loss)));
-            box.Section("reallife_look_sec_money");
+            box.Section("reallife_ibox_sec_money");
             box.Row("reallife_co_claim_insurer", CompanyText.Insurer(c.Insurer));
             box.Row("reallife_co_claim_most", CompanyText.Money(CompanyCatalogue.CoverMost[c.Kind]));
             box.Row("reallife_co_claim_excess", CompanyText.Money(c.Excess));
@@ -126,9 +126,9 @@ namespace RealLifeOverhaul.Economy
             Policy p = shop.File.Cover[kind];
             string place = shop.File.Place;
             box.Title(CompanyText.T("reallife_co_policy_title", "cover", CompanyText.Cover(kind), "business", shop.Name));
-            box.Chip(CompanyText.T(p.Active ? "reallife_look_chip_covered" : "reallife_look_chip_not_covered"), p.Active ? CellTone.Green : CellTone.Yellow);
+            box.Chip(CompanyText.T(p.Active ? "reallife_ibox_chip_covered" : "reallife_ibox_chip_not_covered"), p.Active ? CellTone.Green : CellTone.Yellow);
             int insurer = p.Active ? p.Insurer : CompanyCatalogue.Clamp(_insurer, 0, CompanyCatalogue.Insurers - 1);
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             if (!p.Active)
             {
                 box.Note(CompanyText.T("reallife_co_policy_none"));

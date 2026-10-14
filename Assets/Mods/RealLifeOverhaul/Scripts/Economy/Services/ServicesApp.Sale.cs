@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Economy
             int step = ServicesCatalogue.Clamp(_step >= 0 ? _step : l != null ? l.Step : ServicesCatalogue.AskingDefault, 0, ServicesCatalogue.AskingPct.Length - 1);
             int value = b.Value;
             box.Title(ServicesGame.Name(reg));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_svc_value_base", ServicesText.T("reallife_svc_value_base_value", "amount", ServicesText.Money(b.Base), "days", VenturesCatalogue.OfferValueDays.ToString()));
             box.Note(ServicesText.Fill("reallife_svc_value_goodwill", "type", ServicesText.Percent(b.TypePct), "district", ServicesText.Percent(b.DistrictPct), "economy", ServicesText.Percent(b.ClimatePct),
                 "books", ServicesText.Percent(b.HistoryPct), "amount", ServicesText.Money(b.Goodwill)));
@@ -147,15 +147,15 @@ namespace RealLifeOverhaul.Economy
             box.Subtitle(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
             if (o.Countered)
             {
-                box.Chip(ServicesText.T("reallife_look_chip_final"), CellTone.Yellow);
+                box.Chip(ServicesText.T("reallife_ibox_chip_final"), CellTone.Yellow);
             }
             box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()), CellTone.Yellow);
-            box.Section("reallife_look_sec_offer");
+            box.Section("reallife_ibox_sec_offer");
             box.Row("reallife_svc_bid_price", ServicesText.T("reallife_svc_bid_price_value", "amount", ServicesText.Money(o.Price), "share", ServicesText.Percent(b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0)));
             box.Line(o.Parts > 1
                 ? ServicesText.T("reallife_svc_bid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString())
                 : ServicesText.T("reallife_svc_bid_once"));
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             box.Line(ServicesText.T(o.KeepsStaff ? "reallife_svc_bid_staff_keep" : "reallife_svc_bid_staff_not"), o.KeepsStaff ? CellTone.Green : CellTone.Yellow);
             box.Line(o.ClauseDays > 0 ? ServicesText.T("reallife_svc_bid_clause", "days", o.ClauseDays.ToString(), "share", ServicesCatalogue.ClausePenaltyPct.ToString()) : ServicesText.T("reallife_svc_bid_no_clause"));
             if (m.Investors + m.Loans > 0)

@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 box.Title(BrandsText.T("reallife_brand_tab_shops"));
                 box.Note(BrandsText.T("reallife_brand_shops_intro"));
-                box.Section("reallife_look_sec_how");
+                box.Section("reallife_ibox_sec_how");
                 box.Note(BrandsText.Fill("reallife_brand_shops_standards", "satisfaction", BrandCatalogue.WeightSatisfaction.ToString(), "clean", BrandCatalogue.WeightClean.ToString(),
                     "stock", BrandCatalogue.WeightStock.ToString(), "skill", BrandCatalogue.WeightSkill.ToString()));
                 box.Note(BrandsText.T("reallife_brand_shops_franchised"));
@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteShop(InfoBox box, BrandsState state, BrandShop shop, int day)
         {
             box.Title(shop.Name);
-            box.Subtitle(BrandsText.T("reallife_look_type_in", "type", BrandsText.Type(shop.Type), "district", BrandsText.District(shop.District)));
+            box.Subtitle(BrandsText.T("reallife_ibox_type_in", "type", BrandsText.Type(shop.Type), "district", BrandsText.District(shop.District)));
             if (shop.File != null)
             {
                 WriteMember(box, state, shop);
@@ -134,13 +134,13 @@ namespace RealLifeOverhaul.Economy.Brands
             box.Line(BrandsText.Fill("reallife_brand_member_of", "brand", b != null ? b.Name : "?", "district", BrandsText.District(m.District), "day", m.Joined.ToString()));
             box.Section("reallife_brand_col_standards");
             box.Meter("reallife_brand_col_standards", m.Standards / 100f, Standards(m.Standards), b != null && m.Standards < b.Minimum ? CellTone.Red : CellTone.Green);
-            box.RowPair("reallife_look_satisfaction", m.Satisfaction.ToString(), "reallife_look_clean", m.Clean.ToString());
-            box.RowPair("reallife_look_stock", m.Stock + "%", "reallife_look_skill", m.Skill.ToString());
+            box.RowPair("reallife_ibox_satisfaction", m.Satisfaction.ToString(), "reallife_ibox_clean", m.Clean.ToString());
+            box.RowPair("reallife_ibox_stock", m.Stock + "%", "reallife_ibox_skill", m.Skill.ToString());
             box.Note(BrandsText.Fill("reallife_brand_member_weights", "satisfaction", BrandCatalogue.WeightSatisfaction.ToString(), "clean", BrandCatalogue.WeightClean.ToString(),
                 "stock", BrandCatalogue.WeightStock.ToString(), "skill", BrandCatalogue.WeightSkill.ToString()));
             if (b != null)
             {
-                box.Section("reallife_look_sec_customers");
+                box.Section("reallife_ibox_sec_customers");
                 if (!_director.Promoted(shop))
                 {
                     box.Note(BrandsText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_brand_member_empire" : "reallife_brand_member_no_figure"));   // (Core/EmpireMotors)
@@ -183,9 +183,9 @@ namespace RealLifeOverhaul.Economy.Brands
             bool breach = FranchiseRules.ChainBreach(chain, t.Standards, t.Prices);
             box.Chip(chainName, breach || t.Breach > 0 ? CellTone.Red : CellTone.Plain);
             box.Line(BrandsText.Fill("reallife_brand_chain_of", "chain", chainName, "day", t.From.ToString(), "percent", BrandsText.Percent(FranchiseRules.ChainFootfall(chain)), "royalty", BrandsText.Bp(BrandCatalogue.ChainRoyaltyBp[chain])));
-            box.Section("reallife_look_sec_what_it_asks");
+            box.Section("reallife_ibox_sec_what_it_asks");
             box.Meter("reallife_brand_col_standards", t.Standards / 100f, Standards(t.Standards), t.Standards < BrandCatalogue.ChainStandards[chain] ? CellTone.Red : CellTone.Green);
-            box.Row("reallife_look_minimum", BrandCatalogue.ChainStandards[chain].ToString());
+            box.Row("reallife_ibox_minimum", BrandCatalogue.ChainStandards[chain].ToString());
             box.Line(t.Prices > 0
                 ? BrandsText.Fill("reallife_brand_chain_prices", "prices", BrandsText.Share(t.Prices), "least", BrandsText.Share(BrandCatalogue.ChainPriceLeast[chain]), "most", BrandsText.Share(BrandCatalogue.ChainPriceMost[chain]))
                 : BrandsText.T("reallife_brand_chain_no_prices"));
@@ -194,11 +194,11 @@ namespace RealLifeOverhaul.Economy.Brands
                     "amount", BrandsText.Money(FranchiseRules.ChainFine(t, BrandsDirector.Index)))
                 : BrandsText.T("reallife_brand_chain_good"), breach || t.Breach > 0 ? CellTone.Red : CellTone.Green);
             int exit = _director.ChainExit(t);
-            box.Section("reallife_look_sec_money");
-            box.RowPair("reallife_look_ordinary_day", BrandsText.Money(t.Average), "reallife_brand_col_paid", BrandsText.Money(t.Paid));
-            box.Row("reallife_look_leaving_costs", BrandsText.Money(exit));
+            box.Section("reallife_ibox_sec_money");
+            box.RowPair("reallife_ibox_ordinary_day", BrandsText.Money(t.Average), "reallife_brand_col_paid", BrandsText.Money(t.Paid));
+            box.Row("reallife_ibox_leaving_costs", BrandsText.Money(exit));
             bool kept = t.Keep;
-            box.Section("reallife_look_sec_prices");
+            box.Section("reallife_ibox_sec_prices");
             box.Note(kept
                 ? BrandsText.Fill("reallife_brand_chain_kept", "district", BrandsText.District(shop.District), "least", BrandsText.Share(KeptPrices.Least(chain)), "most", BrandsText.Share(KeptPrices.Most(chain)))
                 : BrandsText.T("reallife_brand_chain_keep_about"));
@@ -243,13 +243,13 @@ namespace RealLifeOverhaul.Economy.Brands
             if (_joinable.Count > 0)
             {
                 int at = BrandCatalogue.Clamp(_joinBrand, 0, _joinable.Count - 1);
-                box.Section("reallife_look_sec_join");
+                box.Section("reallife_ibox_sec_join");
                 box.Note(BrandsText.T("reallife_brand_plain_join"));
                 Choose(box, _joinable.Count, at, i => _joinable[i].Name, i => _joinBrand = i);
                 join = _joinable[at];
             }
             int chain = BrandCatalogue.Clamp(_chain, 0, BrandCatalogue.Chains - 1);
-            box.Section("reallife_look_sec_chain");
+            box.Section("reallife_ibox_sec_chain");
             box.Note(BrandsText.T("reallife_brand_plain_chain"));
             Choose(box, BrandCatalogue.Chains, chain, BrandsText.Chain, i => _chain = i);
             int fee = FranchiseRules.ChainFee(chain, BrandsDirector.Index);

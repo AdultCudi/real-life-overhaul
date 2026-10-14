@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Markets
                 WriteBooks(f, s.Day, s.YearDays);
             }
             box.Chip(ListingText.Stage(f.Stage));
-            box.Section("reallife_look_sec_listing");
+            box.Section("reallife_ibox_sec_listing");
             box.Line(MarketText.Fill("reallife_lst_box_stage", "stage", ListingText.Stage(f.Stage)));
             if (!Settings.MarketsListing && f.Stage == ListingStage.None)
             {
@@ -347,7 +347,7 @@ namespace RealLifeOverhaul.Markets
             OwnListing o = k.Own;
             int bp = MarketHistory.DayMoveBp(k);
             box.Chip(MarketText.Change(bp), bp > 0 ? CellTone.Green : bp < 0 ? CellTone.Red : CellTone.Plain);
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Line(MarketText.Fill("reallife_lst_box_price", "price", MarketText.Price(k.Last), "change", MarketText.Change(bp), "worth", MarketText.Large(k.MarketValue)));
             box.Line(MarketText.Fill("reallife_lst_box_stake", "count", Count(o.Founder), "share", MarketText.Percent(o.StakeBp(k)), "worth", MarketText.Large(o.Founder * (k.Last / 100.0))));
             box.Line(MarketText.Fill("reallife_lst_box_reserve", "each", MarketText.Price((int)Math.Round(o.Rps * 100.0)), "amount", MarketText.Large(Math.Max(0.0, o.Rps) * o.Others(k))));
@@ -514,8 +514,8 @@ namespace RealLifeOverhaul.Markets
             Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
             int move = MarketHistory.DayMoveBp(k);
             box.Chip(MarketText.Change(move), move > 0 ? CellTone.Green : move < 0 ? CellTone.Red : CellTone.Plain);
-            box.Section("reallife_look_sec_quote");
-            box.RowPair("reallife_look_bid", MarketText.Price(q.Bid), "reallife_look_ask", MarketText.Price(q.Ask));
+            box.Section("reallife_ibox_sec_quote");
+            box.RowPair("reallife_ibox_bid", MarketText.Price(q.Bid), "reallife_ibox_ask", MarketText.Price(q.Ask));
             box.Note(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(move)));
             bool closed = ListingRules.Closed(k, s.Day, s.YearDays);
             if (closed || s.Day < o.LockDay)
@@ -523,7 +523,7 @@ namespace RealLifeOverhaul.Markets
                 box.Line(closed ? MarketText.Fill("reallife_lst_ticket_closed", "day", ListingRules.OpensAgain(k, s.Day, s.YearDays).ToString())
                     : MarketText.Fill("reallife_lst_ticket_lockup", "day", o.LockDay.ToString()), CellTone.Yellow);
             }
-            box.Section("reallife_look_sec_order");
+            box.Section("reallife_ibox_sec_order");
             box.Line(MarketText.Fill("reallife_lst_ticket_held", "count", Count(o.Founder), "share", MarketText.Percent(o.StakeBp(k))));
             box.Selector(OwnSideKeys.Length, (int)_ownSide, i => MarketText.T(OwnSideKeys[i]), i => UiClone.Safe(() =>
             {

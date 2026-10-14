@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 box.Line(DealerText.T("reallife_dealer_market_no_bids", "day", FinanceText.Day(state.NoBidsUntil + 1)), CellTone.Red);
             }
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_dealer_cash", DealerText.Money(DealerGame.Cash));
             box.Line(DealerText.Fill("reallife_dealer_market_sum", "new", news.ToString(), "used", used.ToString(), "lots", lots.ToString()));
             box.Note(DealerText.T("reallife_dealer_market_about"));
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Subtitle(DealerGame.ColourName(l.Colour));
             box.Note(DealerText.T("reallife_dealer_new_what", "km", DealerText.Km(l.Km)));
             string yard = ChooseYard(box, state);
-            box.Section("reallife_look_sec_money");
+            box.Section("reallife_ibox_sec_money");
             DealerYard to = yard != null ? state.Yard(yard) : null;
             int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;   // (a respected showroom's perk, as the director charges it)
             box.Line(DealerText.Fill("reallife_dealer_new_money", "price", DealerText.Money(price), "worth", DealerText.Money(worth), "asking", DealerText.Money(DealerRules.Asking(worth))));
@@ -128,20 +128,20 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             box.Title(DealerGame.CarName(l.Type));
             box.Subtitle(DealerGame.ColourName(l.Colour));
-            box.Chip(DealerText.T(l.Inspected ? "reallife_look_chip_inspected" : "reallife_look_chip_not_inspected"), l.Inspected ? CellTone.Green : CellTone.Yellow);
-            box.Section("reallife_look_sec_money");
+            box.Chip(DealerText.T(l.Inspected ? "reallife_ibox_chip_inspected" : "reallife_ibox_chip_not_inspected"), l.Inspected ? CellTone.Green : CellTone.Yellow);
+            box.Section("reallife_ibox_sec_money");
             box.Line(DealerText.Fill("reallife_dealer_used_asking", "price", DealerText.Money(l.Asking), "counter", l.Countered > 0 ? DealerText.Money(l.Countered) : DealerText.T("reallife_dealer_none"),
                 "left", (DealerCatalogue.HagglesMost - l.Haggles).ToString()));
             if (l.Inspected)
             {
                 int worth = _director.Worth(l);
                 box.Row("reallife_dealer_used_worth", DealerText.Money(worth));
-                box.Section("reallife_look_sec_car");
+                box.Section("reallife_ibox_sec_car");
                 box.Line(DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults)));
             }
             else
             {
-                box.Section("reallife_look_sec_car");
+                box.Section("reallife_ibox_sec_car");
                 box.Line(DealerText.Fill("reallife_dealer_used_said", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Shown)));
             }
             string yard = ChooseYard(box, state);
@@ -196,13 +196,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Title(DealerGame.CarName(l.Type));
             box.Subtitle(DealerGame.ColourName(l.Colour));
             box.Chip(AuctionState(l), l.Gone ? CellTone.Red : l.Leader == 0 ? CellTone.Green : CellTone.Plain);
-            box.Section("reallife_look_sec_auction");
+            box.Section("reallife_ibox_sec_auction");
             box.Line(DealerText.Fill("reallife_dealer_lot_bid", "bid", DealerText.Money(l.Asking), "state", AuctionState(l), "bids", l.Bids.ToString()));
             if (l.Gone)
             {
                 box.Note(DealerText.T("reallife_dealer_lot_over"));
             }
-            box.Section("reallife_look_sec_car");
+            box.Section("reallife_ibox_sec_car");
             box.Line(l.Inspected
                 ? DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults))
                 : DealerText.Fill("reallife_dealer_lot_catalogue", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Shown)));
@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return;
             }
             int next = DealerRules.NextBid(l, worth), fee = DealerRules.BuyersFee(next, Prices.At(DealerCatalogue.BuyersFeeLeast));
-            box.Section("reallife_look_sec_next");
+            box.Section("reallife_ibox_sec_next");
             box.Line(DealerText.Fill("reallife_dealer_lot_next", "bid", DealerText.Money(next), "fee", DealerText.Money(fee), "ends", DealerText.When(l.Ends), "left", DealerText.Hours(Mathf.Max(0, l.Ends - now))));
             Transform buttons = box.ButtonRow();
             if (l.Leader != 0)

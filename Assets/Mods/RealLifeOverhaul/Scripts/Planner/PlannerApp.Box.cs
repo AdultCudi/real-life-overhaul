@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Planner
         private void DayFirst(InfoBox box, List<PlannerEntry> items, int day, int today, int now)
         {
             PlannerEntry first = PlannerRules.FirstOf(items, day);
-            box.Section("reallife_look_sec_next");
+            box.Section("reallife_ibox_sec_next");
             if (first == null)
             {
                 box.Row("reallife_planner_glance_first", PlannerText.T("reallife_planner_glance_first_none"));
@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Planner
             float week = PlannerRules.OwedOn(items, today + 1, today + UpcomingDays);
             if (onDay > 0f || week > 0f)
             {
-                box.Section("reallife_look_sec_money");
+                box.Section("reallife_ibox_sec_money");
             }
             if (onDay > 0f)
             {
@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Planner
                     toDo++;
                 }
             }
-            box.Section("reallife_look_sec_totals");
+            box.Section("reallife_ibox_sec_totals");
             if (day != today)
             {
                 box.Row("reallife_planner_glance_planned", toDo.ToString());
@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.Planner
         // When and where it is, what it is, what it costs or pays and what follows if it is missed.
         private static void EntryFacts(InfoBox box, PlannerEntry e, int today)
         {
-            box.Section("reallife_look_sec_when_where");
+            box.Section("reallife_ibox_sec_when_where");
             box.Row("reallife_planner_detail_when", PlannerText.WhenLong(e, today));
             if (!string.IsNullOrEmpty(e.Where))
             {
@@ -249,7 +249,7 @@ namespace RealLifeOverhaul.Planner
             }
             if (!string.IsNullOrEmpty(e.What) || !string.IsNullOrEmpty(e.Money) || !string.IsNullOrEmpty(e.IfMissed))
             {
-                box.Section("reallife_look_sec_what");
+                box.Section("reallife_ibox_sec_what");
             }
             if (!string.IsNullOrEmpty(e.What))
             {
@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Planner
             {
                 return;
             }
-            box.Section("reallife_look_sec_getting_there");
+            box.Section("reallife_ibox_sec_getting_there");
             if (!(metres > PlannerRules.HereMetres))
             {
                 box.Line(PlannerText.T("reallife_planner_way_here"), CellTone.Green);

@@ -282,13 +282,13 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Mine;
             }
             box.Title(FlareText.T("reallife_flare_tab_me"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_flare_me_followers", FlareText.N(file.Followers));
             int next = FlareRules.NextTierAt(file.Followers);
             box.Row("reallife_flare_me_tier", FlareText.Tier(file.Tier));
             if (next > 0)
             {
-                box.Meter("reallife_look_next_tier", LookRules.Fill(file.Followers, next),
+                box.Meter("reallife_ibox_next_tier", LookRules.Fill(file.Followers, next),
                     FlareText.Fill("reallife_flare_me_next", "tier", FlareText.Tier(FlareRules.TierOf(next)), "followers", FlareText.N(next)), CellTone.Plain);
             }
             box.Row("reallife_flare_me_reputation", FlareText.Reputation(file.Reputation) + " (" + file.Reputation + ")");

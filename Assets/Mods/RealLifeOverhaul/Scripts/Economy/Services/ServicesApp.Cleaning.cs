@@ -142,12 +142,12 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(ServicesText.T("reallife_svc_client_closed"), CellTone.Yellow);
             }
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_svc_client_clean", ServicesText.Trend(c.Now, c.CleanBefore));
             box.Line(need > 0
                 ? ServicesText.T("reallife_svc_client_needs", "need", ServicesText.Minutes(need), "today", ServicesText.Minutes(c.MinutesToday), "before", ServicesText.Minutes(c.MinutesBefore))
                 : ServicesText.T("reallife_svc_client_needs_unknown", "today", ServicesText.Minutes(c.MinutesToday)));
-            box.Section("reallife_look_sec_visits");
+            box.Section("reallife_ibox_sec_visits");
             if (c.LastDay > 0)
             {
                 box.Line(ServicesText.T(c.LastDay == day ? "reallife_svc_client_last_today" : "reallife_svc_client_last", "name", c.LastCleaner, "time", ServicesText.Clock(c.LastMinute), "day", c.LastDay.ToString()));
@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.T("reallife_svc_client_contract", "amount", ServicesText.Money(c.Fee), "standard", c.Standard.ToString()));
             }
             int mode = c.Mode;
-            box.Section("reallife_look_sec_how_often");
+            box.Section("reallife_ibox_sec_how_often");
             if (!box.HasSelector || !box.Selector(ServicesCatalogue.VisitsMost + 1, mode, ServicesText.Mode, m => _director.SetMode(place, m)))
             {
                 box.Line(ServicesText.Mode(mode));
@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.Economy
             string place = ServicesGame.Place(reg);
             int hours = ServicesGame.OwnCleaningHours(reg);
             box.Title(ServicesGame.Name(reg));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_svc_client_clean", ServicesGame.Cleanliness(reg).ToString());
             box.Line(ServicesText.T(hours > 0 ? "reallife_svc_add_own_hours" : "reallife_svc_add_no_hours", "hours", hours.ToString()));
             Transform buttons = box.ButtonRow();
@@ -278,8 +278,8 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(ServicesText.T("reallife_svc_crew_needs_shift"), CellTone.Yellow);
             }
-            box.Section("reallife_look_sec_now");
-            box.RowPair("reallife_look_skill", _member.Skill.ToString(), "reallife_co_emp_mood", _member.Mood.ToString());
+            box.Section("reallife_ibox_sec_now");
+            box.RowPair("reallife_ibox_skill", _member.Skill.ToString(), "reallife_co_emp_mood", _member.Mood.ToString());
             box.Line(ServicesText.T("reallife_svc_crew_skill", "skill", _member.Skill.ToString(), "mood", _member.Mood.ToString(), "rate", (CleaningRules.Rate(_member.Skill, _member.Mood, 1) / 100).ToString()));
             box.Line(ServicesText.T("reallife_svc_crew_wage", "wage", CompanyText.Wage(_member.Wage), "hours", _member.WeekHours.ToString()));
             box.Row("reallife_svc_crew_base", _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base"));
@@ -355,7 +355,7 @@ namespace RealLifeOverhaul.Economy
             {
                 string place = offer.Place;
                 box.Title(offer.Name);
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_svc_contract_district", ServicesText.District(offer.District));
                 box.Row("reallife_svc_contract_fee", ServicesText.T("reallife_svc_row_a_week", "amount", ServicesText.Money(offer.Fee)));
                 box.Line(ServicesText.T("reallife_svc_contract_standard", "standard", offer.Standard.ToString(), "days", ServicesCatalogue.ContractDaysUnderMost.ToString()));
@@ -403,7 +403,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             box.Title(ServicesText.T("reallife_svc_tab_contracts"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_svc_contracts_running", ContractRules.Running(state).ToString());
             box.Row("reallife_svc_service_fees", ServicesText.T("reallife_svc_service_fees_value", "amount", ServicesText.Money(_director.ContractWeekFees()), "booked", ServicesText.Signed(ServicesState.Week(state.FeeIncome))));
             box.Note(ServicesText.T("reallife_svc_contracts_says", "days", ServicesCatalogue.OfferEveryDays.ToString(), "most", ServicesCatalogue.OffersMost.ToString()));

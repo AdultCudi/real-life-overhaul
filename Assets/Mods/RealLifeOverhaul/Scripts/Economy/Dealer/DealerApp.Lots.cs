@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 box.Line(DealerText.T("reallife_dealer_yard_no_staff"), CellTone.Red);
             }
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", y.Rep.ToString(), "step", DealerText.Step(step),
                 "next", step + 1 < DealerCatalogue.RepSteps.Length ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString()) : DealerText.T("reallife_dealer_rep_top")));
             if (y.EventOn(day))
@@ -95,16 +95,16 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (y.Laid)
             {
-                box.Meter("reallife_look_lot", LookRules.Fill(y.Cars.Count, y.Spots.Count), DealerText.T("reallife_look_of", "value", y.Cars.Count.ToString(), "most", y.Spots.Count.ToString()), CellTone.Plain);
+                box.Meter("reallife_ibox_lot", LookRules.Fill(y.Cars.Count, y.Spots.Count), DealerText.T("reallife_ibox_of", "value", y.Cars.Count.ToString(), "most", y.Spots.Count.ToString()), CellTone.Plain);
             }
             else
             {
                 box.Line(DealerText.T("reallife_dealer_yard_unlaid"), CellTone.Yellow);
             }
-            box.Section("reallife_look_today");
+            box.Section("reallife_ibox_today");
             box.Line(DealerText.Fill("reallife_dealer_yard_today", "visitors", y.Today.Visitors.ToString(), "served", y.Today.Served.ToString(), "lost", y.Today.Lost.ToString(),
                 "offers", y.Today.Offers.ToString(), "sold", y.Today.Sold.ToString()));
-            box.Section("reallife_look_sec_this_week");
+            box.Section("reallife_ibox_sec_this_week");
             box.Line(DealerText.Fill("reallife_dealer_yard_week", "sold", (w.Sold + y.Today.Sold).ToString(), "takings", DealerText.Money(w.Takings + y.Today.Takings),
                 "bought", DealerText.Money(w.Bought + y.Today.Bought), "margin", DealerText.Money(w.Margin + y.Today.Margin), "claims", DealerText.Money(w.Claims + y.Today.Claims)));
             int steps = (DealerCatalogue.StaffFloorMost - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep + 1;

@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             if (car.ShopUntil > _now)
             {
-                box.Section("reallife_look_sec_workshop");
+                box.Section("reallife_ibox_sec_workshop");
                 box.Line(DealerText.Fill("reallife_dealer_workshop_in", "when", DealerText.When(car.ShopUntil), "condition", DealerText.Condition(DealerRules.Worked(car.Condition, car.Faults))));
                 return;
             }
@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             int cost = _director.WorkshopCost(car);
             int hours = DealerRules.WorkshopHours(car.Condition + DealerRules.FaultCondition(car.Faults));
             int to = DealerRules.Worked(car.Condition, car.Faults);
-            box.Section("reallife_look_sec_workshop");
+            box.Section("reallife_ibox_sec_workshop");
             box.Line(DealerText.Fill("reallife_dealer_workshop_offer", "cost", DealerText.Money(cost), "hours", hours.ToString(), "condition", DealerText.Condition(to),
                 "bays", (DealerCatalogue.WorkshopBays - yard.InWorkshop(_now)).ToString()));
             Transform row = box.ButtonRow();

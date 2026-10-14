@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_offers_title"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_dealer_sum_waiting", _director.Waiting().ToString(), _director.Waiting() > 0 ? CellTone.Yellow : CellTone.Plain);
             int sold = 0, margin = 0;
             for (int y = 0; y < state.Yards.Count; y++)
@@ -140,15 +140,15 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Subtitle(DealerGame.CarName(car.Type) + ", " + yard.Name);
             if (d.Stage == OfferStage.Driving)
             {
-                box.Chip(DealerText.T("reallife_look_chip_driving"), CellTone.Plain);
+                box.Chip(DealerText.T("reallife_ibox_chip_driving"), CellTone.Plain);
                 box.Line(DealerText.T("reallife_dealer_deal_driving"));
             }
             else if (d.WantsDrive && !d.Drove)
             {
                 box.Line(DealerText.T("reallife_dealer_deal_wants_drive"), CellTone.Yellow);
             }
-            box.Section("reallife_look_sec_offer");
-            box.RowPair("reallife_look_offer", DealerText.Money(d.Offer), "reallife_look_asking", DealerText.Money(car.Asking));
+            box.Section("reallife_ibox_sec_offer");
+            box.RowPair("reallife_ibox_offer", DealerText.Money(d.Offer), "reallife_ibox_asking", DealerText.Money(car.Asking));
             box.Note(DealerText.Fill("reallife_dealer_deal_what", "car", DealerGame.CarName(car.Type), "name", yard.Name, "offer", DealerText.Money(d.Offer), "asking", DealerText.Money(car.Asking),
                 "left", DealerText.Hours(Mathf.Max(0, d.Expires - now))));
             if (d.WantsFinance)
@@ -266,7 +266,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 paidOut += c.Paid;
             }
             box.Title(DealerText.T("reallife_dealer_finance_title"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Line(DealerText.Fill("reallife_dealer_finance_plans", "plans", state.Plans.Count.ToString(), "owed", DealerText.Money(owed), "weekly", DealerText.Money(weekly), "missed", missed.ToString()));
             box.Line(DealerText.Fill("reallife_dealer_finance_covers", "covers", state.Covers.Count.ToString(), "paid", DealerText.Money(paidOut)));
             box.Note(DealerText.T("reallife_dealer_finance_about"));

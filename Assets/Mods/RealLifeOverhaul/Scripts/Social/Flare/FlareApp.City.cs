@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.City;
             }
             box.Title(FlareText.T("reallife_flare_tab_city"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Line(FlareText.Fill("reallife_flare_city_count", "count", file.ActiveInfluencers.ToString(), "most", FlareCast.Most.ToString()));
             box.Note(FlareText.T("reallife_flare_city_intro"));
             box.Line(FlareText.T("reallife_flare_city_follow"));
@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Flare
         {
             box.Title(FlareText.Fill("reallife_flare_row_campaign", "business", c.Name, "campaign", c.Campaign));
             box.Chip(FlareText.Busy(c, day));
-            box.Section("reallife_look_sec_campaign");
+            box.Section("reallife_ibox_sec_campaign");
             box.Line(FlareText.Fill("reallife_flare_hire_days", "from", c.From.ToString(), "to", c.To.ToString(), "percent", c.Percent.ToString()));
             box.Line(FlareText.T("reallife_flare_campaign_where"));
             Transform buttons = box.ButtonRow();
@@ -186,7 +186,7 @@ namespace RealLifeOverhaul.Flare
             box.Title(FlareText.Fill("reallife_flare_row_hire", "business", h.Name, "who", _director.WhoLine(h)));
             if (h.Ended)
             {
-                box.Chip(FlareText.T("reallife_look_chip_ended"));
+                box.Chip(FlareText.T("reallife_ibox_chip_ended"));
                 box.Note(FlareText.T("reallife_flare_hire_ended"));
             }
             if (h.Late)

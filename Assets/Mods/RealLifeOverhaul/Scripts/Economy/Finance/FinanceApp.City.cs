@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Economy
             GameInstance save = SaveGameManager.Current;
 
             box.Title(FinanceText.T("reallife_macro_title"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_macro_over_rate", CityText.Rate(state.Base));
             int toTurn = CityModel.DaysToTurn(state, director.MonthDays);
             box.Note(state.Pending && toTurn == 1

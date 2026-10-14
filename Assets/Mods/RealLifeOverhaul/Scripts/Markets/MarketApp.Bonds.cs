@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Title(MarketText.T("reallife_mkt_tab_bonds"));
                 StatusLine(box);
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Line(s.Bonds.Holdings.Count > 0
                     ? MarketText.Fill("reallife_mkt_bond_box_held", "count", s.Bonds.Holdings.Count.ToString(), "worth", MarketText.Money(worth), "day", next.ToString())
                     : MarketText.T("reallife_mkt_bond_box_none"));
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Markets
             box.Title(name);
             box.Chip(BondText.Rate(o.YieldBp), CellTone.Green);
             StatusLine(box);
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             box.Note(MarketText.Fill("reallife_mkt_bond_offer_what", "rate", BondText.Rate(o.YieldBp), "pays", BondText.Pays(o.Def), "term", BondText.Term(o.Def.TermQuarters),
                 "day", (s.Day + BondRules.TermDays(o.Def, year)).ToString()));
             box.Line(MarketText.Fill(o.Def.Kind == BondKind.Deposit ? "reallife_mkt_bond_about_deposit" : o.Def.Kind == BondKind.City ? "reallife_mkt_bond_about_city" : "reallife_mkt_bond_about_treasury",
@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Markets
             box.Note(MarketText.Fill("reallife_mkt_bond_held_what", "face", BondText.Money(h.Face), "rate", BondText.Rate(h.RateBp), "day", h.EndDay.ToString(), "paid", h.Paid.ToString(),
                 "count", h.Payments.ToString()));
             int day = BondRules.NextPayDay(h);
-            box.Section("reallife_look_sec_payments");
+            box.Section("reallife_ibox_sec_payments");
             if (day > 0 && d != null)
             {
                 box.Line(MarketText.Fill(h.Paid + 1 >= h.Payments ? "reallife_mkt_bond_held_last" : "reallife_mkt_bond_held_next", "day", day.ToString(),
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Markets
             }
             box.Line(MarketText.Fill("reallife_mkt_bond_held_record", "received", BondText.Money(h.Received), "back", BondText.Money(h.Reinvested), "tax", BondText.Money(h.Taxed)));
             long sale = _director.BondSale(h);
-            box.Section("reallife_look_sec_selling");
+            box.Section("reallife_ibox_sec_selling");
             if (d != null && d.Kind == BondKind.Deposit)
             {
                 box.Line(MarketText.Fill("reallife_mkt_bond_held_close", "worth", BondText.Money(sale), "months", BondCatalogue.DepositPenaltyMonths.ToString()));

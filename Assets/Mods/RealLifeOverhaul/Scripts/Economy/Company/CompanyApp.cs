@@ -372,7 +372,7 @@ namespace RealLifeOverhaul.Economy
             IReadOnlyList<CompanyAlert> alerts = _director.Alerts;
             if (alerts.Count > 0)
             {
-                box.Chip(CompanyText.T("reallife_look_chip_waiting", "count", alerts.Count.ToString()), CellTone.Yellow);
+                box.Chip(CompanyText.T("reallife_ibox_chip_waiting", "count", alerts.Count.ToString()), CellTone.Yellow);
             }
             box.Headline("reallife_co_over_alerts");
             for (int i = 0; i < alerts.Count && i < AlertsShown; i++)
@@ -456,16 +456,16 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()), CellTone.Red);
             }
-            box.Section("reallife_look_yesterday");
+            box.Section("reallife_ibox_yesterday");
             if (shop.HasBooks)
             {
-                box.RowPair("reallife_look_takings", CompanyText.Money(shop.Takings), "reallife_look_profit", CompanyText.Money(shop.Profit));
+                box.RowPair("reallife_ibox_takings", CompanyText.Money(shop.Takings), "reallife_ibox_profit", CompanyText.Money(shop.Profit));
             }
             else
             {
                 box.Note(CompanyText.T("reallife_co_shop_no_books"));
             }
-            box.Section("reallife_look_sec_business");
+            box.Section("reallife_ibox_sec_business");
             box.Row("reallife_co_shop_district", CompanyText.T("reallife_co_shop_district_value", "district", CompanyText.District(shop.District), "income", shop.Income.ToString()));
             if (_director.On(CompanyPart.Staff))
             {

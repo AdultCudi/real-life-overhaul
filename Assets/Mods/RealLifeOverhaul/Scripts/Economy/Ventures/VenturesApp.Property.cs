@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             _picked = null;
             box.Title(FinanceText.T("reallife_ven_tab_property"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_ven_prop_week", Money(week));
             box.Row("reallife_ven_prop_month", Money(month));
             box.Row("reallife_ven_prop_count", buildings.ToString());
@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             float rent = DailyRent(e);
             box.Title(e.address.ToFormattedString());
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_ven_prop_bought", FinanceText.T("reallife_ven_prop_bought_value", "day", e.purchaseDay.ToString(), "price", Money((float)e.purchasePrice)));
             float worth;
             int let;

@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Economy
                 BankSlice slice = desk.Slice(Bank, _work);
                 box.Title(FinanceText.T("reallife_bank_tab_loans"));
                 box.Subtitle(Bank.Name);
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_bank_owed_here", FinanceText.Money(slice.Owed));
                 box.Row("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow));
                 box.EndSection();
@@ -332,7 +332,7 @@ namespace RealLifeOverhaul.Economy
             if (card.Agreed > 0)
             {
                 float used = card.Owed / (float)card.Agreed;
-                box.Meter("reallife_look_used", used, FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(used * 100f) + "%", "free", FinanceText.Money(card.Free)),
+                box.Meter("reallife_ibox_used", used, FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(used * 100f) + "%", "free", FinanceText.Money(card.Free)),
                     used >= 0.9f ? CellTone.Red : used >= 0.5f ? CellTone.Yellow : CellTone.Green);
             }
             FinanceApp.RateLines(box, FinanceApp.Rate(card.RateNow), card.Ladder.Penalty);

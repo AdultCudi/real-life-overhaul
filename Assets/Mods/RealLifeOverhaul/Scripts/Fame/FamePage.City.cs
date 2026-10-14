@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Fame
                 }
                 box.Title(FameText.RequestTitle(q));
                 box.Chip(FameText.RequestState(q.State));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 if (q.State == FameRequestState.Open)
                 {
                     box.Line(FameText.Fill("reallife_fame_request_answer", "day", FameText.N(q.Until)));
@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Fame
                 }
                 box.Title(FameText.T("reallife_fame_lobby_row"));
                 box.Chip(FameText.LobbyState(l.State));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Line(FameText.Fill("reallife_fame_lobby_line", "day", FameText.N(l.Day), "chance", FameText.N(l.Chance), "rival", FameText.N(l.Rival)));
                 if (l.State == FameLobbyState.Pending)
                 {

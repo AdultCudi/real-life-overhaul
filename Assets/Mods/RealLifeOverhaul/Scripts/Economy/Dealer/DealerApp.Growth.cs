@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_growth_title"));
-            box.Section("reallife_look_sec_how");
+            box.Section("reallife_ibox_sec_how");
             box.Line(DealerText.T("reallife_dealer_growth_events"));
             box.Line(DealerText.T("reallife_dealer_growth_rep"));
             box.Line(DealerText.T("reallife_dealer_growth_missions"));
@@ -125,11 +125,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Title(DealerText.Event(kind, 0));
             box.Note(DealerText.EventAbout(kind));
             int cost = DealerDirector.EventCost(kind);
-            box.Section("reallife_look_sec_terms");
-            box.Row("reallife_look_cost", DealerText.Money(cost));
+            box.Section("reallife_ibox_sec_terms");
+            box.Row("reallife_ibox_cost", DealerText.Money(cost));
             box.Line(DealerText.Fill("reallife_dealer_event_terms", "cost", DealerText.Money(cost), "days", DealerCatalogue.EventDays[kind].ToString(), "rest", DealerCatalogue.EventRest.ToString()));
             box.Note(DealerText.T("reallife_dealer_event_campaigns"));
-            box.Section("reallife_look_sec_where");
+            box.Section("reallife_ibox_sec_where");
             if (state.Yards.Count == 0)
             {
                 box.Line(DealerText.T("reallife_dealer_refuse_off"), CellTone.Yellow);
@@ -220,11 +220,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             bool done = DealerRules.MissionDone(yard, m);
             box.Title(DealerText.Mission(m));
             box.Subtitle(yard.Name);
-            box.Chip(DealerText.T(done ? "reallife_look_chip_done" : "reallife_look_chip_under_way"), done ? CellTone.Green : CellTone.Plain);
+            box.Chip(DealerText.T(done ? "reallife_ibox_chip_done" : "reallife_ibox_chip_under_way"), done ? CellTone.Green : CellTone.Plain);
             box.Note(DealerText.MissionAbout(m));
-            box.Section("reallife_look_sec_progress");
-            box.Meter("reallife_look_done", LookRules.Fill(DealerRules.Progress(yard, m), DealerCatalogue.MissionTarget[m]),
-                DealerText.T("reallife_look_of", "value", DealerRules.Progress(yard, m).ToString(), "most", DealerCatalogue.MissionTarget[m].ToString()), done ? CellTone.Green : CellTone.Plain);
+            box.Section("reallife_ibox_sec_progress");
+            box.Meter("reallife_ibox_done", LookRules.Fill(DealerRules.Progress(yard, m), DealerCatalogue.MissionTarget[m]),
+                DealerText.T("reallife_ibox_of", "value", DealerRules.Progress(yard, m).ToString(), "most", DealerCatalogue.MissionTarget[m].ToString()), done ? CellTone.Green : CellTone.Plain);
             box.Line(DealerText.Fill("reallife_dealer_mission_where", "name", yard.Name, "done", DealerRules.Progress(yard, m).ToString(), "target", DealerCatalogue.MissionTarget[m].ToString(),
                 "points", DealerCatalogue.MissionReward[m].ToString()));
             box.Note(DealerText.T(done ? "reallife_dealer_mission_was_done" : "reallife_dealer_mission_how"));
@@ -240,7 +240,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Chip(DealerText.Step(step));
             box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", yard.Rep.ToString(), "step", DealerText.Step(step),
                 "next", step + 1 < DealerCatalogue.RepSteps.Length ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString()) : DealerText.T("reallife_dealer_rep_top")));
-            box.Section("reallife_look_sec_steps");
+            box.Section("reallife_ibox_sec_steps");
             for (int s = 1; s < DealerCatalogue.RepSteps.Length; s++)
             {
                 box.Check(DealerText.Fill(s <= step ? "reallife_dealer_rep_step_had" : "reallife_dealer_rep_step", "step", DealerText.Step(s), "points", DealerCatalogue.RepSteps[s].ToString(),

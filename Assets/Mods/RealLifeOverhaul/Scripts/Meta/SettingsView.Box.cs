@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.Meta
             int standard = OptionsLayout.AppDefault(line);
             OptionType type = OptionsLayout.AppType(line);
             box.Title(OptionsLayout.AppLabel(line));
-            box.Section("reallife_look_sec_setting");
+            box.Section("reallife_ibox_sec_setting");
             box.Row("reallife_set_box_now", OptionsLayout.AppValueText(line, value));
             string tip = OptionsLayout.AppTip(line);
             if (tip != null)
@@ -348,7 +348,7 @@ namespace RealLifeOverhaul.Meta
             string name = PresetName(_closest);
             UiClone.Words(_shell.Header, T("reallife_set_headline_differ", "preset", name, "count", count.ToString(CultureInfo.InvariantCulture)));
             box.Title(T("reallife_set_box_differ_title"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_set_box_compared", name);
             box.Row("reallife_set_box_differ_count", count.ToString(CultureInfo.InvariantCulture));
             box.Line(count == 0 ? T("reallife_set_box_same", "preset", name) : T("reallife_set_box_differ_pick", "preset", name));

@@ -77,10 +77,10 @@ namespace RealLifeOverhaul.Careers
             _picked = null;
             box.Title(CareersText.T("reallife_career_start_title"));
             box.Note(CareersText.T("reallife_career_start_how"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_career_sum_open", open.ToString(), open > 0 ? CellTone.Green : CellTone.Plain);
             box.Row("reallife_career_sum_ready", ready.ToString());
-            box.Section("reallife_look_sec_next");
+            box.Section("reallife_ibox_sec_next");
             int course = -1;
             if (open > 0)
             {
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T("reallife_career_start_no_university"), CellTone.Yellow);
             }
-            box.Section("reallife_look_sec_how");
+            box.Section("reallife_ibox_sec_how");
             box.Note(CareersText.Fill("reallife_career_start_steps", "least", ProRules.AnswerDaysLeast.ToString(), "most", ProRules.AnswerDaysMost.ToString(),
                 "after", ProRules.InterviewAfterDays.ToString(), "days", ProRules.OfferDays.ToString()));
             Transform buttons = box.ButtonRow();
@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Careers
             string course = c != null ? CareersText.Course(c.Id) : string.Empty, place = c != null ? _director.PlaceOf(c, StudyMode.FullTime) : string.Empty;
             int a, b;
             p.SkillsOf(0, out a, out b);
-            box.Section("reallife_look_sec_next");
+            box.Section("reallife_ibox_sec_next");
             switch (v.Step)
             {
                 case PathStep.Ready:
@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Careers
                 int need = ProRules.Need(f, p, r), points = ProRules.Points(f, p, r);
                 box.RowWords(CareersText.Title(p.Id, r), CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(rank.Pay))), r == now ? CellTone.Green : CellTone.Plain);
                 line.Length = 0;
-                line.Append(CareersText.Fill("reallife_look_rung_asks", "need", need.ToString(), "points", points.ToString()));
+                line.Append(CareersText.Fill("reallife_ibox_rung_asks", "need", need.ToString(), "points", points.ToString()));
                 string needs = rank.Quals.Length > 0 || rank.Cert >= 0 ? RungNeeds(rank) : string.Empty;
                 if (needs.Length > 0)
                 {

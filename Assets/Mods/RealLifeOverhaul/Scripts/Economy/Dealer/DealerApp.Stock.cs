@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_app"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_dealer_sum_waiting", _director.Waiting().ToString(), _director.Waiting() > 0 ? CellTone.Yellow : CellTone.Plain);
             box.Row("reallife_dealer_sum_cars", DealerText.T("reallife_dealer_sum_cars_value", "cars", cars.ToString(), "free", free.ToString()));
             box.Row("reallife_dealer_sum_worth", DealerText.Money(worthAll));
@@ -97,13 +97,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             int at = _now;
             box.Chip(State(yard, car, at), car.ShopUntil > at || car.OutUntil > at ? CellTone.Plain : DealerRules.HasDeal(yard, car.Id) ? CellTone.Green : CellTone.Plain);
             ShowroomPhotos.Show(box, car);
-            box.Section("reallife_look_sec_money");
-            box.RowPair("reallife_look_cost", DealerText.Money(car.Cost), "reallife_look_worth", DealerText.Money(worth));
-            box.Row("reallife_look_trade_price", DealerText.Money(DealerRules.TradePrice(worth)));
+            box.Section("reallife_ibox_sec_money");
+            box.RowPair("reallife_ibox_cost", DealerText.Money(car.Cost), "reallife_ibox_worth", DealerText.Money(worth));
+            box.Row("reallife_ibox_trade_price", DealerText.Money(DealerRules.TradePrice(worth)));
             box.Note(DealerText.Fill("reallife_dealer_car_what", "source", DealerText.Source(car.Source), "name", yard.Name, "days", (day - car.Bought).ToString(),
                 "km", DealerText.Km(car.Km), "condition", DealerText.Condition(car.Condition)));
             box.Row("reallife_dealer_car_faults", car.Known != 0 ? DealerText.Faults(car.Known) : DealerText.T("reallife_dealer_faults_none_known"), car.Known != 0 ? CellTone.Yellow : CellTone.Plain);
-            box.Section("reallife_look_asking");
+            box.Section("reallife_ibox_asking");
             int step = Choice(DealerRules.AskStepOf(worth, car.Asking));
             Choose(box, DealerRules.AskSteps, step, i => DealerText.T("reallife_dealer_car_ask", "price", DealerText.Money(DealerRules.AskAt(worth, i)),
                 "share", DealerText.Share(DealerCatalogue.AskLeast + i * DealerCatalogue.AskStep)), i =>

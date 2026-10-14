@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Title(CompanyText.T("reallife_co_tab_marketing"));
                 box.Note(CompanyText.T("reallife_co_push_intro"));
-                box.Section("reallife_look_sec_how");
+                box.Section("reallife_ibox_sec_how");
                 box.Note(CompanyText.T("reallife_co_push_measure"));
                 box.Note(CompanyText.T("reallife_co_push_game"));
                 box.Note(CompanyText.T("reallife_co_push_pick"));
@@ -89,8 +89,8 @@ namespace RealLifeOverhaul.Economy
             box.Title(CompanyText.T("reallife_co_push_title", "business", shop.Name));
             if (file.Push >= 0)
             {
-                box.Chip(CompanyText.T(file.Pushing(day) ? "reallife_look_chip_running" : "reallife_look_chip_booked"), CellTone.Green);
-                box.Section("reallife_look_sec_campaign");
+                box.Chip(CompanyText.T(file.Pushing(day) ? "reallife_ibox_chip_running" : "reallife_ibox_chip_booked"), CellTone.Green);
+                box.Section("reallife_ibox_sec_campaign");
                 box.Row("reallife_co_push_running", CompanyText.Campaign(file.Push));
                 box.Line(CompanyText.T("reallife_co_push_days", "from", file.PushFrom.ToString(), "to", (file.PushEnd - 1).ToString()));
                 box.Row("reallife_co_push_cost", CompanyText.Money(file.PushCost));
@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Economy
             }
             int offered = _director.OfferedKinds(shop, _kinds);
             int at = CompanyCatalogue.Clamp(_campaign, 0, offered - 1);
-            box.Section("reallife_look_sec_campaign");
+            box.Section("reallife_ibox_sec_campaign");
             int kind = _kinds[at];
             if (!box.HasSelector || !box.Selector(offered, at, i => CompanyText.Campaign(_kinds[i]), i =>
                 {
@@ -145,11 +145,11 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Note(CompanyText.T("reallife_co_report_short", "before", r.DaysBefore.ToString(), "during", r.DaysDuring.ToString()));
             }
-            box.Section("reallife_look_sec_before_during");
+            box.Section("reallife_ibox_sec_before_during");
             box.Line(CompanyText.T("reallife_co_report_customers", "before", r.CustomersBefore.ToString(), "during", r.CustomersDuring.ToString(), "change", CompanyText.Percent(r.Footfall)));
             box.Line(CompanyText.T("reallife_co_report_takings", "before", CompanyText.Money(r.TakingsBefore), "during", CompanyText.Money(r.TakingsDuring)));
             box.Line(CompanyText.T("reallife_co_report_profit", "before", CompanyText.Money(r.ProfitBefore), "during", CompanyText.Money(r.ProfitDuring)));
-            box.Section("reallife_look_sec_money");
+            box.Section("reallife_ibox_sec_money");
             box.Row("reallife_co_push_cost", CompanyText.Money(r.Cost));
             box.Row("reallife_co_report_extra", CompanyText.Money(r.Extra), r.Extra > 0 ? CellTone.Green : CellTone.Plain);
             if (r.Cost > 0)

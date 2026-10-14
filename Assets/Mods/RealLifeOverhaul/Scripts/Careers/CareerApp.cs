@@ -295,7 +295,7 @@ namespace RealLifeOverhaul.Careers
             _picked = null;
             box.Title(CareersText.T("reallife_career_jobs_title"));
             box.Note(CareersText.T("reallife_career_jobs_about"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_career_sum_open", open.ToString(), open > 0 ? CellTone.Green : CellTone.Plain);
             if (open == 0)
             {
@@ -323,7 +323,7 @@ namespace RealLifeOverhaul.Careers
             // The post, who offers it and where (a nurse works at the one hospital, at a desk there, as every job is), and
             // how it stands for the player: the word and the tone of the table's last column.
             box.Title(CareersText.Title(o.Prof, o.Rank));
-            box.Subtitle(CareersText.Fill("reallife_look_post_sub", "employer", CareersText.Employer(o.Employer), "place", WorkGame.Address(o.Street, o.Number)));
+            box.Subtitle(CareersText.Fill("reallife_ibox_post_sub", "employer", CareersText.Employer(o.Employer), "place", WorkGame.Address(o.Street, o.Number)));
             box.Chip(CareersText.T(applied ? "reallife_career_state_applied" : !qualified ? "reallife_career_state_unqualified" : eligible ? "reallife_career_state_open" : "reallife_career_state_short"),
                 applied ? CellTone.Green : !qualified ? CellTone.Red : eligible ? CellTone.Plain : CellTone.Yellow);
             if (!qualified)
@@ -336,19 +336,19 @@ namespace RealLifeOverhaul.Careers
                 box.Line(CareersDirector.TurnedDownText(turned), CellTone.Red);   // (and no Apply until then: ProRules.ReapplyDays)
             }
 
-            box.Section("reallife_look_sec_pay");
+            box.Section("reallife_ibox_sec_pay");
             box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(o.Pay))));
             box.Row("reallife_career_col_hours", CareersText.Week(p));
             box.Row("reallife_career_col_mode", CareersText.WorkWay(o.Work));
-            box.Row("reallife_look_employer_kind", CareersText.Kind((EmployerKind)o.Kind));
+            box.Row("reallife_ibox_employer_kind", CareersText.Kind((EmployerKind)o.Kind));
 
-            box.Section("reallife_look_sec_asks");
+            box.Section("reallife_ibox_sec_asks");
             int a, b;
             p.SkillsOf(o.Rank, out a, out b);
-            box.MeterWords(CareersText.Fill("reallife_look_skills", "a", CareersText.Skill(a), "b", CareersText.Skill(b)), LookRules.Fill(points, need),
+            box.MeterWords(CareersText.Fill("reallife_ibox_skills", "a", CareersText.Skill(a), "b", CareersText.Skill(b)), LookRules.Fill(points, need),
                 CareersText.T("reallife_career_row_fit", "points", points.ToString(), "need", need.ToString()),
                 !qualified ? CellTone.Red : points >= need ? CellTone.Green : eligible ? CellTone.Yellow : CellTone.Red);
-            box.Note(CareersText.T("reallife_look_first_counts"));
+            box.Note(CareersText.T("reallife_ibox_first_counts"));
             string needs = Needs(p, o.Rank);
             if (needs.Length > 0)
             {
@@ -363,7 +363,7 @@ namespace RealLifeOverhaul.Careers
             bool chanceShown = !applied && turned == null && qualified && o.Via != (int)Via.Headhunter;
             if (chanceShown || o.Via == (int)Via.Referral)
             {
-                box.Section("reallife_look_sec_chance");
+                box.Section("reallife_ibox_sec_chance");
             }
             if (chanceShown)
             {
@@ -371,7 +371,7 @@ namespace RealLifeOverhaul.Careers
                 int chance = ProPath.OfferChance(ProRules.HireScore(c));
                 if (chance > 0)
                 {
-                    box.Meter("reallife_look_chance", chance / 100f, CareersText.T("reallife_look_about", "value", CareersText.Percent(chance)),
+                    box.Meter("reallife_ibox_chance", chance / 100f, CareersText.T("reallife_ibox_about", "value", CareersText.Percent(chance)),
                         chance >= 50 ? CellTone.Green : chance >= 20 ? CellTone.Plain : CellTone.Yellow);
                 }
                 else
@@ -384,7 +384,7 @@ namespace RealLifeOverhaul.Careers
                 box.Line(CareersText.T("reallife_career_post_referral"), CellTone.Green);
             }
 
-            box.Section("reallife_look_sec_dates");
+            box.Section("reallife_ibox_sec_dates");
             box.Row("reallife_career_col_closes", CareersText.Day(o.To));
             Transform buttons = box.ButtonRow();
             int id = o.Id;
@@ -465,9 +465,9 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_career_applications_title"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_career_sum_offers", offers.ToString(), offers > 0 ? CellTone.Green : CellTone.Plain);
-            box.Section("reallife_look_sec_how");
+            box.Section("reallife_ibox_sec_how");
             box.Note(CareersText.T("reallife_career_applications_about", "most", CareersDirector.ApplicationsLive.ToString(), "days", ProRules.OfferDays.ToString()));
             Meta.Guide.Point(box, JobsGuide);
             return CareerColumns.Applications;
@@ -479,17 +479,17 @@ namespace RealLifeOverhaul.Careers
             Profession p = a.Post.Def;
             bool interviewing = a.Stage == (int)ApplyStep.Interview;
             box.Title(CareersText.Title(a.Post.Prof, a.Post.Rank));
-            box.Subtitle(CareersText.Fill("reallife_look_post_sub", "employer", CareersText.Employer(a.Post.Employer), "place", WorkGame.Address(a.Post.Street, a.Post.Number)));
+            box.Subtitle(CareersText.Fill("reallife_ibox_post_sub", "employer", CareersText.Employer(a.Post.Employer), "place", WorkGame.Address(a.Post.Street, a.Post.Number)));
             box.Chip(CareersText.Step(a.At), a.Stage == (int)ApplyStep.Offered || interviewing ? CellTone.Green : a.Live ? CellTone.Plain : CellTone.Yellow);
-            box.Section("reallife_look_sec_application");
+            box.Section("reallife_ibox_sec_application");
             box.Row("reallife_career_col_sent", CareersText.Day(a.Day));
             box.Row("reallife_career_col_via", CareersText.ViaName(a.Post.Via));
-            box.Meter("reallife_look_their_rating", a.Score / 100f, CareersText.T("reallife_look_of", "value", a.Score.ToString(), "most", "100"),
+            box.Meter("reallife_ibox_their_rating", a.Score / 100f, CareersText.T("reallife_ibox_of", "value", a.Score.ToString(), "most", "100"),
                 a.Score >= 60 ? CellTone.Green : a.Score >= 40 ? CellTone.Plain : CellTone.Yellow);
             switch (a.At)
             {
                 case ApplyStep.Sent:
-                    box.Row("reallife_look_answer_by", CareersText.Day(a.Answer));
+                    box.Row("reallife_ibox_answer_by", CareersText.Day(a.Answer));
                     InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_career_button_withdraw", () => Do(() => _director.Decline(id)));
                     break;
                 case ApplyStep.Interview:
@@ -497,7 +497,7 @@ namespace RealLifeOverhaul.Careers
                         box.Section("reallife_career_col_interview");
                         box.Row("reallife_career_col_day", CareersText.T("reallife_campus_row_next", "day", CareersText.Day(a.InterviewDay), "hour", CareersText.Hour(a.InterviewHour)));
                         box.Row("reallife_career_col_where", _director.InterviewPlace(a));
-                        box.Note(CareersText.T("reallife_look_interview_early"));
+                        box.Note(CareersText.T("reallife_ibox_interview_early"));
                         int minutes;
                         string why = _director.CanInterview(a, out minutes);
                         if (why != null && why != "reallife_work_why_no_interview")
@@ -515,7 +515,7 @@ namespace RealLifeOverhaul.Careers
                         box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(a.Offer))), CellTone.Green);
                         box.Row("reallife_career_col_hours", CareersText.Week(p));
                         box.Row("reallife_career_col_mode", CareersText.WorkWay(a.Post.Work));
-                        box.Row("reallife_look_reply_by", CareersText.Day(a.Lapse));
+                        box.Row("reallife_ibox_reply_by", CareersText.Day(a.Lapse));
                         if (w.Job != null)
                         {
                             box.Line(CareersText.T("reallife_career_app_notice", "days", ProRules.NoticeDays(w.Job.Rank, w.Job.Post.Rank).ToString(), "employer", CareersText.Employer(w.Job.Post.Employer)), CellTone.Yellow);
@@ -574,25 +574,25 @@ namespace RealLifeOverhaul.Careers
                 row.Set(3, state, today ? TableRow.Green : TableRow.Plain);
             }
             box.Title(CareersText.Title(j.Post.Prof, j.Post.Rank));
-            box.Subtitle(CareersText.Fill("reallife_look_post_sub", "employer", CareersText.Employer(j.Post.Employer), "place", WorkGame.Address(j.Post.Street, j.Post.Number)));
+            box.Subtitle(CareersText.Fill("reallife_ibox_post_sub", "employer", CareersText.Employer(j.Post.Employer), "place", WorkGame.Address(j.Post.Street, j.Post.Number)));
             if (j.NoticeEnd > 0)
             {
                 bool cut = j.Leaving == (int)LeaveReason.Redundant;
-                box.Chip(CareersText.T(cut ? "reallife_look_chip_cut" : "reallife_look_chip_leaving"), cut ? CellTone.Red : CellTone.Yellow);
+                box.Chip(CareersText.T(cut ? "reallife_ibox_chip_cut" : "reallife_ibox_chip_leaving"), cut ? CellTone.Red : CellTone.Yellow);
                 box.Line(cut ? CareersText.T("reallife_life_job_redundant", "day", CareersText.Day(j.NoticeEnd))
                     : CareersText.T("reallife_career_job_leaving", "day", CareersText.Day(j.NoticeEnd)), cut ? CellTone.Red : CellTone.Yellow);
             }
-            box.Section("reallife_look_sec_pay");
+            box.Section("reallife_ibox_sec_pay");
             box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(j.Pay))));
             box.Row("reallife_career_col_hours", CareersText.Week(p));
             box.Row("reallife_career_col_mode", CareersText.WorkWay(j.Work));
-            box.Row("reallife_look_since", CareersText.Day(j.Hired));
-            box.Row("reallife_look_earned_here", CareersText.Cents(j.Earned));
-            box.Section("reallife_look_sec_record");
-            box.Meter("reallife_look_days_worked", LookRules.Fill(j.Worked, j.Due), CareersText.T("reallife_look_of", "value", j.Worked.ToString(), "most", j.Due.ToString()),
+            box.Row("reallife_ibox_since", CareersText.Day(j.Hired));
+            box.Row("reallife_ibox_earned_here", CareersText.Cents(j.Earned));
+            box.Section("reallife_ibox_sec_record");
+            box.Meter("reallife_ibox_days_worked", LookRules.Fill(j.Worked, j.Due), CareersText.T("reallife_ibox_of", "value", j.Worked.ToString(), "most", j.Due.ToString()),
                 j.Worked >= j.Due ? CellTone.Green : CellTone.Yellow);
-            box.Row("reallife_look_late", j.Late.ToString(), j.Late > 0 ? CellTone.Yellow : CellTone.Plain);
-            box.Row("reallife_look_warnings", CareersText.T("reallife_look_of", "value", j.Warnings.ToString(), "most", CareersDirector.WarningsToGo.ToString()),
+            box.Row("reallife_ibox_late", j.Late.ToString(), j.Late > 0 ? CellTone.Yellow : CellTone.Plain);
+            box.Row("reallife_ibox_warnings", CareersText.T("reallife_ibox_of", "value", j.Warnings.ToString(), "most", CareersDirector.WarningsToGo.ToString()),
                 j.Warnings > 0 ? CellTone.Red : CellTone.Plain);
             JobMore(box, w, f, j, day);
             // Where the desk is and what to do today: the working day is started at the desk (Careers/CareersDirector.Desk.cs),
@@ -699,7 +699,7 @@ namespace RealLifeOverhaul.Careers
             ProRules.References(w, out good, out poor);
             box.Title(CareersText.T("reallife_career_cv_title"));
             box.Note(CareersText.T("reallife_career_cv_about"));
-            box.Section("reallife_look_sec_record");
+            box.Section("reallife_ibox_sec_record");
             box.Row("reallife_career_sum_school", TechText.School(StudyRules.School(f)));
             box.Row("reallife_career_sum_refs", CareersText.Fill("reallife_career_refs", "good", good.ToString(), "poor", poor.ToString()), poor > good ? CellTone.Yellow : CellTone.Plain);
             box.Row("reallife_career_sum_earned", CareersText.Cents(w.Earned));

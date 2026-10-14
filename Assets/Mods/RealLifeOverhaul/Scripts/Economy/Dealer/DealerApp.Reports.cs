@@ -29,11 +29,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             int kept = DealerReport.Sum(state, place, today - DealerCatalogue.ReportDays + 1, today, today, _reportAll, _reportDay);
             DealerReport.Day(state, place, today, today, _reportNow);
             box.Title(yard != null ? yard.Name : DealerText.T("reallife_dealer_reports_title"));
-            box.Section("reallife_look_sec_this_week");
+            box.Section("reallife_ibox_sec_this_week");
             Sums(box, "reallife_dealer_reports_week", _reportWeek, week);
-            box.Section("reallife_look_sec_kept");
+            box.Section("reallife_ibox_sec_kept");
             Sums(box, "reallife_dealer_reports_kept", _reportAll, kept);
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Line(DealerText.Fill("reallife_dealer_reports_now", "cars", _reportNow.Cars.ToString(), "age", DealerReport.Value(_reportNow, ReportKind.StockAge).ToString(),
                 "arrears", DealerText.Money(_reportNow.Arrears), "late", _reportNow.Late.ToString()));
             box.Note(DealerText.T("reallife_dealer_reports_about"));

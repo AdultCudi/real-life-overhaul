@@ -59,9 +59,9 @@ namespace RealLifeOverhaul.Economy
             bool valid = LicenceRules.Valid(l, day);
             box.Title(CompanyText.Capital(CompanyText.Licence(kind)));
             box.Subtitle(shop.Name);
-            box.Chip(CompanyText.T(valid ? "reallife_look_chip_valid" : "reallife_look_chip_missing"), valid ? CellTone.Green : CellTone.Red);
+            box.Chip(CompanyText.T(valid ? "reallife_ibox_chip_valid" : "reallife_ibox_chip_missing"), valid ? CellTone.Green : CellTone.Red);
             box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : CellTone.Red);
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             box.Row("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index)));
             box.Row("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString()));
             box.Line(CompanyText.T(LicenceRules.Shuts(kind) ? "reallife_co_lic_fine_shut" : "reallife_co_lic_fine", "amount", CompanyText.Money(LicenceRules.Fine(kind, _director.Index)),

@@ -302,7 +302,7 @@ namespace RealLifeOverhaul.Economy
 
             box.Title(FinanceText.T("reallife_econ_tab_overview"));
             box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_econ_over_cash", FinanceText.Money(save.Money), save.Money < 0f ? CellTone.Red : CellTone.Plain);
             box.Row("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedAccounts + owedOther));
             if (owedOther > 0f || owedAccounts > 0f)
@@ -469,7 +469,7 @@ namespace RealLifeOverhaul.Economy
             box.Title(FinanceText.T(CreditCatalogue.FactorKeys[(int)factor]));
             box.Chip(FinanceText.Word(part), tone);
             box.Note(FinanceText.T(FactorAbout[(int)factor]));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_tab_factor_stands", FinanceText.Stands(score, factor), tone);
             box.Meter("reallife_tab_factor_points", part, FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString()), tone);
             box.Row("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%");
@@ -554,7 +554,7 @@ namespace RealLifeOverhaul.Economy
                 box.Title(FinanceText.T("reallife_econ_tab_borrow"));
                 box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
                 box.Note(FinanceText.T("reallife_econ_borrow_pick"));
-                box.Section("reallife_look_sec_how");
+                box.Section("reallife_ibox_sec_how");
                 box.Note(FinanceText.T("reallife_econ_borrow_fee_note", "share", FeeShare(), "least", FinanceText.Money(CreditCatalogue.PhoneFeeLeast)));
                 box.Note(FinanceText.T("reallife_tab_borrow_columns_note"));
                 box.Note(FinanceText.T("reallife_econ_borrow_repay_note"));
@@ -576,7 +576,7 @@ namespace RealLifeOverhaul.Economy
             int most = Mathf.FloorToInt(PhoneLending.MostNow(lender, score.Value));
             box.Title(lender.Name);
             box.Subtitle(FinanceText.T(FinanceTables.OfferKinds[0]));
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             box.Row("reallife_econ_offer_most", FinanceText.Money(most));
             if (most < CreditCatalogue.LoanLeast)
             {
@@ -829,7 +829,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CashFlow.PeriodName(_period));
             }
-            box.Section("reallife_look_sec_totals");
+            box.Section("reallife_ibox_sec_totals");
             box.Row("reallife_econ_cash_in", FinanceText.Money(_flow.In), CellTone.Green);
             box.Row("reallife_econ_cash_out", FinanceText.Money(-_flow.Out), CellTone.Red);
             float net = _flow.In + _flow.Out;

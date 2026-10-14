@@ -516,7 +516,7 @@ namespace RealLifeOverhaul.Meta
             }
             UiClone.Words(_shell.Header, _words.Count == 0 ? T("reallife_set_search_short") : T("reallife_set_headline_found", "count", count.ToString(), "query", _query));
             box.Title(T("reallife_set_search"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_set_box_query", _query.Length > 0 ? _query : "-");
             box.Row("reallife_set_box_found", count.ToString());
             box.Line(_words.Count == 0 ? T("reallife_set_search_short") : count == 0 ? T("reallife_set_box_found_none") : T("reallife_set_box_found_pick"));

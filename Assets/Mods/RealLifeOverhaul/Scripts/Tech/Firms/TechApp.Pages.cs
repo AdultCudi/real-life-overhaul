@@ -113,10 +113,10 @@ namespace RealLifeOverhaul.Tech
             string place = m.Place;
             box.Title(m.Name);
             box.Subtitle(TechText.FirmName(m.K));
-            box.Chip(TechText.T(day < m.RegisteredUntil ? "reallife_look_chip_registered" : "reallife_look_chip_unregistered"), day < m.RegisteredUntil ? CellTone.Green : CellTone.Yellow);
-            box.Section("reallife_look_sec_work");
+            box.Chip(TechText.T(day < m.RegisteredUntil ? "reallife_ibox_chip_registered" : "reallife_ibox_chip_unregistered"), day < m.RegisteredUntil ? CellTone.Green : CellTone.Yellow);
+            box.Section("reallife_ibox_sec_work");
             Idle idle = WorkLines(box, firm, -1, false);
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Line(day < m.RegisteredUntil ? TechText.T("reallife_tech_firm_registered", "day", m.RegisteredUntil.ToString())
                 : TechText.T("reallife_tech_firm_unregistered", "fee", TechText.Money(Prices.At(FirmsCatalogue.RegisterFee / 100))), day < m.RegisteredUntil ? CellTone.Plain : CellTone.Yellow);
             long arr = Level(FirmsRules.Arr(f, place));
@@ -125,7 +125,7 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_tech_firm_crew", "people", firm.People.ToString(), "engineering", c.Engineering.ToString(), "testing", c.Testing.ToString(), "design", c.Design.ToString(),
                 "product", c.Product.ToString(), "selling", c.Selling.ToString(), "support", c.Support.ToString(),
                 "spare", firm.Spare < 1000 ? TechText.T("reallife_tech_firm_spare", "share", TechText.Mille(firm.Spare)) : string.Empty));
-            box.Section("reallife_look_sec_risk");
+            box.Section("reallife_ibox_sec_risk");
             box.Line(TechText.Fill("reallife_tech_firm_risks", "security", TechText.Mille(c.Security), "reliability", TechText.Mille(c.Reliability), "debt", TechText.Mille(m.Debt),
                 "reputation", TechText.Mille(m.Reputation), "outages", m.Outages.ToString(), "breaches", m.Breaches.ToString()));
             if (box.HasSelector)
@@ -435,7 +435,7 @@ namespace RealLifeOverhaul.Tech
             box.Title(p.Name);
             box.Subtitle(TechText.ProductName(p.K));
             box.Chip(State(p));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             if (p.K == ProductKind.Game)
             {
                 int scope = FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)];
@@ -556,7 +556,7 @@ namespace RealLifeOverhaul.Tech
             box.Title(w.Client);
             box.Subtitle(TechText.Work(w.K));
             box.Chip(TechText.StageName(w.At), w.At == WorkStage.Offered || w.At == WorkStage.Active ? CellTone.Green : w.At == WorkStage.Tender || w.At == WorkStage.Bid ? CellTone.Plain : CellTone.Yellow);
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             switch (w.At)
             {
                 case WorkStage.Offered:
@@ -583,7 +583,7 @@ namespace RealLifeOverhaul.Tech
                     box.Line(TechText.StageName(w.At) + ". " + TechText.T("reallife_tech_contract_paid", "paid", TechText.Cents(Level(w.Paid))));
                     break;
             }
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             box.Line(w.Monthly
                 ? TechText.Fill("reallife_tech_contract_monthly", "value", TechText.Cents(Level(w.Value)), "points", FirmsCatalogue.ManagedPoints.ToString())
                 : TechText.Fill("reallife_tech_contract_project", "value", TechText.Cents(Level(w.Value)), "points", w.Points.ToString(), "days", FirmsCatalogue.WorkDays[w.Kind].ToString(),

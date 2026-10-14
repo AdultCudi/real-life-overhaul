@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 _picked = null;
                 _page = PageList;
                 box.Title(FinanceText.T("reallife_ven_tab_investors"));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_ven_inv_name", FinanceText.T("reallife_ven_of_hundred", "value", file.Reputation.ToString()));
                 box.Row("reallife_ven_inv_in", Money(file.InvestedTotal));
                 box.Row("reallife_ven_inv_out", Money(file.PaidOutTotal));
@@ -199,7 +199,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             Investor investor = file.Investor(offer.InvestorId);
             box.Title(investor.Name);
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_ven_offer_by", FinanceText.Day(offer.LapseDay));
             if (offer.Countered)
             {
@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         private void WritePledge(InfoBox box, Pledge pledge)
         {
             box.Title(_director.NameOf(pledge.InvestorId));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_ven_pledge_for", VenturesGame.TypeName(pledge.TypeName));
             box.Row("reallife_ven_offer_amount", Money(pledge.Amount));
             box.Row("reallife_ven_offer_share", FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(pledge.ShareBp)));
@@ -532,7 +532,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 _picked = null;
                 box.Title(FinanceText.T("reallife_ven_who_title"));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_ven_offer_for", about);
                 box.Note(FinanceText.T("reallife_ven_who_pick", "sector", VenturesText.SectorName(sector)));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ven_back", () => GoTo(r != null ? PageBusiness : PageType));

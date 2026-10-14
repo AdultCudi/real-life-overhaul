@@ -110,7 +110,7 @@ namespace RealLifeOverhaul.Tech
             string back = RivalsRow + m.Place;
             box.Title(c.Name);
             box.Subtitle(RivalKindWords(c));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_tech_col_meet", MeetWords(m.Kind, c));
             Transform buttons;
             switch ((RivalKind)c.Kind)

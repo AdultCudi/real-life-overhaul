@@ -329,7 +329,7 @@ namespace RealLifeOverhaul.Economy
         {
             CreditDesk desk = Desk;
             box.Title(FinanceText.T(ProductKeys[_product]));
-            box.Section("reallife_look_sec_terms");
+            box.Section("reallife_ibox_sec_terms");
             switch (_product)
             {
                 case Overdraft: WriteLimit(box, desk, ProductKind.Overdraft); break;
@@ -760,7 +760,7 @@ namespace RealLifeOverhaul.Economy
             else if (selected == LenderRow)
             {
                 box.Title(FinanceText.T("reallife_econ_kind_private"));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_econ_over_owed", FinanceText.Money(file.Shark.Owed), file.Shark.Owed > 0 ? CellTone.Red : CellTone.Plain);
                 box.Line(FinanceText.T("reallife_econ_private_terms", "day", file.Shark.DueDay.ToString(), "perDay", FinanceText.Money(SharkRules.ADay(file.Shark.Borrowed)),
                     "cap", FinanceText.Money(SharkRules.Cap(file.Shark.Borrowed))), CellTone.Yellow);
@@ -785,10 +785,10 @@ namespace RealLifeOverhaul.Economy
                 Obligations due = Books.Tomorrow(file);
                 box.Title(FinanceText.T("reallife_econ_tab_accounts"));
                 box.Note(FinanceText.T("reallife_econ_accounts_pick"));
-                box.Section("reallife_look_sec_now");
+                box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_econ_over_owed", FinanceText.Money(owed));
                 box.Row("reallife_econ_over_leaves", FinanceText.Money(due.Loans + due.Accounts));
-                box.Section("reallife_look_sec_how");
+                box.Section("reallife_ibox_sec_how");
                 box.Note(FinanceText.T("reallife_econ_accounts_order"));
                 Meta.Guide.Point(box, GuideTitle);
             }
@@ -896,13 +896,13 @@ namespace RealLifeOverhaul.Economy
             if (revolving && a.Agreed > 0)
             {
                 float used = a.Owed / (float)a.Agreed;
-                box.Meter("reallife_look_used", used, FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(used * 100f) + "%", "free", FinanceText.Money(a.Free)),
+                box.Meter("reallife_ibox_used", used, FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(used * 100f) + "%", "free", FinanceText.Money(a.Free)),
                     used >= 0.9f ? CellTone.Red : used >= 0.5f ? CellTone.Yellow : CellTone.Green);
             }
             else if (instalment && a.Agreed > 0)
             {
                 int paid = Mathf.Max(0, a.Agreed - a.Owed);
-                box.Meter("reallife_look_paid_off", LookRules.Fill(paid, a.Agreed), FinanceText.T("reallife_tab_account_paid", "paid", FinanceText.Money(paid), "total", FinanceText.Money(a.Agreed)), CellTone.Green);
+                box.Meter("reallife_ibox_paid_off", LookRules.Fill(paid, a.Agreed), FinanceText.T("reallife_tab_account_paid", "paid", FinanceText.Money(paid), "total", FinanceText.Money(a.Agreed)), CellTone.Green);
             }
             if (a.RateBp > 0)
             {
@@ -984,7 +984,7 @@ namespace RealLifeOverhaul.Economy
         internal static void StandsLines(InfoBox box, string state, LadderState s, bool secured, bool nextStep)
         {
             box.Chip(state, s.RepoPending || s.Misses >= 2 ? CellTone.Red : s.Misses > 0 || s.Overdue > 0 ? CellTone.Yellow : CellTone.Plain);
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             if (nextStep)
             {
                 NextStepLine(box, s, secured);
@@ -1075,7 +1075,7 @@ namespace RealLifeOverhaul.Economy
                 int left = Mathf.CeilToInt(loan.remainingAmount / loan.dailyPayment);
                 box.Line(FinanceText.T("reallife_tab_loan_left", "days", left.ToString(), "day", (today + left).ToString()));
             }
-            box.Meter("reallife_look_paid_off", loan.totalAmount > 0f ? Mathf.Max(0f, loan.PaidAmount) / loan.totalAmount : 1f,
+            box.Meter("reallife_ibox_paid_off", loan.totalAmount > 0f ? Mathf.Max(0f, loan.PaidAmount) / loan.totalAmount : 1f,
                 FinanceText.T("reallife_tab_account_paid", "paid", FinanceText.Money(Mathf.Max(0f, loan.PaidAmount)), "total", FinanceText.Money(loan.totalAmount)), CellTone.Green);
             float yearly = YearlyRate(loan, Mathf.Max(1, AccountRules.DaysPerYear));
             if (yearly > 0f)
@@ -1117,7 +1117,7 @@ namespace RealLifeOverhaul.Economy
             desk.Owed(out loans, out unsecured, out secured, out shark, out other);
             var wealth = Helpers.PlayerHelper.GetPersonalWealth();
             box.Title(FinanceText.T("reallife_econ_row_ways"));
-            box.Section("reallife_look_sec_now");
+            box.Section("reallife_ibox_sec_now");
             box.Row("reallife_econ_over_owed", FinanceText.Money(loans + unsecured + secured + shark + other));
             box.Headline("reallife_econ_ways_sell");
             box.Line(FinanceText.T("reallife_econ_ways_sell_line", "cash", FinanceText.Money(wealth.cash), "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
