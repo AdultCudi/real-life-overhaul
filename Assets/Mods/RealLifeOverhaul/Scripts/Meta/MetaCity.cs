@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Meta
                 Dev.Apply();
                 _generation++;
                 GuideApp.Begin(_generation);
+                SettingsApp.Begin(_generation);
                 MetaUi.Instance.Run(Watch(_generation));
                 if (GameBuild.CityDue)
                 {
@@ -50,6 +51,7 @@ namespace RealLifeOverhaul.Meta
             _generation++;
             Root = null;
             GuideApp.End();
+            SettingsApp.End();
             try
             {
                 if (MetaUi.Exists)

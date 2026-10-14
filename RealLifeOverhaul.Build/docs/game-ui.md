@@ -1072,3 +1072,30 @@ A new option: add its row in `RealLifeOverhaulMod.cs` as before, name its id in 
 
 Proven: every member named, from the game's code. Inferred (not seen running): that a cash register takes a customer
 service shift at a business with no products, and how cars stand on a shop's floor.
+
+## 35. The mod's settings on the phone (`Meta/SettingsApp`, `SettingsView`, `OptionsLayout.Book`)
+
+The Mods tab is one flat list for every mod: `ModOptionsViewController.Rebuild` destroys and makes every row of it each
+time the tab is shown (`OnEnable`) and each time a mod registers its page (`OptionsService.OnChanged`), about 470 of the
+mod's rows and buttons, and about 500 more with the test tools on. The Settings app is the same options in the frame
+every app of the mod uses (`AppShell`, `DataTable`, `InfoBox`), with ten tabs (`AppShell.SetTabCount`, the most of any
+app: the tab labels are one short word, `SettingsRules.TabChars`):
+
+- **One source.** The app's lines are `SettingsRules.Tabs` over the very plan the Mods tab is placed by
+  (`OptionsPlan.Place`), and each line holds the row the page registers. A value is read as the game's controls read it
+  (`ModOptionPrefs.Load`: the key `m:<mod>:<id>`, the option's default) or from its field in `Settings`; a change is saved
+  under that key and then the row's own handler is called with it, as `ModOptionsToggleControl`,
+  `ModOptionsSliderControl` and `ModOptionsDropdownControl` do on a click. A switch's handler is the page's wrapper, so
+  the Mods tab hears of it. The game's controls leave the writing to disk to Unity (at the latest when the game quits);
+  the app calls `PlayerPrefs.Save` when it is closed after a change, so that a crash later does not lose it.
+- **Controls.** A switch is the white box's own (MyEmployees' demand row), a choice the game's previous/next selector
+  (`InfoBox.Selector`), a number the same selector over at most about twenty steps (`SettingsRules.Steps`) or a number
+  typed in the game's text entry (`UIs.textInputUi`). The box has no slider: the game's white box has none.
+- **Search** is the game's text entry; the words are matched as the Mods tab's box matches them (`OptionsFind`; a word in
+  Chinese characters anywhere in a text).
+- **Keys** are listed with the key they have; they are changed on the Mods tab, whose row waits for the key itself.
+- **Opening it** from the Mods tab waits for the options to close (`GuideApp.Blocked`), as the Guide does. Another app's
+  page can add a button that opens it on a section (`SettingsApp.Link`; BizMan's Interior tab).
+
+Proven: the game's members named, from the decompiled game. Not seen running: the ten tabs side by side, the box's
+height for an option's page.

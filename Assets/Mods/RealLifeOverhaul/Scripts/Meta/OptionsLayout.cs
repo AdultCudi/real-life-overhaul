@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Meta
             public Feature AsideOf;                // the feature that may say it does nothing for now
             public bool Away;                      // not on the page in this drawing
             public string Reason;                  // why it does nothing just now, as shown after its label; null while it works
+            public ModOption Option;               // the row as the page registers it (a switch wrapped so that the page hears of it): what the Settings app writes through
         }
 
         /// <summary>A button of the page that opens and closes: a group, a section, "Test tools" or a group of test buttons.</summary>
@@ -197,6 +198,7 @@ namespace RealLifeOverhaul.Meta
             {
                 MetaLog.Error(e);
                 MetaLog.Warn("the options page could not be put in order and is shown as it was built.");
+                _tabs = null;
                 _plain = null;
                 _withTests = null;
                 return AsBuilt(original);
@@ -339,6 +341,7 @@ namespace RealLifeOverhaul.Meta
                 }
             }
             // And the page's own buttons.
+            built.Add(new ButtonOption("reallife_meta_settings_button", () => SettingsApp.Open(null)));
             built.Add(new ButtonOption("reallife_meta_guide_button", Guide.Open));
             built.Add(new ButtonOption("reallife_meta_preset_button_relaxed", () => AskPreset(Intensity.Relaxed)));
             built.Add(new ButtonOption("reallife_meta_preset_button_standard", () => AskPreset(Intensity.Standard)));
@@ -356,6 +359,9 @@ namespace RealLifeOverhaul.Meta
                 rows.Add(new PlanRow(KindOf(option), option is IPersistableOption saved ? saved.Id : null, option.Label));
             }
             _plan = OptionsPlan.Place(rows);
+            _built = new Row[built.Count];
+            TestPlaces.Clear();
+            TestRuns.Clear();
 
             // The groups and their sections, in the table's order.
             Section trouble = null;
@@ -380,7 +386,7 @@ namespace RealLifeOverhaul.Meta
                     }
                     foreach (int index in placed.Rows)
                     {
-                        AddRow(into, built[index], OptionsTree.Row(rows[index].Key));
+                        _built[index] = AddRow(into, built[index], OptionsTree.Row(rows[index].Key));
                     }
                     Feature guide = group.IsFlat || placed.Tree.GuideFeature == null ? null : Features.Find(placed.Tree.GuideFeature);
                     if (guide != null && (guide.HelpKey != null || guide.AboutKey != null))
@@ -407,7 +413,7 @@ namespace RealLifeOverhaul.Meta
                 trouble.Children.Add(other);
                 foreach (int index in _plan.Other.Rows)
                 {
-                    AddRow(other, built[index], null);
+                    _built[index] = AddRow(other, built[index], null);
                     MetaLog.Warn("options page: the row " + rows[index].Key + " is in no section of Meta/OptionsTree.cs and is shown under Troubleshooting, Other.");
                 }
             }
@@ -417,6 +423,8 @@ namespace RealLifeOverhaul.Meta
             }
 
             _testRows = trouble != null ? AddTests(trouble) : 0;
+            _tabs = SettingsRules.Tabs(_plan, rows, TestPlaces);
+            _lineOf = null;
             foreach (Section top in Top)
             {
                 Register(top);
@@ -452,10 +460,14 @@ namespace RealLifeOverhaul.Meta
 
         // One row into a section. A switch is wrapped so that the page hears of it: the game calls the handler with the
         // saved value each time the page is drawn, and on every click. The option's own handler runs first, unchanged.
-        private static void AddRow(Section section, ModOption option, TreeRow tree)
+        private static Row AddRow(Section section, ModOption option, TreeRow tree)
         {
             string id = option is IPersistableOption saved && !string.IsNullOrEmpty(saved.Id) ? saved.Id : null;
             var row = new Row { Section = section, Index = section.Rows.Count, Id = id, LabelKey = option.Label };
+            if (option.Label == SettingsButtonKey)
+            {
+                row.Present = SettingsApp.IsInstalled;   // there is a phone to open it on only while a save is loaded
+            }
             if (tree != null)
             {
                 row.TipKey = tree.TipKey;
@@ -493,8 +505,10 @@ namespace RealLifeOverhaul.Meta
                     }
                 });
             }
+            row.Option = option;
             section.Rows.Add(option);
             section.Infos.Add(row);
+            return row;
         }
 
         // "Test tools" under Troubleshooting: a group per group of the page, and in it one per section, each closed until it is asked for.
@@ -503,8 +517,9 @@ namespace RealLifeOverhaul.Meta
             var tests = new Section { Id = "t", TitleKey = "reallife_meta_title_tests", IsTests = true, InTests = true, Parent = trouble };
             int count = 0;
             var claimed = new HashSet<Feature>();
-            foreach (TreeGroup group in OptionsTree.Groups)
+            for (int g = 0; g < OptionsTree.Groups.Length; g++)
             {
+                TreeGroup group = OptionsTree.Groups[g];
                 var top = new Section { Id = "tg:" + group.Id, TitleKey = group.TitleKey, InTests = true, Parent = tests };
                 foreach (TreeSection section in group.Sections)
                 {
@@ -527,7 +542,10 @@ namespace RealLifeOverhaul.Meta
                                 into = new Section { Id = "ts:" + section.Id, TitleKey = section.TitleKey, InTests = true, Parent = top };
                                 top.Children.Add(into);
                             }
-                            AddRow(into, new ButtonOption(test.LabelKey, InCity(test)), null);
+                            Action run = InCity(test);
+                            AddRow(into, new ButtonOption(test.LabelKey, run), null);
+                            TestPlaces.Add(new TestPlace(g, section.Id, test.LabelKey));
+                            TestRuns.Add(run);
                             count++;
                         }
                     }
@@ -563,7 +581,10 @@ namespace RealLifeOverhaul.Meta
                         rest.Children.Add(into);
                         MetaLog.Warn("options page: the feature " + feature.Id + " is in no section of Meta/OptionsTree.cs; its test tools are under Test tools, Other.");
                     }
-                    AddRow(into, new ButtonOption(test.LabelKey, InCity(test)), null);
+                    Action run = InCity(test);
+                    AddRow(into, new ButtonOption(test.LabelKey, run), null);
+                    TestPlaces.Add(new TestPlace(-1, null, test.LabelKey));
+                    TestRuns.Add(run);
                     count++;
                 }
             }
@@ -790,9 +811,9 @@ namespace RealLifeOverhaul.Meta
                 {
                     On[row.Id] = on;
                 }
-                if (Drawing)
+                if (Drawing || _countFormat == null)
                 {
-                    return;   // DrawEnd counts and greys everything once, when all have reported
+                    return;   // DrawEnd counts and greys everything once, when all have reported; or the page was never drawn (a change from the Settings app)
                 }
                 if (row.Needed)
                 {

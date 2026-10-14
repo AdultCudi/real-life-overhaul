@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Meta
         // ---------------------------------------------------------------- asking for it
 
         /// <summary>One of the game's own screens that the phone's menu must not be opened over, or that hides the HUD.</summary>
-        private static bool Blocked => CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen || Scenes.MainMenu.Options.IsVisible;
+        internal static bool Blocked => CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen || Scenes.MainMenu.Options.IsVisible;
 
         /// <summary>Opens the Guide (on a page, or the list for null). Waits for a menu of the game's to close; says so when it cannot.</summary>
         public static void Open(string topicId)
