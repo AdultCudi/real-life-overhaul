@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Tech
                 .Fact("tech_feature_step", () => Whole(FirmsCatalogue.FeatureStep))
                 .Fact("tech_launch_features", () => Whole(FirmsCatalogue.LaunchFeatures))
                 .Fact("tech_points", () => Whole(FirmsCatalogue.PointsPerDay))
+                .Fact("tech_net_days", () => Whole(TechBridges.NetDaysNow()))
                 .Fact("tech_tiers", () => Mille(FirmsCatalogue.PriceTiers[0]) + ", " + Mille(FirmsCatalogue.PriceTiers[1]) + " " + TechText.T("reallife_guide_tech_or") + " " + Mille(FirmsCatalogue.PriceTiers[2]))
                 .Fact("tech_marketing_most", () => Guide.Money(Prices.At(FirmsCatalogue.MarketingDay[FirmsCatalogue.MarketingDay.Length - 1] / 100)))
                 .Fact("tech_tickets", () => Whole(FirmsCatalogue.TicketsPerPerson))

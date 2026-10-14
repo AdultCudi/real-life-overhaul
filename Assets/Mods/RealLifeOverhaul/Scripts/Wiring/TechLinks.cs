@@ -48,6 +48,10 @@ namespace RealLifeOverhaul
                 TechBridges.Supplied = Supplied;
                 TechBridges.Ipo = Ipo;
                 TechBridges.Mbps = Mbps;
+                TechBridges.Net = Net;
+                TechBridges.NetDays = () => Utilities.InternetCatalogue.InstallDays;
+                TechBridges.OpenInternet = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
+                TechBridges.OpenRota = OpenRota;
                 TechBridges.OthersPicked = OthersPicked;
                 TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
@@ -138,6 +142,71 @@ namespace RealLifeOverhaul
                 {
                     Fault("TechLinks.Supplied", e);
                     return true;
+                }
+            }
+
+            // What keeps a business that needs the internet closed for want of it, as the utilities close it each hour
+            // (UtilitiesDirector.Effects): no plan (none, cut or closed), one still being installed, or an outage. Nothing for
+            // a business that does not need one, one still in the grace the rule began with, or with the utilities off.
+            private static int Net(BuildingRegistration reg, out int when)
+            {
+                when = 0;
+                try
+                {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    Utilities.UtilitiesState state = d != null ? d.State : null;
+                    if (state == null || !Settings.Utilities || reg == null || Array.IndexOf(Utilities.InternetCatalogue.Needs, reg.businessTypeName) < 0)
+                    {
+                        return 0;
+                    }
+                    string place = Utilities.UtilitiesGame.Place(reg);
+                    int today = SaveGameManager.Current.Day;
+                    if (Utilities.InternetRules.InGrace(state, place, today))
+                    {
+                        return 0;
+                    }
+                    Utilities.Account a = state.Find(place, Utilities.Service.Internet);
+                    if (a == null || a.State == Utilities.SupplyState.Closed || a.State == Utilities.SupplyState.Cut)
+                    {
+                        return 1;
+                    }
+                    if (a.State == Utilities.SupplyState.Pending)
+                    {
+                        when = a.ConnectDay;
+                        return 2;
+                    }
+                    int hour = today * 24 + SaveGameManager.Current.Hour;
+                    if (Utilities.InternetRules.InOutage(a, hour))
+                    {
+                        when = a.OutageUntil % 24;
+                        return 3;
+                    }
+                    return 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Net", e);
+                    return 0;
+                }
+            }
+
+            // The Company app's Rota tab with a business picked, while the company runs.
+            private static bool OpenRota(string place)
+            {
+                try
+                {
+                    Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
+                    if (company == null || !company.Running)
+                    {
+                        return false;
+                    }
+                    company.Open(Economy.CompanyDirector.TabRota, "rota:" + place);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.OpenRota", e);
+                    return false;
                 }
             }
 
