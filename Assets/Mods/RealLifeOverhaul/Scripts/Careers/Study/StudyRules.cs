@@ -209,6 +209,54 @@ namespace RealLifeOverhaul.Careers
             return day < today || (day == today && minuteOfDay > Hour(c, mode) * 60 + StudyCatalogue.LateMinutes);
         }
 
+        public const int HeldLookBack = 28;   // days: classes gone by but not yet counted are looked for this far back (the hour and the day count them sooner)
+
+        /// <summary>
+        /// The classes of an enrolment held so far: those counted (attended or missed), those whose window has shut since
+        /// without being counted yet (today's from <see cref="StudyCatalogue.LateMinutes"/> after its start until the next
+        /// hour counts it as missed), and the one the player is sitting now (<paramref name="sitting"/>: the course of the
+        /// class being sat, -1 for none). At most the course's classes. A loop of at most four weeks, run when a page is
+        /// written, never per frame.
+        /// </summary>
+        public static int Held(Enrolment e, int today, int minuteOfDay, int sitting)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null)
+            {
+                return 0;
+            }
+            if (!c.Timetabled || e.Stage != (int)EnrolStage.Studying || e.Seen >= c.Sessions)
+            {
+                return e.Seen;
+            }
+            var mode = (StudyMode)e.Mode;
+            int held = e.Seen, days = Days(c, mode);
+            for (int d = Math.Max(Math.Max(e.Start, e.SettledDay + 1), today - HeldLookBack); d <= today && held < c.Sessions; d++)
+            {
+                if (Gone(c, mode, d, today, minuteOfDay) || (d == today && sitting == e.Course && On(days, d)))
+                {
+                    held++;
+                }
+            }
+            return held;
+        }
+
+        /// <summary>
+        /// The next class of an enrolment that can still be joined, as day * 1440 + its starting minute, or -1: none while
+        /// it is not at its classes, and none once every class of the course has been held (<see cref="Held"/>). The one rule
+        /// every page that names the next class reads: the Campus app, Persona, the desks and doors, the notices.
+        /// </summary>
+        public static int NextClass(Enrolment e, int today, int minuteOfDay, int sitting)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null || !c.Timetabled || e.Stage != (int)EnrolStage.Studying || Held(e, today, minuteOfDay, sitting) >= c.Sessions)
+            {
+                return -1;
+            }
+            int from = Math.Max(e.Start, e.SettledDay + 1);
+            return NextClass(c, (StudyMode)e.Mode, today, minuteOfDay, sitting == e.Course ? Math.Max(from, today + 1) : from);
+        }
+
         /// <summary>The next day on or after a day with a class of the course; -1 for none.</summary>
         public static int Next(CourseDef c, StudyMode mode, int from)
         {

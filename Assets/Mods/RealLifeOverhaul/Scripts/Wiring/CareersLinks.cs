@@ -631,6 +631,7 @@ namespace RealLifeOverhaul
                             }
                         }
                     }
+                    int today = PlannerDirector.Now() / PlannerTime.MinutesPerDay;
                     for (int i = 0; i < f.Courses.Count; i++)
                     {
                         Enrolment e = f.Courses[i];
@@ -660,6 +661,7 @@ namespace RealLifeOverhaul
                                 p.Start = hour * 60;
                                 p.End = ((hour + c.Hours) % 24) * 60;
                                 p.Attend = true;
+                                p.JoinBy = director.SittingClass == c.Id && day == today ? -1 : hour * 60 + StudyCatalogue.LateMinutes;   // missed once it can no longer be joined (StudyRules.Joinable)
                                 CampusBuilding uni = director.University;
                                 if (mode != StudyMode.Distance && c.Campus == Campus.University && uni != null && uni.Usable)
                                 {

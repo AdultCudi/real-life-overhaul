@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Planner
         public int End = -1;         // minutes since midnight on the same day; -1: no end
         public bool Deadline;        // "by 17:00": End is the last moment, there is no start
         public bool Attend;          // the player has to be there: it can clash with another, and it is missed if not done
+        public int JoinBy = -1;      // minutes since midnight: the last moment it can still be begun (a class's late window); -1: until it ends
         public bool Done;
         public bool Own;             // one of the player's notes: it can be edited, ticked off and deleted
 
@@ -168,7 +169,7 @@ namespace RealLifeOverhaul.Planner
             Id = default(EntryId);
             Category = PlannerCategory.Note;
             Day = 0;
-            Start = End = -1;
+            Start = End = JoinBy = -1;
             Deadline = Attend = Done = Own = false;
             Title = Where = What = Money = IfMissed = Street = null;
             HasPlace = false;
@@ -347,9 +348,9 @@ namespace RealLifeOverhaul.Planner
             {
                 return PlannerState.Done;
             }
-            if (nowMinutes >= e.Ends)
+            if (nowMinutes >= e.Ends || (e.JoinBy >= 0 && !e.Deadline && nowMinutes > e.Day * PlannerTime.MinutesPerDay + e.JoinBy))
             {
-                return e.Attend || e.Deadline ? PlannerState.Missed : PlannerState.Over;
+                return e.Attend || e.Deadline ? PlannerState.Missed : PlannerState.Over;   // (past the moment it could be begun: the same)
             }
             if (e.Deadline)
             {

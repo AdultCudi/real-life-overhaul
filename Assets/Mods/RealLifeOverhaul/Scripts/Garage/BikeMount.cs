@@ -446,13 +446,13 @@ namespace RealLifeOverhaul
                     }
                 }
                 _hidden.Clear();
-                if (_poi != null)
+                if (!ReferenceEquals(_poi, null))
                 {
                     if (_scooter != null && ReferenceEquals(_scooter.poi, _poi))
                     {
                         _scooter.poi = null;
                     }
-                    Destroy(_poi.gameObject);
+                    MapPlaces.Drop(_poi);   // out of the game's list of markers first, then destroyed (Core/MapPlaces)
                     _poi = null;
                 }
                 if (_body != null && _body.Root != null)

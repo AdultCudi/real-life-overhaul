@@ -146,15 +146,15 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>
         /// Where a course stands: the enrolment under way if there is one, else its best pass, else its latest result, else
-        /// not started. The next class is the Campus app's (the first day of the timetable not yet settled).
+        /// not started. The next class is the Campus app's (<see cref="StudyRules.NextClass(Enrolment, int, int, int)"/> at this
+        /// minute of the day; <paramref name="sitting"/> the course whose class is being sat, -1 for none).
         /// </summary>
-        public static EducationStatus Status(StudyFile f, CourseDef c, int today)
+        public static EducationStatus Status(StudyFile f, CourseDef c, int today, int minuteOfDay, int sitting)
         {
             var s = new EducationStatus();
             Enrolment live = f != null ? f.Live(c.Id) : null;
             if (live != null)
             {
-                var mode = (StudyMode)live.Mode;
                 s.Done = c.Timetabled ? live.Done : live.Homework;
                 s.Of = c.Timetabled ? c.Sessions : c.Homework;
                 s.Homework = !c.Timetabled;
@@ -169,9 +169,9 @@ namespace RealLifeOverhaul.Careers
                         break;
                     default:
                         s.State = live.FeeLate ? EducationState.FeeOwed : EducationState.Studying;
-                        int next = c.Timetabled ? StudyRules.Next(c, mode, live.SettledDay >= today ? today + 1 : today) : -1;
-                        s.NextDay = next > 0 ? next : 0;
-                        s.NextHour = next > 0 ? StudyRules.Hour(c, mode) : 0;
+                        int next = StudyRules.NextClass(live, today, minuteOfDay, sitting);
+                        s.NextDay = next >= 0 ? next / (24 * 60) : 0;
+                        s.NextHour = next >= 0 ? next % (24 * 60) / 60 : 0;
                         break;
                 }
                 return s;
@@ -252,7 +252,7 @@ namespace RealLifeOverhaul.Careers
         /// listed if <paramref name="listed"/> says so (offered with the options as they are) or the player has begun it;
         /// with <paramref name="startedOnly"/> (a box that cannot scroll) only those begun. Returns the courses listed.
         /// </summary>
-        public static int Rows(StudyFile f, Func<CourseDef, bool> listed, bool startedOnly, int today, List<EducationRow> into)
+        public static int Rows(StudyFile f, Func<CourseDef, bool> listed, bool startedOnly, int today, int minuteOfDay, int sitting, List<EducationRow> into)
         {
             into.Clear();
             int courses = 0;
@@ -267,7 +267,7 @@ namespace RealLifeOverhaul.Careers
                     {
                         continue;
                     }
-                    EducationStatus s = Status(f, c, today);
+                    EducationStatus s = Status(f, c, today, minuteOfDay, sitting);
                     bool begun = Started(s.State);
                     if ((startedOnly && !begun) || (!begun && (listed == null || !listed(c))))
                     {

@@ -160,6 +160,15 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
+                string missing = Incomplete(place, this);
+                if (missing != null)
+                {
+                    if (Said.Add(Id + ":" + missing))
+                    {
+                        Logger?.Warn("Map places: a place of '" + Id + "' (" + (place.Name ?? "no name") + ") is not put on the map: " + missing + ".");
+                    }
+                    return;
+                }
                 place.Owner = this;
                 _places.Add(place);
                 Mark(place);
@@ -446,6 +455,89 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- markers
 
+        private static int _dropped;   // markers taken off the game's map since the driver's last look (for its self-check)
+
+        /// <summary>
+        /// True while the game's map can take a marker: the map's object is switched on, so a marker made now is woken by
+        /// the engine. The game switches the whole map off during its time machine (sleeping, skipping time:
+        /// TimeMachine.ToggleUiVisibility). A marker made then and destroyed before the map came back was never woken, so
+        /// its own OnDestroy (which takes it out of CityMap.pois) never ran: it stayed in the game's list dead, and the
+        /// game's PermanentPointsOfInterest.HandlePermanentPOIs, called from CityMap.LateUpdate, threw a
+        /// NullReferenceException on it every frame from then on (0.16.0). A place given meanwhile waits for the driver's
+        /// next look (once a second).
+        /// </summary>
+        internal static bool CanMark(CityManager city)
+        {
+            return city != null && city.cityMap != null && city.cityMap.poiTemplate != null && city.cityMap.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>
+        /// One of the mod's markers off the game's map: taken out of the game's list of markers first (the marker's own
+        /// OnDestroy does that only if the engine ever woke it), the game's two caches of that list rebuilt on the next frame
+        /// (CityManager.UpdatePointOfInterests), then destroyed. Every marker the mod gives the game goes this way.
+        /// </summary>
+        internal static void Drop(PointOfInterest marker)
+        {
+            if (ReferenceEquals(marker, null))
+            {
+                return;
+            }
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            if (city != null && city.cityMap != null && city.cityMap.pois.Remove(marker))
+            {
+                city.UpdatePointOfInterests();
+            }
+            _dropped++;
+            if (marker != null)
+            {
+                UnityEngine.Object.Destroy(marker.gameObject);
+            }
+        }
+
+        /// <summary>What a place lacks to be put on the map (null: nothing): a place where it is, and a category with an icon.</summary>
+        private static string Incomplete(MapPlace place, Category owner)
+        {
+            Vector3 p = place.Position;
+            if (float.IsNaN(p.x) || float.IsNaN(p.y) || float.IsNaN(p.z) || float.IsInfinity(p.x) || float.IsInfinity(p.y) || float.IsInfinity(p.z))
+            {
+                return "it has no position";
+            }
+            if (owner.Icon == null)
+            {
+                return "its kind has no icon";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// With Developer diagnostics on, after markers were taken off the map: the game's list of markers looked through
+        /// once for any left dead (one look over a few hundred references, only after a change, never per frame).
+        /// </summary>
+        private static void CheckDropped(CityManager city)
+        {
+            if (_dropped == 0)
+            {
+                return;
+            }
+            int dropped = _dropped;
+            _dropped = 0;
+            if (!Meta.Dev.Verbose || city == null || city.cityMap == null)
+            {
+                return;
+            }
+            List<PointOfInterest> pois = city.cityMap.pois;
+            int dead = 0;
+            for (int i = 0; i < pois.Count; i++)
+            {
+                if (pois[i] == null)
+                {
+                    dead++;
+                }
+            }
+            Logger?.Info("Map places check (markers taken off): " + dropped + " taken out of the game's list of " + pois.Count + " marker(s) before they went; "
+                + dead + " dead marker(s) left in it" + (dead == 0 ? ": PASS" : " (not the mod's: its own are taken out first)"));
+        }
+
         private static void Mark(MapPlace place)
         {
             if (!ReferenceEquals(place.Building, null))
@@ -472,9 +564,9 @@ namespace RealLifeOverhaul
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                if (city == null || city.cityMap == null || city.cityMap.poiTemplate == null)
+                if (!CanMark(city))
                 {
-                    return;   // (looked at again by the driver: the map may not be there yet)
+                    return;   // (looked at again by the driver: the map may not be there yet, or be switched off)
                 }
                 var anchor = new GameObject("Place " + place.Name);
                 anchor.transform.SetParent(_driver.transform, false);
@@ -501,9 +593,9 @@ namespace RealLifeOverhaul
             {
                 _filters.ApplyFilters();   // the game looks at its buildings again, and puts the light out
             }
-            if (place.Marker != null && !GameManager.isCitySceneBeingUnloaded)
+            if (!ReferenceEquals(place.Marker, null) && !GameManager.isCitySceneBeingUnloaded)
             {
-                UnityEngine.Object.Destroy(place.Marker.gameObject);
+                Drop(place.Marker);
             }
             if (place.Anchor != null)
             {
@@ -1301,6 +1393,7 @@ namespace RealLifeOverhaul
                     Refresh();
                 }
                 Label();
+                CheckDropped(InstanceBehavior<CityManager>.Instance);
                 if (!ReferenceEquals(_card, null))
                 {
                     _carded = null;   // written again once a second: the game rewrites the card on the hour

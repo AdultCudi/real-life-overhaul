@@ -185,7 +185,7 @@ namespace RealLifeOverhaul.Careers
                 list = null;   // (rows not straight in the box: it cannot be sized to them, so only the begun ones)
             }
             bool scrolls = list != null && _box.GetComponentInParent<ScrollRect>() != null;
-            int courses = EducationRules.Rows(f, CareersDirector.Offered, !scrolls, save.Day, _rows);
+            int courses = EducationRules.Rows(f, CareersDirector.Offered, !scrolls, save.Day, CareersGame.MinuteOfDay, CareersDirector.Instance != null ? CareersDirector.Instance.SittingClass : -1, _rows);
             int headings = 0;
             for (int i = 0; i < _rows.Count; i++)
             {

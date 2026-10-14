@@ -140,6 +140,21 @@ internal static class Program
         Check(due.State == PlannerState.Missed, "a deadline is missed at its hour");
         PlannerLogic.Arrange(list, PlannerTime.At(6, 0));
         Check(allDay.State == PlannerState.Over && later.Next, "the day changes: yesterday's all-day entry is over, tomorrow's first is next");
+        // A class can be joined only until a while after it starts (StudyRules.Joinable): after that it is missed, though its
+        // hours run on, and it is not what is next.
+        list.Begin(1, 10, false);
+        PlannerEntry lesson = Add(list, "a", 9, 5, 540, 720);
+        lesson.JoinBy = 600;
+        PlannerEntry after = Add(list, "a", 10, 5, 780, 840);
+        PlannerLogic.Arrange(list, PlannerTime.At(5, 9, 30));
+        Check(lesson.State == PlannerState.Now && lesson.Next, "a class is on and next while it can still be joined");
+        PlannerLogic.Arrange(list, PlannerTime.At(5, 10, 0));
+        Check(lesson.State == PlannerState.Now, "a class can be joined until its last minute");
+        PlannerLogic.Arrange(list, PlannerTime.At(5, 10, 12));
+        Check(lesson.State == PlannerState.Missed && !lesson.Next && after.Next, "past the moment it can be joined, a class is missed and the next entry is next");
+        lesson.JoinBy = -1;
+        PlannerLogic.Arrange(list, PlannerTime.At(5, 10, 12));
+        Check(lesson.State == PlannerState.Now, "an entry with no last moment to begin is on until it ends");
         list.Begin(1, 10, false);
         PlannerLogic.Arrange(list, at);
         Check(list.Items.Count == 0, "an empty agenda arranges to nothing");
