@@ -135,6 +135,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             ClassPrompt();
+            PersonaEducation.Keep();   // (the mod's courses in the Persona app's education box: a null test once it is there)
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
             EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen);
