@@ -280,6 +280,35 @@ namespace RealLifeOverhaul.Markets
             return Math.Log(Math.Max(0.01, fair));
         }
 
+        // ---------------------------------------------------------------- the closes the day's moves are measured from
+
+        /// <summary>
+        /// Every listed company's, the index's and each sector's close the day's move is measured from (PrevClose,
+        /// IndexPrevClose, SectorPrevClose), out of their histories (<see cref="MarketHistory.DayBase(List{Candle}, bool, int)"/>):
+        /// at the open, the last close; read from a save, by whether the market is in a session. They move only at the
+        /// open, so after the close, overnight and over a weekend the Companies tab, the watch list, a company's page and
+        /// the ticket show the session just ended as the index and the sectors do, never 0 for all. (Until 0.15.1 they
+        /// were moved to the last price at the close, which left every company at 0.00% until the next open.) Taken from
+        /// the shared histories alone, so it is the same on every machine of a Going Public session. 140 companies and 23
+        /// sectors, once an open or a load; no allocation.
+        /// </summary>
+        public static void DayBases(MarketState state, bool session)
+        {
+            for (int i = 0; i < state.Stocks.Count; i++)
+            {
+                Stock s = state.Stocks[i];
+                if (s.Listed)
+                {
+                    s.PrevClose = Math.Max(1, MarketHistory.DayBase(s.Daily, session, s.PrevClose));
+                }
+            }
+            state.IndexPrevClose = MarketHistory.DayBase(state.IndexDaily, session, state.IndexPrevClose);
+            for (int sec = 0; sec < (int)MarketSector.Count; sec++)
+            {
+                state.SectorPrevClose[sec] = MarketHistory.DayBase(state.SectorDaily[sec], session, state.SectorPrevClose[sec]);
+            }
+        }
+
         // ---------------------------------------------------------------- a split
 
         /// <summary>

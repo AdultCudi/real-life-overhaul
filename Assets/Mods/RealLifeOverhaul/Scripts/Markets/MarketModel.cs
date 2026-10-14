@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Markets
         public double Outlook;                   // what the market expects of the business beyond its figures (ln), which they bear out in time
         public long Shares;                      // in issue
         public double Impact;                    // the player's recent trading in it, in shares, fading
-        public int PrevClose, Open, High, Low, Last;   // cents; Last is the price of the last step
+        public int PrevClose, Open, High, Low, Last;   // cents; Last is the price of the last step; PrevClose the close today's move is from (set at the open: MarketLife.DayBases)
         public long DayVolume;
 
         // ---- the business
@@ -502,5 +502,8 @@ namespace RealLifeOverhaul.Markets
         public long Now => Time(Day, Phase);
 
         public long Frontier => Time(FrontierDay, FrontierPhase);
+
+        /// <summary>True from a market day's open to its close (the open done, the close not yet).</summary>
+        public bool InSession => MarketCatalogue.TradingDay(Day) && Phase >= MarketCatalogue.PhaseOpen && Phase < MarketCatalogue.PhaseClose;
     }
 }

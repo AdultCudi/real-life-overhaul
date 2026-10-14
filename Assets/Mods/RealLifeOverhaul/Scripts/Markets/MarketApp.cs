@@ -336,7 +336,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A move from one price to another in basis points; 0 if there is no price before.</summary>
         internal static int Bp(long now, long before)
         {
-            return before > 0 ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (now - before) * 10000L / before)) : 0;
+            return MarketHistory.MoveBp(now, before);
         }
 
         internal static GameUi.CellTone Tone(int bp)

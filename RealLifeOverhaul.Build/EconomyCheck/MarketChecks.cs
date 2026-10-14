@@ -175,6 +175,7 @@ internal static partial class Program
         MarketNoFreeLunch();
         MarketCost();
         MarketTrading2();   // stop losses, take profits and trading bots (MarketChecks5.cs)
+        MarketDayMoves();   // the day's move of every company, the index and the sectors, in a session and between (MarketChecks6.cs)
         Console.WriteLine("  the stock market: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 }

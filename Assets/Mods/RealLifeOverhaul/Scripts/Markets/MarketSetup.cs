@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Markets
                 Add(state, s, default(CarriedPrice), day, year, seed);
             }
             Indices(state, year);
+            MarketLife.DayBases(state, state.InSession);   // (as a save of this moment reads: MarketStore.Read)
             return state;
         }
 

@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Markets
 
         private TableSpec WriteMarket(InfoBox box, MarketState s)
         {
-            int today = Bp(s.IndexLast, s.IndexPrevClose);
+            int today = MarketHistory.IndexDayMoveBp(s);
             box.Title(MarketText.T("reallife_mkt_index"));
             StatusLine(box);
             box.Line(MarketText.Fill("reallife_mkt_box_index", "level", IndexWords(s.IndexLast), "change", MarketText.Change(today)));
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
 
             TableRow index = Row(SectorRow, -1);
-            WriteIndex(index, MarketText.T("reallife_mkt_index"), s.IndexLast, s.IndexPrevClose, s.IndexDaily, null);
+            WriteIndex(index, MarketText.T("reallife_mkt_index"), s.IndexLast, MarketHistory.IndexDayMoveBp(s), s.IndexDaily, null);
             for (int sec = 0; sec < (int)MarketSector.Count; sec++)
             {
                 if (s.SectorLast[sec] <= 0)
@@ -126,18 +126,17 @@ namespace RealLifeOverhaul.Markets
                     continue;
                 }
                 TableRow row = Row(SectorRow, sec);
-                WriteIndex(row, MarketText.Sector((MarketSector)sec), s.SectorLast[sec], s.SectorPrevClose[sec], null, s.SectorDaily[sec]);
+                WriteIndex(row, MarketText.Sector((MarketSector)sec), s.SectorLast[sec], MarketHistory.SectorDayMoveBp(s, sec), null, s.SectorDaily[sec]);
             }
             return MarketTables.Overview;
         }
 
         private static readonly int[] Backs = { 5, 21, 63, 100 };
 
-        private static void WriteIndex(TableRow row, string name, int last, int prevClose, List<Candle> daily, List<int> closes)
+        private static void WriteIndex(TableRow row, string name, int last, int today, List<Candle> daily, List<int> closes)
         {
             row.Set(0, name);
             row.Set(1, IndexWords(last), last);
-            int today = Bp(last, prevClose);
             row.Set(2, MarketText.Change(today), today, Tone(today));
             int count = daily != null ? daily.Count : closes.Count;
             for (int b = 0; b < Backs.Length; b++)
@@ -159,7 +158,7 @@ namespace RealLifeOverhaul.Markets
         {
             box.Title(MarketText.T("reallife_mkt_index"));
             StatusLine(box);
-            int today = Bp(s.IndexLast, s.IndexPrevClose);
+            int today = MarketHistory.IndexDayMoveBp(s);
             box.Line(MarketText.Fill("reallife_mkt_box_index", "level", IndexWords(s.IndexLast), "change", MarketText.Change(today)));
             box.Line(MarketText.Fill("reallife_mkt_box_range", "low", IndexWords(s.IndexLow), "high", IndexWords(s.IndexHigh)));
             Transform buttons = box.ButtonRow();
@@ -187,7 +186,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(0, k.Name + "  <size=80%>" + k.Ticker + "</size>");
                 row.Set(1, MarketText.Sector(k.Sector));
                 row.Set(2, MarketText.Price(k.Last), k.Last / 100.0);
-                int bp = Bp(k.Last, k.PrevClose);
+                int bp = MarketHistory.DayMoveBp(k);
                 up += bp > 0 ? 1 : 0;
                 down += bp < 0 ? 1 : 0;
                 row.Set(3, MarketText.Change(bp), bp, Tone(bp));
@@ -461,7 +460,7 @@ namespace RealLifeOverhaul.Markets
             }
             box.Title(k.Name + "  <size=70%>" + k.Ticker + "</size>");
             Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
-            int bp = Bp(k.Last, k.PrevClose);
+            int bp = MarketHistory.DayMoveBp(k);
             box.Line(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(bp)));
             long held = s.Held(k.Id);
             Position p = s.Position(k.Id);

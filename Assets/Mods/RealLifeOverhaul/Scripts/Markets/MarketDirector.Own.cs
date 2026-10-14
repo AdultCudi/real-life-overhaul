@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Markets
             Stock own = _engine.MineListed();
             if (own != null)
             {
-                return MarketText.Fill("reallife_lst_summary_listed", "name", own.Name, "price", MarketText.Price(own.Last), "change", MarketText.Change(MarketApp.Bp(own.Last, own.PrevClose)),
+                return MarketText.Fill("reallife_lst_summary_listed", "name", own.Name, "price", MarketText.Price(own.Last), "change", MarketText.Change(MarketHistory.DayMoveBp(own)),
                     "share", MarketText.Percent(own.Own.StakeBp(own)), "worth", MarketText.Large(own.Own.Founder * (own.Last / 100.0)));
             }
             if (CompanyAside)

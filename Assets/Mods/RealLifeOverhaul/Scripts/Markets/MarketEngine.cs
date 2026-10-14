@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Markets
         public bool Held => State.HeldDay > 0 && State.Now < MarketState.Time(State.HeldDay, State.HeldPhase);
 
         /// <summary>True while the market trades: a market day, from the open to the close.</summary>
-        public bool Trading => MarketCatalogue.TradingDay(State.Day) && State.Phase >= MarketCatalogue.PhaseOpen && State.Phase < MarketCatalogue.PhaseClose;
+        public bool Trading => State.InSession;
 
         /// <summary>
         /// A save has just been loaded into this engine: the tape is followed up to its frontier, and no order is taken
@@ -481,6 +481,8 @@ namespace RealLifeOverhaul.Markets
             }
             State.ElectionsSeen = env.Elections;
 
+            // A new session: every day's move is measured from the last close from now on (until the next open).
+            MarketLife.DayBases(State, true);
             // A listing announced for today comes to the market, and the player's own company priced or listed (MarketEngine.Own.cs).
             if (State.ListingId > 0 && State.ListingDay <= day)
             {
@@ -922,19 +924,7 @@ namespace RealLifeOverhaul.Markets
             Expire(day);
             BotsClose(day);
             CloseNews(day);
-            for (int i = 0; i < State.Stocks.Count; i++)
-            {
-                Stock s = State.Stocks[i];
-                if (s.Listed)
-                {
-                    s.PrevClose = s.Last;
-                }
-            }
-            State.IndexPrevClose = State.IndexLast;
-            for (int sec = 0; sec < Sectors; sec++)
-            {
-                State.SectorPrevClose[sec] = State.SectorLast[sec];
-            }
+            // (the closes the day's moves are measured from stay as they are until the next open: MarketLife.DayBases)
             // Old news goes.
             for (int i = State.News.Count - 1; i >= 0; i--)
             {
@@ -1801,7 +1791,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     continue;
                 }
-                int bp = (int)((long)(s.Last - s.PrevClose) * 10000L / s.PrevClose);
+                int bp = MarketHistory.DayMoveBp(s);   // (the app's own rule: the day's biggest movers are the ones it shows)
                 if (bp > upBp)
                 {
                     upBp = bp;
