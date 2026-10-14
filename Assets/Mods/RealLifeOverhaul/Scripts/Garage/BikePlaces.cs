@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
 
         private readonly Transform _owner;
         private readonly List<BikePlace> _places = new List<BikePlace>(18);
+        private List<Transform> _stands;   // the game's scooter stands, found behind the loading screen (PrewarmStands); null once Find has them
         private bool _found;
 
         public BikePlaces(Transform owner)
@@ -68,7 +69,41 @@ namespace RealLifeOverhaul
 
         public bool Found => _found;
 
-        /// <summary>Finds the places. One-off per city load (it looks through the scene once).</summary>
+        /// <summary>
+        /// For ScenePrewarm: the game's scooter stands, which only a search of the whole scene finds (a frame of 84 ms the
+        /// first time the player was on the street after a load), looked for behind the loading screen and kept for
+        /// <see cref="Find"/>. False while the player is indoors, as Find waits for the street: tried again at the walk
+        /// out of a door, behind the game's black screen.
+        /// </summary>
+        public bool PrewarmStands()
+        {
+            if (_found || _stands != null || !Settings.Garage || !Settings.TwoWheelers)
+            {
+                return true;   // with the option off, Find looks for itself if it is switched on later, as before
+            }
+            if (BuildingManager.IsInsideBuilding)
+            {
+                return false;
+            }
+            _stands = Stands();
+            return true;
+        }
+
+        // The stands the game has put out in the street, of its electric scooters.
+        private static List<Transform> Stands()
+        {
+            var stands = new List<Transform>();
+            foreach (VehicleSpawnerController spawner in SceneFinds.All<VehicleSpawnerController>("garage: the city's scooter stands being looked for (a search of the whole scene, once a city)"))
+            {
+                if (spawner != null && spawner.vehicleType == TwoWheelers.ScooterType && spawner.gameObject.activeInHierarchy)
+                {
+                    stands.Add(spawner.transform);
+                }
+            }
+            return stands;
+        }
+
+        /// <summary>Finds the places. One-off per city load (the search of the scene it needs is made behind the loading screen).</summary>
         public void Find()
         {
             _found = true;
@@ -79,14 +114,9 @@ namespace RealLifeOverhaul
             }
             try
             {
-                var stands = new List<Transform>();
-                foreach (VehicleSpawnerController spawner in SceneFinds.All<VehicleSpawnerController>("garage: the city's scooter stands being looked for (a search of the whole scene, once a city)"))
-                {
-                    if (spawner != null && spawner.vehicleType == TwoWheelers.ScooterType && spawner.gameObject.activeInHierarchy)
-                    {
-                        stands.Add(spawner.transform);
-                    }
-                }
+                List<Transform> stands = _stands ?? Stands();
+                _stands = null;
+                stands.RemoveAll(stand => stand == null);   // (one taken away since it was found)
                 stands.Sort(ByPlace);
                 int step = Mathf.Max(2, Mathf.CeilToInt(stands.Count / (float)MaxDocks));
                 int docks = 0;
@@ -458,6 +488,7 @@ namespace RealLifeOverhaul
                 }
             }
             _places.Clear();
+            _stands = null;
             _found = false;
         }
 

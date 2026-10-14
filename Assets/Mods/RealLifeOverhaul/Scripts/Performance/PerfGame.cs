@@ -24,8 +24,35 @@ namespace RealLifeOverhaul
         private static readonly FieldInfo LampGlow = typeof(StreetLamp).GetField("volumetricLightObject", Hidden);
         private static readonly FieldInfo LampIsOn = typeof(StreetLamp).GetField("_isOn", Hidden);
 
-        /// <summary>False if this version of the game keeps a street lamp's lights somewhere else.</summary>
-        public static bool KnowsLamps => LampLights != null && LampData != null && LampGlow != null && LampIsOn != null;
+        // The game's own list of every street lamp (and tree, bench, sign and spawner) it culls by distance: each StreetLamp
+        // puts itself on it in its Start (StreetLamp.cs: CullingManager.generalCullingGroupController.RegisterCullable)
+        // and takes itself off in OnDestroy.
+        private static readonly FieldInfo Cullables = typeof(CullingGroupController).GetField("_cullables", Hidden);
+
+        /// <summary>False if this version of the game keeps a street lamp's lights, or its list of lamps, somewhere else.</summary>
+        public static bool KnowsLamps => LampLights != null && LampData != null && LampGlow != null && LampIsOn != null && Cullables != null;
+
+        /// <summary>
+        /// Fills <paramref name="lamps"/> (cleared first) with the street lamps of the loaded city whose object is active:
+        /// what a search of the whole scene for them would find (a frame of some 85 ms), read instead from the game's own
+        /// culling list. Cost: one pass over that list (a few thousand entries, one type test each), nothing allocated.
+        /// </summary>
+        public static void Lamps(List<StreetLamp> lamps)
+        {
+            lamps.Clear();
+            CullingManager culling = InstanceBehavior<CullingManager>.Instance;
+            if (culling == null || culling.generalCullingGroupController == null || !(Cullables.GetValue(culling.generalCullingGroupController) is List<ICullable> all))
+            {
+                return;
+            }
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] is StreetLamp lamp && lamp != null && lamp.gameObject.activeInHierarchy)
+                {
+                    lamps.Add(lamp);
+                }
+            }
+        }
 
         public static Light[] LightsOf(StreetLamp lamp) => LampLights.GetValue(lamp) as Light[];
         public static HDAdditionalLightData[] LightDataOf(StreetLamp lamp) => LampData.GetValue(lamp) as HDAdditionalLightData[];

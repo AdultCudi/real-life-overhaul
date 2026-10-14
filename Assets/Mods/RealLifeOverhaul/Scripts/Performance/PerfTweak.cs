@@ -64,6 +64,31 @@ namespace RealLifeOverhaul
         /// </summary>
         internal virtual void WorldChanged(bool loaded) { }
 
+        /// <summary>
+        /// The look at the scene this tweak would make when it comes on (a search of the whole scene, or a walk over
+        /// every object of the city's scenes: a frame of 80 to 130 ms each), made instead while the loading screen is
+        /// still up, if the tweak is wanted then (<see cref="PerfTweaks.Prewarm"/>, through Core/SceneFinds' ScenePrewarm).
+        /// What it finds is kept for Apply and the timer; anything a scene brings later is looked at as before. A tweak
+        /// with no such look has nothing here.
+        /// </summary>
+        protected virtual void Prewarm() { }
+
+        internal void RunPrewarm(IModLogger logger)
+        {
+            if (Active || !ShouldBeActive)
+            {
+                return;
+            }
+            try
+            {
+                Prewarm();
+            }
+            catch (Exception e)
+            {
+                logger?.Error("Performance: '" + Id + "' could not look at the scene behind the loading screen; it looks when it comes on, as before. " + e);
+            }
+        }
+
         /// <summary>One line for the reports: what the tweak holds changed right now.</summary>
         public virtual string Describe() => string.Empty;
 

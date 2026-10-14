@@ -155,11 +155,17 @@ namespace RealLifeOverhaul
             int size = ContactPictures.Size;
             var pixels = new Color32[size * size];
             // The shape is fitted by what is drawn of it, not by its canvas: as high as GlyphShare of the square, and a wide
-            // one (a car) as wide as WideShare, centred. One pass over the shape's pixels to find its bounds.
+            // one (a car) as wide as WideShare, centred. One pass over the shape's pixels to find its bounds, and the same
+            // pixels then sampled here (Ink), not through the engine one call a pixel: some 30,000 calls, most of a frame
+            // of 11 ms for each logo in the first minute after a load.
             int minX = 0, minY = 0, maxX = -1, maxY = -1;
+            Color32[] texels = null;
+            int sw = 1, sh = 1;
             if (shape != null)
             {
-                Bounds(shape, out minX, out minY, out maxX, out maxY);
+                texels = Bounds(shape, out minX, out minY, out maxX, out maxY);
+                sw = shape.width;
+                sh = shape.height;
             }
             float bw = maxX - minX + 1, bh = maxY - minY + 1;
             float k = bw > 0f && bh > 0f ? Mathf.Max(bw / (WideShare * size), bh / (GlyphShare * size)) : 1f;   // shape texels to a picture pixel
@@ -170,7 +176,7 @@ namespace RealLifeOverhaul
                 for (int x = 0; x < size; x++)
                 {
                     float tx = minX + (x + 0.5f - ox) * k;
-                    float ink = maxX >= 0 && tx >= minX && tx <= maxX + 1 && ty >= minY && ty <= maxY + 1 ? shape.GetPixelBilinear(tx / shape.width, ty / shape.height).a : 0f;
+                    float ink = maxX >= 0 && tx >= minX && tx <= maxX + 1 && ty >= minY && ty <= maxY + 1 ? Ink(texels, sw, sh, tx, ty) : 0f;
                     pixels[y * size + x] = Color32.Lerp(back, white, ink);
                 }
             }
@@ -183,8 +189,23 @@ namespace RealLifeOverhaul
             Done(p, "the game's logo shape '" + p.Look.Shape + "'" + (shape == null ? " (not found: the game's own 'not found' shape)" : string.Empty));
         }
 
-        // The box of a shape's pixels that are drawn (alpha over a twentieth).
-        private static void Bounds(Texture2D shape, out int minX, out int minY, out int maxX, out int maxY)
+        // The shape's alpha at texel coordinates (tx, ty), filtered between the four nearest texels as the engine's
+        // Texture2D.GetPixelBilinear does it for the game's shapes (texel centres at half-texel offsets; edges clamped, the
+        // wrap mode LogoHelper.GetLogoShapeTexture gives them). Pure arithmetic over the pixels already read.
+        private static float Ink(Color32[] texels, int w, int h, float tx, float ty)
+        {
+            float u = tx - 0.5f, v = ty - 0.5f;
+            int x0 = Mathf.FloorToInt(u), y0 = Mathf.FloorToInt(v);
+            float fx = u - x0, fy = v - y0;
+            int xa = Mathf.Clamp(x0, 0, w - 1), xb = Mathf.Clamp(x0 + 1, 0, w - 1);
+            int ya = Mathf.Clamp(y0, 0, h - 1), yb = Mathf.Clamp(y0 + 1, 0, h - 1);
+            float low = Mathf.Lerp(texels[ya * w + xa].a, texels[ya * w + xb].a, fx);
+            float high = Mathf.Lerp(texels[yb * w + xa].a, texels[yb * w + xb].a, fx);
+            return Mathf.Lerp(low, high, fy) / 255f;
+        }
+
+        // The box of a shape's pixels that are drawn (alpha over a twentieth), and the pixels it was read from.
+        private static Color32[] Bounds(Texture2D shape, out int minX, out int minY, out int maxX, out int maxY)
         {
             Color32[] px = shape.GetPixels32();
             int w = shape.width, h = shape.height;
@@ -208,6 +229,7 @@ namespace RealLifeOverhaul
             {
                 minX = minY = 0;
             }
+            return px;
         }
 
         // One of the game's own contact pictures, copied through the graphics card (it is packed and not readable as it is).

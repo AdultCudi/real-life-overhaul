@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Leisure
         private float _nextCount;
         private int _crowdNear;
         private int _built;            // how many of the loops exist yet: one is made per tick, never four in a frame
+        private readonly AudioClip[] _made = new AudioClip[Layers];   // loops made behind the loading screen, until their source takes them
         private bool _paused;
         private bool _failed;
         private bool _hooked;
@@ -54,6 +55,28 @@ namespace RealLifeOverhaul.Leisure
         private void Awake()
         {
             _instance = this;
+            ScenePrewarm.Add("leisure: the ambient sound's four loops being made (arithmetic, once a city)", PrewarmLoops);
+        }
+
+        // The four loops' arithmetic (some 650,000 samples, about 5 ms a loop, which were four frames of the first second
+        // on the street after a load) done behind the loading screen while the ambient sound is on. The same numbers
+        // whenever they are made: every loop is seeded. Build then only gives each loop its source.
+        private static bool PrewarmLoops()
+        {
+            LeisureSound sound = _instance;
+            if (sound == null || sound._failed || !Settings.Leisure || !Settings.AmbientSound)
+            {
+                return true;   // made on the timer if the sound is switched on later, as before
+            }
+            using var piece = SessionWatch.Piece("leisure: the ambient sound's four loops being made");
+            for (int i = sound._built; i < Layers; i++)
+            {
+                if (sound._made[i] == null)
+                {
+                    sound._made[i] = Loop(i);
+                }
+            }
+            return true;
         }
 
         private void OnDestroy()
@@ -68,6 +91,10 @@ namespace RealLifeOverhaul.Leisure
                 if (_layer[i] != null && _layer[i].clip != null)
                 {
                     Destroy(_layer[i].clip);
+                }
+                if (_made[i] != null)
+                {
+                    Destroy(_made[i]);   // made behind the loading screen, never given a source
                 }
             }
             for (int i = 0; i < _cues.Length; i++)
@@ -379,13 +406,11 @@ namespace RealLifeOverhaul.Leisure
 
         private void Build(int layer)
         {
-            AudioClip clip;
-            switch (layer)
+            AudioClip clip = _made[layer];
+            _made[layer] = null;
+            if (clip == null)
             {
-                case Birds: clip = BirdsLoop(); break;
-                case Crickets: clip = CricketsLoop(); break;
-                case Hum: clip = NoiseLoop("RealLifeOverhaul Ambience City", 8f, 0.035f, 0f, 0.25f, 0.9f, 4101); break;
-                default: clip = NoiseLoop("RealLifeOverhaul Ambience Crowd", 8f, 0.22f, 0.05f, 4.5f, 0.7f, 977); break;
+                clip = Loop(layer);
             }
             AudioSource source = Source(clip.name, true);
             source.clip = clip;
@@ -409,6 +434,17 @@ namespace RealLifeOverhaul.Leisure
         }
 
         // ---------------------------------------------------------------- arithmetic
+
+        private static AudioClip Loop(int layer)
+        {
+            switch (layer)
+            {
+                case Birds: return BirdsLoop();
+                case Crickets: return CricketsLoop();
+                case Hum: return NoiseLoop("RealLifeOverhaul Ambience City", 8f, 0.035f, 0f, 0.25f, 0.9f, 4101);
+                default: return NoiseLoop("RealLifeOverhaul Ambience Crowd", 8f, 0.22f, 0.05f, 4.5f, 0.7f, 977);
+            }
+        }
 
         private static AudioClip Make(string clipName, float[] samples)
         {

@@ -50,6 +50,9 @@ namespace RealLifeOverhaul
         private float _lastMouseTime;
         private Vector3 _lastPos;
 
+        // Empire Motors' view on V is looked for behind the loading screen, not the first time this camera comes on (Camera/EmpireView).
+        private void Awake() => ScenePrewarm.Add("camera: Empire Motors' view from the driver's seat being found", EmpireView.Prewarm);
+
         private static readonly int HotLateUpdate = HotSpots.Slot("Camera: ChaseCamera.LateUpdate");
         private void LateUpdate()
         {

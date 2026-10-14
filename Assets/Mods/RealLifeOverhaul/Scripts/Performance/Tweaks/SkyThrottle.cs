@@ -34,6 +34,13 @@ namespace RealLifeOverhaul
         private bool _stale;
         private bool _hooked;
 
+        // What the look behind the loading screen found (Prewarm), for the Sweep when the tweak comes on: good for the city
+        // it was found in (its PerfDirector) while no scene has arrived since.
+        private Volume[] _keptVolumes;
+        private StaticLightingSky[] _keptSkies;
+        private PerfDirector _keptFor;
+        private int _keptArrivals;
+
         public override string Id => "sky_updates";
         public override string LabelKey => "reallife_perf_sky_updates";
         public override bool DefaultOn => true;   // third benchmark: +0.13 ms, all three pairs agreed, all of it in the pipeline's share
@@ -61,17 +68,40 @@ namespace RealLifeOverhaul
 
         private const string SkySearch = "performance: the skies being listed (two searches of the whole scene, after scenes arrive)";
 
+        // The two searches, made behind the loading screen when the tweak is wanted there (they were two frames' worth,
+        // 95 and 87 ms, in the frame the tweak came on). The components are kept, not their profiles: which profile a
+        // volume uses is read when the tweak comes on, as before.
+        protected override void Prewarm()
+        {
+            _keptVolumes = SceneFinds.All<Volume>(SkySearch, FindObjectsInactive.Include);
+            _keptSkies = SceneFinds.All<StaticLightingSky>(SkySearch, FindObjectsInactive.Include);
+            _keptFor = PerfDirector.Instance;
+            _keptArrivals = PerfTweaks.Arrivals;
+        }
+
         // Every sky a volume or a static-lighting component in the loaded scenes can put in front of the camera.
         private void Sweep()
         {
             _stale = false;
-            foreach (Volume volume in SceneFinds.All<Volume>(SkySearch, FindObjectsInactive.Include))
+            bool kept = _keptVolumes != null && _keptFor != null && ReferenceEquals(_keptFor, PerfDirector.Instance) && _keptArrivals == PerfTweaks.Arrivals;
+            Volume[] volumes = kept ? _keptVolumes : SceneFinds.All<Volume>(SkySearch, FindObjectsInactive.Include);
+            StaticLightingSky[] skies = kept ? _keptSkies : SceneFinds.All<StaticLightingSky>(SkySearch, FindObjectsInactive.Include);
+            _keptVolumes = null;   // once: a scene that arrives later is looked for on the timer
+            _keptSkies = null;
+            _keptFor = null;
+            foreach (Volume volume in volumes)
             {
-                Take(volume.HasInstantiatedProfile() ? volume.profile : volume.sharedProfile);
+                if (volume != null)
+                {
+                    Take(volume.HasInstantiatedProfile() ? volume.profile : volume.sharedProfile);
+                }
             }
-            foreach (StaticLightingSky sky in SceneFinds.All<StaticLightingSky>(SkySearch, FindObjectsInactive.Include))
+            foreach (StaticLightingSky sky in skies)
             {
-                Take(sky.profile);
+                if (sky != null)
+                {
+                    Take(sky.profile);
+                }
             }
             Refresh();
         }
