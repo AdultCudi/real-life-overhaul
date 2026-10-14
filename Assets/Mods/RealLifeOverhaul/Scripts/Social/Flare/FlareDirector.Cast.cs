@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Flare
         private string _hirePlace;
         private int _hireKind = -1;
         private readonly List<int> _hireWho = new List<int>(3);
+        private readonly List<FlareCampaign> _campaigns = new List<FlareCampaign>(8);
+        private string _busyLogged;   // the last refusal written to the log, so a page written again does not write it again
 
         // A new account, or one from before the influencers: the cast is made, by its own seed.
         private void Cast(FlareFile file, int day)
@@ -361,12 +363,68 @@ namespace RealLifeOverhaul.Flare
             {
                 why = "reallife_flare_hire_no_company";
             }
+            if (!quoted && why == BusyWhy)
+            {
+                LogBusy(place, shop.Name, (FlareDeal)deal);
+            }
             if (!keep)
             {
                 _hireKind = -1;
                 _hirePlace = null;
             }
             return quoted;
+        }
+
+        /// <summary>The reason's key when a business has a campaign already (Wiring/FlareLinks.Quote).</summary>
+        public const string BusyWhy = "reallife_flare_hire_busy";
+
+        /// <summary>The company's campaigns at the player's businesses, running or booked, as the company has them now. Read when the Business tab is written.</summary>
+        public List<FlareCampaign> Campaigns()
+        {
+            _campaigns.Clear();
+            try
+            {
+                FlareBridges.Campaigns?.Invoke(_campaigns);
+            }
+            catch (Exception e)
+            {
+                _campaigns.Clear();
+                Logger?.Error(e);
+            }
+            return _campaigns;
+        }
+
+        /// <summary>The company's campaign at a business, running or booked; false with none.</summary>
+        public bool CampaignAt(string place, out FlareCampaign campaign)
+        {
+            List<FlareCampaign> all = Campaigns();
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (string.Equals(all[i].Place, place, StringComparison.Ordinal))
+                {
+                    campaign = all[i];
+                    return true;
+                }
+            }
+            campaign = default(FlareCampaign);
+            return false;
+        }
+
+        // A hire refused because the business has a campaign already: one line naming it, once for each refusal (the page is written again often).
+        private void LogBusy(string place, string name, FlareDeal deal)
+        {
+            FlareCampaign c;
+            bool known = CampaignAt(place, out c);
+            string key = place + "|" + deal + "|" + (known ? c.Kind + "|" + c.From + "|" + c.To : "?");
+            if (key == _busyLogged)
+            {
+                return;
+            }
+            _busyLogged = key;
+            Logger?.Info("Flare: a hire for " + (name ?? place) + " (" + deal + ") was refused on day " + (Save != null ? Save.Day : 0) + ": "
+                         + (known ? c.Campaign + " (kind " + c.Kind + ") is " + (Save != null && Save.Day >= c.From ? "running" : "booked") + " there, " + (c.OnFlare ? "hired on Flare" : "booked from the Company app")
+                                    + ", days " + c.From + " to " + c.To + "; one campaign at a time at a business"
+                                  : "the company says a campaign is booked there, but did not say which") + ".");
         }
 
         /// <summary>The deal is made: booked and paid as the company's campaign, then kept here with how it will go.</summary>
@@ -447,6 +505,14 @@ namespace RealLifeOverhaul.Flare
                         }
                     }
                     Logger?.Info("Flare: the deal with " + WhoLine(h) + " for " + h.Name + " is ended by the player.");
+                    try
+                    {
+                        FlareBridges.EndCampaign?.Invoke(h.Place, h.Kind, h.From);   // the company's campaign that is the deal ends with it
+                    }
+                    catch (Exception e)
+                    {
+                        Logger?.Error(e);
+                    }
                     Rewrite(h.Place, false);
                     Changed();
                     return;

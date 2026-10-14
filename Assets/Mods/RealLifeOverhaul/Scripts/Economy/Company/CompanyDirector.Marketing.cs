@@ -113,7 +113,12 @@ namespace RealLifeOverhaul.Economy
         {
             CompanyShop shop = On(CompanyPart.Marketing) ? ShopAt(place) : null;
             int share, reach;
-            if (shop == null || kind < 0 || kind >= CompanyCatalogue.CampaignKinds || !Offered(shop, kind, out share, out reach) || !CampaignRules.CanBook(shop.File) || !Promoted(shop))
+            if (shop != null && kind >= 0 && kind < CompanyCatalogue.CampaignKinds && !CampaignRules.CanBook(shop.File))
+            {
+                Logger?.Info("Company: " + (CampaignKind)kind + " not booked for " + shop.Name + ": " + BusyLine(shop) + ". One campaign at a time at a business.");
+                return;
+            }
+            if (shop == null || kind < 0 || kind >= CompanyCatalogue.CampaignKinds || !Offered(shop, kind, out share, out reach) || !Promoted(shop))
             {
                 return;
             }
@@ -142,6 +147,39 @@ namespace RealLifeOverhaul.Economy
                     Logger?.Error(e);
                 }
             }
+            Changed();
+        }
+
+        /// <summary>For the log: what is booked at a business, how it was booked and its days.</summary>
+        internal string BusyLine(CompanyShop shop)
+        {
+            int kind, from, to;
+            bool started;
+            if (shop == null || Save == null || !CampaignRules.Busy(shop.File, Save.Day, out kind, out from, out to, out started))
+            {
+                return "nothing is booked there";
+            }
+            return (CampaignKind)kind + " is " + (started ? "running" : "booked") + " there, " + (CampaignRules.HiredOnFlare(kind) ? "hired on Flare" : "booked from the Company app")
+                   + ", days " + from + " to " + to + " (today is day " + Save.Day + ")";
+        }
+
+        /// <summary>
+        /// For Flare, through Wiring/FlareLinks: the player ended an influencer's deal, so the company's campaign that
+        /// is that deal ends with it (the same kind at the business, from the same day). One not started yet is taken
+        /// off at once; one running ends with today and is reported tomorrow. Anything else booked there is left alone.
+        /// </summary>
+        public void EndCampaign(string place, int kind, int from)
+        {
+            CompanyShop shop = _running && Save != null ? ShopAt(place) : null;
+            if (shop == null || shop.File.Push != kind || shop.File.PushFrom != from || !CampaignRules.HiredOnFlare(kind))
+            {
+                return;
+            }
+            int end = shop.File.PushEnd;
+            bool gone = CampaignRules.EndEarly(shop.File, Save.Day);
+            Logger?.Info("Company: " + (CampaignKind)kind + " for " + shop.Name + " ended on Flare by the player on day " + Save.Day
+                         + (gone ? " before it began: taken off, with no report" : ": its last day is today instead of day " + (end - 1) + ", the report comes tomorrow") + ".");
+            Refoot(shop);
             Changed();
         }
 
