@@ -62,17 +62,47 @@ namespace RealLifeOverhaul
     /// took in that frame, with the three that took the most, by feature and method (Core/HotSpots). Time under
     /// "scripts' Update" that is not under the mod's own scripts is the game's, or another mod's.
     ///
+    /// With the step timing on, the frame is cut where the engine itself cuts it (just after it updates the time,
+    /// Diagnostics/FrameSteps), so the parts add up to the frame: the named groups, "waiting for the last frame to be
+    /// shown", "the rest" of the engine's steps, and "outside the engine's steps". Then the line says what the system
+    /// saw of the same frame (Diagnostics/MachineClock) and, where the build offers them, the engine's own figures for
+    /// the graphics card, and ends with "so:" and the cause the figures point to (Diagnostics/FrameRules):
+    ///
+    ///   ...; where it went: scripts' Update 1 ms, rendering 5 ms, waiting for the last frame to be shown 362 ms, the
+    ///   rest 2 ms, outside the engine's steps 1 ms; the processor: the main thread ran 16 ms of it, the game 47 ms over
+    ///   all its threads, the machine's 24 processors 97% busy (other programs 91%); page faults in it: 310; the
+    ///   engine's own figures: not offered by this build; so: the game waited for the last frame to be shown while
+    ///   other programs held the processor (...).
+    ///
+    /// How to tell them apart:
+    /// - The graphics card or the display: the time is under "waiting for the last frame to be shown", the main thread
+    ///   ran little of it and the other programs' share is small. Where the engine gives the graphics card's time, a
+    ///   large one says the card itself was slow; a small one says the render thread or the display.
+    /// - Another program: the main thread ran little of the frame while other programs held most of the machine's
+    ///   processors (a build, a game, a scan). The time can be under the wait (the render thread kept waiting) or
+    ///   outside the steps.
+    /// - The engine's own work, or a script's: the main thread ran most of the frame, and the steps above say where.
+    /// - Outside the engine's steps with the processor free: the window's messages, the system or the driver.
+    /// - Tens of thousands of page faults: memory was being brought in, paged back from the disk or touched for the
+    ///   first time (a large allocation, a texture coming in).
+    /// The thread's and the system's times are counted at the system's clock tick (about 15.6 ms): good for a long
+    /// frame and the minute's sums, not for one short frame.
+    ///
     /// The line a minute says the same of the minute: the mod's own scripts' time a frame on average and at the
     /// most, the three that took the most, and how much of the heap's growth happened under them (every frame
     /// counted where the runtime counts allocations, else one frame in eight sampled), with the three under which
     /// it grew the most. A frame in which the heap grows by 8 MB or more at once gets a line of its own, with how
-    /// much of it was under the mod's own scripts and under which.
+    /// much of it was under the mod's own scripts and under which. It also gives the minute's waits for the last
+    /// frame to be shown and its time outside the engine's steps (the sum and the worst frame), the share of the
+    /// minute the main thread ran, the other programs' share of the processor, the page faults, and the causes of
+    /// its frames over 33 ms counted by the same rules as the long-frame line.
     ///
     /// Per frame while recording: a dozen reads of numbers the engine and the game already keep (the frame's
     /// time, the collection count, the heap's size, the collector's time, three of the game's flags) and as many
     /// comparisons; the mod's own scripts' timing, a few microseconds (Core/HotSpots); with the step timing on,
-    /// some two hundred and fifty reads of the clock more (Diagnostics/FrameSteps). Nothing is allocated except
-    /// for a line that is written.
+    /// some two hundred and fifty reads of the clock more and four calls into kernel32 (Diagnostics/FrameSteps,
+    /// Diagnostics/MachineClock); where the build offers the engine's frame timing, two calls into it. Nothing is
+    /// allocated except for a line that is written.
     /// </summary>
     public sealed class SessionWatch : MonoBehaviour
     {
@@ -84,6 +114,7 @@ namespace RealLifeOverhaul
         private const float NewsLasts = 5f;        // seconds a walk into or out of a building, or a scene coming or going, is still mentioned in a long frame's line
         private const string RootPrefix = "RealLifeOverhaul";
         private const float RestNamed = 5f;        // milliseconds of "the rest" above which the engine's step it was mostly in is named
+        private const double SpanDiffers = 2.0;    // milliseconds by which the steps' own clock may differ from the engine's frame time before the line gives both
         private const long Leap = 8L * 1024 * 1024;   // bytes the heap may grow by in one frame before the frame gets a line of its own
         private const int LeapsPerMinute = 6;
 
@@ -128,6 +159,18 @@ namespace RealLifeOverhaul
         private int _searches, _searchesInPlay;
         private bool _exact;                   // the runtime counts what the main thread allocates (ExactCount)
         private int _jumps;                    // lines for a frame in which the heap leapt, in the minute
+
+        // Where the minute's frames went, as the long-frame line splits one (FrameSteps, MachineClock, FrameRules).
+        private int _split;                    // frames of play the step timing covered whole
+        private double _spanSum, _waitSum, _waitWorst, _outsideSum, _outsideWorst;
+        private int _threadFrames, _othersFrames;
+        private double _threadSum, _threadSpan, _othersSum, _othersWorst;
+        private long _faultsSum, _faultsWorst;
+        private int _faultFrames;
+        private readonly int[] _causes = new int[6];   // the frames over 33 ms, by FrameCause
+        private bool _timing;                  // the engine offers its own frame timing (FrameTimingManager)
+        private readonly FrameTiming[] _timings = new FrameTiming[4];
+        private double _gpuWorst;
 
         /// <summary>
         /// Names the large piece of work the mod is starting in this frame, for the long-frame line. A constant
@@ -258,6 +301,7 @@ namespace RealLifeOverhaul
                     SceneManager.sceneUnloaded += OnSceneUnloaded;
                 }
                 FrameSteps.Want(true);
+                _timing = TimingOffered();
             }
             catch (Exception e)
             {
@@ -267,6 +311,131 @@ namespace RealLifeOverhaul
                          + (GC.MaxGeneration + 1) + " generation(s); its time in a frame is " + (_collector.Valid ? "read from the engine" : "not offered by this build")
                          + "; the frame's steps are " + (FrameSteps.Installed ? "timed" : "not timed (the option 'Measurements time every step of the frame' is off, or the engine's loop could not be read)")
                          + "; the mod's own scripts are timed by feature and method, and what they allocate is " + (_exact ? "counted in every frame (the runtime counts it)" : "read from the heap's size, one frame in " + HotSpots.AllocEvery) + ".");
+            Logger?.Info("Session: the frame's pace: " + Pace() + "; the engine's own frame timing (the graphics card's time) is " + (_timing ? "offered" : "not offered by this build")
+                         + "; processors " + SystemInfo.processorCount + "; the system's figures for each frame (kernel32): " + MachineClock.Status()
+                         + (FrameSteps.Installed ? "; the frame's steps: " + FrameSteps.Shape : string.Empty) + ".");
+        }
+
+        // The frame rate cap and vSync, as the game has set them.
+        private static string Pace()
+        {
+            int sync = QualitySettings.vSyncCount;
+            int cap = Application.targetFrameRate;
+            return (sync > 0 ? "vSync on (every " + (sync == 1 ? "refresh" : sync + " refreshes") + ")" : "vSync off")
+                   + ", " + (cap > 0 ? "frame rate capped at " + cap + " a second" : "no frame rate cap") + (sync > 0 && cap > 0 ? " (vSync overrides the cap)" : string.Empty);
+        }
+
+        // Whether the build has the engine's frame timing switched on (Player Settings, Frame Timing Stats). In a method of its own:
+        // an engine without FrameTimingManager fails here alone.
+        private static bool TimingOffered()
+        {
+            try
+            {
+                return FrameTimingManager.IsFeatureEnabled();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private void CaptureTiming()
+        {
+            FrameTimingManager.CaptureFrameTimings();
+            if (FrameTimingManager.GetLatestTimings(1, _timings) >= 1 && _timings[0].gpuFrameTime > _gpuWorst)
+            {
+                _gpuWorst = _timings[0].gpuFrameTime;
+            }
+        }
+
+        // The worst of the last few frames the engine has figures for: they come a few frames late.
+        private void ReadTiming(ref FrameFigures figures)
+        {
+            uint got = FrameTimingManager.GetLatestTimings((uint)_timings.Length, _timings);
+            for (int i = 0; i < got && i < _timings.Length; i++)
+            {
+                figures.GpuMs = Math.Max(figures.GpuMs, _timings[i].gpuFrameTime);
+                figures.RenderThreadMs = Math.Max(figures.RenderThreadMs, _timings[i].cpuRenderThreadFrameTime);
+            }
+        }
+
+        // The frame before this one as the step timing and the system saw it, the engine's own figures beside them.
+        private FrameFigures Figures(float took, bool withTiming)
+        {
+            FrameFigures figures = FrameFigures.Unknown(took * 1000.0);
+            if (FrameSteps.Valid)
+            {
+                figures.SpanMs = FrameSteps.LastSpanMs;
+                figures.StepsMs = FrameSteps.LastStepsMs;
+                figures.WaitMs = FrameSteps.LastMs(FrameSteps.Wait);
+                figures.ThreadMs = MachineClock.ThreadMs;
+                figures.ProcessMs = MachineClock.ProcessMs;
+                figures.Busy = MachineClock.Busy;
+                figures.Others = MachineClock.Others;
+                figures.Faults = MachineClock.Faults;
+            }
+            figures.Processors = SystemInfo.processorCount;
+            if (withTiming && _timing)
+            {
+                try
+                {
+                    ReadTiming(ref figures);
+                }
+                catch (Exception)
+                {
+                    _timing = false;   // the engine's figures are left out from now on
+                }
+            }
+            return figures;
+        }
+
+        // The minute's sums of where its frames went.
+        private void Split(float took)
+        {
+            if (_timing)
+            {
+                try
+                {
+                    CaptureTiming();
+                }
+                catch (Exception)
+                {
+                    _timing = false;
+                }
+            }
+            if (!FrameSteps.Valid)
+            {
+                return;
+            }
+            FrameFigures f = Figures(took, false);
+            _split++;
+            _spanSum += f.SpanMs;
+            _waitSum += f.WaitMs;
+            _waitWorst = Math.Max(_waitWorst, f.WaitMs);
+            _outsideSum += f.OutsideMs;
+            _outsideWorst = Math.Max(_outsideWorst, f.OutsideMs);
+            if (f.ThreadMs >= 0.0)
+            {
+                _threadFrames++;
+                _threadSum += f.ThreadMs;
+                _threadSpan += f.SpanMs;
+            }
+            if (f.Others >= 0.0)
+            {
+                _othersFrames++;
+                _othersSum += f.Others;
+                _othersWorst = Math.Max(_othersWorst, f.Others);
+            }
+            if (f.Faults >= 0L)
+            {
+                _faultFrames++;
+                _faultsSum += f.Faults;
+                _faultsWorst = Math.Max(_faultsWorst, f.Faults);
+            }
+            if (took > 0.033f)
+            {
+                _causes[(int)FrameRules.Cause(f)]++;
+            }
         }
 
         // Whether the runtime counts what the main thread allocates (then the heap's growth under each of the mod's scripts
@@ -339,6 +508,13 @@ namespace RealLifeOverhaul
             _grown = 0;
             _collectorNanos = 0;
             _collectorWorst = 0;
+            _split = 0;
+            _spanSum = _waitSum = _waitWorst = _outsideSum = _outsideWorst = 0.0;
+            _threadFrames = _othersFrames = _faultFrames = 0;
+            _threadSum = _threadSpan = _othersSum = _othersWorst = 0.0;
+            _faultsSum = _faultsWorst = 0L;
+            Array.Clear(_causes, 0, _causes.Length);
+            _gpuWorst = 0.0;
         }
 
         private void Update()
@@ -403,6 +579,7 @@ namespace RealLifeOverhaul
             }
             try
             {
+                Split(took);
                 if (heap - heapBefore >= Leap && ++_jumps <= LeapsPerMinute)
                 {
                     Leapt(heap - heapBefore, took);
@@ -455,31 +632,40 @@ namespace RealLifeOverhaul
             }
 
             // Where the engine spent it.
+            // Where the engine spent it: the frame cut where the engine cuts it, so the parts add up to its length (FrameSteps).
             _line.Append("; where it went: ");
+            FrameFigures figures = Figures(took, true);
             if (FrameSteps.Valid)
             {
-                float rest = took * 1000f;
                 bool any = false;
                 for (int g = 0; g < FrameSteps.Count; g++)
                 {
                     float ms = FrameSteps.LastMs(g);
-                    rest -= ms;
                     if (ms >= 1f)
                     {
                         _line.Append(any ? ", " : string.Empty).Append(FrameSteps.Names[g]).Append(' ').Append(ms.ToString("F0")).Append(" ms");
                         any = true;
                     }
                 }
-                _line.Append(any ? ", " : string.Empty).Append("the rest ").Append(Mathf.Max(0f, rest).ToString("F0")).Append(" ms");
+                double rest = FrameSteps.LastRestMs;
+                _line.Append(any ? ", " : string.Empty).Append("the rest ").Append(rest.ToString("F0")).Append(" ms");
                 if (rest >= RestNamed && FrameSteps.LastOther(out string step, out float stepMs) && stepMs >= 1f)
                 {
                     _line.Append(" (the most of it in the frame's step ").Append(step).Append(", ").Append(stepMs.ToString("F0")).Append(" ms)");
+                }
+                _line.Append(", outside the engine's steps ").Append(figures.OutsideMs.ToString("F0")).Append(" ms");
+                if (Math.Abs(figures.SpanMs - took * 1000.0) >= SpanDiffers)
+                {
+                    _line.Append(" (by the steps' own clock the frame took ").Append(figures.SpanMs.ToString("F0")).Append(" ms)");
                 }
             }
             else
             {
                 _line.Append("not timed");
             }
+            FrameRules.Describe(_line, figures, FrameSteps.Valid ? MachineClock.ThreadWhy : "not measured (the frame's steps are not timed)",
+                FrameSteps.Valid ? MachineClock.SystemWhy : "not measured", FrameSteps.Valid ? MachineClock.MemoryWhy : "not measured",
+                _timing ? "none yet" : "not offered by this build");
 
             // The mod's own scripts: every Update, LateUpdate and FixedUpdate of its, and its handlers of the game's events.
             _line.Append("; the mod's own scripts in it: ");
@@ -675,6 +861,7 @@ namespace RealLifeOverhaul
             _searches = SceneFinds.Made;
             _searchesInPlay = SceneFinds.InPlay;
             OwnScripts(seconds);
+            Went();
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());
             _collections = collections;
@@ -682,6 +869,57 @@ namespace RealLifeOverhaul
         }
 
         private static long Megabytes(long bytes) => bytes / (1024L * 1024L);
+
+        // Where the minute's frames went (the frames the step timing covered whole), as the long-frame line splits one.
+        private void Went()
+        {
+            if (_split == 0)
+            {
+                _line.Append("; where the frames went: not timed");
+                return;
+            }
+            _line.Append("; waiting for the last frame to be shown ").Append(_waitSum.ToString("F0")).Append(" ms in the minute, ").Append(_waitWorst.ToString("F0"))
+                .Append(" ms at most in a frame; outside the engine's steps ").Append(_outsideSum.ToString("F0")).Append(" ms, ").Append(_outsideWorst.ToString("F0")).Append(" ms at most");
+            _line.Append("; the main thread ran ");
+            if (_threadFrames > 0 && _threadSpan > 0.0)
+            {
+                _line.Append((_threadSum * 100.0 / _threadSpan).ToString("F0")).Append("% of the time");
+            }
+            else
+            {
+                _line.Append("for a time ").Append(MachineClock.ThreadWhy);
+            }
+            _line.Append("; other programs held ");
+            if (_othersFrames > 0)
+            {
+                _line.Append((_othersSum * 100.0 / _othersFrames).ToString("F0")).Append("% of the processors on average and ").Append((_othersWorst * 100.0).ToString("F0")).Append("% at most in a frame");
+            }
+            else
+            {
+                _line.Append("a share ").Append(MachineClock.SystemWhy);
+            }
+            _line.Append("; page faults ");
+            if (_faultFrames > 0)
+            {
+                _line.Append(_faultsSum).Append(" in the minute, ").Append(_faultsWorst).Append(" at most in a frame");
+            }
+            else
+            {
+                _line.Append(MachineClock.MemoryWhy);
+            }
+            _line.Append("; the frames over 33 ms: ");
+            bool any = false;
+            for (int c = 0; c < _causes.Length; c++)
+            {
+                if (_causes[c] > 0)
+                {
+                    _line.Append(any ? ", " : string.Empty).Append(_causes[c]).Append(' ').Append(FrameRules.Short((FrameCause)c));
+                    any = true;
+                }
+            }
+            _line.Append(any ? string.Empty : "none");
+            _line.Append(_timing ? "; the graphics card " + _gpuWorst.ToString("F1") + " ms at most in a frame (the engine's own figures)" : "; the engine's own frame timing: not offered by this build");
+        }
 
         // The minute of the mod's own scripts (Core/HotSpots): their time a frame, the three that took the most, and the
         // heap's growth under them in the sampled frames, scaled to the minute and set beside the growth of the heap in all.
