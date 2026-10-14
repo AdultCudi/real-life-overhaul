@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Careers
         private Action<Address> _onDeskEnter, _deskEnterSeen;
         private string _placeStreet, _placeKey;
         private int _placeNumber;
+        private long _placeStamp;                    // the headquarters' stamp the job's place key was made for
 
         // ---------------------------------------------------------------- once a second
 
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
+                HeadquartersMoved();
                 DeskWatch();
             }
             catch (Exception e)
@@ -97,7 +99,11 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             Job j = Work != null ? Work.Job : null;
-            string here = j != null && DeskGame.Inside(out _, out BuildingRegistration reg) && CareersGame.InsideAt(j.Post.Street, j.Post.Number) ? TalentGame.Place(reg) : null;
+            string here = j != null && DeskGame.Inside(out _, out BuildingRegistration reg) && CareersGame.InsideAt(j.Post.Street, j.Post.Number) ? DeskPlace(reg) : null;
+            if (here != null && here != JobPlace(j))
+            {
+                here = null;   // (another company's floor of a tower: the desk is on the employer's)
+            }
             if (_deskAt != null && here != _deskAt)
             {
                 DeskRelease(here == null ? "the player left the building" : "another building");
@@ -147,21 +153,51 @@ namespace RealLifeOverhaul.Careers
 
         // ---------------------------------------------------------------- the desk in the employer's building
 
-        /// <summary>The job's building, as a place key; the same for the same address.</summary>
+        /// <summary>
+        /// The job's building, as a place key; the same for the same address. A tech company's in one of the towers it
+        /// shares with others (Tech/Sites) is its own floor's: the desk is there, never on another company's floor.
+        /// </summary>
         private string JobPlace(Job j)
         {
             if (j == null)
             {
                 return null;
             }
-            if (_placeKey == null || _placeStreet != j.Post.Street || _placeNumber != j.Post.Number)
+            long stamp = CareersBridges.HeadquartersStampNow();
+            if (_placeKey == null || _placeStreet != j.Post.Street || _placeNumber != j.Post.Number || _placeStamp != stamp)
             {
                 _placeStreet = j.Post.Street;
                 _placeNumber = j.Post.Number;
+                _placeStamp = stamp;
                 _placeKey = HiringGame.Place(new Address(j.Post.Street, j.Post.Number));   // (a headquarters can move: the post follows it)
+                if (OnTowerFloor(j.Post))
+                {
+                    _placeKey = HqTowers.FloorPlace(_placeKey, j.Post.Employer);
+                }
             }
             return _placeKey;
         }
+
+        // True for a post at a tech company's headquarters as it stands now: its floor of a tower.
+        private static bool OnTowerFloor(Opening o)
+        {
+            if (o == null || o.Kind != (int)EmployerKind.TechFirm || CareersBridges.Headquarters == null)
+            {
+                return false;
+            }
+            try
+            {
+                return CareersBridges.Headquarters(o.Employer, out string street, out int number) && street == o.Street && number == o.Number;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
+        /// <summary>The place key of where the player is: the building's, and on a tower's floor that company's floor's.</summary>
+        private static string DeskPlace(BuildingRegistration reg) => HqTowers.FloorPlace(TalentGame.Place(reg), CareersBridges.FloorHereNow());
 
         private int DeskSeed(Job j) => (int)TechRandom.Hash(StudySeed, DeskSalt, DeskRules.JobKey(j));
 
@@ -174,7 +210,11 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            string place = TalentGame.Place(reg);
+            string place = DeskPlace(reg);
+            if (place != JobPlace(j))
+            {
+                return;   // (another company's floor of the employer's tower: no desk of the player's here)
+            }
             if (_deskAt == place && (_deskDone || _deskFailed))
             {
                 return;
@@ -319,7 +359,7 @@ namespace RealLifeOverhaul.Careers
             {
                 try
                 {
-                    if (DeskGame.Inside(out _, out BuildingRegistration reg) && TalentGame.Place(reg) == _deskAt)
+                    if (DeskGame.Inside(out _, out BuildingRegistration reg) && DeskPlace(reg) == _deskAt)
                     {
                         DeskGame.GiveBack(_deskStation);
                     }

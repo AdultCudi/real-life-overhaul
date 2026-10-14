@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         public string TypeKey;     // the locale key of what it is, for the line under the name on the game's card; may be null
         public Func<bool> Shown;   // the feature's own option; null for always
         public bool Literal;       // NameKey is the name itself (a company's proper name), never looked up
+        public string[] Tenants;   // the proper names of who is in it, by floor (the tech companies of a tower); null for one feature alone
         public bool Board;         // its feature stood a board of its own at the door: that is its one sign (Core/FrontSigns)
 
         internal string Name;      // NameKey in the language of the moment, made the first time it is asked for
@@ -76,7 +77,7 @@ namespace RealLifeOverhaul
         /// under the id, for a kind that keeps its own name, a missing street or name, or an address another id holds (a
         /// missing id: false, and the book as it was).
         /// </summary>
-        public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null, bool literal = false)
+        public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null, bool literal = false, string[] tenants = null)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -91,7 +92,8 @@ namespace RealLifeOverhaul
             var entry = new SpecialEntry
             {
                 Id = id, Street = street, Number = number, Kind = kind, NameKey = nameKey,
-                TypeKey = string.IsNullOrEmpty(typeKey) ? null : typeKey, Shown = shown, Literal = literal, Name = literal ? nameKey : null
+                TypeKey = string.IsNullOrEmpty(typeKey) ? null : typeKey, Shown = shown, Literal = literal, Name = literal ? nameKey : null,
+                Tenants = tenants != null && tenants.Length > 0 ? (string[])tenants.Clone() : null
             };
             _byId[id] = entry;
             _byAddress[key] = entry;
@@ -126,13 +128,18 @@ namespace RealLifeOverhaul
         /// <summary>The entry at an address while its feature shows it, or null.</summary>
         public SpecialEntry At(string street, int number)
         {
-            if (_byAddress.Count == 0 || string.IsNullOrEmpty(street) || !_byAddress.TryGetValue(Key(street, number), out SpecialEntry entry))
-            {
-                return null;
-            }
-            Func<bool> shown = entry.Shown;
-            return shown == null || shown() ? entry : null;
+            SpecialEntry entry = Filed(street, number);
+            return entry != null && IsShown(entry) ? entry : null;
         }
+
+        // The entry at an address, shown or not.
+        private SpecialEntry Filed(string street, int number)
+        {
+            return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.TryGetValue(Key(street, number), out SpecialEntry entry) ? entry : null;
+        }
+
+        /// <summary>True while an entry's feature shows it: its own option is on (an entry with none always is).</summary>
+        public static bool IsShown(SpecialEntry entry) => entry != null && (entry.Shown == null || entry.Shown());
 
         /// <summary>True if any feature holds the building at an address, whether or not its name is shown just now.</summary>
         public bool Holds(string street, int number)
@@ -229,16 +236,18 @@ namespace RealLifeOverhaul
         /// </summary>
         public bool Refuses(string street, int number, bool rented, bool owned)
         {
-            return !rented && !owned && At(street, number) != null;
+            return RefusesEntry(Filed(street, number), rented, owned);
         }
 
         /// <summary>
-        /// The same for an entry already in hand (the fronts, looked at once a second, and the city map's look at every
-        /// building): no address to file, nothing made.
+        /// The one rule of the refusal, for an entry in hand (the fronts, looked at once a second, and the city map's look at
+        /// every building; <see cref="Refuses"/> files the address first): a feature holds the building, its own option is
+        /// on, and no player rents or owns it. With the option off the building is the game's again, to rent, buy or take
+        /// over; switched on again, a building a player took meanwhile stays theirs and the feature moves off it.
         /// </summary>
         public static bool RefusesEntry(SpecialEntry entry, bool rented, bool owned)
         {
-            return entry != null && !rented && !owned && (entry.Shown == null || entry.Shown());
+            return !rented && !owned && IsShown(entry);
         }
 
         /// <summary>Marks whether the id's feature stood a board of its own at its building's door. False if the id holds none.</summary>
@@ -270,11 +279,44 @@ namespace RealLifeOverhaul
             into.Clear();
             foreach (SpecialEntry entry in _byId.Values)
             {
-                if (entry.Shown == null || entry.Shown())
+                if (IsShown(entry))
                 {
                     into.Add(entry);
                 }
             }
+        }
+
+        private int _shownSign = int.MinValue;
+
+        /// <summary>
+        /// Looks at which entries their features show now. An option switched on or off changes no entry, so the book's
+        /// <see cref="Stamp"/> moves here when the set shown has changed: everything made from the book (the refusals on an
+        /// open page, the map's search) is made again. True if it moved. One call of each feature's option, once a second.
+        /// </summary>
+        public bool LookShown()
+        {
+            int sign = 17;
+            unchecked
+            {
+                foreach (SpecialEntry entry in _byId.Values)
+                {
+                    if (IsShown(entry))
+                    {
+                        sign += entry.Id.GetHashCode() * 31 + 7;   // (a sum: the order of the dictionary does not matter)
+                    }
+                }
+            }
+            if (sign == _shownSign)
+            {
+                return false;
+            }
+            bool first = _shownSign == int.MinValue;
+            _shownSign = sign;
+            if (!first)
+            {
+                Stamp++;
+            }
+            return !first;
         }
 
         /// <summary>Every name is looked up again the next time it is asked for (the language has changed).</summary>

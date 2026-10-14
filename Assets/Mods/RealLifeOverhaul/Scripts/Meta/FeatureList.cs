@@ -1246,6 +1246,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_tech_sites_about").Help("reallife_guide_tech_sites")
                 .Fact("sites_most", () => Guide.Number(Tech.ServerRoomPlan.MostShown))
                 .Fact("sites_companies", () => Guide.Number(Tech.HiringCatalogue.RivalFirms.Length))
+                .Fact("sites_towers", () => Guide.Number(Tech.HqTowers.Towers(Tech.HiringCatalogue.RivalFirms.Length)))
+                .Fact("sites_floors", () => Guide.Number(Tech.HqTowers.PerTower))
                 .Owns(Settings.TechSiteRoomsId, Settings.TechSiteHqId, Settings.TechSiteCloudId, Settings.TechSiteOfficesId)
                 .Test("reallife_sites_test_room", "reallife_sites_test_hq", "reallife_sites_test_floor")
                 .Cleanup(() => Tech.TechSites.Instance?.StopAll(), -1);
