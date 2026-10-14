@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Leisure
     /// every other setting goes on working; the same key brings the free camera back where it was.
     /// Never in a vehicle or on the bus: the game's own notification says so. In a Going Public
     /// session the clock is everyone's and the game cannot be paused for one player: the mode then
-    /// leaves the clock running and the speed controls alone (Core/GoingPublic).
+    /// leaves the clock running and the speed controls alone (Core/GoingPublic). Each picture's small
+    /// copy for Flare is made on a worker thread once the engine has written it (Core/PhotoThumbs).
     ///
     /// Idle cost: one key test a frame. While the mode is on it runs every frame, which is the
     /// point of it, and allocates only when a notification is asked for.
@@ -619,6 +620,10 @@ namespace RealLifeOverhaul.Leisure
                         {
                             Logger?.Error(e);
                         }
+                    }
+                    if (_shotPath != null)
+                    {
+                        PhotoThumbs.MakeSoon(_shotPath);   // its small copy, for Flare: made on a worker thread once the engine has written it
                     }
                     _shotStep = 3;
                     break;
