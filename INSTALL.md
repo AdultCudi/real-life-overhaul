@@ -10,7 +10,7 @@ There are two places to get the mod. Use one of them, not both.
 
 Both are the same mod, built from this repository. The game loads a mod from its own `ModsLocal` folder exactly as it loads one from the Workshop.
 
-You still need Big Ambitions itself, on Windows.
+You still need Big Ambitions itself, on Windows, kept up to date on Steam's public branch: the mod is made for the game's current build.
 
 ## Install with setup.exe (the easy way)
 
@@ -90,4 +90,5 @@ The value must match the one on the release page. Only download the mod from the
 ## If it does not load
 
 - The mod is not on the Mods tab: run the setup again, or, if you installed by hand, check the folder layout in step 5 and that the game was closed while you copied it.
+- The mod's apps do nothing, or the mod says the game needs updating: your game is an older build. In Steam, right-click Big Ambitions in the Library and choose **Properties**. Under **Betas**, set Beta Participation to **None**. Then, under **Installed Files**, choose **Verify integrity of game files**.
 - Something goes wrong in play: report it on the [Discord](https://discord.gg/tzCh2VXs9E) in #bug-reports, or open an issue here. Attach `Player.log` from `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions`, taken right after the problem and before the game starts again.
