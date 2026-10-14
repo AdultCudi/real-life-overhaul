@@ -1,4 +1,4 @@
-0.12.0
+0.12.1
 
-New
-- Ready for game updates: as the game starts, Real Life Overhaul checks every piece of Big Ambitions it relies on, switches off only the parts that stand on a piece the game lacks, and says which in one notice, with how to update the game in Steam when it is the older one. Everything else keeps working, a part that meets a missing piece later stops once instead of failing every frame, and a saved record the mod cannot read is kept in the save untouched.
+Fixed
+- A short freeze just as the loading screen goes, when the parts of the mod that read the save all started at the same moment; they now start one after another. Developer diagnostics: a frame while the loading screen is still fading out is no longer counted as a pause you see.
