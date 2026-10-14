@@ -1,4 +1,4 @@
-0.9.12
+0.9.13
 
 Fixed
-- A new player could not see how to get a professional job offer, and no employer could make one before a course. The Career app now opens on a Professions page that says how offers come, what each profession still needs (the course and where it is taught, more skill or a vacancy), and what you can apply for now. Vacancies are there from the first day, a vacancy is marked open to you only where an offer can come, and the first time nothing is open a notification names your first step.
+- Interiors and decor can no longer cut an established shop's takings sharply. Falling short of a district's standard now costs 6% of customers at most (8% before), a complaint counts inside that, the price a district bears is never lowered, and every effect comes in over 7 days. Four sliders in the options set each part from off to double, and the Interior tab shows what the interior does to each business today and why.
