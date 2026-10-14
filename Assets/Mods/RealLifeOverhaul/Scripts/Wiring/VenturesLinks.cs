@@ -142,7 +142,8 @@ namespace RealLifeOverhaul
                             {
                                 e.Title = PlannerText.T("reallife_ven_plan_call_title", "name", Name(file, d.InvestorId));
                                 e.What = PlannerText.T("reallife_ven_plan_call_what", "amount", FinanceText.Money(d.CallOwed));
-                                e.Money = PlannerText.T("reallife_planner_costs", "amount", FinanceText.Money(Math.Min(d.CallPerDay, d.CallOwed)));
+                                float owed = Math.Min(d.CallPerDay, d.CallOwed);
+                                PlannerText.Costs(e, owed, FinanceText.Money(owed));
                                 e.IfMissed = PlannerText.T("reallife_ven_plan_call_missed", "count", VenturesCatalogue.CallMissesMost.ToString());
                             }
                         }

@@ -415,7 +415,7 @@ namespace RealLifeOverhaul
                         }
                         e.Title = LedgerText.Fill("reallife_ledger_online_plan_renews_title", "title", title);
                         e.What = LedgerText.Fill("reallife_ledger_online_plan_renews_what", "title", title, "price", price);
-                        e.Money = Planner.PlannerText.T("reallife_planner_costs", "amount", price);
+                        Planner.PlannerText.Costs(e, d.OnlinePrice(i), price);
                         e.IfMissed = LedgerText.T("reallife_ledger_online_plan_renews_missed");
                     }
                 }

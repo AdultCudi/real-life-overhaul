@@ -117,7 +117,10 @@ namespace RealLifeOverhaul.Planner
             {
                 e.Title = PlannerText.T("reallife_planner_checkout_title");
                 e.What = PlannerText.T("reallife_planner_checkout_what", "nights", TravelState.Nights.ToString());
-                e.Money = TravelState.Owed > 0 ? PlannerText.T("reallife_planner_costs", "amount", PlannerText.Money(TravelState.Owed)) : null;
+                if (TravelState.Owed > 0)
+                {
+                    PlannerText.Costs(e, TravelState.Owed, PlannerText.Money(TravelState.Owed));
+                }
             }
         }
     }
