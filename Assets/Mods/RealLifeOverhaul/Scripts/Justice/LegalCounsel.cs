@@ -121,7 +121,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    if (building == null || building.BuildingType != "ba:buildingtype_office" || string.IsNullOrEmpty(building.StreetName) || Taken(building))
+                    if (building == null || building.BuildingType != "ba:buildingtype_office" || Offices.Conversions.Holds(building) || string.IsNullOrEmpty(building.StreetName) || Taken(building))
                     {
                         continue;
                     }
