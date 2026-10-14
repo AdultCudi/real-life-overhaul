@@ -209,7 +209,7 @@ namespace RealLifeOverhaul.Economy
             box.Title(EstateText.T("reallife_estate_tab_hire"));
             if (hire.Running)
             {
-                box.Line(EstateText.Pair("reallife_estate_hire_lot", EstateGame.NameOf(hire.Lot)));
+                box.Row("reallife_estate_hire_lot", EstateGame.NameOf(hire.Lot));
                 box.Line(EstateText.T("reallife_estate_hire_spaces", "count", hire.Cars.Count.ToString(), "spaces", hire.Spaces.ToString()));
                 box.Line(EstateText.T("reallife_estate_hire_rating", "rating", EstateText.Level(hire.Rating)));
                 box.Line(EstateText.T("reallife_estate_hire_year", "takings", EstateText.Money(hire.TakingsYear), "costs", EstateText.Money(hire.CostsYear)));

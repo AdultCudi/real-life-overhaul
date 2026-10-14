@@ -66,9 +66,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_app"));
-            box.Line(DealerText.Pair("reallife_dealer_sum_waiting", _director.Waiting().ToString()));
-            box.Line(DealerText.Pair("reallife_dealer_sum_cars", DealerText.T("reallife_dealer_sum_cars_value", "cars", cars.ToString(), "free", free.ToString())));
-            box.Line(DealerText.Pair("reallife_dealer_sum_worth", DealerText.Money(worthAll)));
+            box.Row("reallife_dealer_sum_waiting", _director.Waiting().ToString());
+            box.Row("reallife_dealer_sum_cars", DealerText.T("reallife_dealer_sum_cars_value", "cars", cars.ToString(), "free", free.ToString()));
+            box.Row("reallife_dealer_sum_worth", DealerText.Money(worthAll));
             box.Line(DealerText.T("reallife_dealer_about"));
             box.Line(DealerText.T("reallife_dealer_sum_note"));
             Meta.Guide.Point(box, GuideTitle);
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Line(DealerText.Fill("reallife_dealer_car_money", "cost", DealerText.Money(car.Cost), "worth", DealerText.Money(worth), "trade", DealerText.Money(DealerRules.TradePrice(worth))));
             box.Line(DealerText.Fill("reallife_dealer_car_what", "source", DealerText.Source(car.Source), "name", yard.Name, "days", (day - car.Bought).ToString(),
                 "km", DealerText.Km(car.Km), "condition", DealerText.Condition(car.Condition)));
-            box.Line(DealerText.Pair("reallife_dealer_car_faults", car.Known != 0 ? DealerText.Faults(car.Known) : DealerText.T("reallife_dealer_faults_none_known")));
+            box.Row("reallife_dealer_car_faults", car.Known != 0 ? DealerText.Faults(car.Known) : DealerText.T("reallife_dealer_faults_none_known"));
             int step = Choice(DealerRules.AskStepOf(worth, car.Asking));
             Choose(box, DealerRules.AskSteps, step, i => DealerText.T("reallife_dealer_car_ask", "price", DealerText.Money(DealerRules.AskAt(worth, i)),
                 "share", DealerText.Share(DealerCatalogue.AskLeast + i * DealerCatalogue.AskStep)), i =>

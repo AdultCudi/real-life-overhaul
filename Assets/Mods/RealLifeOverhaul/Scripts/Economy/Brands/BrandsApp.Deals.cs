@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     box.Line(BrandsText.Fill(a.ShopsRun > 0 ? "reallife_brand_app_record" : "reallife_brand_app_record_none", "years", a.Experience.ToString(), "run", a.ShopsRun.ToString(), "closed", a.ShopsClosed.ToString()));
                 }
-                box.Line(FinanceText.Pair("reallife_brand_app_temper", BrandsText.Temper(a.Temper)));
+                box.Row("reallife_brand_app_temper", BrandsText.Temper(a.Temper));
                 box.Line(BrandsText.TemperAbout(a.Temper));
                 box.Line(BrandsText.Fill("reallife_brand_app_known", "points", BrandsText.Points(BrandRules.Effective(b, a.District)), "bears", FranchiseRules.Bears(a.Temper, BrandRules.Effective(b, a.District)).ToString()));
                 var first = box.ButtonRow();

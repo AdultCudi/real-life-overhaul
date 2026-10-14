@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 box.Line(DealerText.T("reallife_dealer_market_no_bids", "day", FinanceText.Day(state.NoBidsUntil + 1)));
             }
-            box.Line(DealerText.Pair("reallife_dealer_cash", DealerText.Money(DealerGame.Cash)));
+            box.Row("reallife_dealer_cash", DealerText.Money(DealerGame.Cash));
             box.Line(DealerText.Fill("reallife_dealer_market_sum", "new", news.ToString(), "used", used.ToString(), "lots", lots.ToString()));
             box.Line(DealerText.T("reallife_dealer_market_about"));
             Meta.Guide.Point(box, GuideTitle);
@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (l.Inspected)
             {
                 int worth = _director.Worth(l);
-                box.Line(DealerText.Pair("reallife_dealer_used_worth", DealerText.Money(worth)));
+                box.Row("reallife_dealer_used_worth", DealerText.Money(worth));
                 box.Line(DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults)));
             }
             else

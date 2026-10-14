@@ -79,8 +79,8 @@ namespace RealLifeOverhaul.Careers
             box.Line(CareersText.T("reallife_career_start_how"));
             box.Line(CareersText.Fill("reallife_career_start_steps", "least", ProRules.AnswerDaysLeast.ToString(), "most", ProRules.AnswerDaysMost.ToString(),
                 "after", ProRules.InterviewAfterDays.ToString(), "days", ProRules.OfferDays.ToString()));
-            box.Line(CareersText.Pair("reallife_career_sum_open", open.ToString()));
-            box.Line(CareersText.Pair("reallife_career_sum_ready", ready.ToString()));
+            box.Row("reallife_career_sum_open", open.ToString());
+            box.Row("reallife_career_sum_ready", ready.ToString());
             int course = -1;
             if (open > 0)
             {

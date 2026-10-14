@@ -294,7 +294,7 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_career_jobs_title"));
-            box.Line(CareersText.Pair("reallife_career_sum_open", open.ToString()));
+            box.Row("reallife_career_sum_open", open.ToString());
             box.Line(w.AgencyUntil >= day
                 ? CareersText.T("reallife_career_jobs_agency_on", "day", CareersText.Day(w.AgencyUntil))
                 : CareersText.T("reallife_career_jobs_agency_off"));
@@ -433,7 +433,7 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_career_applications_title"));
-            box.Line(CareersText.Pair("reallife_career_sum_offers", offers.ToString()));
+            box.Row("reallife_career_sum_offers", offers.ToString());
             box.Line(CareersText.T("reallife_career_applications_about", "most", CareersDirector.ApplicationsLive.ToString(), "days", ProRules.OfferDays.ToString()));
             Meta.Guide.Point(box, JobsGuide);
             return CareerColumns.Applications;
@@ -641,11 +641,11 @@ namespace RealLifeOverhaul.Careers
             int good, poor;
             ProRules.References(w, out good, out poor);
             box.Title(CareersText.T("reallife_career_cv_title"));
-            box.Line(CareersText.Pair("reallife_career_sum_school", TechText.School(StudyRules.School(f))));
-            box.Line(CareersText.Pair("reallife_career_sum_refs", CareersText.Fill("reallife_career_refs", "good", good.ToString(), "poor", poor.ToString())));
-            box.Line(CareersText.Pair("reallife_career_sum_earned", CareersText.Cents(w.Earned)));
-            box.Line(CareersText.Pair("reallife_career_sum_days", w.DaysWorked.ToString()));
-            box.Line(CareersText.Pair("reallife_career_sum_name", CareersBridges.ReputationNow().ToString()));
+            box.Row("reallife_career_sum_school", TechText.School(StudyRules.School(f)));
+            box.Row("reallife_career_sum_refs", CareersText.Fill("reallife_career_refs", "good", good.ToString(), "poor", poor.ToString()));
+            box.Row("reallife_career_sum_earned", CareersText.Cents(w.Earned));
+            box.Row("reallife_career_sum_days", w.DaysWorked.ToString());
+            box.Row("reallife_career_sum_name", CareersBridges.ReputationNow().ToString());
             CvMore(box, w, f, day);
             box.Line(CareersText.T("reallife_career_cv_about"));
             Meta.Guide.Point(box, JobsGuide);

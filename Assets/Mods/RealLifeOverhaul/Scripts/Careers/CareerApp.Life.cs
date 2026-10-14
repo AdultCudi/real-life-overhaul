@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T(j.Declared ? "reallife_life_job_declared" : "reallife_life_job_conflict"));
             }
-            box.Line(CareersText.Pair("reallife_life_sum_pension", CareersText.Cents(w.Pension)));
+            box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
         }
 
         partial void JobButtons(Transform buttons, Job j, int day)
@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T("reallife_life_benefit_line", "amount", CareersText.Money(Prices.At(w.BenefitWeek)), "day", CareersText.Day(w.BenefitUntil)));
             }
-            box.Line(CareersText.Pair("reallife_life_sum_pension", CareersText.Cents(w.Pension)));
+            box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired <= 0)
             {
                 RetireButton(box, w);
@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Careers
 
         partial void CvMore(InfoBox box, WorkFile w, StudyFile f, int day)
         {
-            box.Line(CareersText.Pair("reallife_life_sum_pension", CareersText.Cents(w.Pension)));
+            box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired > 0)
             {
                 box.Line(CareersText.T("reallife_life_retired_on", "day", CareersText.Day(w.Retired)));

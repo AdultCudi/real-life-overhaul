@@ -88,10 +88,10 @@ namespace RealLifeOverhaul.Economy
             box.Title(CompanyText.T("reallife_co_push_title", "business", shop.Name));
             if (file.Push >= 0)
             {
-                box.Line(FinanceText.Pair("reallife_co_push_running", CompanyText.Campaign(file.Push)));
+                box.Row("reallife_co_push_running", CompanyText.Campaign(file.Push));
                 box.Line(CompanyText.T("reallife_co_push_days", "from", file.PushFrom.ToString(), "to", (file.PushEnd - 1).ToString()));
-                box.Line(FinanceText.Pair("reallife_co_push_cost", CompanyText.Money(file.PushCost)));
-                box.Line(FinanceText.Pair("reallife_co_push_effect", CompanyText.Percent(file.PushPercent)));
+                box.Row("reallife_co_push_cost", CompanyText.Money(file.PushCost));
+                box.Row("reallife_co_push_effect", CompanyText.Percent(file.PushPercent));
                 box.Line(CompanyText.T("reallife_co_push_report_due", "day", file.PushEnd.ToString()));
                 BackButton(box);
                 return;
@@ -116,9 +116,9 @@ namespace RealLifeOverhaul.Economy
             int cost, percent, suit, repeat;
             _director.CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
             box.Line(CompanyText.T(CampaignAbout[kind], "share", CompanyText.Share(CompanyCatalogue.DiscountShare)));
-            box.Line(FinanceText.Pair("reallife_co_push_cost", CompanyText.Money(cost)));
-            box.Line(FinanceText.Pair("reallife_co_push_length", CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day + 1).ToString())));
-            box.Line(FinanceText.Pair("reallife_co_push_effect", CompanyText.Percent(percent)));
+            box.Row("reallife_co_push_cost", CompanyText.Money(cost));
+            box.Row("reallife_co_push_length", CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day + 1).ToString()));
+            box.Row("reallife_co_push_effect", CompanyText.Percent(percent));
             box.Line(CompanyText.T("reallife_co_push_parts", "own", CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind]), "district", CompanyText.Share(suit),
                 "economy", CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)_director.Cycle, 0, 3)])) + (repeat < 1000 ? " " + CompanyText.T("reallife_co_push_repeat", "share", CompanyText.Share(repeat)) : string.Empty));
             var buttons = box.ButtonRow();
@@ -139,8 +139,8 @@ namespace RealLifeOverhaul.Economy
             box.Line(CompanyText.T("reallife_co_report_customers", "before", r.CustomersBefore.ToString(), "during", r.CustomersDuring.ToString(), "change", CompanyText.Percent(r.Footfall)));
             box.Line(CompanyText.T("reallife_co_report_takings", "before", CompanyText.Money(r.TakingsBefore), "during", CompanyText.Money(r.TakingsDuring)));
             box.Line(CompanyText.T("reallife_co_report_profit", "before", CompanyText.Money(r.ProfitBefore), "during", CompanyText.Money(r.ProfitDuring)));
-            box.Line(FinanceText.Pair("reallife_co_push_cost", CompanyText.Money(r.Cost)));
-            box.Line(FinanceText.Pair("reallife_co_report_extra", CompanyText.Money(r.Extra)));
+            box.Row("reallife_co_push_cost", CompanyText.Money(r.Cost));
+            box.Row("reallife_co_report_extra", CompanyText.Money(r.Extra));
             box.Line(r.Cost > 0 ? FinanceText.Pair("reallife_co_report_return", CompanyText.Percent(r.Return)) : CompanyText.T("reallife_co_report_no_return"));
             BackButton(box);
         }

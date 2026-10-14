@@ -153,15 +153,15 @@ namespace RealLifeOverhaul.Fame
             {
                 box.Line(FameText.Fill("reallife_fame_scandal_line", "day", FameText.N(f.ScandalUntil)));
             }
-            box.Line(FameText.Pair("reallife_fame_label_profile", FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall))));
-            box.Line(FameText.Pair("reallife_fame_label_reputation", FameText.Rep(f.Overall)));
-            box.Line(FameText.Pair("reallife_fame_label_wealth", FameText.N(f.Wealth)));
-            box.Line(FameText.Pair("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier))));
-            box.Line(FameText.Pair("reallife_fame_label_influence", FameText.N(FameCity.Influence(f))));
+            box.Row("reallife_fame_label_profile", FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall)));
+            box.Row("reallife_fame_label_reputation", FameText.Rep(f.Overall));
+            box.Row("reallife_fame_label_wealth", FameText.N(f.Wealth));
+            box.Row("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier)));
+            box.Row("reallife_fame_label_influence", FameText.N(FameCity.Influence(f)));
             box.Headline("reallife_fame_head_reputation");
             for (int i = 0; i < 4; i++)
             {
-                box.Line(FameText.Pair(LabelKeys[i], FameText.Rep(f.Rep[i])));
+                box.Row(LabelKeys[i], FameText.Rep(f.Rep[i]));
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_fame_back", back);
             Meta.Guide.Point(box, GuideTitle);
@@ -174,7 +174,7 @@ namespace RealLifeOverhaul.Fame
             if (picked == "wealth")
             {
                 box.Title(FameText.T("reallife_fame_row_wealth"));
-                box.Line(FameText.Pair("reallife_fame_label_wealth", FameText.N(f.Wealth)));
+                box.Row("reallife_fame_label_wealth", FameText.N(f.Wealth));
                 box.Line(FameText.Fill("reallife_fame_wealth_parts", "worth", FameText.Money(f.NetWorth), "week", FameText.Money(f.Weekly), "count", FameText.N(f.Businesses),
                     "properties", FameText.N(f.Properties)));
                 about = FameText.T("reallife_fame_wealth_about");
@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Fame
             else if (picked == "recognition")
             {
                 box.Title(FameText.T("reallife_fame_row_recognition"));
-                box.Line(FameText.Pair("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier))));
+                box.Row("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier)));
                 box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", (f.Press / 10f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
                 about = FameText.T("reallife_fame_recognition_about");
             }
@@ -190,7 +190,7 @@ namespace RealLifeOverhaul.Fame
             {
                 int i = FameRules.Clamp(Number(picked, 5), 0, 3);
                 box.Title(FameText.Part((FamePart)i));
-                box.Line(FameText.Pair(LabelKeys[i], FameText.Rep(f.Rep[i])));
+                box.Row(LabelKeys[i], FameText.Rep(f.Rep[i]));
                 if (i != (int)FamePart.Integrity)
                 {
                     box.Line(FameText.Fill("reallife_fame_page_heading", "value", FameText.N(f.Target[i])));
@@ -206,8 +206,8 @@ namespace RealLifeOverhaul.Fame
                 }
                 FameDistrict d = f.Districts[i];
                 box.Title(FameGame.DistrictName(d.Name));
-                box.Line(FameText.Pair("reallife_fame_label_opinion", FameText.Rep(d.Opinion)));
-                box.Line(FameText.Pair("reallife_fame_label_known", FameText.N(d.Known)));
+                box.Row("reallife_fame_label_opinion", FameText.Rep(d.Opinion));
+                box.Row("reallife_fame_label_known", FameText.N(d.Known));
                 box.Line(FameText.Fill("reallife_fame_page_district", "shops", FameText.N(d.Shops), "jobs", FameText.N(d.Jobs), "raised", FameText.N(d.Raised)));
                 about = FameText.T("reallife_fame_district_about");
             }

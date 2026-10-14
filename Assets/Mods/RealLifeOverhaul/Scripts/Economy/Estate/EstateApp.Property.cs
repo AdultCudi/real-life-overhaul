@@ -132,9 +132,9 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             box.Title(EstateText.T("reallife_estate_tab_mine"));
-            box.Line(EstateText.Pair("reallife_estate_mine_count", state.Holdings.Count.ToString()));
-            box.Line(EstateText.Pair("reallife_estate_mine_worth", EstateText.Money(worth)));
-            box.Line(EstateText.Pair("reallife_estate_mine_rent", EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(rent))));
+            box.Row("reallife_estate_mine_count", state.Holdings.Count.ToString());
+            box.Row("reallife_estate_mine_worth", EstateText.Money(worth));
+            box.Row("reallife_estate_mine_rent", EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(rent)));
             box.Line(EstateText.T("reallife_estate_mine_what"));
             box.Line(EstateText.T("reallife_estate_mine_game"));
             Meta.Guide.Point(box, GuideTitle);
@@ -343,9 +343,9 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(EstateText.T("reallife_estate_tab_tenants"));
-                box.Line(EstateText.Pair("reallife_estate_tenants_let", let.ToString()));
-                box.Line(EstateText.Pair("reallife_estate_tenants_empty", empty.ToString()));
-                box.Line(EstateText.Pair("reallife_estate_tenants_owed", EstateText.Money(owed)));
+                box.Row("reallife_estate_tenants_let", let.ToString());
+                box.Row("reallife_estate_tenants_empty", empty.ToString());
+                box.Row("reallife_estate_tenants_owed", EstateText.Money(owed));
                 box.Line(EstateText.T("reallife_estate_tenants_notice_what", "days", EstateCatalogue.NoticeArrearsDays.ToString(), "notice", EstateRules.NoticeLength(c.RentLever).ToString(), "court", EstateCatalogue.CourtDays.ToString()));
                 box.Line(EstateText.T("reallife_estate_tenants_what"));
                 box.Line(EstateText.T("reallife_estate_tenants_rent_what"));
@@ -615,7 +615,7 @@ namespace RealLifeOverhaul.Economy
             EstateGame.Offices(_places);
             if (agency.Running)
             {
-                box.Line(EstateText.Pair("reallife_estate_agency_office", EstateGame.NameOf(agency.Office)));
+                box.Row("reallife_estate_agency_office", EstateGame.NameOf(agency.Office));
                 box.Line(EstateText.T(agency.Negotiators > 0 ? "reallife_estate_agency_staff" : "reallife_estate_agency_no_staff", "count", agency.Negotiators.ToString(), "hours", (agency.Capacity / 10f).ToString("0.#")));
                 box.Line(EstateText.T("reallife_estate_agency_totals", "deals", agency.Deals.ToString(), "lost", agency.Lost.ToString(), "amount", EstateText.Money(agency.Commission)));
                 box.Headline("reallife_estate_agency_reputation");

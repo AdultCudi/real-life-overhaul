@@ -301,33 +301,33 @@ namespace RealLifeOverhaul.Economy
             var wealth = PlayerHelper.GetPersonalWealth();   // the game's own figure for what the player is worth (Persona shows it)
 
             box.Title(FinanceText.T("reallife_econ_tab_overview"));
-            box.Line(FinanceText.Pair("reallife_econ_over_cash", FinanceText.Money(save.Money)));
-            box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedAccounts + owedOther)));
+            box.Row("reallife_econ_over_cash", FinanceText.Money(save.Money));
+            box.Row("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedAccounts + owedOther));
             if (owedOther > 0f || owedAccounts > 0f)
             {
                 box.Line(FinanceText.T("reallife_econ_over_owed_three", "loans", FinanceText.Money(owedLoans), "accounts", FinanceText.Money(owedAccounts), "other", FinanceText.Money(owedOther)));
             }
-            box.Line(FinanceText.Pair("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade))));
+            box.Row("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade)));
             bool cityOn = CityLines(box);   // the bank rate, prices and the economy, while the city's economy runs
             box.Headline("reallife_econ_over_costs");
-            box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(due.Total)));
-            box.Line(FinanceText.Pair("reallife_econ_over_loan_payments", FinanceText.Money(payments)));
+            box.Row("reallife_econ_over_leaves", FinanceText.Money(due.Total));
+            box.Row("reallife_econ_over_loan_payments", FinanceText.Money(payments));
             if (interest > 0f)
             {
                 box.Line(FinanceText.T("reallife_econ_over_interest", "amount", FinanceText.Money(interest)));
             }
             if (due.Accounts > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_econ_over_accounts", FinanceText.Money(due.Accounts)));
+                box.Row("reallife_econ_over_accounts", FinanceText.Money(due.Accounts));
             }
             if (otherDaily > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_econ_over_fines", FinanceText.Money(otherDaily)));
+                box.Row("reallife_econ_over_fines", FinanceText.Money(otherDaily));
             }
-            box.Line(FinanceText.Pair("reallife_econ_over_rent", FinanceText.Money(rent)));
-            box.Line(FinanceText.Pair("reallife_econ_over_wages", FinanceText.Money(wages)));
+            box.Row("reallife_econ_over_rent", FinanceText.Money(rent));
+            box.Row("reallife_econ_over_wages", FinanceText.Money(wages));
             box.Headline("reallife_econ_over_worth_head");
-            box.Line(FinanceText.Pair("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts)));
+            box.Row("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts));
             box.Line(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
             if (cityOn)
@@ -459,9 +459,9 @@ namespace RealLifeOverhaul.Economy
             float most = CreditCatalogue.PointsOf(factor);
             int now = Mathf.RoundToInt(score.Factor[(int)factor] * most);
             box.Title(FinanceText.T(CreditCatalogue.FactorKeys[(int)factor]));
-            box.Line(FinanceText.Pair("reallife_tab_factor_stands", FinanceText.Stands(score, factor)));
-            box.Line(FinanceText.Pair("reallife_tab_factor_points", FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString())));
-            box.Line(FinanceText.Pair("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%"));
+            box.Row("reallife_tab_factor_stands", FinanceText.Stands(score, factor));
+            box.Row("reallife_tab_factor_points", FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString()));
+            box.Row("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%");
             box.Headline("reallife_tab_factor_moves");
             box.Line(FinanceText.Tip(score, factor));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
@@ -562,7 +562,7 @@ namespace RealLifeOverhaul.Economy
             Lender lender = _lender;
             int most = Mathf.FloorToInt(PhoneLending.MostNow(lender, score.Value));
             box.Title(lender.Name);
-            box.Line(FinanceText.Pair("reallife_econ_offer_most", FinanceText.Money(most)));
+            box.Row("reallife_econ_offer_most", FinanceText.Money(most));
             if (most < CreditCatalogue.LoanLeast)
             {
                 box.Line(FinanceText.T("reallife_econ_offer_nothing", "least", FinanceText.Money(CreditCatalogue.LoanLeast)));
@@ -572,7 +572,7 @@ namespace RealLifeOverhaul.Economy
             _amount = Mathf.Clamp(_amount, CreditCatalogue.LoanLeast, most);
             Amounts(most);
             LoanQuote quote = PhoneLending.Quote(lender, _amount, score.Value);
-            box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#"))));
+            box.Row("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#")));
             box.Headline("reallife_econ_offer_amount");
             if (!box.HasSelector || !box.Selector(_amounts.Count, _amounts.IndexOf(_amount), i => FinanceText.Money(_amounts[i]), i =>
                 {
@@ -592,16 +592,16 @@ namespace RealLifeOverhaul.Economy
                     uis.textInputUi.Show("reallife_econ_offer_placeholder", "common_confirm", text => UiClone.Safe(() => Typed(text)), null, _amount.ToString(), false, TypedAmountLength));
             }
             box.Headline("reallife_econ_offer_cost");
-            box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_days", quote.Days.ToString()));
-            box.Line(FinanceText.Pair("reallife_econ_offer_fee", FinanceText.Money(quote.Fee)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_total", FinanceText.Money(quote.Cost)));
-            box.Line(FinanceText.Pair("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost)));
+            box.Row("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment));
+            box.Row("reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest));
+            box.Row("reallife_econ_offer_days", quote.Days.ToString());
+            box.Row("reallife_econ_offer_fee", FinanceText.Money(quote.Fee));
+            box.Row("reallife_econ_offer_total", FinanceText.Money(quote.Cost));
+            box.Row("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost));
             float owedThem = GameLoans.OwedTo(lender.Address);
             if (owedThem > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_tab_offer_owed_them", FinanceText.Money(owedThem)));
+                box.Row("reallife_tab_offer_owed_them", FinanceText.Money(owedThem));
             }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_apply", Apply);
@@ -814,9 +814,9 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CashFlow.PeriodName(_period));
             }
-            box.Line(FinanceText.Pair("reallife_econ_cash_in", FinanceText.Money(_flow.In)));
-            box.Line(FinanceText.Pair("reallife_econ_cash_out", FinanceText.Money(-_flow.Out)));
-            box.Line(FinanceText.Pair("reallife_econ_cash_net", FinanceText.Money(_flow.In + _flow.Out)));
+            box.Row("reallife_econ_cash_in", FinanceText.Money(_flow.In));
+            box.Row("reallife_econ_cash_out", FinanceText.Money(-_flow.Out));
+            box.Row("reallife_econ_cash_net", FinanceText.Money(_flow.In + _flow.Out));
             if (_flow.OldestDay > _flow.FromDay && _flow.FromDay >= 1)
             {
                 box.Line(FinanceText.T("reallife_econ_cash_reach", "day", _flow.OldestDay.ToString()));
@@ -878,7 +878,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.T("reallife_tab_cash_share_out", "amount", FinanceText.Money(went), "share", Share(went, -_flow.Out)));
             }
-            box.Line(FinanceText.Pair("reallife_econ_cash_net", FinanceText.Money(came - went)));
+            box.Row("reallife_econ_cash_net", FinanceText.Money(came - went));
         }
 
         private static string Share(float part, float whole)

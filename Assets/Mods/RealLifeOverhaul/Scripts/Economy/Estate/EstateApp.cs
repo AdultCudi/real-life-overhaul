@@ -415,9 +415,9 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(EstateText.T("reallife_estate_tab_market"));
-                box.Line(EstateText.Pair("reallife_estate_market_level", EstateText.Share(state.Real)));
+                box.Row("reallife_estate_market_level", EstateText.Share(state.Real));
                 box.Line(EstateText.T("reallife_estate_market_heading", "cycle", EstateText.Cycle(c.Cycle), "target", EstateText.Share(EstateRules.RealTarget(c.Cycle, c.Quarters))));
-                box.Line(EstateText.Pair("reallife_estate_market_prices", EstateText.Share(c.Index)));
+                box.Row("reallife_estate_market_prices", EstateText.Share(c.Index));
                 box.Line(EstateText.T("reallife_estate_market_what"));
                 box.Line(EstateText.T("reallife_estate_market_rents"));
                 box.Line(EstateText.T("reallife_estate_market_mortgage"));
@@ -433,7 +433,7 @@ namespace RealLifeOverhaul.Economy
             int rent = EstateRules.MarketRent(b.Base, use, income, cond, 0, c);
             string place = b.Place;
             box.Title(EstateGame.NameOf(place));
-            box.Line(EstateText.Pair("reallife_estate_listing_price", EstateText.Money(value)));
+            box.Row("reallife_estate_listing_price", EstateText.Money(value));
             box.Line(EstateText.T("reallife_estate_listing_base", "amount", EstateText.Money(b.Base)));
             box.Line(EstateText.T("reallife_estate_listing_market", "market", EstateText.Share(state.Real), "prices", EstateText.Share(c.Index)));
             box.Line(EstateText.T("reallife_estate_listing_district", "district", EstateText.District(b.District), "share", EstateText.Share(EstateRules.DistrictValue(income))));
@@ -459,7 +459,7 @@ namespace RealLifeOverhaul.Economy
             int price = EstateGame.HotelPrice(slot, state.Real, c.DaysPerYear);
             string id = slot.Id;
             box.Title(EstateGame.HotelName(slot));
-            box.Line(EstateText.Pair("reallife_estate_listing_price", EstateText.Money(price)));
+            box.Row("reallife_estate_listing_price", EstateText.Money(price));
             box.Line(EstateText.Fill("reallife_estate_hotel_rooms", "count0", HotelRules.Rooms(tier, 0).ToString(), "room0", EstateGame.RoomName(tier, 0), "count1", HotelRules.Rooms(tier, 1).ToString(),
                 "room1", EstateGame.RoomName(tier, 1)));
             box.Line(EstateText.T("reallife_estate_hotel_price_what", "years", (EstateCatalogue.HotelMultiple / 1000f).ToString("0.#"), "share", EstateText.Share(EstateCatalogue.Occupancy), "market", EstateText.Share(state.Real)));

@@ -384,9 +384,9 @@ namespace RealLifeOverhaul.Economy
                 box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - AlertsShown).ToString()));
             }
             box.Headline("reallife_co_tab_overview");
-            box.Line(FinanceText.Pair("reallife_co_over_businesses", shops.Count.ToString()));
-            box.Line(FinanceText.Pair("reallife_co_over_staff", state.Staff.Count.ToString()));
-            box.Line(FinanceText.Pair("reallife_co_over_quarter", CompanyText.T("reallife_co_over_quarter_value", "quarter", state.Tax.Quarter.ToString(), "day", state.Tax.QuarterFrom.ToString())));
+            box.Row("reallife_co_over_businesses", shops.Count.ToString());
+            box.Row("reallife_co_over_staff", state.Staff.Count.ToString());
+            box.Row("reallife_co_over_quarter", CompanyText.T("reallife_co_over_quarter_value", "quarter", state.Tax.Quarter.ToString(), "day", state.Tax.QuarterFrom.ToString()));
             Transform others = ServicesDirector.CanClean || OwnBankDirector.CanOpen ? box.ButtonRow() : null;
             if (ServicesDirector.CanClean) InfoBox.Button(others, InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
             if (OwnBankDirector.CanOpen) InfoBox.Button(others, InfoBox.Positive, "reallife_ob_open", OwnBankDirector.OpenApp);   // (the player's bank: Economy/OwnBank)
@@ -452,7 +452,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(shop.HasBooks
                 ? CompanyText.T("reallife_co_shop_yesterday", "takings", CompanyText.Money(shop.Takings), "profit", CompanyText.Money(shop.Profit))
                 : CompanyText.T("reallife_co_shop_no_books"));
-            box.Line(FinanceText.Pair("reallife_co_shop_district", CompanyText.T("reallife_co_shop_district_value", "district", CompanyText.District(shop.District), "income", shop.Income.ToString())));
+            box.Row("reallife_co_shop_district", CompanyText.T("reallife_co_shop_district_value", "district", CompanyText.District(shop.District), "income", shop.Income.ToString()));
             if (_director.On(CompanyPart.Staff))
             {
                 box.Line(shop.Staff > 0
@@ -469,23 +469,23 @@ namespace RealLifeOverhaul.Economy
                         cover += (cover.Length > 0 ? ", " : string.Empty) + CompanyText.Cover(k);
                     }
                 }
-                box.Line(FinanceText.Pair("reallife_co_shop_cover", cover.Length > 0 ? cover : CompanyText.T("reallife_co_none")));
+                box.Row("reallife_co_shop_cover", cover.Length > 0 ? cover : CompanyText.T("reallife_co_none"));
             }
             if (_director.On(CompanyPart.Marketing))
             {
-                box.Line(FinanceText.Pair("reallife_co_shop_campaign", file.Push >= 0
+                box.Row("reallife_co_shop_campaign", file.Push >= 0
                     ? CompanyText.T(file.Pushing(day) ? "reallife_co_shop_campaign_on" : "reallife_co_shop_campaign_booked", "campaign", CompanyText.Campaign(file.Push), "day",
                         (file.Pushing(day) ? file.PushEnd - 1 : file.PushFrom).ToString())
-                    : CompanyText.T("reallife_co_none")));
+                    : CompanyText.T("reallife_co_none"));
             }
             if (_director.On(CompanyPart.Licences))
             {
                 int missing = LicenceRules.Missing(file, shop.Needs, day);
-                box.Line(FinanceText.Pair("reallife_co_shop_licences", missing == 0 ? CompanyText.T("reallife_co_shop_licences_ok") : CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing))));
+                box.Row("reallife_co_shop_licences", missing == 0 ? CompanyText.T("reallife_co_shop_licences_ok") : CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing)));
             }
             if (_director.On(CompanyPart.Tax) && file.Hide > 0)
             {
-                box.Line(FinanceText.Pair("reallife_co_shop_hidden", file.Hide + "%"));
+                box.Row("reallife_co_shop_hidden", file.Hide + "%");
             }
             if (ServicesDirector.CanSell) InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));   // (selling a business: Economy/Services)
             BackButton(box);

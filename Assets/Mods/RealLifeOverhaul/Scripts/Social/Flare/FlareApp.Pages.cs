@@ -128,13 +128,13 @@ namespace RealLifeOverhaul.Flare
                 Texture2D picture = p.Author == FlareAuthor.Player ? _pictures.Of(file, p) : null;
                 if (picture == null || box.Picture(picture, FlareRules.ThumbWidth, _pictures.Height) == null)
                 {
-                    box.Line(FlareText.Pair("reallife_flare_picture", p.Name ?? string.Empty));   // not one of the newest five, still being read, or the file is gone
+                    box.Row("reallife_flare_picture", p.Name ?? string.Empty);   // not one of the newest five, still being read, or the file is gone
                 }
             }
             box.Line(FlareText.Fill("reallife_flare_post_figures", "reach", FlareText.N(p.Reach), "likes", FlareText.N(p.Likes), "replies", FlareText.N(p.Replies)));
             if (p.Author == FlareAuthor.Player)
             {
-                box.Line(FlareText.Pair("reallife_flare_post_followers", FlareText.Signed(p.Gained)));
+                box.Row("reallife_flare_post_followers", FlareText.Signed(p.Gained));
                 if (p.Viral || p.Bad)
                 {
                     box.Line(FlareText.T(p.Viral ? "reallife_flare_post_viral" : "reallife_flare_post_bad"));
@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Flare
                 Choose(box, 2, _untag ? 1 : 0, i => FlareText.Fill(i == 0 ? "reallife_flare_tag_yes" : "reallife_flare_tag_no", "friend", friend), i => _untag = i == 1);
             }
             var preview = new FlarePost { Source = d.Source, Tone = (FlareTone)tone, Name = d.Name, Arg = d.Arg, Seed = file.NextId * 7919 };
-            box.Line(FlareText.Pair("reallife_flare_preview", FlareText.Post(preview, tag ? friend : null, null, null)));
+            box.Row("reallife_flare_preview", FlareText.Post(preview, tag ? friend : null, null, null));
             int fit = FlareRules.ToneFit(d.Source, (FlareTone)tone);
             if (fit < FlareRules.BadFit)
             {
@@ -281,11 +281,11 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Mine;
             }
             box.Title(FlareText.T("reallife_flare_tab_me"));
-            box.Line(FlareText.Pair("reallife_flare_me_followers", FlareText.N(file.Followers)));
+            box.Row("reallife_flare_me_followers", FlareText.N(file.Followers));
             int next = FlareRules.NextTierAt(file.Followers);
             box.Line(FlareText.Pair("reallife_flare_me_tier", FlareText.Tier(file.Tier))
                      + (next > 0 ? " " + FlareText.Fill("reallife_flare_me_next", "tier", FlareText.Tier(FlareRules.TierOf(next)), "followers", FlareText.N(next)) : string.Empty));
-            box.Line(FlareText.Pair("reallife_flare_me_reputation", FlareText.Reputation(file.Reputation) + " (" + file.Reputation + ")"));
+            box.Row("reallife_flare_me_reputation", FlareText.Reputation(file.Reputation) + " (" + file.Reputation + ")");
             box.Line(FlareText.Fill("reallife_flare_me_week", "list", FlareText.History(file.History)));
             box.Line(FlareText.Fill("reallife_flare_me_totals", "posts", FlareText.N(file.TotalPosts), "likes", FlareText.N(file.TotalLikes),
                 "friends", FlareRules.Count(file.Following).ToString()));
@@ -384,7 +384,7 @@ namespace RealLifeOverhaul.Flare
             int overall;
             if (FlareGame.Satisfaction(reg, out overall, _parts))
             {
-                box.Line(FlareText.Pair("reallife_flare_shop_stars", Stars(overall)));
+                box.Row("reallife_flare_shop_stars", Stars(overall));
                 int said = 0;
                 for (int k = 0; k < _parts.Length && said < 2; k++)
                 {
@@ -398,7 +398,7 @@ namespace RealLifeOverhaul.Flare
             }
             int talk = file.BuzzAt(place, day);
             box.Line(talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"));
-            box.Line(FlareText.Pair("reallife_flare_shop_posts", posts.ToString()));
+            box.Row("reallife_flare_shop_posts", posts.ToString());
             FlareCampaign campaign;
             if (_director.CampaignAt(place, out campaign))
             {

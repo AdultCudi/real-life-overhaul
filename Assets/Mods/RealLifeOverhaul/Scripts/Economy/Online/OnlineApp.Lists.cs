@@ -95,12 +95,12 @@ namespace RealLifeOverhaul.Economy
             }
             _picked = null;
             box.Title(OnlineText.T("reallife_online_tab_orders"));
-            box.Line(OnlineText.Pair("reallife_online_que_late", late.ToString()));
-            box.Line(OnlineText.Pair("reallife_online_que_waiting", waiting.ToString()));
-            box.Line(OnlineText.Pair("reallife_online_que_packed", packed.ToString()));
-            box.Line(OnlineText.Pair("reallife_online_que_out", sent.ToString()));
-            box.Line(OnlineText.Pair("reallife_online_que_pickers", OnlineText.T("reallife_online_que_pickers_value", "count", pickers.ToString(), "each", OnlineCatalogue.PickPerHour.ToString())));
-            box.Line(OnlineText.Pair("reallife_online_que_vans", vans.ToString()));
+            box.Row("reallife_online_que_late", late.ToString());
+            box.Row("reallife_online_que_waiting", waiting.ToString());
+            box.Row("reallife_online_que_packed", packed.ToString());
+            box.Row("reallife_online_que_out", sent.ToString());
+            box.Row("reallife_online_que_pickers", OnlineText.T("reallife_online_que_pickers_value", "count", pickers.ToString(), "each", OnlineCatalogue.PickPerHour.ToString()));
+            box.Row("reallife_online_que_vans", vans.ToString());
             box.Line(OnlineText.Fill("reallife_online_que_note", "hours", OnlineCatalogue.WaitMost.ToString(), "share", OnlineText.Share(OnlineCatalogue.LateRefund)));
             Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Orders;
@@ -204,8 +204,8 @@ namespace RealLifeOverhaul.Economy
                     Refresh();
                 });
             }
-            box.Line(OnlineText.Pair("reallife_online_cat_on", OnlineText.T("reallife_online_cat_on_value", "count", on.ToString(), "most", OnlineCatalogue.LinesMost.ToString())));
-            box.Line(OnlineText.Pair("reallife_online_cat_expected", (site.PerDay / 1000f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)));
+            box.Row("reallife_online_cat_on", OnlineText.T("reallife_online_cat_on_value", "count", on.ToString(), "most", OnlineCatalogue.LinesMost.ToString()));
+            box.Row("reallife_online_cat_expected", (site.PerDay / 1000f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture));
             box.Line(OnlineText.Fill("reallife_online_cat_parts", "need", site.Need.ToString(), "price", OnlineText.Share(site.Price), "stars", OnlineText.Share(OnlineRules.StarsFactor(shop.Stars)),
                 "marketing", OnlineText.Share(OnlineRules.MarketingFactor(site.Ads, site.Campaign))));
             box.Line(OnlineText.T("reallife_online_cat_note"));
@@ -222,8 +222,8 @@ namespace RealLifeOverhaul.Economy
             string key = shop.Place, item = line.Item;
             int own = _director.ShopPrice(place, item), going = index < site.Going.Length ? site.Going[index] : 0, ask = line.Price > 0 ? line.Price : own;
             box.Title(_director.ItemName(item));
-            box.Line(OnlineText.Pair("reallife_online_line_going", OnlineText.Price(going)));
-            box.Line(OnlineText.Pair("reallife_online_line_shop", OnlineText.Price(own)));
+            box.Row("reallife_online_line_going", OnlineText.Price(going));
+            box.Row("reallife_online_line_shop", OnlineText.Price(own));
             int step = ShopPriceStep;
             if (line.Price > 0 && own > 0)
             {
@@ -243,14 +243,14 @@ namespace RealLifeOverhaul.Economy
                         : OnlineText.T("reallife_online_line_step", "price", OnlineText.Price(StepPrice(own, i)), "percent", (PriceSteps[i] > 0 ? "+" : string.Empty) + PriceSteps[i]),
                     i => _director.SetPrice(key, item, i == ShopPriceStep ? 0 : StepPrice(own, i))))
             {
-                box.Line(OnlineText.Pair("reallife_online_line_online", OnlineText.Price(ask)));
+                box.Row("reallife_online_line_online", OnlineText.Price(ask));
             }
             int factor = going > 0 && ask > 0 ? OnlineRules.PriceFactor((int)((long)ask * 1000 / going)) : 0;
             box.Line(factor > 0
                 ? OnlineText.T("reallife_online_line_effect", "share", OnlineText.Share(factor))
                 : OnlineText.T("reallife_online_line_too_dear", "share", OnlineText.Share(OnlineCatalogue.PriceCeiling - 1000)));
-            box.Line(OnlineText.Pair("reallife_online_line_stock", (index < site.Stock.Length ? site.Stock[index] : 0).ToString()));
-            box.Line(OnlineText.Pair("reallife_online_line_week", OnlineText.T("reallife_online_line_week_value", "sold", line.SoldWeek.ToString(), "missed", line.MissedWeek.ToString())));
+            box.Row("reallife_online_line_stock", (index < site.Stock.Length ? site.Stock[index] : 0).ToString());
+            box.Row("reallife_online_line_week", OnlineText.T("reallife_online_line_week_value", "sold", line.SoldWeek.ToString(), "missed", line.MissedWeek.ToString()));
             Transform buttons = box.ButtonRow();
             if (line.On)
             {
@@ -284,8 +284,8 @@ namespace RealLifeOverhaul.Economy
         {
             string key = place.Shop.Place;
             box.Title(_director.ItemName(item));
-            box.Line(OnlineText.Pair("reallife_online_line_shop", OnlineText.Price(_director.ShopPrice(place, item))));
-            box.Line(OnlineText.Pair("reallife_online_line_stock", _director.StockOf(place, item).ToString()));
+            box.Row("reallife_online_line_shop", OnlineText.Price(_director.ShopPrice(place, item)));
+            box.Row("reallife_online_line_stock", _director.StockOf(place, item).ToString());
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_on", () =>
             {

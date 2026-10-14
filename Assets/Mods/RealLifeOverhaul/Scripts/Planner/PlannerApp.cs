@@ -501,20 +501,20 @@ namespace RealLifeOverhaul.Planner
             }
             if (missed > 0)
             {
-                box.Line(Pair("reallife_planner_glance_missed", missed.ToString()));
+                box.Row("reallife_planner_glance_missed", missed.ToString());
             }
-            box.Line(Pair("reallife_planner_glance_todo", toDo.ToString()));
-            box.Line(Pair("reallife_planner_glance_done", done.ToString()));
-            box.Line(Pair("reallife_planner_glance_week", week.ToString()));
+            box.Row("reallife_planner_glance_todo", toDo.ToString());
+            box.Row("reallife_planner_glance_done", done.ToString());
+            box.Row("reallife_planner_glance_week", week.ToString());
             box.Headline("reallife_planner_calendar");
-            box.Line(Pair("reallife_planner_calendar_week", PlannerText.T("reallife_planner_calendar_week_value", "day", (PlannerTime.Weekday(today) + 1).ToString())));
+            box.Row("reallife_planner_calendar_week", PlannerText.T("reallife_planner_calendar_week_value", "day", (PlannerTime.Weekday(today) + 1).ToString()));
             int perYear = SaveGameManager.Current != null ? GameCalendar.DaysPerYear : 0;
             if (perYear > 0)
             {
                 int year = PlannerTime.Year(today, perYear);
                 int next = PlannerTime.NextYearStart(today, perYear);
-                box.Line(Pair("reallife_planner_calendar_year", PlannerText.T("reallife_planner_calendar_year_value", "year", (year + 1).ToString(), "days", perYear.ToString())));
-                box.Line(Pair("reallife_planner_calendar_new_year", PlannerText.Date(next)));
+                box.Row("reallife_planner_calendar_year", PlannerText.T("reallife_planner_calendar_year_value", "year", (year + 1).ToString(), "days", perYear.ToString()));
+                box.Row("reallife_planner_calendar_new_year", PlannerText.Date(next));
             }
             box.Line(PlannerText.T("reallife_planner_glance_hint"));
             Meta.Guide.Point(box, GuideTitle);
@@ -528,7 +528,7 @@ namespace RealLifeOverhaul.Planner
             string status = PlannerText.StatusKey(e);
             if (status != null)
             {
-                box.Line(Pair("reallife_planner_detail_status", PlannerText.T(status)));
+                box.Row("reallife_planner_detail_status", PlannerText.T(status));
             }
             if (e.Clash && e.State != PlannerState.Done)
             {
@@ -538,10 +538,10 @@ namespace RealLifeOverhaul.Planner
                     box.Line(PlannerText.T("reallife_planner_detail_clash", "title", other));
                 }
             }
-            box.Line(Pair("reallife_planner_detail_when", PlannerText.WhenLong(e, today)));
+            box.Row("reallife_planner_detail_when", PlannerText.WhenLong(e, today));
             if (!string.IsNullOrEmpty(e.Where))
             {
-                box.Line(Pair("reallife_planner_detail_where", e.Where));
+                box.Row("reallife_planner_detail_where", e.Where);
             }
             if (!string.IsNullOrEmpty(e.What))
             {
@@ -709,7 +709,7 @@ namespace RealLifeOverhaul.Planner
         {
             int today = TimeHelper.CurrentDay;
             box.Title(PlannerText.T(_draftId == 0 ? "reallife_planner_new_note" : "reallife_planner_note_edit"));
-            box.Line(Pair("reallife_planner_note_title", _draftTitle));
+            box.Row("reallife_planner_note_title", _draftTitle);
             // The title: one of the ready ones, or the player's own words typed into the game's text box.
             int own = _draftOwn != null ? 1 : 0;
             int at = _draftOwn != null && _draftTitle == _draftOwn ? 0 : Mathf.Max(0, PresetIndex(_draftTitle)) + own;

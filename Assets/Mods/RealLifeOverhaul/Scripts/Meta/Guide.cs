@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Meta
 
         /// <summary>
         /// The last line of an app's page: the Guide's page that explains it, named as the Guide's list names it
-        /// ("Guide: <b>Stock market</b>"). Every app ends its pages this way, so that what a figure means and how a
+        /// ("Guide: <b>Stock market</b>"), at the page's foot in the box's note style (InfoBox.GuideLink). Every app ends its pages this way, so that what a figure means and how a
         /// rule works is read in the Guide and the page itself holds only the figures and the actions. A few strings,
         /// written with the page (on a click).
         /// </summary>
@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Meta
         {
             if (box != null)
             {
-                box.Row("reallife_guide_app", featureTitleKey.GetLocalization());
+                box.GuideLink(featureTitleKey.GetLocalization());
             }
         }
 

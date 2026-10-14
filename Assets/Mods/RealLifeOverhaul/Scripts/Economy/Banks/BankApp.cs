@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Economy
             box.Title(FinanceText.T("reallife_bank_current"));
             if (IsHouse)
             {
-                box.Line(FinanceText.Pair("reallife_bank_balance", FinanceText.Money(save.Money)));
+                box.Row("reallife_bank_balance", FinanceText.Money(save.Money));
                 box.Line(FinanceText.T("reallife_bank_current_here"));
             }
             else
@@ -376,9 +376,9 @@ namespace RealLifeOverhaul.Economy
             CreditAccount a = HeldHere(ProductKind.Overdraft);
             if (a != null)
             {
-                box.Line(FinanceText.Pair("reallife_econ_offer_drawn", FinanceText.Money(a.Owed)));
-                box.Line(FinanceText.Pair("reallife_econ_offer_limit", FinanceText.Money(a.Agreed)));
-                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow)));
+                box.Row("reallife_econ_offer_drawn", FinanceText.Money(a.Owed));
+                box.Row("reallife_econ_offer_limit", FinanceText.Money(a.Agreed));
+                box.Row("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow));
                 if (!a.Frozen)
                 {
                     Transform buttons = box.ButtonRow();
@@ -504,9 +504,9 @@ namespace RealLifeOverhaul.Economy
                     row.Set(4, FinanceText.Money(-entry.Amount), -entry.Amount, TableRow.Red);
                 }
             }
-            box.Line(FinanceText.Pair("reallife_econ_cash_net", FinanceText.Money(came - went)));
-            box.Line(FinanceText.Pair("reallife_econ_cash_in", FinanceText.Money(came)));
-            box.Line(FinanceText.Pair("reallife_econ_cash_out", FinanceText.Money(went)));
+            box.Row("reallife_econ_cash_net", FinanceText.Money(came - went));
+            box.Row("reallife_econ_cash_in", FinanceText.Money(came));
+            box.Row("reallife_econ_cash_out", FinanceText.Money(went));
             if (_rows.Count == 0)
             {
                 Say("none", FinanceText.T("reallife_bank_row_no_movements", "bank", Bank.Name));

@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_offers_title"));
-            box.Line(DealerText.Pair("reallife_dealer_sum_waiting", _director.Waiting().ToString()));
+            box.Row("reallife_dealer_sum_waiting", _director.Waiting().ToString());
             int sold = 0, margin = 0;
             for (int y = 0; y < state.Yards.Count; y++)
             {

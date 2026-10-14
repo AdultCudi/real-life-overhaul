@@ -143,6 +143,35 @@ namespace RealLifeOverhaul.Careers
             return T(Mod + "_pro_rank_" + p.Key + "_" + rank.ToString(Inv));
         }
 
+        private static readonly int[] RunFrom = new int[7], RunTo = new int[7];
+
+        /// <summary>A week's days, with a run of three or more written as one: "Mon to Fri", "Mon, Wed, Fri", "Mon to Thu, Sat".</summary>
+        public static string DaySpan(int days)
+        {
+            int runs = GameUi.LookRules.DayRuns(days, RunFrom, RunTo);
+            if (runs == 0)
+            {
+                return "-";
+            }
+            var b = new StringBuilder(48);
+            for (int i = 0; i < runs; i++)
+            {
+                if (i > 0)
+                {
+                    b.Append(", ");
+                }
+                string from = T(Mod + "_study_day_" + RunFrom[i].ToString(Inv));
+                b.Append(RunFrom[i] == RunTo[i] ? from : T("reallife_career_row_hours", "from", from, "to", T(Mod + "_study_day_" + RunTo[i].ToString(Inv))));
+            }
+            return b.ToString();
+        }
+
+        /// <summary>A profession's working week, its days run together: "Mon to Fri, 09:00 to 17:00" (the box's rows).</summary>
+        public static string Week(Profession p)
+        {
+            return Fill("reallife_work_hours", "days", DaySpan(p.Days), "from", Hour(p.Hour), "to", Hour((p.Hour + p.Hours) % 24));
+        }
+
         /// <summary>A profession's working week: "Mon, Tue, Wed, Thu, Fri, 09:00 to 17:00".</summary>
         public static string Hours(Profession p)
         {

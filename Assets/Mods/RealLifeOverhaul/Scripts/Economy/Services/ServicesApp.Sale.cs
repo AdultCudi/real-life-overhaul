@@ -98,11 +98,11 @@ namespace RealLifeOverhaul.Economy
             int step = ServicesCatalogue.Clamp(_step >= 0 ? _step : l != null ? l.Step : ServicesCatalogue.AskingDefault, 0, ServicesCatalogue.AskingPct.Length - 1);
             int value = b.Value;
             box.Title(ServicesGame.Name(reg));
-            box.Line(ServicesText.Pair("reallife_svc_value_base", ServicesText.T("reallife_svc_value_base_value", "amount", ServicesText.Money(b.Base), "days", VenturesCatalogue.OfferValueDays.ToString())));
+            box.Row("reallife_svc_value_base", ServicesText.T("reallife_svc_value_base_value", "amount", ServicesText.Money(b.Base), "days", VenturesCatalogue.OfferValueDays.ToString()));
             box.Line(ServicesText.Fill("reallife_svc_value_goodwill", "type", ServicesText.Percent(b.TypePct), "district", ServicesText.Percent(b.DistrictPct), "economy", ServicesText.Percent(b.ClimatePct),
                 "books", ServicesText.Percent(b.HistoryPct), "amount", ServicesText.Money(b.Goodwill)));
-            box.Line(ServicesText.Pair("reallife_svc_value_fixtures", ServicesText.Money(b.Fixtures)));
-            box.Line(ServicesText.Pair("reallife_svc_value_worth", ServicesText.Money(b.Value)));
+            box.Row("reallife_svc_value_fixtures", ServicesText.Money(b.Fixtures));
+            box.Row("reallife_svc_value_worth", ServicesText.Money(b.Value));
             if (b.Investors + b.Loans > 0)
             {
                 box.Line(ServicesText.T("reallife_svc_value_owed", "investors", ServicesText.Money(b.Investors), "loans", ServicesText.Money(b.Loans), "left", ServicesText.Signed(b.Net)));
@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Economy
             box.Title(ServicesText.T("reallife_svc_bid_title", "business", l != null ? l.Name : "?"));
             box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()));
             box.Line(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
-            box.Line(ServicesText.Pair("reallife_svc_bid_price", ServicesText.T("reallife_svc_bid_price_value", "amount", ServicesText.Money(o.Price), "share", ServicesText.Percent(b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0))));
+            box.Row("reallife_svc_bid_price", ServicesText.T("reallife_svc_bid_price_value", "amount", ServicesText.Money(o.Price), "share", ServicesText.Percent(b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0)));
             box.Line(o.Parts > 1
                 ? ServicesText.T("reallife_svc_bid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString())
                 : ServicesText.T("reallife_svc_bid_once"));

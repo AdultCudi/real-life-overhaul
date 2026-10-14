@@ -452,7 +452,7 @@ namespace RealLifeOverhaul.Careers
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_campus_button_graduate", () => Do(_director.Graduate));
                 }
             }
-            box.Line(CareersText.Pair("reallife_campus_sum_week", CareersText.Minutes(f.WeekOf == (day - 1) / 7 ? f.WeekMinutes : 0)));
+            box.Row("reallife_campus_sum_week", CareersText.Minutes(f.WeekOf == (day - 1) / 7 ? f.WeekMinutes : 0));
             string university = _director.UniversityLine();
             if (university != null)
             {
@@ -460,7 +460,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (f.LoanCents > 0)
             {
-                box.Line(CareersText.Pair("reallife_campus_sum_loan", CareersText.Cents(f.LoanCents)));
+                box.Row("reallife_campus_sum_loan", CareersText.Cents(f.LoanCents));
             }
             box.Line(CareersText.T("reallife_campus_studying_about", "early", StudyCatalogue.ArriveEarlyMinutes.ToString(), "late", StudyCatalogue.LateMinutes.ToString()));
             Meta.Guide.Point(box, StudyGuide);
@@ -593,9 +593,9 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_results_title"));
-            box.Line(CareersText.Pair("reallife_campus_sum_passed", passed.ToString()));
-            box.Line(CareersText.Pair("reallife_campus_sum_honours", honours.ToString()));
-            box.Line(CareersText.Pair("reallife_campus_sum_school", TechText.School(StudyRules.School(f))));
+            box.Row("reallife_campus_sum_passed", passed.ToString());
+            box.Row("reallife_campus_sum_honours", honours.ToString());
+            box.Row("reallife_campus_sum_school", TechText.School(StudyRules.School(f)));
             box.Line(CareersText.T("reallife_campus_results_about"));
             Meta.Guide.Point(box, StudyGuide);
             return CampusColumns.Results;
@@ -632,7 +632,7 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_skills_title"));
-            box.Line(CareersText.Pair("reallife_campus_sum_skills", any.ToString()));
+            box.Row("reallife_campus_sum_skills", any.ToString());
             TutorButton(box);
             box.Line(CareersText.T("reallife_campus_skills_about", "days", StudyCatalogue.FadeAfterDays.ToString(), "floor", CareersText.Mille(StudyCatalogue.FadeFloor)));
             Meta.Guide.Point(box, StudyGuide);

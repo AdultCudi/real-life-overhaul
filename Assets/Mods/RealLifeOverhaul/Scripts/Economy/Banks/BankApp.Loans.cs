@@ -96,8 +96,8 @@ namespace RealLifeOverhaul.Economy
                 _picked = null;
                 BankSlice slice = desk.Slice(Bank, _work);
                 box.Title(FinanceText.T("reallife_bank_tab_loans"));
-                box.Line(FinanceText.Pair("reallife_bank_owed_here", FinanceText.Money(slice.Owed)));
-                box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow)));
+                box.Row("reallife_bank_owed_here", FinanceText.Money(slice.Owed));
+                box.Row("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow));
                 box.Line(FinanceText.T("reallife_bank_loans_pick"));
                 box.Line(FinanceText.T("reallife_bank_loans_finance"));
                 Meta.Guide.Point(box, GuideTitle);
@@ -134,8 +134,8 @@ namespace RealLifeOverhaul.Economy
             float yearly = FinanceApp.YearlyRate(loan, Mathf.Max(1, AccountRules.DaysPerYear));
             box.Title(kind);
             FinanceApp.StandsLines(box, FinanceText.State(m.Ladder, frozen, false), m.Ladder, m.Purpose == LoanPurpose.Business && Books.Business(m.Security) != null, !frozen);
-            box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(loan.remainingAmount), "total", FinanceText.Money(loan.totalAmount))));
-            box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(loan.dailyPayment)));
+            box.Row("reallife_econ_over_owed", FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(loan.remainingAmount), "total", FinanceText.Money(loan.totalAmount)));
+            box.Row("reallife_econ_offer_payment", FinanceText.Money(loan.dailyPayment));
             if (loan.dailyPayment > 0 && !frozen)
             {
                 int left = Mathf.CeilToInt(loan.remainingAmount / loan.dailyPayment);
@@ -143,9 +143,9 @@ namespace RealLifeOverhaul.Economy
             }
             if (yearly > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", yearly.ToString("0.#"))));
+                box.Row("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", yearly.ToString("0.#")));
             }
-            box.Line(FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(loan.dailyInterest)));
+            box.Row("reallife_econ_offer_interest", FinanceText.Money(loan.dailyInterest));
             if (m.Purpose == LoanPurpose.Business)
             {
                 BuildingRegistration shop = Books.Business(m.Security);
@@ -212,8 +212,8 @@ namespace RealLifeOverhaul.Economy
         {
             box.Title(CreditDesk.Name(a));
             FinanceApp.StandsLines(box, FinanceText.State(a), a.Ladder, a.Secured, !a.Frozen && a.Owed > 0);
-            box.Line(FinanceText.Pair("reallife_econ_over_owed", a.Agreed > 0
-                ? FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(a.Owed), "total", FinanceText.Money(a.Agreed)) : FinanceText.Money(a.Owed)));
+            box.Row("reallife_econ_over_owed", a.Agreed > 0
+                ? FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(a.Owed), "total", FinanceText.Money(a.Agreed)) : FinanceText.Money(a.Owed));
             if (a.Kind == ProductKind.Arrears)
             {
                 box.Line(FinanceText.T("reallife_econ_account_arrears"));
@@ -224,7 +224,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(FinanceText.T("reallife_econ_account_instalment", "payment", FinanceText.Money(due), "days", left.ToString()));
                 if (left > 0 && !a.Frozen)
                 {
-                    box.Line(FinanceText.Pair("reallife_tab_account_paid_off_day", FinanceText.Day(today + left)));
+                    box.Row("reallife_tab_account_paid_off_day", FinanceText.Day(today + left));
                 }
                 box.Line(FinanceText.T(a.Secured ? "reallife_econ_account_secured" : "reallife_econ_account_unsecured", "thing", CreditDesk.Thing(a)));
             }
@@ -324,8 +324,8 @@ namespace RealLifeOverhaul.Economy
             CardMovements(name, today);
             box.Title(name);
             FinanceApp.StandsLines(box, FinanceText.State(card), card.Ladder, false, !card.Frozen && card.Owed > 0);
-            box.Line(FinanceText.Pair("reallife_bank_card_balance", FinanceText.Money(card.Owed)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_limit", FinanceText.Money(card.Agreed)));
+            box.Row("reallife_bank_card_balance", FinanceText.Money(card.Owed));
+            box.Row("reallife_econ_offer_limit", FinanceText.Money(card.Agreed));
             if (card.Agreed > 0)
             {
                 box.Line(FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(card.Owed * 100f / card.Agreed) + "%", "free", FinanceText.Money(card.Free)));

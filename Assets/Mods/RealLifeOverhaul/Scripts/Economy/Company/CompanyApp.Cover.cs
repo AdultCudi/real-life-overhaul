@@ -73,8 +73,8 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(CompanyText.T("reallife_co_tab_cover"));
-                box.Line(FinanceText.Pair("reallife_co_cover_premiums", CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(premiums))));
-                box.Line(FinanceText.Pair("reallife_co_cover_open", open.ToString()));
+                box.Row("reallife_co_cover_premiums", CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(premiums)));
+                box.Row("reallife_co_cover_open", open.ToString());
                 box.Headline("reallife_co_cover_what");
                 box.Line(CompanyText.T("reallife_co_cover_what_fire"));
                 box.Line(CompanyText.T("reallife_co_cover_what_theft"));
@@ -105,10 +105,10 @@ namespace RealLifeOverhaul.Economy
             }
             box.Line(CompanyText.T(c.Kind == (int)CoverKind.Fire ? "reallife_co_claim_what_fire" : c.Kind == (int)CoverKind.Theft ? "reallife_co_claim_what_theft" : "reallife_co_claim_what_liability",
                 "day", c.Day.ToString(), "amount", CompanyText.Money(c.Loss)));
-            box.Line(FinanceText.Pair("reallife_co_claim_insurer", CompanyText.Insurer(c.Insurer)));
-            box.Line(FinanceText.Pair("reallife_co_claim_most", CompanyText.Money(CompanyCatalogue.CoverMost[c.Kind])));
-            box.Line(FinanceText.Pair("reallife_co_claim_excess", CompanyText.Money(c.Excess)));
-            box.Line(FinanceText.Pair("reallife_co_claim_pays", CompanyText.Money(c.Payout)));
+            box.Row("reallife_co_claim_insurer", CompanyText.Insurer(c.Insurer));
+            box.Row("reallife_co_claim_most", CompanyText.Money(CompanyCatalogue.CoverMost[c.Kind]));
+            box.Row("reallife_co_claim_excess", CompanyText.Money(c.Excess));
+            box.Row("reallife_co_claim_pays", CompanyText.Money(c.Payout));
             if (c.Stage == ClaimStage.Open)
             {
                 box.Line(CompanyText.T("reallife_co_claim_counts", "most", (CompanyCatalogue.InsurerClaimsMost[c.Insurer] - 1).ToString(), "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading)));
@@ -137,9 +137,9 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
-                box.Line(FinanceText.Pair("reallife_co_claim_insurer", CompanyText.Insurer(insurer)));
+                box.Row("reallife_co_claim_insurer", CompanyText.Insurer(insurer));
             }
-            box.Line(FinanceText.Pair("reallife_co_policy_premium", CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(p.Active ? p.Premium : _director.Quote(shop, kind, insurer)))));
+            box.Row("reallife_co_policy_premium", CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(p.Active ? p.Premium : _director.Quote(shop, kind, insurer))));
             box.Line(CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[insurer]), "least", CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[insurer])));
             box.Line(CompanyText.T("reallife_co_policy_most", "most", CompanyText.Money(CompanyCatalogue.CoverMost[kind]), "days", CompanyCatalogue.InsurerPayDays[insurer].ToString()));
             box.Line(CompanyText.T("reallife_co_policy_claims", "most", (CompanyCatalogue.InsurerClaimsMost[insurer] - 1).ToString(), "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading)));

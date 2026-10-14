@@ -307,7 +307,7 @@ namespace RealLifeOverhaul.Economy
             }
             int conf = OwnBankRules.Confidence(c, b, ratio), trust = OwnBankRules.Trust(c, b, OwnBankGame.Today, conf);
             box.Title(b.Name);
-            box.Line(OwnBankText.Pair("reallife_ob_box_regulator", OwnBankText.Stage(b)));
+            box.Row("reallife_ob_box_regulator", OwnBankText.Stage(b));
             if (b.Run)
             {
                 box.Line(OwnBankText.T("reallife_ob_box_run"));
@@ -320,17 +320,17 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(OwnBankText.T("reallife_ob_box_no_hq"));
             }
-            box.Line(OwnBankText.Pair("reallife_ob_box_ratio", OwnBankText.Fill("reallife_ob_box_ratio_value", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio),
-                "watch", OwnBankText.Ratio(OwnBankCatalogue.WatchRatio))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf))));
+            box.Row("reallife_ob_box_ratio", OwnBankText.Fill("reallife_ob_box_ratio_value", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio),
+                "watch", OwnBankText.Ratio(OwnBankCatalogue.WatchRatio)));
+            box.Row("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf)));
             if (b.HistoryCount > 0)
             {
-                box.Line(OwnBankText.Pair("reallife_ob_box_last", OwnBankText.Fill("reallife_ob_box_last_value", "income", OwnBankText.Money(b.LastIncome), "costs", OwnBankText.Money(b.LastCosts),
-                    "profit", OwnBankText.Signed(b.LastIncome - b.LastCosts))));
+                box.Row("reallife_ob_box_last", OwnBankText.Fill("reallife_ob_box_last_value", "income", OwnBankText.Money(b.LastIncome), "costs", OwnBankText.Money(b.LastCosts),
+                    "profit", OwnBankText.Signed(b.LastIncome - b.LastCosts)));
             }
-            box.Line(OwnBankText.Pair("reallife_ob_box_year", OwnBankText.Signed(OwnBankRules.YearProfit(b))));
+            box.Row("reallife_ob_box_year", OwnBankText.Signed(OwnBankRules.YearProfit(b)));
             long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level);
-            box.Line(OwnBankText.Pair("reallife_ob_box_value", OwnBankText.Money(value)));
+            box.Row("reallife_ob_box_value", OwnBankText.Money(value));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_ob_box_put_in", () => AskAmount("reallife_ob_ask_put_in", OwnBankCatalogue.CapitalStepCents * 10, cents =>
             {
@@ -396,8 +396,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     box.Line(OwnBankText.T("reallife_ob_box_run"));
                 }
-                box.Line(OwnBankText.Pair("reallife_ob_box_deposits", OwnBankText.Money(b.Savings)));
-                box.Line(OwnBankText.Pair("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf))));
+                box.Row("reallife_ob_box_deposits", OwnBankText.Money(b.Savings));
+                box.Row("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf)));
                 if (!b.Run)
                 {
                     box.Line(OwnBankText.T("reallife_ob_box_savers_pick"));
@@ -408,9 +408,9 @@ namespace RealLifeOverhaul.Economy
             }
             int kind = picked;
             box.Title(OwnBankText.Saver(kind));
-            box.Line(OwnBankText.Pair("reallife_ob_box_deposits", OwnBankText.Money(b.Deposits[kind])));
-            box.Line(OwnBankText.Pair("reallife_ob_box_wanted", OwnBankText.Money(OwnBankRules.SaversWanted(c, b, kind, trust))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_rival_rate", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, kind))));
+            box.Row("reallife_ob_box_deposits", OwnBankText.Money(b.Deposits[kind]));
+            box.Row("reallife_ob_box_wanted", OwnBankText.Money(OwnBankRules.SaversWanted(c, b, kind, trust)));
+            box.Row("reallife_ob_box_rival_rate", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, kind)));
             box.Headline("reallife_ob_box_rate_head");
             int least = OwnBankCatalogue.SaverOffsetLeast, step = OwnBankCatalogue.SaverOffsetStep, rivalBp = OwnBankRules.RivalSaverBp(c, b, kind);
             box.Selector((OwnBankCatalogue.SaverOffsetMost - least) / step + 1, (b.SaverOffset[kind] - least) / step,
@@ -457,10 +457,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     box.Line(OwnBankText.T("reallife_ob_box_no_lending"));
                 }
-                box.Line(OwnBankText.Pair("reallife_ob_box_lent", OwnBankText.Money(b.Lent)));
-                box.Line(OwnBankText.Pair("reallife_ob_box_arrears", OwnBankText.Money(b.InArrears)));
-                box.Line(OwnBankText.Pair("reallife_ob_box_written", OwnBankText.Fill("reallife_ob_box_written_value", "month", OwnBankText.Money(b.LastLost), "all", OwnBankText.Money(b.LostAll),
-                    "back", OwnBankText.Money(b.RecoveredAll))));
+                box.Row("reallife_ob_box_lent", OwnBankText.Money(b.Lent));
+                box.Row("reallife_ob_box_arrears", OwnBankText.Money(b.InArrears));
+                box.Row("reallife_ob_box_written", OwnBankText.Fill("reallife_ob_box_written_value", "month", OwnBankText.Money(b.LastLost), "all", OwnBankText.Money(b.LostAll),
+                    "back", OwnBankText.Money(b.RecoveredAll)));
                 if (!stopped)
                 {
                     box.Line(OwnBankText.T("reallife_ob_box_lending_pick"));
@@ -472,11 +472,11 @@ namespace RealLifeOverhaul.Economy
             int seg = picked;
             long recovering = b.Recovering[seg];
             box.Title(OwnBankText.Segment(seg));
-            box.Line(OwnBankText.Pair("reallife_ob_box_lent", OwnBankText.Money(b.Loans[seg])));
-            box.Line(OwnBankText.Pair("reallife_ob_box_arrears", OwnBankText.Fill("reallife_ob_box_arrears_value", "arrears", OwnBankText.Money(b.Arrears[seg]), "back", OwnBankText.Money(recovering))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_defaults", OwnBankText.Fill("reallife_ob_box_defaults_value", "rate", OwnBankText.Ratio(OwnBankRules.DefaultPerMille(c, b, seg)),
-                "usual", OwnBankText.Ratio(OwnBankCatalogue.DefaultBase[seg]))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_wanted", OwnBankText.Money(OwnBankRules.LoansWanted(c, b, seg))));
+            box.Row("reallife_ob_box_lent", OwnBankText.Money(b.Loans[seg]));
+            box.Row("reallife_ob_box_arrears", OwnBankText.Fill("reallife_ob_box_arrears_value", "arrears", OwnBankText.Money(b.Arrears[seg]), "back", OwnBankText.Money(recovering)));
+            box.Row("reallife_ob_box_defaults", OwnBankText.Fill("reallife_ob_box_defaults_value", "rate", OwnBankText.Ratio(OwnBankRules.DefaultPerMille(c, b, seg)),
+                "usual", OwnBankText.Ratio(OwnBankCatalogue.DefaultBase[seg])));
+            box.Row("reallife_ob_box_wanted", OwnBankText.Money(OwnBankRules.LoansWanted(c, b, seg)));
             box.Headline("reallife_ob_box_rate_head");
             int least = OwnBankCatalogue.LoanOffsetLeast, step = OwnBankCatalogue.LoanOffsetStep, rivalBp = OwnBankRules.RivalLoanBp(c, b, seg);
             box.Selector((OwnBankCatalogue.LoanOffsetMost - least) / step + 1, (b.LoanOffset[seg] - least) / step,
@@ -517,9 +517,9 @@ namespace RealLifeOverhaul.Economy
                 row.Set(5, OwnBankText.Money(year), year / 100.0);
             }
             box.Title(OwnBankText.T("reallife_ob_tab_fund"));
-            box.Line(OwnBankText.Pair("reallife_ob_box_fund_value", OwnBankText.Fill("reallife_ob_box_fund_value_value", "value", OwnBankText.Money(b.FundValue), "gain", OwnBankText.Signed(b.FundValue - b.FundCost))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_fund_room", OwnBankText.Money(OwnBankFund.Room(b))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_fund_dividends", OwnBankText.Money(dividends)));
+            box.Row("reallife_ob_box_fund_value", OwnBankText.Fill("reallife_ob_box_fund_value_value", "value", OwnBankText.Money(b.FundValue), "gain", OwnBankText.Signed(b.FundValue - b.FundCost)));
+            box.Row("reallife_ob_box_fund_room", OwnBankText.Money(OwnBankFund.Room(b)));
+            box.Row("reallife_ob_box_fund_dividends", OwnBankText.Money(dividends));
             box.Headline("reallife_ob_box_fund_head");
             box.Selector(OwnBankCatalogue.Strategies, b.Strategy, i => OwnBankText.Strategy(i), i => UiClone.Safe(() =>
             {

@@ -382,13 +382,13 @@ namespace RealLifeOverhaul.Economy
             {
                 RotaWeekSum s = r.Sum;
                 box.Line(CompanyText.Fill("reallife_rota_sum_customers", "served", s.Served.ToString(), "come", s.Come.ToString(), "nobody", s.LostUnmanned.ToString(), "full", s.LostFull.ToString()));
-                box.Line(FinanceText.Pair("reallife_rota_sum_sales", RotaMoney(s.Sales)));
-                box.Line(FinanceText.Pair("reallife_rota_sum_wages", RotaMoney(-s.Wages)));
+                box.Row("reallife_rota_sum_sales", RotaMoney(s.Sales));
+                box.Row("reallife_rota_sum_wages", RotaMoney(-s.Wages));
                 RotaSumLine(box, "reallife_rota_sum_fees", s.Fees);
                 RotaSumLine(box, "reallife_rota_sum_theft", s.Theft);
                 RotaSumLine(box, "reallife_rota_sum_night", s.Night);
                 RotaSumLine(box, "reallife_rota_sum_demands", s.Demands);
-                box.Line(FinanceText.Pair("reallife_rota_sum_net", RotaMoney(s.Net)));
+                box.Row("reallife_rota_sum_net", RotaMoney(s.Net));
                 if (s.StockShort > 0)
                 {
                     box.Line(CompanyText.T("reallife_rota_sum_stock", "count", s.StockShort.ToString(), "amount", RotaMoney(s.StockLost)));
@@ -404,7 +404,7 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
-                box.Line(FinanceText.Pair("reallife_rota_sum_wages", RotaMoney(-r.Sum.Wages)));
+                box.Row("reallife_rota_sum_wages", RotaMoney(-r.Sum.Wages));
                 box.Line(CompanyText.T("reallife_rota_box_rota", "covered", r.Plan.CoveredHours.ToString(), "wanted", r.Plan.WantedHours.ToString(), "unmet", r.Plan.UnmetCount.ToString()));
             }
             var buttons = box.ButtonRow();
@@ -446,7 +446,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (amount != 0)
             {
-                box.Line(FinanceText.Pair(key, RotaMoney(-amount)));
+                box.Row(key, RotaMoney(-amount));
             }
         }
 
@@ -558,12 +558,12 @@ namespace RealLifeOverhaul.Economy
             }
             box.Title(CompanyText.T("reallife_rota_day_title", "day", RotaDayName(d), "business", sheet.Place.Name));
             box.Line(RotaPlanName(sheet, r));
-            box.Line(FinanceText.Pair("reallife_rota_day_now", RotaHours(shop.Open, d)));
-            box.Line(FinanceText.Pair("reallife_rota_day_plan", RotaHours(r.Open, d)));
+            box.Row("reallife_rota_day_now", RotaHours(shop.Open, d));
+            box.Row("reallife_rota_day_plan", RotaHours(r.Open, d));
             box.Line(CompanyText.Fill("reallife_rota_day_sum", "served", served.ToString(), "come", come.ToString(), "earn", RotaMoney(earns), "cost", RotaMoney(costs)));
             if (shop.DayFee[d] > 0)
             {
-                box.Line(FinanceText.Pair("reallife_rota_day_fee", RotaMoney(shop.DayFee[d])));
+                box.Row("reallife_rota_day_fee", RotaMoney(shop.DayFee[d]));
             }
             box.Line(CompanyText.T("reallife_rota_day_explain"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_rota_day_back", () =>

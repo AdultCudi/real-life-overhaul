@@ -59,8 +59,8 @@ namespace RealLifeOverhaul.Economy
             bool valid = LicenceRules.Valid(l, day);
             box.Title(CompanyText.T("reallife_co_lic_title", "licence", CompanyText.Capital(CompanyText.Licence(kind)), "business", shop.Name));
             box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : CompanyText.T("reallife_co_lic_missing"));
-            box.Line(FinanceText.Pair("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index))));
-            box.Line(FinanceText.Pair("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString())));
+            box.Row("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index)));
+            box.Row("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString()));
             box.Line(CompanyText.T(LicenceRules.Shuts(kind) ? "reallife_co_lic_fine_shut" : "reallife_co_lic_fine", "amount", CompanyText.Money(LicenceRules.Fine(kind, _director.Index)),
                 "hours", CompanyCatalogue.LicenceClosedHours.ToString()));
             bool hasSwitch = box.HasSwitch && box.Switch("reallife_co_lic_auto", l.Auto, on => _director.SetAutoRenew(place, kind, on));

@@ -22,8 +22,15 @@ namespace RealLifeOverhaul.GameUi
     ///
     /// The box lays its children out itself (the game's vertical layout group), so a page is whatever was added, in order.
     /// A page is rebuilt only when the player clicks something.
+    ///
+    /// On top of the game's parts the box has a look of the mod's own (InfoBox.Look.cs, InfoBox.Parts.cs, LookRules): a
+    /// header with the app's colour, the title, a line of who and where and status chips; sections under a heading in
+    /// small capitals and a hairline, their rows indented; rows of a muted label and a value in the body's colour;
+    /// meters, ticks, notes and the Guide's page at the foot. Every part is a copy of a template made once from the
+    /// game's own texts, pictures and colours when the box is taken (From); a page costs one copy per part, and nothing
+    /// of it runs per frame.
     /// </summary>
-    public sealed class InfoBox
+    public sealed partial class InfoBox
     {
         public static IModLogger Logger;
 
@@ -48,11 +55,15 @@ namespace RealLifeOverhaul.GameUi
                 UiClone.Fallback("the white box of MyEmployees has no name, no line of text or no buttons");
                 return null;
             }
+            box.ReadLook(whiteBox);
             UiClone.KeepOnly(whiteBox, "Background");
             Wrap(box._title.GetComponent<TMP_Text>());
             Wrap(box._line.GetComponent<TMP_Text>());
             box.PrepareSelector();
             box.PrepareSwitch();
+            box.MakeLook(templates);
+            box.Space(whiteBox);
+            box._into = whiteBox;
             return box;
         }
 
@@ -67,6 +78,8 @@ namespace RealLifeOverhaul.GameUi
             if (made != null)
             {
                 made._box = box;
+                made._into = box;
+                made.Space(box);
             }
             return made;
         }
@@ -189,6 +202,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Empties the box for a new page.</summary>
         public void Clear()
         {
+            Begin();
             for (int i = _box.childCount - 1; i >= 0; i--)
             {
                 Transform child = _box.GetChild(i);
@@ -200,55 +214,61 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        // A copy of a template, where the page is being written (the open section's rows, or the box) unless a parent is given.
         private GameObject Add(GameObject template, Transform parent = null)
         {
-            GameObject made = UnityEngine.Object.Instantiate(template, parent ?? _box, false);
+            GameObject made = UnityEngine.Object.Instantiate(template, parent ?? _into ?? _box, false);
             made.name = template.name;
             made.SetActive(true);
+            _parts++;
             return made;
         }
 
+        /// <summary>The page's title: the header of the page, with the app's colour over it (Header).</summary>
         public void Title(string words)
         {
-            Title(words, null);
+            Header(words);
         }
 
-        /// <summary>A title in the box, or (with a parent) anywhere else: the copy of the box's own.</summary>
+        /// <summary>
+        /// A title in the box, or (with a parent) anywhere else: in the box the page's header (Header), anywhere else a
+        /// plain copy of the box's own title.
+        /// </summary>
         public TMP_Text Title(string words, Transform parent)
         {
+            if (parent == null)
+            {
+                return Header(words);
+            }
             GameObject title = Add(_title, parent);
             UiClone.Words(title.transform, words);
             return title.GetComponent<TMP_Text>();
         }
 
-        /// <summary>A line of text. The game's lines read "Label: value" with the value in bold; mark-up in 'words' does the same.</summary>
+        /// <summary>
+        /// A line of text where the page is being written. An old "Label <b>value</b>" line (FinanceText.Pair, the
+        /// game's own form) is written as a row (Row), so a page not yet written with rows reads as one that is.
+        /// </summary>
         public TMP_Text Line(string words)
         {
-            return Line(words, null);
+            string label, value;
+            if (LookRules.SplitPair(words, out label, out value))
+            {
+                return RowWords(label, value, CellTone.Plain);
+            }
+            return Text(_bodyT, words, null);
         }
 
         /// <summary>A line of text in the box, or (with a parent) anywhere else: the copy of the box's own, in its font and colour.</summary>
         public TMP_Text Line(string words, Transform parent)
         {
+            if (parent == null)
+            {
+                return Line(words);
+            }
             GameObject line = Add(_line, parent);
             UiClone.Words(line.transform, words);
             return line.GetComponent<TMP_Text>();
-        }
-
-        /// <summary>
-        /// A labelled row, as the game writes an employee's "Age: <b>31</b>": the label (a locale key, often a column's
-        /// title), a colon and the value in bold. The one form every app's figures are written in, so that a page reads as a
-        /// list of short rows rather than sentences.
-        /// </summary>
-        public TMP_Text Row(string labelKey, string value)
-        {
-            return RowWords(labelKey.GetLocalization(), value);
-        }
-
-        /// <summary>The same with the label in final words.</summary>
-        public TMP_Text RowWords(string label, string value)
-        {
-            return Line(label + ": <b>" + value + "</b>", null);
         }
 
         /// <summary>
@@ -262,7 +282,8 @@ namespace RealLifeOverhaul.GameUi
                 return null;
             }
             var row = new GameObject("Picture", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
-            row.transform.SetParent(_box, false);
+            row.transform.SetParent(_into ?? _box, false);
+            _parts++;
             var image = row.GetComponent<RawImage>();
             image.texture = texture;
             image.raycastTarget = false;
@@ -274,34 +295,25 @@ namespace RealLifeOverhaul.GameUi
             return image;
         }
 
+        /// <summary>A headline: the start of a section (Section), the look every app's headings have.</summary>
         public void Headline(string key)
         {
-            Headline(key, null);
+            Section(key);
         }
 
-        /// <summary>A headline over a grey rule with words already made (a name and a figure), in the box.</summary>
+        /// <summary>A headline with words already made (a name and a figure): the start of a section (SectionWords).</summary>
         public Transform HeadlineWords(string words)
         {
-            if (_headline == null)
-            {
-                return Line("<b>" + words + "</b>", null).transform;
-            }
-            GameObject headline = Add(_headline, null);
-            var text = headline.GetComponentInChildren<TMP_Text>(true);
-            if (text != null)
-            {
-                UiClone.Words(text, words);
-                for (int i = text.transform.childCount - 1; i >= 0; i--)
-                {
-                    text.transform.GetChild(i).gameObject.SetActive(false);
-                }
-            }
-            return headline.transform;
+            return SectionWords(words);
         }
 
-        /// <summary>A headline over a grey rule, in the box or (with a parent) anywhere else. Returns what was made.</summary>
+        /// <summary>A headline: in the box the start of a section (Section), anywhere else the game's own over a grey rule. Returns what was made.</summary>
         public Transform Headline(string key, Transform parent)
         {
+            if (parent == null)
+            {
+                return Section(key);
+            }
             if (_headline == null)
             {
                 return Line("<b>" + key.GetLocalization() + "</b>", parent).transform;
@@ -414,6 +426,10 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public Transform ButtonRow(Transform parent = null)
         {
+            if (parent == null)
+            {
+                EndSection();   // a row of buttons closes the section it follows: its buttons act on the page, not on its last rows
+            }
             GameObject row = Add(_buttons, parent);
             for (int i = 0; i < row.transform.childCount; i++)
             {
@@ -472,6 +488,7 @@ namespace RealLifeOverhaul.GameUi
         public void Done()
         {
             LayoutRebuilder.MarkLayoutForRebuild((RectTransform)_box);
+            Finish();
         }
     }
 }

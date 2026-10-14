@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Flare
                 box.Line(FlareText.Fill("reallife_flare_profile_what", "niche", FlareText.Niche(inf.Niche), "district", FlareGame.DistrictName(inf.District), "style", FlareText.Style(inf.Style)));
                 box.Line(FlareText.Fill("reallife_flare_profile_figures", "followers", FlareText.N(inf.Followers), "engaged", (inf.Engagement / 100f).ToString("0.0") + "%",
                     "reliable", inf.Reliability.ToString()));
-                box.Line(FlareText.Pair("reallife_flare_profile_price", FlareText.Money(Prices.At(FlareCast.Price(inf)))));
+                box.Row("reallife_flare_profile_price", FlareText.Money(Prices.At(FlareCast.Price(inf))));
                 if (inf.Person >= 0 && _director.PersonName(inf.Person) != null)
                 {
                     box.Line(FlareText.Fill(inf.Star ? "reallife_flare_profile_star_person" : "reallife_flare_profile_friend", "name", _director.PersonName(inf.Person)));
@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Flare
             {
                 box.Line(FlareText.T("reallife_flare_hire_scandal"));
             }
-            box.Line(FlareText.Pair("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind)));
+            box.Row("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind));
             box.Line(FlareText.Fill("reallife_flare_hire_days", "from", h.From.ToString(), "to", h.To.ToString(), "percent", h.Percent.ToString()));
             Transform buttons = box.ButtonRow();
             if (!h.Ended)

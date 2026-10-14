@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Economy
         private void WriteLoanOffer(InfoBox box, CreditScore score)
         {
             int most = Mathf.FloorToInt(PhoneLending.MostNow(Bank, score.Value));
-            box.Line(FinanceText.Pair("reallife_econ_offer_most", FinanceText.Money(most)));
+            box.Row("reallife_econ_offer_most", FinanceText.Money(most));
             if (most < CreditCatalogue.LoanLeast)
             {
                 box.Line(FinanceText.T("reallife_econ_offer_nothing", "least", FinanceText.Money(CreditCatalogue.LoanLeast)));
@@ -177,10 +177,10 @@ namespace RealLifeOverhaul.Economy
             Steps(CreditCatalogue.LoanLeast, most);
             AmountSelector(box);
             LoanQuote quote = PhoneLending.Quote(Bank, _amount, score.Value);
-            box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#"))));
-            box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment)) + "  " + FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_days", quote.Days.ToString()) + "  " + FinanceText.Pair("reallife_econ_offer_fee", FinanceText.Money(quote.Fee)));
-            box.Line(FinanceText.Pair("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost)));
+            box.Row("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#")));
+            box.RowPair("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment), "reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest));
+            box.RowPair("reallife_econ_offer_days", quote.Days.ToString(), "reallife_econ_offer_fee", FinanceText.Money(quote.Fee));
+            box.Row("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost));
             Transform buttons = box.ButtonRow();
             int amount = _amount;
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_apply", () => ApplyLoan(amount));
@@ -288,7 +288,7 @@ namespace RealLifeOverhaul.Economy
                 Close(box);
                 return;
             }
-            box.Line(FinanceText.Pair("reallife_econ_offer_limit", FinanceText.Money(offer.Most)) + "  " + FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(offer.RateBp)));
+            box.RowPair("reallife_econ_offer_limit", FinanceText.Money(offer.Most), "reallife_econ_offer_rate", FinanceApp.Rate(offer.RateBp));
             Transform buttons = box.ButtonRow();
             string kindName = FinanceText.T(ProductCatalogue.KindKeys[(int)kind]);
             Lender bank = Bank;
@@ -337,7 +337,7 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
-                box.Line(FinanceText.Pair("reallife_econ_business_name", _shops[_shop].BusinessName));
+                box.Row("reallife_econ_business_name", _shops[_shop].BusinessName);
             }
             BuildingRegistration shop = _shops[_shop];
             float profit;
@@ -350,12 +350,12 @@ namespace RealLifeOverhaul.Economy
                 Close(box);
                 return;
             }
-            box.Line(FinanceText.Pair("reallife_econ_offer_most", FinanceText.Money(offer.Most)));
+            box.Row("reallife_econ_offer_most", FinanceText.Money(offer.Most));
             Steps(CreditCatalogue.LoanLeast, offer.Most);
             AmountSelector(box);
             LoanQuote quote = desk.BusinessQuote(Bank, _amount);
-            box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#"))) + "  " + FinanceText.Pair("reallife_econ_offer_fee", FinanceText.Money(quote.Fee)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment)) + "  " + FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest)));
+            box.RowPair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#")), "reallife_econ_offer_fee", FinanceText.Money(quote.Fee));
+            box.RowPair("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment), "reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest));
             int amount = _amount;
             Lender bank = Bank;
             Transform buttons = box.ButtonRow();
@@ -414,7 +414,7 @@ namespace RealLifeOverhaul.Economy
             _deposit = Mathf.Clamp(_deposit, 0, deposits - 1);
             _term = Mathf.Clamp(_term, 0, terms - 1);
             int deposit = depositLeast + _deposit * depositStep, term = termLeast + _term * termStep;
-            box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(offer.RateBp)));
+            box.Row("reallife_econ_offer_rate", FinanceApp.Rate(offer.RateBp));
             Steps(ProductTerms.FinanceLeast(kind), offer.Most);
             AmountSelector(box);
             if (box.HasSelector)
@@ -433,7 +433,7 @@ namespace RealLifeOverhaul.Economy
             int own = ProductTerms.DepositFor(_amount, deposit), price = _amount + own, amount = _amount;
             FinanceQuote quote = ProductTerms.Quote(price, deposit, amount, term, offer.RateBp, AccountRules.DaysPerYear);
             box.Line(FinanceText.T("reallife_econ_finance_example", "price", FinanceText.Money(price), "own", FinanceText.Money(own)));
-            box.Line(FinanceText.Pair("reallife_econ_finance_first", FinanceText.Money(quote.Instalment + quote.FirstInterest)) + "  " + FinanceText.Pair("reallife_econ_finance_interest", FinanceText.Money(quote.Interest)));
+            box.RowPair("reallife_econ_finance_first", FinanceText.Money(quote.Instalment + quote.FirstInterest), "reallife_econ_finance_interest", FinanceText.Money(quote.Interest));
             Lender bank = Bank;
             string kindName = FinanceText.T(ProductCatalogue.KindKeys[(int)kind]);
             Transform buttons = box.ButtonRow();
