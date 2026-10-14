@@ -419,6 +419,11 @@ namespace RealLifeOverhaul.Markets
             if (keep && _running && Save != null && ReferenceEquals(Save, _save))
             {
                 _engine.Finish();   // (a moment half played is played out first: MarketEngine.Midway)
+                long back = _engine.SettleAll();   // (worked orders' money with the broker back in the cash: the market is off a while)
+                if (back > 0)
+                {
+                    Logger?.Info("Stock market: stopping; " + back + " of worked orders' money with the broker is back in the cash.");
+                }
                 MarketStore.Save(Save.modData, _engine.State);
                 MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
             }
@@ -434,6 +439,7 @@ namespace RealLifeOverhaul.Markets
             _following = false;
             _checks.Clear();
             _shared.Length = 0;
+            _guestTrades.Clear();   // (a guest's trades not sent never reach another host)
             RemoveApp();
         }
 
@@ -679,7 +685,7 @@ namespace RealLifeOverhaul.Markets
                 return new Estimate { Why = OrderWhy.Behind };
             }
             MarketState s = _engine.State;
-            return MarketTrading.Check(s, s.Stock(stockId), side, type, qty, limitCents, stopCents, _world.Wallet.Cash, CommissionLeast, Trading, _engine.Held, s.Phase, closing);
+            return MarketTrading.Check(s, s.Stock(stockId), side, type, qty, limitCents, stopCents, _engine.Wallet.Cash, CommissionLeast, Trading, _engine.Held, s.Phase, closing);   // (the money with the broker counts: MarketEngine.Wallet)
         }
 
         /// <summary>An order placed: filled at once if it can be, else it waits. Null with the reason if it cannot be placed.</summary>
@@ -778,7 +784,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
-            if (!_world.Wallet.Take(amount, MarketMoney.Deposit, string.Empty))
+            if (!_engine.Wallet.Take(amount, MarketMoney.Deposit, string.Empty))   // (what is short taken back from worked orders' money with the broker first)
             {
                 return false;
             }

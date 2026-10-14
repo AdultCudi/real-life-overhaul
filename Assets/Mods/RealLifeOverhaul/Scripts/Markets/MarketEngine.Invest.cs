@@ -36,15 +36,19 @@ namespace RealLifeOverhaul.Markets
     ///                      it, so two worked orders never wait for each other). Its day is told at the close; it never expires.
     ///                      One history line a day holds its slices.
     ///   its money          on a cash account, settled once a day, never by the slice (each of the game's transactions is
-    ///                      a sound, a line of the books and an event): a purchase holds its day's money from the cash in
-    ///                      one transaction at its first slice of a market day (a day's most at the price of the moment,
-    ///                      the commission and a tenth more, never more than the cash), its slices draw on it, and what is
-    ///                      left is given back in one at the close or as it ends; short of it, the day's slices stop and
-    ///                      the order goes on the next day. A sale's takings, after the commission, wait on it and are paid
-    ///                      in one at the close or as it ends. A margin account moves no cash of the game's at all.
+    ///                      a sound, a line of the books and an event): a purchase parks its day's money from the cash in
+    ///                      hand in one transaction at its first slice of a market day (a day's most at the price of the
+    ///                      moment, the commission and a tenth more, never more than the cash in hand), its slices draw on
+    ///                      it, and what is left is given back in one at the close or as it ends. A sale's takings, after the
+    ///                      commission, wait on it and are paid in one at the close or as it ends. Both stay the player's
+    ///                      for every other purchase and charge in the market, which takes back what it needs first
+    ///                      (<see cref="BrokerWallet"/>). When the day's money cannot pay a slice the order goes on at the next
+    ///                      market day, or stops if the cash in hand cannot pay for one share either: the cash ran out. A
+    ///                      margin account moves no cash of the game's at all.
     ///   dividends put back a dividend paid to a holding whose share to put back is set: that share of it after tax
     ///                      becomes an order at the market for the next open, for as many shares as it buys then, one
-    ///                      order's most at the most and never past the holding limit; what it cannot buy stays in the cash.
+    ///                      order's most at the most and never into the room any open purchase of the company is for; what
+    ///                      it cannot buy stays in the cash.
     ///
     /// Both are the player's own orders and fill as every order does: their moves of the price go the way a fill's go (in a
     /// Going Public session to the host, as events of its tape), nothing new is sent, and they live in the save's part g
@@ -93,7 +97,8 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// Whether a worked order can be placed now (nothing is changed): checked as an order at the market is, but for its
         /// size. A sale is only of shares held and not already being sold, never short; a purchase needs room under the
-        /// holding limit (it stops there) and, from cash, the price of one share at least (it buys what the cash pays for).
+        /// holding limit (it stops there) and, from cash, the price of one share at least (it buys what the cash pays for;
+        /// the money worked orders have with the broker counts, as for every purchase in the market).
         /// </summary>
         public OrderWhy WorkedWhy(Stock s, OrderSide side, long qty, bool held)
         {
@@ -129,7 +134,7 @@ namespace RealLifeOverhaul.Markets
             if (!State.Account.Margin)
             {
                 Quote q = MarketTrading.QuoteOf(State, s, Trading ? State.Phase : MarketCatalogue.PhaseOpen);
-                if (InvestRules.SharesFor(_world.Wallet.Cash, q.Ask, _world.CommissionLeast) <= 0)
+                if (InvestRules.SharesFor(Wallet.Cash, q.Ask, _world.CommissionLeast) <= 0)
                 {
                     return OrderWhy.NoMoney;
                 }
@@ -197,6 +202,27 @@ namespace RealLifeOverhaul.Markets
             return stopped;
         }
 
+        /// <summary>
+        /// Every worked order's money with the broker settled now, the market stopping (its option switched off): the cash is
+        /// not short of it while the market is off. An order still open parks again when the market runs. How much came back.
+        /// </summary>
+        public long SettleAll()
+        {
+            Finish();   // (a moment half played is played out first: Midway)
+            long back = 0L;
+            for (int i = 0; i < State.Orders.Count; i++)
+            {
+                Order o = State.Orders[i];
+                if (o.Worked && (o.Parked > 0 || o.Due > 0))
+                {
+                    back += o.Parked + o.Due;
+                    Settle(o, NameOf(o.StockId));
+                    o.ParkedDay = 0;
+                }
+            }
+            return back;
+        }
+
         private string NameOf(int stockId)
         {
             Stock s = State.Stock(stockId);
@@ -252,7 +278,7 @@ namespace RealLifeOverhaul.Markets
         }
 
         // One slice: held to the holding limit less what other open purchases are still for (a sale: to the shares held less
-        // what other sales are for), on a cash account to the day's money held for it, at the market's price now with its
+        // what other sales are for), on a cash account to the day's money parked for it, at the market's price now with its
         // move; the least commission only on the order's first slice. A step whose room other orders hold, or whose day's
         // money is spent, goes by; the order stops when nothing of it can ever be done.
         private void Work(Order o, Stock s, long qty, long volume, int day, int phase)
@@ -292,18 +318,25 @@ namespace RealLifeOverhaul.Markets
             int cents = MarketTrading.MarketPrice(State, s, buying, qty, phase);
             if (buying && !State.Account.Margin)
             {
-                if (o.HeldDay != day && !Hold(o, s, day, phase, least))
+                if (o.ParkedDay != day && !Park(o, s, day, phase, least))
                 {
-                    Stop(o, s, OrderWhy.NoMoney, day);   // (the cash does not pay for a share: it ran out)
+                    Stop(o, s, OrderWhy.NoMoney, day);   // (the cash in hand does not pay for a share: it ran out)
                     return;
                 }
-                long afford = InvestRules.SharesFor(o.Held, cents, least);
+                long afford = InvestRules.SharesFor(o.Parked, cents, least);
                 if (afford < qty)
                 {
                     qty = afford;
                     if (qty <= 0)
                     {
-                        return;   // (the day's money is spent: the order goes on at the next market day)
+                        // The day's money cannot pay a slice (spent, or taken back by the player's other purchases). With
+                        // no cash in hand for one share either the cash has run out, and the order stops; else it goes on
+                        // at the next market day. So it never parks, day after day, whatever cash comes in.
+                        if (InvestRules.SharesFor(Wallet.Free, MarketTrading.MarketPrice(State, s, true, 1, phase), least) <= 0)
+                        {
+                            Stop(o, s, OrderWhy.NoMoney, day);
+                        }
+                        return;
                     }
                     cents = MarketTrading.MarketPrice(State, s, true, qty, phase);   // (fewer shares move it less: never dearer)
                 }
@@ -333,40 +366,62 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A worked purchase's money for a market day, held from the cash in one transaction at its first slice of the day:
-        // what a day's most (or what is left of the order, or of the room it has, if less) costs at the price of the moment
-        // with the move its size makes, the commission and a tenth more, never more than the cash. False, and nothing held,
-        // when the cash does not pay for one share.
-        private bool Hold(Order o, Stock s, int day, int phase, int least)
+        // A worked purchase's money for a market day, parked in one transaction at its first slice of the day: what a day's
+        // most (or what is left of the order, or of the room it has, if less) costs at the price of the moment with the move
+        // its size makes, the commission and a tenth more, never more than the cash in hand (worked sales' takings of the day
+        // paid into it first: they are the player's). It never takes another worked order's money. False, and nothing parked,
+        // when the cash in hand does not pay for one share.
+        private bool Park(Order o, Stock s, int day, int phase, int least)
         {
             long room = MarketTrading.MostHeld(s) - State.Held(s.Id) - Others(o, s.Id);
             long qty = Math.Max(1L, Math.Min(o.Left, Math.Min(MarketTrading.MostPerOrder(s), room)));
-            long amount = Math.Min(_world.Wallet.Cash, InvestRules.DayHold(qty, MarketTrading.MarketPrice(State, s, true, qty, phase), least));
-            if (InvestRules.SharesFor(amount, MarketTrading.MarketPrice(State, s, true, 1, phase), least) <= 0 || !_world.Wallet.Take(amount, MarketMoney.WorkedHeld, s.Name))
+            long need = InvestRules.DayPark(qty, MarketTrading.MarketPrice(State, s, true, qty, phase), least);
+            if (Wallet.Free < need)
+            {
+                PayTakings();
+            }
+            long amount = Math.Min(Wallet.Free, need);
+            if (InvestRules.SharesFor(amount, MarketTrading.MarketPrice(State, s, true, 1, phase), least) <= 0 || !Wallet.TakeFree(amount, MarketMoney.WorkedHeld, s.Name))
             {
                 return false;
             }
-            o.Held += amount;
-            o.HeldDay = day;
+            o.Parked += amount;
+            o.ParkedDay = day;
             return true;
         }
 
-        // A worked order's money with the broker settled, one transaction each: what is left of the day's held money given
+        // The day's takings of every worked sale paid into the cash now, one transaction each (MarketMoney.WorkedSold): a
+        // worked purchase parks from the cash in hand, and they are the player's.
+        private void PayTakings()
+        {
+            for (int i = 0; i < State.Orders.Count; i++)
+            {
+                Order x = State.Orders[i];
+                if (x.Worked && x.Due > 0)
+                {
+                    long due = x.Due;
+                    x.Due = 0;
+                    Wallet.Give(due, MarketMoney.WorkedSold, NameOf(x.StockId));
+                }
+            }
+        }
+
+        // A worked order's money with the broker settled, one transaction each: what is left of the day's parked money given
         // back, the day's takings of its sales paid. At the close, and as it ends (done, stopped, cancelled, switched off,
         // its company gone).
         private void Settle(Order o, string name)
         {
-            if (o.Held > 0)
+            if (o.Parked > 0)
             {
-                long back = o.Held;
-                o.Held = 0;
-                _world.Wallet.Give(back, MarketMoney.WorkedBack, name);
+                long back = o.Parked;
+                o.Parked = 0;
+                Wallet.Give(back, MarketMoney.WorkedBack, name);
             }
             if (o.Due > 0)
             {
                 long due = o.Due;
                 o.Due = 0;
-                _world.Wallet.Give(due, MarketMoney.WorkedSold, name);
+                Wallet.Give(due, MarketMoney.WorkedSold, name);
             }
         }
 
@@ -388,7 +443,7 @@ namespace RealLifeOverhaul.Markets
             });
         }
 
-        // At the close: every worked order's money with the broker settled (what is left of the day's held money back, the
+        // At the close: every worked order's money with the broker settled (what is left of the day's parked money back, the
         // day's takings paid), and each still open that worked today told.
         private void WorkedClose(int day)
         {
@@ -400,7 +455,7 @@ namespace RealLifeOverhaul.Markets
                     continue;
                 }
                 Stock s = State.Stock(o.StockId);
-                if (o.Held > 0 || o.Due > 0)
+                if (o.Parked > 0 || o.Due > 0)
                 {
                     Settle(o, s != null ? s.Name : string.Empty);
                 }
@@ -436,10 +491,11 @@ namespace RealLifeOverhaul.Markets
         }
 
         // A payout put back, filled now: as many shares as its money buys at the market's price, with its move and the
-        // commission, as an order at the market for that many would be, but never more than one order's most nor past the
-        // most the player may hold (what other open purchases of it are still for left to them). What it cannot buy stays in
-        // the cash, and the player is told why (Why on a filled one: bought in part). With dividends put back switched off
-        // since it waited (the second's look may not have come), refused.
+        // commission, as an order at the market for that many would be, but never more than one order's most nor into the
+        // room under the holding limit that any open purchase of the company is still for (MarketTrading.Reserved: placed
+        // before it or after, the payout gives way to every one). What it cannot buy stays in the cash, and the player is told
+        // why (Why on a filled one: bought in part). With dividends put back switched off since it waited (the second's look
+        // may not have come), refused.
         private void BackNow(Order o, Stock s, int phase)
         {
             if (!ReinvestOn)
@@ -449,7 +505,7 @@ namespace RealLifeOverhaul.Markets
             }
             int least = _world.CommissionLeast;
             long per = MarketTrading.MostPerOrder(s);
-            long cap = Math.Min(per, Math.Max(0L, MarketTrading.MostHeld(s) - State.Held(s.Id) - Others(o, s.Id)));
+            long cap = Math.Min(per, Math.Max(0L, MarketTrading.MostHeld(s) - State.Held(s.Id) - MarketTrading.Reserved(State, s.Id, OrderSide.Buy)));
             long most = InvestRules.SharesFor(o.Budget, MarketTrading.MarketPrice(State, s, true, 1, phase), least);
             long qty = most > 0 ? InvestRules.SharesFor(o.Budget, MarketTrading.MarketPrice(State, s, true, most, phase), least) : 0;   // (at the price of the most: never more than the money)
             OrderWhy part = OrderWhy.None;
@@ -566,6 +622,104 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             return next.StockId;
+        }
+    }
+
+    /// <summary>
+    /// The player's cash as the market moves and counts it (MarketEngine.Wallet), in front of the game's: the money worked
+    /// orders have with the broker (InvestRules.WithBroker: a purchase's parked day of money, a sale's takings due) stays the
+    /// player's for every other purchase and charge in the market. What can be afforded counts it (<see cref="Cash"/>); a
+    /// purchase or a charge that needs more than the cash in hand takes back first what it needs and no more (Ready, Take,
+    /// Force): worked sales' takings first, then purchases' parked money, the latest-placed order first, one transaction
+    /// for each order (MarketMoney.WorkedSold, WorkedBack), so never more than one from an order for one purchase. A
+    /// worked order's own day of money parks from the cash in hand alone (<see cref="Free"/>, <see cref="TakeFree"/>), so
+    /// no worked order takes another's and nothing goes round between them. What the app shows as the cash is the cash in
+    /// hand. Game-free; a look at the orders only when the cash in hand is short, or when what can be afforded is asked.
+    /// </summary>
+    public sealed class BrokerWallet : IMarketWallet
+    {
+        private readonly IMarketWallet _hand;   // the game's cash (the checks': their own)
+        private readonly MarketState _state;
+
+        public BrokerWallet(IMarketWallet hand, MarketState state)
+        {
+            _hand = hand;
+            _state = state;
+        }
+
+        /// <summary>The cash in hand: what the app shows as the cash, and all a worked order parks from.</summary>
+        public long Free => _hand.Cash;
+
+        /// <summary>What can be afforded in the market: the cash in hand and the money worked orders have with the broker.</summary>
+        public long Cash => _hand.Cash + InvestRules.WithBroker(_state, out _, out _);
+
+        public bool Ready(long amount)
+        {
+            if (amount <= 0 || _hand.Cash >= amount)
+            {
+                return true;
+            }
+            if (Cash < amount)
+            {
+                return false;   // (not even with the money with the broker: none of it is taken back)
+            }
+            Release(amount - _hand.Cash);
+            return _hand.Cash >= amount;
+        }
+
+        public bool Take(long amount, string why, string name)
+        {
+            return amount <= 0 || (Ready(amount) && _hand.Take(amount, why, name));
+        }
+
+        public void Force(long amount, string why, string name)
+        {
+            if (amount > _hand.Cash)
+            {
+                Release(amount - _hand.Cash);   // (what is owed comes from the money with the broker first, as far as it goes)
+            }
+            _hand.Force(amount, why, name);
+        }
+
+        public void Give(long amount, string why, string name)
+        {
+            _hand.Give(amount, why, name);
+        }
+
+        /// <summary>A worked order's own day of money: from the cash in hand only, none taken back from the broker.</summary>
+        public bool TakeFree(long amount, string why, string name)
+        {
+            return amount <= 0 || _hand.Take(amount, why, name);
+        }
+
+        // Money with the broker given back to the cash, 'need' at most: worked sales' takings first, then purchases' parked
+        // money, the latest-placed order first (orders are kept in the order of their numbers), one transaction for each.
+        private void Release(long need)
+        {
+            for (int pass = 0; pass < 2 && need > 0; pass++)
+            {
+                for (int i = _state.Orders.Count - 1; i >= 0 && need > 0; i--)
+                {
+                    Order o = _state.Orders[i];
+                    long has = !o.Worked ? 0L : pass == 0 ? o.Due : o.Parked;
+                    if (has <= 0)
+                    {
+                        continue;
+                    }
+                    long back = Math.Min(has, need);
+                    if (pass == 0)
+                    {
+                        o.Due -= back;
+                    }
+                    else
+                    {
+                        o.Parked -= back;
+                    }
+                    need -= back;
+                    Stock s = _state.Stock(o.StockId);
+                    _hand.Give(back, pass == 0 ? MarketMoney.WorkedSold : MarketMoney.WorkedBack, s != null ? s.Name : string.Empty);
+                }
+            }
         }
     }
 }

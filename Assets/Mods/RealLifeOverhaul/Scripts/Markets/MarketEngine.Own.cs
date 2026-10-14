@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Markets
         {
             if (amount > 0 && Mine(s) && !s.Own.Test)
             {
-                _world.Wallet.Force(amount, why, s.Name);
+                Wallet.Force(amount, why, s.Name);
             }
         }
 
@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Markets
         {
             if (amount > 0 && Mine(s) && !s.Own.Test)
             {
-                _world.Wallet.Give(amount, why, s.Name);
+                Wallet.Give(amount, why, s.Name);
             }
         }
 

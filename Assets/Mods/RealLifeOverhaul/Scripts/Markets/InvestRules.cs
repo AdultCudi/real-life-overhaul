@@ -99,8 +99,8 @@ namespace RealLifeOverhaul.Markets
     ///     a worked order         larger than one order may be: a slice at each step of the market of at most the share of
     ///                            the step's trading one order may take of a day's (<see cref="Slice"/>), so about one
     ///                            order's most a day; its slices together move the price as one order of their size would
-    ///                            (MarketTrading.SliceShare); on a cash account its day's money held at once and settled
-    ///                            at the close (<see cref="DayHold"/>, <see cref="WithBroker"/>)
+    ///                            (MarketTrading.SliceShare); on a cash account its day's money parked at once and settled
+    ///                            at the close (<see cref="DayPark"/>, <see cref="WithBroker"/>)
     ///     a dividend put back    the share chosen of what it pays after tax, bought into the same company at the next open
     ///                            as an order at the market for as many shares as it pays for (<see cref="SharesFor"/>),
     ///                            one order's most at the most and never past the holding limit
@@ -415,30 +415,47 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The player's money with the broker for worked orders on a cash account, in money: the day's money held for
+        /// The player's money with the broker for worked orders on a cash account, in money: the day's money parked for
         /// purchases (not spent yet: back at the close) and the day's takings of sales after the commission (paid at the
-        /// close). Out of the cash and in no holding meanwhile, so whatever counts what the player has counts it here.
+        /// close). Out of the cash in hand and in no holding meanwhile, so whatever counts what the player has counts it
+        /// here; still the player's for every other purchase in the market (BrokerWallet).
         /// </summary>
-        public static long WithBroker(MarketState s, out long held, out long due)
+        public static long WithBroker(MarketState s, out long parked, out long due)
         {
-            held = due = 0L;
+            parked = due = 0L;
             for (int i = 0; i < s.Orders.Count; i++)
             {
                 Order o = s.Orders[i];
-                held += Math.Max(0L, o.Held);
+                parked += Math.Max(0L, o.Parked);
                 due += Math.Max(0L, o.Due);
             }
-            return held + due;
+            return parked + due;
+        }
+
+        /// <summary>
+        /// Every worked order's money with the broker taken off it, for the save tools to pay out in the sum they settle
+        /// everything for (MarketDirector.StopAll): how much, and of it what was parked and what was due. None of it is left
+        /// to be given back a second time by what they do after.
+        /// </summary>
+        public static long EmptyBroker(MarketState s, out long parked, out long due)
+        {
+            long all = WithBroker(s, out parked, out due);
+            for (int i = 0; i < s.Orders.Count; i++)
+            {
+                s.Orders[i].Parked = 0;
+                s.Orders[i].Due = 0;
+            }
+            return all;
         }
 
         // ---------------------------------------------------------------- worked orders
 
         /// <summary>
-        /// A worked purchase's money for a market day, held at its first slice: what so many shares cost at a price with the
-        /// commission, and a tenth more for the price moving through the day. Its slices draw on it; what is left comes back
-        /// at the close.
+        /// A worked purchase's money for a market day, parked at its first slice: what so many shares cost at a price with
+        /// the commission, and a tenth more for the price moving through the day. Its slices draw on it; what is left comes
+        /// back at the close.
         /// </summary>
-        public static long DayHold(long qty, int cents, int least)
+        public static long DayPark(long qty, int cents, int least)
         {
             if (qty <= 0 || cents <= 0)
             {
@@ -449,13 +466,17 @@ namespace RealLifeOverhaul.Markets
             return cost + (cost + 9L) / 10L;
         }
 
+        /// <summary>The most the game's money moves in one transaction here: a float holds it exactly (int.MaxValue, the most the
+        /// game takes, would round up to 2^31 as a float: a unit too many in each piece).</summary>
+        public const long PieceMost = 1L << 30;
+
         /// <summary>
-        /// The next piece of a sum the game's money takes in one transaction (it takes no more than int.MaxValue at a time),
-        /// taken off what is left: a larger sum is paid or taken in pieces, none of it lost. Nothing when nothing is left.
+        /// The next piece of a sum the game's money moves in one transaction, taken off what is left: a larger sum is paid or
+        /// taken in pieces of <see cref="PieceMost"/> at most, none of it lost. Nothing when nothing is left.
         /// </summary>
         public static long Piece(ref long left)
         {
-            long piece = Math.Max(0L, Math.Min(left, int.MaxValue));
+            long piece = Math.Max(0L, Math.Min(left, PieceMost));
             left -= piece;
             return piece;
         }

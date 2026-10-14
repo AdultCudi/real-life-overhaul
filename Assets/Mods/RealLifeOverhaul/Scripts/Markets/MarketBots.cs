@@ -546,7 +546,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     return false;
                 }
-                if (wallet.Cash < value + fee)
+                if (!wallet.Ready(value + fee))   // (what is short taken back from worked orders' money with the broker first)
                 {
                     shortOfCash = true;
                     return false;

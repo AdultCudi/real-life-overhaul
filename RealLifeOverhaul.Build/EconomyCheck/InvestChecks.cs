@@ -461,9 +461,9 @@ internal static partial class Program
         int day = m.State.Day;
         RunTo(m, day, MarketCatalogue.PhaseOpen + 40);
         long filled = o.Filled;
-        long heldBefore = o.Held, cashBefore = world.Purse.Money;
+        long heldBefore = o.Parked, cashBefore = world.Purse.Money;
         Check(filled > 0 && heldBefore > 0 && m.Cancel(o.Id) && o.State == OrderState.Cancelled && o.Why == OrderWhy.Cancelled && o.Filled == filled, "worked: cancelled, what it bought is kept");
-        Check(o.Held == 0 && world.Purse.Money == cashBefore + heldBefore, "worked: and the day's money held for it comes back at once, in one transaction");
+        Check(o.Parked == 0 && world.Purse.Money == cashBefore + heldBefore, "worked: and the day's money held for it comes back at once, in one transaction");
         RunTo(m, TradingOnOrAfter(day + 1));
         Check(o.Filled == filled && m.State.Held(s.Id) == filled && o.EndDay == day, "worked: and nothing more is bought; it ended the day it was cancelled");
         RunTo(m, day + 10);
@@ -1067,7 +1067,9 @@ internal static partial class Program
               && pt["reallife_guide_markets_bots"].Contains("fracionada") && zh["reallife_guide_markets_bots"].Contains("分批执行")
               && guide.Contains("{bond_holdings_large}") && pt["reallife_guide_markets"].Contains("{bond_holdings_large}") && zh["reallife_guide_markets"].Contains("{bond_holdings_large}")
               && bots.Contains("what is not spent comes back at the close") && pt["reallife_guide_markets_bots"].Contains("volta no fechamento") && zh["reallife_guide_markets_bots"].Contains("收盘时退回")
-              && en["reallife_opt_tip_markets_large"].Contains("held until the close") && en["reallife_mkt_inv_ticket_hold"].Contains("comes back at the close"),
+              && en["reallife_opt_tip_markets_large"].Contains("still yours for other Stocks purchases") && en["reallife_mkt_inv_ticket_hold"].Contains("still use this money first")
+              && bots.Contains("still use that money first") && pt["reallife_guide_markets_bots"].Contains("ainda usam esse dinheiro primeiro")
+              && zh["reallife_guide_markets_bots"].Contains("仍可优先使用这笔钱"),
             "invest: the Stocks pages of the Guide tell of the portfolio, worked orders and their day's money, the most of a bond purchase, the bonds held, rollovers and ladders, with their figures, in each language");
         bool line = false;
         foreach (KeyValuePair<string, string> row in en)
@@ -1108,6 +1110,8 @@ internal static partial class Program
             Log(why, -amount);
             return true;
         }
+
+        public bool Ready(long amount) => amount <= 0 || Money >= amount;
 
         public void Force(long amount, string why, string name)
         {
@@ -1346,7 +1350,7 @@ internal static partial class Program
             "worked: a purchase's money is held in one transaction a market day and what is left given back in one, none for a slice (" + holds + " held and " + backs + " back over "
             + days.Count + " days, for " + world.Inner.Fills + " slices)");
         long spent = lines.Sum(t => -t.Value) + lines.Sum(t => t.Fee);
-        Check(-purse.Sum(MarketMoney.WorkedHeld) == spent + purse.Sum(MarketMoney.WorkedBack) && o.Held == 0 && purse.Low >= 0,
+        Check(-purse.Sum(MarketMoney.WorkedHeld) == spent + purse.Sum(MarketMoney.WorkedBack) && o.Parked == 0 && purse.Low >= 0,
             "worked: what was held is what its slices cost with the commission and what came back, to the unit, and the cash never went under nothing");
 
         MarketEngine n = LogMarket(342, 1000L, out LogWorld w2, 3, 5);
@@ -1374,7 +1378,7 @@ internal static partial class Program
         UntilDone(r, o3, 12);
         List<Trade> lines3 = r.State.Trades.Where(t => t.Order == o3.Id).ToList();
         bool daily3 = lines3.Select(t => t.Day).Distinct().All(d => w3.Purse.Count(MarketMoney.WorkedHeld, d) == 1 && w3.Purse.Count(MarketMoney.WorkedBack, d) <= 1);
-        Check(o3 != null && !o3.IsOpen && o3.Why == OrderWhy.NoMoney && o3.Filled > per3 && daily3 && w3.Purse.Low >= 0 && o3.Held == 0
+        Check(o3 != null && !o3.IsOpen && o3.Why == OrderWhy.NoMoney && o3.Filled > per3 && daily3 && w3.Purse.Low >= 0 && o3.Parked == 0
               && start - w3.Purse.Money == lines3.Sum(t => -t.Value) + lines3.Sum(t => t.Fee),
             "worked: short of cash it holds what there is, buys what that pays for a day at a time, and stops when the cash runs out, nothing lost (" + (o3 != null ? o3.Filled : -1) + " bought)");
 
@@ -1384,7 +1388,7 @@ internal static partial class Program
         g.State.Account.Cash = 50000000000L;
         Order o4 = g.PlaceWorked(s4.Id, OrderSide.Buy, MarketTrading.MostPerOrder(s4) * 2, g.Held, false, out _);
         UntilDone(g, o4, 6);
-        Check(o4 != null && o4.Filled > 0 && w4.Purse.Moves.Count == 0 && o4.Held == 0, "worked: in a margin account it moves none of the game's cash: no transaction at all");
+        Check(o4 != null && o4.Filled > 0 && w4.Purse.Moves.Count == 0 && o4.Parked == 0, "worked: in a margin account it moves none of the game's cash: no transaction at all");
 
         MarketEngine k = LogMarket(345, 50000000000L, out LogWorld w5, 3, 5);
         Stock buy = Liquid(k, MarketSize.Large), sell = Liquid(k, MarketSize.Large, 1);
@@ -1395,13 +1399,13 @@ internal static partial class Program
         string text = MarketStore.Write(k.State);
         MarketState back = MarketStore.Read(text, out _);
         Order rb = back != null ? back.Order(b5.Id) : null, rs = back != null ? back.Order(s5.Id) : null;
-        Check(b5.Held > 0 && s5.Due > 0 && rb != null && rs != null && rb.Held == b5.Held && rb.HeldDay == b5.HeldDay && rs.Due == s5.Due && MarketStore.Write(back) == text,
+        Check(b5.Parked > 0 && s5.Due > 0 && rb != null && rs != null && rb.Parked == b5.Parked && rb.ParkedDay == b5.ParkedDay && rs.Due == s5.Due && MarketStore.Write(back) == text,
             "worked: a save in the middle of a market day keeps the money held for its purchases and the takings due from its sales, and writes them again the same");
         int g0 = text.IndexOf("~g:", StringComparison.Ordinal), g1 = text.IndexOf('~', g0 + 3);
         string part = text.Substring(g0 + 3, (g1 < 0 ? text.Length : g1) - g0 - 3);
         string shorter = string.Join(";", part.Split(';').Select(x => string.Join("|", x.Split('|').Take(26))));
         MarketState older = MarketStore.Read(text.Replace("~g:" + part, "~g:" + shorter), out _);
-        Check(older != null && older.Orders.Where(x => x.Worked).All(x => x.Held == 0 && x.Due == 0 && x.HeldDay == 0) && older.Orders.Count(x => x.Worked) == 2,
+        Check(older != null && older.Orders.Where(x => x.Worked).All(x => x.Parked == 0 && x.Due == 0 && x.ParkedDay == 0) && older.Orders.Count(x => x.Worked) == 2,
             "worked: a record of part g without them reads nothing held and nothing due");
     }
 
@@ -1522,7 +1526,7 @@ internal static partial class Program
         RunTo(m, MarketTrading.NextTradingDay(m.State.Day), MarketCatalogue.PhaseOpen + 20);
         Check(back.State == OrderState.Refused && back.Why == OrderWhy.Switched && back.Filled == 0 && m.State.Held(t.Id) == held && world.Told.Any(x => x.Order == back && x.Qty == 0 && x.Why == OrderWhy.Switched),
             "put back: a dividend waiting while the option was switched off is refused at the open with the reason, its money left in the cash");
-        Check(w.IsOpen && w.Filled == filled && world.Purse.Count(MarketMoney.WorkedHeld) == holds && world.Purse.Money == cash && w.Held == 0,
+        Check(w.IsOpen && w.Filled == filled && world.Purse.Count(MarketMoney.WorkedHeld) == holds && world.Purse.Money == cash && w.Parked == 0,
             "worked: with the option off at the open a worked order takes no slice and holds no money");
         Check(m.StopAllOf(false, OrderWhy.Switched) == 1 && !w.IsOpen && w.Why == OrderWhy.Switched, "worked: and the option's look cancels it with its reason");
     }
@@ -1596,11 +1600,16 @@ internal static partial class Program
         {
             pieces.Add(InvestRules.Piece(ref left));
         }
-        long one = int.MaxValue, two = (long)int.MaxValue + 1, none = 0, under = -5;
+        long one = 1L << 30, two = (1L << 30) + 1, none = 0, under = -5;
         long p1 = InvestRules.Piece(ref one), p2 = InvestRules.Piece(ref two);
-        Check(pieces.SequenceEqual(new[] { 2147483647L, 2147483647L, 705032706L }) && left == 0 && p1 == int.MaxValue && one == 0 && p2 == int.MaxValue && two == 1
+        Check(pieces.SequenceEqual(new[] { 1073741824L, 1073741824L, 1073741824L, 1073741824L, 705032704L }) && left == 0 && p1 == 1L << 30 && one == 0 && p2 == 1L << 30 && two == 1
               && InvestRules.Piece(ref none) == 0 && none == 0 && InvestRules.Piece(ref under) == 0 && under == -5,
-            "money: a sum over what the game moves at once goes in pieces of int.MaxValue at most, to the unit; nothing of nothing");
+            "money: a sum over what the game moves at once goes in pieces of 2^30 at most, to the unit; nothing of nothing");
+        // The game's money is a float: a piece of int.MaxValue would become 2^31 there, a unit too many each time; 2^30 is
+        // held exactly, so a sum in whole pieces moves exactly what it is (a float's own rounding aside, as for any sum).
+        float exact = InvestRules.PieceMost, wide = int.MaxValue;
+        Check((long)exact == InvestRules.PieceMost && (long)wide != int.MaxValue && (double)(float)(InvestRules.PieceMost * 4) == InvestRules.PieceMost * 4,
+            "money: a piece is a sum a float holds exactly (2^30), where int.MaxValue becomes 2^31 as a float");
         string game = ModSource(@"Markets\MarketGame.cs");
         int at = game.IndexOf("public sealed class MarketWallet", StringComparison.Ordinal), end = at >= 0 ? game.IndexOf("public static long Wealth()", at, StringComparison.Ordinal) : -1;
         string wallet = at >= 0 && end > at ? game.Substring(at, end - at) : string.Empty;
@@ -1646,10 +1655,10 @@ internal static partial class Program
         Stock s = Liquid(m, MarketSize.Large);
         long before = InvestRules.MarketWorth(m.State, m.State.Phase);
         Order o = Worked(m, s, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 3, out _);
-        o.Held = 1234;
+        o.Parked = 1234;
         o.Due = 567;
-        long with = InvestRules.MarketWorth(m.State, m.State.Phase), broker = InvestRules.WithBroker(m.State, out long held, out long due);
-        Check(with - before == 1801 && broker == 1801 && held == 1234 && due == 567, "invest: the money with the broker for worked orders counts in what the player holds on the market");
+        long with = InvestRules.MarketWorth(m.State, m.State.Phase), broker = InvestRules.WithBroker(m.State, out long parked, out long due);
+        Check(with - before == 1801 && broker == 1801 && parked == 1234 && due == 567, "invest: the money with the broker for worked orders counts in what the player holds on the market");
         Check(RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedHeld) == RealLifeOverhaul.Economy.CashCategory.Investments && RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedBack) == RealLifeOverhaul.Economy.CashCategory.Investments
               && RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedSold) == RealLifeOverhaul.Economy.CashCategory.Investments,
             "invest: the worked orders' transactions are filed under investments in the Finance app, with the other shares");

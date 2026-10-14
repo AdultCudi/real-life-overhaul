@@ -29,11 +29,11 @@ namespace RealLifeOverhaul.Markets
     ///   f the player's bonds (Markets/Bonds/BondStore). Never in the city's line.
     ///   g the player's worked orders and dividends waiting to be put back (MarketEngine.Invest.cs): an order's fields as in
     ///      part o, then whether it is worked or a payout put back, its money, the day it stopped and its last day's slices,
-    ///      then the day's money held for it, the day's takings due to the player and the day it was held (a record without
-    ///      them reads nothing held: one written before the day's money was held once a day). Apart from part o, so that a
-    ///      version before them never fills a worked order whole at the open; read back, every order takes its place by its
-    ///      number again. Never in the city's line. (A version before part g, read in the middle of a market day, loses that
-    ///      day's held money: it knows nothing of it.)
+    ///      then the day's money parked for it, the day's takings due to the player and the day it was parked (a record
+    ///      without them reads nothing parked). It has a limit of its own, and a worked order still open or with money
+    ///      with the broker is always read. Apart from part o, so that a version before them never fills a worked order
+    ///      whole at the open; read back, every order takes its place by its number again. Never in the city's line. (A
+    ///      version before part g, read in the middle of a market day, loses that day's parked money: it knows nothing of it.)
     ///   A holding of part p may end with the share of each dividend it puts back, a line of part t with the worked order it
     ///   is the day's slices of and whether it was bought with a dividend put back (each written only when there is one).
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
@@ -304,8 +304,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         // Part g: worked orders and dividends to put back, each an order's fields, then what it is, its money, the day it
-        // stopped and its last day's slices, then the day's money with the broker (held for it, due from it) and the day
-        // it was held.
+        // stopped and its last day's slices, then the day's money with the broker (parked for it, due from it) and the day
+        // it was parked.
         private static void WorkedOrders(StringBuilder t, MarketState s)
         {
             int n = 0;
@@ -322,8 +322,8 @@ namespace RealLifeOverhaul.Markets
                 L(t, o.Budget);
                 Join(t, o.EndDay, o.DayOf);
                 L(t, o.DayQty, o.DayValue);
-                L(t, o.Held, o.Due);
-                Join(t, o.HeldDay);
+                L(t, o.Parked, o.Due);
+                Join(t, o.ParkedDay);
             }
         }
 
@@ -350,18 +350,24 @@ namespace RealLifeOverhaul.Markets
             return o;
         }
 
-        // Part g read back: a worked order (at the market, until it is done) or a payout put back (at the market, for the day, with its money).
+        // Part g read back: a worked order (at the market, until it is done) or a payout put back (at the market, for the day,
+        // with its money). It has a limit of its own, apart from part o's (a busy list of orders that are done leaves part o
+        // full), and a worked order still open, or with money with the broker, is read whatever the count: no worked order
+        // and none of the player's money is lost on a load.
         private static void ReadWorked(MarketState s, string body)
         {
+            int read = 0;
             foreach (string record in Records(body))
             {
                 string[] c = record.Split('|');
                 bool worked = I(c, 19) != 0, back = !worked && I(c, 20) != 0;
-                Order o = (worked || back) && s.Orders.Count < MarketCatalogue.OrdersMost * 2 ? ReadOrder(c, back) : null;
+                bool keep = worked && (I(c, 13) == (int)OrderState.Open || L(c, 26) > 0 || L(c, 27) > 0);
+                Order o = (worked || back) && (keep || read < MarketCatalogue.OrdersMost * 2) ? ReadOrder(c, back) : null;
                 if (o == null || s.Order(o.Id) != null || (back && Math.Max(0, L(c, 21)) <= 0))
                 {
                     continue;
                 }
+                read++;
                 o.Type = OrderType.Market;
                 o.Closing = false;
                 o.Worked = worked;
@@ -372,9 +378,9 @@ namespace RealLifeOverhaul.Markets
                 o.DayOf = Math.Max(0, I(c, 23));
                 o.DayQty = Math.Max(0, L(c, 24));
                 o.DayValue = Math.Max(0, L(c, 25));
-                o.Held = worked ? Math.Max(0, L(c, 26)) : 0;     // (a record without them: nothing held, nothing due)
+                o.Parked = worked ? Math.Max(0, L(c, 26)) : 0;   // (a record without them: nothing parked, nothing due)
                 o.Due = worked ? Math.Max(0, L(c, 27)) : 0;
-                o.HeldDay = worked ? Math.Max(0, I(c, 28)) : 0;
+                o.ParkedDay = worked ? Math.Max(0, I(c, 28)) : 0;
                 s.Orders.Add(o);
             }
             // (every order in its place again: the market fills them in the order they were placed, by their numbers)

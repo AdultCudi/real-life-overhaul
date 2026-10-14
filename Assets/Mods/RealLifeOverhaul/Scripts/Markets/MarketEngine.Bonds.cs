@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Markets
             long money = BondRules.Money(paid, ref h.Carry);
             if (money > 0)
             {
-                _world.Wallet.Give(money, BondMoney.Paid, NameOf(h));
+                Wallet.Give(money, BondMoney.Paid, NameOf(h));
             }
             BondTold?.Invoke(new BondNote { Kind = BondNoteKind.Interest, Holding = h.Id, Def = h.Def, A = money, B = putBack / 100, C = tax / 100 });
         }
@@ -125,7 +125,7 @@ namespace RealLifeOverhaul.Markets
             long money = BondRules.Money(h.Face, ref h.Carry);
             if (money > 0)
             {
-                _world.Wallet.Give(money, BondMoney.Repaid, NameOf(h));
+                Wallet.Give(money, BondMoney.Repaid, NameOf(h));
             }
             BondTold?.Invoke(new BondNote { Kind = BondNoteKind.Repaid, Holding = h.Id, Def = h.Def, A = money });
         }
@@ -162,7 +162,7 @@ namespace RealLifeOverhaul.Markets
         public BondWhy CanBuyBond(BondOffer offer, long money, bool open, bool on, long worth = 0)
         {
             int level = State.Env.PriceLevel;
-            return BondRules.CanBuy(State.Bonds, offer, money, _world.Wallet.Cash, open, Held, on, BondRules.Least(level), BondRules.Most(level, worth), 1, BondRules.HoldingsMost(LargeOn));
+            return BondRules.CanBuy(State.Bonds, offer, money, Wallet.Cash, open, Held, on, BondRules.Least(level), BondRules.Most(level, worth), 1, BondRules.HoldingsMost(LargeOn));
         }
 
         /// <summary>A bond bought now for so much of the player's cash, at its yield of today, set to roll over at its end or not. Null with the reason when it cannot be.</summary>
@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Markets
             }
             BondHolding h = BondRules.Make(State.Bonds.NextId, offer, money, State.Day, Year, reinvest, false);
             h.Rollover = rollover;
-            if (!_world.Wallet.Take(money, BondMoney.Bought, NameOf(h)))
+            if (!Wallet.Take(money, BondMoney.Bought, NameOf(h)))
             {
                 why = BondWhy.NoCash;
                 return null;
@@ -206,7 +206,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return why;
             }
-            return _pieces[0] > most ? BondWhy.TooMuch : money > _world.Wallet.Cash ? BondWhy.NoCash : BondWhy.None;
+            return _pieces[0] > most ? BondWhy.TooMuch : money > Wallet.Cash ? BondWhy.NoCash : BondWhy.None;
         }
 
         /// <summary>
@@ -222,12 +222,13 @@ namespace RealLifeOverhaul.Markets
             {
                 return 0;
             }
+            Wallet.Ready(money);   // (one purchase: what is short taken back from worked orders' money once, not for each piece)
             int bought = 0;
             for (int i = 0; i < _ladder.Count; i++)
             {
                 BondHolding h = BondRules.Make(State.Bonds.NextId, Offer(_ladder[i].Id, -1, null), _pieces[i], State.Day, Year, reinvest, false);
                 h.Rollover = rollover;
-                if (!_world.Wallet.Take(_pieces[i], BondMoney.Bought, NameOf(h)))
+                if (!Wallet.Take(_pieces[i], BondMoney.Bought, NameOf(h)))
                 {
                     why = BondWhy.NoCash;   // (the cash went between the check and the purchase: what was bought is kept)
                     break;
@@ -276,7 +277,7 @@ namespace RealLifeOverhaul.Markets
             State.Bonds.Holdings.Remove(h);
             if (money > 0)
             {
-                _world.Wallet.Give(money, BondMoney.Sold, NameOf(h));
+                Wallet.Give(money, BondMoney.Sold, NameOf(h));
             }
             return true;
         }

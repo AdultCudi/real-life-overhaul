@@ -42,6 +42,8 @@ internal static partial class Program
             return true;
         }
 
+        public bool Ready(long amount) => amount <= 0 || Money >= amount;
+
         public void Force(long amount, string why, string name)
         {
             if (amount > 0)

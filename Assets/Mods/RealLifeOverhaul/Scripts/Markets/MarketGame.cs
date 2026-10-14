@@ -17,8 +17,9 @@ namespace RealLifeOverhaul.Markets
     {
         public long Cash => SaveGameManager.Current != null ? (long)Math.Floor(Math.Max(0.0, SaveGameManager.Current.Money)) : 0L;
 
-        // A sum larger than the game takes in one transaction (int.MaxValue) is moved in pieces, none of it lost
-        // (InvestRules.Piece): a bond rolled over for years, a large company's shares, a day's money for a worked order.
+        // A sum larger than the game moves exactly in one transaction is moved in pieces, none of it lost (InvestRules.Piece:
+        // pieces a float holds exactly): a bond rolled over for years, a large company's shares, a day's money for a worked
+        // order.
         public bool Take(long amount, string why, string name)
         {
             if (amount <= 0)
@@ -31,6 +32,11 @@ namespace RealLifeOverhaul.Markets
             }
             Move(-1, amount, why, name);   // (all of it is there: no piece can be refused)
             return true;
+        }
+
+        public bool Ready(long amount)
+        {
+            return amount <= 0 || Cash >= amount;   // (the game's own cash: nothing with the broker here, MarketEngine.Wallet sees to that)
         }
 
         public void Force(long amount, string why, string name)

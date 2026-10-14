@@ -200,10 +200,10 @@ namespace RealLifeOverhaul.Markets
                 box.Row("reallife_mkt_inv_founder", MarketText.Money(_sums.Founder));
             }
             box.Row("reallife_mkt_inv_cash", MarketText.Money(_director.Cash));
-            InvestRules.WithBroker(s, out long held, out long due);   // (worked orders' money of the day: out of the cash until the close)
-            if (held > 0)
+            InvestRules.WithBroker(s, out long parked, out long due);   // (worked orders' money of the day: out of the cash in hand until the close)
+            if (parked > 0)
             {
-                box.Row("reallife_mkt_inv_held_money", MarketText.Money(held));
+                box.Row("reallife_mkt_inv_held_money", MarketText.Money(parked));
             }
             if (due > 0)
             {

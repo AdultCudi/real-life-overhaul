@@ -170,9 +170,9 @@ namespace RealLifeOverhaul.Markets
                 box.Row("reallife_ibox_today", MarketText.Fill("reallife_mkt_inv_today_value", "count", Count(o.DayQty), "price",
                     MarketText.Price((int)System.Math.Min(int.MaxValue, o.DayValue * 100 / o.DayQty))));
             }
-            if (o.Held > 0)
+            if (o.Parked > 0)
             {
-                box.Row("reallife_mkt_inv_row_held", MarketText.Money(o.Held));   // (today's money not spent yet: back at the close)
+                box.Row("reallife_mkt_inv_row_held", MarketText.Money(o.Parked));   // (today's money not spent yet: back at the close)
             }
             if (o.Due > 0)
             {

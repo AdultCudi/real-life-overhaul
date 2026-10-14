@@ -9,6 +9,12 @@ namespace RealLifeOverhaul.Markets
         long Cash { get; }
         /// <summary>Takes an amount. False, and nothing taken, if the cash is not there.</summary>
         bool Take(long amount, string why, string name);
+        /// <summary>
+        /// The cash made ready for a purchase of so much paid in more than one transaction (its price and its commission):
+        /// true when the cash in hand comes to it now (the market's own wallet first takes back what it needs of the money
+        /// worked orders have with the broker, MarketEngine.Invest.cs). Nothing is taken.
+        /// </summary>
+        bool Ready(long amount);
         /// <summary>Takes an amount even if the cash is not there (what is owed to the broker).</summary>
         void Force(long amount, string why, string name);
         void Give(long amount, string why, string name);
@@ -30,7 +36,7 @@ namespace RealLifeOverhaul.Markets
         public const string Shortfall = "reallife_transaction_shares_shortfall";
         public const string BotFee = "reallife_transaction_shares_bot_fee";       // a trading bot's monthly fee (MarketBots)
         public const string BotShare = "reallife_transaction_shares_bot_share";   // its share of the profit
-        public const string WorkedHeld = "reallife_transaction_shares_worked_held";   // a worked purchase's day of money, held at its first slice (MarketEngine.Invest.cs)...
+        public const string WorkedHeld = "reallife_transaction_shares_worked_held";   // a worked purchase's day of money, parked at its first slice (MarketEngine.Invest.cs)...
         public const string WorkedBack = "reallife_transaction_shares_worked_back";   // ...and what is left of it, given back at the close or its end
         public const string WorkedSold = "reallife_transaction_shares_worked_sold";   // a worked sale's takings of the day after the commission, paid at the close or its end
     }
@@ -536,17 +542,17 @@ namespace RealLifeOverhaul.Markets
             {
                 if (!a.Margin && order.Worked)
                 {
-                    // A worked order's slice on a cash account: paid from the day's money held for it, with no transaction of
-                    // its own (MarketEngine.Invest.cs: Hold and Settle). Short of it, nothing is bought.
-                    if (order.Held < value + fee)
+                    // A worked order's slice on a cash account: paid from the day's money parked for it, with no transaction
+                    // of its own (MarketEngine.Invest.cs: Park and Settle). Short of it, nothing is bought.
+                    if (order.Parked < value + fee)
                     {
                         return false;
                     }
-                    order.Held -= value + fee;
+                    order.Parked -= value + fee;
                 }
                 else if (!a.Margin)
                 {
-                    if (wallet.Cash < value + fee)
+                    if (!wallet.Ready(value + fee))   // (what is short taken back from worked orders' money with the broker first)
                     {
                         return false;
                     }

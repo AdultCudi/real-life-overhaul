@@ -221,11 +221,12 @@ namespace RealLifeOverhaul.Markets
         public long DayQty, DayValue;    // ...and the shares and money of that day's slices (the day's notification at the close)
         public int SlicePct;         // (never saved) that day's largest slice against its step's trading, per cent: the self-check
         // A worked order on a cash account settles its money once a day, never by the slice (MarketEngine.Invest.cs): a
-        // purchase's day of money is held from the cash at its first slice and what is left given back at the close or its
-        // end; a sale's takings, after the commission, wait here and are paid at the close or its end.
-        public long Held;            // money held for today's slices of a purchase, whole units
+        // purchase's day of money is parked from the cash at its first slice and what is left given back at the close or its
+        // end; a sale's takings, after the commission, wait here and are paid at the close or its end. Both stay the
+        // player's for every other purchase in the market (BrokerWallet).
+        public long Parked;          // money parked for today's slices of a purchase, whole units
         public long Due;             // takings of today's slices of a sale after the commission, whole units
-        public int HeldDay;          // the market day its money was held (0: none yet): once a day
+        public int ParkedDay;        // the market day its money was parked (0: none yet): once a day
 
         public long Left => Qty - Filled;
         public bool IsOpen => State == OrderState.Open;

@@ -53,6 +53,14 @@ namespace RealLifeOverhaul.Markets
         public readonly MarketState State;
         public readonly MarketTape Tape;
         private readonly IMarketWorld _world;
+
+        /// <summary>
+        /// The player's cash as the market moves and counts it: the game's (the world's), with the money worked orders have
+        /// with the broker still the player's for every other purchase and charge (MarketEngine.Invest.cs, BrokerWallet).
+        /// Every take, force and look at what can be afforded in the market goes through it; a worked order's own day of
+        /// money parks from the cash in hand alone.
+        /// </summary>
+        public readonly BrokerWallet Wallet;
         private long _replayUntil;
         private readonly List<MarketEvent> _live = new List<MarketEvent>(16);
         private readonly List<MarketEvent> _due = new List<MarketEvent>(16);
@@ -83,6 +91,7 @@ namespace RealLifeOverhaul.Markets
             State = state;
             Tape = tape;
             _world = world;
+            Wallet = new BrokerWallet(world.Wallet, state);
             _replayUntil = tape != null ? tape.Frontier : 0;
             double total = 0.0;
             for (int k = 1; k <= Steps; k++)
@@ -1263,7 +1272,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 else
                 {
-                    _world.Wallet.Give(money, MarketMoney.Dividend, s != null ? s.Name : string.Empty);
+                    Wallet.Give(money, MarketMoney.Dividend, s != null ? s.Name : string.Empty);
                 }
                 State.Account.Dividends += money;
                 if (p != null)
@@ -1516,7 +1525,7 @@ namespace RealLifeOverhaul.Markets
                     }
                     else if (money > 0)
                     {
-                        _world.Wallet.Give(money, MarketMoney.Payout, s.Name);
+                        Wallet.Give(money, MarketMoney.Payout, s.Name);
                     }
                     MarketTrading.Book(p, -held, money, State.Account);
                 }
@@ -1629,7 +1638,7 @@ namespace RealLifeOverhaul.Markets
         {
             Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
-            Order order = MarketTrading.Place(State, s, side, type, life, qty, limitCents, stopCents, _world.Wallet.Cash, _world.CommissionLeast, open, held, State.Phase, test, out why, closing);
+            Order order = MarketTrading.Place(State, s, side, type, life, qty, limitCents, stopCents, Wallet.Cash, _world.CommissionLeast, open, held, State.Phase, test, out why, closing);
             if (order == null || !open)
             {
                 return order;
@@ -1670,7 +1679,7 @@ namespace RealLifeOverhaul.Markets
             // A trade's lasting move is the city's in a session, and so it is on a day played again that was played in one
             // (its tape has the move: the fill played again must not add it a second time).
             bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
-            if (!MarketTrading.Fill(State, s, o, qty, cents, least >= 0 ? least : _world.CommissionLeast, _world.Wallet, phase, !city, out double kept))
+            if (!MarketTrading.Fill(State, s, o, qty, cents, least >= 0 ? least : _world.CommissionLeast, Wallet, phase, !city, out double kept))
             {
                 o.State = o.Filled > 0 ? OrderState.Cancelled : OrderState.Refused;
                 o.Why = o.Side == OrderSide.Buy ? (State.Account.Margin ? OrderWhy.BelowMargin : OrderWhy.NoMoney) : (State.Account.Margin ? OrderWhy.BelowMargin : OrderWhy.NoShares);
@@ -2017,7 +2026,7 @@ namespace RealLifeOverhaul.Markets
             if (State.Positions.Count == 0 && a.Cash < 0)
             {
                 long owed = -a.Cash;
-                _world.Wallet.Force(owed, MarketMoney.Shortfall, string.Empty);
+                Wallet.Force(owed, MarketMoney.Shortfall, string.Empty);
                 a.Cash = 0;
                 MarketTrading.AddTrade(State, new Trade { Day = day, Phase = phase, Kind = TradeKind.Shortfall, Value = -owed });
                 _world.Paid(TradeKind.Shortfall, null, owed);
