@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Economy
         private readonly RotaAdvisor _rotaAdvisor = new RotaAdvisor();
         private readonly RotaLadder _rotaLadder = new RotaLadder();
         private readonly Dictionary<string, int> _rotaModes = new Dictionary<string, int>(8);   // the player's choice for a business: staff first or lean (RotaStore)
-        private bool _rotaModesUnread;              // the save holds a line of choices this version cannot read: it is left as it is until a choice is made
+        private bool _rotaModesUnread;              // the save holds a line of choices this version cannot read: it is kept as it is (Core/SaveLines)
         private readonly int[] _rotaPromotion = new int[RotaCatalogue.Days];
         private readonly bool[] _rotaBarred = new bool[RotaCatalogue.Cells];
         private readonly Stopwatch _rotaClock = new Stopwatch();
@@ -819,7 +819,8 @@ namespace RealLifeOverhaul.Economy
             _rotaModesUnread = save != null && save.modData != null && save.modData.TryGetValue(RotaStore.Key, out text) && !RotaStore.Read(text, _rotaModes);
             if (_rotaModesUnread)
             {
-                Logger?.Warn("Company: the staff rota planner's choices in this save are not of a version this one reads; every business weighs for itself until a choice is made, and the line is left as it is until then.");
+                SaveLines.Unreadable(save.modData, RotaStore.Key, "its version is not one this version of the mod reads");   // (put back as it was read at every save)
+                Logger?.Warn("Company: the staff rota planner's choices in this save are not of a version this one reads; every business weighs for itself this session, and the line is kept in the save as it is.");
             }
             else if (Verbose)
             {

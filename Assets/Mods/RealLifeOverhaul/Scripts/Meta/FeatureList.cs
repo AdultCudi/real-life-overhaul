@@ -1183,6 +1183,7 @@ namespace RealLifeOverhaul.Meta
             Economy.RotaGuide.AddFacts(Features.Add("economy_rota", "reallife_meta_title_economy_rota")
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
+                .Data(Economy.RotaStore.Key)   // (its line of choices: named when a save's line of it cannot be read, Core/SaveLines)
                 .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
 
             // Property: a market that moves, letting, works, selling, an agency, a hotel and car hire. Off, every building's

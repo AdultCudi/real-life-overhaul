@@ -268,6 +268,10 @@ namespace RealLifeOverhaul
                 data.TryGetValue(TravelState.SaveKey, out saved);
             }
             TravelState.Read(saved);
+            if (!string.IsNullOrEmpty(saved) && saved.IndexOf('=') < 0)
+            {
+                SaveLines.Unreadable(data, TravelState.SaveKey, "none of it could be read");   // (kept as it was read: Core/SaveLines)
+            }
             _lastHour = TimeHelper.CurrentHour;
             _lastDay = TimeHelper.CurrentDay;
             if (TravelState.StreakDay == 0)

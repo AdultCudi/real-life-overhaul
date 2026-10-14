@@ -236,6 +236,8 @@ internal static partial class Program
         Check(DistrictLog.Read(null).Reports == 0 && DistrictLog.Read("").Reports == 0 && DistrictLog.Read("9;3:x").Reports == 0,
             "districts: no line, or a line of another version, is an empty log");
         Check(DistrictLog.Read("1;x;4:ba:neighborhood_midtown;q:ba:neighborhood_midtown;5:").Reports == 1, "districts: a damaged report is skipped and the rest are read");
+        Check(DistrictLog.Readable(null) && DistrictLog.Readable("") && DistrictLog.Readable(log.Write()) && !DistrictLog.Readable("9;3:x"),
+            "districts: a log of another version is not one this version reads, so the save keeps it as it was (Core/SaveLines)");
         var full = new DistrictLog();
         for (int i = 0; i < DistrictRules.LogMost + 50; i++)
         {

@@ -635,6 +635,10 @@ namespace RealLifeOverhaul.Events
                         FireDamage.ReopenAt = reopen;
                     }
                 }
+                else
+                {
+                    SaveLines.Unreadable(save.modData, StateKey, "it has fewer parts than this version of the mod reads");   // (kept as it was read: Core/SaveLines)
+                }
             }
             EventCalendar.Salt = salt != 0 ? salt : Random.Range(1, int.MaxValue);
             _lastHour = -1;

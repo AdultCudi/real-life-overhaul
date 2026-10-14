@@ -173,6 +173,10 @@ namespace RealLifeOverhaul.Districts
                     save.modData.TryGetValue(DistrictLog.Key, out line);
                 }
                 _log = DistrictLog.Read(line);
+                if (!DistrictLog.Readable(line))
+                {
+                    SaveLines.Unreadable(save.modData, DistrictLog.Key, "its version is not one this version of the mod reads");   // (kept as it was read: Core/SaveLines)
+                }
                 _log.Prune(save.Day);
                 _logSave = save;
                 _logLoaded = true;
