@@ -1,4 +1,4 @@
-0.10.3
+0.10.4
 
 Fixed
-- The Guide brought up to date with the mod as it is now. It names the options and sections as they are, and covers what changed lately: the internet that tech firms need, Flare's campaigns, the rota for tech firms, the mod's buildings off the market, the bus at its stop, the university's classroom doors, Persona's course list and the trading bots. Troubleshooting says what to do on an older game build, when a tech firm's staff do nothing and when no employer offers you a job.
+- Professional jobs are worked at your own desk, as the game's own job at El Gato Food Market is. Go to work, click your desk and press Start working on the game's work panel, with its fast forward and skip. Where a building has no desk for the job, one is set up, and days from home are worked at your home computer. The Career app's My job page says where your desk is.
