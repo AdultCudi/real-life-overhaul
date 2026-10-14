@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Tech
             foreach (Cap c in f.Caps)
             {
                 w.Record().Place(c.Place).Add(c.Stage).Add(c.Post).Add(c.BoardSeats).Add(c.VcSeats).Add(c.TargetMrr).Add(c.TargetDay).Add(c.Misses).Add(c.Pressure).Add(c.Ceo).Add(c.RaiseUntil)
-                    .Add(c.Meetings).Add(c.Bridge).Add(c.BridgeDay).Add(c.OptionsGranted).Add(c.LastMrr);
+                    .Add(c.Meetings).Add(c.Bridge).Add(c.BridgeDay).Add(c.OptionsGranted).Add(c.LastMrr).Add(c.Unassigned).Add(c.OptionsChecked);
             }
             w.Part('k');
             foreach (Cap c in f.Caps)
@@ -159,7 +159,8 @@ namespace RealLifeOverhaul.Tech
                 var c = new Cap
                 {
                     Place = x.Place(), Stage = x.Int(-1), Post = x.Long(), BoardSeats = Math.Max(1, x.Int(1)), VcSeats = x.Int(), TargetMrr = x.Long(), TargetDay = x.Int(), Misses = x.Int(),
-                    Pressure = x.Int(), Ceo = x.Text(), RaiseUntil = x.Int(), Meetings = x.Int(), Bridge = x.Long(), BridgeDay = x.Int(), OptionsGranted = x.Int(), LastMrr = x.Long()
+                    Pressure = x.Int(), Ceo = x.Text(), RaiseUntil = x.Int(), Meetings = x.Int(), Bridge = x.Long(), BridgeDay = x.Int(), OptionsGranted = x.Int(), LastMrr = x.Long(),
+                    Unassigned = Math.Max(0L, x.Long()), OptionsChecked = x.Int()   // (a line from before 0.12.4 reads 0 and 0)
                 };
                 if (f.Caps.Count < 32)
                 {

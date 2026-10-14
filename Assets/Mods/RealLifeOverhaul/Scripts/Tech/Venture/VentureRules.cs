@@ -661,6 +661,37 @@ namespace RealLifeOverhaul.Tech
             return shares;
         }
 
+        /// <summary>
+        /// Options split evenly among a firm's people: each one's share, with what does not divide left over for the next
+        /// split. With nobody there, nothing is given and all of it is left over.
+        /// </summary>
+        public static long Split(long shares, int people, out long left)
+        {
+            if (people <= 0 || shares <= 0)
+            {
+                left = Math.Max(0L, shares);
+                return 0L;
+            }
+            long each = shares / people;
+            left = shares - each * people;
+            return each;
+        }
+
+        /// <summary>
+        /// The staff options of a firm of the player's that nobody holds: its pool, less what its people hold now. A player's
+        /// firm's pool is made only by grants (a startup's seed round sets one aside of its own, in Round above), so this is
+        /// what grants made while nobody worked there, what did not divide, and what people who left had held. Never below 0.
+        /// </summary>
+        public static long Unheld(Cap c, long held)
+        {
+            long pool = 0L;
+            for (int i = 0; c != null && i < c.Holders.Count; i++)
+            {
+                pool += c.Holders[i].Kind == (int)HolderKind.Pool ? c.Holders[i].Shares : 0L;
+            }
+            return Math.Max(0L, pool - Math.Max(0L, held));
+        }
+
         /// <summary>The share of a grant that has vested: none in the first year, then by the day over four years.</summary>
         public static int Vested(int grantedDay, int day, int year)
         {

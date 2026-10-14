@@ -266,6 +266,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
+                OptionsDay(c);
                 for (int t = c.Sheets.Count - 1; t >= 0; t--)
                 {
                     if (day > c.Sheets[t].Lapse)
@@ -655,7 +656,11 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>Share options granted to the firm's people: a share of the firm, split among them, each a little happier and less likely to go.</summary>
+        /// <summary>
+        /// Share options granted to the firm's people: a share of the firm, split among them, each a little happier and less
+        /// likely to go. Refused while nobody works there (until 0.12.3 the shares were made and went to nobody), with a
+        /// warning that says why; options still waiting for somebody (<see cref="Cap.Unassigned"/>) go out with the grant.
+        /// </summary>
         internal bool GrantOptions(string place)
         {
             Cap c = CapFor(place, true);
@@ -663,23 +668,84 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
+            int people = PeopleAt(place);
+            if (people == 0)
+            {
+                FirmPlace firm = FirmOf(place);
+                Tell2(NotificationType.Warning, "reallife_vc_options_nobody", Data("firm", firm != null ? firm.File.Name : string.Empty), TabFunding, TechApp.CapRow + place);
+                return false;
+            }
             long shares = VentureRules.Grant(c, VentureCatalogue.OptionGrant);
+            GiveOptions(c, place, shares + c.Unassigned, people);
+            ChangedVenture();
+            return true;
+        }
+
+        // The firm's people now: the professionals whose place it is.
+        private int PeopleAt(string place)
+        {
             int people = 0;
             for (int i = 0; i < _people.Count; i++)
             {
                 people += _people[i].File.Place == place ? 1 : 0;
             }
-            for (int i = 0; i < _people.Count && people > 0; i++)
+            return people;
+        }
+
+        // What the firm's people hold now, shares.
+        private long HeldAt(string place)
+        {
+            long held = 0L;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                held += _people[i].File.Place == place ? Math.Max(0, _people[i].File.Options) : 0;
+            }
+            return held;
+        }
+
+        // Options split evenly among the firm's people, each a little happier; what does not divide waits for the next split.
+        private void GiveOptions(Cap c, string place, long shares, int people)
+        {
+            long each = VentureRules.Split(shares, people, out long left);
+            c.Unassigned = left;
+            if (each <= 0L)
+            {
+                return;
+            }
+            for (int i = 0; i < _people.Count; i++)
             {
                 Profile p = _people[i].File;
                 if (p.Place == place)
                 {
-                    p.Options = (int)Math.Min(int.MaxValue, p.Options + shares / people);
+                    p.Options = (int)Math.Min(int.MaxValue, p.Options + each);
                     p.Morale = Math.Min(1000, p.Morale + VentureCatalogue.OptionMorale);
                 }
             }
-            ChangedVenture();
-            return true;
+        }
+
+        // Once a day: a save from before 0.12.4 has its options looked over once (grants made while nobody worked at the firm
+        // went to nobody: what nobody holds is waiting for somebody), and options waiting go to the firm's people when there
+        // are enough for each of them to have one.
+        private void OptionsDay(Cap c)
+        {
+            if (c.OptionsChecked == 0)
+            {
+                c.OptionsChecked = 1;
+                if (c.OptionsGranted > 0)
+                {
+                    c.Unassigned = Math.Max(c.Unassigned, VentureRules.Unheld(c, HeldAt(c.Place)));
+                }
+            }
+            int people = PeopleAt(c.Place);
+            if (people > 0 && c.Unassigned >= people)
+            {
+                FirmPlace firm = FirmOf(c.Place);
+                long given = c.Unassigned;
+                GiveOptions(c, c.Place, given, people);
+                Logger?.Info("Tech: share options waiting at " + (firm != null ? firm.File.Name : c.Place) + " went to its " + people + " professional(s): "
+                             + (given - c.Unassigned) + " share(s), " + c.Unassigned + " left over.");
+                ChangedVenture();
+            }
         }
 
         internal void SetChief(string place, string id)
