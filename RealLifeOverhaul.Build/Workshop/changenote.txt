@@ -1,4 +1,4 @@
-0.12.1
+0.12.3
 
 Fixed
-- A short freeze just as the loading screen goes, when the parts of the mod that read the save all started at the same moment; they now start one after another. Developer diagnostics: a frame while the loading screen is still fading out is no longer counted as a pause you see.
+- At a landmark your character now takes a proper selfie: back to the view, the phone held out at arm's length a little above the eyes, looking into it, then lowered. People filming in the street now hold the phone upright at eye level with the elbows down, not up at the chin with the elbows out.

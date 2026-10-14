@@ -430,22 +430,65 @@ def smoke(t):
     return p
 
 
-PHONE_R = Grip("R", at=(0, 0.060, -0.012), thumb=(-1, 0, 0), back=(0, 0, -1), hold="plate")
-PHONE_L = Grip("L", at=(0, -0.060, -0.012), thumb=(-1, 0, 0), back=(0, 0, -1), hold="plate")
+# The phone upright (portrait), as people hold it to film or take a picture of themselves: the palm on its back, the
+# fingers up it and a little across, the thumb along its side. Two hands for filming, the lower corners each; the
+# right one alone for a selfie. Held from below like this the wrists are under the phone, so with the screen at eye
+# level the elbows still hang down in front of the chest: the game's character has short arms (0.50 m from shoulder to
+# wrist), and a phone held by its ends at eye level puts both elbows up level with the shoulders and out to the sides.
+PHONE_HOLD = (0.28, 0.10, 0.12, 0.15, 0.20, 0.45, 0.15)   # fingers nearly straight along the back (it is 7 cm across), the thumb on the edge
+PHONE_R = Grip("R", at=(0.030, -0.045, -0.014), thumb=(1.0, 0.12, 0), back=(0, 0, -1), hold=PHONE_HOLD)
+PHONE_L = Grip("L", at=(-0.030, -0.045, -0.014), thumb=(-1.0, 0.12, 0), back=(0, 0, -1), hold=PHONE_HOLD)
+SELFIE = Grip("R", at=(0.014, -0.030, -0.014), thumb=(0.82, 0.57, 0), back=(0, 0, -1), hold=PHONE_HOLD)
+EYES = np.array([0.0, 0.10, 1.555])                  # where the eyes are, standing (the head joint 0.07 forward and 0.08 up)
+
+
+def facing(towards, top=(0.0, 0.0, 1.0)):
+    """A turn for the phone with its screen (+Z) towards `towards` and its top (+Y) as near `top` as that allows."""
+    z = unit(towards)
+    y = np.asarray(top, dtype=float)
+    y = unit(y - z * z.dot(y))
+    return np.stack([np.cross(y, z), y, z], axis=1)
 
 
 def take_photo(t):
-    # The phone comes up in both hands, is framed (a small turn, a step of the head), held still for the shot, and lowered.
+    # Filming, or a picture of something ahead: the phone comes up in both hands to eye level, a hand's length short
+    # of the face (0.30 m) with the screen to the eyes, the elbows down in front of the chest; it is framed (a small
+    # turn, a step of the head), held still for the shot, and lowered back to the chest to look at what was taken.
     up = keys(t, (0.0, 0.0), (0.20, 1.0), (0.82, 1.0), (1.0, 0.0))
     frame = keys(t, (0.22, 0.0), (0.36, 1.0), (0.50, -0.4), (0.60, 0.0))
     p = Pose()
-    stand(p, height=0.905 - 0.015 * up, width=0.16, yaw=5 * frame, shift=(0.0, 0.01 * up), sway=0.4 * frame)
-    p.chest(pitch=1 - 3 * up, yaw=3 * frame)
-    screen = turn(yaw=6 * frame, pitch=-8 * up) @ np.stack([(0, 0, -1), (1, 0, 0), (0, -1, 0)], axis=1)
-    resting = turn(pitch=-55) @ np.stack([(0, 0, -1), (1, 0, 0), (0, -1, 0)], axis=1)
-    phone = (between(resting, screen, up), np.array([0.0, 0.28 + 0.16 * up, 1.05 + 0.40 * up]))
-    p.tool(*phone, PHONE_R, PHONE_L, elbows={"R": (0.35, -0.3, -1.0), "L": (-0.35, -0.3, -1.0)})
-    p.head(pitch=14 - 14 * up, yaw=2 * frame)
+    stand(p, height=0.905 - 0.010 * up, width=0.16, yaw=5 * frame, shift=(0.0, 0.01 * up), sway=0.4 * frame)
+    p.chest(pitch=2 - 3 * up, yaw=3 * frame)
+    low, high = np.array([0.0, 0.31, 1.17]), np.array([0.0, 0.40, 1.545])
+    at = low + (high - low) * up + np.array([0.0, 0.03, 0.0]) * math.sin(math.pi * up)      # out a little on the way up
+    aim = turn(yaw=6 * frame) @ (EYES - high)
+    screen = between(facing(EYES - low, top=(0.0, 1.0, 0.35)), facing(aim), up)
+    p.tool(screen, at, PHONE_R, PHONE_L, elbows={"R": (0.25, -0.25, -1.0), "L": (-0.25, -0.25, -1.0)})
+    p.look_at(at + (0.0, 0.0, 0.02), down=40)
+    return p
+
+
+def selfie(t):
+    # A picture of oneself with whatever is behind: the right arm takes the phone up and out to its length (0.42 m
+    # from the eyes, 40 degrees round to the right and 15 up), the screen turned to the face; the head turns up into
+    # it and tips to one side, the right shoulder rises with the arm and the weight goes on to the left foot. Held for
+    # the picture (a second one with the phone moved a little and the head tipped the other way), then lowered to the
+    # chest for a look at it. The left arm hangs. Played with the back to what is to be in the picture.
+    out = keys(t, (0.0, 0.0), (0.06, 0.0), (0.24, 1.0), (0.80, 1.0), (0.94, 0.0))
+    tip = keys(t, (0.26, 0.0), (0.34, 1.0), (0.52, 1.0), (0.60, -0.6), (0.76, -0.6), (0.84, 0.0))
+    shift = keys(t, (0.44, 0.0), (0.54, 1.0), (0.80, 1.0), (0.90, 0.0))          # the phone moved a little for the second picture
+    p = Pose()
+    stand(p, height=0.905 - 0.006 * out, width=0.16, yaw=-4 * out, sway=-0.45 * out, toe_out=10)
+    p.chest(yaw=-3 * out, pitch=1 - 4 * out, roll=-2 * out)
+    p.shrug("R", 0.30 * out)
+    low = np.array([0.10, 0.30, 1.20])
+    high = EYES + turn(yaw=40 - 6 * shift, pitch=-(15 + 3 * shift)) @ np.array([0.0, 0.42, 0.0])
+    at = low + (high - low) * out + np.array([0.04, 0.04, 0.03]) * math.sin(math.pi * out)
+    screen = between(facing(EYES - low, top=(-0.15, 1.0, 0.35)), facing(EYES - high, top=(-0.06, 0.0, 1.0)), out)
+    p.tool(screen, at, SELFIE, elbows={"R": (0.7, -0.15, -1.0)})
+    hang(p, "L", -0.45 * out)
+    p.look_at(at, down=40)
+    p.head(roll=7 * tip * out)
     return p
 
 
@@ -547,7 +590,8 @@ BASE_CLIPS = [
     Clip("clap", 2.0, clap, note="four claps a loop"),
     Clip("watch_nod", 6.4, watch_nod, note="listening to music, arms down"),
     Clip("smoke", 9.0, smoke, tool="cigarette", grips=(SMOKE,), tool_length=0.084, note="a drag every nine seconds"),
-    Clip("take_photo", 5.0, take_photo, loop=False, tool="phone", grips=(PHONE_R, PHONE_L), tool_length=0.15, note="phone up in both hands, held, lowered"),
+    Clip("take_photo", 5.0, take_photo, loop=False, tool="phone", grips=(PHONE_R, PHONE_L), tool_length=0.15, note="phone upright in both hands, up to eye level 0.30 m ahead, held, lowered"),
+    Clip("selfie", 5.0, selfie, loop=False, tool="phone", grips=(SELFIE,), tool_length=0.15, note="phone up and out at arm's length in the right hand, above the eyes, screen to the face; two pictures, lowered"),
     Clip("counter_reach", 2.4, counter_reach, loop=False, tool="coffee_cup", grips=(CUP,), tool_length=0.12, marks={"grip": 0.9},
          note="the right hand goes to a cup on a counter 0.62 m ahead and 0.975 m up, and back: put the cup in or take it out of the hand half way"),
     Clip("cup_hold", 7.0, cup_hold, tool="coffee_cup", grips=(CUP,), tool_length=0.12, note="a cup held at the chest"),
