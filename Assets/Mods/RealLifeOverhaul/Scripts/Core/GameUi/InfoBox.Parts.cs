@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.GameUi
     public sealed partial class InfoBox
     {
         /// <summary>Over this long to write a page is said as slow in the self-check (milliseconds).</summary>
-        public const double FillBudgetMs = 3.0;   // a page of the old box with as many parts took about as long: the look adds no objects of its own
+        public const double FillBudgetMs = 3.0;   // a page of forty parts; a row is one text as the old line was, a heading two objects where the game's headline was seven
 
         private TMP_Text _headerText;     // the page's header, while it is the last thing written
         private Transform _chips;
