@@ -1,7 +1,4 @@
-0.13.0
+0.14.0
 
 New
-- BizMan's start screen shows the competitors in the city for the mod's tech firms and the training academy, and each tech firm has a Competitors page in the Tech app: who you are up against, how your products compare and where they are. A council tender names the companies bidding against you.
-
-Fixed
-- A tech firm that makes products had no Register button on its page in the Tech app, so it could not join the data protection register.
+- The Car Showroom grows: advertising events, a reputation with missions and perks, extras to sell with a car, a workshop that improves a car's condition, auction cars delivered a few days later, and reports with charts in the app.
