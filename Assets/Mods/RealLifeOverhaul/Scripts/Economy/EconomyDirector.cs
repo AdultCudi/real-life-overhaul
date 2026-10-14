@@ -298,8 +298,15 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- starting and stopping
 
+        // The first second after a load runs the start and the Finance app's install in one call of the timer: each under a
+        // name of its own as well (counted once in the mod's total), so that the session record says which of them that
+        // second's frame went to.
+        private static readonly int HotStartUp = HotSpots.Slot("Economy: EconomyDirector.StartUp");
+        private static readonly int HotInstall = HotSpots.Slot("Economy: EconomyDirector.Install");
+
         private void StartUp()
         {
+            using var hotSpot = HotSpots.Time(HotStartUp);
             int today = Save.Day;
             CreditLedger.Clock = Today;
             CreditLedger.Income = Income;
@@ -448,6 +455,7 @@ namespace RealLifeOverhaul.Economy
 
         private void Install()
         {
+            using var hotSpot = HotSpots.Time(HotInstall);
             var view = new FinanceApp(this);
             GameSprites.Want(FinanceApp.AppGlyphs);
             bool tryAgain;
