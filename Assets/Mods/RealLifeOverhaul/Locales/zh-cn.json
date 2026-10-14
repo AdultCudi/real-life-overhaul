@@ -18259,5 +18259,9 @@
   "reallife_planner_morning_all_day": "今天：{count}项安排，都没有固定时间。",
   "reallife_planner_morning_all_day_one": "今天：1项安排，没有固定时间。",
   "reallife_mkt_day_change": "今日涨跌",
-  "reallife_mkt_day_change_value": "{money}（{percent}）"
+  "reallife_mkt_day_change_value": "{money}（{percent}）",
+  "reallife_mkt_bond_opt_so_far": "债券累计利息",
+  "reallife_opt_tip_markets_bond_so_far": "每条债券利息通知都会附上这只债券到目前为止已支付给你的税后利息。关闭时只显示本次付款。",
+  "reallife_mkt_bond_note_paid_total": "{name}支付利息{amount}，已存入你的现金。这只债券至今已付{total}。",
+  "reallife_mkt_bond_note_paid_back_total": "{name}的利息：{amount}存入你的现金，{back}再投入该债券。这只债券至今已付{total}。"
 }

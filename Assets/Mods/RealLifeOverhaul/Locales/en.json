@@ -18259,5 +18259,9 @@
   "reallife_planner_morning_all_day": "Today: {count} entries, none at a set time.",
   "reallife_planner_morning_all_day_one": "Today: one entry, at no set time.",
   "reallife_mkt_day_change": "Today's change",
-  "reallife_mkt_day_change_value": "{money} ({percent})"
+  "reallife_mkt_day_change_value": "{money} ({percent})",
+  "reallife_mkt_bond_opt_so_far": "A bond's interest so far",
+  "reallife_opt_tip_markets_bond_so_far": "Each notice of a bond's interest adds what that bond has paid you so far, after tax. Off: the payment alone.",
+  "reallife_mkt_bond_note_paid_total": "Interest of {amount} from {name}, paid into your cash. {total} paid on this bond so far.",
+  "reallife_mkt_bond_note_paid_back_total": "Interest from {name}: {amount} paid into your cash and {back} put back into the bond. {total} paid on this bond so far."
 }

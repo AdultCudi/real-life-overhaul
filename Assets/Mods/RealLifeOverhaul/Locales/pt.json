@@ -18259,5 +18259,9 @@
   "reallife_planner_morning_all_day": "Hoje: {count} entradas, nenhuma com hora marcada.",
   "reallife_planner_morning_all_day_one": "Hoje: uma entrada, sem hora marcada.",
   "reallife_mkt_day_change": "Variação de hoje",
-  "reallife_mkt_day_change_value": "{money} ({percent})"
+  "reallife_mkt_day_change_value": "{money} ({percent})",
+  "reallife_mkt_bond_opt_so_far": "Os juros de um título até agora",
+  "reallife_opt_tip_markets_bond_so_far": "Cada aviso de juros de um título acrescenta quanto esse título já pagou a você até agora, após o imposto. Desligado: só o pagamento.",
+  "reallife_mkt_bond_note_paid_total": "Juros de {amount} de {name}, pagos no seu caixa. {total} pagos por este título até agora.",
+  "reallife_mkt_bond_note_paid_back_total": "Juros de {name}: {amount} pagos no seu caixa e {back} reinvestidos no título. {total} pagos por este título até agora."
 }

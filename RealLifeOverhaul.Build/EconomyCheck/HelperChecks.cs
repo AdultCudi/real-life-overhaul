@@ -22,6 +22,7 @@ internal static partial class Program
         HelperRejectReason();
         HelperGoodChance();
         HelperDayChange();
+        HelperBondSoFar();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -230,6 +231,59 @@ internal static partial class Program
         Check(withoutBase == before - 10 * 10000, "helpers, day change: a company with no previous close yet is left out");
         HelperText("reallife_mkt_day_change", "day change");
         HelperText("reallife_mkt_day_change_value", "day change", "money", "percent");
+    }
+
+    // ---------------------------------------------------------------- 8. a bond's interest so far
+
+    private static void HelperBondSoFar()
+    {
+        // A year's Treasury bond paying every quarter, nothing put back: what each notice says it has paid so far.
+        MarketEngine m = BondMarket(211, 60, 1000000, out MarketWorld world);
+        var soFar = new List<long>();
+        m.BondTold = n =>
+        {
+            if (n.Kind == BondNoteKind.Interest)
+            {
+                soFar.Add(BondRules.InterestSoFar(m.State.Bonds.Holding(n.Holding)));   // (read as the director reads it when it is told)
+            }
+        };
+        BondOffer offer = OfferOf(m, 2);
+        BondHolding h = m.BuyBond(offer, 100000, 0, m.Trading, true, out BondWhy why);
+        Check(h != null && BondRules.InterestSoFar(h) == 0 && BondRules.InterestSoFar(null) == 0, "helpers, bond: a bond just bought has paid nothing so far");
+        long each = h.Face * offer.YieldBp / 40000L - ListingVotes.DividendTax(h.Face * offer.YieldBp / 40000L, 0);   // cents after tax, each payment
+        RunTo(m, h.EndDay + 8);
+        bool adds = soFar.Count == 4;
+        for (int k = 0; adds && k < soFar.Count; k++)
+        {
+            adds &= soFar[k] == (k + 1) * each;
+        }
+        Check(adds, "helpers, bond: each notice's total is the interest after tax of every payment so far, this one included (" + string.Join(",", soFar) + ")");
+
+        // Half put back: what is put back counts as paid on the bond too.
+        m = BondMarket(212, 60, 1000000, out world);
+        h = m.BuyBond(OfferOf(m, 12), 200000, 50, m.Trading, true, out why);
+        RunTo(m, TradingOnOrAfter(BondRules.PayDay(h, 2)) + 1);
+        BondHolding held = m.State.Bonds.Holding(h.Id);
+        Check(held != null && held.Reinvested > 0 && BondRules.InterestSoFar(held) == held.Received + held.Reinvested, "helpers, bond: interest put back is part of what the bond has paid");
+
+        // The running totals are in the save: a round trip keeps them, a record with none starts at 0.
+        var book = new BondBook();
+        book.Holdings.Add(held);
+        var text = new System.Text.StringBuilder();
+        BondStore.Write(text, book);
+        var back = new BondBook();
+        BondStore.Read(text.ToString(), back);
+        Check(back.Holdings.Count == 1 && BondRules.InterestSoFar(back.Holdings[0]) == BondRules.InterestSoFar(held), "helpers, bond: the total comes back from the save");
+        var fresh = new BondBook();
+        BondStore.Read("2;1|2|-1||1000000|1000000|400|10|70|4|0|0|0|0|0|0|0", fresh);
+        Check(fresh.Holdings.Count == 1 && BondRules.InterestSoFar(fresh.Holdings[0]) == 0, "helpers, bond: a bond with no payment kept starts at 0");
+
+        HelperNote("reallife_mkt_bond_note_paid_total", "bond", "amount", "name", "total");
+        HelperNote("reallife_mkt_bond_note_paid_back_total", "bond", "amount", "name", "back", "total");
+        string filled = HelperFill("reallife_mkt_bond_note_paid_back_total", "name", new string('n', 48), "amount", "$123,456", "back", "$123,456", "total", "$1,234,567");
+        Check(filled.Length <= 240, "helpers, bond: the notice with a long name and large sums is " + filled.Length + " characters, over 240");
+        HelperText("reallife_mkt_bond_opt_so_far", "bond");
+        HelperText("reallife_opt_tip_markets_bond_so_far", "bond");
     }
 
     // ---------------------------------------------------------------- the texts

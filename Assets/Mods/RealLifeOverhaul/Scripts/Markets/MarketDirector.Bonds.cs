@@ -192,6 +192,19 @@ namespace RealLifeOverhaul.Markets
             {
                 return;   // (a payment too small for a whole unit: carried on to the next)
             }
+            if (Settings.MarketsBondSoFar && h != null)
+            {
+                string total = MarketText.Money(BondRules.InterestSoFar(h) / 100);   // (this payment included)
+                if (n.B > 0)
+                {
+                    Queue(NotificationType.Success, "reallife_mkt_bond_note_paid_back_total", "name", name, "amount", MarketText.Money(n.A), "back", MarketText.Money(n.B), "total", total);
+                }
+                else
+                {
+                    Queue(NotificationType.Success, "reallife_mkt_bond_note_paid_total", "name", name, "amount", MarketText.Money(n.A), "total", total);
+                }
+                return;
+            }
             if (n.B > 0)
             {
                 Queue(NotificationType.Success, "reallife_mkt_bond_note_paid_back", "name", name, "amount", MarketText.Money(n.A), "back", MarketText.Money(n.B));
