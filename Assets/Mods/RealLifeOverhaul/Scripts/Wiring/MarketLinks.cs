@@ -32,8 +32,10 @@ namespace RealLifeOverhaul
         ///   Rivals   the game's named rivals (Ventures' reader of them)
         ///   Old      the old market's file (Ventures'): the live one while Ventures runs, else the save's copy
         ///   Banks    the city's three largest banks (Economy/Lending, BankTerms.Banks): a deposit at each (Markets/Bonds)
+        ///   NetWorth what the player is worth as the Finance app shows it (Economy/Finance, Books.NetWorth): the most of
+        ///            one bond purchase is a share of it with what the market holds (Markets/Bonds)
         ///   Planner  results of the companies held or watched, dividends coming, a margin call, orders that lapse,
-        ///            bonds' payments and ends
+        ///            bonds' payments and ends (one set to roll over repays nothing into the cash)
         /// </summary>
         public static class MarketLinks
         {
@@ -53,6 +55,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Old = Old;
                 MarketBridges.Poll = Poll;
                 MarketBridges.Banks = Banks;
+                MarketBridges.NetWorth = Books.NetWorth;
                 News.Reported += Reported;
                 FireLosses.Billed += Fire;
                 PlannerDirector.Instance?.AddSource(Source);
@@ -437,10 +440,10 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
-                        bool end = h.Paid + 1 >= h.Payments;
-                        long cents = BondRules.InterestCents(h, d) + (end ? h.Face : 0);
-                        e.Title = PlannerText.T(end ? "reallife_mkt_plan_bond_end_title" : "reallife_mkt_plan_bond_title", "name", BondText.Name(h));
-                        e.What = PlannerText.T(end ? "reallife_mkt_plan_bond_end_what" : "reallife_mkt_plan_bond_what");
+                        bool end = h.Paid + 1 >= h.Payments, rolls = end && InvestRules.Rolls(h, Settings.MarketsBonds);   // (rolling over: what it repays goes into a new one)
+                        long cents = BondRules.InterestCents(h, d) + (end && !rolls ? h.Face : 0);
+                        e.Title = PlannerText.T(rolls ? "reallife_mkt_plan_bond_roll_title" : end ? "reallife_mkt_plan_bond_end_title" : "reallife_mkt_plan_bond_title", "name", BondText.Name(h));
+                        e.What = PlannerText.T(rolls ? "reallife_mkt_plan_bond_roll_what" : end ? "reallife_mkt_plan_bond_end_what" : "reallife_mkt_plan_bond_what");
                         e.Money = PlannerText.T("reallife_planner_pays", "amount", BondText.Money(cents));
                     }
                     Account a = s.Account;

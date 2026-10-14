@@ -227,11 +227,11 @@ namespace RealLifeOverhaul.Markets
                 row.Set(0, k != null ? k.Name : string.Empty);
                 row.Set(1, MarketText.T(SideKeys[(int)o.Side]));
                 row.Set(2, KindWords(o) + (o.Forced ? " *" : string.Empty));
-                row.Set(3, o.Filled > 0 && o.Filled < o.Qty ? Count(o.Filled) + " / " + Count(o.Qty) : Count(o.Qty), o.Qty);
+                row.Set(3, SharesWords(o), o.Qty);
                 int cents = o.Type == OrderType.Limit ? o.LimitCents : o.Type == OrderType.Stop ? o.StopCents : o.Filled > 0 ? (int)(o.FilledValue * 100 / o.Filled) : 0;
                 row.Set(4, cents > 0 ? MarketText.Price(cents) : "-", cents / 100.0);
-                row.Set(5, o.Life == OrderLife.Day ? MarketText.T(LifeKeys[0]) : MarketText.Fill("reallife_mkt_until_day", "day", o.ExpireDay.ToString()));
-                row.Set(6, MarketText.T(StateKeys[(int)o.State]), o.State == OrderState.Filled ? TableRow.Green : o.State == OrderState.Refused ? TableRow.Red : TableRow.Plain);
+                row.Set(5, LastsWords(o));
+                row.Set(6, StateWords(o), o.State == OrderState.Filled ? TableRow.Green : o.State == OrderState.Refused || Stopped(o) ? TableRow.Red : TableRow.Plain);
                 row.Set(7, MarketText.Fill("reallife_mkt_day", "day", o.PlacedDay.ToString()), o.PlacedDay * 100.0 + o.PlacedPhase);
             }
             int id = Picked(_picked, OrderRow);
@@ -255,15 +255,21 @@ namespace RealLifeOverhaul.Markets
         {
             Stock k = s.Stock(o.StockId);
             box.Title(k != null ? k.Name : string.Empty);
-            box.Chip(MarketText.T(StateKeys[(int)o.State]), o.IsOpen ? CellTone.Plain : o.Filled > 0 ? CellTone.Green : CellTone.Yellow);
+            box.Chip(StateWords(o), o.IsOpen ? CellTone.Plain : Stopped(o) ? CellTone.Red : o.Filled > 0 ? CellTone.Green : CellTone.Yellow);
             box.Section("reallife_ibox_sec_order");
-            box.Line(MarketText.Fill("reallife_mkt_order_state", "state", MarketText.T(StateKeys[(int)o.State]),
-                "lasts", o.Life == OrderLife.Day ? MarketText.T(LifeKeys[0]) : MarketText.Fill("reallife_mkt_until_day", "day", o.ExpireDay.ToString())));
+            box.Line(MarketText.Fill("reallife_mkt_order_state", "state", StateWords(o), "lasts", LastsWords(o)));
             if (o.Why != OrderWhy.None && !o.IsOpen)
             {
                 box.Line(MarketText.Why(o.Why), CellTone.Red);
             }
-            box.Note(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", KindWords(o)));
+            if (o.Worked || o.Back)
+            {
+                WriteInvestOrder(box, s, k, o);   // a worked order's progress, or a dividend put back (MarketApp.Invest.cs)
+            }
+            else
+            {
+                box.Note(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", KindWords(o)));
+            }
             if (o.Type == OrderType.Limit)
             {
                 box.Line(MarketText.Fill("reallife_mkt_order_limit", "price", MarketText.Price(o.LimitCents)));
@@ -272,7 +278,7 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.Fill(o.Triggered ? "reallife_mkt_order_stop_reached" : "reallife_mkt_order_stop", "price", MarketText.Price(o.StopCents)));
             }
-            if (o.Filled > 0)
+            if (o.Filled > 0 && !o.Worked)
             {
                 box.Line(MarketText.Fill("reallife_mkt_order_filled", "count", Count(o.Filled), "price", MarketText.Price((int)(o.FilledValue * 100 / o.Filled))));
             }
@@ -303,117 +309,7 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- Portfolio
-
-        private TableSpec WritePortfolio(InfoBox box, MarketState s)
-        {
-            long worth = 0, cost = 0, dividends = 0;
-            FounderRow(s);
-            WriteBotHoldings(s);   // (the bots' holdings, marked with their firm: MarketApp.Bots.cs)
-            for (int i = 0; i < s.Positions.Count; i++)
-            {
-                Position p = s.Positions[i];
-                Stock k = s.Stock(p.StockId);
-                if (k == null)
-                {
-                    continue;
-                }
-                Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
-                long value = p.Shares > 0 ? MarketTrading.Value(p.Shares, q.Bid, false) : -MarketTrading.Value(-p.Shares, q.Ask, true);
-                long paid = p.Shares > 0 ? p.Cost : -p.Cost;
-                long gain = value - paid;
-                worth += value;
-                cost += paid;
-                dividends += p.Dividends;
-                TableRow row = Row(HoldingRow, k.Id);
-                row.Kind = (int)k.Sector;
-                row.Set(0, k.Name + (p.Test ? "  <size=80%>" + MarketText.T("reallife_mkt_test_mark") + "</size>" : string.Empty));
-                row.Set(1, Count(p.Shares), p.Shares);
-                long shares = Math.Abs(p.Shares);
-                double each = shares > 0 ? p.Cost / (double)shares : 0.0;
-                row.Set(2, MarketText.Price((int)Math.Round(each * 100.0)), each);
-                row.Set(3, MarketText.Price(k.Last), k.Last / 100.0);
-                row.Set(4, MarketText.Money(value), value);
-                row.Set(5, MarketText.Money(gain), gain, Tone(Math.Sign(gain)));
-                int pct = paid != 0 ? (int)(gain * 10000L / Math.Abs(paid)) : 0;
-                row.Set(6, MarketText.Change(pct), pct, Tone(pct));
-                row.Set(7, MarketText.Money(p.Dividends), p.Dividends);
-                string next = NextPayment(s, k, p, out double nextDay);
-                row.Set(8, next, nextDay);
-            }
-            WriteAccount(box, s, worth, cost, dividends);
-            BondsLine(box, s);   // (the bonds held: MarketApp.Bonds.cs)
-            OwnButton(box);
-            Meta.Guide.Point(box, GuideTitle);
-            return MarketTables.Portfolio;
-        }
-
-        private void WriteAccount(InfoBox box, MarketState s, long worth, long cost, long dividends)
-        {
-            Account a = s.Account;
-            box.Title(MarketText.T(a.Margin ? "reallife_mkt_account_margin" : "reallife_mkt_account_cash"));
-            if (a.Margin && a.CallDay > 0)
-            {
-                box.Chip(MarketText.T("reallife_ibox_chip_margin_call"), CellTone.Red);
-                box.Line(MarketText.Fill("reallife_mkt_account_call", "amount", MarketText.Money(a.CallAmount), "day", a.CallDay.ToString()), CellTone.Red);
-            }
-            StatusLine(box);
-            box.Section("reallife_ibox_sec_now");
-            box.Row("reallife_ibox_worth", MarketText.Money(worth));
-            box.Row("reallife_ibox_gain", MarketText.Money(worth - cost), worth > cost ? CellTone.Green : worth < cost ? CellTone.Red : CellTone.Plain);
-            long day = MarketTrading.DayChange(s, out long dayBefore);   // (today against the previous close, in cents)
-            if (dayBefore > 0)
-            {
-                box.Row("reallife_mkt_day_change", MarketText.Fill("reallife_mkt_day_change_value", "money", MarketText.Money(day / 100), "percent", MarketText.Change(MarketTrading.DayChangeBp(day, dayBefore))),
-                    day > 0 ? CellTone.Green : day < 0 ? CellTone.Red : CellTone.Plain);
-            }
-            box.Note(MarketText.Fill("reallife_mkt_account_worth", "worth", MarketText.Money(worth), "cost", MarketText.Money(cost), "gain", MarketText.Money(worth - cost)));
-            box.Line(MarketText.Fill("reallife_mkt_account_dividends", "dividends", MarketText.Money(a.Dividends), "commission", MarketText.Money(a.Commission)));
-            Transform buttons = null;
-            if (a.Margin)
-            {
-                long equity = MarketTrading.Equity(s, s.Phase), need = MarketTrading.Maintenance(s, s.Phase), gross = MarketTrading.GrossExposure(s, s.Phase);
-                long power = Math.Max(0, equity * 100 / MarketCatalogue.InitialMarginPct - gross);
-                box.Section("reallife_mkt_account_margin");
-                box.Line(MarketText.Fill("reallife_mkt_account_cash_line", "cash", MarketText.Money(a.Cash), "equity", MarketText.Money(equity)));
-                box.Line(MarketText.Fill("reallife_mkt_account_margin_line", "need", MarketText.Money(need), "power", MarketText.Money(power)));
-                box.Line(MarketText.Fill("reallife_mkt_account_withdrawable", "amount", MarketText.Money(_director.MostWithdrawable())));
-                if (a.Interest + a.BorrowFees > 0)
-                {
-                    box.Line(MarketText.Fill("reallife_mkt_account_costs", "interest", MarketText.Money(a.Interest), "fees", MarketText.Money(a.BorrowFees)));
-                }
-                buttons = box.ButtonRow();
-                if (Settings.MarketsMargin)
-                {
-                    AskMoney(buttons, InfoBox.Positive, "reallife_mkt_deposit", "reallife_mkt_deposit_placeholder", amount =>
-                    {
-                        if (!_director.Deposit(amount))
-                        {
-                            Notifications.ShowError("reallife_mkt_note_deposit_refused", null, false);
-                        }
-                    });
-                }
-                AskMoney(buttons, InfoBox.Additional, "reallife_mkt_withdraw", "reallife_mkt_withdraw_placeholder", amount =>
-                {
-                    if (!_director.Withdraw(amount))
-                    {
-                        Notifications.ShowError("reallife_mkt_note_withdraw_refused", null, false);
-                    }
-                });
-            }
-            else if (Settings.MarketsMargin)
-            {
-                box.Line(MarketText.Fill("reallife_mkt_account_margin_offer", "least", MarketText.Money(Prices.At(MarketCatalogue.MarginOpenLeastAtStart))));
-                buttons = box.ButtonRow();
-                AskMoney(buttons, InfoBox.Additional, "reallife_mkt_open_margin", "reallife_mkt_deposit_placeholder", amount =>
-                {
-                    if (!_director.Deposit(amount))
-                    {
-                        Notifications.ShowError("reallife_mkt_note_deposit_refused", null, false);
-                    }
-                });
-            }
-        }
+        // ---------------------------------------------------------------- Portfolio (MarketApp.Portfolio.cs)
 
         // The game's own text box for a sum of money; what is typed is checked by what it is for.
         private void AskMoney(Transform row, int kind, string buttonKey, string placeholderKey, Action<long> then)
@@ -450,7 +346,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(0, MarketText.Fill("reallife_mkt_day", "day", t.Day.ToString()), t.Day * 100.0 + t.Phase);
                 row.Set(1, k != null ? k.Name : string.Empty);
                 int kind = Mathf.Clamp((int)t.Kind, 0, KindKeys.Length - 1);
-                row.Set(2, MarketText.T(KindKeys[kind]) + (t.Test ? "  <size=80%>" + MarketText.T("reallife_mkt_test_mark") + "</size>" : string.Empty) + BotMark(t.Bot));
+                row.Set(2, MarketText.T(KindKeys[kind]) + (t.Test ? "  <size=80%>" + MarketText.T("reallife_mkt_test_mark") + "</size>" : string.Empty) + BotMark(t.Bot) + InvestMark(t));
                 row.Set(3, t.Qty != 0 ? Count(t.Qty) : string.Empty, t.Qty);
                 row.Set(4, t.PriceCents > 0 ? MarketText.Price(t.PriceCents) : string.Empty, t.PriceCents / 100.0);
                 row.Set(5, MarketText.Money(t.Value), t.Value, Tone(Math.Sign(t.Value)));
@@ -500,6 +396,7 @@ namespace RealLifeOverhaul.Markets
                 box.Line(MarketText.Fill("reallife_mkt_ticket_status", "status", Status(s, k)));
             }
             TrustLine(box, k);   // a property trust: what it pays and when (MarketApp.Bonds.cs)
+            PutBackChoice(box, k, p);   // the share of each dividend the holding puts back (MarketApp.Invest.cs)
             bool closing = _kind >= KindStopLoss;
             box.Section("reallife_ibox_sec_order");
             if (closing)
@@ -549,7 +446,11 @@ namespace RealLifeOverhaul.Markets
                     });
             }
             Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);
-            if (e.Why == OrderWhy.None)
+            if (Worked(e, closing))
+            {
+                WorkedLines(box, s, k, q);   // over one order's most: it is worked, a slice of each step's trading (MarketApp.Invest.cs)
+            }
+            else if (e.Why == OrderWhy.None)
             {
                 box.Line(MarketText.Fill(_side == OrderSide.Buy ? "reallife_mkt_ticket_cost" : "reallife_mkt_ticket_brings", "price", MarketText.Price(e.PriceCents), "value", MarketText.Money(e.Value),
                     "fee", MarketText.Money(e.Fee), "total", MarketText.Money(e.Total)));
@@ -598,9 +499,13 @@ namespace RealLifeOverhaul.Markets
             return _side == OrderSide.Buy ? q.Ask : q.Bid;
         }
 
-        // An order's kind in words: a stop loss and a take profit by their own names.
+        // An order's kind in words: a stop loss and a take profit by their own names, a worked order and a dividend put back by theirs.
         private static string KindWords(Order o)
         {
+            if (o.Worked || o.Back)
+            {
+                return MarketText.T(o.Worked ? "reallife_mkt_inv_type_worked" : "reallife_mkt_inv_type_back");
+            }
             if (o.Closing && o.Type != OrderType.Market)
             {
                 return MarketText.T(o.Type == OrderType.Stop ? TicketKeys[KindStopLoss] : TicketKeys[KindTakeProfit]);
@@ -675,6 +580,11 @@ namespace RealLifeOverhaul.Markets
         {
             bool closing = _kind >= KindStopLoss;
             Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);   // (as it is now, not as it was drawn)
+            if (Worked(e, closing))
+            {
+                ConfirmWorked(k);   // (larger than one order may be: worked, MarketApp.Invest.cs)
+                return;
+            }
             if (e.Why != OrderWhy.None)
             {
                 Error(e.Why, k);

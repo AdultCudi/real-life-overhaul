@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < file.Accounts.Count; i++)
             {
                 CreditAccount a = file.Accounts[i];
-                if (a.Closed || a.Test || (a.Owed <= 0 && ProductCatalogue.Revolving(a.Kind)))
+                if (!Books.Owing(a))   // (the same accounts as the net worth the market asks for: Books.NetWorth)
                 {
                     continue;
                 }

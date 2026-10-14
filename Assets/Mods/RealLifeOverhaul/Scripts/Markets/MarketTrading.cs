@@ -9,6 +9,12 @@ namespace RealLifeOverhaul.Markets
         long Cash { get; }
         /// <summary>Takes an amount. False, and nothing taken, if the cash is not there.</summary>
         bool Take(long amount, string why, string name);
+        /// <summary>
+        /// The cash made ready for a purchase of so much paid in more than one transaction (its price and its commission):
+        /// true when the cash in hand comes to it now (the market's own wallet first takes back what it needs of the money
+        /// worked orders have with the broker, MarketEngine.Invest.cs). Nothing is taken.
+        /// </summary>
+        bool Ready(long amount);
         /// <summary>Takes an amount even if the cash is not there (what is owed to the broker).</summary>
         void Force(long amount, string why, string name);
         void Give(long amount, string why, string name);
@@ -30,6 +36,9 @@ namespace RealLifeOverhaul.Markets
         public const string Shortfall = "reallife_transaction_shares_shortfall";
         public const string BotFee = "reallife_transaction_shares_bot_fee";       // a trading bot's monthly fee (MarketBots)
         public const string BotShare = "reallife_transaction_shares_bot_share";   // its share of the profit
+        public const string WorkedHeld = "reallife_transaction_shares_worked_held";   // a worked purchase's day of money, parked at its first slice (MarketEngine.Invest.cs)...
+        public const string WorkedBack = "reallife_transaction_shares_worked_back";   // ...and what is left of it, given back at the close or its end
+        public const string WorkedSold = "reallife_transaction_shares_worked_sold";   // a worked sale's takings of the day after the commission, paid at the close or its end
     }
 
     /// <summary>A price to buy or sell at: the bid, the offer and the middle, in cents.</summary>
@@ -58,12 +67,14 @@ namespace RealLifeOverhaul.Markets
     ///   every purchase is at the offer and every sale at the bid, with a commission on each: a round trip always costs
     ///   the spread and two commissions; an order moves the price against itself by the square root of its size against
     ///   a day's volume, counting what the player traded in the company just before (so splitting an order saves
-    ///   nothing); a part of that move stays in the price; one order is at most a fifth of a day's volume and a holding
-    ///   at most a tenth of a company; nothing is traded while the market is shut, behind or held after a load; a
-    ///   resting order fills only at a price the market reached in that step, at its limit or the step's first price if
-    ///   that was better, a stop at the market's price of the step that reached it (the next price: after a gap or a fast
-    ///   fall, under the stop), and a limit never more than a quarter of the step's volume; a stop loss or a take profit
-    ///   only ever closes what is still held; cash is in whole units, rounded against the player.
+    ///   nothing); a part of that move stays in the price; one order is at most a fifth of a day's volume (a larger one
+    ///   is worked, a fifth of each step's trading at a time, its slices moving the price as one order of their size and,
+    ///   on a cash account, settling its money once a day: MarketEngine.Invest.cs) and a holding at most a tenth of a
+    ///   company, which no purchase but the broker's own ever passes; nothing is traded while the market is shut,
+    ///   behind or held after a load; a resting order fills only at a price the market reached in that step, at its limit
+    ///   or the step's first price if that was better, a stop at the market's price of the step that reached it (the next
+    ///   price: after a gap or a fast fall, under the stop), and a limit never more than a quarter of the step's volume; a
+    ///   stop loss or a take profit only ever closes what is still held; cash is in whole units, rounded against the player.
     /// </summary>
     public static class MarketTrading
     {
@@ -529,9 +540,19 @@ namespace RealLifeOverhaul.Markets
             long held = p != null ? p.Shares : 0;
             if (buying)
             {
-                if (!a.Margin)
+                if (!a.Margin && order.Worked)
                 {
-                    if (wallet.Cash < value + fee)
+                    // A worked order's slice on a cash account: paid from the day's money parked for it, with no transaction
+                    // of its own (MarketEngine.Invest.cs: Park and Settle). Short of it, nothing is bought.
+                    if (order.Parked < value + fee)
+                    {
+                        return false;
+                    }
+                    order.Parked -= value + fee;
+                }
+                else if (!a.Margin)
+                {
+                    if (!wallet.Ready(value + fee))   // (what is short taken back from worked orders' money with the broker first)
                     {
                         return false;
                     }
@@ -558,8 +579,15 @@ namespace RealLifeOverhaul.Markets
                     {
                         return false;
                     }
-                    wallet.Give(value, MarketMoney.Sold, s.Name);
-                    wallet.Take(fee, MarketMoney.Commission, s.Name);
+                    if (order.Worked)
+                    {
+                        order.Due += value - fee;   // (a worked sale's takings wait on it, paid in one transaction at the close or its end)
+                    }
+                    else
+                    {
+                        wallet.Give(value, MarketMoney.Sold, s.Name);
+                        wallet.Take(fee, MarketMoney.Commission, s.Name);
+                    }
                 }
                 else
                 {
@@ -588,8 +616,9 @@ namespace RealLifeOverhaul.Markets
                 order.State = OrderState.Filled;
             }
             // The market moves: a part of the order's impact stays in the price (as the market's mood: it fades), and the
-            // player's recent trading in it grows.
-            double share = Math.Sqrt(qty / Math.Max(1.0, s.Adv));
+            // player's recent trading in it grows. A worked order's slice moves it by its part of what the order would have
+            // as one (SliceShare): its slices together move it as one order of their size, not each as an order of its own.
+            double share = order.Worked ? SliceShare(s.Impact, qty, s.Adv) : Math.Sqrt(qty / Math.Max(1.0, s.Adv));
             kept = (buying ? 1.0 : -1.0) * MarketCatalogue.ImpactPermanent * MarketCatalogue.ImpactTemporary * DayVol(state, s) * share;
             if (move)
             {
@@ -598,9 +627,53 @@ namespace RealLifeOverhaul.Markets
                 s.DayVolume += qty;
             }
             s.Impact += qty;   // (the player's own recent trading, whatever moves the price)
-            AddTrade(state, new Trade { Day = state.Day, Phase = phase, StockId = s.Id, Kind = buying ? TradeKind.Bought : TradeKind.Sold, Qty = qty, PriceCents = cents,
-                Value = buying ? -value : value, Fee = fee, Test = order.Test });
+            TradeKind kind = buying ? TradeKind.Bought : TradeKind.Sold;
+            if (!order.Worked || !AddToLine(state, order.Id, s.Id, kind, qty, buying ? -value : value, fee, phase))
+            {
+                AddTrade(state, new Trade
+                {
+                    Day = state.Day, Phase = phase, StockId = s.Id, Kind = kind, Qty = qty, PriceCents = cents, Value = buying ? -value : value, Fee = fee, Test = order.Test,
+                    Order = order.Worked ? order.Id : 0, Back = order.Back
+                });
+            }
             return true;
+        }
+
+        /// <summary>
+        /// The lasting move of a worked order's slice, as a share of the square root law's unit: the square root of the
+        /// player's recent trading in the company with the slice, against a day's volume, less without it. The slices of one
+        /// worked order so come to the move of one order of their size (less the fading of the trading the market remembers),
+        /// as its cost (Impact) already does; an order on its own (nothing traded just before) moves the price as ever.
+        /// </summary>
+        public static double SliceShare(double recent, long qty, double adv)
+        {
+            double a = Math.Max(1.0, adv), before = Math.Max(0.0, recent);
+            return Math.Sqrt((before + Math.Max(0L, qty)) / a) - Math.Sqrt(before / a);
+        }
+
+        // A worked order's slice on the history line of that order's slices of the same day, if there is one: the shares, the
+        // money and the commission added, its price their average. False when there is none yet (the slice is a new line).
+        // Nothing is made for a slice that joins its line.
+        private static bool AddToLine(MarketState state, int order, int stockId, TradeKind kind, long qty, long value, long fee, int phase)
+        {
+            for (int i = state.Trades.Count - 1; i >= 0; i--)
+            {
+                Trade t = state.Trades[i];
+                if (t.Day != state.Day)
+                {
+                    return false;   // (lines are in the order of time: none of today's is further back)
+                }
+                if (t.Order == order && t.StockId == stockId && t.Kind == kind)
+                {
+                    t.Qty += qty;
+                    t.Value += value;
+                    t.Fee += fee;
+                    t.Phase = phase;
+                    t.PriceCents = t.Qty > 0 ? (int)Math.Min(int.MaxValue, Math.Abs(t.Value) * 100L / t.Qty) : t.PriceCents;
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

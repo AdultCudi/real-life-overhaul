@@ -25,8 +25,9 @@ namespace RealLifeOverhaul.Markets
     /// MarketShare): the host plays it as alone and sends the new lines of its tape; a guest's market is the host's,
     /// with the guest's own holdings, and follows the host's tape, never past the host's furthest moment, so it plays
     /// the very moments the host played. Every player's trades move the one city's prices: their lasting moves are
-    /// events of the host's tape (MarketEngine.TradesAsEvents, TradeSink). When the guest leaves, its market goes on
-    /// alone from there, with secrets of its own.
+    /// events of the host's tape (MarketEngine.TradesAsEvents, TradeSink; a guest sends its own once a second, added up
+    /// by company, never more lines than the host reads of a request: MarketShare's GuestTrades). When the guest
+    /// leaves, its market goes on alone from there, with secrets of its own.
     ///
     /// Everything that happens (a fill, a dividend, a call, the news) comes back through the world
     /// (<see cref="MarketGameWorld"/>) and is told to the player once the frame's work is done. A fault anywhere
@@ -62,6 +63,8 @@ namespace RealLifeOverhaul.Markets
         private long _checkedAt;
         private long _hostFrontier;                                // a guest: the furthest moment the host has played
         private Action<int, int, long> _tradeSink;
+        private Action<string> _askTrade;
+        private readonly GuestTrades _guestTrades = new GuestTrades();   // a guest: its fills' moves by company, to the host once a second (MarketShare)
         private Action<BotNote> _botTold;
 
         /// <summary>Raised after the market has moved on or something the player did changed it (the app shows it again).</summary>
@@ -98,7 +101,8 @@ namespace RealLifeOverhaul.Markets
             _onSave = OnSave;
             _say = (kind, a, b) => _engine?.Event(kind, a, b);
             _world = new MarketGameWorld(this);
-            _tradeSink = (stock, micros, shares) => SharedCity.Ask('M', "i|" + stock + "|" + micros + "|" + shares);
+            _tradeSink = (stock, micros, shares) => _guestTrades.Add(stock, micros, shares);   // (sent once a second: SendTrades)
+            _askTrade = line => SharedCity.Ask('M', line);
             _botTold = BotHeard;
             StartCoroutine(Guard.Routine(Tick()));
             SharedCity.Register(new SharedCityPart
@@ -202,6 +206,8 @@ namespace RealLifeOverhaul.Markets
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // (for the rest of a day that had a shared trade: a replay of it takes every move from the tape)
             OwnSecond();
             BotsSecond();
+            InvestSecond();   // (the options of worked orders, dividends put back and rollovers: MarketDirector.Invest.cs)
+            SendTrades();
             InstallApp();
         }
 
@@ -367,6 +373,7 @@ namespace RealLifeOverhaul.Markets
             _engine = new MarketEngine(state, tape, _world);
             _engine.BotTold = _botTold;
             HookBonds();   // (its bonds' news: MarketDirector.Bonds.cs)
+            HookInvest();  // (its worked orders' news and the options it follows: MarketDirector.Invest.cs)
             _engine.HoldAfterLoad();
             OwnStarted(save);   // (the player's own company: who they are, and their company back if a save made as a guest left it aside)
             _frontierWritten = tape.Frontier;
@@ -412,6 +419,11 @@ namespace RealLifeOverhaul.Markets
             if (keep && _running && Save != null && ReferenceEquals(Save, _save))
             {
                 _engine.Finish();   // (a moment half played is played out first: MarketEngine.Midway)
+                long back = _engine.SettleAll();   // (worked orders' money with the broker back in the cash: the market is off a while)
+                if (back > 0)
+                {
+                    Logger?.Info("Stock market: stopping; " + back + " of worked orders' money with the broker is back in the cash.");
+                }
                 MarketStore.Save(Save.modData, _engine.State);
                 MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
             }
@@ -427,6 +439,7 @@ namespace RealLifeOverhaul.Markets
             _following = false;
             _checks.Clear();
             _shared.Length = 0;
+            _guestTrades.Clear();   // (a guest's trades not sent never reach another host)
             RemoveApp();
         }
 
@@ -508,6 +521,24 @@ namespace RealLifeOverhaul.Markets
             return MarketShare.Changes(lines, _engine.State, ref _checkedAt);
         }
 
+        // A guest, once a second: its trades since the last look, a line for each company (more for a large move), no more
+        // than a host reads of one request with what is already waiting in it; the rest at the next second (MarketShare's
+        // GuestTrades). The same lines as ever: an older host takes them.
+        private void SendTrades()
+        {
+            if (!_following || _guestTrades.Empty)
+            {
+                return;
+            }
+            int room = GuestTrades.LinesMost - SharedCity.Waiting('M');
+            int sent = room > 0 ? _guestTrades.Send(_askTrade, room) : 0;
+            if (Verbose && sent > 0)
+            {
+                Logger?.Info("Stock market check (a guest): " + sent + " trade line(s) for the host, " + _guestTrades.Lines + " waiting for the next second, at most "
+                             + GuestTrades.LinesMost + " a request: PASS");
+            }
+        }
+
         // The host: a guest's trades, put on the tape for every market at the next moment.
         private void HostRequest(string text, string who)
         {
@@ -517,7 +548,7 @@ namespace RealLifeOverhaul.Markets
             }
             string[] lines = text.Split('\n');
             int done = 0;
-            for (int i = 0; i < lines.Length && i < 64; i++)
+            for (int i = 0; i < lines.Length && i < GuestTrades.LinesMost; i++)
             {
                 string[] f = lines[i].Split('|');
                 if (f.Length >= 4 && f[0] == "i" && int.TryParse(f[1], out int stock) && int.TryParse(f[2], out int micros) && long.TryParse(f[3], out long shares)
@@ -565,6 +596,7 @@ namespace RealLifeOverhaul.Markets
             _engine = new MarketEngine(state, tape, _world);
             _engine.BotTold = _botTold;
             HookBonds();   // (its bonds' news: MarketDirector.Bonds.cs)
+            HookInvest();  // (its worked orders' news and the options it follows: MarketDirector.Invest.cs)
             _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
             state.Following = true;   // (the player's own company is set aside meanwhile: MarketShare.Adopt)
@@ -628,6 +660,7 @@ namespace RealLifeOverhaul.Markets
         {
             _following = false;
             _checks.Clear();
+            _guestTrades.Clear();   // (not sent: the host is no longer followed)
             if (_engine != null)
             {
                 _engine.Finish();   // (a moment half played is played out as the guest's: MarketEngine.Midway)
@@ -652,7 +685,7 @@ namespace RealLifeOverhaul.Markets
                 return new Estimate { Why = OrderWhy.Behind };
             }
             MarketState s = _engine.State;
-            return MarketTrading.Check(s, s.Stock(stockId), side, type, qty, limitCents, stopCents, _world.Wallet.Cash, CommissionLeast, Trading, _engine.Held, s.Phase, closing);
+            return MarketTrading.Check(s, s.Stock(stockId), side, type, qty, limitCents, stopCents, _engine.Wallet.Cash, CommissionLeast, Trading, _engine.Held, s.Phase, closing);   // (the money with the broker counts: MarketEngine.Wallet)
         }
 
         /// <summary>An order placed: filled at once if it can be, else it waits. Null with the reason if it cannot be placed.</summary>
@@ -707,7 +740,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
-            bool done = MarketTrading.Cancel(_engine.State, orderId);
+            bool done = _engine.Cancel(orderId);   // (a worked order's money with the broker settled at once: MarketEngine.Invest.cs)
             Moved();
             return done;
         }
@@ -751,7 +784,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
-            if (!_world.Wallet.Take(amount, MarketMoney.Deposit, string.Empty))
+            if (!_engine.Wallet.Take(amount, MarketMoney.Deposit, string.Empty))   // (what is short taken back from worked orders' money with the broker first)
             {
                 return false;
             }
@@ -869,8 +902,27 @@ namespace RealLifeOverhaul.Markets
         /// <summary>An order filled (or refused at the fill): the player is told once the frame's work is done.</summary>
         internal void OrderFilled(Order order, Stock stock, long qty, int cents)
         {
-            if (order == null || stock == null)
+            if (order == null || stock == null || order.Worked)
             {
+                return;   // (a worked order's slices are told by the day, and its end as it comes: MarketDirector.Invest.cs)
+            }
+            if (order.Back)
+            {
+                // A dividend put back: what it bought (only a part of it, with the reason: one order's most or the holding
+                // limit), or why it could not; what it does not buy stays in the cash.
+                if (qty <= 0)
+                {
+                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                }
+                else if (order.Why != OrderWhy.None)
+                {
+                    Queue(NotificationType.Info, "reallife_mkt_inv_note_back_part", "name", stock.Name, "count", qty.ToString("N0"), "price", MarketText.Price(cents), "why",
+                        MarketText.Why(order.Why));
+                }
+                else
+                {
+                    Queue(NotificationType.Success, "reallife_mkt_inv_note_back", "name", stock.Name, "count", qty.ToString("N0"), "price", MarketText.Price(cents));
+                }
                 return;
             }
             if (qty <= 0)

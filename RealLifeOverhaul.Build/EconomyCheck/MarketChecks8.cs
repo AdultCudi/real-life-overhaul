@@ -549,7 +549,7 @@ internal static partial class Program
         {
             bought++;
         }
-        Check(bought == BondCatalogue.HoldingsMost && m.CanBuyBond(o, least, true, true) == BondWhy.Full, "bonds: no more than the most held at once (" + bought + ")");
+        Check(bought == BondRules.HoldingsMost(m.LargeOn) && m.CanBuyBond(o, least, true, true) == BondWhy.Full, "bonds: no more than the most held at once (" + bought + ")");
         long cash = world.Purse.Money;
         Check(m.BuyBond(o, least, 0, false, true, out BondWhy why) == null && why == BondWhy.Closed && world.Purse.Money == cash, "bonds: a refused purchase takes nothing");
         Check(!m.SellBond(m.State.Bonds.Holdings[0].Id, false, out _, out why) && why == BondWhy.Closed, "bonds: nothing is sold while the market is shut");

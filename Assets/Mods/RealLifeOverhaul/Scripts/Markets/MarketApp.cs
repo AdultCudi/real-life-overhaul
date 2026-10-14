@@ -17,8 +17,10 @@ namespace RealLifeOverhaul.Markets
     ///   Companies   every listed company: price, the day's move, volume, worth, P/E, yield and what you hold, by sector
     ///               and size (the screener: every column sorts)
     ///   Watchlist   the companies you watch
-    ///   Orders      orders open and lately done; pick one to see it or cancel it
-    ///   Portfolio   what you hold, what it cost and what it is worth; the box has the account (and a margin account)
+    ///   Orders      orders open and lately done, worked orders with what is done and left; pick one to see it or cancel it
+    ///   Portfolio   everything held, each with what it is (a stock, a property trust, a bond, a deposit), what it cost and
+    ///               is worth, its income and next payment; the box has the spread across kinds, what it pays over a year
+    ///               and the account (and a margin account) (MarketApp.Portfolio.cs)
     ///   History     the account's history: trades, dividends, payouts, interest and fees
     ///   Bots        the trading bots for hire and those hired: their record, their settings (MarketApp.Bots.cs)
     ///   Bonds       the bonds and bank deposits on offer and those held, with their next payment (MarketApp.Bonds.cs)
@@ -302,6 +304,15 @@ namespace RealLifeOverhaul.Markets
             if (company != int.MinValue)
             {
                 OpenPage(company);
+                Refresh();
+                return;
+            }
+            int bond = Picked(row.Id, PortfolioBondRow);
+            if (bond != int.MinValue)
+            {
+                // A bond of the Portfolio tab: it, on the Bonds tab (where bonds are bought, sold and managed).
+                _tab = TabBonds;
+                _picked = BondHeldRow + bond;
                 Refresh();
                 return;
             }

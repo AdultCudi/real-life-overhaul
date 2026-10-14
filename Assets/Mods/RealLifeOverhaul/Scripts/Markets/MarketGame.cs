@@ -17,16 +17,33 @@ namespace RealLifeOverhaul.Markets
     {
         public long Cash => SaveGameManager.Current != null ? (long)Math.Floor(Math.Max(0.0, SaveGameManager.Current.Money)) : 0L;
 
+        // A sum larger than the game moves exactly in one transaction is moved in pieces, none of it lost (InvestRules.Piece:
+        // pieces a float holds exactly): a bond rolled over for years, a large company's shares, a day's money for a worked
+        // order.
         public bool Take(long amount, string why, string name)
         {
-            return amount <= 0 || (SaveGameManager.Current != null && amount <= int.MaxValue && GameManager.ChangeMoneySafe(-amount, Info(why, name), null, null, false));
+            if (amount <= 0)
+            {
+                return true;
+            }
+            if (SaveGameManager.Current == null || Cash < amount)
+            {
+                return false;   // (the cash is not there: nothing taken)
+            }
+            Move(-1, amount, why, name);   // (all of it is there: no piece can be refused)
+            return true;
+        }
+
+        public bool Ready(long amount)
+        {
+            return amount <= 0 || Cash >= amount;   // (the game's own cash: nothing with the broker here, MarketEngine.Wallet sees to that)
         }
 
         public void Force(long amount, string why, string name)
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(-Math.Min(amount, int.MaxValue), Info(why, name), null, null, true);
+                Move(-1, amount, why, name);
             }
         }
 
@@ -34,7 +51,15 @@ namespace RealLifeOverhaul.Markets
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(Math.Min(amount, int.MaxValue), Info(why, name), null, null, true);
+                Move(1, amount, why, name);
+            }
+        }
+
+        private static void Move(int sign, long amount, string why, string name)
+        {
+            for (long left = amount; left > 0;)
+            {
+                GameManager.ChangeMoneySafe(sign * InvestRules.Piece(ref left), Info(why, name), null, null, true);
             }
         }
 
@@ -42,6 +67,27 @@ namespace RealLifeOverhaul.Markets
         private static TransactionInfo Info(string why, string name)
         {
             return new TransactionInfo(why, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } });
+        }
+
+        /// <summary>
+        /// What the game counts the player worth, in money (its own figure, as the Persona app shows it: cash, the game's
+        /// investment funds, vehicles, boats and property at their price, less loans); their cash alone if it cannot be read.
+        /// Read when the Bonds tab is written or a bond is bought (the most of one purchase: BondRules.Most), never per frame.
+        /// </summary>
+        public static long Wealth()
+        {
+            if (SaveGameManager.Current == null)
+            {
+                return 0L;
+            }
+            try
+            {
+                return (long)Math.Floor(Helpers.PlayerHelper.GetPersonalWealth().CurrentWealth);
+            }
+            catch (Exception)
+            {
+                return (long)Math.Floor(Math.Max(0.0, SaveGameManager.Current.Money));
+            }
         }
     }
 

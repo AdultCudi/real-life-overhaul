@@ -157,6 +157,22 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// A guest: the lines a part has asked for that are not sent yet (the next request, within the second, takes them
+        /// all). A part whose host reads only so many lines of one request (the market's trades) asks this before it adds
+        /// more. A count over a short text, once a second at most.
+        /// </summary>
+        public static int Waiting(char id)
+        {
+            StringBuilder b = id < Asked.Length ? Asked[id] : null;
+            int lines = 0;
+            for (int i = 0; b != null && i < b.Length; i++)
+            {
+                lines += b[i] == '\n' ? 1 : 0;
+            }
+            return lines;
+        }
+
         private static SharedCityPart Find(char id)
         {
             for (int i = 0; i < Parts.Count; i++)

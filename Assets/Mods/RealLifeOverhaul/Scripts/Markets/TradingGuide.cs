@@ -6,11 +6,13 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// Orders that wait (stop losses, take profits, limits) and trading bots in the mod's feature list, and the figures
-    /// their Guide page prints: every {name} in its text is filled from <see cref="MarketBots"/> and
-    /// <see cref="MarketCatalogue"/> here, so the page can never say anything the rules do not do. Called once, when the
-    /// feature list is built (Meta/FeatureList); each figure is worked out when the page is opened. Their data is the
-    /// market's own line (MarketStore), which the market's entry already names.
+    /// Orders that wait (stop losses, take profits, limits), worked orders and trading bots in the mod's feature list, and
+    /// the figures their Guide page prints: every {name} in its text is filled from <see cref="MarketBots"/> and
+    /// <see cref="MarketCatalogue"/> here, so the page can never say anything the rules do not do. With them, the market's
+    /// own entry (Meta/FeatureList, registered first) takes a large investor's options, tests and figures: worked orders and
+    /// larger bond purchases, dividends put back, a bond's rollover (InvestRules, BondCatalogue). Called once, when the
+    /// feature list is built; each figure is worked out when the page is opened. Their data is the market's own line
+    /// (MarketStore), which the market's entry already names.
     /// </summary>
     public static class TradingGuide
     {
@@ -18,11 +20,18 @@ namespace RealLifeOverhaul.Markets
 
         public static void Register()
         {
+            Features.Add("markets", "reallife_meta_title_markets")   // (the market's entry, made just before: its large investor's parts)
+                .Owns(Settings.MarketsLargeId, Settings.MarketsReinvestId)
+                .Test("reallife_mkt_inv_test_back", "reallife_mkt_inv_test_roll")
+                .Fact("bond_most_share", () => Whole(BondCatalogue.MostWorthPct) + "%")
+                .Fact("bond_most_cap", () => Guide.Money(Prices.At((float)BondCatalogue.MostCapAtStart)))
+                .Fact("bond_holdings_large", () => Whole(BondCatalogue.HoldingsMostLarge))
+                .Fact("bond_ladder_terms", () => Whole(BondRules.LadderTerms(new System.Collections.Generic.List<BondDef>(8))));
             Features.Add("markets_bots", "reallife_meta_title_markets_bots")
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_bots_about").Help("reallife_guide_markets_bots")
                 .Owns(Settings.MarketsBotsId)
-                .Test("reallife_mkt_bot_test_month")
+                .Test("reallife_mkt_bot_test_month", "reallife_mkt_inv_test_work")
                 .Fact("bot_capital_least", () => Guide.Money(Prices.At((float)MarketBots.CapitalLeastAtStart)))
                 .Fact("bot_fee_least", () => Guide.Money(Prices.At((float)MarketBots.FeeLeastAtStart)))
                 .Fact("bot_trade_least", () => Guide.Money(Prices.At((float)MarketBots.TradeLeastAtStart)))

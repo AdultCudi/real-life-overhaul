@@ -115,6 +115,7 @@ internal static partial class Program
         ShowroomFloor();
         Markets();
         MarketPace();   // the open and the close in pieces, the catch-up's budget, the worth taken apart once (MarketPaceChecks.cs)
+        Invest();       // a large investor's tools: holdings by kind, worked orders, dividends put back, rollovers and ladders (InvestChecks.cs)
         Listing();
         Ledger();
         Newsstand();

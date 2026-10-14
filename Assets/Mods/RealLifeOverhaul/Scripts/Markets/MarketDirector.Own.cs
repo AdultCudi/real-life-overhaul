@@ -188,8 +188,9 @@ namespace RealLifeOverhaul.Markets
             ListingFacts facts = Facts();
             ListingBook.Last(f, day, Year, 4, out long turnover, out long _, out int _);
             long exchange = ListingBook.YearlyFee(own.MarketValue, Level), audit = ListingBook.AuditFee(turnover, Level);
-            _world.Wallet.Force(exchange, ListingMoney.Exchange, own.Name);
-            _world.Wallet.Force(audit, ListingMoney.Audit, own.Name);
+            _engine.Wallet.Cover(exchange + audit);   // (both fees' give-back from worked orders' money in one, never one for each)
+            _engine.Wallet.Force(exchange, ListingMoney.Exchange, own.Name);
+            _engine.Wallet.Force(audit, ListingMoney.Audit, own.Name);
             f.Fees += exchange + audit;
             f.FeeYear = year;
             f.Findings = ListingBook.Findings(facts);
@@ -228,7 +229,7 @@ namespace RealLifeOverhaul.Markets
             if (f.HandOver.Count > 0 && day > f.HandOverBy)
             {
                 long owed = f.HandOverCount > 0 ? f.HandOverOwed * f.HandOver.Count / f.HandOverCount : f.HandOverOwed;
-                _world.Wallet.Force(owed, ListingMoney.Kept, f.HandOverTo ?? string.Empty);
+                _engine.Wallet.Force(owed, ListingMoney.Kept, f.HandOverTo ?? string.Empty);
                 Logger?.Warn("Listing: " + f.HandOver.Count + " business(es) could not be handed over to " + f.HandOverTo + " in time; paid for instead: " + owed + ".");
                 Queue(NotificationType.Warning, "reallife_lst_note_kept", "count", f.HandOver.Count.ToString(), "buyer", f.HandOverTo ?? string.Empty, "amount", MarketText.Money(owed));
                 f.HandOver.Clear();
@@ -390,7 +391,7 @@ namespace RealLifeOverhaul.Markets
             }
             long fee = Retainer();
             Named(f);
-            if (!_world.Wallet.Take(fee, ListingMoney.Advisers, f.Name))
+            if (!_engine.Wallet.Take(fee, ListingMoney.Advisers, f.Name))
             {
                 return OwnWhy.NoMoney;
             }
@@ -417,7 +418,7 @@ namespace RealLifeOverhaul.Markets
                 return OwnWhy.NotReady;
             }
             long fee = AuditFee();
-            if (!_world.Wallet.Take(fee, ListingMoney.Audit, f.Name))
+            if (!_engine.Wallet.Take(fee, ListingMoney.Audit, f.Name))
             {
                 return OwnWhy.NoMoney;
             }
@@ -518,7 +519,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return OwnWhy.Suspended;
             }
-            if (q.Total > 0 && q.Total > _world.Wallet.Cash)
+            if (q.Total > 0 && q.Total > _engine.Wallet.Cash)
             {
                 return OwnWhy.NoMoney;
             }
@@ -730,7 +731,7 @@ namespace RealLifeOverhaul.Markets
             }
             else
             {
-                _world.Wallet.Force(tax, ListingMoney.DividendTax, stock != null ? stock.Name : string.Empty);
+                _engine.Wallet.Force(tax, ListingMoney.DividendTax, stock != null ? stock.Name : string.Empty);
             }
             return tax;
         }

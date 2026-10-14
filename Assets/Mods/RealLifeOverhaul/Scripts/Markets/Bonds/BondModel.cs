@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Markets
         public long Reinvested;      // cents of interest put back into it
         public long Taxed;           // cents of tax withheld
         public bool Test;            // bought by the test tools
+        public bool Rollover;        // at its end it rolls over into a new one of the same kind and term at that day's yield (BondRules.Rolled), while bonds are on
     }
 
     /// <summary>Every bond the player holds, and the number the next one takes. Never in the city's line (MarketStore): each player's own.</summary>
@@ -59,8 +60,11 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>What a bond did, for the director to tell: interest paid (A to the player, B put back, C the tax) or the face repaid (A).</summary>
-    public enum BondNoteKind { Interest = 0, Repaid = 1 }
+    /// <summary>
+    /// What a bond did, for the director to tell: interest paid (A to the player, B put back, C the tax), the face repaid (A),
+    /// or the bond rolled over at its end (Holding the new one: A the money rolled into it, B its rate in bp, C its end day).
+    /// </summary>
+    public enum BondNoteKind { Interest = 0, Repaid = 1, Rolled = 2 }
 
     public struct BondNote
     {

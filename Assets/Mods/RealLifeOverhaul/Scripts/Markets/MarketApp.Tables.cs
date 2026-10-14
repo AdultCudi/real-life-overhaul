@@ -68,19 +68,24 @@ namespace RealLifeOverhaul.Markets
             .Filter("reallife_mkt_filter_orders", OrderStates)
             .Empty("reallife_mkt_empty_orders");
 
-        /// <summary>Portfolio: 0 company, 1 shares, 2 cost a share, 3 price, 4 worth, 5 gain or loss, 6 the gain in per cent, 7 dividends, 8 the next payment.</summary>
+        /// <summary>
+        /// Portfolio, every holding (MarketApp.Portfolio.cs): 0 holding, 1 what it is (ordered by kind, so a click on its head
+        /// groups them), 2 shares, 3 price (a bond's for each 100), 4 what it cost, 5 worth, 6 gain or loss, 7 income paid so
+        /// far, 8 the next payment; filtered by sector and by kind.
+        /// </summary>
         public static readonly TableSpec Portfolio = new TableSpec("Stocks", "Portfolio")
-            .Column("reallife_mkt_col_company", 380f, TableSort.Text, flexible: true)
+            .Column("reallife_mkt_col_holding", 400f, TableSort.Text, flexible: true)
+            .Column("reallife_mkt_col_kind", 190f, TableSort.Number)
             .Column("reallife_mkt_col_shares", 160f, TableSort.Number)
-            .Column("reallife_mkt_col_cost_share", 190f, TableSort.Money)
-            .Column("reallife_mkt_col_price", 170f, TableSort.Money)
-            .Column("reallife_mkt_col_worth", 210f, TableSort.Money, sums: true)
-            .Column("reallife_mkt_col_gain", 200f, TableSort.Money, sums: true)
-            .Column("reallife_mkt_col_gain_pct", 150f, TableSort.Number)
-            .Column("reallife_mkt_col_dividends", 200f, TableSort.Money, sums: true)
-            .Column("reallife_mkt_col_next_pay", 260f, TableSort.Date, right: true)
+            .Column("reallife_mkt_col_price", 160f, TableSort.Money)
+            .Column("reallife_mkt_col_cost", 200f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_worth", 200f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_gain", 190f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_income", 180f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_next_pay", 240f, TableSort.Date, right: true)
             .Filter("reallife_mkt_filter_sectors", MarketCatalogue.SectorKeys)
-            .Empty("reallife_mkt_empty_portfolio");
+            .Filter("reallife_mkt_inv_filter_kinds", InvestText.KindKeys)
+            .Empty("reallife_mkt_inv_empty");
 
         /// <summary>Bots: 0 firm, 1 strategy, 2 capital, 3 worth, 4 profit, 5 the deepest fall, 6 trades, 7 state.</summary>
         public static readonly TableSpec Bots = new TableSpec("Stocks", "Bots")

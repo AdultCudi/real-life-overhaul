@@ -259,4 +259,112 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
     }
+
+    /// <summary>
+    /// A Going Public guest's trades on their way to the host (MarketDirector, its trade sink): each fill's lasting move and
+    /// shares added up by company until the next request, then sent as the line every host reads, "i|stock|micros|shares".
+    /// A host reads at most <see cref="LinesMost"/> lines of one request and takes a line's move only to
+    /// <see cref="MicrosMost"/> micros either way (MarketEngine.GuestTrade), so a larger sum goes over several lines and what
+    /// does not fit in one request waits for the next: a catch-up of many slices loses nothing, and the host's tape takes the
+    /// same total as if every fill had been sent alone (its moves only add up). The same line as ever: an older host reads
+    /// it. Game-free; nothing is made as fills come (a few kept lists), a line's text once a second.
+    /// </summary>
+    public sealed class GuestTrades
+    {
+        public const int LinesMost = 64;          // the lines a host reads of one request (MarketDirector.HostRequest)
+        public const int MicrosMost = 200000;     // the move of one line a host takes whole, either way (MarketEngine.GuestTrade)
+
+        private readonly List<int> _stocks = new List<int>(8);
+        private readonly List<long> _micros = new List<long>(8);
+        private readonly List<long> _shares = new List<long>(8);
+
+        public bool Empty => _stocks.Count == 0;
+
+        /// <summary>A fill's lasting move (micros) and its shares, added to its company's since the last request.</summary>
+        public void Add(int stock, int micros, long shares)
+        {
+            if (shares <= 0)
+            {
+                return;
+            }
+            int at = _stocks.IndexOf(stock);
+            if (at < 0)
+            {
+                _stocks.Add(stock);
+                _micros.Add(0L);
+                _shares.Add(0L);
+                at = _stocks.Count - 1;
+            }
+            _micros[at] += micros;
+            _shares[at] += shares;
+        }
+
+        /// <summary>The lines what is waiting comes to.</summary>
+        public int Lines
+        {
+            get
+            {
+                int lines = 0;
+                for (int i = 0; i < _stocks.Count; i++)
+                {
+                    lines += LinesOf(_micros[i], _shares[i]);
+                }
+                return lines;
+            }
+        }
+
+        /// <summary>
+        /// Up to 'most' lines given to 'send', the company that traded first first; a company's sum over the lines its move
+        /// and its shares need, each line's shares its part of the move (one at least). What is left waits for the next
+        /// request. How many lines were sent.
+        /// </summary>
+        public int Send(Action<string> send, int most)
+        {
+            int sent = 0;
+            while (sent < most && _stocks.Count > 0)
+            {
+                long micros = _micros[0], shares = _shares[0];
+                int lines = LinesOf(micros, shares);
+                long m = lines <= 1 ? micros : Math.Sign(micros) * Math.Min(Math.Abs(micros), MicrosMost);
+                long n = shares;
+                if (lines > 1)
+                {
+                    long part = micros != 0 ? (long)((double)shares * Math.Abs(m) / Math.Abs(micros)) : shares / lines;
+                    n = Math.Max(1L, Math.Min(Math.Min(part, shares - (lines - 1)), int.MaxValue));
+                }
+                send("i|" + _stocks[0] + "|" + m + "|" + Math.Max(1L, n));
+                sent++;
+                micros -= m;
+                shares -= n;
+                if (lines <= 1)
+                {
+                    _stocks.RemoveAt(0);
+                    _micros.RemoveAt(0);
+                    _shares.RemoveAt(0);
+                }
+                else
+                {
+                    _micros[0] = micros;
+                    _shares[0] = Math.Max(1L, shares);
+                }
+            }
+            return sent;
+        }
+
+        public void Clear()
+        {
+            _stocks.Clear();
+            _micros.Clear();
+            _shares.Clear();
+        }
+
+        // The lines a company's sum takes: its move in parts of MicrosMost at most, its shares in parts a host counts whole
+        // (int.MaxValue), one at least.
+        private static int LinesOf(long micros, long shares)
+        {
+            long byMove = (Math.Abs(micros) + MicrosMost - 1) / MicrosMost;
+            long byShares = (Math.Max(1L, shares) + int.MaxValue - 1) / int.MaxValue;
+            return (int)Math.Max(1L, Math.Min(int.MaxValue, Math.Max(byMove, byShares)));
+        }
+    }
 }

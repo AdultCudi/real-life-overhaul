@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Markets
             {
                 why = BotWhy.TooLittle;
             }
-            else if (capital > _world.Wallet.Cash)
+            else if (capital > Wallet.Cash)
             {
                 why = BotWhy.NoCash;
             }
@@ -416,13 +416,14 @@ namespace RealLifeOverhaul.Markets
                 share = ((after - b.HighWater) * f.ShareBp + 9999L) / 10000L;
                 b.HighWater = after - share;
             }
+            Wallet.Cover(fee + share);   // (the fee's and the share's give-back from worked orders' money in one, never one for each)
             if (fee > 0)
             {
-                _world.Wallet.Force(fee, MarketMoney.BotFee, f.Name);
+                Wallet.Force(fee, MarketMoney.BotFee, f.Name);
             }
             if (share > 0)
             {
-                _world.Wallet.Force(share, MarketMoney.BotShare, f.Name);
+                Wallet.Force(share, MarketMoney.BotShare, f.Name);
             }
             b.Cash -= fee + share;
             b.Fees += fee + share;
@@ -578,7 +579,7 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
-            if (!MarketBots.Fill(State, b, s, buying, qty, cents, _world.CommissionLeast, _world.Wallet, phase, !city, out double kept, out shortOfCash))
+            if (!MarketBots.Fill(State, b, s, buying, qty, cents, _world.CommissionLeast, Wallet, phase, !city, out double kept, out shortOfCash))
             {
                 return false;
             }
@@ -618,7 +619,7 @@ namespace RealLifeOverhaul.Markets
             }
             Bot b = MarketBots.Hired(State, due.Bot);
             BotFirm f = MarketBots.Firm(due.Bot);
-            _world.Wallet.Give(money, MarketMoney.Dividend, (s != null ? s.Name : string.Empty) + (f != null ? " (" + f.Name + ")" : string.Empty));
+            Wallet.Give(money, MarketMoney.Dividend, (s != null ? s.Name : string.Empty) + (f != null ? " (" + f.Name + ")" : string.Empty));
             if (b != null)
             {
                 b.Cash += money;
@@ -646,7 +647,7 @@ namespace RealLifeOverhaul.Markets
                 long money = MarketTrading.Value(h.Shares, s.GoneCents, false);
                 if (money > 0)
                 {
-                    _world.Wallet.Give(money, MarketMoney.Payout, s.Name + " (" + (b.Def != null ? b.Def.Name : string.Empty) + ")");
+                    Wallet.Give(money, MarketMoney.Payout, s.Name + " (" + (b.Def != null ? b.Def.Name : string.Empty) + ")");
                 }
                 b.Cash += money;
                 long gain = money - h.Cost;

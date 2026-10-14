@@ -586,29 +586,5 @@ namespace RealLifeOverhaul.Markets
         {
             return k.Own != null && _director.Engine != null && _director.Engine.Mine(k) ? k.Own.Founder : s.Held(k.Id);
         }
-
-        // The founder's own stake at the head of the Portfolio tab (not part of the account's figures).
-        private void FounderRow(MarketState s)
-        {
-            Stock k = _director.MyCompany;
-            if (k == null)
-            {
-                return;
-            }
-            Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
-            long value = MarketTrading.Value(k.Own.Founder, q.Bid, false);
-            TableRow row = Row(CompanyRow, k.Id);
-            row.Pinned = true;
-            row.NoTotal = true;
-            row.Kind = (int)k.Sector;
-            row.Set(0, k.Name + "  <size=80%>" + MarketText.T("reallife_lst_yours") + "</size>");
-            row.Set(1, Count(k.Own.Founder), k.Own.Founder);
-            row.Set(2, "-", double.NaN);
-            row.Set(3, MarketText.Price(k.Last), k.Last / 100.0);
-            row.Set(4, MarketText.Money(value), value);
-            row.Set(5, "-", double.NaN);
-            row.Set(6, "-", double.NaN);
-            row.Set(7, "-", double.NaN);
-        }
     }
 }

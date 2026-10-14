@@ -10,8 +10,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// For the save tools ("prepare this save for removing the mod", "reset the mod's data"): shares do not exist in
         /// the plain game, so every holding is sold at today's bid and every short bought back at the offer, with no
-        /// commission; a margin account pays back what it holds (or what it owes is taken from the cash), and every order
-        /// goes. Each is listed in the log. Then the market stops; the timer starts it again while the option is on.
+        /// commission; a margin account pays back what it holds (or what it owes is taken from the cash), worked orders' money
+        /// with the broker comes back, and every order goes. Each is listed in the log. Then the market stops; the timer
+        /// starts it again while the option is on.
         /// </summary>
         public void StopAll()
         {
@@ -22,7 +23,11 @@ namespace RealLifeOverhaul.Markets
                 {
                     MarketState s = _engine.State;
                     var log = new StringBuilder(256);
-                    long total = 0;
+                    long total = InvestRules.EmptyBroker(s, out long parked, out long dueThen);   // worked orders' money with the broker, first: nothing after gives it back twice
+                    if (total > 0)
+                    {
+                        log.Append(" the money with the broker for worked orders ").Append(total).Append(" (").Append(parked).Append(" parked, ").Append(dueThen).Append(" due);");
+                    }
                     for (int i = s.Positions.Count - 1; i >= 0; i--)
                     {
                         Position p = s.Positions[i];
