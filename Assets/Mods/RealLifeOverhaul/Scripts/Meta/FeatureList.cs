@@ -717,6 +717,14 @@ namespace RealLifeOverhaul.Meta
                 .OnFrom(Settings.BusinessRacketId, Intensity.Standard)
                 .Data("reallife:business")
                 .Contact(BusinessDesk.ContactId)
+                .Fact("biz_chance_least", () => Guide.Percent(BusinessCatalogue.RollChance(1)))
+                .Fact("biz_chance_most", () => Guide.Percent(BusinessCatalogue.RollChance(10)))
+                .Fact("biz_save_days", () => BusinessCatalogue.NewSaveDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("biz_shop_days", () => BusinessCatalogue.NewBusinessDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("biz_open_most", () => BusinessCatalogue.MostOpen.ToString(CultureInfo.InvariantCulture))
+                .Fact("biz_dip_most", () => (-BusinessCatalogue.MostDip).ToString(CultureInfo.InvariantCulture) + "%")
+                .Fact("biz_boost_most", () => BusinessCatalogue.MostBoost.ToString(CultureInfo.InvariantCulture) + "%")
+                .Fact("biz_closed_most", () => BusinessCatalogue.MostClosedHours.ToString(CultureInfo.InvariantCulture))
                 // Read from the (now empty) save: the director's own stand-down (footfall and closures put back) runs when the option goes off or the city unloads.
                 .ResetData(() => BusinessState.Load(SaveGameManager.Current.modData, TimeHelper.CurrentDay))
                 .Repair(BusinessDesk.Setup);
@@ -855,6 +863,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("net_monthly", () => ((Utilities.InternetCatalogue.MonthlyShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("net_business", () => ((Utilities.InternetCatalogue.BusinessShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("net_install_fee", () => Guide.Money(Utilities.InternetCatalogue.InstallFee))
+                .Fact("net_grace_days", () => Utilities.InternetCatalogue.GraceDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("bb_licence", () => Guide.Money(Utilities.BroadbandRules.LicenceFee(Prices.Level)))
                 .Fact("bb_build_least", () => Guide.Money(Utilities.BroadbandRules.BuildCost(2, Prices.Level)))
                 .Fact("bb_build_most", () => Guide.Money(Utilities.BroadbandRules.BuildCost(4, Prices.Level)))

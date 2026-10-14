@@ -1,6 +1,6 @@
 # Real Life Overhaul
 
-A mod for [Big Ambitions](https://store.steampowered.com/app/1331550/Big_Ambitions/) that adds everyday life to the city: a camera behind your character, traffic accidents with police and ambulance, crime, courts, driving licences, jobs, health, friends, a family and public transport. Every part can be switched off by itself.
+A mod for [Big Ambitions](https://store.steampowered.com/app/1331550/Big_Ambitions/) that adds everyday life to the city: a camera behind your character, accidents, crime, police and courts, buses and driving, a home, a family and friends, courses and careers, credit, a city economy and a stock market, and much more for your businesses, from staff and brands to a tech firm. Every part can be switched off by itself.
 
 **To play it, subscribe on the Steam Workshop:**
 https://steamcommunity.com/sharedfiles/filedetails/?id=3816536560
@@ -15,7 +15,7 @@ This repository is the source. You only need it to read the code, report a probl
 
 Version 0.1.0 was the first public release; 0.10.2 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
 
-Windows only. English, Brazilian Portuguese and Simplified Chinese.
+Windows only. English, Brazilian Portuguese and Simplified Chinese. It is made for the current build of Big Ambitions on Steam's public branch: on an older build some of its apps and features do not work, and the mod says so in the main menu, with how to update the game.
 
 ## What is in the repository
 
@@ -71,7 +71,7 @@ It prints the SHA-256 of both files for the release notes. The installer script 
 
 Open an issue. What helps most:
 
-1. On the mod's options page, under Diagnostics, switch on "Developer diagnostics" and make the problem happen again.
+1. On the mod's options page, under Troubleshooting, Diagnostics, switch on "Developer diagnostics" and make the problem happen again.
 2. Attach `Player.log` from that session. It is in `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions` and is overwritten when the game starts again.
 3. Add a screenshot, what you were doing, what you expected, the mod version and which other mods are on.
 
