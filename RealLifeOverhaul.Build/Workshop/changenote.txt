@@ -1,4 +1,4 @@
-0.17.2
+0.18.0
 
-Fixed
-- After an employer turns down your application you can no longer apply to them for the same post again straight away; you can try again after 14 days, or at once anywhere else.
+New
+- The Planner has a Week tab with a column for each day, a filter over its tabs, clashes when two things overlap or are too far apart to reach in time, a time to leave by for anything at a place with a reminder for it, a day at a glance with its free time and the money due, and your own entries that come back every day or every week.
