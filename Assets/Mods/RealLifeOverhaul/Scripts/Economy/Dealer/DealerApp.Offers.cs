@@ -63,7 +63,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 row.Set(2, yard != null ? yard.Name : string.Empty);
                 Money(row, 3, s.Price);
                 Money(row, 4, s.Cost);
-                row.Set(5, (s.Financed ? DealerText.T("reallife_dealer_extra_finance") + " " : string.Empty) + (s.Tier >= 0 ? DealerText.Tier(s.Tier) : string.Empty));
+                row.Set(5, (s.Financed ? DealerText.T("reallife_dealer_extra_finance") + " " : string.Empty) + (s.Tier >= 0 ? DealerText.Tier(s.Tier) : string.Empty)
+                           + (s.Extras != 0 ? (s.Financed || s.Tier >= 0 ? ", " : string.Empty) + DealerText.Extras(s.Extras) : string.Empty));
                 row.Set(6, FinanceText.Day(s.Day), s.Day);
                 row.Set(7, DealerText.T("reallife_dealer_state_sold", "margin", DealerText.Money(s.Price - s.Cost)), s.Price < s.Cost ? TableRow.Red : TableRow.Green);
             }
@@ -106,7 +107,28 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.Tier(d.Tier));
             }
+            if (d.Extras != 0)
+            {
+                t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.Extras(d.Extras));
+            }
             return t.ToString();
+        }
+
+        // What the extras a buyer would take come to at this price, and what the showroom pays for them.
+        private static int ExtrasPrice(int extras, int price, out int cost)
+        {
+            int sell = 0;
+            cost = 0;
+            for (int e = 0; e < DealerCatalogue.ExtraKinds; e++)
+            {
+                if ((extras & (1 << e)) != 0)
+                {
+                    int one = DealerRules.ExtraPrice(price, e, Prices.At(DealerCatalogue.ExtraLeast[e]));
+                    sell += one;
+                    cost += DealerRules.ExtraCost(one, e);
+                }
+            }
+            return sell;
         }
 
         private void WriteDeal(InfoBox box, DealerYard yard, DealerOffer d, int now)
@@ -136,6 +158,15 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (d.Tier >= 0 && yard.Warranty)
             {
                 box.Line(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium", DealerText.Money(DealerRules.Premium(d.Offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast)))));
+            }
+            if (d.Extras != 0 && yard.Extras)
+            {
+                int sell = ExtrasPrice(d.Extras, d.Offer, out int cost);
+                box.Line(DealerText.Fill("reallife_dealer_deal_extras", "extras", DealerText.Extras(d.Extras), "price", DealerText.Money(sell), "margin", DealerText.Money(sell - cost)));
+            }
+            if (d.Lift > 0)
+            {
+                box.Line(DealerText.T("reallife_dealer_deal_lift"));
             }
             int steps = DealerRules.CounterSteps(d, car.Asking);
             int step = Choice(steps - 1);

@@ -249,6 +249,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Credit.cs" Link="Mod\DealerRules.Credit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerLines.cs" Link="Mod\DealerLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerStore.cs" Link="Mod\DealerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Business.cs" Link="Mod\DealerRules.Business.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerReport.cs" Link="Mod\DealerReport.cs" />
   </ItemGroup>
 
 </Project>

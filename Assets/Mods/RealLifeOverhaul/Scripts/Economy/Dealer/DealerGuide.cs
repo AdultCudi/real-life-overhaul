@@ -47,7 +47,74 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_recover", () => Share(DealerCatalogue.RecoverShare))
                 .Fact("dealer_tiers", Tiers)
                 .Fact("dealer_claims", () => Whole(DealerCatalogue.ClaimsMost))
-                .Fact("dealer_claim_rest", () => Whole(DealerCatalogue.ClaimRest));
+                .Fact("dealer_claim_rest", () => Whole(DealerCatalogue.ClaimRest))
+                .Fact("dealer_events", Events)
+                .Fact("dealer_event_rest", () => Whole(DealerCatalogue.EventRest))
+                .Fact("dealer_promotion_top", () => Whole(DealerCatalogue.PromotionMost))
+                .Fact("dealer_steps", Steps)
+                .Fact("dealer_rep_sale", () => Whole(DealerCatalogue.RepSale))
+                .Fact("dealer_rep_good", () => Whole(DealerCatalogue.RepGoodCar))
+                .Fact("dealer_rep_fault", () => Whole(DealerCatalogue.RepFault))
+                .Fact("dealer_missions", Missions)
+                .Fact("dealer_extras", Extras)
+                .Fact("dealer_workshop_bays", () => Whole(DealerCatalogue.WorkshopBays))
+                .Fact("dealer_workshop_restore", () => Share(DealerCatalogue.WorkshopRestore))
+                .Fact("dealer_workshop_least", () => Whole(DealerCatalogue.WorkshopHoursLeast))
+                .Fact("dealer_workshop_most", () => Whole(DealerCatalogue.WorkshopHoursMost))
+                .Fact("dealer_prepare_restore", () => Share(DealerCatalogue.PrepareRestore))
+                .Fact("dealer_delivery_least", () => Whole(DealerCatalogue.DeliveryDaysLeast))
+                .Fact("dealer_delivery_most", () => Whole(DealerCatalogue.DeliveryDaysMost))
+                .Fact("dealer_delivery_hour", () => Hour(DealerCatalogue.DeliveryHour))
+                .Fact("dealer_report_days", () => Whole(DealerCatalogue.ReportDays))
+                .Fact("dealer_average_days", () => Whole(DealerCatalogue.AverageDays));
+        }
+
+        // One line per event: its name, its days, its cost and what it does.
+        private static string Events()
+        {
+            var text = new System.Text.StringBuilder();
+            for (int k = 0; k < DealerCatalogue.EventKinds; k++)
+            {
+                text.Append("- ").Append(DealerText.Fill("reallife_guide_economy_dealer_event", "name", DealerText.Event(k, 0), "days", Whole(DealerCatalogue.EventDays[k]),
+                    "cost", Guide.Money(Prices.At(DealerCatalogue.EventCost[k])), "does", DealerText.EventShort(k))).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        // One line per step of the reputation: its name, where it starts and its perk.
+        private static string Steps()
+        {
+            var text = new System.Text.StringBuilder();
+            for (int s = 1; s < DealerCatalogue.RepSteps.Length; s++)
+            {
+                text.Append("- ").Append(DealerText.Fill("reallife_dealer_rep_step", "step", DealerText.Step(s), "points", Whole(DealerCatalogue.RepSteps[s]), "perk", DealerText.Perk(s)))
+                    .Append('\n');
+            }
+            return text.ToString();
+        }
+
+        // One line per mission: what it asks and the reputation it gives.
+        private static string Missions()
+        {
+            var text = new System.Text.StringBuilder();
+            for (int m = 0; m < DealerCatalogue.Missions; m++)
+            {
+                text.Append("- ").Append(DealerText.Fill("reallife_guide_economy_dealer_mission", "name", DealerText.Mission(m), "about", DealerText.MissionAbout(m),
+                    "points", Whole(DealerCatalogue.MissionReward[m]))).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        // One line per extra: its name, its price and how many take it.
+        private static string Extras()
+        {
+            var text = new System.Text.StringBuilder();
+            for (int e = 0; e < DealerCatalogue.ExtraKinds; e++)
+            {
+                text.Append("- ").Append(DealerText.Fill("reallife_guide_economy_dealer_extra", "name", DealerText.Extra(e), "price", Share(DealerCatalogue.ExtraPrice[e]),
+                    "least", Guide.Money(Prices.At(DealerCatalogue.ExtraLeast[e])), "cost", Share(DealerCatalogue.ExtraCost[e]), "takeup", Share(DealerCatalogue.ExtraTakeUp[e]))).Append('\n');
+            }
+            return text.ToString();
         }
 
         // One line per warranty: its name, how long it covers and its premium.

@@ -29,6 +29,7 @@ internal static partial class Program
         DealerBooks();
         DealerSave();
         DealerBalance();
+        DealerBusiness();
     }
 
     private static void DealerWorth()
@@ -335,8 +336,8 @@ internal static partial class Program
             }
         }
         Check(offers > 0 && oneEach && y.Deals.Count <= y.Cars.Count, "dealer: with staff on shift offers come, one waiting for each car at most (" + offers + " in ten days)");
-        DealerRules.CloseDay(y, 13);
-        Check(y.Week[0].Day == 11 && y.Today.Day == 13, "dealer: a closed day goes into the week's books");
+        DealerRules.CloseDay(s, y, 13);
+        Check(y.Past[0].Day == 11 && y.Today.Day == 13 && y.Past[0].Cars == y.Cars.Count, "dealer: a closed day goes into the days kept, with the lot read off as it closed");
     }
 
     private static void DealerCredit()
@@ -434,7 +435,7 @@ internal static partial class Program
         y.Deals.Add(new DealerOffer { Id = 7, Car = 4, Customer = "Rosa Lambert", Profile = 2, Offer = 22000, Ceiling = 23900, Counters = 1, Made = 390, Expires = 414, Stage = OfferStage.Driving, Drove = true, WantsDrive = true,
             WantsFinance = true, Score = 700, Deposit = 20, Term = 120, Tier = 1, TradeType = "ba:vehicletype_honzamimic", TradeColour = "Black", TradeKm = 90000, TradeCondition = 600, TradeAllowance = 3100 });
         y.Today = new DealerBook { Day = 16, Visitors = 9, Served = 7, Lost = 2, Offers = 3, Sold = 1, Takings = 23000, Bought = 18000, Claims = 300, Margin = 4000 };
-        y.Week[0] = new DealerBook { Day = 15, Visitors = 4 };
+        y.Past[0].CopyFrom(new DealerBook { Day = 15, Visitors = 4 });
         s.Yards.Add(y);
         s.Market.Add(new DealerListing { Id = 50, Kind = ListingKind.Auction, Type = "ba:vehicletype_vordpony", Colour = "Silver", Km = 60000, Condition = 700, Shown = 740, Faults = 2, Inspected = true, Asking = 21000, Floor = 0,
             Haggles = 0, Countered = 0, Ends = 405, Leader = 3, Ceiling = 30000, Bids = 6, Gone = false });
@@ -447,7 +448,7 @@ internal static partial class Program
         Check(back != null && back.Yards.Count == 1 && back.Yards[0].Name == "Mark's   Motors  fine" && back.Yards[0].Cars[0].VehicleId == "Ab+c/9==" && back.Yards[0].Deals[0].TradeAllowance == 3100
               && back.Yards[0].Spots.Count == 2 && back.Market[0].Leader == 3 && back.Plans[0].Missed == 1 && back.Covers[0].RestUntil == 25 && back.Sales[0].Tier == 2 && !back.Yards[0].Finance,
             "dealer: every part comes back, a name with the line's own marks made plain");
-        DealerState later = DealerStore.Read(line.Replace("^m:", "^z:something new|1;2^m:").Replace("|456^p:", "|456|99|extra^p:"), out version);
+        DealerState later = DealerStore.Read(line.Replace("^m:", "^z:something new|1;2^m:").Replace("^t:", "|99|extra^t:"), out version);
         Check(later != null && DealerStore.Write(later) == line, "dealer: a line of a later version, with a new part and new fields, still loads");
         Check(DealerStore.Read("nonsense", out version) == null && DealerStore.Read("v=1^y:a|b", out version) == null && DealerStore.Read(null, out version) == null,
             "dealer: a line that is not the dealership's is not taken for one");

@@ -1,3 +1,5 @@
+using System;
+
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
@@ -19,13 +21,21 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const string FeeKey = "reallife_transaction_dealer_fee";
         public const string PrepareKey = "reallife_transaction_dealer_prepare";
         public const string ClaimKey = "reallife_transaction_dealer_claim";
+        public const string WorkshopKey = "reallife_transaction_dealer_workshop";
+        public const string EventKey = "reallife_transaction_dealer_event";
+        public const string ExtrasCostKey = "reallife_transaction_dealer_extras_cost";   // the extras sold, bought in
+        public static readonly string[] ExtraKeys =   // each extra sold with a car, by DealerCatalogue's kinds
+        {
+            "reallife_transaction_dealer_extra_protection", "reallife_transaction_dealer_extra_service", "reallife_transaction_dealer_extra_accessories", "reallife_transaction_dealer_extra_wheels"
+        };
         public const string StockRow = "reallife_books_dealer_stock";       // the row among the goods for cars and what they cost to buy
-        public const string RunningRow = "reallife_books_dealer_running";   // ...and for warranty claims
+        public const string RunningRow = "reallife_books_dealer_running";   // ...and for warranty claims and events
 
         /// <summary>
         /// What a transaction booked at a dealership of the player's is: takings (a car sold, an instalment, a premium, a car
-        /// taken back and sold at the auction), the stock's cost (a car bought, an inspection, the auction's fee, preparing
-        /// one) or the running cost (a claim). None for anything else booked there (the game's wages, rent and the rest).
+        /// taken back and sold at the auction, an extra), the stock's cost (a car bought, an inspection, the auction's fee,
+        /// preparing one, the workshop, the extras bought in) or the running cost (a claim, an event). None for anything
+        /// else booked there (the game's wages, rent and the rest).
         /// </summary>
         public static DealerLine Of(string type)
         {
@@ -40,11 +50,14 @@ namespace RealLifeOverhaul.Economy.Dealership
                 case InspectionKey:
                 case FeeKey:
                 case PrepareKey:
+                case WorkshopKey:
+                case ExtrasCostKey:
                     return DealerLine.Stock;   // (money back on one of them would come off the row)
                 case ClaimKey:
+                case EventKey:
                     return DealerLine.Running;
                 default:
-                    return DealerLine.None;
+                    return Array.IndexOf(ExtraKeys, type) >= 0 ? DealerLine.Takings : DealerLine.None;
             }
         }
 

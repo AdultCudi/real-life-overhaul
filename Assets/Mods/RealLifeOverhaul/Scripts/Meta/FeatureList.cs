@@ -1259,7 +1259,8 @@ namespace RealLifeOverhaul.Meta
             Economy.Dealership.DealerGuide.AddFacts(Features.Add("economy_dealer", "reallife_meta_title_economy_dealer")
                 .About("reallife_guide_economy_dealer_about").Help("reallife_guide_economy_dealer")
                 .Owns(Settings.EconomyDealerId)
-                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_back")
+                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_event", "reallife_dealer_test_arrive",
+                    "reallife_dealer_test_mission", "reallife_dealer_test_back")
                 .Data(Economy.Dealership.DealerStore.Key, Economy.Dealership.DealerStore.TestKey)
                 .Cleanup(() => Economy.Dealership.DealerDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.Dealership.DealerDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
