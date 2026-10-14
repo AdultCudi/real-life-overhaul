@@ -53,6 +53,10 @@ namespace RealLifeOverhaul.Economy
         private readonly List<int> _amounts = new List<int>(16);
         private readonly CreditFactor[] _tips = new CreditFactor[2];
         private readonly CashFlow _flow = new CashFlow();
+        private readonly CashTable _cash;                                     // the statement, written as it scrolls (over _flow.Entries)
+        private readonly Func<Dictionary<string, string>, bool> _mine, _ofCard;   // made once: what a read of the history keeps
+        private string _cardName;   // the card whose movements are read (_ofCard)
+        private bool _cashRows;     // the table that shows is the statement, written from _cash
 
         private AppShell _shell;
         private DataTable _table;
@@ -71,6 +75,13 @@ namespace RealLifeOverhaul.Economy
             _id = id;
             _tables = new BankTables(id);
             _spec = _tables.Off;
+            _cash = new CashTable(_flow.Entries, CashWords.Game);
+            _mine = Mine;
+            _ofCard = data =>
+            {
+                string value;
+                return data != null && data.TryGetValue("name", out value) && string.Equals(value, _cardName, StringComparison.Ordinal);
+            };
         }
 
         private CreditDesk Desk => _director.Desk;
@@ -158,6 +169,7 @@ namespace RealLifeOverhaul.Economy
                 _pool.Add(_rows[i]);
             }
             _rows.Clear();
+            _cashRows = false;
             _shell.ShowTab(_tab);
             InfoBox box = _shell.Box;
             box.Clear();
@@ -183,10 +195,17 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             box.Done();
-            _table.Show(_spec, _rows, selected);
+            if (_cashRows)
+            {
+                _table.Show(_spec, _cash, selected);   // (written as it scrolls: some fifteen rows of words, not one for every movement)
+            }
+            else
+            {
+                _table.Show(_spec, _rows, selected);
+            }
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Banks: " + (Bank != null ? Bank.Name : "no bank") + ", tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms; " + box.Fit() + ".");
+                Logger?.Info("Banks: " + (Bank != null ? Bank.Name : "no bank") + ", tab " + _tab + " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)") + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms; " + box.Fit() + ".");
             }
         }
 
@@ -476,7 +495,7 @@ namespace RealLifeOverhaul.Economy
         private void Statement(InfoBox box, int today)
         {
             Names();
-            _flow.Read(_period, today);
+            _flow.Read(_period, today, IsHouse ? null : _mine);   // (the house bank's is every movement: nothing to leave out)
             _spec = _tables.Statement;
             box.Headline("reallife_bank_statement");
             if (!box.HasSelector || !box.Selector(CashFlow.PeriodDays.Length, _period, CashFlow.PeriodName, i =>
@@ -487,33 +506,25 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CashFlow.PeriodName(_period));
             }
+            // Every movement of the bank's, newest first, in the table as it scrolls (CashTable); its totals here, in the
+            // order the rows were once added up in, so that they come to the same figures.
             float came = 0f, went = 0f;
             for (int i = _flow.Entries.Count - 1; i >= 0; i--)
             {
-                CashFlow.Entry entry = _flow.Entries[i];
-                if (!Mine(entry.Data))
+                float amount = _flow.Entries[i].Amount;
+                if (amount > 0f)
                 {
-                    continue;
-                }
-                TableRow row = Row("cash:" + i);
-                row.Kind = entry.Category;
-                row.Set(0, FinanceText.Day(entry.Day), entry.Day);
-                row.Set(1, CashFlow.ItemName(entry.Type, entry.Data));
-                row.Set(2, FinanceText.T(CashCategory.Keys[entry.Category]));
-                if (entry.Amount > 0f)
-                {
-                    came += entry.Amount;
-                    row.Set(3, FinanceText.Money(entry.Amount), entry.Amount, TableRow.Green);
+                    came += amount;
                 }
                 else
                 {
-                    went -= entry.Amount;
-                    row.Set(4, FinanceText.Money(-entry.Amount), -entry.Amount, TableRow.Red);
+                    went -= amount;
                 }
             }
             box.Row("reallife_econ_cash_net", FinanceText.Money(came - went), came >= went ? CellTone.Green : CellTone.Red);
             box.RowPair("reallife_econ_cash_in", FinanceText.Money(came), "reallife_econ_cash_out", FinanceText.Money(went));
-            if (_rows.Count == 0)
+            _cashRows = _flow.Entries.Count > 0;
+            if (!_cashRows)
             {
                 Say("none", FinanceText.T("reallife_bank_row_no_movements", "bank", Bank.Name));
             }

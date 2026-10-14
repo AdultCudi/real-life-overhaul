@@ -62,6 +62,20 @@ namespace RealLifeOverhaul.GameUi
             Model.Begin(spec, rows);
         }
 
+        /// <summary>A table of rows the app has written: its columns go on the header cells, the rows' figures and kinds into the model.</summary>
+        public void Begin(TableSpec spec, List<TableRow> rows)
+        {
+            _shell.SetColumns(spec);
+            Model.Begin(spec, rows);
+        }
+
+        /// <summary>A table written from a source when shown: its columns go on the header cells, its rows' figures and kinds into the model.</summary>
+        public void Begin(TableSpec spec, ITableSource source)
+        {
+            _shell.SetColumns(spec);
+            Model.Begin(spec, source);
+        }
+
         /// <summary>The rows are in: the order, the filter and the totals are worked out and the game's controls show them.</summary>
         public void Apply()
         {
@@ -182,6 +196,7 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             long started = Stopwatch.GetTimestamp();
+            using var hotSpot = HotSpots.Time(SlotOf(Model.Spec));
             if (!Model.SortBy(column))
             {
                 return;
@@ -207,6 +222,7 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             long started = Stopwatch.GetTimestamp();
+            using var hotSpot = HotSpots.Time(SlotOf(spec));
             int kind = _optionKinds[filter][option];
             if (kind == spec.Filters[filter].Chosen)
             {
@@ -223,6 +239,17 @@ namespace RealLifeOverhaul.GameUi
                 AppShell.Logger?.Info("Table (" + spec.Id + "): filter " + (filter + 1) + " set to " + (kind < 0 ? "all" : "kind " + kind) + ", " + (Model.Count - Model.Pinned) + " of "
                     + (Model.Rows - Model.Pinned) + " row(s) shown; " + Ms(started) + " ms.");
             }
+        }
+
+        // The HotSpots slot of an app's tables' sorts and filters ("Table: Finance"): named once an app, on its first click (a slot for each
+        // app, not each table: the names are a few hundred in all, HotSpots.Most).
+        private static int SlotOf(TableSpec spec)
+        {
+            if (spec.Slot < 0)
+            {
+                spec.Slot = HotSpots.Slot("Table: " + spec.App);
+            }
+            return spec.Slot;
         }
 
         private static string Ms(long started)

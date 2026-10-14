@@ -113,6 +113,12 @@ namespace RealLifeOverhaul.Markets
     /// (RSI, MACD, stochastic, average true range, on-balance volume), the price scale on the right and the dates below.
     /// The wheel zooms, a drag moves back and forth in time, and the pointer shows the candle under it. Everything is
     /// worked out when the chart is given its candles or moved, never per frame.
+    ///
+    /// The pointer moving over the candles changes only the bar over the candle under it and the two legends: the bar is a
+    /// picture of its own over the chart's (drawn after it and under the texts, as it was drawn last in the chart's own
+    /// picture), so a move of the pointer redraws one bar and writes the legends (ShowHover), and the candles, the scale
+    /// and the dates stay as they were drawn. The scales are worked out by value (Scale), not by a function made for each
+    /// drawing, so a drawing allocates nothing but its words.
     /// </summary>
     public sealed class MarketChart : MonoBehaviour, IScrollHandler, IBeginDragHandler, IDragHandler, IPointerMoveHandler, IPointerExitHandler
     {
@@ -128,7 +134,7 @@ namespace RealLifeOverhaul.Markets
         private static readonly Color32 Band = new Color32(40, 110, 220, 40), Hover = new Color32(60, 60, 60, 120);
 
         private RectTransform _area;
-        private ChartMesh _mesh;
+        private ChartMesh _mesh, _hoverMesh;
         private readonly List<TMP_Text> _scale = new List<TMP_Text>(Grid + 4);
         private readonly List<TMP_Text> _dates = new List<TMP_Text>(Dates);
         private TMP_Text _legend, _lowerLegend, _empty;
@@ -145,6 +151,30 @@ namespace RealLifeOverhaul.Markets
         private int _hover = -1;
         private float _dragCarry;
         private string _emptyWords = string.Empty;
+        private Action _draw, _showHover;   // made once: what the pointer, the wheel and a drag ask for
+
+        // Where the last drawing put the candles, for the bar over the one under the pointer (ShowHover); _drawn false while
+        // the chart says it has nothing to show.
+        private bool _drawn;
+        private int _drawFirst, _drawLast;
+        private float _drawStep, _drawTop;
+
+        /// <summary>A scale from values to heights: from 'lo' over 'span' to 'bottom' over 'height', as each drawing works it out.</summary>
+        private readonly struct Scale
+        {
+            private readonly double _lo, _span;
+            private readonly float _bottom, _height;
+
+            public Scale(double lo, double span, float bottom, float height)
+            {
+                _lo = lo;
+                _span = span;
+                _bottom = bottom;
+                _height = height;
+            }
+
+            public float Y(double value) => _bottom + (float)((value - _lo) / _span) * _height;
+        }
 
         /// <summary>Makes a chart filling 'parent', its texts copies of 'textTemplate' (the game's own line of text).</summary>
         public static MarketChart Make(RectTransform parent, Func<Transform, TMP_Text> newText)
@@ -166,6 +196,17 @@ namespace RealLifeOverhaul.Markets
             meshRect.pivot = Vector2.zero;
             chart._mesh = meshGo.AddComponent<ChartMesh>();
             chart._mesh.raycastTarget = true;   // (the chart's own events: the wheel, a drag, the pointer)
+            var hoverGo = new GameObject("Hover", typeof(RectTransform));   // over the picture, under the texts made next
+            hoverGo.transform.SetParent(area, false);
+            var hoverRect = (RectTransform)hoverGo.transform;
+            hoverRect.anchorMin = Vector2.zero;
+            hoverRect.anchorMax = Vector2.one;
+            hoverRect.offsetMin = hoverRect.offsetMax = Vector2.zero;
+            hoverRect.pivot = Vector2.zero;
+            chart._hoverMesh = hoverGo.AddComponent<ChartMesh>();
+            chart._hoverMesh.raycastTarget = false;
+            chart._draw = chart.Draw;
+            chart._showHover = chart.ShowHover;
             for (int i = 0; i < Grid + 3; i++)
             {
                 chart._scale.Add(chart.Label(newText, 18f, TextAlignmentOptions.MidlineLeft));
@@ -302,7 +343,7 @@ namespace RealLifeOverhaul.Markets
                 _shown = Mathf.Clamp(e.scrollDelta.y > 0f ? Mathf.RoundToInt(_shown * 0.8f) : Mathf.RoundToInt(_shown * 1.25f) + 1, LeastShown, n);
                 if (_shown != was)
                 {
-                    UiSafe(Draw);
+                    UiSafe(_draw);
                 }
             }
             catch (Exception fault)
@@ -339,7 +380,7 @@ namespace RealLifeOverhaul.Markets
                     if (end != _end)
                     {
                         _end = end;
-                        UiSafe(Draw);
+                        UiSafe(_draw);
                     }
                 }
             }
@@ -370,7 +411,7 @@ namespace RealLifeOverhaul.Markets
                 if (hover != _hover)
                 {
                     _hover = hover;
-                    UiSafe(Draw);
+                    UiSafe(_showHover);   // only the bar and the legends change
                 }
             }
             catch (Exception fault)
@@ -386,7 +427,7 @@ namespace RealLifeOverhaul.Markets
                 if (_hover >= 0)
                 {
                     _hover = -1;
-                    UiSafe(Draw);
+                    UiSafe(_showHover);
                 }
             }
             catch (Exception fault)
@@ -423,10 +464,12 @@ namespace RealLifeOverhaul.Markets
             int n = _candles.Count;
             if (n == 0 || width < 50f || height < 50f)
             {
+                _drawn = false;
                 _empty.gameObject.SetActive(true);
                 UiCloneWords(_empty, _emptyWords);
                 Place(_empty, width * 0.5f - 110f, height * 0.5f);
                 _mesh.End();
+                ShowHover();   // (no bar)
                 return;
             }
             int first = Math.Max(0, _end - _shown), last = Math.Max(first, _end - 1);
@@ -456,13 +499,13 @@ namespace RealLifeOverhaul.Markets
             hi += pad;
             float step = plotW / Math.Max(1, _shown);
             float body = Math.Max(1f, step * 0.66f);
-            Func<double, float> Y = p => priceBottom + (float)((p - lo) / (hi - lo)) * (mainTop - priceBottom);
+            var Y = new Scale(lo, hi - lo, priceBottom, mainTop - priceBottom);
 
             // The grid and the price scale.
             for (int g = 0; g <= Grid; g++)
             {
                 double price = lo + (hi - lo) * g / Grid;
-                float y = Y(price);
+                float y = Y.Y(price);
                 _mesh.Box(0f, y - 0.5f, plotW, y + 0.5f, Rule);
                 TMP_Text label = _scale[g];
                 label.gameObject.SetActive(true);
@@ -478,8 +521,8 @@ namespace RealLifeOverhaul.Markets
                 float x = (i - first) * step + step * 0.5f;
                 bool up = _c[i] >= _o[i];
                 Color32 colour = up ? Up : Down;
-                _mesh.Box(x - 0.75f, Y(_l[i]), x + 0.75f, Y(_h[i]), colour);
-                float top = Y(Math.Max(_o[i], _c[i])), bottom = Y(Math.Min(_o[i], _c[i]));
+                _mesh.Box(x - 0.75f, Y.Y(_l[i]), x + 0.75f, Y.Y(_h[i]), colour);
+                float top = Y.Y(Math.Max(_o[i], _c[i])), bottom = Y.Y(Math.Min(_o[i], _c[i]));
                 _mesh.Box(x - body * 0.5f, bottom, x + body * 0.5f, Math.Max(top, bottom + 1f), colour);
                 if (!_index)
                 {
@@ -489,7 +532,6 @@ namespace RealLifeOverhaul.Markets
             }
 
             // The line over the candles.
-            string legend = OverlayLegend(Math.Max(first, _hover >= 0 ? _hover : last));
             switch (_overlay)
             {
                 case ChartOverlay.Sma20:
@@ -507,7 +549,7 @@ namespace RealLifeOverhaul.Markets
                         if (!double.IsNaN(_b[i]) && !double.IsNaN(_x[i]))
                         {
                             float x = (i - first) * step + step * 0.5f;
-                            _mesh.Box(x - step * 0.5f, Y(_x[i]), x + step * 0.5f, Y(_b[i]), Band);
+                            _mesh.Box(x - step * 0.5f, Y.Y(_x[i]), x + step * 0.5f, Y.Y(_b[i]), Band);
                         }
                     }
                     Polyline(_a, first, last, step, Y, First);
@@ -524,15 +566,8 @@ namespace RealLifeOverhaul.Markets
                 LowerPane(first, last, step, paneBottom, paneTop, plotW);
             }
 
-            // The candle under the pointer.
-            int shownAt = _hover >= first && _hover <= last ? _hover : last;
-            if (_hover >= first && _hover <= last)
-            {
-                float x = (_hover - first) * step + step * 0.5f;
-                _mesh.Box(x - 0.5f, DateHeight, x + 0.5f, mainTop, Hover);
-            }
+            // The legend over the chart: its words are the candle's under the pointer (ShowHover).
             _legend.gameObject.SetActive(true);
-            UiCloneWords(_legend, CandleWords(shownAt) + (legend.Length > 0 ? "    " + legend : string.Empty));
             Place(_legend, 4f, height - LegendHeight * 0.5f);
             ((RectTransform)_legend.transform).sizeDelta = new Vector2(width, 26f);
 
@@ -550,6 +585,39 @@ namespace RealLifeOverhaul.Markets
                 Place(label, (i - first) * step + step * 0.5f - 110f, DateHeight * 0.5f);
             }
             _mesh.End();
+            _drawn = true;
+            _drawFirst = first;
+            _drawLast = last;
+            _drawStep = step;
+            _drawTop = mainTop;
+            ShowHover();
+        }
+
+        // The candle under the pointer: a bar over it (its own picture, over the candles') and the two legends' words, of it
+        // or, with the pointer away, of the last candle shown. What a move of the pointer redraws; the rest stays as drawn.
+        private void ShowHover()
+        {
+            _hoverMesh.Begin();
+            if (!_drawn)
+            {
+                _hoverMesh.End();
+                return;
+            }
+            int first = _drawFirst, last = _drawLast;
+            bool over = _hover >= first && _hover <= last;
+            if (over)
+            {
+                float x = (_hover - first) * _drawStep + _drawStep * 0.5f;
+                _hoverMesh.Box(x - 0.5f, DateHeight, x + 0.5f, _drawTop, Hover);
+            }
+            _hoverMesh.End();
+            int shownAt = over ? _hover : last;
+            string legend = OverlayLegend(Math.Max(first, _hover >= 0 ? _hover : last));
+            UiCloneWords(_legend, CandleWords(shownAt) + (legend.Length > 0 ? "    " + legend : string.Empty));
+            if (_lower != ChartLower.None)
+            {
+                UiCloneWords(_lowerLegend, LowerWords(shownAt));
+            }
         }
 
         // The range widened by the line over the candles.
@@ -582,7 +650,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        private void Polyline(double[] series, int first, int last, float step, Func<double, float> y, Color32 colour)
+        private void Polyline(double[] series, int first, int last, float step, in Scale y, Color32 colour)
         {
             bool have = false;
             Vector2 previous = default(Vector2);
@@ -593,7 +661,7 @@ namespace RealLifeOverhaul.Markets
                     have = false;
                     continue;
                 }
-                var point = new Vector2((i - first) * step + step * 0.5f, y(series[i]));
+                var point = new Vector2((i - first) * step + step * 0.5f, y.Y(series[i]));
                 if (have)
                 {
                     _mesh.Line(previous, point, 2f, colour);
@@ -643,24 +711,24 @@ namespace RealLifeOverhaul.Markets
                     break;
             }
             double span = hi - lo;
-            Func<double, float> Y = v => bottom + (float)((v - lo) / span) * (top - bottom);
+            var Y = new Scale(lo, span, bottom, top - bottom);
             if (_lower == ChartLower.Rsi || _lower == ChartLower.Stochastic)
             {
                 double low = _lower == ChartLower.Rsi ? 30.0 : 20.0, high = _lower == ChartLower.Rsi ? 70.0 : 80.0;
-                _mesh.Box(0f, Y(low), plotW, Y(high), Band);
-                ScaleAt(Grid + 1, plotW, Y(high), high.ToString("0"));
-                ScaleAt(Grid + 2, plotW, Y(low), low.ToString("0"));
+                _mesh.Box(0f, Y.Y(low), plotW, Y.Y(high), Band);
+                ScaleAt(Grid + 1, plotW, Y.Y(high), high.ToString("0"));
+                ScaleAt(Grid + 2, plotW, Y.Y(low), low.ToString("0"));
             }
             if (_lower == ChartLower.Macd)
             {
-                float zero = Y(0.0);
+                float zero = Y.Y(0.0);
                 _mesh.Box(0f, zero - 0.5f, plotW, zero + 0.5f, Rule);
                 for (int i = first; i <= last; i++)
                 {
                     if (!double.IsNaN(_w[i]))
                     {
                         float x = (i - first) * step + step * 0.5f;
-                        _mesh.Box(x - step * 0.3f, zero, x + step * 0.3f, Y(_w[i]), _w[i] >= 0 ? UpFaint : DownFaint);
+                        _mesh.Box(x - step * 0.3f, zero, x + step * 0.3f, Y.Y(_w[i]), _w[i] >= 0 ? UpFaint : DownFaint);
                     }
                 }
                 Polyline(_y, first, last, step, Y, First);
@@ -674,9 +742,7 @@ namespace RealLifeOverhaul.Markets
                     Polyline(_z, first, last, step, Y, Second);
                 }
             }
-            int at = _hover >= first && _hover <= last ? _hover : last;
-            _lowerLegend.gameObject.SetActive(true);
-            UiCloneWords(_lowerLegend, LowerWords(at));
+            _lowerLegend.gameObject.SetActive(true);   // (its words are the candle's under the pointer: ShowHover)
             Place(_lowerLegend, 4f, top - 12f);
             ((RectTransform)_lowerLegend.transform).sizeDelta = new Vector2(plotW, 24f);
         }
@@ -804,7 +870,7 @@ namespace RealLifeOverhaul.Markets
         {
             if (_mesh != null && _candles.Count > 0)
             {
-                UiSafe(Draw);
+                UiSafe(_draw);
             }
         }
     }

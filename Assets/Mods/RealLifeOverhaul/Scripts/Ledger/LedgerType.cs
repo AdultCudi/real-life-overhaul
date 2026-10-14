@@ -13,9 +13,11 @@ namespace RealLifeOverhaul.Ledger
     /// Liberation Serif or DejaVu Serif under Linux and Proton), with its bold and italic faces where the system has them;
     /// else none, and the paper keeps the game's own font. No font file ships with the mod.
     ///
-    /// Looked up when the page is built (once a city). One line in Player.log, once a session, says which face the paper is
-    /// set in and why, with the names of the game's loaded font assets. A face made from the system is made once a
-    /// session and kept.
+    /// Looked up when the page is built (once a city, at the paper's first opening). The game's own serif is asked of the
+    /// game by name; only when it has none are the fonts in memory gone through (Core/SceneFinds: a search of everything
+    /// the engine holds), and a serif found so is kept while it stays loaded. One line in Player.log, once a session, says which face the paper is set
+    /// in and why, with the names of the game's loaded font assets when they were gone through. A face made from the system
+    /// is made once a session and kept.
     /// </summary>
     public static class LedgerType
     {
@@ -26,6 +28,7 @@ namespace RealLifeOverhaul.Ledger
         private static string _madeFrom;
         private static bool _triedSystem;
         private static bool _told;
+        private static TMP_FontAsset _searched;   // the serif found among the game's loaded fonts, while it stays loaded
 
         /// <summary>The paper's face, or null for the game's own font.</summary>
         public static TMP_FontAsset Find()
@@ -41,14 +44,23 @@ namespace RealLifeOverhaul.Ledger
             {
                 face = null;   // the game's list of sign faces is not as this version expects: looked for by name below
             }
+            TMP_FontAsset[] loaded = null;
             if (face != null)
             {
                 why = "the serif the game ships for shop signs";
             }
-            TMP_FontAsset[] loaded = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
-            if (face == null)
+            else if (_searched != null)
             {
+                face = _searched;   // found among the game's fonts earlier this session (a font asset stays loaded)
+                why = "a serif among the game's fonts";
+            }
+            else
+            {
+                // Only when the game's own serif is not there: everything in memory gone through (SceneFinds counts and names it;
+                // the page is built at its first opening, with the game standing still under the menu).
+                loaded = SceneFinds.InMemory<TMP_FontAsset>("ledger: a serif among the game's fonts being looked for (everything in memory gone through)");
                 face = Serif(loaded);
+                _searched = face;
                 if (face != null)
                 {
                     why = "a serif among the game's fonts";
@@ -66,7 +78,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 _told = true;
                 LedgerDirector.Logger?.Info("City Ledger: the paper is set in " + (face != null ? Family(face) + ", " + why : "the game's own font: no serif in the game or on the system")
-                                            + ". The game's font assets: " + Names(loaded) + ".");
+                                            + (loaded != null ? ". The game's font assets: " + Names(loaded) + "." : "."));
             }
             return face;
         }

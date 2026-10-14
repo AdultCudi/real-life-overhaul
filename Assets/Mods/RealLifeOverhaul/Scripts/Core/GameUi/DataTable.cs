@@ -11,84 +11,16 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The tone of a cell: plain, the game's yellow, its red, its green (as EconoView colours a gain and a loss). A type
-    /// of its own so that a cell's figure is never taken for a tone: TableRow.Set(column, words, figure) orders and sums
-    /// the column by the figure whatever its type.
-    /// </summary>
-    public enum CellTone : byte
-    {
-        Plain = 0,
-        Yellow = 1,
-        Red = 2,
-        Green = 3
-    }
-
-    /// <summary>
-    /// One row of an app's table: the words of each cell, what each cell is ordered by, the kind the row is of, or
-    /// one line that only says something. An app keeps its rows and uses them again (Reset).
-    /// </summary>
-    public sealed class TableRow
-    {
-        /// <summary>The tones of a cell (GameUi.CellTone), by their old names.</summary>
-        public const GameUi.CellTone Plain = GameUi.CellTone.Plain, Yellow = GameUi.CellTone.Yellow, Red = GameUi.CellTone.Red, Green = GameUi.CellTone.Green;
-
-        public string Id;
-        public readonly string[] Text = new string[TableSpec.MaxColumns];
-        public readonly double[] Key = new double[TableSpec.MaxColumns];    // what a column is ordered and summed by; NaN for nothing
-        public readonly byte[] Tones = new byte[TableSpec.MaxColumns];
-        public int Kind, Kind2;     // for the table's first and second filter; -1 for of no kind
-        public bool Info;           // a line of words: no background, not to be selected, always shown first
-        public bool Pick;           // a click on it means something
-        public bool Pinned;         // shown first whatever the order and the filter, and not counted or summed
-        public bool NoTotal;        // ordered and filtered like any other row, but in no total
-        public int Index;           // what it stands for in its tab's list
-
-        // The four cells the apps' first tables had, by their old names.
-        public string A { get { return Text[0]; } set { Text[0] = value; } }
-        public string B { get { return Text[1]; } set { Text[1] = value; } }
-        public string C { get { return Text[2]; } set { Text[2] = value; } }
-        public string D { get { return Text[3]; } set { Text[3] = value; } }
-        /// <summary>The tone of the fourth cell (the last one of a table of four).</summary>
-        public GameUi.CellTone Tone { get { return (GameUi.CellTone)Tones[3]; } set { Tones[3] = (byte)value; } }
-
-        public TableRow Reset(string id)
-        {
-            Id = id;
-            for (int i = 0; i < TableSpec.MaxColumns; i++)
-            {
-                Text[i] = null;
-                Key[i] = double.NaN;
-                Tones[i] = (byte)Plain;
-            }
-            Kind = Kind2 = -1;
-            Info = Pick = Pinned = NoTotal = false;
-            Index = 0;
-            return this;
-        }
-
-        /// <summary>A cell of words, ordered by them where its column sorts.</summary>
-        public void Set(int column, string words, GameUi.CellTone tone = Plain)
-        {
-            Text[column] = words;
-            Key[column] = double.NaN;
-            Tones[column] = (byte)tone;
-        }
-
-        /// <summary>A cell with the figure it is ordered (and summed) by: an amount, a rate, a count, a day.</summary>
-        public void Set(int column, string words, double key, GameUi.CellTone tone = Plain)
-        {
-            Text[column] = words;
-            Key[column] = key;
-            Tones[column] = (byte)tone;
-        }
-    }
-
-    /// <summary>
     /// The table of an app, whatever it lists: the game's own (BaTable) over the game's scroller, which makes only
     /// the rows in view and reuses them. An app hands over its rows and the table's specification; the order, the
     /// filter and the totals are the model's (TableView, TableModel), and this class shows the rows in that order,
     /// with one line at the foot for the totals (as EconoView's income statement ends in its total) and one sentence
     /// where a filter leaves nothing (as EconoView says "no loans" in the list's place).
+    ///
+    /// A list of thousands (every movement of money of a month) is shown from a source instead (ITableSource, Show with a
+    /// source): the table orders, filters and sums it by its figures and kinds, and a row's words are written only when
+    /// the scroller brings it into view (TableRow.Ready, from DataCellView.SetData), so a tab of 30,000 movements makes
+    /// some fifteen rows of words. The rows standing for a source's rows are the table's own, kept and used again.
     ///
     /// The header names are not fields of TableRow, so the game's own sort by reflection takes no part.
     /// </summary>
@@ -112,7 +44,10 @@ namespace RealLifeOverhaul.GameUi
 
         private readonly List<TableRow> _shown = new List<TableRow>(48);
         private readonly TableRow _total = new TableRow(), _empty = new TableRow();
+        private readonly List<TableRow> _standing = new List<TableRow>(64);   // the rows a source's rows stand in, kept and used again
+        private readonly List<TableRow> _rowsOf = new List<TableRow>(64);     // those of the source shown now, in its order
         private List<TableRow> _source;
+        private ITableSource _from;   // the source the rows are written from, or null for rows the app wrote
         private TableView _view;
         private bool _started, _jump;
         private int _layout;
@@ -166,7 +101,7 @@ namespace RealLifeOverhaul.GameUi
             }
             try
             {
-                return model.Id;
+                return IdOf(model);
             }
             catch (Exception fault)
             {
@@ -181,45 +116,61 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public void Show(TableSpec spec, List<TableRow> rows, string selectedId)
         {
-            bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(rows, _source);
+            bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(rows, _source) && _from == null;
             if (!same)
             {
                 _layout++;
             }
             _source = rows;
-            TableModel model = _view.Model;
-            _view.Begin(spec, rows.Count);
-            // A table that neither sorts nor filters is a page laid out by hand (headings between its rows): every
-            // row stays exactly where it was written. In any other, a line of words and a pinned row come first.
-            bool ordered = spec.Sortable > 0 || spec.FilterCount > 0;
-            for (int r = 0; r < rows.Count; r++)
+            _from = null;
+            _view.Begin(spec, rows);   // (a line of words and a pinned row come first, unless the table neither sorts nor filters: TableModel.Begin)
+            Shown(selectedId, same);
+        }
+
+        /// <summary>
+        /// Shows a table whose rows are written only as they come into view (a list of thousands: GameUi.ITableSource), as
+        /// the table the specification describes. Its order, filter and totals are those of the rows written in full; a
+        /// row's words are made when the scroller shows it, a column's words when the table is ordered by it. The same
+        /// source shown again stays where the player scrolled to. Its rows are kept by the table and used again.
+        /// </summary>
+        public void Show(TableSpec spec, ITableSource source, string selectedId)
+        {
+            bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(source, _from);
+            if (!same)
             {
-                TableRow row = rows[r];
-                if (ordered && (row.Info || row.Pinned))
-                {
-                    model.Pin(r);
-                    continue;
-                }
-                for (int c = 0; c < spec.Count; c++)
-                {
-                    if (spec.Columns[c].Sort != TableSort.None || spec.Columns[c].Sums)
-                    {
-                        model.Set(r, c, row.Key[c], row.Text[c]);
-                    }
-                }
-                model.Kind(r, 0, row.Kind);
-                model.Kind(r, 1, row.Kind2);
-                if (row.NoTotal)
-                {
-                    model.Leave(r);
-                }
+                _layout++;
             }
+            int count = source.Count;
+            while (_standing.Count < count)
+            {
+                _standing.Add(new TableRow());   // (once for the longest list this table has shown: some 70 bytes a row)
+            }
+            _rowsOf.Clear();
+            for (int r = 0; r < count; r++)
+            {
+                _rowsOf.Add(_standing[r].Stand(source, r));
+            }
+            _source = _rowsOf;
+            _from = source;
+            _view.Begin(spec, source);
+            Shown(selectedId, same);
+        }
+
+        private void Shown(string selectedId, bool same)
+        {
             _view.Apply();
             Fill();
             SelectRow(null, selectedId);   // remembers who is selected; the row colours itself when the scroller makes it
             int jump = _jump ? Place(selectedId) : -1;
             _jump = false;
             Reload(jump, same);
+        }
+
+        // A row's id: a row written from a source is written first (only a search for a selected row asks this of rows not shown).
+        private static string IdOf(TableRow row)
+        {
+            row.Ready();
+            return row.Id;
         }
 
         public void ClearSelection()
@@ -281,7 +232,7 @@ namespace RealLifeOverhaul.GameUi
         {
             for (int i = 0; id != null && i < _shown.Count; i++)
             {
-                if (_shown[i].Id == id)
+                if (IdOf(_shown[i]) == id)
                 {
                     return i;
                 }
@@ -320,7 +271,7 @@ namespace RealLifeOverhaul.GameUi
             int selected = -1;
             for (int r = 0; was != null && r < _source.Count; r++)
             {
-                if (_source[r].Id == was)
+                if (IdOf(_source[r]) == was)
                 {
                     selected = r;
                     break;
@@ -339,6 +290,10 @@ namespace RealLifeOverhaul.GameUi
             }
             SelectRow(null, null);
             Reload(-1, false);
+            if (keep >= 0)
+            {
+                _source[keep].Ready();
+            }
             if (keep >= 0 && _source[keep].Pick)
             {
                 _jump = true;
@@ -419,6 +374,7 @@ namespace RealLifeOverhaul.GameUi
                         selectedBackgroundColor = _table.RowSelected;
                     }
                 }
+                row.Ready();   // (a row of a source is written when it first comes into view)
                 _row = row;
                 TableSpec spec = _table != null ? _table.Spec : null;
                 int shown = row.Info || spec == null ? 1 : Mathf.Min(spec.Count, _count);
@@ -432,7 +388,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     if (_cells[i] != null)
                     {
-                        _cells[i].text = row.Text[i] ?? string.Empty;
+                        _cells[i].text = row.TextAt(i) ?? string.Empty;
                     }
                 }
                 Look(false);
@@ -534,7 +490,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     continue;
                 }
-                switch ((CellTone)_row.Tones[i])
+                switch ((CellTone)_row.ToneAt(i))
                 {
                     case TableRow.Red: _cells[i].color = references.colors.red; break;
                     case TableRow.Yellow: _cells[i].color = selected ? references.colors.orange : references.colors.yellow; break;

@@ -156,7 +156,9 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>
         /// Runs something the player clicked, inside the guard of the class the click's code is written in (Core/Guard):
         /// nothing thrown here reaches the game's interface, a fault counts for that class as its other entry points' do,
-        /// and a click of a class or feature that is switched off does nothing.
+        /// and a click of a class or feature that is switched off does nothing. The click is timed under the name of the class
+        /// and method its code is written in ("Click: FinanceApp.Build", Core/Guard.HandlerSlot: one look-up a click), so the
+        /// session record names an app's tab, row, button or filter that takes long.
         /// </summary>
         public static void Safe(Action action)
         {
@@ -169,6 +171,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return;
             }
+            using var hotSpot = HotSpots.Time(Guard.HandlerSlot(action, "Click"));
             try
             {
                 action();

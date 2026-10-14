@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Flare
         public void Closed()
         {
             _ready = false;
-            _pictures.Clear();
+            _pictures.Closed();   // (the pictures are kept for the next opening: FlarePictures)
         }
 
         /// <summary>The director says something has changed: the page is written again if it is showing.</summary>
