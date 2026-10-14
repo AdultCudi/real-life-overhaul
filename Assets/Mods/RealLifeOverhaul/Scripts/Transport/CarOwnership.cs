@@ -113,7 +113,7 @@ namespace RealLifeOverhaul
             Instance = this;
             CarGarage.Reset();
             _roadside = new CarRoadside(this);
-            _cut = CutPedal;
+            _cut = Guard.Listener(CutPedal);   // (each physics step of the vehicle's input: a fault never reaches the vehicle's own: Core/Guard)
             _onHelp = HelpClicked;
             CarDash.Logger = Logger;
             GameUi.WorldPanel.Logger = Logger;

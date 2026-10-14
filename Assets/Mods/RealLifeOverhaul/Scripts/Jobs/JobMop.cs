@@ -92,7 +92,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _onCell = cell => mop.UseAtPlayerPosition();   // the game's public call, for the cell under the player
+                _onCell = Guard.Listener<DirtSpotObject>(cell => mop.UseAtPlayerPosition());   // the game's public call, for the cell under the player
                 _logger?.Warn("Jobs: the mop's click method was not found; the mop cleans the cell under the player instead.");
             }
             _event.AddListener(_onCell);

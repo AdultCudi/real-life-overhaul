@@ -702,7 +702,7 @@ namespace RealLifeOverhaul.GameUi
                 image.sprite = _dotSprite;
                 var button = dot.GetComponent<Button>();
                 button.transition = Selectable.Transition.None;
-                button.onClick.AddListener(() => Turn(page));
+                button.onClick.AddListener(Guard.Listener(() => Turn(page)));
                 _dotImages.Add(image);
             }
             float width = DotsWidth(Pages);

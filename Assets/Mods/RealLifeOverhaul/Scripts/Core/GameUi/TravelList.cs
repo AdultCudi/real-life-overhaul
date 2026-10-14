@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     Row clicked = row;
                     row.Button.onClick = new Button.ButtonClickedEvent();
-                    row.Button.onClick.AddListener(() => Picked(clicked));
+                    row.Button.onClick.AddListener(Guard.Listener(() => Picked(clicked)));
                 }
                 _rows.Add(row);
             }

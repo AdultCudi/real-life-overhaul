@@ -12,6 +12,7 @@ using UI.CurrentBuilding;
 using UI.Guiders;
 using UI.InGameUI;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -398,7 +399,7 @@ namespace RealLifeOverhaul
                 LocalizorManager.OnLanguageChanged = (Action)Delegate.Remove(LocalizorManager.OnLanguageChanged, _onLanguage);
                 if (_destination != null)
                 {
-                    _destination.onClick.RemoveListener(Guiders);
+                    _destination.onClick.RemoveListener(_guiders);
                 }
             }
             catch (Exception)
@@ -462,13 +463,14 @@ namespace RealLifeOverhaul
             {
                 if (_destination != null)
                 {
-                    _destination.onClick.RemoveListener(Guiders);
+                    _destination.onClick.RemoveListener(_guiders);
                 }
                 _card = card;
                 _destination = card != null ? card.setDestinationButton : null;
                 if (_destination != null)
                 {
-                    _destination.onClick.AddListener(Guiders);   // (after the game's own: its listener is the button's own)
+                    _guiders = _guiders ?? Guard.Listener(Guiders);   // (made once, through the guard: Core/Guard)
+                    _destination.onClick.AddListener(_guiders);   // (after the game's own: its listener is the button's own)
                 }
             }
             bool on = SpecialBuildings.Active;
@@ -574,6 +576,8 @@ namespace RealLifeOverhaul
 
         // Each guider set to an address: the special name on its marker, or the game's own words back where a name was
         // put and is no longer wanted. A few comparisons a second.
+        private UnityAction _guiders;
+
         private void Guiders()
         {
             List<DirectionGuider> all = GuidersManager.AllGuiders;

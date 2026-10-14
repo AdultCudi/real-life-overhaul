@@ -396,8 +396,8 @@ namespace RealLifeOverhaul.Meta
                 _field.enabled = false;
                 _field.enabled = true;
                 _field.onValueChanged.AddListener(Changed);
-                _field.onSelect.AddListener(Selected);
-                _field.onDeselect.AddListener(Deselected);
+                _field.onSelect.AddListener(Guard.Listener<string>(Selected));   // (the two with no try of their own: through the guard, Core/Guard)
+                _field.onDeselect.AddListener(Guard.Listener<string>(Deselected));
                 _field.onEndEdit.AddListener(Ended);
 
                 _top = gameObject.AddComponent<ScrollToTop>();

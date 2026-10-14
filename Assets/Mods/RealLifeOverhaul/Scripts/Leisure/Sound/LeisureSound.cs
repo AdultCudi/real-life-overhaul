@@ -6,6 +6,7 @@ using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul.Leisure
 {
@@ -330,7 +331,8 @@ namespace RealLifeOverhaul.Leisure
             else if (!_hooked)
             {
                 _hooked = true;
-                gm.radioPlayer.onNewSong.AddListener(OnSong);
+                _onSong = _onSong ?? Guard.Listener<string>(OnSong);   // (made once, through the guard: Core/Guard)
+                gm.radioPlayer.onNewSong.AddListener(_onSong);
             }
         }
 
@@ -344,9 +346,11 @@ namespace RealLifeOverhaul.Leisure
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm != null && gm.radioPlayer != null)
             {
-                gm.radioPlayer.onNewSong.RemoveListener(OnSong);
+                gm.radioPlayer.onNewSong.RemoveListener(_onSong);
             }
         }
+
+        private UnityAction<string> _onSong;
 
         private void OnSong(string song)
         {

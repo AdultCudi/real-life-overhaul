@@ -154,8 +154,8 @@ namespace RealLifeOverhaul
             _categoryShown = categoryShown;
             _mode = mode;
             _choose = choose;
-            _onCategoryShown = OnCategoryShown;
-            _onColour = OnColour;
+            _onCategoryShown = Guard.Listener<AppearanceElementType>(OnCategoryShown);   // (a fault here never reaches the game's own listeners: Core/Guard)
+            _onColour = Guard.Listener<int>(OnColour);
             _tag = "reallife_creator_tag".GetLocalization();
             TMP_Text sample = customizer.GetComponentInChildren<TMP_Text>(true);
             _font = sample != null ? sample.font : null;
@@ -360,7 +360,7 @@ namespace RealLifeOverhaul
             tile.Mark.transform.SetAsLastSibling();
 
             Button button = entry.GetComponent<Button>();
-            button.onClick.AddListener(() => OnTile(tile));
+            button.onClick.AddListener(Guard.Listener(() => OnTile(tile)));
             entry.gameObject.SetActive(true);
             return tile;
         }

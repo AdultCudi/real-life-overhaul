@@ -7,6 +7,7 @@ using BigAmbitions.Mods;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -838,6 +839,51 @@ namespace RealLifeOverhaul
                 try
                 {
                     handler(a, b);
+                }
+                catch (Exception e)
+                {
+                    Fail(guard, e);
+                }
+            };
+        }
+
+        /// <summary>
+        /// A listener for one of the engine's or the game's UnityEvents (a button's click, a toggle's change, a car's
+        /// collision, the vehicle's input each physics step) that can never throw into the event's other listeners, with the
+        /// guard of the class it is written in. Made once and kept where it is taken off again: the event compares it.
+        /// </summary>
+        public static UnityAction Listener(UnityAction handler)
+        {
+            FeatureGuard guard = OfHandler(handler);
+            return () =>
+            {
+                if (guard.Off)
+                {
+                    return;
+                }
+                try
+                {
+                    handler();
+                }
+                catch (Exception e)
+                {
+                    Fail(guard, e);
+                }
+            };
+        }
+
+        public static UnityAction<T> Listener<T>(UnityAction<T> handler)
+        {
+            FeatureGuard guard = OfHandler(handler);
+            return value =>
+            {
+                if (guard.Off)
+                {
+                    return;
+                }
+                try
+                {
+                    handler(value);
                 }
                 catch (Exception e)
                 {

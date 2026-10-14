@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.GameUi
                 if (row.Button != null)
                 {
                     row.Button.onClick = new Button.ButtonClickedEvent();
-                    row.Button.onClick.AddListener(() => Picked(index));
+                    row.Button.onClick.AddListener(Guard.Listener(() => Picked(index)));
                 }
                 var pointer = made.AddComponent<MapPickerEntry>();
                 pointer.Owner = this;

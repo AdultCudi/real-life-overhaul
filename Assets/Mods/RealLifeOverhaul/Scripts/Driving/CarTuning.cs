@@ -77,7 +77,7 @@ namespace RealLifeOverhaul
             Instance = this;
             _drag = gameObject.AddComponent<CarDrag>();
             _drag.enabled = false;
-            _easePedal = EasePedal;
+            _easePedal = Guard.Listener(EasePedal);   // (each physics step of the vehicle's input: a fault never reaches the vehicle's own: Core/Guard)
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Driving: CarTuning.Update");

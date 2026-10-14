@@ -9,6 +9,7 @@ using UI;
 using UI.Guiders;
 using UI.InGameUI;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul
@@ -648,13 +649,15 @@ namespace RealLifeOverhaul
                 if (added > 0)
                 {
                     // The two switches that tick rows without telling them: the category's own, and "toggle all" at the top.
-                    under.ToggleAll.onValueChanged.RemoveListener(Swept);
-                    under.ToggleAll.onValueChanged.AddListener(Swept);
+                    _sweptHeard = _sweptHeard ?? Guard.Listener<bool>(Swept);   // (made once, through the guard: a fault never reaches the game's own listeners: Core/Guard)
+                    _sweptAllHeard = _sweptAllHeard ?? Guard.Listener<bool>(SweptAll);
+                    under.ToggleAll.onValueChanged.RemoveListener(_sweptHeard);
+                    under.ToggleAll.onValueChanged.AddListener(_sweptHeard);
                     var all = GameContract.FilterToggleAll.Field?.GetValue(filters) as Toggle;
                     if (all != null)
                     {
-                        all.onValueChanged.RemoveListener(SweptAll);
-                        all.onValueChanged.AddListener(SweptAll);
+                        all.onValueChanged.RemoveListener(_sweptAllHeard);
+                        all.onValueChanged.AddListener(_sweptAllHeard);
                     }
                     under.UpdateToggleAllState();
                     Logger?.Info("Map places: " + added + " row(s) added to the city map's filters" + (own ? " (under a category of their own)." : " (under special buildings)."));
@@ -815,6 +818,8 @@ namespace RealLifeOverhaul
         }
 
         // The category's switch has gone over every row under it, the mod's included, without telling them.
+        private static UnityAction<bool> _sweptHeard, _sweptAllHeard;   // (the two switches' listeners, through the guard)
+
         private static void Swept(bool on)
         {
             for (int i = 0; i < Categories.Count; i++)
@@ -944,7 +949,7 @@ namespace RealLifeOverhaul
                             var click = blob.gameObject.AddComponent<Button>();
                             click.targetGraphic = blob;
                             click.transition = Selectable.Transition.None;
-                            click.onClick.AddListener(() => GoTo(place));
+                            click.onClick.AddListener(Guard.Listener(() => GoTo(place)));
                         }
                         place.Labelled = true;
                     }
