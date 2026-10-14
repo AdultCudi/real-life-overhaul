@@ -43,6 +43,10 @@ namespace RealLifeOverhaul.Markets
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+        // The line being written, kept for the next: its room (about 250 to 400 thousand characters for 140 companies with
+        // their histories) grows once a session instead of over again on every save and autosave. One per thread.
+        [ThreadStatic] private static StringBuilder _text;
+
         public static MarketState Load(Dictionary<string, string> data, out int version)
         {
             version = 0;
@@ -84,7 +88,8 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public static string Write(MarketState s, bool city)
         {
-            var t = new StringBuilder(64 * 1024);
+            StringBuilder t = _text ?? (_text = new StringBuilder(64 * 1024));
+            t.Length = 0;
             t.Append("v=").Append(Version).Append("~h:");
             t.Append(s.Id.ToString("X16", Inv));
             Join(t, s.CreatedDay, s.YearDays, s.Day, s.Phase, s.FrontierDay, s.FrontierPhase);

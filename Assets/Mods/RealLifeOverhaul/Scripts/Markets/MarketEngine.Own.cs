@@ -75,6 +75,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public int Alone()
         {
+            Finish();   // (a moment half played is played out first: Midway)
             if (State.Following)
             {
                 return 0;
@@ -404,6 +405,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>An investor buys into a player's company to press its board for a demand now (the test tools), as one would after results.</summary>
         public bool PressBoard(int stockId, ActivistDemand demand)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
             if (s == null || s.Own == null || !s.Listed || demand == ActivistDemand.None)
             {

@@ -26,8 +26,11 @@ namespace RealLifeOverhaul.Markets
     /// <summary>
     /// The market's clock and everything that happens on it. Game-free. The market runs on a fixed grid of the game's
     /// time (results at 07:30, the open at 09:30, a step every five minutes, the close at 16:00, Monday to Friday) and
-    /// <see cref="RunTo"/> works through every moment of the grid up to a time, in slices of a given size, so time
-    /// that passes in a sleep, a skip or a prison stay is played out step by step as if the player had watched it.
+    /// <see cref="RunFor"/> works through every moment of the grid up to a time, for so long a frame, so time that
+    /// passes in a sleep, a skip or a prison stay is played out step by step as if the player had watched it. The open
+    /// and the close, the heavy moments (a company's business since the last open, its settling at the close: about 1 to
+    /// 3 ms for 140 companies), are worked through a company at a time over frames (<see cref="Midway"/>), with the
+    /// same result to the last bit wherever a frame ends.
     ///
     /// A moment the tape has already seen (before its frontier) is played with the tape's secret, city and events;
     /// a moment past it with a fresh secret and the city as it is, both written to the tape.
@@ -131,6 +134,10 @@ namespace RealLifeOverhaul.Markets
         {
             if (until > _replayUntil)
             {
+                if (_part != Part.None && !Replaying && until > State.Now)
+                {
+                    Finish();   // (a moment half played that was begun as a new one is played out as one)
+                }
                 _replayUntil = until;
             }
         }
@@ -185,7 +192,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Something happened in the city now that the market answers at once. Ignored while the tape is being followed.</summary>
         public void Event(int kind, int a, int b)
         {
-            if (Replaying)
+            if (Played < _replayUntil)
             {
                 return;
             }
@@ -196,23 +203,118 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// Plays the market forward to a moment, doing at most about 'work' company-moments of work (a step of the
-        /// session is one for every listed company). True when it has got there; false when it ran out and will go on
-        /// next time.
+        /// session is one for every listed company; a piece of the open or the close, one). True when it has got there;
+        /// false when it ran out and will go on next time.
         /// </summary>
         public bool RunTo(long target, ref int work)
         {
-            while (State.Now < target)
-            {
-                if (work <= 0)
-                {
-                    return false;
-                }
-                work -= Next();
-            }
-            return true;
+            return Run(target, ref work, long.MaxValue);
         }
 
-        // The next moment of the grid; what it cost.
+        /// <summary>
+        /// Plays the market forward to a moment for about so many ticks of <see cref="System.Diagnostics.Stopwatch"/> at most (a frame's
+        /// budget), a piece at a time: a step of the session (0.1 to 0.2 ms for 140 companies), or one company's (or one
+        /// bot's) part of the open or the close. True when it has got there; false when the time ran out and it will go on
+        /// next time. What it plays does not depend on where the time runs out (<see cref="Midway"/>).
+        /// </summary>
+        public bool RunFor(long target, long ticks)
+        {
+            int work = int.MaxValue;
+            return Run(target, ref work, System.Diagnostics.Stopwatch.GetTimestamp() + ticks);
+        }
+
+        /// <summary>
+        /// True while a moment of the grid is half played: the open or the close, worked through a few companies a frame
+        /// (each a few microseconds, the close's settling of 140 companies about 1 ms in all). <see cref="MarketState.Now"/>
+        /// stays at the moment before it until its last piece, so the market is behind the clock meanwhile and takes no
+        /// order. Everything that changes the market from outside finishes it first (<see cref="Finish"/>), so it is played
+        /// exactly as in one frame, and the same on every machine of a Going Public session.
+        /// </summary>
+        public bool Midway => _part != Part.None;
+
+        /// <summary>
+        /// The moment half played, played to its end at once: before anything from outside changes the market, or it is
+        /// written. (Asked for by something the market told while at its own work, it does nothing: that is inside the
+        /// moment, as it always was.)
+        /// </summary>
+        public void Finish()
+        {
+            if (_working)
+            {
+                return;
+            }
+            _working = true;
+            try
+            {
+                while (_part != Part.None)
+                {
+                    Continue();
+                }
+            }
+            finally
+            {
+                _working = false;
+            }
+        }
+
+        private bool _working;   // the market is at its own work (Run, Finish)
+
+        private bool Run(long target, ref int work, long until)
+        {
+            if (_working)
+            {
+                return false;
+            }
+            _working = true;
+            try
+            {
+                while (_part != Part.None || State.Now < target)
+                {
+                    if (work <= 0)
+                    {
+                        return false;
+                    }
+                    work -= _part != Part.None ? Continue() : Next();
+                    if (until != long.MaxValue && System.Diagnostics.Stopwatch.GetTimestamp() >= until && (_part != Part.None || State.Now < target))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            finally
+            {
+                _working = false;
+            }
+        }
+
+        // The moment the market stands at for what comes in from outside: one half played counts as played (as it did when
+        // a moment was always played in one go).
+        private long Played => _part == Part.None ? State.Now
+            : MarketState.Time(_partDay, _part >= Part.CloseCandles ? MarketCatalogue.PhaseClose : MarketCatalogue.PhaseOpen);
+
+        // The pieces of a moment worked through over frames: the open's (each company's business since the last open, the
+        // night's draws, each company's open, then the orders and bots) and the close's (each company's day candle, each
+        // company settled, the day's books, each bot, the news).
+        private enum Part
+        {
+            None,
+            OpenBusiness,
+            OpenNight,
+            OpenCompanies,
+            OpenEnd,
+            CloseCandles,
+            CloseSettle,
+            CloseBooks,
+            CloseBots,
+            CloseEnd
+        }
+
+        private Part _part;          // the piece of the moment half played next to work, or None
+        private int _at;             // the next company (or bot) of that piece
+        private int _partDay;        // the moment's day
+
+        // The next moment of the grid, or its first piece (the open and the close); what it cost.
         private int Next()
         {
             int day = State.Day, phase = State.Phase;
@@ -238,10 +340,8 @@ namespace RealLifeOverhaul.Markets
                     State.Phase = MarketCatalogue.PhaseResults;
                     break;
                 case MarketCatalogue.PhaseResults:
-                    Open(day);
-                    State.Phase = MarketCatalogue.PhaseOpen;
-                    cost *= 3;
-                    break;
+                    OpenBegin(day);   // (the rest in pieces: Continue)
+                    return 1;
                 default:
                     if (phase < MarketCatalogue.PhaseClose - 1)
                     {
@@ -250,14 +350,93 @@ namespace RealLifeOverhaul.Markets
                     }
                     else
                     {
-                        Close(day);
-                        State.Phase = MarketCatalogue.PhaseClose;
-                        cost *= 2;
+                        Begin(Part.CloseCandles, day);   // (in pieces: Continue)
+                        return 1;
                     }
                     break;
             }
             Reach();
             return cost;
+        }
+
+        private void Begin(Part part, int day)
+        {
+            _part = part;
+            _partDay = day;
+            _at = 0;
+        }
+
+        // The next piece of the moment half played; what it cost (1). Its last piece moves the clock on.
+        private int Continue()
+        {
+            int day = _partDay;
+            switch (_part)
+            {
+                case Part.OpenBusiness:
+                    if (_at < State.Stocks.Count)
+                    {
+                        Business(State.Stocks[_at++], day);
+                        return 1;
+                    }
+                    State.BusinessDay = day;
+                    _part = Part.OpenNight;
+                    return 1;
+                case Part.OpenNight:
+                    OpenNight(day);
+                    Begin(Part.OpenCompanies, day);
+                    return 1;
+                case Part.OpenCompanies:
+                    if (_at < State.Stocks.Count)
+                    {
+                        OpenCompany(State.Stocks[_at++], day);
+                        return 1;
+                    }
+                    _part = Part.OpenEnd;
+                    return 1;
+                case Part.OpenEnd:
+                    OpenEnd(day);
+                    _part = Part.None;
+                    State.Phase = MarketCatalogue.PhaseOpen;
+                    Reach();
+                    return 1;
+                case Part.CloseCandles:
+                    if (_at < State.Stocks.Count)
+                    {
+                        Candles(State.Stocks[_at++], day);
+                        return 1;
+                    }
+                    CloseIndices(day);
+                    Begin(Part.CloseSettle, day);
+                    return 1;
+                case Part.CloseSettle:
+                    if (_at < State.Stocks.Count)
+                    {
+                        Settle(State.Stocks[_at++], day);
+                        return 1;
+                    }
+                    _part = Part.CloseBooks;
+                    return 1;
+                case Part.CloseBooks:
+                    CloseBooks(day);
+                    Begin(Part.CloseBots, day);
+                    return 1;
+                case Part.CloseBots:
+                    if (_at < State.Bots.Count)
+                    {
+                        BotClose(State.Bots[_at++], day);
+                        return 1;
+                    }
+                    _part = Part.CloseEnd;
+                    return 1;
+                case Part.CloseEnd:
+                    CloseEnd(day);
+                    _part = Part.None;
+                    State.Phase = MarketCatalogue.PhaseClose;
+                    Reach();
+                    return 1;
+            }
+            _part = Part.None;
+            return 1;
         }
 
         private void Reach()
@@ -426,7 +605,13 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- 09:30: the open
 
-        private void Open(int day)
+        // What the open's first pieces leave for its companies and its end (OpenBegin, OpenNight).
+        private MarketEnv _openEnv;
+        private int _openFrom, _openShut, _openRate, _openIndex;
+        private double _openNight, _openVariance, _openVs, _openMarketNews, _openMarketMood, _openMarketNewsVar;
+
+        // The open's first piece: the city of the day; then every company's business since the last open (Business).
+        private void OpenBegin(int day)
         {
             MarketEnv env;
             if (Tape == null || !Tape.Env(day, out env))
@@ -434,12 +619,19 @@ namespace RealLifeOverhaul.Markets
                 env = _world.Env(day);
                 Tape?.AddEnv(day, env);
             }
-            int ratePriced = State.RateSeenBp;
-            int indexBefore = State.IndexLast;
+            _openRate = State.RateSeenBp;
+            _openIndex = State.IndexLast;
             State.Env = env;
-            Business(day);
+            _openEnv = env;
+            int from = State.BusinessDay > 0 ? State.BusinessDay + 1 : day;
+            _openFrom = Math.Max(from, day - 30);   // (a very long gap: the last month of it is enough for the business)
+            Begin(Part.OpenBusiness, day);
+        }
 
-            // The night: how long since the last session, and the crash and crazes that may begin with the morning.
+        // The night: how long since the last session, and the crash and crazes that may begin with the morning.
+        private void OpenNight(int day)
+        {
+            MarketEnv env = _openEnv;
             int shut = 1;
             for (int d = day - 1; d >= 1 && !MarketCatalogue.TradingDay(d); d--)
             {
@@ -480,6 +672,13 @@ namespace RealLifeOverhaul.Markets
                 marketMood += MarketInputs.ElectionKickBp / 10000.0;
             }
             State.ElectionsSeen = env.Elections;
+            _openShut = shut;
+            _openNight = night;
+            _openVariance = variance;
+            _openVs = vs;
+            _openMarketNews = marketNews;
+            _openMarketMood = marketMood;
+            _openMarketNewsVar = marketNewsVar;
 
             // A new session: every day's move is measured from the last close from now on (until the next open).
             MarketLife.DayBases(State, true);
@@ -489,70 +688,80 @@ namespace RealLifeOverhaul.Markets
                 List(day);
             }
             OwnMorning(day, env);
-            for (int i = 0; i < State.Stocks.Count; i++)
+        }
+
+        // A company's open: its dividend out of the price, a split, the night's move.
+        private void OpenCompany(Stock s, int day)
+        {
+            if (!s.Listed)
             {
-                Stock s = State.Stocks[i];
-                if (!s.Listed)
-                {
-                    continue;
-                }
-                // A dividend whose record day has passed goes out of the price.
-                if (s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0 && s.RecordDay < day)
-                {
-                    s.ExDone = true;
-                    s.LastExDay = day;
-                }
-                if (s.SplitDay > 0 && s.SplitDay <= day)
-                {
-                    MarketLife.Split(State, s, s.SplitRatio);
-                }
-                if (TrustRules.Is(s))
-                {
-                    TrustRules.Declare(s, day, Year);   // a property trust's next distribution, as its last leaves the price (Markets/TrustRules)
-                }
-                double beta = s.Def.Beta / 100.0;
-                int sector = (int)s.Sector;
-                double own = s.Def.IdioBp / 10000.0 * vs * Math.Sqrt(OwnVariance(variance) * night) * (s.ResultsBoostDay == day ? Math.Sqrt(MarketCatalogue.ResultsDayVolScale) : 1.0);
-                double z = MarketRandom.Fat(_secret, MarketRandom.OpenShock, MarketRandom.OpenTail, s.Id, 1);
-                double zo = MarketRandom.Normal(_secret, MarketRandom.OpenMood, s.Id, 1);
-                double founder = s.Own != null ? ListingRules.OpenNews(s, env) : 0.0;   // a player's company: what the city made of its founder yesterday
-                s.LogFair = MarketLife.LogFairOf(s, env, day, Year);
-                if (s.BidCents > 0)
-                {
-                    double held = BidMarketShare * (beta * (marketNews + marketMood) + _sectorNews[sector] + _sectorMood[sector]) + BidOwnShare * own * z;
-                    s.Sent = s.Sent * Math.Max(0.0, 1.0 - BidKappa * night) + held + founder * BidOwnShare;
-                    s.Mis = s.Sent;
-                }
-                else
-                {
-                    double news = beta * marketNews + _sectorNews[sector] + own * OwnNews * z
-                                  - 0.5 * (beta * beta * marketNewsVar + _sectorSd[sector] * _sectorSd[sector] * (1.0 - MarketCatalogue.SectorMoodShare) + own * own * (1.0 - MarketCatalogue.OwnMoodShare));
-                    double mood = beta * marketMood + _sectorMood[sector] + own * OwnMood * zo + founder;
-                    if (s.ListedDay == day && s.Daily.Count == 0)
-                    {
-                        // A new listing's first trade: the price it was offered at, and the first morning's interest in it.
-                        mood += MarketLife.IpoPopMean + MarketLife.IpoPopSpread * MarketRandom.Normal(_secret, MarketRandom.Listing, s.Id, 1);
-                    }
-                    double was = s.Sent;
-                    s.Sent = s.Sent * (1.0 - Kappa * night) + mood;
-                    s.Mis += news + (s.Sent - was);
-                }
-                if (s.LastBarCount >= 0 && s.BarCount > 0)
-                {
-                    Array.Copy(s.Bars, s.LastBars, s.BarCount);
-                    s.LastBarCount = s.BarCount;
-                    s.LastBarsDay = day - shut;
-                }
-                s.BarCount = 0;
-                int open = s.MidCents;
-                s.Open = s.High = s.Low = s.Last = open;
-                s.DayVolume = 0;
+                return;
             }
+            MarketEnv env = _openEnv;
+            int shut = _openShut;
+            double night = _openNight, vs = _openVs, marketNews = _openMarketNews, marketMood = _openMarketMood, marketNewsVar = _openMarketNewsVar;
+            // A dividend whose record day has passed goes out of the price.
+            if (s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0 && s.RecordDay < day)
+            {
+                s.ExDone = true;
+                s.LastExDay = day;
+            }
+            if (s.SplitDay > 0 && s.SplitDay <= day)
+            {
+                MarketLife.Split(State, s, s.SplitRatio);
+            }
+            if (TrustRules.Is(s))
+            {
+                TrustRules.Declare(s, day, Year);   // a property trust's next distribution, as its last leaves the price (Markets/TrustRules)
+            }
+            double beta = s.Def.Beta / 100.0;
+            int sector = (int)s.Sector;
+            double own = s.Def.IdioBp / 10000.0 * vs * Math.Sqrt(OwnVariance(_openVariance) * night) * (s.ResultsBoostDay == day ? Math.Sqrt(MarketCatalogue.ResultsDayVolScale) : 1.0);
+            double z = MarketRandom.Fat(_secret, MarketRandom.OpenShock, MarketRandom.OpenTail, s.Id, 1);
+            double zo = MarketRandom.Normal(_secret, MarketRandom.OpenMood, s.Id, 1);
+            double founder = s.Own != null ? ListingRules.OpenNews(s, env) : 0.0;   // a player's company: what the city made of its founder yesterday
+            s.LogFair = MarketLife.LogFairOf(s, env, day, Year);
+            if (s.BidCents > 0)
+            {
+                double held = BidMarketShare * (beta * (marketNews + marketMood) + _sectorNews[sector] + _sectorMood[sector]) + BidOwnShare * own * z;
+                s.Sent = s.Sent * Math.Max(0.0, 1.0 - BidKappa * night) + held + founder * BidOwnShare;
+                s.Mis = s.Sent;
+            }
+            else
+            {
+                double news = beta * marketNews + _sectorNews[sector] + own * OwnNews * z
+                              - 0.5 * (beta * beta * marketNewsVar + _sectorSd[sector] * _sectorSd[sector] * (1.0 - MarketCatalogue.SectorMoodShare) + own * own * (1.0 - MarketCatalogue.OwnMoodShare));
+                double mood = beta * marketMood + _sectorMood[sector] + own * OwnMood * zo + founder;
+                if (s.ListedDay == day && s.Daily.Count == 0)
+                {
+                    // A new listing's first trade: the price it was offered at, and the first morning's interest in it.
+                    mood += MarketLife.IpoPopMean + MarketLife.IpoPopSpread * MarketRandom.Normal(_secret, MarketRandom.Listing, s.Id, 1);
+                }
+                double was = s.Sent;
+                s.Sent = s.Sent * (1.0 - Kappa * night) + mood;
+                s.Mis += news + (s.Sent - was);
+            }
+            if (s.LastBarCount >= 0 && s.BarCount > 0)
+            {
+                Array.Copy(s.Bars, s.LastBars, s.BarCount);
+                s.LastBarCount = s.BarCount;
+                s.LastBarsDay = day - shut;
+            }
+            s.BarCount = 0;
+            int open = s.MidCents;
+            s.Open = s.High = s.Low = s.Last = open;
+            s.DayVolume = 0;
+        }
+
+        // The open's last piece: the index's open, the rate's news, the orders waiting for the open, the bots.
+        private void OpenEnd(int day)
+        {
+            MarketEnv env = _openEnv;
             if (State.IndexBarCount > 0)
             {
                 Array.Copy(State.IndexBars, State.IndexLastBars, State.IndexBarCount);
                 State.IndexLastBarCount = State.IndexBarCount;
-                State.IndexLastBarsDay = day - shut;
+                State.IndexLastBarsDay = day - _openShut;
             }
             State.IndexBarCount = 0;
             Index(out int indexNow);
@@ -561,9 +770,9 @@ namespace RealLifeOverhaul.Markets
             {
                 _sectorOpen[sec] = State.SectorLast[sec];
             }
-            if (ratePriced >= 0 && env.RateBp != ratePriced && indexBefore > 0)
+            if (_openRate >= 0 && env.RateBp != _openRate && _openIndex > 0)
             {
-                Say(new MarketNews { Day = day, Kind = MarketNewsKind.Rate, A = env.RateBp - ratePriced, B = (int)((long)(indexNow - indexBefore) * 10000L / indexBefore) });
+                Say(new MarketNews { Day = day, Kind = MarketNewsKind.Rate, A = env.RateBp - _openRate, B = (int)((long)(indexNow - _openIndex) * 10000L / _openIndex) });
             }
             State.RateSeenBp = env.RateBp;
             OpenOrders(day);
@@ -571,45 +780,39 @@ namespace RealLifeOverhaul.Markets
             Margin(day, MarketCatalogue.PhaseOpen);
         }
 
-        // Every day of the calendar since the last open: each company's business, its quarters.
-        private void Business(int day)
+        // A company's business on every day of the calendar since the last open, its quarters.
+        private void Business(Stock s, int day)
         {
-            int from = State.BusinessDay > 0 ? State.BusinessDay + 1 : day;
-            from = Math.Max(from, day - 30);   // (a very long gap: the last month of it is enough for the business)
-            MarketEnv env = State.Env;
-            for (int i = 0; i < State.Stocks.Count; i++)
+            if (!s.Listed)
             {
-                Stock s = State.Stocks[i];
-                if (!s.Listed)
-                {
-                    continue;
-                }
-                if (s.Own != null)
-                {
-                    OwnBusiness(s, env, from, day);   // (its business is its founder's books: MarketEngine.Own.cs)
-                    continue;
-                }
-                double competition = Competition(s, env);
-                for (int d = from; d <= day; d++)
-                {
-                    int quarter = MarketCatalogue.QuarterOf(d, Year);
-                    if (quarter != s.Quarter)
-                    {
-                        if (s.PendingQuarter >= 0)
-                        {
-                            // Results that were never given out (a long gap): out now, with the next quarter coming.
-                            Say(MarketLife.Results(s, day, Year, _secret, env));
-                        }
-                        MarketLife.CloseQuarter(s, quarter, Year);
-                        if (s.ResultsDay <= day)
-                        {
-                            s.ResultsDay = MarketTrading.NextTradingDay(day);   // (this morning's results are already out)
-                        }
-                    }
-                    MarketLife.Business(s, env, Year, _secret, d, competition);
-                }
+                return;
             }
-            State.BusinessDay = day;
+            int from = _openFrom;
+            MarketEnv env = _openEnv;
+            if (s.Own != null)
+            {
+                OwnBusiness(s, env, from, day);   // (its business is its founder's books: MarketEngine.Own.cs)
+                return;
+            }
+            double competition = Competition(s, env);
+            for (int d = from; d <= day; d++)
+            {
+                int quarter = MarketCatalogue.QuarterOf(d, Year);
+                if (quarter != s.Quarter)
+                {
+                    if (s.PendingQuarter >= 0)
+                    {
+                        // Results that were never given out (a long gap): out now, with the next quarter coming.
+                        Say(MarketLife.Results(s, day, Year, _secret, env));
+                    }
+                    MarketLife.CloseQuarter(s, quarter, Year);
+                    if (s.ResultsDay <= day)
+                    {
+                        s.ResultsDay = MarketTrading.NextTradingDay(day);   // (this morning's results are already out)
+                    }
+                }
+                MarketLife.Business(s, env, Year, _secret, d, competition);
+            }
         }
 
         // The share of a company's turnover the player's businesses in its trade take: half their takings in the trade
@@ -896,19 +1099,23 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- 16:00: the close
 
-        private void Close(int day)
+        private readonly MarketValuation.Terms _terms = new MarketValuation.Terms();   // a company's worth taken apart for its settling (Settle)
+
+        // A company's day as a candle of its history.
+        private void Candles(Stock s, int day)
         {
-            for (int i = 0; i < State.Stocks.Count; i++)
+            if (!s.Listed)
             {
-                Stock s = State.Stocks[i];
-                if (!s.Listed)
-                {
-                    continue;
-                }
-                var candle = new Candle(day, s.Open, s.High, s.Low, s.Last, s.DayVolume);
-                MarketHistory.AddDay(s.Daily, s.Monthly, candle, Year);
-                s.Adv = s.Adv * 0.95 + Math.Max(s.Adv * 0.3, s.DayVolume) * 0.05;
+                return;
             }
+            var candle = new Candle(day, s.Open, s.High, s.Low, s.Last, s.DayVolume);
+            MarketHistory.AddDay(s.Daily, s.Monthly, candle, Year);
+            s.Adv = s.Adv * 0.95 + Math.Max(s.Adv * 0.3, s.DayVolume) * 0.05;
+        }
+
+        // The index's day and the sectors' closes, after every company's.
+        private void CloseIndices(int day)
+        {
             MarketHistory.AddDay(State.IndexDaily, State.IndexMonthly, new Candle(day, State.IndexOpen, State.IndexHigh, State.IndexLow, State.IndexLast, 0), Year);
             for (int sec = 0; sec < Sectors; sec++)
             {
@@ -919,7 +1126,11 @@ namespace RealLifeOverhaul.Markets
                     closes.RemoveAt(0);
                 }
             }
-            Settle(day);
+        }
+
+        // After every company is settled: the money of the day, the companies' lives, tomorrow's variance, the account.
+        private void CloseBooks(int day)
+        {
             Dividends(day);
             Income(day);   // the player's bonds (MarketEngine.Bonds.cs)
             Corporate(day);
@@ -927,10 +1138,13 @@ namespace RealLifeOverhaul.Markets
             Interest(day);
             Margin(day, MarketCatalogue.PhaseClose);
             Expire(day);
-            BotsClose(day);
+        }
+
+        // The close's last piece, after the bots: the day's news, and old news goes.
+        private void CloseEnd(int day)
+        {
             CloseNews(day);
             // (the closes the day's moves are measured from stay as they are until the next open: MarketLife.DayBases)
-            // Old news goes.
             for (int i = State.News.Count - 1; i >= 0; i--)
             {
                 if (State.News[i].Day < day - 6)
@@ -940,30 +1154,27 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // After the close: what the day's news did to each price goes into what the market expects of the business (its
-        // Outlook), worked out so that the price stays exactly where it closed; what is left in the distance from the
-        // business's worth is the mood alone.
-        private void Settle(int day)
+        // After the close: what the day's news did to a company's price goes into what the market expects of the business
+        // (its Outlook), worked out so that the price stays exactly where it closed; what is left in the distance from the
+        // business's worth is the mood alone. The company is taken apart once for the search and its new worth (_terms).
+        private void Settle(Stock s, int day)
         {
-            MarketEnv env = State.Env;
-            for (int i = 0; i < State.Stocks.Count; i++)
+            if (!s.Listed || s.BidCents > 0)
             {
-                Stock s = State.Stocks[i];
-                if (!s.Listed || s.BidCents > 0)
-                {
-                    continue;
-                }
-                double logPrice = s.LogFair + s.Mis;
-                double accrued = MarketLife.Accrued(s, day, Year);
-                double rest = Math.Exp(logPrice - s.Sent) - accrued;
-                if (rest > 0.0)
-                {
-                    s.Outlook = MarketValuation.OutlookFor(s, env, rest, s.Outlook);
-                }
-                s.LogFair = MarketLife.LogFairOf(s, env, day, Year);
-                s.Mis = logPrice - s.LogFair;
-                s.Sent = s.Mis;
+                return;
             }
+            MarketEnv env = State.Env;
+            double logPrice = s.LogFair + s.Mis;
+            double accrued = MarketLife.Accrued(s, day, Year);
+            double rest = Math.Exp(logPrice - s.Sent) - accrued;
+            _terms.Fill(s, env);
+            if (rest > 0.0)
+            {
+                s.Outlook = MarketValuation.OutlookFor(_terms, rest, s.Outlook);
+            }
+            s.LogFair = MarketLife.LogFairAt(s, _terms.Worth(s.Outlook), day, Year);
+            s.Mis = logPrice - s.LogFair;
+            s.Sent = s.Mis;
         }
 
         // The market's and the sectors' variance for tomorrow, from today's moves.
@@ -1230,6 +1441,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A takeover bid for a company now (the test tools), made as one would be: from the next open its price is what the bid is worth.</summary>
         public bool BidFor(int stockId)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed || s.BidCents > 0)
             {
@@ -1247,6 +1459,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A crisis (or a windfall) at a company now (the test tools), as one would come: its price follows at the next open.</summary>
         public bool NewsFor(int stockId, bool crisis)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed || s.BidCents > 0 || s.Own != null)   // (a player's company has no crises drawn for it: its news is its books)
             {
@@ -1259,6 +1472,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A company leaves the market now (the test tools): failed, paying holders 'cents' a share, or taken over at that price.</summary>
         public bool Delist(int stockId, GoneReason reason, int cents)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed)
             {
@@ -1398,6 +1612,7 @@ namespace RealLifeOverhaul.Markets
         public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool open, bool held, bool test, out OrderWhy why,
             bool closing = false)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
             Order order = MarketTrading.Place(State, s, side, type, life, qty, limitCents, stopCents, _world.Wallet.Cash, _world.CommissionLeast, open, held, State.Phase, test, out why, closing);
             if (order == null || !open)
@@ -1506,6 +1721,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The host: a guest's trade, to be played by every market at the next moment of the grid (bounded as a trade can be).</summary>
         public bool GuestTrade(int stockId, int micros, long shares)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed || Replaying || shares <= 0)
             {

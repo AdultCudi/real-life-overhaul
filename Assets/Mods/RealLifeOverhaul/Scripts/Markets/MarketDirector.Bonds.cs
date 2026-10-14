@@ -91,6 +91,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bond bought now with so much of the player's cash. Null with the reason when it cannot be.</summary>
         public BondHolding BuyBond(BondOffer offer, long money, int reinvest, out BondWhy why)
         {
+            FinishMoment();
             why = BondReady(true);
             if (why != BondWhy.None)
             {
@@ -117,6 +118,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bond sold (a deposit closed) now; what it brought. False with the reason when it cannot be.</summary>
         public bool SellBond(int id, out long money, out BondWhy why)
         {
+            FinishMoment();
             money = 0;
             why = BondReady(true);
             if (why != BondWhy.None)
@@ -145,6 +147,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The share of a bond's interest put back into it, from its next payment on.</summary>
         public bool SetBondReinvest(int id, int pct, out BondWhy why)
         {
+            FinishMoment();
             why = BondReady(false);
             bool done = why == BondWhy.None && _engine.SetBondReinvest(id, pct, out why);
             Moved();
@@ -222,6 +225,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: the Stocks app opened on its Bonds tab.</summary>
         public void TestBonds()
         {
+            FinishMoment();
             const string Test = "Open the Bonds tab";
             if (!TestReady(Test, false))
             {
@@ -240,6 +244,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: each bond's next payment made now, as on its day (one at its end repays as well).</summary>
         public void TestBondPay()
         {
+            FinishMoment();
             const string Test = "My bonds pay now";
             if (!TestReady(Test, true))
             {

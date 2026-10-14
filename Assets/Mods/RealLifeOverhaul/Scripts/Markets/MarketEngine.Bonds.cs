@@ -129,6 +129,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bond bought now for so much of the player's cash, at its yield of today. Null with the reason when it cannot be.</summary>
         public BondHolding BuyBond(BondOffer offer, long money, int reinvest, bool open, bool on, out BondWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             why = CanBuyBond(offer, money, open, on);
             if (why != BondWhy.None)
             {
@@ -148,6 +149,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bond sold (a deposit closed) now: what it brings into the player's cash. False with the reason when it cannot be.</summary>
         public bool SellBond(int id, bool open, out long money, out BondWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             money = 0;
             BondHolding h = State.Bonds.Holding(id);
             why = h == null ? BondWhy.NotHeld : Held ? BondWhy.Held : !open ? BondWhy.Closed : BondWhy.None;
@@ -167,6 +169,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The share of each payment's interest put back into a bond, from its next payment on. False while orders wait after a load.</summary>
         public bool SetBondReinvest(int id, int pct, out BondWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             BondHolding h = State.Bonds.Holding(id);
             why = h == null ? BondWhy.NotHeld : Held ? BondWhy.Held : BondWhy.None;
             if (why != BondWhy.None)
@@ -194,6 +197,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The test tools: every bond's next payment made now, as on its day (one at its end repays as well). How many were paid.</summary>
         public int PayBondsNow()
         {
+            Finish();   // (a moment half played is played out first: Midway)
             int count = 0;
             List<BondHolding> held = State.Bonds.Holdings;
             for (int i = held.Count - 1; i >= 0; i--)

@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A firm's bot hired with so much capital and its settings (each held to its choices). Null with the reason when it cannot be.</summary>
         public Bot Hire(int firm, long capital, int size, int stop, int loss, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             BotFirm f = MarketBots.Firm(firm);
             why = BotWhy.None;
             if (Held)
@@ -101,6 +102,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bot's settings changed (each held to its choices): the stops of what it holds follow at once.</summary>
         public bool SetBot(int firm, int size, int stop, int loss, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = MarketBots.Hired(State, firm);
             why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : BotWhy.None;
             if (why != BotWhy.None)
@@ -114,6 +116,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The shares a bot trades: its strategy's market, the companies picked for it, or those the player holds.</summary>
         public bool SetScope(int firm, BotScope scope, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = Asked(firm, out why);
             if (b == null)
             {
@@ -127,6 +130,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A company picked for a bot, or taken off its picks. False with the reason when it cannot be (None: nothing changed).</summary>
         public bool PickFor(int firm, int stockId, bool on, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = Asked(firm, out why);
             if (b == null)
             {
@@ -150,6 +154,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bot's payouts: the share of its new profit (held to its choices) and how often.</summary>
         public bool SetPayout(int firm, int pct, BotPayEvery every, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = Asked(firm, out why);
             if (b == null)
             {
@@ -192,6 +197,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bot asked to sell everything at the market's next step and stop.</summary>
         public bool SellUp(int firm, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = MarketBots.Hired(State, firm);
             why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : BotWhy.None;
             if (why != BotWhy.None)
@@ -206,6 +212,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A stopped bot started again with what it has now, the most it may lose reckoned from that.</summary>
         public bool Restart(int firm, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = MarketBots.Hired(State, firm);
             why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : b.Status != BotStatus.Stopped || b.Holdings.Count > 0 ? BotWhy.NotStopped : BotWhy.None;
             if (why == BotWhy.None && b.Cash < BotCapitalLeast)
@@ -235,6 +242,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public bool Dismiss(int firm, out BotWhy why)
         {
+            Finish();   // (a moment half played is played out first: Midway)
             Bot b = MarketBots.Hired(State, firm);
             why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : HoldsOwn(b) ? BotWhy.OwnShares : BotWhy.None;
             if (why != BotWhy.None)
@@ -354,40 +362,37 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // At the close: the month's statement when the month ends, the drawdown, and what to do at the next session.
-        private void BotsClose(int day)
+        // At the close, for each bot in turn (a piece of the close of its own: MarketEngine.Continue): the month's statement
+        // when the month ends, the drawdown, and what to do at the next session (it scores every company: tens of microseconds).
+        private void BotClose(Bot b, int day)
         {
-            for (int i = 0; i < State.Bots.Count; i++)
+            if (b.Status != BotStatus.Stopped)
             {
-                Bot b = State.Bots[i];
-                if (b.Status != BotStatus.Stopped)
-                {
-                    b.MonthDays++;   // (a bot stopped costs nothing for the days it is stopped)
-                }
-                long worth = MarketBots.Worth(State, b, MarketCatalogue.PhaseClose);
-                if (worth > b.Peak)
-                {
-                    b.Peak = worth;
-                }
-                else if (b.Peak > 0)
-                {
-                    b.DrawdownBp = Math.Max(b.DrawdownBp, (int)Math.Min(10000L, (b.Peak - worth) * 10000L / b.Peak));
-                }
-                if (MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), Year) != MarketCatalogue.MonthOf(day, Year))
-                {
-                    Settle(b, day, true);   // (its payout, whichever its time, with the month's statement)
-                }
-                else if (b.PayEvery != BotPayEvery.Monthly && MarketBots.PayDue(b.PayEvery, day, Year))
-                {
-                    long paid = MarketBots.Payout(b);
-                    if (paid > 0 && b.PayEvery == BotPayEvery.Weekly)
-                    {
-                        Tell(new BotNote { Kind = BotNoteKind.Paid, Firm = b.Firm, A = paid, B = b.PayOwed });   // (a daily payout is told in the month's statement)
-                    }
-                }
-                b.LastDay = day;
-                MarketBots.Decide(State, b, day, Year, _world.CommissionLeast, _botWork);
+                b.MonthDays++;   // (a bot stopped costs nothing for the days it is stopped)
             }
+            long worth = MarketBots.Worth(State, b, MarketCatalogue.PhaseClose);
+            if (worth > b.Peak)
+            {
+                b.Peak = worth;
+            }
+            else if (b.Peak > 0)
+            {
+                b.DrawdownBp = Math.Max(b.DrawdownBp, (int)Math.Min(10000L, (b.Peak - worth) * 10000L / b.Peak));
+            }
+            if (MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), Year) != MarketCatalogue.MonthOf(day, Year))
+            {
+                Settle(b, day, true);   // (its payout, whichever its time, with the month's statement)
+            }
+            else if (b.PayEvery != BotPayEvery.Monthly && MarketBots.PayDue(b.PayEvery, day, Year))
+            {
+                long paid = MarketBots.Payout(b);
+                if (paid > 0 && b.PayEvery == BotPayEvery.Weekly)
+                {
+                    Tell(new BotNote { Kind = BotNoteKind.Paid, Firm = b.Firm, A = paid, B = b.PayOwed });   // (a daily payout is told in the month's statement)
+                }
+            }
+            b.LastDay = day;
+            MarketBots.Decide(State, b, day, Year, _world.CommissionLeast, _botWork);
         }
 
         // The month's fee for the market days hired in it and the share of the profit over the high-water mark, taken

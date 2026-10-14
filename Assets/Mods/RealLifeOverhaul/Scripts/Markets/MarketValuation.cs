@@ -243,72 +243,130 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// What one share is worth, in money, if the market expects so much of the business beyond its figures (ln): the
         /// payouts to come as the figures say, each with the part of that expectation that will have come through in them
-        /// by then. Always more than nothing (see the class's notes); higher the more is expected.
+        /// by then. Always more than nothing (see the class's notes); higher the more is expected. Worked out through
+        /// <see cref="Terms"/> (one of this thread's own), which holds the whole of the sum.
         /// </summary>
         public static double Worth(Stock s, in MarketEnv env, double outlook)
         {
-            if (s.Shares <= 0)
+            Terms terms = _worth ?? (_worth = new Terms());
+            terms.Fill(s, env);
+            return terms.Worth(outlook);
+        }
+
+        [ThreadStatic] private static Terms _worth;    // Worth's own
+        [ThreadStatic] private static Terms _search;   // OutlookFor's own (so a Worth asked for between its tries leaves it as it was)
+
+        /// <summary>
+        /// A company's worth taken apart for many expectations: everything <see cref="Worth"/> works out but the
+        /// expectation's own part, filled once for a company and the city as they are. Each expectation tried after that
+        /// costs one exp a year and the floor's (seventeen), instead of the whole fifteen-year sum with its rates,
+        /// distress and payouts; <see cref="OutlookFor(Terms, double, double)"/>'s search tries about nine, so settling a
+        /// company at the close costs about a third of what it did. A try gives Worth's very bits: the same products in the
+        /// same order, with only the expectation's factor, always the last of each, left for the try (EconomyCheck,
+        /// MarketPaceChecks, against the sum written out whole). Made once by its owner and filled again for each
+        /// company; nothing is allocated after that. One thread at a time.
+        /// </summary>
+        public sealed class Terms
+        {
+            private readonly double[] _year = new double[Horizon + 1];   // a year's payout before the expectation: payout x profit x (1 - tax) x discount
+            private readonly bool[] _paid = new bool[Horizon + 1];       // ...for a year with a profit (a loss pays nothing)
+            private double _rest;                                       // the years after the horizon, as one, before the expectation
+            private bool _restPaid;
+            private bool _trust;                                        // a property trust: the sum at where the property market is heading
+            private double _property;
+            private double _shares;
+            private double _floorEach;                                  // the floor's 3% of turnover a share, before the expectation
+            private bool _none;                                         // no shares: worth a cent
+
+            /// <summary>Everything the worth is made of but the expectation, for this company and city as they are now.</summary>
+            public void Fill(Stock s, in MarketEnv env)
             {
-                return 0.01;
-            }
-            CompanyDef d = s.Def;
-            double tax = MarketInputs.TaxRate(env);
-            Paths(s, env, out double usual, out double patch, out double supply, out double cost, out double debtNow, out double debtUsual, out double rateNow, out double rateUsual);
-            double cycle = CycleMargin(s, env);
-            double k = Rate(s, env);
-            double gT = TerminalGrowth(s);
-            double least = gT + SpreadLeast;
-            double pass = d.PassPct / 100.0;
-            double inflation = env.InflationBp / 10000.0;
-            double city = CityGrowth(s, env);
-            double own = s.Growth - s.GrowthTarget;
-            double payoutT = s.Own != null ? ListingCatalogue.OwnPayout : PayoutOf(s, gT);   // (a player's company's profit is its holders': ListingRules)
-            double rev = s.Rev, discount = 1.0, sum = 0.0, debt = debtNow, rate = rateNow;
-            for (int t = 1; t <= Horizon; t++)
-            {
-                double real = MarketCatalogue.LongRealGrowth + own * OwnFade[t] + city * PatchFade[t];
-                double prices = TargetInflation + (inflation - TargetInflation) * PriceFade[t];
-                rev *= 1.0 + Math.Max(-0.3, real + prices * pass);
-                // Debt and what it costs come back to their usual over the year (as the business does it day by day).
-                double interest = (debtUsual + (debt - debtUsual) * DebtHalfYear) * (rateUsual + (rate - rateUsual) * DebtHalfYear);
-                double margin = usual + patch * PatchFade[t] - cost * PriceFade[t] + (t == 1 ? supply * SupplyYears : 0.0);
-                double profit = rev * (margin - interest);
-                // The chance it fails that year, from its margin as it stands (its own ups and downs left out: they pass) and
-                // its debt as they are expected to be then.
-                double distress = DistressAt(usual + cycle * PatchFade[t] - cost * PriceFade[t], interest);
-                discount /= YearRate(k, distress, least);
-                if (profit > 0.0)
+                _none = s.Shares <= 0;
+                if (_none)
                 {
-                    sum += (s.Own != null ? ListingCatalogue.OwnPayout : PayoutOf(s, real + prices * pass)) * profit * (1.0 - tax) * discount * Math.Exp(outlook * OutlookShare[t]);
+                    return;
                 }
-                // A loss is borrowed (as the business does): more debt for the years after.
-                debt = debtUsual + (debt - debtUsual) * DebtYear + (profit < 0.0 ? -profit / rev : 0.0);
-                rate = rateUsual + (rate - rateUsual) * DebtYear;
+                CompanyDef d = s.Def;
+                double tax = MarketInputs.TaxRate(env);
+                Paths(s, env, out double usual, out double patch, out double supply, out double cost, out double debtNow, out double debtUsual, out double rateNow, out double rateUsual);
+                double cycle = CycleMargin(s, env);
+                double k = Rate(s, env);
+                double gT = TerminalGrowth(s);
+                double least = gT + SpreadLeast;
+                double pass = d.PassPct / 100.0;
+                double inflation = env.InflationBp / 10000.0;
+                double city = CityGrowth(s, env);
+                double own = s.Growth - s.GrowthTarget;
+                double payoutT = s.Own != null ? ListingCatalogue.OwnPayout : PayoutOf(s, gT);   // (a player's company's profit is its holders': ListingRules)
+                double rev = s.Rev, discount = 1.0, debt = debtNow, rate = rateNow;
+                for (int t = 1; t <= Horizon; t++)
+                {
+                    double real = MarketCatalogue.LongRealGrowth + own * OwnFade[t] + city * PatchFade[t];
+                    double prices = TargetInflation + (inflation - TargetInflation) * PriceFade[t];
+                    rev *= 1.0 + Math.Max(-0.3, real + prices * pass);
+                    // Debt and what it costs come back to their usual over the year (as the business does it day by day).
+                    double interest = (debtUsual + (debt - debtUsual) * DebtHalfYear) * (rateUsual + (rate - rateUsual) * DebtHalfYear);
+                    double margin = usual + patch * PatchFade[t] - cost * PriceFade[t] + (t == 1 ? supply * SupplyYears : 0.0);
+                    double profit = rev * (margin - interest);
+                    // The chance it fails that year, from its margin as it stands (its own ups and downs left out: they pass) and
+                    // its debt as they are expected to be then.
+                    double distress = DistressAt(usual + cycle * PatchFade[t] - cost * PriceFade[t], interest);
+                    discount /= YearRate(k, distress, least);
+                    _paid[t] = profit > 0.0;
+                    _year[t] = _paid[t] ? (s.Own != null ? ListingCatalogue.OwnPayout : PayoutOf(s, real + prices * pass)) * profit * (1.0 - tax) * discount : 0.0;
+                    // A loss is borrowed (as the business does): more debt for the years after.
+                    debt = debtUsual + (debt - debtUsual) * DebtYear + (profit < 0.0 ? -profit / rev : 0.0);
+                    rate = rateUsual + (rate - rateUsual) * DebtYear;
+                }
+                double interestUsual = debtUsual * rateUsual;
+                double last = rev * (usual - interestUsual);
+                double distressUsual = DistressAt(usual, interestUsual);
+                double kT = YearRate(k, distressUsual, least) - 1.0;
+                _restPaid = last > 0.0;
+                _rest = _restPaid ? payoutT * last * (1.0 - tax) * (1.0 + gT) / (kT - gT) * discount : 0.0;
+                // A property trust's buildings at where the property market is heading (TrustRules.PropertyFactor).
+                _trust = TrustRules.Is(s);
+                _property = _trust ? TrustRules.PropertyFactor(env) : 1.0;
+                _shares = s.Shares;
+                _floorEach = 0.03 * s.Rev / s.Shares;
             }
-            double interestUsual = debtUsual * rateUsual;
-            double last = rev * (usual - interestUsual);
-            double distressUsual = DistressAt(usual, interestUsual);
-            double kT = YearRate(k, distressUsual, least) - 1.0;
-            double expected = Math.Exp(outlook * OutlookShare[Horizon + 1]);
-            if (last > 0.0)
+
+            /// <summary>What one share is worth, in money, at an expectation (ln), for the company and city last filled.</summary>
+            public double Worth(double outlook)
             {
-                sum += payoutT * last * (1.0 - tax) * (1.0 + gT) / (kT - gT) * discount * expected;
+                if (_none)
+                {
+                    return 0.01;
+                }
+                double sum = 0.0;
+                for (int t = 1; t <= Horizon; t++)
+                {
+                    if (_paid[t])
+                    {
+                        sum += _year[t] * Math.Exp(outlook * OutlookShare[t]);
+                    }
+                }
+                double expected = Math.Exp(outlook * OutlookShare[Horizon + 1]);
+                if (_restPaid)
+                {
+                    sum += _rest * expected;
+                }
+                if (_trust)
+                {
+                    sum *= _property;
+                }
+                // Worth never quite nothing: a smooth floor of a few per cent of its turnover a share (what it may yet be worth).
+                double value = sum / _shares;
+                double floor = Math.Max(1e-6, _floorEach * expected);
+                double x = Math.Max(-30.0, value / floor);
+                return x > 30.0 ? value : floor * Math.Log(1.0 + Math.Exp(x));
             }
-            // A property trust's buildings at where the property market is heading (TrustRules.PropertyFactor).
-            if (TrustRules.Is(s))
-            {
-                sum *= TrustRules.PropertyFactor(env);
-            }
-            // Worth never quite nothing: a smooth floor of a few per cent of its turnover a share (what it may yet be worth).
-            double value = sum / s.Shares;
-            double floor = Math.Max(1e-6, 0.03 * s.Rev / s.Shares * expected);
-            double x = Math.Max(-30.0, value / floor);
-            return x > 30.0 ? value : floor * Math.Log(1.0 + Math.Exp(x));
         }
 
         /// <summary>
         /// The expectation (ln) at which a share is worth so much: the outlook the market's price stands for. Found by the
-        /// secant rule from where it is (the worth only ever grows with what is expected); within -8 and 8.
+        /// secant rule from where it is (the worth only ever grows with what is expected); within -8 and 8. The company
+        /// is taken apart once for the search (<see cref="Terms"/>).
         /// </summary>
         public static double OutlookFor(Stock s, in MarketEnv env, double worth, double from)
         {
@@ -316,13 +374,25 @@ namespace RealLifeOverhaul.Markets
             {
                 return from;
             }
+            Terms terms = _search ?? (_search = new Terms());
+            terms.Fill(s, env);
+            return OutlookFor(terms, worth, from);
+        }
+
+        /// <summary>The expectation (ln) at which a share is worth so much, for a company already taken apart (filled for it and the city as they are).</summary>
+        public static double OutlookFor(Terms terms, double worth, double from)
+        {
+            if (!(worth > 0.0))
+            {
+                return from;
+            }
             double target = Math.Log(worth);
-            double a = Clamp(from, -8.0, 8.0), ga = Math.Log(Worth(s, env, a)) - target;
+            double a = Clamp(from, -8.0, 8.0), ga = Math.Log(terms.Worth(a)) - target;
             if (Math.Abs(ga) < 1e-10)
             {
                 return a;
             }
-            double b = Clamp(a - ga / 0.8, -8.0, 8.0), gb = Math.Log(Worth(s, env, b)) - target;
+            double b = Clamp(a - ga / 0.8, -8.0, 8.0), gb = Math.Log(terms.Worth(b)) - target;
             for (int i = 0; i < 12 && Math.Abs(gb) > 1e-10; i++)
             {
                 double slope = Math.Abs(b - a) > 1e-12 ? (gb - ga) / (b - a) : 0.8;
@@ -338,7 +408,7 @@ namespace RealLifeOverhaul.Markets
                 a = b;
                 ga = gb;
                 b = c;
-                gb = Math.Log(Worth(s, env, b)) - target;
+                gb = Math.Log(terms.Worth(b)) - target;
             }
             return b;
         }

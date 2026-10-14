@@ -113,6 +113,7 @@ internal static partial class Program
         Dealer();
         ShowroomFloor();
         Markets();
+        MarketPace();   // the open and the close in pieces, the catch-up's budget, the worth taken apart once (MarketPaceChecks.cs)
         Listing();
         Ledger();
         Newsstand();

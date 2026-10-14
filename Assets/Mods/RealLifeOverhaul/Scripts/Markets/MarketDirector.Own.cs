@@ -140,6 +140,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A business of the player's sold (Economy/Services): while their company is listed its price is the company's, every holder's by their shares.</summary>
         public void BusinessSold(int price)
         {
+            FinishMoment();
             Stock own = MyCompany;
             if (own == null || own.Own.Test || price <= 0)
             {
@@ -371,6 +372,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The advisers taken on: every requirement but the audit must be met, and their retainer is paid now.</summary>
         public OwnWhy Engage()
         {
+            FinishMoment();
             OwnWhy why = WayBlocked();
             ListingFile f = Listing;
             if (why != OwnWhy.None)
@@ -403,6 +405,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The audit ordered: its fee now, signed some days on.</summary>
         public OwnWhy OrderAudit()
         {
+            FinishMoment();
             OwnWhy why = WayBlocked();
             ListingFile f = Listing;
             if (why != OwnWhy.None)
@@ -434,6 +437,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public OwnWhy Publish(string name, int floatBp, int walkCents)
         {
+            FinishMoment();
             OwnWhy why = WayBlocked();
             ListingFile f = Listing;
             if (why != OwnWhy.None)
@@ -472,6 +476,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The offer withdrawn before it is priced: the audit stands while it is good, what was paid is not returned.</summary>
         public bool Withdraw()
         {
+            FinishMoment();
             ListingFile f = Listing;
             if (f == null || !f.OnTheWay || f.Stage == ListingStage.Priced || _following)
             {
@@ -526,6 +531,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public OwnWhy Ask(OwnAction action, long value)
         {
+            FinishMoment();
             if (action == OwnAction.Audit || value > int.MaxValue || value < int.MinValue)
             {
                 return OwnWhy.TooLarge;
