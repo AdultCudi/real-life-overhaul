@@ -250,18 +250,25 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool DoesWithout(Exception e, string what)
         {
+            return DoesWithout(e, what, "the mod does without it");
+        }
+
+        /// <summary>As <see cref="DoesWithout(Exception, string)"/>, with what is done instead.</summary>
+        public static bool DoesWithout(Exception e, string what, string answer)
+        {
             if (!Missing(e))
             {
                 return false;
             }
-            Without(e, what, "the mod does without it");
+            Without(e, what, answer);
             return true;
         }
 
+        // "Game build: this game lacks X. What it was for: what is done instead. This game is Build N; ... Build M."
         private static void Without(Exception e, string what, string answer)
         {
-            Say(what, "Game build: this game lacks " + GameBuild.MemberOf(e != null ? e.Message : null) + ", so for " + what + " " + answer + ". "
-                      + GameBuild.Builds(GameBuild.Running, Meta.Changelog.Version));
+            Say(what, "Game build: this game lacks " + GameBuild.MemberOf(e != null ? e.Message : null) + ". " + char.ToUpperInvariant(what[0]) + what.Substring(1)
+                      + ": " + answer + ". " + GameBuild.Builds(GameBuild.Running, Meta.Changelog.Version));
         }
 
         // Once a session for each part or member: a game that lacks something lacks it for good.

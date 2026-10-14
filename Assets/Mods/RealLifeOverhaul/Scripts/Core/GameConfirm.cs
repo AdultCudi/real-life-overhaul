@@ -205,7 +205,7 @@ namespace RealLifeOverhaul
         private static void NotDirect(Exception e)
         {
             _direct = false;
-            GameMembers.DoesWithout(e, "the game's question box as the mod is built for it (the running game's own is asked instead)");
+            GameMembers.DoesWithout(e, "the mod's questions", "they are asked through the running game's own question box instead");
         }
 
         // ---------------------------------------------------------------- the running game's Show, by reflection
@@ -270,8 +270,7 @@ namespace RealLifeOverhaul
             if (!_toldOwn)
             {
                 _toldOwn = true;
-                Say("Game build: the mod's questions are shown through the running game's own question box, " + Describe(parameters) + ". "
-                    + GameBuild.Builds(GameBuild.Running, Meta.Changelog.Version));
+                Say("Game build: the mod's questions are asked through this game's own " + Describe(parameters) + ".");
             }
         }
 
