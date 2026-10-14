@@ -1,5 +1,5 @@
-0.10.1
+0.10.2
 
 Fixed
-- On an older build of the game, none of the mod's apps opened on the phone, and much else of the mod stopped working, such as the camera, careers and the police on the street. The apps now open on such a game, the parts that need what it lacks switch off quietly, and the mod says in the main menu and when a save is loaded that the game needs updating, and how to update it in Steam.
-- In Portuguese, the Open Roles, Career and Tech apps kept their English names.
+- At Hudson City University, the classroom doors offered the business school's own courses, such as Office Businesses, instead of the room's course. Each door now opens the study panel for its room's course, to attend its class or to say when the next one is, and its mark shows a class soon, enrolled or completed. The room signs read once, from the corridor, and are never mirrored.
+- The Persona app's education box listed only the game's five courses. It now lists every course of the mod's too, grouped by where it is taught, each with where you stand on it.
