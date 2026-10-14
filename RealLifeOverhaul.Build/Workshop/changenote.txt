@@ -1,4 +1,4 @@
-0.15.3
+0.16.0
 
-Fixed
-- The street cart vendor could be left waiting for a customer who never came, for example when an accident nearby cut off their way to the cart. Such a customer now leaves the queue at once, is not counted as a walk-off, and another comes instead.
+New
+- Trading bots: choose the shares each bot trades, your own company's among them, have part of its profit paid to you daily, weekly or monthly, and see each dividend you receive in the market news.
