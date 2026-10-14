@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
@@ -16,6 +17,7 @@ internal static partial class Program
     private static void HotSpotChecks()
     {
         HotSlots();
+        HotNames();
         HotOff();
         HotFrames();
         HotStretch();
@@ -51,6 +53,80 @@ internal static partial class Program
         int b = HotSpots.Slot("Check: B.Update");
         Check(a != b && HotSpots.Slot("Check: A.Update") == a && HotSpots.Name(a) == "Check: A.Update", "hot spots: a name keeps its number, two names have two");
         Check(HotSpots.Name(-1) == "unnamed" && HotSpots.Name(HotSpots.Most) == "unnamed", "hot spots: a number that was never given has no name");
+    }
+
+    // The names Core/Guard gives the slots of the coroutines and handlers it times (HotSpots.Written), read from what the
+    // compiler really makes here of a coroutine, a method, a lambda of each kind and a local function.
+    private static void HotNames()
+    {
+        var named = new HotNamed();
+        Check(HotSpots.Written(named.Tick().GetType(), null) == "HotNamed.Tick", "hot names: a coroutine by the method it is written in (" + HotSpots.Written(named.Tick().GetType(), null) + ")");
+        Action method = named.OnHour;
+        Check(HotSpots.Written(method.Method.DeclaringType, method.Method.Name) == "HotNamed.OnHour", "hot names: a method by its own name");
+        Action own = named.Own();
+        Check(HotSpots.Written(own.Method.DeclaringType, own.Method.Name) == "HotNamed.Own", "hot names: a lambda that uses the object, by the method it is written in (" + HotSpots.Written(own.Method.DeclaringType, own.Method.Name) + ")");
+        Action alone = named.Alone();
+        Check(HotSpots.Written(alone.Method.DeclaringType, alone.Method.Name) == "HotNamed.Alone", "hot names: a lambda that uses nothing, out of the compiler's class (" + HotSpots.Written(alone.Method.DeclaringType, alone.Method.Name) + ")");
+        Action captured = named.Captured(3);
+        Check(HotSpots.Written(captured.Method.DeclaringType, captured.Method.Name) == "HotNamed.Captured", "hot names: a lambda that keeps a local, out of the compiler's class (" + HotSpots.Written(captured.Method.DeclaringType, captured.Method.Name) + ")");
+        Action local = named.Local();
+        Check(HotSpots.Written(local.Method.DeclaringType, local.Method.Name) == "HotNamed.Local", "hot names: a local function by the method it is written in (" + HotSpots.Written(local.Method.DeclaringType, local.Method.Name) + ")");
+        Check(HotSpots.Written(typeof(HotWalk), null) == "HotWalk.MoveNext", "hot names: an IEnumerator written by hand, by its MoveNext");
+        Check(HotSpots.Written(null, null) == "a handler.MoveNext", "hot names: nothing to name it by");
+    }
+
+    private sealed class HotNamed
+    {
+        private int _count;
+
+        public IEnumerator Tick()
+        {
+            _count++;
+            yield return null;
+        }
+
+        public void OnHour()
+        {
+            _count++;
+        }
+
+        public Action Own()
+        {
+            return () => _count++;
+        }
+
+        public Action Alone()
+        {
+            return () => Console.Write(string.Empty);
+        }
+
+        public Action Captured(int by)
+        {
+            return () => _count += by;
+        }
+
+        public Action Local()
+        {
+            void Count()
+            {
+                Console.Write(string.Empty);
+            }
+            return Count;
+        }
+    }
+
+    private sealed class HotWalk : IEnumerator
+    {
+        public object Current => null;
+
+        public bool MoveNext()
+        {
+            return false;
+        }
+
+        public void Reset()
+        {
+        }
     }
 
     // Off, as the mod ships: a scope is an empty value, nothing is kept and nothing is allocated.

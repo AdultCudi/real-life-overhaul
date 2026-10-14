@@ -18,8 +18,8 @@ using RealLifeOverhaul;
 //                  five pieces found, each named only where the mod does without it, so nothing is switched off; each
 //                  a line of the contract; and the features each touches through the method that reads it
 //   the code       every method of the mod's own that names a game member and is never inlined is called only inside
-//                  a try with a catch; every Update, LateUpdate, FixedUpdate and OnGUI is guarded; every coroutine of
-//                  the mod's runs inside the guard (Guard.Routine)
+//                  a try with a catch; every Update, LateUpdate, FixedUpdate and OnGUI is guarded and timed (HotSpots);
+//                  every coroutine of the mod's runs inside the guard (Guard.Routine), which times each of its steps
 internal static partial class Program
 {
     private static void ScanChecks(GameFiles files, string mod)
@@ -48,6 +48,7 @@ internal static partial class Program
             Isolation(image, md, pe);
             EntryPoints(image, md, pe);
             Coroutines(image, md, pe);
+            Patches(md, pe);
             Section("the game's calls into the mod: what it asks through its interfaces and base classes, the delegates it is given, the dialogs and the options page (Core/GuardCalls)");
             var self = new GameAssembly("RealLifeOverhaul", mod);
             GameCalls(md, pe, files, self);
@@ -559,6 +560,15 @@ internal static partial class Program
         "RealLifeOverhaul.LifeEvents.Update",     // the save hook must run whatever is off: each part that can fail is in a try of its own (Life/LifeEvents.cs)
     };
 
+    // ...and each one timed (Core/HotSpots), so that the session record can name the mod's share of a long frame: its
+    // first line opens a scope, `using var hotSpot = HotSpots.Time(slot);`. These two are not: the record's reader
+    // itself, and the guard's notices (one look every three seconds while a notice waits).
+    private static readonly HashSet<string> TimedByHand = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "RealLifeOverhaul.SessionWatch.Update",   // the session record: it reads the scopes (Diagnostics/SessionWatch.cs)
+        "RealLifeOverhaul.GuardNotices.Update",   // one time comparison a frame, a notice every three seconds while one waits
+    };
+
     private static bool Behaviour(MetadataReader md, TypeDefinitionHandle th, Dictionary<TypeDefinitionHandle, bool> known, int depth = 0)
     {
         if (known.TryGetValue(th, out bool yes))
@@ -587,8 +597,10 @@ internal static partial class Program
     {
         int fail = MethodToken(md, "Guard", "Fail");
         Check(fail != 0, "entry points: Guard.Fail is not in the built mod");
+        int time = MethodToken(md, "HotSpots", "Time");
+        Check(time != 0, "entry points: HotSpots.Time is not in the built mod");
         var known = new Dictionary<TypeDefinitionHandle, bool>();
-        int entries = 0, unguarded = 0;
+        int entries = 0, unguarded = 0, untimed = 0;
         foreach (TypeDefinitionHandle th in md.TypeDefinitions)
         {
             if (!Behaviour(md, th, known))
@@ -606,11 +618,16 @@ internal static partial class Program
                 }
                 entries++;
                 string full = FullMethodName(md, mh);
+                MethodBodyBlock body = pe.GetMethodBody(m.RelativeVirtualAddress);
+                if (!TimedByHand.Contains(full) && !Steps(body.GetILBytes()).Any(s => s.Op == 0x28 && s.Operand == time))
+                {
+                    untimed++;
+                    Check(false, "entry points: " + full + " is not timed: its first line is to be `using var hotSpot = HotSpots.Time(HotUpdate);` with a slot of its own (Core/HotSpots)");
+                }
                 if (GuardedByHand.Contains(full))
                 {
                     continue;
                 }
-                MethodBodyBlock body = pe.GetMethodBody(m.RelativeVirtualAddress);
                 bool caught = body.ExceptionRegions.Any(r => r.Kind == ExceptionRegionKind.Catch);
                 bool failed = Steps(body.GetILBytes()).Any(s => s.Op == 0x28 && s.Operand == fail);
                 if (!caught || !failed)
@@ -622,7 +639,8 @@ internal static partial class Program
         }
         Check(entries > 100, "entry points: fewer Update, LateUpdate, FixedUpdate and OnGUI methods than the mod has (" + entries + ")");
         Console.WriteLine("   " + entries + " Update, LateUpdate, FixedUpdate and OnGUI methods of the mod's components; " + (entries - unguarded - GuardedByHand.Count)
-                          + " behind the guard, " + GuardedByHand.Count + " guarded by hand, " + unguarded + " not.");
+                          + " behind the guard, " + GuardedByHand.Count + " guarded by hand, " + unguarded + " not; " + (entries - untimed - TimedByHand.Count)
+                          + " timed (HotSpots), " + TimedByHand.Count + " left untimed by hand, " + untimed + " not.");
     }
 
     // Every coroutine the mod starts runs inside the guard (Guard.Routine), but the game's own (a fade, an emoji, a
@@ -684,5 +702,62 @@ internal static partial class Program
         }
         Check(calls > 50, "coroutines: fewer coroutines started than the mod starts (" + calls + ")");
         Console.WriteLine("   " + calls + " coroutines started; " + (calls - bare) + " inside the guard or the game's own, " + bare + " not.");
+    }
+    // The mod patches none of the game's methods (no Harmony: the rules allow one only where there is truly no other
+    // way). A patch would run inside the game's own method, often each frame, so one that is ever added is timed like an
+    // Update: each Prefix, Postfix and Finalizer of a class marked [HarmonyPatch] opens a HotSpots scope.
+    private static void Patches(MetadataReader md, PEReader pe)
+    {
+        int time = MethodToken(md, "HotSpots", "Time");
+        int patches = 0, untimed = 0;
+        foreach (TypeDefinitionHandle th in md.TypeDefinitions)
+        {
+            TypeDefinition t = md.GetTypeDefinition(th);
+            bool patch = false;
+            foreach (CustomAttributeHandle ah in t.GetCustomAttributes())
+            {
+                patch |= AttributeName(md, md.GetCustomAttribute(ah)) == "HarmonyPatch";
+            }
+            if (!patch)
+            {
+                continue;
+            }
+            foreach (MethodDefinitionHandle mh in t.GetMethods())
+            {
+                MethodDefinition m = md.GetMethodDefinition(mh);
+                string name = md.GetString(m.Name);
+                if ((name != "Prefix" && name != "Postfix" && name != "Finalizer") || m.RelativeVirtualAddress == 0)
+                {
+                    continue;
+                }
+                patches++;
+                if (!Steps(pe.GetMethodBody(m.RelativeVirtualAddress).GetILBytes()).Any(s => s.Op == 0x28 && s.Operand == time))
+                {
+                    untimed++;
+                    Check(false, "patches: " + FullMethodName(md, mh) + " runs inside a game method and is not timed: its first line is to be `using var hotSpot = HotSpots.Time(slot);` (Core/HotSpots)");
+                }
+            }
+        }
+        Console.WriteLine("   " + patches + " Harmony patch method(s) of the mod's" + (patches > 0 ? "; " + (patches - untimed) + " timed, " + untimed + " not." : " (none: the mod patches nothing of the game's)."));
+    }
+
+    private static string AttributeName(MetadataReader md, CustomAttribute attribute)
+    {
+        EntityHandle type;
+        if (attribute.Constructor.Kind == HandleKind.MemberReference)
+        {
+            type = md.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Parent;
+        }
+        else if (attribute.Constructor.Kind == HandleKind.MethodDefinition)
+        {
+            type = md.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor).GetDeclaringType();
+        }
+        else
+        {
+            return null;
+        }
+        string name = type.Kind == HandleKind.TypeReference ? md.GetString(md.GetTypeReference((TypeReferenceHandle)type).Name)
+            : type.Kind == HandleKind.TypeDefinition ? md.GetString(md.GetTypeDefinition((TypeDefinitionHandle)type).Name) : null;
+        return name != null && name.EndsWith("Attribute", StringComparison.Ordinal) ? name.Substring(0, name.Length - "Attribute".Length) : name;
     }
 }

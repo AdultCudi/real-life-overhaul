@@ -686,6 +686,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
+                using var hotSpot = HotSpots.Time(HandlerSlot(handler, "Event"));
                 try
                 {
                     handler();
@@ -705,8 +706,10 @@ namespace RealLifeOverhaul
         /// the game lacks stops the class's entry points at once, said once), instead of reaching Unity's own log. A
         /// coroutine under way is never cut short between its steps, whatever is switched off meanwhile: one may be half
         /// way through a fade or a move of the player that only its own end puts right. A coroutine it waits for (an
-        /// IEnumerator it yields) runs inside the same guard. Cost: one small object for each coroutine started, nothing
-        /// per step beyond one call.
+        /// IEnumerator it yields) runs inside the same guard. Each step is timed under the coroutine's own name
+        /// ("Coroutine: Class.Method", <see cref="RoutineSlot"/>), so that the time the engine counts under "coroutines and
+        /// timers" has the mod's names too. Cost: one small object for each coroutine started, nothing per step beyond one
+        /// call and one flag test.
         /// </summary>
         public static IEnumerator Routine(IEnumerator routine)
         {
@@ -717,18 +720,21 @@ namespace RealLifeOverhaul
         {
             private readonly FeatureGuard _guard;
             private readonly IEnumerator _inner;
+            private readonly int _slot;
             private object _current;
 
             public GuardedRoutine(FeatureGuard guard, IEnumerator inner)
             {
                 _guard = guard;
                 _inner = inner;
+                _slot = RoutineSlot(inner.GetType());
             }
 
             public object Current => _current;
 
             public bool MoveNext()
             {
+                using var hotSpot = HotSpots.Time(_slot);
                 try
                 {
                     if (!_inner.MoveNext())
@@ -749,6 +755,53 @@ namespace RealLifeOverhaul
             public void Reset()
             {
                 _inner.Reset();
+            }
+        }
+
+        // ---------------------------------------------------------------- timing (Core/HotSpots)
+
+        private static readonly Dictionary<Type, int> RoutineSlots = new Dictionary<Type, int>(96);
+        private static readonly Dictionary<System.Reflection.MethodInfo, int> HandlerSlots = new Dictionary<System.Reflection.MethodInfo, int>(128);
+
+        /// <summary>
+        /// The HotSpots slot of a coroutine, by the class the compiler made of it ("&lt;Tick&gt;d__12" inside TransitDirector:
+        /// "Coroutine: TransitDirector.Tick"); a coroutine of the game's the mod waits on is named by the game's class and
+        /// method. Made once per coroutine method, when the first of it starts.
+        /// </summary>
+        public static int RoutineSlot(Type routine)
+        {
+            lock (RoutineSlots)
+            {
+                if (RoutineSlots.TryGetValue(routine, out int known))
+                {
+                    return known;
+                }
+                int slot = HotSpots.Slot("Coroutine: " + HotSpots.Written(routine, null));
+                RoutineSlots[routine] = slot;
+                return slot;
+            }
+        }
+
+        /// <summary>
+        /// The HotSpots slot of a handler the guard wraps ("Event: CareersDirector.OnHour", "Listener: StocksApp.Awake"
+        /// for a lambda written in Awake). Made once per handler method, when it is wrapped.
+        /// </summary>
+        public static int HandlerSlot(Delegate handler, string kind)
+        {
+            if (handler == null)
+            {
+                return -1;
+            }
+            System.Reflection.MethodInfo method = handler.Method;
+            lock (HandlerSlots)
+            {
+                if (HandlerSlots.TryGetValue(method, out int known))
+                {
+                    return known;
+                }
+                int slot = HotSpots.Slot(kind + ": " + HotSpots.Written(method.DeclaringType, method.Name));
+                HandlerSlots[method] = slot;
+                return slot;
             }
         }
 
@@ -774,8 +827,10 @@ namespace RealLifeOverhaul
         public static Action<T1, T2, T3, T4, T5, T6, T7, T8> Wrap<T1, T2, T3, T4, T5, T6, T7, T8>(Action<T1, T2, T3, T4, T5, T6, T7, T8> handler)
         {
             FeatureGuard guard = OfHandler(handler);
+            int slot = HandlerSlot(handler, "Event");
             return (a, b, c, d, e, f, g, h) =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;
@@ -794,8 +849,10 @@ namespace RealLifeOverhaul
         /// <summary>A handler for one of the game's events that can never throw into the game's own code. Made once and kept: event holders compare it.</summary>
         public static Action Wrap(FeatureGuard guard, Action handler)
         {
+            int slot = HandlerSlot(handler, "Event");
             return () =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;
@@ -813,8 +870,10 @@ namespace RealLifeOverhaul
 
         public static Action<T> Wrap<T>(FeatureGuard guard, Action<T> handler)
         {
+            int slot = HandlerSlot(handler, "Event");
             return value =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;
@@ -832,8 +891,10 @@ namespace RealLifeOverhaul
 
         public static Action<T1, T2> Wrap<T1, T2>(FeatureGuard guard, Action<T1, T2> handler)
         {
+            int slot = HandlerSlot(handler, "Event");
             return (a, b) =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;
@@ -861,8 +922,10 @@ namespace RealLifeOverhaul
                 return null;
             }
             FeatureGuard guard = OfHandler(handler);
+            int slot = HandlerSlot(handler, "Listener");
             return () =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;
@@ -885,8 +948,10 @@ namespace RealLifeOverhaul
                 return null;
             }
             FeatureGuard guard = OfHandler(handler);
+            int slot = HandlerSlot(handler, "Listener");
             return value =>
             {
+                using var hotSpot = HotSpots.Time(slot);
                 if (guard.Off)
                 {
                     return;
