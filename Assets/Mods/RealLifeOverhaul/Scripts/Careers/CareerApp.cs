@@ -378,6 +378,10 @@ namespace RealLifeOverhaul.Careers
                 {
                     box.Line(CareersText.T("reallife_career_post_no_chance", "points", ProPath.PointsShort(c).ToString()), CellTone.Red);
                 }
+                int more = ProPath.PointsFor(c, ProPath.GoodChance);   // (how far it is to an even chance or better)
+                box.Row("reallife_career_good_chance", more == 0 ? CareersText.T("reallife_career_good_chance_have") : more > 100 ? CareersText.T("reallife_career_good_chance_far")
+                    : more == 1 ? CareersText.T("reallife_career_good_chance_point") : CareersText.T("reallife_career_good_chance_points", "points", more.ToString()),
+                    more == 0 ? CellTone.Green : CellTone.Plain);
             }
             if (o.Via == (int)Via.Referral)
             {

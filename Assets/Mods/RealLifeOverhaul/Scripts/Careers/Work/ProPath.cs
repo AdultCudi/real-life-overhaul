@@ -83,6 +83,31 @@ namespace RealLifeOverhaul.Careers
             return Never;
         }
 
+        public const int GoodChance = 50;   // per cent: the chance of an offer the vacancy box calls good ("For a good chance")
+
+        /// <summary>
+        /// The points of the rung's skills the candidate still wants before an application has at least <paramref name="chance"/>
+        /// per cent of bringing an offer (<see cref="OfferChance"/>): 0 if it has now; over 100 if no points would do (not
+        /// qualified, or held back by something skill does not change). At most 101 scores, when the vacancy box is written.
+        /// </summary>
+        public static int PointsFor(Candidate c, int chance)
+        {
+            if (!c.Qualified)
+            {
+                return Never;
+            }
+            int points = c.Points;
+            for (int more = 0; more <= 100; more++)
+            {
+                c.Points = points + more;
+                if (OfferChance(ProRules.HireScore(c)) >= chance)
+                {
+                    return more;
+                }
+            }
+            return Never;
+        }
+
         // ---------------------------------------------------------------- with one course more
 
         /// <summary>True if a course is taught with the options as they are: the school's always, the university's and the certificates while the university is open.</summary>

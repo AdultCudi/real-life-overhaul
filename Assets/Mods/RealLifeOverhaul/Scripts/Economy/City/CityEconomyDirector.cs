@@ -68,6 +68,7 @@ namespace RealLifeOverhaul.Economy
         private Action _second, _onSave, _onHour, _onDay;
         private int _followedDay;      // a guest following the host's city: the last day its own part of the day was done
         private bool _heardHost;       // a guest: the host's state has been applied at least once since it began to follow
+        private int _eveTold;          // the day the evening notice of tomorrow's rate decision was last sent (CityStore.EveKey)
 
         public bool Running => _running;
 
@@ -202,6 +203,7 @@ namespace RealLifeOverhaul.Economy
             }
             string before;
             _beforeTests = save.modData.TryGetValue(CityStore.TestKey, out before) && !string.IsNullOrEmpty(before) ? before : null;
+            _eveTold = save.modData.TryGetValue(CityStore.EveKey, out string eve) && int.TryParse(eve, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int eveDay) ? eveDay : 0;
             int districts = CityGame.Districts(state);
             int goods = CityGame.FindGoods();
 
@@ -345,6 +347,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     return;   // a new day: the game's run writes every figure afresh in a moment, and the day event follows it
                 }
+                DecisionEve(Save.Day, Save.Hour);
                 for (int i = 0; i < _shops.Count; i++)
                 {
                     if (_shops[i].Wanted != 0 || _shops[i].Applied)
@@ -518,6 +521,7 @@ namespace RealLifeOverhaul.Economy
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[CityStore.Key] = CityStore.Write(_state);
+            save.modData[CityStore.EveKey] = _eveTold.ToString(System.Globalization.CultureInfo.InvariantCulture);
             if (_beforeTests != null)
             {
                 save.modData[CityStore.TestKey] = _beforeTests;
@@ -880,6 +884,25 @@ namespace RealLifeOverhaul.Economy
                     {
                         { "kind", CityText.Kind(kind) }, { "percent", Math.Abs(CityModel.ShockPercent(line, _level)).ToString() }, { "days", line.Days.ToString() }
                     }, 12f, null, Guard.Wrap(OpenCity), true, false);
+            }
+        }
+
+        // The evening before a decision of the central bank takes effect: one notice of what the market expects (the move
+        // announced, as the City page shows it). Once a day, the day kept in the player's own line of the save.
+        private void DecisionEve(int day, int hour)
+        {
+            if (!Settings.EconomyRateAhead || !CityModel.DecisionEve(_state, _monthDays, day, hour, _eveTold))
+            {
+                return;
+            }
+            _eveTold = day;
+            int after = MacroCatalogue.Clamp(_state.Base + _state.PendingMove, MacroCatalogue.BaseLeast, MacroCatalogue.BaseMost);
+            Notifications.Show(NotificationType.Info, CityModel.DecisionEveKey(_state.PendingMove),
+                new Dictionary<string, string> { { "points", CityText.Points(_state.PendingMove) }, { "rate", CityText.Rate(after) } }, 10f, null, Guard.Wrap(OpenCity), true, false);
+            if (Verbose)
+            {
+                Logger?.Info("Economy check (city, the evening before a decision, day " + day + " at " + hour.ToString("00") + ":00): the rate " + Quarters(_state.Base) + " to " + Quarters(after)
+                             + " from tomorrow; the notice sent once: PASS");
             }
         }
 

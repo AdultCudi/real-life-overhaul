@@ -179,6 +179,35 @@ namespace RealLifeOverhaul.Markets
             return longs - shorts;
         }
 
+        /// <summary>
+        /// The day's change of the player's own holdings against the previous close (<see cref="Stock.PrevClose"/>, set at
+        /// the open), in cents: a holding gains as its price rises, a short one as it falls. <paramref name="before"/> is
+        /// what they were worth at that close, for the per cent. One pass over the holdings, when the Portfolio is written.
+        /// </summary>
+        public static long DayChange(MarketState state, out long before)
+        {
+            long change = 0;
+            before = 0;
+            for (int i = 0; i < state.Positions.Count; i++)
+            {
+                Position p = state.Positions[i];
+                Stock s = state.Stock(p.StockId);
+                if (s == null || p.Shares == 0 || s.PrevClose <= 0)
+                {
+                    continue;
+                }
+                change += p.Shares * (long)(s.Last - s.PrevClose);
+                before += Math.Abs(p.Shares) * (long)s.PrevClose;
+            }
+            return change;
+        }
+
+        /// <summary>The day's change in basis points of what was held at the previous close; 0 with nothing held.</summary>
+        public static int DayChangeBp(long change, long before)
+        {
+            return before > 0 ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, change * 10000L / before)) : 0;
+        }
+
         /// <summary>A margin account's equity: its own money, what is held and what is owed on shares sold short.</summary>
         public static long Equity(MarketState state, int phase)
         {

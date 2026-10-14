@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Planner
         public static ReminderLead DefaultLead = ReminderLead.HourBefore;
         public static bool Welcomed;                              // the first-run notification has been shown on this save
         public static int SeenStamp;                              // PlannerLogic.DueStamp when the app was last opened
+        public static int MorningDay;                             // the day the morning line was last sent (PlannerRules.MorningDue); 0 none
         /// <summary>The soonest moment a reminder is due (game minutes); int.MaxValue with none: the director's one comparison a second.</summary>
         public static int NextFire { get; private set; } = int.MaxValue;
 
@@ -91,6 +92,7 @@ namespace RealLifeOverhaul.Planner
             DefaultLead = ReminderLead.HourBefore;
             Welcomed = false;
             SeenStamp = 0;
+            MorningDay = 0;
         }
 
         public static bool Shows(PlannerCategory category)
@@ -407,6 +409,7 @@ namespace RealLifeOverhaul.Planner
                         case "lead": DefaultLead = Lead(value, ReminderLead.HourBefore); break;
                         case "hello": Welcomed = value != 0; break;
                         case "seen": SeenStamp = value; break;
+                        case "morning": MorningDay = value; break;
                         default: read--; break;
                     }
                 }
@@ -468,7 +471,7 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             data[Key] = "v=1;next=" + Text(NextNoteId) + ";hide=" + Text(HiddenCategories) + ";lead=" + Text((int)DefaultLead)
-                        + ";hello=" + (Welcomed ? "1" : "0") + ";seen=" + Text(SeenStamp);
+                        + ";hello=" + (Welcomed ? "1" : "0") + ";seen=" + Text(SeenStamp) + ";morning=" + Text(MorningDay);
             var text = new StringBuilder(Notes.Count * 48);
             for (int i = 0; i < Notes.Count; i++)
             {

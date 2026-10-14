@@ -167,6 +167,12 @@ namespace RealLifeOverhaul.Markets
             box.Row("reallife_ibox_worth", MarketText.Money(_sums.Net));
             box.Row("reallife_ibox_cost", MarketText.Money(_sums.NetCost));
             box.Row("reallife_ibox_gain", MarketText.Money(_sums.Gain), _sums.Gain > 0 ? CellTone.Green : _sums.Gain < 0 ? CellTone.Red : CellTone.Plain);
+            long day = MarketTrading.DayChange(s, out long dayBefore);   // (today against the previous close, in cents)
+            if (dayBefore > 0)
+            {
+                box.Row("reallife_mkt_day_change", MarketText.Fill("reallife_mkt_day_change_value", "money", MarketText.Money(day / 100), "percent", MarketText.Change(MarketTrading.DayChangeBp(day, dayBefore))),
+                    day > 0 ? CellTone.Green : day < 0 ? CellTone.Red : CellTone.Plain);
+            }
             box.Section("reallife_mkt_inv_sec_kinds");
             bool any = false;
             for (int k = 0; k < (int)HoldingKind.Count; k++)

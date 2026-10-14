@@ -193,6 +193,24 @@ namespace RealLifeOverhaul.Economy
             return state.Age / Math.Max(1, monthDays);
         }
 
+        public const int DecisionEveHour = 18;   // hour of the game's day: "the bank rate decision is tomorrow" comes from the evening before it takes effect
+
+        /// <summary>
+        /// True if the evening notice of tomorrow's rate decision is due: a decision is announced (<see cref="CityState.Pending"/>)
+        /// and takes effect tomorrow, it is <see cref="DecisionEveHour"/> or later, and it has not been sent today
+        /// (<paramref name="told"/>: the day it was last sent, kept in the player's own line of the save).
+        /// </summary>
+        public static bool DecisionEve(CityState state, int monthDays, int day, int hour, int told)
+        {
+            return state != null && state.Pending && DaysToTurn(state, monthDays) == 1 && hour >= DecisionEveHour && told != day;
+        }
+
+        /// <summary>The key of the evening notice for an announced move: a rise, a cut, or a hold.</summary>
+        public static string DecisionEveKey(int move)
+        {
+            return move > 0 ? "reallife_macro_note_eve_up" : move < 0 ? "reallife_macro_note_eve_down" : "reallife_macro_note_eve_hold";
+        }
+
         /// <summary>Days until the central bank's next decision takes effect (the next turn of a month), 1 at least.</summary>
         public static int DaysToTurn(CityState state, int monthDays)
         {

@@ -45,6 +45,82 @@ namespace RealLifeOverhaul.Planner
         public const int FreeLeast = 30;         // game minutes: a shorter gap between two entries is no free time
         public const int MostGaps = 3;           // the day's box names this many stretches of free time
 
+        public const int TabToday = 0, TabUpcoming = 1, TabWeek = 2;   // the app's tabs, in their order
+
+        public const int MorningHour = 5;     // the morning line comes on waking, or from 05:00 for a player who is up...
+        public const int MorningLast = 12;    // ...and not from noon on: a save loaded in the afternoon has had its morning
+
+        /// <summary>
+        /// True if the morning line is due: the player awake, from <see cref="MorningHour"/> until <see cref="MorningLast"/>,
+        /// not yet sent today (<paramref name="told"/>: the day it was last sent, kept in the save, so a reload does not send it again).
+        /// </summary>
+        public static bool MorningDue(int day, int hour, bool asleep, int told)
+        {
+            return !asleep && hour >= MorningHour && hour < MorningLast && told != day;
+        }
+
+        /// <summary>The entries of a day still to do (upcoming or under way) that the morning line counts.</summary>
+        public static int MorningCount(List<PlannerEntry> items, int day)
+        {
+            int n = 0;
+            for (int i = 0; i < items.Count; i++)
+            {
+                PlannerEntry e = items[i];
+                n += e.Day == day && (e.State == PlannerState.Upcoming || e.State == PlannerState.Now) ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// The morning line's key for a day: how many entries (one or more), whether the first has a time, and whether
+        /// there is a time to leave by (<paramref name="leave"/>: false when the place is not known, is where the player
+        /// is, or the time has passed). Null for an empty day: nothing is sent.
+        /// </summary>
+        public static string MorningKey(int count, bool timed, bool leave)
+        {
+            if (count <= 0)
+            {
+                return null;
+            }
+            string one = count == 1 ? "_one" : string.Empty;
+            return !timed ? "reallife_planner_morning_all_day" + one : "reallife_planner_morning" + one + (leave ? string.Empty : "_here");
+        }
+
+        /// <summary>Whether an entry is listed on a tab: Today the day's, Upcoming the days after, Week seven days from today.</summary>
+        public static bool OnTab(PlannerEntry e, int tab, int today)
+        {
+            switch (tab)
+            {
+                case TabToday: return e.Day == today;
+                case TabWeek: return e.Day >= today && e.Day < today + WeekGrid.Days;
+                default: return e.Day > today;
+            }
+        }
+
+        /// <summary>
+        /// How many entries a tab lists under its filter (<paramref name="group"/>, a PlannerGroup, -1 for all), as the
+        /// table shows them: a group with nothing on the tab, or a tab with entries of one group only, lists everything
+        /// (GameUi.TableModel lets the filter go then). One pass over the looked-at entries, when the tables are filled.
+        /// </summary>
+        public static int TabCount(List<PlannerEntry> items, int tab, int today, int group)
+        {
+            int all = 0, ofGroup = 0, held = 0;
+            for (int i = 0; i < items.Count; i++)
+            {
+                PlannerEntry e = items[i];
+                if (!OnTab(e, tab, today))
+                {
+                    continue;
+                }
+                int g = (int)GroupOf(e.Category);
+                all++;
+                ofGroup += g == group ? 1 : 0;
+                held |= 1 << g;
+            }
+            bool kinds = (held & (held - 1)) != 0;   // (two groups or more)
+            return group >= 0 && ofGroup > 0 && kinds ? ofGroup : all;
+        }
+
         public static PlannerGroup GroupOf(PlannerCategory category)
         {
             switch (category)

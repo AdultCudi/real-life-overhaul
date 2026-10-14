@@ -254,6 +254,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
                 .AddButton("reallife_study_test_exam", () => Careers.CareersDirector.Instance?.TestExam())
                 .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
+                .AddToggle(Settings.CareersClassStartId, "reallife_study_opt_class_start", Settings.CareersClassStart,
+                    v => Settings.CareersClassStart = v)
                 .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
                     v => Settings.CareersDegrees = v)
                 .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
@@ -267,6 +269,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
                 .AddButton("reallife_work_test_desk", () => Careers.CareersDirector.Instance?.TestDesk())
                 .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
+                .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
+                    v => Settings.CareersAgencyNote = v)
+                .AddToggle(Settings.CareersRejectReasonId, "reallife_work_opt_reject_reason", Settings.CareersRejectReason,
+                    v => Settings.CareersRejectReason = v)
                 .AddToggle(Settings.CareersLifeId, "reallife_life_enabled", Settings.CareersLife,
                     v => Settings.CareersLife = v)
                 .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
@@ -646,6 +652,8 @@ namespace RealLifeOverhaul
                     v => Settings.Planner = v)
                 .AddToggle(Settings.PlannerRemindersId, "reallife_planner_reminders", Settings.PlannerReminders,
                     v => Settings.PlannerReminders = v)
+                .AddToggle(Settings.PlannerMorningId, "reallife_planner_opt_morning", Settings.PlannerMorning,
+                    v => Settings.PlannerMorning = v)
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
@@ -687,6 +695,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.EconomyCityLevelId, "reallife_macro_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCityLevel,
                     v => Settings.EconomyCityLevel = v)
+                .AddToggle(Settings.EconomyRateAheadId, "reallife_macro_opt_eve", Settings.EconomyRateAhead,
+                    v => Settings.EconomyRateAhead = v)
                 .AddButton("reallife_macro_test_show", () => Economy.CityEconomyDirector.Instance?.TestShow())
                 .AddButton("reallife_macro_test_month", () => Economy.CityEconomyDirector.Instance?.TestMonth())
                 .AddButton("reallife_macro_test_boom", () => Economy.CityEconomyDirector.Instance?.TestCycle(Economy.CycleState.Boom))
@@ -725,6 +735,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsDividendNotes = v)
                 .AddToggle(Settings.MarketsBondsId, "reallife_mkt_bond_opt", Settings.MarketsBonds,
                     v => Settings.MarketsBonds = v)
+                .AddToggle(Settings.MarketsBondSoFarId, "reallife_mkt_bond_opt_so_far", Settings.MarketsBondSoFar,
+                    v => Settings.MarketsBondSoFar = v)
                 .AddToggle(Settings.MarketsLargeId, "reallife_mkt_inv_opt_large", Settings.MarketsLarge,
                     v => Settings.MarketsLarge = v)
                 .AddToggle(Settings.MarketsReinvestId, "reallife_mkt_inv_opt_reinvest", Settings.MarketsReinvest,

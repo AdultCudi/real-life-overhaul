@@ -93,6 +93,7 @@ namespace RealLifeOverhaul
         public const string LicencePointsId = "licence_points";
         public const string PlannerId = "planner";
         public const string PlannerRemindersId = "planner_reminders";
+        public const string PlannerMorningId = "planner_morning";
         public const string EconomyId = "economy";
         public const string EconomyProductsId = "economy_products";
         public const string EconomySharkId = "economy_shark";
@@ -100,6 +101,7 @@ namespace RealLifeOverhaul
         public const string EconomyLevelId = "economy_level";
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
+        public const string EconomyRateAheadId = "economy_rate_ahead";
         public const string VenturesInvestorsId = "ventures_investors";
         public const string MarketsId = "ventures_market";        // (the old market's option: kept, so that a player's choice carries over to the city's stock market)
         public const string MarketsMarginId = "markets_margin";
@@ -107,6 +109,7 @@ namespace RealLifeOverhaul
         public const string MarketsBotsId = "markets_bots";
         public const string MarketsDividendNotesId = "markets_dividend_notes";
         public const string MarketsBondsId = "markets_bonds";
+        public const string MarketsBondSoFarId = "markets_bond_so_far";
         public const string MarketsLargeId = "markets_large";
         public const string MarketsReinvestId = "markets_reinvest";
         public const string VenturesLevelId = "ventures_level";
@@ -229,6 +232,9 @@ namespace RealLifeOverhaul
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
         public const string CareersFamilyId = "careers_family";
+        public const string CareersAgencyNoteId = "careers_agency_note";
+        public const string CareersClassStartId = "careers_class_start";
+        public const string CareersRejectReasonId = "careers_reject_reason";
         public const string BusinessId = "business_pressure";
         public const string BusinessFrequencyId = "business_frequency";
         public const string BusinessEasyId = "business_easy";
@@ -343,12 +349,14 @@ namespace RealLifeOverhaul
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
+        public static bool PlannerMorning = true;        // ...and one line of the day on waking: how many entries, the first and when to leave for it (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
         public static bool EconomyProducts = true;       // more kinds of credit: an overdraft, a card, a business loan, car finance, a mortgage, consolidation (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort (off: it lends nothing and does nothing; a debt to it can still be paid)
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Products/ProductCatalogue)
         public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
+        public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects (off: none; the decision comes all the same)
         public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)
         public static bool VenturesInvestors = true;     // investors: offers for a business that does well, the pitch, deals (off: no new offers or meetings; deals that exist carry on) (Scripts/Economy/Ventures)
         public static bool Markets = true;               // the city's stock market and the Stocks app (off: the market stands still and nothing is traded; shares held are kept) (Scripts/Markets)
@@ -356,6 +364,7 @@ namespace RealLifeOverhaul
         public static bool MarketsListing = true;        // the player's own company may come to the market (off: no new listing is begun; a company on the market stays there until taken private) (Scripts/Markets/Listing)
         public static bool MarketsBots = true;           // trading bots may be hired in the Stocks app (off: none is hired, and every bot hired is let go, its shares the player's own) (Scripts/Markets/MarketBots)
         public static bool MarketsDividendNotes = true;  // a notification when dividends are paid to the player or their bots, one for all that land at once (off: paid all the same, each still a line of the market news)
+        public static bool MarketsBondSoFar = true;      // a bond's interest notice adds what it has paid so far (off: the payment alone)
         public static bool MarketsBonds = true;          // bonds and bank deposits may be bought in the Stocks app (off: none is bought; those held still pay, end and can be sold) (Scripts/Markets/Bonds)
         public static bool MarketsLarge = true;          // an order over one order's limit is worked a slice of each step at a time, and one bond purchase may be up to a share of what the player is worth (off: both limits as before; worked orders open are cancelled) (Scripts/Markets/InvestRules)
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open (off: every dividend is paid in cash) (Scripts/Markets/InvestRules)
@@ -497,6 +506,9 @@ namespace RealLifeOverhaul
         public static bool CareersJobs = true;           // professional jobs: the city's businesses, the rivals', its tech companies and the public sector take the player on by their qualifications and skills, with applications, interviews, offers and working days, in the Career app (off: no vacancies; a job held is kept) (Scripts/Careers)
         public static bool CareersLife = true;           // working life in a profession: reviews, rises, bonuses and promotions, office matters, overtime and burnout, search firms, redundancy and benefit, share options, the pension and the top seats of a rival's company (off: a job is its days and pay alone) (Scripts/Careers)
         public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type (off: none of them; records are kept) (Scripts/Careers)
+        public static bool CareersClassStart = true;     // "your class starts now" at a class's hour while the player is not inside the place that holds it, once a class (off: the older notice of a class begun elsewhere)
+        public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close (off: the no alone)
+        public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office (off: none; the registration ends all the same)
         public static bool CareersOwn = true;            // working for oneself: leaving a profession to found a company or open a practice, former colleagues, restraint clauses and claims, freelance contracts and side work (off: no contracts come; a practice is kept) (Scripts/Careers)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
@@ -634,6 +646,7 @@ namespace RealLifeOverhaul
             LicencePoints = Bool(modId, LicencePointsId, LicencePoints);
             Planner = Bool(modId, PlannerId, Planner);
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
+            PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
@@ -641,6 +654,7 @@ namespace RealLifeOverhaul
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
+            EconomyRateAhead = Bool(modId, EconomyRateAheadId, EconomyRateAhead);
             VenturesInvestors = Bool(modId, VenturesInvestorsId, VenturesInvestors);
             Markets = Bool(modId, MarketsId, Markets);
             MarketsMargin = Bool(modId, MarketsMarginId, MarketsMargin);
@@ -648,6 +662,7 @@ namespace RealLifeOverhaul
             MarketsBots = Bool(modId, MarketsBotsId, MarketsBots);
             MarketsDividendNotes = Bool(modId, MarketsDividendNotesId, MarketsDividendNotes);
             MarketsBonds = Bool(modId, MarketsBondsId, MarketsBonds);
+            MarketsBondSoFar = Bool(modId, MarketsBondSoFarId, MarketsBondSoFar);
             MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
@@ -770,6 +785,9 @@ namespace RealLifeOverhaul
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
+            CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
+            CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);
+            CareersRejectReason = Bool(modId, CareersRejectReasonId, CareersRejectReason);
             Business = Bool(modId, BusinessId, Business);
             BusinessFrequency = Int(modId, BusinessFrequencyId, BusinessFrequency);
             BusinessEasy = Bool(modId, BusinessEasyId, BusinessEasy);

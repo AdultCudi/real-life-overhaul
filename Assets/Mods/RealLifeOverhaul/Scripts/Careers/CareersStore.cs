@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Careers
     ///
     ///   s  each skill the player has or had: skill|thousandths|best|day last used
     ///   c  each course under way, r each one finished: course|mode|start|seen|done|settled day|homework|fee|instalments|loan|on loan|
-    ///      grant|stage|exam from|exam to|retakes|score|grade|ended|graduated|fee late
+    ///      grant|stage|exam from|exam to|retakes|score|grade|ended|graduated|fee late|start told
     ///   w, o, a, j, y  the working life (Careers/Work/WorkStore)
     ///   q  each grown child at university: name|degree|stage|start|end|paid|class
     ///   t  tutoring: the day|sessions that day
@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Careers
         private static void Course(TechWriter w, Enrolment e)
         {
             w.Record().Add(e.Course).Add(e.Mode).Add(e.Start).Add(e.Seen).Add(e.Done).Add(e.SettledDay).Add(e.Homework).Add(e.Fee).Add(e.Instalments).Add(e.Loan).Add(e.OnLoan)
-                .Add(e.Grant).Add(e.Stage).Add(e.ExamFrom).Add(e.ExamTo).Add(e.Retakes).Add(e.Score).Add(e.Grade).Add(e.Ended).Add(e.Graduated).Add(e.FeeLate);
+                .Add(e.Grant).Add(e.Stage).Add(e.ExamFrom).Add(e.ExamTo).Add(e.Retakes).Add(e.Score).Add(e.Grade).Add(e.Ended).Add(e.Graduated).Add(e.FeeLate).Add(e.StartTold);
         }
 
         public static StudyFile Read(string text, out int version)
@@ -167,7 +167,8 @@ namespace RealLifeOverhaul.Careers
                 Grade = x.Int(),
                 Ended = x.Int(),
                 Graduated = x.Bool(),
-                FeeLate = x.Bool()
+                FeeLate = x.Bool(),
+                StartTold = x.Int()   // (a save from before it: 0, nothing told)
             };
             return e.Def != null ? e : null;
         }

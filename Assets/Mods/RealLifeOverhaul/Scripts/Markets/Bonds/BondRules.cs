@@ -305,6 +305,16 @@ namespace RealLifeOverhaul.Markets
             return face;
         }
 
+        /// <summary>
+        /// The interest a bond has paid so far, after tax, in cents: what was paid out to the player and what was put back
+        /// into it (<see cref="BondHolding.Received"/> and <see cref="BondHolding.Reinvested"/>, the running totals each
+        /// payment adds to and the save keeps). For "N paid on this bond so far" in the notice of each payment.
+        /// </summary>
+        public static long InterestSoFar(BondHolding h)
+        {
+            return h == null ? 0L : h.Received + h.Reinvested;
+        }
+
         /// <summary>Whole money out of cents with what was carried before; the cents under a unit are carried on.</summary>
         public static long Money(long cents, ref long carry)
         {
