@@ -41,7 +41,8 @@ namespace RealLifeOverhaul.Interiors
         private readonly Dictionary<BuildingRegistration, InteriorShop> _byReg = new Dictionary<BuildingRegistration, InteriorShop>(16);
         private InteriorStore _store;
         private float _nextSlow;
-        private int _lastDay = -1, _lastHour = -1, _switches = -1;
+        private int _lastDay = -1, _lastHour = -1;
+        private long _switches = -1;
         private int _basketToday, _officeToday;
         private readonly Dictionary<string, int> _carry = new Dictionary<string, int>(StringComparer.Ordinal);       // an office's fraction of a client carried to the next hour, thousandths
         private readonly Dictionary<string, int> _booked = new Dictionary<string, int>(StringComparer.Ordinal);      // clients booked today, by office
@@ -114,17 +115,21 @@ namespace RealLifeOverhaul.Interiors
                 {
                     save.modData = new Dictionary<string, string>();
                 }
-                string line;
+                string line, rules;
                 _store = InteriorStore.Read(save.modData.TryGetValue(InteriorStore.Key, out line) ? line : null);
+                _store.ReadRules(save.modData.TryGetValue(InteriorStore.RulesKey, out rules) ? rules : null);
                 OtherMods.Look(Logger);
                 Logger?.Info("Interiors: ready. " + _store.Files.Count + " business file(s)" + (OtherMods.MeaningfulInteriors.Loaded ? "; Meaningful Interiors is on, so the district standard's part and the basket stay off" : string.Empty)
-                             + (OtherMods.MeaningfulAmbience.Loaded ? "; Meaningful Ambience is on, so the decor's footfall stays off" : string.Empty) + ".");
+                             + (OtherMods.MeaningfulAmbience.Loaded ? "; Meaningful Ambience is on, so the decor's footfall stays off" : string.Empty)
+                             + (_store.RulesFrom != InteriorFile.Unset ? "; the bounded rules first read this save on day " + _store.RulesFrom : "; the bounded rules meet this save today, and its businesses' effects come in over " + InteriorRules.RampDays + " days")
+                             + "; strengths: standard " + Settings.InteriorsStandardStrength + "%, decor " + Settings.InteriorsDecorStrength + "%, prices " + Settings.InteriorsPricesStrength
+                             + "%, wear " + Settings.InteriorsWearStrength + "%.");
             }
             SaveHook.Keep(_onSave);
             InteriorTab.Keep();
 
             int day = TimeHelper.CurrentDay, hour = TimeHelper.CurrentHour;
-            int switches = Switches();
+            long switches = Switches();
             if (!Settings.Interiors)
             {
                 if (_shops.Count > 0)
@@ -160,24 +165,29 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        // The options and the two other mods, as one number: a change of any is a change of what applies.
-        private static int Switches()
+        // The options and the two other mods, as one number: a change of any is a change of what applies (each slider
+        // takes 8 bits: 0 to 200).
+        private static long Switches()
         {
-            return (Settings.Interiors ? 1 : 0) | (Settings.InteriorsBasket ? 2 : 0) | (Settings.InteriorsStanding ? 4 : 0) | (Settings.InteriorsStaff ? 8 : 0)
-                   | (OtherMods.MeaningfulInteriors.Loaded ? 16 : 0) | (OtherMods.MeaningfulAmbience.Loaded ? 32 : 0)
-                   | (InteriorRules.Clamp(Settings.InteriorsStandardLevel, 0, 7) << 6) | (InteriorRules.Clamp(Settings.InteriorsRewardLevel, 0, 7) << 9)
-                   | (InteriorRules.Clamp(Settings.InteriorsDecorLevel, 0, 7) << 12) | (InteriorRules.Clamp(Settings.InteriorsPricesLevel, 0, 7) << 15)
-                   | (InteriorRules.Clamp(Settings.InteriorsWearLevel, 0, 7) << 18);
+            long flags = (Settings.Interiors ? 1 : 0) | (Settings.InteriorsBasket ? 2 : 0) | (Settings.InteriorsStanding ? 4 : 0) | (Settings.InteriorsStaff ? 8 : 0)
+                         | (OtherMods.MeaningfulInteriors.Loaded ? 16 : 0) | (OtherMods.MeaningfulAmbience.Loaded ? 32 : 0);
+            return flags | ((long)Slider(Settings.InteriorsStandardStrength) << 6) | ((long)Slider(Settings.InteriorsDecorStrength) << 14)
+                   | ((long)Slider(Settings.InteriorsPricesStrength) << 22) | ((long)Slider(Settings.InteriorsWearStrength) << 30);
+        }
+
+        private static int Slider(int percent)
+        {
+            return InteriorRules.Clamp(percent, InteriorRules.StrengthLeast, InteriorRules.StrengthMost);
         }
 
         /// <summary>The parts that apply now and their strengths, from the options and the two other mods.</summary>
-        public static InteriorParts Parts => InteriorRules.Parts(Settings.InteriorsStandardLevel, Settings.InteriorsRewardLevel, Settings.InteriorsDecorLevel,
-            Settings.InteriorsPricesLevel, Settings.InteriorsWearLevel, Settings.InteriorsBasket, Settings.InteriorsStanding, Settings.InteriorsStaff,
+        public static InteriorParts Parts => InteriorRules.Parts(Settings.InteriorsStandardStrength, Settings.InteriorsDecorStrength, Settings.InteriorsPricesStrength,
+            Settings.InteriorsWearStrength, Settings.InteriorsBasket, Settings.InteriorsStanding, Settings.InteriorsStaff,
             OtherMods.MeaningfulInteriors.Loaded, OtherMods.MeaningfulAmbience.Loaded);
 
-        /// <summary>Falling short of the district's standard costs something (its strength is not Off, and Meaningful Interiors is not on).</summary>
+        /// <summary>The district's standard counts (its strength is not off, and Meaningful Interiors is not on).</summary>
         public static bool StandardOn => Parts.StandardScale > 0;
-        public static bool DecorOn => Parts.DecorPercent > 0;
+        public static bool DecorOn => Parts.DecorMille > 0;
         public static bool BasketOn => Parts.Basket;
 
         // ---------------------------------------------------------------- once a game day
@@ -224,6 +234,12 @@ namespace RealLifeOverhaul.Interiors
             _byReg.Clear();
             InteriorGame.Places(_regs);
             InteriorParts parts = Parts;
+            if (_store.RulesFrom == InteriorFile.Unset)
+            {
+                _store.RulesFrom = day;   // these rules meet the save today: what every business already trading does comes in from now
+                Logger?.Info("Interiors: the bounded rules meet this save on day " + day + ": every business's effects on customers and takings come in over "
+                             + InteriorRules.RampDays + " days, in full from day " + InteriorRules.FullFrom(day) + ".");
+            }
             int bestOffice = -1;
             for (int i = 0; i < _regs.Count; i++)
             {
@@ -258,6 +274,9 @@ namespace RealLifeOverhaul.Interiors
                     }
                     wear = p.WearScale > 0 ? f.Wear : 0;
                 }
+                s.PhaseFrom = _store.PhaseFrom(f);
+                s.Ramp = InteriorRules.Ramp(s.PhaseFrom, day);
+                s.IssueDip = InteriorGame.IssueDip(reg);
                 s.Stop = InteriorGame.Stop(reg);
                 InteriorRules.Work(s, wear, p);
                 if (s.Kind == InteriorKind.Office)
@@ -274,7 +293,8 @@ namespace RealLifeOverhaul.Interiors
                 InteriorShop s = _byReg[_regs[i]];
                 int was;
                 before.TryGetValue(s.Place, out was);
-                if (s.Kind == InteriorKind.Shop && (s.Footfall != 0 || was != 0) && (age || s.Footfall != was) && Write(_regs[i], age))
+                // (the session's first round writes every shop: a figure an older version wrote into the save is put right at once)
+                if (s.Kind == InteriorKind.Shop && (_firstRound || s.Footfall != 0 || was != 0) && (age || s.Footfall != was) && Write(_regs[i], age))
                 {
                     written++;
                 }
@@ -296,6 +316,9 @@ namespace RealLifeOverhaul.Interiors
             _pool.RemoveAt(_pool.Count - 1);
             s.Fitting = false;
             s.StandardFrom = 0;
+            s.Ramp = 1000;
+            s.PhaseFrom = 0;
+            s.IssueDip = 0;
             return s;
         }
 
@@ -539,6 +562,11 @@ namespace RealLifeOverhaul.Interiors
                     }
                     _store.Prune(place => BusinessGame.Held(place) != null);
                     save.modData[InteriorStore.Key] = _store.Write();
+                    string rules = _store.WriteRules();
+                    if (rules != null)
+                    {
+                        save.modData[InteriorStore.RulesKey] = rules;
+                    }
                 }
             }
             catch (Exception e)
@@ -582,11 +610,25 @@ namespace RealLifeOverhaul.Interiors
             return null;
         }
 
-        /// <summary>The interior's part of a business's footfall, per cent (business pressure's ambient sum).</summary>
+        /// <summary>
+        /// The interior's part of a business's footfall, per cent (business pressure's interior part). Asked as business
+        /// pressure writes the business's figure, so its shortfall gives way at once to a dip of business pressure's that
+        /// has just started or ended there (a complaint): the two together never take more than the bound.
+        /// </summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             InteriorShop s = At(reg);
-            return s != null ? s.Footfall : 0;
+            if (s == null)
+            {
+                return 0;
+            }
+            int dip = InteriorGame.IssueDip(reg);
+            if (dip != s.IssueDip)
+            {
+                s.IssueDip = dip;
+                InteriorRules.Combine(s);
+            }
+            return s.Footfall;
         }
 
         /// <summary>Thousandths more or less of the price the district bears at a business.</summary>
@@ -689,9 +731,10 @@ namespace RealLifeOverhaul.Interiors
             }
             Logger?.Info("Interiors report: " + s.Name + ": interior " + s.Interior + " (" + s.InteriorNow + " after wear and dirt), decor " + s.DecorRaw + " (" + s.Decor + "), overall " + s.Overall
                          + ", standard " + s.Standard + " (income " + s.Income + ", game minimum " + s.GameMinimum + "), " + s.Sqm + " m2, target " + s.Target / 10 + ", wear " + s.Wear / 10
-                         + "%, clean " + s.Clean + "; footfall " + s.Footfall + "% (standard " + s.StandardFootfall + ", decor " + s.DecorFootfall + "), bears " + s.Bears + " per mille, basket "
-                         + s.Basket + " per mille, complaint " + s.ComplaintChance + " per mille, brand " + s.BrandPoints + ", standing " + s.StandingPoints + ", comfort " + s.Comfort
-                         + ", office esteem " + s.OfficeEsteem + ", bids " + s.OfficeBid + " per mille.");
+                         + "%, clean " + s.Clean + "; footfall " + s.Footfall + "% (standard " + s.StandardFootfall + " of " + s.StandardFull + " in full, decor " + s.DecorFootfall + " of " + s.DecorFull
+                         + ", bound " + s.Bound + ", business pressure's dip " + s.IssueDip + "), phased in " + s.Ramp / 10 + "% since day " + s.PhaseFrom + ", bears " + s.Bears + " per mille, basket "
+                         + s.Basket + " per mille, takings " + InteriorRules.Takings(s.Footfall, s.Basket) + " per mille, complaint " + s.ComplaintChance + " per mille, brand " + s.BrandPoints
+                         + ", standing " + s.StandingPoints + ", comfort " + s.Comfort + ", office esteem " + s.OfficeEsteem + ", bids " + s.OfficeBid + " per mille.");
             Notifications.Show(NotificationType.Info, "reallife_interior_test_report", InteriorText.Report(s), 12f);
         }
 
