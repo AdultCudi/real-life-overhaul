@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Utilities
 {
@@ -7,6 +8,11 @@ namespace RealLifeOverhaul.Utilities
     /// reaches, what a plan costs this month, a plan bought and installed, the fee for leaving a contract early, the
     /// month's price moving, and the outages. Every draw comes from the save's seed, the day and the provider (Draw):
     /// the same day of the same save always has the same outages and prices, so reloading changes nothing.
+    ///
+    /// The grace period: a save that meets the rule that some businesses cannot open without a connection for the first
+    /// time (the feature newly in it: no utilities line yet, or one from before the internet) gives the businesses it
+    /// already has that need one GraceDays of the game's clock to get connected. Only those places, listed when it
+    /// begins; a business started after that needs a connection from its first day.
     /// </summary>
     public static class InternetRules
     {
@@ -141,6 +147,73 @@ namespace RealLifeOverhaul.Utilities
                 next -= InternetCatalogue.PromoCut;
             }
             return Math.Max(InternetCatalogue.PromoLeast, Math.Min(InternetCatalogue.PromoMost, next));
+        }
+
+        // ---------------------------------------------------------------- the grace period
+
+        /// <summary>
+        /// True for a save meeting the internet for the first time: the state read from it is none (the utilities newly in
+        /// it), or a line written before the internet, which had no seed (every line since has one: it is drawn on the first
+        /// load and kept).
+        /// </summary>
+        public static bool FirstMeeting(UtilitiesState loaded)
+        {
+            return loaded == null || loaded.Seed == 0;
+        }
+
+        /// <summary>The grace begun today for the places that need a connection now (each once); none if there are none. The number of places it covers.</summary>
+        public static int BeginGrace(UtilitiesState s, IList<string> places, int today)
+        {
+            s.Grace.Clear();
+            for (int i = 0; places != null && i < places.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(places[i]) && !s.Grace.Contains(places[i]))
+                {
+                    s.Grace.Add(places[i]);
+                }
+            }
+            s.GraceUntil = s.Grace.Count > 0 ? today + InternetCatalogue.GraceDays : 0;
+            return s.Grace.Count;
+        }
+
+        /// <summary>True if a place may open without a connection today: one the grace covers, before it ends.</summary>
+        public static bool InGrace(UtilitiesState s, string place, int today)
+        {
+            return s != null && place != null && today < s.GraceUntil && s.Grace.Contains(place);
+        }
+
+        /// <summary>The days of the grace left, today counted (GraceDays on the day it begins, 1 on its last); 0 with none.</summary>
+        public static int GraceLeft(UtilitiesState s, int today)
+        {
+            return s == null || s.Grace.Count == 0 ? 0 : Math.Max(0, s.GraceUntil - today);
+        }
+
+        /// <summary>
+        /// The clock moved from the day last seen to today without those days being played: a step back, or, where the
+        /// clock is a session's (Going Public: a guest's clock is set to the host's as they join), a leap of more than a
+        /// day. The grace moves with it and keeps the days it had left. True if it moved.
+        /// </summary>
+        public static bool MoveGrace(UtilitiesState s, int seen, int today, bool sessionClock)
+        {
+            int step = today - seen;
+            if (s == null || s.GraceUntil <= 0 || seen < 0 || !(step < 0 || (sessionClock && step > 1)))
+            {
+                return false;
+            }
+            s.GraceUntil = Math.Max(1, s.GraceUntil + step);
+            return true;
+        }
+
+        /// <summary>The grace over by today: ended and forgotten. True on the day it ends (to tell the player once).</summary>
+        public static bool EndGrace(UtilitiesState s, int today)
+        {
+            if (s == null || s.GraceUntil <= 0 || today < s.GraceUntil)
+            {
+                return false;
+            }
+            s.GraceUntil = 0;
+            s.Grace.Clear();
+            return true;
         }
 
         /// <summary>A number from 0 to range-1, the same for the same seed, day, provider and purpose.</summary>

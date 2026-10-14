@@ -104,6 +104,7 @@ internal static partial class Program
         Utilities();
         SpecialNames();
         StudyPrompts();
+        CampusRulesChecks();
         Internet();
         Broadband();
         Empire();
@@ -127,6 +128,7 @@ internal static partial class Program
         Own();
         FamilyStudy();
         Districts();
+        Interiors();
         BusRide();
         PlayerBank();
         Office();

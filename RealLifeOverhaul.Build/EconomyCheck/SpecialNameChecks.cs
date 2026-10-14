@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RealLifeOverhaul;
 
 // The book of the special buildings' names (Scripts/Core/SpecialNameBook): who may be named, by address, one building per
@@ -116,5 +117,139 @@ internal static partial class Program
         book.Clear();
         Check(book.Count == 0 && book.At("Fifth Avenue", 120) == null && book.NameAt("Fifth Avenue", 120, false, words) == null,
             "special names: emptied with the city");
+
+        // ---------------------------------------------------------------- a proper name (a tech company's headquarters)
+        asked = 0;
+        Check(book.Set("techhq_1", "Park Row", 9, SpecialKind.Other, "Skyvault Systems", "reallife_hq_card_type", null, literal: true)
+              && book.NameAt("Park Row", 9, false, words) == "Skyvault Systems" && asked == 0,
+            "special names: a company's proper name is shown as it is, never looked up as a key");
+        book.Forget();
+        Check(book.NameAt("Park Row", 9, false, words) == "Skyvault Systems" && asked == 0, "special names: ...and kept when the language changes");
+        Check(book.NameAt("Park Row", 9, true, words) == null, "special names: a company's building the player rents keeps the game's name");
+        Check(book.HolderOf("Park Row", 9) == "techhq_1" && book.HolderOf("Park Row", 10) == null && book.HolderOf(null, 9) == null,
+            "special names: who holds a building, so that another feature passes over it");
+        Check(!book.Set("police_3", "Park Row", 9, SpecialKind.Police, "reallife_law_precinct_3") && book.HolderOf("Park Row", 9) == "techhq_1",
+            "special names: a building a tech company holds is refused to another feature");
+        book.Clear();
+        OffTheMarket();
+    }
+
+    // The mod's buildings off the market (Core/ClaimedOffers): which are refused, and that no feature's building is ever
+    // one the player rents or owns, chosen at the load or after the player has taken one.
+    private static void OffTheMarket()
+    {
+        var book = new SpecialNameBook();
+        Func<string, string> words = key => key == "reallife_util_desk_title" ? "City Utilities" : "[" + key + "]";
+
+        // ---------------------------------------------------------------- which buildings are refused
+        Check(SpecialNameBook.MaySit(false, false) && !SpecialNameBook.MaySit(true, false) && !SpecialNameBook.MaySit(false, true) && !SpecialNameBook.MaySit(true, true),
+            "off the market: a feature takes only a building nobody of the players rents or owns");
+        bool hqOn = true;
+        book.Set("techhq_10", "Wall Street", 40, SpecialKind.Other, "Signalhill Telecom", "reallife_hq_card_type", () => hqOn, literal: true);
+        book.Set("utilities_office", "Fifth Avenue", 120, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type");
+        Check(book.Refuses("Wall Street", 40, false, false) && book.Refuses("Fifth Avenue", 120, false, false),
+            "off the market: a building a feature holds is not to let, for sale or to take over");
+        Check(book.NameAt("Wall Street", 40, false, words) == "Signalhill Telecom" && book.NameAt("Fifth Avenue", 120, false, words) == "City Utilities",
+            "off the market: the line says whose it is (Taken by Signalhill Telecom)");
+        Check(!book.Refuses("Wall Street", 40, true, false) && !book.Refuses("Wall Street", 40, false, true) && !book.Refuses("Wall Street", 40, true, true),
+            "off the market: what the player already rents or owns is never refused (theirs to keep, run and give up)");
+        Check(!book.Refuses("Wall Street", 41, false, false) && !book.Refuses("Wall Street ", 40, false, false) && !book.Refuses(null, 40, false, false),
+            "off the market: every other building is to let as the game has it");
+        hqOn = false;
+        Check(!book.Refuses("Wall Street", 40, false, false) && book.Refuses("Fifth Avenue", 120, false, false),
+            "off the market: with its feature off a building is on the market again, the others stay off");
+        hqOn = true;
+        var shown = new List<SpecialEntry> { null, null };
+        book.Shown(shown);
+        Check(shown.Count == 2 && !shown.Contains(null), "off the market: the buildings to keep out of the map's rows, the list cleared first");
+        hqOn = false;
+        book.Shown(shown);
+        Check(shown.Count == 1 && shown[0].Id == "utilities_office", "off the market: ...only those whose feature is on");
+        hqOn = true;
+        // The refusal follows whatever building a feature holds at the moment, not a list: the university moves.
+        book.Set("campus", "College Road", 1, SpecialKind.Campus, "reallife_study_campus_university");
+        Check(book.Refuses("College Road", 1, false, false), "off the market: the university's building, wherever it is chosen");
+        book.Set("campus", "Campus Walk", 7, SpecialKind.Campus, "reallife_study_campus_university");
+        Check(!book.Refuses("College Road", 1, false, false) && book.Refuses("Campus Walk", 7, false, false),
+            "off the market: when the university moves, its old building is to let again and the new one is not");
+        book.Remove("campus");
+        Check(!book.Refuses("Campus Walk", 7, false, false), "off the market: a building let go of is to let again");
+
+        // ---------------------------------------------------------------- never on a building the player has
+        // A city of office buildings, some rented or owned by the players; the features choose the largest that may serve,
+        // one after another, as the utilities office and the university do (the courthouse, a precinct, a hotel and a
+        // tech company's headquarters take the same test before they choose).
+        var rnd = new Random(20261013);
+        bool neverPlayers = true, alwaysSame = true, movesOff = true, othersStay = true;
+        for (int city = 0; city < 300; city++)
+        {
+            int count = 4 + rnd.Next(40);
+            var sqm = new int[count];
+            var rented = new bool[count];
+            var owned = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                sqm[i] = 200 + rnd.Next(5) * 400 + rnd.Next(3);   // many ties: broken by address
+                rented[i] = rnd.Next(4) == 0;
+                owned[i] = rnd.Next(9) == 0;
+            }
+            int[] first = Claims(count, sqm, rented, owned);
+            int[] second = Claims(count, sqm, rented, owned);
+            for (int f = 0; f < first.Length; f++)
+            {
+                alwaysSame &= first[f] == second[f];
+                neverPlayers &= first[f] < 0 || SpecialNameBook.MaySit(rented[first[f]], owned[first[f]]);
+            }
+            // The player takes the utilities office's building (an old save, another player in a session): the office moves
+            // off it to a building nobody has, and the university, which never stood there, stays where it is.
+            if (first[0] >= 0)
+            {
+                int was = first[0];
+                rented[was] = true;
+                int[] after = Claims(count, sqm, rented, owned, first[1]);
+                movesOff &= after[0] != was && (after[0] < 0 || SpecialNameBook.MaySit(rented[after[0]], owned[after[0]])) && (after[0] < 0 || after[0] != after[1]);
+                othersStay &= after[1] == first[1];
+            }
+        }
+        Check(neverPlayers, "off the market: in 300 cities no feature's building is one the player rents or owns");
+        Check(alwaysSame, "off the market: the same city gives the same buildings every time (the same on every machine of a session)");
+        Check(movesOff, "off the market: a feature whose building becomes the player's moves to one nobody has");
+        Check(othersStay, "off the market: only the feature that lost its building moves");
+
+        // ---------------------------------------------------------------- the cost of the look
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        int refused = 0;
+        for (int i = 0; i < 1000000; i++)
+        {
+            refused += book.Refuses(i % 3 == 0 ? "Wall Street" : "Broadway", 40, false, false) ? 1 : 0;
+        }
+        watch.Stop();
+        Check(refused == 333334 && watch.ElapsedMilliseconds < 400,
+            "off the market: a million looks at whether a building is refused in " + watch.ElapsedMilliseconds + " ms (under 400)");
+    }
+
+    // The university (index 1 of the answer) where it stood, if it may still stand there, then the utilities office (0),
+    // the largest building that may serve and that no other holds, as Utilities/UtilitiesOffice and Careers/CampusBuilding
+    // choose; a university with no building yet takes the largest after the office.
+    private static int[] Claims(int count, int[] sqm, bool[] rented, bool[] owned, int keepCampus = -1)
+    {
+        var book = new SpecialNameBook();
+        Func<int, string> street = i => "Street " + (i % 5);
+        Func<int, int> number = i => i;
+        Func<int, bool> fits = i => SpecialNameBook.MaySit(rented[i], owned[i]);
+        Func<int, int> size = i => sqm[i];
+        var answer = new int[2];
+        bool kept = keepCampus >= 0 && fits(keepCampus);
+        if (kept)
+        {
+            book.Set("campus", street(keepCampus), number(keepCampus), SpecialKind.Campus, "reallife_study_campus_university");
+        }
+        answer[0] = SpecialNameBook.PickLargest(count, fits, size, street, number, book.Holds);
+        if (answer[0] >= 0)
+        {
+            book.Set("utilities_office", street(answer[0]), number(answer[0]), SpecialKind.Civic, "reallife_util_desk_title");
+        }
+        answer[1] = kept ? keepCampus : SpecialNameBook.PickLargest(count, fits, size, street, number, book.Holds);
+        return answer;
     }
 }

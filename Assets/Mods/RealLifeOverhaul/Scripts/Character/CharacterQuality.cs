@@ -108,12 +108,15 @@ namespace RealLifeOverhaul
         private const float SearchSeconds = 0.5f;
         private const int CreationSearchAttempts = 60;   // each one walks the (small) creation scene
         private const int CitySearchAttempts = 600;      // each one is a single lookup; the city can take minutes to load
+        private const float OthersSeconds = 5f;          // Going Public's other players are looked through this often for strand hair (in play)
+        private const int OthersLogged = 6;              // a line for each of the first few found in a scene, then one more
 
         private sealed class Managed
         {
             public AppearanceSetter Character;
             public Action Handler;
             public bool SharedPreview;   // the shop preview also shows employees; the player's looks go on it only while it shows the player
+            public bool Other;           // not a character on show: the hair finish only (FindOthers)
         }
 
         public static IModLogger Logger;
@@ -123,6 +126,14 @@ namespace RealLifeOverhaul
         public bool CreationScene;
 
         private readonly List<Managed> _characters = new List<Managed>(3);
+        // Everyone else drawn here in the game's strand hair (another player's character in a Going Public session, or
+        // anyone the game builds from the detailed set): the hair finish only, on the materials of this machine's renderers.
+        private readonly List<Managed> _others = new List<Managed>(4);
+        private readonly SearchPace _othersPace = new SearchPace();   // the whole scene, only behind the black screen (Core/SearchPace)
+        private readonly List<Transform> _remotes = new List<Transform>(4);
+        private readonly List<AppearanceSetter> _remoteLooks = new List<AppearanceSetter>(4);
+        private int _othersFound;
+        private float _nextOthers;
         private CharacterLighting _lighting;
         private GridLooks _creatorLooks;
         private bool _hairOn;
@@ -160,8 +171,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Character: CharacterQuality.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -228,6 +241,20 @@ namespace RealLifeOverhaul
                     ApplyLooksToAll();
                     _looksVersion = CharacterCatalogue.Version;   // applying may itself take a look off (the game's piece under it changed)
                     _creatorLooks?.Refresh();
+                }
+
+                if (!CreationScene && _hairOn && !_hairSuspended && !_stopped)
+                {
+                    // The whole scene only where a long frame is not seen; in play, Going Public's other players alone.
+                    if (_othersPace.Due(SceneFinds.Hidden, Time.unscaledTime))
+                    {
+                        FindOthers(SceneFinds.All<AppearanceSetter>("character: everyone in the game's strand hair being looked for (a search of the whole scene, behind the black screen)"));
+                    }
+                    else if (Time.unscaledTime >= _nextOthers)
+                    {
+                        _nextOthers = Time.unscaledTime + OthersSeconds;
+                        FindRemoteOthers();
+                    }
                 }
 
                 if (_lighting != null && Settings.CharacterLighting != _lighting.Applied)
@@ -326,6 +353,130 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        // ---------------------------------------------------------------- everyone else in strand hair
+
+        // Any character drawn in the game's strand hair that is not one on show gets the hair finish too, and from then on
+        // again on each change of its look (the game announces it). Only the materials on this machine's renderers are
+        // swapped: the character's appearance data (what a save keeps and what Going Public sends to the other players) is
+        // neither read for this nor written.
+        //
+        // Where they are found: every character of the scene, behind the game's black screen at a door, a loading screen or
+        // a pause (Core/SearchPace: at most twice in one); and in play, every five seconds, the other players' figures of a
+        // Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game played alone the search
+        // found nobody in the street. The search of the whole scene used to be made every five seconds of play: a frame of
+        // some 90 ms each time in the city (Player.log of 13 October, 0.9.4). The finish itself only on a change of look.
+        private void FindOthers(AppearanceSetter[] all)
+        {
+            PruneOthers();
+            for (int i = 0; i < all.Length; i++)
+            {
+                Other(all[i]);
+            }
+        }
+
+        // In play: the other players of a Going Public session, from that mod's list. Nothing outside a session.
+        private void FindRemoteOthers()
+        {
+            if (!GoingPublic.InSession)
+            {
+                return;
+            }
+            PruneOthers();
+            _remotes.Clear();
+            GoingPublic.RemotePlayers(_remotes);
+            for (int r = 0; r < _remotes.Count; r++)
+            {
+                if (_remotes[r] == null)
+                {
+                    continue;
+                }
+                _remotes[r].GetComponentsInChildren(true, _remoteLooks);   // (a figure is a few dozen objects)
+                for (int i = 0; i < _remoteLooks.Count; i++)
+                {
+                    Other(_remoteLooks[i]);
+                }
+                _remoteLooks.Clear();
+            }
+            _remotes.Clear();
+        }
+
+        private void PruneOthers()
+        {
+            for (int i = _others.Count - 1; i >= 0; i--)
+            {
+                if (_others[i].Character == null)
+                {
+                    _others.RemoveAt(i);   // gone with its scene or its session; its hair records go with HairLook.Prune
+                }
+            }
+        }
+
+        // One character found: looked after from now on if it wears the game's strand hair and is not known yet.
+        private void Other(AppearanceSetter character)
+        {
+            if (character == null || Known(character) || !HairLook.WearsStrandHair(character))
+            {
+                return;
+            }
+            var other = new Managed { Character = character, Other = true };
+            other.Handler = () => RefreshOther(other);
+            character.visualsUpdated += other.Handler;
+            _others.Add(other);
+            _othersFound++;
+            if (_othersFound <= OthersLogged)
+            {
+                bool session = GoingPublic.Role == GoingPublicRole.Host || GoingPublic.Role == GoingPublicRole.Guest;
+                Logger?.Info("Hair: the finish is on '" + character.name + "' too (drawn here in the game's strand hair"
+                             + (session ? ", in a Going Public session" : "") + "; only this machine's materials change, nothing of its look is saved or sent).");
+            }
+            else if (_othersFound == OthersLogged + 1)
+            {
+                Logger?.Info("Hair: more characters in strand hair get the finish; the F9 report counts them.");
+            }
+            HairLook.Prune();
+            RefreshOther(other);
+        }
+
+        private bool Known(AppearanceSetter character)
+        {
+            for (int i = 0; i < _characters.Count; i++)
+            {
+                if (_characters[i].Character == character)
+                {
+                    return true;
+                }
+            }
+            for (int i = 0; i < _others.Count; i++)
+            {
+                if (_others[i].Character == character)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static readonly int HotRefreshOther = HotSpots.Slot("Character: CharacterQuality.RefreshOther");
+        // Runs inside the game's own appearance update, so nothing may escape from it.
+        private void RefreshOther(Managed other)
+        {
+            using var hotSpot = HotSpots.Time(HotRefreshOther);
+            try
+            {
+                if (other.Character != null && _hairOn && !_hairSuspended && !_stopped)
+                {
+                    SayHair(other.Character, HairLook.Apply(other.Character));
+                }
+            }
+            catch (Exception e)
+            {
+                DisableHair(e);
+            }
+        }
+
+        /// <summary>How many characters other than the ones on show the hair finish looks after, for the F9 report.</summary>
+        public int OtherCharacters => _others.Count;
+
         // ---------------------------------------------------------------- characters
 
         /// <summary>Hair and textures for this character, now and whenever the game changes its look.</summary>
@@ -375,9 +526,11 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotRefresh = HotSpots.Slot("Character: CharacterQuality.Refresh");
         // Runs inside the game's own appearance update, so nothing may escape from it.
         private void Refresh(Managed managed)
         {
+            using var hotSpot = HotSpots.Time(HotRefresh);
             bool hairChanged = false;
             try
             {
@@ -402,11 +555,12 @@ namespace RealLifeOverhaul
             SayHair(managed.Character, hairChanged);
         }
 
-        // The self-check line of the hair finish: one per character per change of its hair, with diagnostics on, after
-        // the scalp underlay is on too (an underlay still on its way in from the bundle is said to be none).
+        // The self-check line of the hair finish: once per character per scene whatever the options, then one per change
+        // of its hair with diagnostics on, after the scalp underlay is on too (an underlay still on its way in from the
+        // bundle is said to be none).
         private static void SayHair(AppearanceSetter character, bool changed)
         {
-            if (!changed || character == null || !Meta.Dev.Verbose)
+            if (!changed || character == null || !(Meta.Dev.Verbose | HairLook.FirstSay(character)))
             {
                 return;
             }
@@ -500,6 +654,13 @@ namespace RealLifeOverhaul
                         SayHair(_characters[i].Character, HairLook.Apply(_characters[i].Character));
                     }
                 }
+                for (int i = 0; i < _others.Count; i++)
+                {
+                    if (_others[i].Character != null)
+                    {
+                        SayHair(_others[i].Character, HairLook.Apply(_others[i].Character));
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -574,6 +735,21 @@ namespace RealLifeOverhaul
                 }
             }
             _characters.Clear();
+            for (int i = 0; i < _others.Count; i++)
+            {
+                try
+                {
+                    if (_others[i].Character != null)
+                    {
+                        _others[i].Character.visualsUpdated -= _others[i].Handler;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
+            _others.Clear();
             try
             {
                 _creatorLooks?.Dispose();

@@ -101,8 +101,10 @@ namespace RealLifeOverhaul
 
         private static bool Wanted => Settings.Police && Settings.People && Settings.PolicePresence > 0 && ModState.Loaded && TrafficTools.Ready;
 
+        private static readonly int HotUpdate = HotSpots.Slot("People: PolicePresence.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

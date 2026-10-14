@@ -13,7 +13,7 @@ scripts\
   props.py                THE PROPS: one function each, and the list with triangle budgets
   city_props.py           the city-life props (tools, things carried, the coffee cart): same rules, listed by props.py
   life_props.py           the second round (things held, pushed and worn, job props, street furniture): likewise
-  props_<name>.py         the later rounds, a module each (civic, service, events, everyday, garage, family, site), with its
+  props_<name>.py         the later rounds, a module each (civic, service, events, everyday, garage, family, site, tow), with its
   paint_<name>.py           own painting module (what it adds to the atlas) and
   checks_<name>.py          its own measurements for check_life.py
   scenes.py               whole scenes made of the exported props: previews\scene_<name>.png
@@ -58,7 +58,9 @@ occlusion, and nothing else: no Blender-only shading.
   shapes carry chamfers and area-weighted normals instead, which is what gives the edges their highlight.
 - **Swatches and decals.** A swatch is one surface finish whose patch gets dirtier towards the bottom; a part
   mapped onto it by height picks up grime and contact shadow where it meets the ground, with no unwrap. A decal
-  is a painted face (the barrier board, a badge). The tape's row spans the whole atlas so it tiles along U.
+  is a painted face (the barrier board, a badge). The tape's row spans the whole atlas so it tiles along U. A swatch
+  is 40 x 80 pixels (it was 56 x 96 until the tow truck and the tech buildings filled the atlas): it is read 7 px in from
+  its edges, and a plain finish with its grime needs no more.
 - **No colliders, scripts or materials in the bundle**, meshes are not kept readable, textures are BC7 with
   mipmaps. `PropLibrary` does nothing per frame.
 
@@ -67,18 +69,18 @@ occlusion, and nothing else: no Blender-only shading.
 | | limit | now |
 |---|---|---|
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
-| triangles, all props together | 130 000 | 120 198 (241 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts, its roof apart) |
+| triangles, all props together | 130 000 | 127 186 (271 props: the two-wheelers are in the bundle whole and in parts, the city bus and the tow truck in parts) |
 | materials | 2, shared by everything | 2 |
-| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 248 regions, 87 % of the atlas used |
-| meshes in memory | | 6.6 MB |
-| bundle on disk | 16 MB | 10.6 MB, loaded once per session, asynchronously |
+| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 277 regions, 94 % of the atlas used (swatches are 40 x 80) |
+| meshes in memory | | 7.3 MB |
+| bundle on disk | 16 MB | 11.5 MB, loaded once per session, asynchronously |
 
 **Why the ceilings went up** (they were 30 000 triangles, a 2048 x 2048 atlas and 9 MB for 77 props). The first two
 rounds were things in a hand and a cordon. The later rounds are a police station's frontage, bus stops and a bus,
 a fire engine, hotels, street events, home and social life, a garage and a building site: 240 props, among
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
-not what is rendered. Memory is the real cost: about 6.6 MB of meshes and 14.0 MB of texture, where the game's own
+not what is rendered. Memory is the real cost: about 7.3 MB of meshes and 14.0 MB of texture, where the game's own
 city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
 one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
 third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
@@ -281,7 +283,7 @@ The police station, the bus stop and the hotel frontage. Three of them carry a p
 | `suitcase` | 0.45 x 0.65 x 0.25 | 608 | lit | ground centre; standing, handle up | hard-shell case (light blue, ribbed on both broad faces, four wheels inside its height). **Carried by the bar over its top: along X, centred (0, 0.630, 0), 0.028 thick, 0.12 of it straight, 0.030 clear above the shell** (whose top is 0.585). For `carry_bag_walk` (right hand); not used by code yet |
 | `street_bin` | 0.54 x 0.90 x 0.54 | 546 | lit | ground centre; round | Events, `FireScene` (`EventProps.Bin`): the flames are put 0.85 m up in the middle, so the top is open (rim 0.90 m, inside 0.45 across, litter in it 0.64 to 0.69 m up). Dark green, a gold band at 0.59 to 0.67 m and a thin one under the black rim |
 
-Atlas: 18 regions (4 swatches `civic_iron`, `civic_grey`, `civic_lamp_blue`, `civic_leather`; 14 decals), 942 424 pixels with their gutters. Module total 10 834 triangles.
+Atlas: 18 regions (4 swatches `civic_iron`, `civic_grey`, `civic_lamp_blue`, `civic_leather`; 14 decals), 931 672 pixels with their gutters. Module total 10 834 triangles.
 <!-- end: civic -->
 
 <!-- module: service -->
@@ -304,8 +306,10 @@ the lens and the strap where the clips put the hands. `scene_bus_inside.png` sho
 `newer_props.py <id> ...` after `build_props.py`: the listed props' meshes (the very files the bundle is built from)
 and their catalogue rows go into `Assets\Mods\RealLifeOverhaul\Bundles\props_newer`, and the mod reads them after the
 bundle and uses them in place of its own of the same id, with its atlas (so a remade prop may only use paints the atlas
-already has: check that `build\atlas.json` has not changed). All of them or none. `build_bundle.ps1` removes the folder
-once a bundle has been built with them in it. **The fire engine is a body that stands over one of the game's own traffic vehicles** while **all**
+already has: check that `build\atlas.json` has not changed). All of them or none. The folder's catalogue carries the
+SHA-256 of the bundle file beside it, and the mod uses the folder only next to that very bundle: a folder left from an
+older version is ignored (said once in the log). `build_bundle.ps1` removes the folder once a bundle has been built
+with them in it. **The fire engine is a body that stands over one of the game's own traffic vehicles** while **all**
 of that vehicle's renderers are hidden (`EngineLivery.Dress`), so it carries its own wheels. Both are lofted hulls
 (cross-sections along the length, windows let in 2.4 cm with a chamfered surround), not boxes. **A body over a game's
 vehicle is made to that vehicle: the same length, and its axles where that vehicle's are**, so that the hidden
@@ -426,7 +430,7 @@ Careers and business (none placed by code yet: each needs a line of placement):
 <!-- module: family -->
 ### Family and driving school (`scripts\props_family.py`, `paint_family.py`, `checks_family.py`)
 
-**The code is the specification** for the first seven: each has the pivot, facing and size of the plain-shape stand-in it replaces (`Scripts\Family\FamilyCast.cs` `FamilyProps.StandIn`, looked up at line 452; `Scripts\Licences\LicenceProps.cs` `Make`, looked up at line 49), and `checks_family.py` measures them on the built meshes. The other seven are **not asked for by code yet**: their numbers are their own contract. All points are in Unity axes from the prop's pivot (x right, y up, z forward). 14 ids, 7 254 triangles, 163 840 atlas pixels (13 regions: 9 decals, 4 swatches).
+**The code is the specification** for the first seven: each has the pivot, facing and size of the plain-shape stand-in it replaces (`Scripts\Family\FamilyCast.cs` `FamilyProps.StandIn`, looked up at line 452; `Scripts\Licences\LicenceProps.cs` `Make`, looked up at line 49), and `checks_family.py` measures them on the built meshes. The other seven are **not asked for by code yet**: their numbers are their own contract. All points are in Unity axes from the prop's pivot (x right, y up, z forward). 14 ids, 7 254 triangles, 153 088 atlas pixels (13 regions: 9 decals, 4 swatches).
 
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
@@ -552,9 +556,70 @@ Not asked for by code (made for an earlier wish-list; kept because they are done
 | `gavel` | 0.10 x 0.07 x 0.28 | 320 | lit | ground centre; lying on its side, head across X at the +Z end | Judge's gavel; the handle is 0.022 thick. Justice wants only its sound |
 | `gavel_block` | 0.12 x 0.03 x 0.12 | 130 | lit | ground centre; round | Sound block |
 
-Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 465 536 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
+Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 452 096 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
 <!-- end: site -->
 <!-- end: site -->
+
+<!-- module: tow -->
+### The tow truck (`scripts\props_tow.py`, painted by `paint_tow.py`, measured by `checks_tow.py`)
+
+**The mod's own rollback tow truck** (`Traffic/Tow/TowTruck`), on no vehicle of the game's, driven by the city bus's driver
+(`Transport/BusDriver`). A cab-over truck 8.3 m long, its cab 2.26 m wide and its bed 2.40, on two axles 4.60 m apart, in the
+livery of a firm of the city's own (Bridgeway Towing: white over a navy skirt, an amber stripe round the cab), an amber light bar
+on its roof. **Its parts are modelled where they lie at rest, in the truck's own space**, so the code puts each on at the truck's
+origin and moves the subframe and the bed from there: the subframe turns nose up about (0, 0.89, -4.45) by up to 13 degrees, the
+bed slides back along it by up to 4.12 m (`TowRules.DeckPose`), and its tail then lies 4 cm over the road 8.89 m behind the
+origin. `checks_tow.py` holds every figure `TowRules` and `TowTruck` use to the model's. **The wheels are the city bus's**
+(`city_bus_wheel`, `city_bus_wheel_twin`) drawn at 0.45 / 0.48 of their size: no meshes of its own for them. `previews\scene_tow_loading.png`
+shows the bed down with a car-sized box at its foot, `scene_tow_loaded.png` the bed up with one on it.
+
+| id | size | triangles | material | pivot and facing | use |
+|---|---|---|---|---|---|
+| `tow_truck` | 2.71 x 2.61 x 8.16 | 2 996 | lit | **ground centre under the middle between its axles**; nose to +Z | `TowTruck` (`Shapes.Prop` under its shell, which leans and dips). **Axles at z +2.30 and -2.30** (`TowRules.AxleFront`, `AxleRear`), wheels at x +-0.98 (front) and +-0.90 (rear pair), 0.45 in radius. Cab from z 1.50 to 3.30, its roof 2.615 up; the bumper's face at z 3.42 (`TowRules.Nose`), its tow eyes and plate 6 cm beyond. **The light bar** on the roof, the middle of its underside at (0, 2.615, 2.40) (`TowTruck.BarAt`), 1.40 long: the code shows `tow_bar_lens` over each half in turn. **Control levers on both sides** at z 0.75 (`PanelAhead`), five knobs 1.00 m up reaching x +-1.24 (`PanelOut`): `TowService` stands the operator 0.46 m out from them for `pump_panel`. Lockers between the cab and the rear wheels, the chassis rails to z -4.55, the underride bar with red and white stripes, the ram's mount on the chassis at (0, 0.60, -1.00) (`RamFoot`). Nothing of the body behind the cab reaches the bed's underside (0.94 m) |
+| `tow_truck_tilt` | 1.10 x 0.14 x 5.40 | 176 | lit | **the truck's origin**: modelled where it lies at rest | The subframe: two rails 0.10 m square at x +-0.40 from z -4.50 to 0.90, on the chassis rails, cross members, the pivot tube across at (y 0.89, z -4.45) (`TowTruck.TiltPivot`). The ram's head under it at (0, 0.84, -2.50) at rest (`RamHead`): the code draws the ram between the two |
+| `tow_truck_bed` | 2.42 x 1.24 x 6.15 | 686 | lit | **the truck's origin**: modelled where it lies at rest | The bed: its top 1.06 m up (`TowRules.BedTop`) from its tail at z -4.85 (`BedTail`) to the headboard at 1.17 (`HeadBoard`), 2.40 wide, the underside tapering to a 3 cm lip over the last 0.55 m; steel planks with hazard stripes at the tail, edge rails, red and white strips along the sides, marker lamps. The headboard lettered on its back, two work lamps on it. **The winch** before the headboard: its cable leaves at (0, 1.18, 0.84) (`TowTruck.WinchAt`), where the code starts the cable it draws. A car up to 5.6 m long fits between the tail and the headboard less 0.30 (`TowRules.LongestCar`) |
+| `tow_bar_lens` | 0.69 x 0.10 x 0.26 | 44 | glow | **the middle of the underside of the light bar** (`tow_truck`'s (0, 2.615, 2.40)); the lens is at +X | The +X half of the light bar again, 3 mm proud of it all round, in the glow material; the code turns a second one 180 degrees about Y for the other half and shows them in turn while the truck is at work, with two amber point lights over the bar |
+| `tow_truck_light_head` | 1.58 x 0.11 x 0.00 | 32 | glow | **the truck's own origin**, as `tow_truck` | The lenses of the two headlamp units (the city bus's `svc_headlamp`, made 0.36 x 0.205) again, 1.5 mm proud: from dusk |
+| `tow_truck_light_tail`, `_brake` | 1.88 x 0.11 x 0.00 | 4 each | glow | as `tow_truck_light_head` | The tail and the brake lenses of the two back units (the bus's `svc_bus_tail_lamp`, made 0.12 x 0.48), faces at z -4.66 under the bed's overhang |
+| `tow_truck_light_left`, `_right` | 0.33 x 0.17 x 8.01 | 6 each | glow | as `tow_truck_light_head` | A side's indicators: the outer end of the headlamp unit, the top of the back unit, the repeater on the cab's side. Both blink together while the truck stands at work |
+
+Atlas: 10 regions (2 swatches: `tow_blue`, `tow_amber`; 8 decals: the light bar, the doors, the headboard, the grille, the plate,
+the deck, the side strips, the underride bar's stripes). The glass, the lamps and the wheels' faces are the service vehicles' regions.
+<!-- end: tow -->
+### The tech sector's buildings (`scripts\props_tech.py`, painted by `paint_tech.py`, measured by `checks_tech.py`)
+
+**The code is the specification** (`Scripts\Tech\Sites\SiteProps.cs` asks `PropLibrary` for each id and draws a box of
+the same size until the bundle has it; `Scripts\Tech\Sites\SitePlan.cs` and `RoomPlans.cs` lay them out). Nothing is
+lettered on these models: the company's name on the logo wall and the cloud's name on the sign are the mod's own
+lettering in the game's font. The racks' status lights are painted dark on the doors; `dc_leds_a` and `dc_leds_b` lie
+exactly over them and the mod draws them in two materials of its own that it makes blink, out of step with each other.
+
+| id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use |
+|---|---|---|---|---|---|
+| `dc_rack` | 0.60 x 2.00 x 1.09 | 116 | lit | ground centre of its 0.60 x 1.07 footprint; **front +Z at 0.535** (the handle 0.02 proud) | 42-unit rack of eleven servers; in rows, fronts on a cold aisle |
+| `dc_rack_ai` | 0.60 x 2.00 x 1.20 | 216 | lit | ground centre; front +Z at 0.600 | AI accelerator sleds behind the door, liquid cooling's two pipes and manifold at the back |
+| `dc_rack_network` | 0.60 x 2.45 x 1.09 | 172 | lit | as `dc_rack` | Patch panels, switches and their cables; a cable riser from its top to the tray 2.45 up |
+| `dc_leds_a`, `dc_leds_b` | 0.04 x 1.55 x 0 | 28, 32 | glow (the mod's own) | **a rack's pivot** (0.065 forward on `dc_rack_ai`) | The doors' status lights, 0.002 m proud of the front, in two sets |
+| `dc_cooling` | 1.80 x 1.96 x 0.90 | 70 | lit | ground centre; front +Z | Computer room air conditioner: louvres, panel, filter; at the end of a hot aisle |
+| `dc_ups` | 0.80 x 1.90 x 0.85 | 58 | lit | ground centre; front +Z | Battery cabinet against a side wall |
+| `dc_tray` | 0.46 x 0.58 x 2.00 | 252 | lit | **the middle of the tray's underside**; runs along Z | Ladder tray (0.40 between the rails) with a loom and a fibre duct, hanger rods 0.55 up; 2.45 m over a row, scaled along Z to the row |
+| `dc_floor` | 2.40 x 0.02 x 2.40 | 12 | lit | ground centre | Four by four raised floor tiles; scaled to the panel |
+| `dc_floor_vent` | 0.60 x 0.024 x 2.40 | 12 | lit | ground centre; runs along Z | Four perforated tiles, lying on the panels down a cold aisle |
+| `dc_ops_desk` | 1.60 x 1.21 x 0.80 | 378 | lit | ground centre; **whoever works at it stands at +Z** | Operations desk, top 0.75, three screens of dashboards |
+| `hq_reception` | 2.64 x 1.20 x 0.94 | 282 | lit | ground centre of its 0.90 deep footprint; **visitors at +Z** | Counter 1.10 up, the work surface 0.75 behind; a dark band across the front from 0.25 to 0.35 up (face at z 0.452) that the mod covers in the company's colour |
+| `hq_logo_wall` | 3.42 x 2.61 x 0.30 | 156 | lit | ground centre; front +Z | Free-standing slatted wall; the dark plate 2.50 x 1.10, centred 1.60 up with its face at z 0.080, takes the company's colour and name |
+| `hq_screen` | 1.60 x 0.95 x 0.06 | 58 | lit | **the middle of its back**; front +Z | Wall screen of dashboards, hung with its back on the wall |
+| `tech_rack_small` | 0.60 x 1.20 x 0.82 | 114 | lit | ground centre; front +Z | A server closet rack in a tech office |
+| `tech_bench` | 1.40 x 1.21 x 0.70 | 320 | lit | ground centre; whoever works at it stands at +Z | A developer's desk with two screens of code and a tower |
+| `tech_whiteboard` | 1.81 x 1.21 x 0.08 | 74 | lit | the middle of its back; front +Z | A whiteboard with a sketch of a system and notes |
+| `dc_sign` | 2.40 x 1.42 x 0.40 | 112 | lit | ground centre; read from +Z | Monument sign; a glass plate 2.00 x 0.60 centred 0.95 up, face at z 0.126, for the cloud's name |
+| `dc_booth` | 1.84 x 2.42 x 1.84 | 220 | lit | ground centre; front +Z | Security booth glazed on three sides, its door at the back, SECURITY over the front |
+| `dc_barrier` | 0.48 x 4.45 x 0.40 | 92 | lit | ground centre of the post | A vehicle barrier with its arm raised |
+| `dc_fence` | 2.50 x 2.20 x 0.25 | 192 | lit | ground centre; runs along X | 2.5 m of security fence with an outrigger |
+
+Scenes: `scene_server_room`, `scene_hq_lobby`, `scene_tech_office`, `scene_dc_frontage`. Atlas: 19 regions (4 swatches,
+15 decals), 465 024 pixels with their gutters (the floor tiles at 128 x 128). Module total 2 966 triangles.
+<!-- end: tech -->
 
 ## Fit to the character
 

@@ -80,8 +80,10 @@ namespace RealLifeOverhaul
             _easePedal = EasePedal;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Driving: CarTuning.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

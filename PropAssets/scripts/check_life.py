@@ -13,7 +13,7 @@ import numpy as np
 
 BUILD = os.environ.get("PROPS_BUILD") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build")
 failures = []
-EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site"]
+EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 
 
 def kit(name, triangles=False):
@@ -65,6 +65,9 @@ def top_near(name, x, y, reach=0.03, across=None, below=9.0):
     v = kit(name)
     near = (np.abs(v[:, 0] - x) <= (across or reach)) & (np.abs(v[:, 1] - y) <= reach) & (v[:, 2] < below)
     return float(v[near, 2].max())
+
+
+EXTRA.append("tech")       # the tech sector's buildings (checks_tech.py)
 
 
 def main():

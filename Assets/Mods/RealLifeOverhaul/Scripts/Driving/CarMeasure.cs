@@ -60,8 +60,10 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Info, "reallife_car_measure_armed", null, 8f);
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Driving: CarMeasure.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

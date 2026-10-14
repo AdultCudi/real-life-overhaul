@@ -141,6 +141,23 @@ namespace RealLifeOverhaul
             return root;
         }
 
+        /// <summary>
+        /// The same two alternating point lights at a place on any object of the mod's own (the tow truck's light bar), so
+        /// many lumens each and lighting so far. They flip on the same clock as CreateFlasher's: whole multiples of the interval
+        /// of unscaled time, the first lit on the even ones.
+        /// </summary>
+        public static GameObject CreateFlasher(Transform parent, string objectName, Vector3 localPosition, Color first, Color second, float interval, float lumens, float range)
+        {
+            var root = new GameObject(objectName);
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = localPosition;
+            var flasher = root.AddComponent<Flasher>();
+            flasher.Interval = interval;
+            flasher.A = CreateLight(root.transform, new Vector3(-0.4f, 0f, 0f), first, lumens, range);
+            flasher.B = CreateLight(root.transform, new Vector3(0.4f, 0f, 0f), second, lumens, range);
+            return root;
+        }
+
         /// <summary>The height the existing beacons and hazard lights have always used.</summary>
         public static float BeaconHeight(VehicleComponent car)
         {
@@ -748,9 +765,11 @@ namespace RealLifeOverhaul
 
             private bool _on;
 
+            private static readonly int HotUpdate = HotSpots.Slot("Traffic: Flasher.Update");
             // Only touches the lights on the frames where the state flips.
             private void Update()
             {
+                using var hotSpot = HotSpots.Time(HotUpdate);
                 if (FrameGuard.Off)
                 {
                     enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -797,8 +816,10 @@ namespace RealLifeOverhaul
 
             private float _next;
 
+            private static readonly int HotUpdate = HotSpots.Slot("Traffic: Flicker.Update");
             private void Update()
             {
+                using var hotSpot = HotSpots.Time(HotUpdate);
                 if (FrameGuard.Off)
                 {
                     enabled = false;   // (its feature was switched off after its faults: Core/Guard)

@@ -26,6 +26,37 @@ namespace RealLifeOverhaul
         private static readonly Collider[] Lanes = new Collider[48];
         private static readonly Collider[] Blockers = new Collider[16];
 
+        /// <summary>
+        /// The car the player is driving, remembered as they are taken away from it (to hospital, into custody, to prison) so
+        /// that it can be brought to them afterwards: null for none, for one the game carries with the player, and for another
+        /// player's car in a Going Public session (GoingPublic.MineVehicle). Going Public lets a player drive another's car;
+        /// that car is left where it stopped, as it stands on its owner's machine, never towed or billed for here, and the
+        /// player is told so once. The decision is WhoseCar.BringLater's, checked offline.
+        /// </summary>
+        public static VehicleInstance LeftBehind(VehicleController driven)
+        {
+            bool has = driven != null && driven.vehicleInstance != null && driven.vehicleType != null;
+            bool carried = has && driven.vehicleType.spawnInPlayerObject;
+            bool mine = has && GoingPublic.MineVehicle(driven);
+            if (WhoseCar.BringLater(has, carried, mine))
+            {
+                return driven.vehicleInstance;
+            }
+            if (has && !carried)
+            {
+                Logger?.Info("Tow: the car being driven is another player's (Going Public); it is left where it stopped and nothing is billed.");
+                try
+                {
+                    Notifications.Show(NotificationType.Info, "reallife_tow_not_yours", null, 10f);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
+            return null;
+        }
+
         /// <summary>Moves the car to a space near the given point and bills the tow. Safe to call with null.</summary>
         public static void BringNear(VehicleInstance instance, Vector3 near)
         {
@@ -48,6 +79,11 @@ namespace RealLifeOverhaul
                 if (vehicle == null)
                 {
                     Logger?.Warn("Tow: the car is not in the city scene; left where it is.");
+                    return;
+                }
+                if (!GoingPublic.MineVehicle(vehicle))
+                {
+                    Logger?.Info("Tow: the car is another player's (Going Public); it is never moved or billed for here.");
                     return;
                 }
 
@@ -89,8 +125,30 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>
+        /// Parks one of the player's cars in the nearest free kerbside space the game's auto-park would offer near a place,
+        /// leaving out any space <paramref name="refuse"/> turns down (BusZones: one in view, or in a bus zone). No fee and
+        /// no message: the caller says what it must. False, with the car where it was, if there is none.
+        /// </summary>
+        public static bool ParkNearby(VehicleController vehicle, Vector3 near, Func<Vector3, bool> refuse)
+        {
+            if (vehicle == null || vehicle.vehicleInstance == null || !GoingPublic.MineVehicle(vehicle))
+            {
+                return false;   // (another player's car, in a Going Public session, is theirs: never moved here)
+            }
+            try
+            {
+                return TryParkNear(vehicle, near, refuse);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
         // Kerbside spaces are generated per parking lane on demand, so ask each nearby lane for its spaces.
-        private static bool TryParkNear(VehicleController vehicle, Vector3 near)
+        private static bool TryParkNear(VehicleController vehicle, Vector3 near, Func<Vector3, bool> refuse = null)
         {
             float length = VehicleHelper.GetVehicleColliderCenterAndSize(vehicle.vehicleInstance.vehicleTypeName).Item2.z;
             int count = Physics.OverlapSphereNonAlloc(near, SearchRadius, Lanes, LayerHelper.parkingAreaLayerMask, QueryTriggerInteraction.Collide);
@@ -141,7 +199,7 @@ namespace RealLifeOverhaul
                     Vector3 position = spot.transform.position;
                     Quaternion rotation = spot.transform.parent.rotation;
                     float width = spot.visuals != null ? spot.visuals.size.y : 2.4f;
-                    if (IsOccupied(vehicle, position, rotation, width, length))
+                    if (IsOccupied(vehicle, position, rotation, width, length) || (refuse != null && refuse(position)))
                     {
                         continue;
                     }

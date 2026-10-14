@@ -4,7 +4,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Drives the mod's own bus (<see cref="BusVehicle"/>) along a route the way a bus is driven.
+    /// Drives the mod's own bus (<see cref="BusVehicle"/>) along a route the way a bus is driven, and the mod's tow truck
+    /// (<see cref="TowTruck"/>) the same way: whatever it drives is an <see cref="IDrivenVehicle"/>, measured from its own middle.
     /// The path, the pace and the way the rear axle follows the front are <see cref="BusPath"/>'s,
     /// which the build's NavCheck drives through a bay as it ships; this class is what the game
     /// adds: the physics step, the road's height under the axles, and what is in the bus's way.
@@ -26,8 +27,9 @@ namespace RealLifeOverhaul
     ///
     /// WHAT IT LOOKS AT. Every 0.15 s, along its own path ahead of its nose (round a bend as well as
     /// down a straight), boxes as wide as the bus over as far as it needs to stop in: one physics
-    /// query each. Told where the kerb is (Kerb: a bus pulling in to its bay), it leaves out what is
-    /// beyond it, on the pavement. Held up close to the end of a route that allows it (nearEnough),
+    /// query each. Told where the kerb is (Kerb: a bus pulling in to its bay, or coming up to or
+    /// leaving a stop on the lane's line), it leaves out what is beyond it, on the pavement: whoever
+    /// waits at the kerb is never in its way. What holds it up is kept (HeldBy), for the log. Held up close to the end of a route that allows it (nearEnough),
     /// it takes where it is as the end after a couple of seconds.
     ///
     /// The bus is moved in the physics step (a kinematic body: it pushes, it is not pushed), and the
@@ -55,12 +57,13 @@ namespace RealLifeOverhaul
         private readonly List<float> _rx = new List<float>(128);
         private readonly List<float> _ry = new List<float>(128);
         private readonly List<float> _rz = new List<float>(128);
-        private BusVehicle _bus;
+        private IDrivenVehicle _bus;
         private float _s;              // metres along the path its front axle has come
         private float _gateAt = float.MaxValue;
         private float _speed;
         private float _pull;
         private float _obstacle = float.MaxValue;
+        private Collider _obstacleHit;   // what that is (the nearest thing in its way when last looked)
         private bool _person;
         private bool _blocked;
         private float _blockedSince;
@@ -90,11 +93,20 @@ namespace RealLifeOverhaul
         /// <summary>Metres of route still to drive.</summary>
         public float RouteLeft => Active ? Mathf.Max(0f, _path.End - _s) : 0f;
 
+        /// <summary>Metres from where it is to the end of the route it was last given, driving or not (pulled up at a light, say).</summary>
+        public float PathLeft => _path.Count >= 2 ? Mathf.Max(0f, _path.End - _s) : 0f;
+
         /// <summary>Where its front axle is: the point its routes are laid for.</summary>
         public Vector3 Front => _front;
 
         /// <summary>Seconds it has stood behind something in its way; 0 when it is not held up.</summary>
         public float HeldFor => Active && _blocked ? Time.time - _blockedSince : 0f;
+
+        /// <summary>What it stands behind while it is held up (the nearest thing in its way when it last looked), else null.</summary>
+        public Collider HeldBy => Active && _blocked ? _obstacleHit : null;
+
+        /// <summary>Metres ahead of its nose of the stretch of its way that what holds it is in (its looks are SenseBox long).</summary>
+        public float HeldAhead => Active && _blocked ? _obstacle : float.MaxValue;
 
         /// <summary>The first point of the route as given that its front axle has not yet reached.</summary>
         public int NextPoint => _path.NextPoint(_s);
@@ -125,15 +137,15 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- what it is told
 
         /// <summary>The bus it drives from now on, standing where it has just been put (BusVehicle.Place).</summary>
-        public void Take(BusVehicle bus)
+        public void Take(IDrivenVehicle bus)
         {
             Forget();
             _bus = bus;
-            Transform frame = bus.transform;
+            Transform frame = bus.Frame;
             Vector3 forward = Flat(frame.forward);
             forward = forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.forward;
-            _front = frame.position + forward * BusVehicle.AxleFront;
-            _rear = frame.position + forward * BusVehicle.AxleRear;
+            _front = frame.position + forward * bus.FrontAxleAhead;
+            _rear = frame.position + forward * bus.RearAxleAhead;
             _frontY = _front.y;
             _rearY = _rear.y;
             _heading = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
@@ -148,7 +160,7 @@ namespace RealLifeOverhaul
         /// </summary>
         /// <param name="nearEnough">Held up with no more than this left, it stands where it is and that is the end; 0 for never.</param>
         /// <param name="caps">The most it may be doing at each of the route's points (a junction), or null.</param>
-        public void BeginRoute(BusVehicle bus, List<Vector3> route, float nearEnough, List<float> caps = null)
+        public void BeginRoute(IDrivenVehicle bus, List<Vector3> route, float nearEnough, List<float> caps = null)
         {
             if (_bus != bus)
             {
@@ -164,6 +176,7 @@ namespace RealLifeOverhaul
             _gateAt = float.MaxValue;
             _blocked = false;
             _obstacle = float.MaxValue;
+            _obstacleHit = null;
             _senseAt = 0f;
             _rx.Clear();
             _ry.Clear();
@@ -187,7 +200,7 @@ namespace RealLifeOverhaul
         /// <summary>Pull up at this point of the route, its nose short of it; -1 for none.</summary>
         public void PullUpAt(int pathIndex)
         {
-            _gateAt = pathIndex >= 0 && pathIndex < _path.PointArc.Count ? _path.PointArc[pathIndex] - BusVehicle.NoseAhead - GateShort : float.MaxValue;
+            _gateAt = pathIndex >= 0 && pathIndex < _path.PointArc.Count ? _path.PointArc[pathIndex] - (_bus != null ? _bus.NoseBeyondAxle : 0f) - GateShort : float.MaxValue;
         }
 
         /// <summary>Where the kerb is (a point on its edge, and the way across it onto the pavement): what lies beyond it is not looked at.</summary>
@@ -232,8 +245,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- driving
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Transport: BusDriver.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -313,7 +328,7 @@ namespace RealLifeOverhaul
         {
             _path.At(_s, out float fx, out float fy, out float fz, out float roadX, out float roadZ);
             float rx = _rear.x, rz = _rear.z;
-            BusPath.Trail(fx, fz, ref rx, ref rz, BusVehicle.Wheelbase);
+            BusPath.Trail(fx, fz, ref rx, ref rz, _bus.AxleSpan);
             var front = new Vector3(fx, fy, fz);
             var rear = new Vector3(rx, _rear.y, rz);
             if (Time.time >= _groundAt)
@@ -344,16 +359,17 @@ namespace RealLifeOverhaul
         private void Sense()
         {
             _obstacle = float.MaxValue;
+            _obstacleHit = null;
             _person = false;
             if (_path.Count < 2)
             {
                 return;
             }
             float reach = Mathf.Max(SenseLeast, _speed * _speed / (2f * BusPath.Braking) + StopGap + SenseBox);
-            float nose = _s + BusVehicle.NoseAhead;
+            float nose = _s + _bus.NoseBeyondAxle;
             float total = _path.Total;
             int saved = _path.Cursor;
-            var half = new Vector3(BusVehicle.HalfWidth + SenseMargin, 0.9f, SenseBox * 0.5f);
+            var half = new Vector3(_bus.HalfBreadth + SenseMargin, 0.9f, SenseBox * 0.5f);
             for (float ahead = 0f; ahead < reach && _obstacle == float.MaxValue; ahead += SenseBox)
             {
                 float middle = nose + ahead + SenseBox * 0.5f;
@@ -376,6 +392,7 @@ namespace RealLifeOverhaul
                     if (ahead < _obstacle)
                     {
                         _obstacle = ahead;
+                        _obstacleHit = hit;
                         _person = ((_peopleLayers >> hit.gameObject.layer) & 1) != 0;
                     }
                 }

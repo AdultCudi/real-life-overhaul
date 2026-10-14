@@ -65,6 +65,12 @@ namespace RealLifeOverhaul
         /// <summary>A bribe was paid at a business: the issue's kind, the place and the amount. Default: nobody hears of it.</summary>
         public static Action<string, string, int> Bribed;
 
+        /// <summary>True while a business falls short of its district's standard (Scripts/Interiors): a customer's complaint is then due whatever the satisfaction figures say. Default: never.</summary>
+        public static Func<BuildingRegistration, bool> Shabby;
+
+        /// <summary>The cleanliness a health inspector judges, from the game's own figure (Scripts/Interiors: a worn place looks dirtier). Default: the game's figure.</summary>
+        public static Func<BuildingRegistration, int, int> Inspected;
+
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
         private readonly List<string> _opening = new List<string>(8);   // the businesses whose last closure of the mod's has just ended
@@ -96,8 +102,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Business: BusinessDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -639,7 +647,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Business pressure: stood down; nothing of " + (everything ? "the mod's is running on any business." : "its own is running on any business (the utilities' closures stay)."));
             if (!quiet)
             {
-                Notifications.Show(NotificationType.Info, "reallife_biz_test_resolved", null, 8f);
+                Notifications.Show(NotificationType.Info, "reallife_biz_test_resolved", new Dictionary<string, string>(1) { { "days", BusinessCatalogue.BusinessRestDays.ToString() } }, 12f);
             }
         }
 

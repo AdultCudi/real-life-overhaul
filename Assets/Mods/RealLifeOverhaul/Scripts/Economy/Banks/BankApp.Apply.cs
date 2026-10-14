@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 Say("refused", FinanceText.T("reallife_bank_row_refused_all", "bank", Bank.Name, "threshold", CreditCatalogue.LendingThreshold.ToString()));
+                Meta.Guide.Point(box, GuideTitle);
                 return null;
             }
             bool products = Settings.EconomyProducts && Desk.Running;
@@ -63,13 +64,14 @@ namespace RealLifeOverhaul.Economy
             {
                 _product = -1;
                 box.Title(FinanceText.T("reallife_bank_tab_apply"));
-                box.Line(FinanceText.T("reallife_bank_apply_intro", "bank", Bank.Name));
-                box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
-                box.Line(FinanceText.T("reallife_bank_apply_one_desk"));
                 if (gate != ProductAnswer.Yes)
                 {
                     box.Line(Why(gate));
                 }
+                box.Line(FinanceText.T("reallife_bank_apply_intro", "bank", Bank.Name));
+                box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
+                box.Line(FinanceText.T("reallife_bank_apply_one_desk"));
+                Meta.Guide.Point(box, GuideTitle);
                 return null;
             }
             box.Title(FinanceText.T(BankTables.OfferKinds[_product]));
@@ -83,6 +85,13 @@ namespace RealLifeOverhaul.Economy
                 case BankTables.Home: WriteFinance(box, ProductKind.Mortgage); break;
                 default: WriteConsolidate(box); break;
             }
+            switch (_product)
+            {
+                case BankTables.Overdraft: box.Line(FinanceApp.AboutKind(ProductKind.Overdraft)); break;
+                case BankTables.Card: box.Line(FinanceApp.AboutKind(ProductKind.CreditCard)); break;
+                case BankTables.Consolidate: box.Line(FinanceText.T("reallife_bank_consolidate_about", "bank", Bank.Name)); break;
+            }
+            Meta.Guide.Point(box, GuideTitle);
             return selected;
         }
 
@@ -251,7 +260,6 @@ namespace RealLifeOverhaul.Economy
         {
             CreditDesk desk = Desk;
             ProductOffer offer = desk.Offer(kind, Bank);
-            box.Line(FinanceApp.AboutKind(kind) ?? string.Empty);
             if (offer.Answer == ProductAnswer.AlreadyOpen)
             {
                 bool here = offer.Bank != null && offer.Bank.Rank == Bank.Rank;
@@ -461,7 +469,6 @@ namespace RealLifeOverhaul.Economy
             LoanQuote quote;
             int count;
             ProductAnswer answer = desk.Consolidation(Bank, out before, out after, out quote, out count);
-            box.Line(FinanceText.T("reallife_bank_consolidate_about", "bank", Bank.Name));
             if (before.Owed > 0)
             {
                 box.Line(FinanceText.T("reallife_econ_consolidate_line", "owed", FinanceText.Money(before.Owed), "daily", FinanceText.Money(before.Daily), "days", before.Days.ToString())

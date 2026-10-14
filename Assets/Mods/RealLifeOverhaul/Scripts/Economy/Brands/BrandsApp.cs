@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("brands: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("brands: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, BrandsDirector.AppId);
             _table = DataTable.On(_shell, "Brands");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(BrandsTables.Off))
@@ -236,6 +236,7 @@ namespace RealLifeOverhaul.Economy.Brands
                             table = WriteBrands(box, state, day, ref selected);
                             break;
                     }
+                    Meta.Guide.Point(box, "reallife_meta_title_economy_brands");   // (every page of the app ends with the Guide's page, after its buttons)
                 }
                 box.Done();
                 _table.Show(table, _rows, selected);

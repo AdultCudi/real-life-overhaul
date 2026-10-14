@@ -66,10 +66,11 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_jobs_title"));
-                box.Line(TechText.T("reallife_hire_jobs_about"));
                 box.Line(TechText.Pair("reallife_hire_sum_ads", TechText.T("reallife_hire_sum_ads_value", "count", open.ToString(), "most", HiringCatalogue.AdsMost.ToString())));
                 box.Line(TechText.Fill("reallife_hire_jobs_office", "week", HiringCatalogue.AdWeekMost.ToString(), "boosted", HiringCatalogue.AdWeekMostBoosted.ToString(),
                     "more", HiringCatalogue.OfficeBonusLeast.ToString()));
+                box.Line(TechText.T("reallife_hire_jobs_about"));
+                Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Jobs;
         }
@@ -90,6 +91,7 @@ namespace RealLifeOverhaul.Tech
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_hire_button_applicants", () => ShowTab(TechDirector.TabApplicants));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, JobsGuide);
         }
 
         private void WriteNewAd(InfoBox box, int day, int open)
@@ -197,8 +199,9 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_applicants_title"));
-                box.Line(TechText.T("reallife_hire_applicants_about"));
                 box.Line(TechText.Pair("reallife_hire_sum_live", live.ToString()));
+                box.Line(TechText.T("reallife_hire_applicants_about"));
+                Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Applicants;
         }
@@ -227,6 +230,16 @@ namespace RealLifeOverhaul.Tech
             bool tested = (a.Revealed & HiringRules.RevealSkill) != 0, years = (a.Revealed & HiringRules.RevealYears) != 0, fit = (a.Revealed & HiringRules.RevealFit) != 0;
             bool ask = (a.Revealed & HiringRules.RevealAsk) != 0 || ad.Search;
             box.Title(s.P.Name);
+            bool open = a.Live && a.Stage < (int)ApplyStage.Offered;
+            if (!open && a.At == ApplyStage.Countered)
+            {
+                box.Line(TechText.Fill(a.RivalBid > 0 ? "reallife_hire_counter_rival" : "reallife_hire_counter", "name", s.P.Name, "amount", TechText.Rate(a.Counter), "offer", TechText.Rate(a.Offer),
+                    "day", (a.OfferDay + HiringCatalogue.OfferDays).ToString()));
+            }
+            else if (!open)
+            {
+                box.Line(Stage(a) + (a.Offer > 0 ? " " + TechText.T("reallife_hire_offer_was", "pay", TechText.Rate(a.Offer)) : string.Empty));
+            }
             box.Line(TechText.Fill("reallife_hire_cv", "role", TechText.Role(s.P.Role), "level", TechText.Level(s.P.Level), "skill", TechText.Percent(tested ? s.P.Main / 1000 : s.CvMain),
                 "tested", TechText.T(tested ? "reallife_hire_cv_tested" : "reallife_hire_cv_claimed"), "school", TechText.School(s.P.School), "certs", TechText.Certs(s.P)));
             box.Line(TechText.Fill("reallife_hire_cv_more", "years", TechText.Years(years ? s.P.YearsDays : s.P.YearsDays + s.Claim * 120), "district", HiringGame.District(s.District),
@@ -236,8 +249,8 @@ namespace RealLifeOverhaul.Tech
             box.Line(refs + " " + record);
             box.Line(TechText.Fill("reallife_hire_known", "keen", TechText.Mille(a.Interest), "fit", fit ? TechText.T(s.Fit >= 650 ? "reallife_hire_fit_good" : s.Fit >= 400 ? "reallife_hire_fit_fair" : "reallife_hire_fit_poor") : "?",
                 "ask", ask ? TechText.Rate(s.Ask) : "?", "work", (a.Revealed & HiringRules.RevealAsk) != 0 ? TechText.Work(s.Want) : "?"));
-            Transform first = box.ButtonRow();
-            if (a.Live && a.Stage < (int)ApplyStage.Offered)
+            Transform first = open || a.At == ApplyStage.Countered ? box.ButtonRow() : null;
+            if (open)
             {
                 if (!a.Interviewed)
                 {
@@ -269,16 +282,11 @@ namespace RealLifeOverhaul.Tech
             }
             else if (a.At == ApplyStage.Countered)
             {
-                box.Line(TechText.Fill(a.RivalBid > 0 ? "reallife_hire_counter_rival" : "reallife_hire_counter", "name", s.P.Name, "amount", TechText.Rate(a.Counter), "offer", TechText.Rate(a.Offer),
-                    "day", (a.OfferDay + HiringCatalogue.OfferDays).ToString()));
                 InfoBox.Button(first, InfoBox.Positive, "reallife_hire_button_take_counter", () => Do(() => _director.TakeCounter(id)));
                 InfoBox.Button(first, InfoBox.Negative, "reallife_hire_button_walk_away", () => Do(() => _director.WalkAway(id)));
             }
-            else
-            {
-                box.Line(Stage(a) + (a.Offer > 0 ? " " + TechText.T("reallife_hire_offer_was", "pay", TechText.Rate(a.Offer)) : string.Empty));
-            }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, JobsGuide);
         }
 
         // ---------------------------------------------------------------- the market
@@ -340,14 +348,15 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_market_title"));
-                box.Line(TechText.T("reallife_hire_market_about"));
-                box.Line(TechText.Pair("reallife_hire_sum_seekers", all.ToString()));
-                box.Line(TechText.Pair("reallife_hire_sum_unemployment", TechText.Mille(HiringRules.Unemployment(cycle))));
-                box.Line(TechText.Pair("reallife_hire_sum_rivals", f.RivalAds.Count.ToString()));
                 if (HiringGame.Summer(day))
                 {
                     box.Line(TechText.T("reallife_hire_market_summer"));
                 }
+                box.Line(TechText.Pair("reallife_hire_sum_seekers", all.ToString()));
+                box.Line(TechText.Pair("reallife_hire_sum_unemployment", TechText.Mille(HiringRules.Unemployment(cycle))));
+                box.Line(TechText.Pair("reallife_hire_sum_rivals", f.RivalAds.Count.ToString()));
+                box.Line(TechText.T("reallife_hire_market_about"));
+                Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Market;
         }
@@ -400,6 +409,7 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Pair("reallife_hire_family_districts", text.Length > 0 ? text.ToString() : TechText.T("reallife_talent_none")));
             box.Line(TechText.T("reallife_hire_family_shortage", "shortage", TechText.Mille(_director.ShortageOf(family))));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, JobsGuide);
         }
 
         // ---------------------------------------------------------------- search firms
@@ -443,6 +453,7 @@ namespace RealLifeOverhaul.Tech
                 Transform buttons = box.ButtonRow();
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_hire_button_applicants", () => ShowTab(TechDirector.TabApplicants));
                 InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+                Meta.Guide.Point(box, JobsGuide);
             }
             else
             {
@@ -450,6 +461,7 @@ namespace RealLifeOverhaul.Tech
                 box.Title(TechText.T("reallife_hire_searches_title"));
                 box.Line(TechText.Fill("reallife_hire_searches_about", "share", TechText.Bp(HiringCatalogue.SearchFeeBp), "count", HiringCatalogue.SearchCandidates.ToString(),
                     "least", HiringCatalogue.SearchDaysLeast.ToString(), "most", HiringCatalogue.SearchDaysMost.ToString()));
+                Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Search;
         }

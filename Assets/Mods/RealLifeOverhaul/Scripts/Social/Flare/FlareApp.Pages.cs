@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Flare
     public sealed partial class FlareApp
     {
         private const int RepliesShown = 4;
+        private const string GuideTitle = "reallife_meta_title_flare";   // the Guide's page every page of the app points to at its foot
 
         private int _tone = -1;     // the tone picked for the draft that shows; -1 for the one that suits it best
         private bool _untag;        // the draft's friend is not to be tagged
@@ -57,6 +58,7 @@ namespace RealLifeOverhaul.Flare
                 Trending(box, file, day);
                 box.Line(FlareText.T("reallife_flare_intro_what"));
                 box.Line(FlareText.T("reallife_flare_intro_post"));
+                Meta.Guide.Point(box, GuideTitle);
             }
             return FlareTables.Feed;
         }
@@ -156,9 +158,12 @@ namespace RealLifeOverhaul.Flare
                 Transform buttons = box.ButtonRow();
                 InfoBox.Button(buttons, InfoBox.Positive, following ? "reallife_flare_unfollow" : "reallife_flare_follow", () => _director.Follow(key, !following));
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_flare_back", Back);
-                return;
             }
-            BackButton(box);
+            else
+            {
+                BackButton(box);
+            }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- Post
@@ -182,9 +187,10 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Drafts;
             }
             box.Title(FlareText.T("reallife_flare_tab_post"));
+            WaitLine(box, file, day);
             box.Line(FlareText.T("reallife_flare_post_intro"));
             box.Line(FlareText.Fill("reallife_flare_post_limits", "posts", FlareRules.PostsPerDay.ToString(), "hours", (FlareRules.PostGapMinutes / 60).ToString(), "days", FlareRules.DraftDays.ToString()));
-            WaitLine(box, file, day);
+            Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Drafts;
         }
 
@@ -195,6 +201,7 @@ namespace RealLifeOverhaul.Flare
             bool tag = canTag && !_untag;
             int tone = _tone >= 0 ? _tone : (int)FlareRules.BestTone(d.Source);
             box.Title(FlareText.Draft(d, friend));
+            bool wait = WaitLine(box, file, day);
             Choose(box, FlareText.ToneKeys.Length, tone, i => FlareText.Pair("reallife_flare_tone_label", FlareText.Tone(i)), i => _tone = i);
             if (canTag)
             {
@@ -214,7 +221,6 @@ namespace RealLifeOverhaul.Flare
                 int gain = FlareRules.Gain(file.Followers, FlareRules.Quality(d.Source, tag, d.Place != null), fit, file.Reputation, repeat);
                 box.Line(FlareText.Fill("reallife_flare_expect", "followers", FlareText.N(gain)) + (repeat < 1000 ? " " + FlareText.T("reallife_flare_repeat") : string.Empty));
             }
-            bool wait = WaitLine(box, file, day);
             Transform buttons = box.ButtonRow();
             int id = d.Id;
             FlareTone chosen = (FlareTone)tone;
@@ -233,6 +239,7 @@ namespace RealLifeOverhaul.Flare
                 post.interactable = false;
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_flare_back", Back);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // When the player can post next, if not now. True if they cannot post now.
@@ -283,6 +290,7 @@ namespace RealLifeOverhaul.Flare
             box.Line(FlareText.Fill("reallife_flare_me_totals", "posts", FlareText.N(file.TotalPosts), "likes", FlareText.N(file.TotalLikes),
                 "friends", FlareRules.Count(file.Following).ToString()));
             box.Line(FlareText.Fill("reallife_flare_me_today", "count", (file.PostsDay == day ? file.PostsToday : 0).ToString(), "most", FlareRules.PostsPerDay.ToString()));
+            Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Mine;
         }
 
@@ -338,6 +346,8 @@ namespace RealLifeOverhaul.Flare
             }
             FlareHire hire = null;
             HireRows(file, day, ref selected, ref hire);
+            FlareCampaign campaign = default(FlareCampaign);
+            bool campaignPicked = CampaignRows(file, ref selected, ref campaign);
             if (pickedPlace != null)
             {
                 if (_hireOpen)
@@ -355,9 +365,15 @@ namespace RealLifeOverhaul.Flare
                 WriteHireRow(box, file, hire, day);
                 return FlareTables.Business;
             }
+            if (campaignPicked)
+            {
+                WriteCampaignRow(box, campaign, day);
+                return FlareTables.Business;
+            }
             box.Title(FlareText.T("reallife_flare_tab_business"));
             box.Line(FlareText.T(shops.Count > 0 ? "reallife_flare_business_intro" : "reallife_flare_business_none"));
             box.Line(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
+            Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Business;
         }
 
@@ -383,9 +399,11 @@ namespace RealLifeOverhaul.Flare
             int talk = file.BuzzAt(place, day);
             box.Line(talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"));
             box.Line(FlareText.Pair("reallife_flare_shop_posts", posts.ToString()));
-            int reach = FlareRules.SponsoredReach(file.Followers);
-            box.Line(reach > 0 ? FlareText.Fill("reallife_flare_shop_sponsored", "share", (reach / 10).ToString())
-                : FlareText.Fill("reallife_flare_shop_sponsored_later", "followers", FlareText.N(FlareRules.SponsoredFrom)));
+            FlareCampaign campaign;
+            if (_director.CampaignAt(place, out campaign))
+            {
+                box.Line(FlareText.Busy(campaign, day));
+            }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_flare_shop_hire", () =>
             {
@@ -393,6 +411,10 @@ namespace RealLifeOverhaul.Flare
                 Refresh();
             });
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_flare_back", Back);
+            int reach = FlareRules.SponsoredReach(file.Followers);
+            box.Line(reach > 0 ? FlareText.Fill("reallife_flare_shop_sponsored", "share", (reach / 10).ToString())
+                : FlareText.Fill("reallife_flare_shop_sponsored_later", "followers", FlareText.N(FlareRules.SponsoredFrom)));
+            Meta.Guide.Point(box, GuideTitle);
         }
     }
 }

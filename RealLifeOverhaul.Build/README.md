@@ -34,6 +34,11 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PursuitPace       how fast a patrol car after the player may go (0.95 of their car's top speed, 130 to 200 km/h) and how long it keeps at it
       PursuitBackup     the second patrol car that joins a pursuit of the player after 45 s, if traffic has a car to give
       TrafficTools      what all of these need from the traffic system; a vehicle's real footprint from its colliders
+      Tow/              the tow truck that takes a cleared scene's wrecks away (TrafficAccidents hands them over in Clear)
+        TowService      one truck at a time: held out of sight, sent, the operator's work, the wreck winched up and carried, taken off the road unseen; the wreck goes as before wherever this cannot be done; the test button
+        TowTruck        the mod's own rollback (props tow_truck, tow_truck_tilt, tow_truck_bed, the bus's wheels): solid, driven by BusDriver, its bed posed, its light bar and lamps, the winch's cable
+        TowRoads        where it stands (ahead of the wreck in its lane, come by the lane beside) and where it starts (out of sight, 70 to 280 m back): once per truck sent
+        TowRules        game-free (NavCheck/TowCheck): the bed's motion, a car drawn along the road and up the bed, the stretch it takes, the time it is said to take, when it may come and go
     People/    the mod's street characters and the scenes they play
       ActorPool      the twelve characters every scene shares: created once, reused in the same outfit, hidden when out of view; four may be out only to be seen and give way to any scene
       Uniforms       the one outfit every officer wears and the one every paramedic wears: named garments, fixed colours; the hi-vis shirt
@@ -183,6 +188,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
       TransitRide      the time a ride takes (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass, ride counts, a fare owed back, in modData
       BusRider         the bus ride seen: the game's walk to the front door, the fare, board_step up, the validator, the aisle, a seat (strap_hang on a full bus), the pull-away; at the far end up and off by the middle door; every way out
+      IDrivenVehicle   what BusDriver drives: the city bus and the tow truck, measured from their own middles
       BusInside        the inside of the bus as a rider walks it (game-free: EconomyCheck walks every path; PropAssets/checks_service.py measures each place on the mesh), and the ride's fare and fade rules
       SubwayJourney    the game's own subway taking a journey's time: the panel at each entrance, service by the clock (frequency, delays), the day pass, the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
@@ -325,6 +331,18 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       DistrictPanel      its window, a copy of the map's filter window beside it: the key, the card, the districts
       DistrictView       the one component: the layer ticked (Core/MapPlaces.RegisterChoice), the map's opening and the day, the tint, the card, the crime log; the test buttons
       DistrictGuide      its options block and its feature entry (Guide figures from the rules)
+    Interiors/ interiors and decor that matter: the game's interior design score, a decor score from the placed items, wear,
+               each district's standard, and what they do to customers, prices, complaints, brands, Standing, staff, hiring and bids
+      InteriorRules      the decor score (diminishing returns by item kind, each category's share, variety), the target by floor area,
+                         wear and dirt, the district's standard, every effect and its cap, the parts the other authors' mods take over (game-free)
+      InteriorStore      each business's wear and news in the save's one line (game-free)
+      InteriorGame       everything it touches of the game: the interior score, the placed items sorted by the game's own tags and
+                         types, the floor area, the district's minimum, the basket, a refresh's charge; InteriorBridges, what it asks of the others
+      InteriorDirector   the one component: the morning's round, the hourly basket, footfall written, complaints and news, the test buttons
+      InteriorTab        the Interior tab in BizMan: a copy of the game's own tab button and two of BizMan's scroll views with
+                         MyEmployees' lines: the scores, and four pages (what it does, the items that count, today's customers
+                         by where they came from, the game's own rules for the business)
+      InteriorText, InteriorGuide   its words, its options block and its three feature entries (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships
@@ -475,8 +493,10 @@ moves. All of the mod's are `carveOnlyStationary`, placed while switched off and
 For reports of the kind "it stutters after a few minutes, or hours". `Diagnostics/SessionWatch` is a component on the
 mod's root object that is disabled unless "Developer diagnostics" is on (`Meta.Dev.Apply` switches it), so it costs
 nothing as shipped. On, it costs a dozen reads of numbers the engine and the game already keep and as many comparisons
-a frame, about thirty reads of the clock for the step timing (`Diagnostics/FrameSteps`, under two microseconds), and,
-once a minute, a walk over the mod's own objects. Nothing is allocated except for a line that is written.
+a frame, some two hundred and fifty reads of the clock for the step timing (`Diagnostics/FrameSteps`, a few
+microseconds), the timing of the mod's own scripts (`Core/HotSpots`, some 55 ns a scope, under 8 microseconds a frame),
+and, once a minute, a walk over the mod's own objects. Nothing is allocated except for a line that is written. As
+shipped, each of the mod's scopes is one flag test.
 
 One line for every minute of play (loading screens, pauses and time with the window in the background are left out):
 
@@ -487,7 +507,11 @@ and 3.1 ms at most in a frame; engine memory 2950 MB; mod objects 345 (118 shown
 12; city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city
 loaded 23 (2 while playing); frames over 80 ms: 2, of them 2 behind the game's black screen (into or out of a building)
 and 0 seen; the mod's navigation obstacles changed in the minute 0; handlers put back on the game's events 0 (changed
-events looked into 3); searches of the whole scene 0 (0 while playing); on foot in the street, game hour 9.
+events looked into 3); searches of the whole scene 0 (0 while playing); the mod's own scripts: 0.41 ms a frame on
+average and 3.2 ms at most in a frame, the most in the minute: Transport: TransitDirector.Update (0.12 ms a frame, 2.0 ms
+at worst), Traffic: SolidStreets.Update (0.06 ms a frame, 0.9 ms at worst), People: ActorPool.Update (0.04 ms a frame,
+0.3 ms at worst); the heap grew under them by 14 KB a second (every frame counted) of the 590 KB a second it grew in
+all, the most under Transport: TransitDirector.Update (6 KB a second), ...; on foot in the street, game hour 9.
 ```
 
 | part | what it is | what to look for over a session |
@@ -506,6 +530,11 @@ events looked into 3); searches of the whole scene 0 (0 while playing); on foot 
 | the mod's navigation obstacles changed | carving obstacles of the mod's made, moved or switched in the minute (`Core/MeshCuts`) | a handful when a bus stop, a cart or a cordon comes or goes while the player is on foot near it; never a steady number minute after minute |
 | handlers put back on the game's events | `Core/EventHold`: times a handler had to be put on one of the game's event fields, and times a changed field was looked into | a few after a load, then 0. Sixty a minute is a holder putting itself back every second |
 | searches of the whole scene (while playing) | `Core/SceneFinds`: every `FindObjectsByType` and `Resources.FindObjectsOfTypeAll` the mod makes | each is a frame of about 110 ms in this game. "While playing" must be 0: what a search finds is found behind the loading screen (`ScenePrewarm`) |
+| the mod's own scripts | `Core/HotSpots`: every Update, LateUpdate and FixedUpdate of the mod's and its handlers of the game's events (a new hour or day, a door, the city map, a character's change of look), each named "Feature: Class.Method"; their time a frame on average and in the worst frame, and the three that took the most | well under a millisecond a frame on average. A name whose worst is tens of milliseconds is a stutter of the mod's, and the name says where |
+| the heap grew under them | what the mod's own scripts allocated: counted exactly in every frame where the runtime counts each thread's allocations (`GC.GetAllocatedBytesForCurrentThread`, found out when the record starts), else read from the heap's size one frame in eight; beside it what the heap grew by in all | the mod's share of "grown by". The three names under which it grew the most are where to look first |
+
+One line for a frame in which the managed heap grew by 8 MB or more at once (6 a minute at most): how much, how much of it
+under the mod's own scripts (where that frame was counted) and under which, and the mod's last pieces of work.
 
 One line for a frame longer than 80 ms (12 a minute at most; the rest are in the minute's count):
 
@@ -513,9 +542,11 @@ One line for a frame longer than 80 ms (12 a minute at most; the rest are in the
 Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went: coroutines and timers
 204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far), at work 0.0 ms, heap 731 MB before and
 733 MB after; the game: its screen was black or fading (its own walk into or out of a building: not seen as a stutter),
-the player came out of a building in it, not saving, no scene loaded or unloaded; the mod's navigation obstacles changed
-in the second before it and in it: 0; the mod's last pieces of work: "people: a character being made" (3.1 ms) 41.0 s
-before, "transit: a bus stop being put out" (not timed) 80.2 s before; on foot in the street, game hour 7.
+the player came out of a building in it, not saving, no scene loaded or unloaded; the mod's own scripts in it: 0.6 ms
+(Transport: TransitDirector.Update 0.3 ms, People: ActorPool.Update 0.1 ms, Core: GoingPublicWatch.Update 0.1 ms); the
+mod's navigation obstacles changed in the second before it and in it: 0; the mod's last pieces of work: "people: a
+character being made" (3.1 ms) 41.0 s before, "transit: a bus stop being put out" (not timed) 80.2 s before; on foot in
+the street, game hour 7.
 ```
 
 How to read it:
@@ -523,8 +554,12 @@ How to read it:
 - **where it went** is the engine's own steps of that frame, timed by `Diagnostics/FrameSteps`. "navigation" is the step
   in which the engine cuts the walkable mesh: a long frame with its time there is a cut, asked for half a second
   earlier by a carving obstacle. "coroutines and timers" with the screen black is the game taking the player through a
-  door. "scripts' Update" is some script's Update, the game's or a mod's: the mod's share is the time beside the pieces
-  of work named "in it". "rendering" and "the rest" are the engine's.
+  door. "scripts' Update" is some script's Update, the game's or a mod's. "rendering" and "the rest" are the engine's;
+  where the rest is 5 ms or more, the one engine step it was mostly in is named beside it (every step outside the
+  named groups is timed by itself: "PostLateUpdate.UpdateAllSkinnedMeshes", or another mod's step by its type).
+- **the mod's own scripts in it** is the time all of the mod's Updates, LateUpdates, FixedUpdates and event handlers
+  took in that frame (`Core/HotSpots`), with the three that took the most. Time under "scripts' Update" that is not
+  here is the game's or another mod's.
 - **the collector** says whether a collection finished between the record's two looks, how long the engine's collector
   worked in that frame, and the heap on both sides of it.
 - **the game** says whether its black screen was up, whether the player had just gone through a door, whether it was
@@ -540,11 +575,14 @@ a handful of writes into a fixed ring with a constant text and one read of the c
 does something large in one go: a character made or given a look (`ActorPool.Dress`, `CityPeople.Dress`, the casts), a
 living-city site set up, a bus stop, a precinct front or a two-wheeler stand put out, an accident, a crime, a fire or a
 street event starting, the game saving (the mod's own share of the save is timed and written as its own `Session:`
-line), the performance tweaks listing the loaded materials. New code that builds something in one frame names it the
-same way; `Mark` is never called per frame and never with a text put together for the call.
+line), the performance tweaks listing the loaded materials. Nearly all of them name it with
+`using var piece = SessionWatch.Piece("...")`, which is `Mark` and, at the end of the block, `Done`, so the line has its
+time beside it. New code that builds something in one frame names it the same way; `Mark` is never called per frame
+and never with a text put together for the call.
 
-What the lines cannot say: which script a long frame was spent in when its time is under "scripts' Update" or
-"coroutines and timers" and no work was named, and anything about the graphics card.
+What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's
+own coroutines took (they run under "coroutines and timers" and are not timed one by one); and anything about the
+graphics card.
 
 ### Long frames: what was found, and the rules that follow
 
@@ -576,6 +614,29 @@ Three sessions of Player.log with the record on (83 frames over 80 ms) sort like
   second for ever, because each one's putting back changed the event for the others (`Core/EventHold.cs` says how it is
   kept now). It was a few kilobytes a second, not a long frame.
 
+The session of 13 October (0.9.4, half an hour on foot in the street, 16 frames over 50 ms a minute):
+
+- **A search of the whole scene every five seconds of play: the mod's.** About twelve frames a minute of 84 to 124 ms,
+  all under "scripts' Update" with nothing of the mod's named, five seconds apart to a tenth of a second. The hair finish
+  for other characters in the game's strand hair (`Character/CharacterQuality.FindOthers`, new in 0.9.4) called
+  `FindObjectsByType<AppearanceSetter>` on a five second timer, not through `Core/SceneFinds`, so the record did not count it,
+  and found nobody in a game played alone. Now the whole scene is searched only behind the black screen, a loading
+  screen or a pause (`Core/SearchPace`, twice at most in one), and in play only Going Public's own list of the other
+  players is read (`Core/GoingPublic.RemotePlayers`).
+- **Searches the first time something was needed, in play: the mod's.** The marked crossings (a frame of 107 ms, "the
+  city's crossings being listed", and the traffic's first look of 89,806 microseconds) are now listed behind the loading
+  screen with the road map (`SolidStreets.Prewarm`); the game's navigation obstacles beside the bus stops likewise
+  (`BusZones.Prewarm`); the game's panel of the building the player is in is taken from the game's own reference, not
+  from a search of the scene with switched-off objects included (a frame of 104 ms under "coroutines and timers" the
+  first time the player went into a building).
+- **The traffic's look over its budget** (113 microseconds on average and 3311 at worst): the developer diagnostics'
+  own lines, sixteen in that minute, were written, and their texts made, inside the measured look. They are now written
+  with its clock stopped, and the minute's line says where the look's time went, phase by phase.
+- **Frames with their time under "the rest"** (115 to 244 ms, four of them, one just after going into a building): not
+  in any script's step, so not the mod's scripts. Which engine step they were in is named from now on.
+- **The heap's growth** (72 MB in the busiest minute, 35 MB in the next): the mod's share of it is now said in the
+  minute's line, and a frame in which the heap leaps by 8 MB or more (one of 25 MB in that session) gets a line of its own.
+
 ## Checks
 
 `dotnet run --project RealLifeOverhaul.Build/CatalogueCheck -c Release`
@@ -589,7 +650,9 @@ Run it after any change to the event catalogue or `en.json`.
 Three more check programs compile the mod's own game-free files and run them on made-up data: `PlannerCheck` (see
 "The Planner"), `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses,
 and in `HitchCheck.cs` the keeper of handlers on the game's events, `Core/EventHold.cs`, and the session record's
-rings, `Core/WorkRings.cs`) and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
+rings, `Core/WorkRings.cs`; in `HotSpotCheck.cs` the timing of the mod's own scripts, `Core/HotSpots.cs`, and when the
+whole scene may be searched, `Core/SearchPace.cs`, with the before and after of the hair finish's search on a made-up
+session) and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
 
 ## After a game update
 
@@ -4188,6 +4251,7 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `PerfDirector` and the tweaks that are on by default | one time comparison; the tweaks tick every 2 to 5 s | **before: every scene loaded or unloaded made `RefractionOff` look through every material in memory in that frame (`Resources.FindObjectsOfTypeAll<Material>`, seven engine calls a material) and, on the next tick, `StaleLampLights` through all 3,038 street lamps (three reflected fields each). After: unloads are ignored, a load asks for one look four seconds after the last scene arrived, and both looks go through their list 300 and 250 at a time, 20 times a second. The first look after the city loads is sliced the same way; refraction stays as the game has it until that look is finished** |
 | `TransitDirector` (4 times a second) | the stops in reach, the bus | **before: every second the label of each dressed stop was put together for a self-check that had already been made; and the self-check itself (a dozen questions to the navigation mesh, once per dressing) ran with diagnostics off, when nobody reads its line. After: neither** |
 | `MetaUi`, `CuffPose`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
+| `TowService` (added after this read-through) | disabled while there is nothing to tow; with a truck out, a time comparison a frame and a 0.25 s tick (a few distances; driving away, `TransitSight.Seen`'s rays) | at work a handful of transform writes a frame (the bed, the cable, the wreck); `TowTruck.Update` and its `BusDriver` run only while the truck is on the street |
 | `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
 | `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
 | `CarStrikes.FixedUpdate` (driving above 5 km/h) | every other step: the car against walkers, standing figures and the mod's people | left: it is the hit test itself |
@@ -5638,6 +5702,9 @@ Core/GameUi/
                   entries whose lines wrap) for lists that say more than a station's name
   GuideMark       a mark on a place that is no building, on the game's own destination guider (the job's), taken
                   only while it is free and taken off only by whoever put it there
+  NoticeKinds     game-free (CatalogueCheck/NoticeCheck): which kind a notification of the mod's is, from its key alone
+  NoticeLook      the mod's notifications told from the game's: the kind's picture on a disc of the mod's colour, in the
+                  game's own toast and the game's own notification list; the options page's test of one of each kind
 Planner/
   PlannerModel    game-free: the clock as the game counts it, entries, order, clashes, states, "next", the badge
   PlannerStore    game-free: notes, reminders and settings; the save's three lines ("reallife:planner",
@@ -5685,6 +5752,46 @@ list window, three more bars under the game's needs (section 14), a reading in t
 15), the game's own repair-bay panel with a button more (section 16), its panel over a place at a dock, a stand, a
 broken-down car and the doctor's desk, and its destination marker (`GameUi.GuideMark`). Neither feature has a
 canvas, a prompt or a key of its own left.
+
+### The mod's notifications (`Core/GameUi/NoticeKinds`, `NoticeLook`)
+
+Every notification of the mod's goes through the game's own `Notifications.Show`, so it pops up in the game's toast
+and stays in the game's list, saved with the game as its type, key, names and time (`UI.Notification/Notification`).
+To be told from the game's at a glance, each carries a picture of its kind on a disc in the mod's indigo, where the
+game's carry their white one; the game's own notifications, and other mods', are never touched.
+
+- **Which kind.** Read from the key each time it is drawn (`NoticeKinds.Of`: the prefix after `reallife_`, a table
+  read longest first), so nothing new is saved and notifications in an older save get their picture too. A new
+  feature's keys need a row in the table only if its prefix is new; a key with no row is drawn as "anything else".
+  NoticeCheck fails a key raised by a call that is not taken for the mod's, a toast text over 240 characters, a row
+  that can never match, and more than half of the notifications under "anything else".
+- **Where it is set.** The toast: after the game's maker on `Notifications.onShow` (the copy it has just made: its
+  `Text/Image` becomes the disc, the picture a child of it). The list: the scroller's `cellViewVisibilityChanged`,
+  raised right after the game's `NotificationListCellView.SetData`; rows are reused, so every row is set either way
+  (the mod's: the disc and its picture; the game's: its white disc back, the game having put its own picture on).
+  No Harmony patch, nothing per frame.
+- **The pictures.** The game's own where one fits, found once behind the loading screen (`GameSprites`), else one of
+  the mod's glyphs drawn in code like the map's (`MapPlaces.Glyph`, which gained Coin, House and Heart for this):
+
+  | kind | the game's picture | else the mod's glyph |
+  | --- | --- | --- |
+  | accidents and the road | Icon-Traffic | Cone |
+  | police and crime | Icon-Security | Shield |
+  | health and the hospital | BusinessIcon-Hospital | Cross |
+  | money and bills | Icon-Coin | Coin |
+  | property and rent | Icon-Building | House |
+  | work and careers | Icon-Briefcase | Briefcase |
+  | the player's businesses | Icon-Shop | Tower |
+  | the tech sector | Icon-Laptop | Cloud |
+  | news and the city | (none) | Paper |
+  | family and friends | Icon-People | Heart |
+  | anything else | (none) | Star |
+
+  Icon-Coin, Icon-Building, Icon-Security, Icon-Shop and the disc's Circle are used by Images of the UI scene, so in
+  memory; the others may not be, and then the glyph is drawn. With "Developer diagnostics" on, `Notice check
+  (attach)` says how many kinds got the game's picture.
+- **Option and test.** "The mod's notifications carry their own picture and colour" (on by default; off, they look
+  like the game's). Options > Tests: "One notification of each kind" shows the eleven, 1.2 s apart, kept in the list.
 
 ## Minimap and GPS (`Scripts/Navigation`)
 

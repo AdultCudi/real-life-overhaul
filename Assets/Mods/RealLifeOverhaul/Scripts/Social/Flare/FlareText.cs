@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_draft_arrested", "reallife_flare_draft_photo", "reallife_flare_draft_scandal", "reallife_flare_draft_photo",
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo",
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_shares", "reallife_flare_draft_photo",
-            "reallife_flare_draft_photo", "reallife_flare_draft_issue_safety", "reallife_flare_draft_campaign", "reallife_flare_draft_graduated"
+            "reallife_flare_draft_photo", "reallife_flare_draft_issue_safety", "reallife_flare_draft_campaign", "reallife_flare_draft_graduated", "reallife_flare_draft_interior"
         };
         private static readonly string[][] PostKeys =
         {
@@ -58,7 +58,8 @@ namespace RealLifeOverhaul.Flare
             null, null,
             new[] { "reallife_flare_post_issue_safety_1", "reallife_flare_post_issue_safety_2" },
             new[] { "reallife_flare_post_campaign_1", "reallife_flare_post_campaign_2" },
-            new[] { "reallife_flare_post_graduated_1", "reallife_flare_post_graduated_2" }
+            new[] { "reallife_flare_post_graduated_1", "reallife_flare_post_graduated_2" },
+            new[] { "reallife_flare_post_interior_1", "reallife_flare_post_interior_2" }
         };
         private static readonly string[] RoadsKeys = { "reallife_flare_post_issue_roads_1", "reallife_flare_post_issue_roads_2" };
         private static readonly string[][] ToneLineKeys =
@@ -248,6 +249,16 @@ namespace RealLifeOverhaul.Flare
         public static string Deal(int deal)
         {
             return T(Of(DealKeys, deal));
+        }
+
+        /// <summary>
+        /// What keeps a business from a new hire, in a sentence: the campaign, how it was booked and its days.
+        /// "Midtown Electronics has a campaign booked for day 34: Discount day, booked from the Company app. You can hire once it ends."
+        /// </summary>
+        public static string Busy(FlareCampaign c, int day)
+        {
+            string when = Fill(FlareRules.BusyWhenKey(day, c.From, c.To), "day", c.From.ToString(Inv), "from", c.From.ToString(Inv), "to", c.To.ToString(Inv));
+            return Fill(FlareRules.BusyKey(c.OnFlare), "business", c.Name, "when", when, "campaign", c.Campaign);
         }
 
         // An influencer's, a brand's or a candidate's post: a template by what it is, a variant by its seed.

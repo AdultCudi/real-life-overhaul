@@ -254,9 +254,11 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Ragdoll: RagdollSystem.Update");
         // Runs only while somebody is down. Per ragdoll: a handful of flags, and until it is frozen the rest check.
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

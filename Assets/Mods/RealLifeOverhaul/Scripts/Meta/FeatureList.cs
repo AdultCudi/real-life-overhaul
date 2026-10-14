@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.CharacterHighDetailId, Settings.CharacterHairId, Settings.CharacterLightingId, Settings.CharacterNewLooksId)
                 .Test("reallife_test_hair_say", HairTests.Say)
                 .Test("reallife_test_hair_lamp", HairTests.Lamp)
+                .Test("reallife_test_hair_streetlamp", HairTests.StreetLamp)
                 .Test("reallife_test_hair_switch", HairTests.Switch)
                 .Cleanup(HairTests.Forget)
                 .Data("reallife:look_*")
@@ -230,10 +231,10 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("phone", "reallife_meta_title_phone")
                 .About("reallife_guide_phone_about").Help("reallife_guide_phone")
-                .Owns(Settings.PhoneContactsId, Settings.PhoneSkinId)
+                .Owns(Settings.PhoneContactsId, Settings.PhoneSkinId, Settings.NoticeLookId)
                 .NeedsReload(Settings.PhoneContactsId)
                 .Contact("reallife-911", "reallife-doctor", "reallife-friend", "reallife-mom")
-                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw")
+                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_test_notice_look")
                 .Repair(PhoneContacts.Setup);
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
@@ -250,9 +251,9 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_traffic_about").Help("reallife_guide_traffic")
                 .Fact("crash_least", () => Guide.Money(Prices.At(CrashConsequences.LiabilityLeast)))
                 .Fact("crash_most", () => Guide.Money(Prices.At(CrashConsequences.LiabilityMost)))
-                .Owns(Settings.TrafficAccidentsId, Settings.AccidentNoticesId, Settings.AccidentMarkerId, Settings.SirenId, Settings.PoliceId)
+                .Owns(Settings.TrafficAccidentsId, Settings.AccidentNoticesId, Settings.AccidentMarkerId, Settings.TowTrucksId, Settings.SirenId, Settings.PoliceId)
                 // A guest of a Going Public session has the host's traffic, which nothing of this mod's takes cars from (Core/GoingPublic).
-                .StandsAside(GoingPublic.TrafficSentence, Settings.TrafficAccidentsId, Settings.AccidentFrequencyId, Settings.PoliceId, Settings.PolicePursuitId, Settings.SirenId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.TrafficAccidentsId, Settings.AccidentFrequencyId, Settings.TowTrucksId, Settings.PoliceId, Settings.PolicePursuitId, Settings.SirenId)
                 .Preset(Settings.AccidentFrequencyId, 1, 3, 4)
                 .Fact("accident_hours", () => AccidentHours(StreetRules.DefaultFrequency))
                 .Fact("accident_hours_now", () => AccidentHours(Settings.AccidentFrequency))
@@ -260,7 +261,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("accident_hours_most", () => AccidentHours(10))
                 .Preset(Settings.CrashConsequencesId, 0, 1, 1)
                 .Preset(Settings.PolicePursuitId, 0, 1, 1)
-                .Test("reallife_test_accident", "reallife_test_accident_minor", "reallife_test_accident_moderate", "reallife_test_accident_severe")
+                .Test("reallife_test_accident", "reallife_test_accident_minor", "reallife_test_accident_moderate", "reallife_test_accident_severe", "reallife_test_tow_truck")
                 .Fact("fine_caught", () => Guide.Money(PolicePursuit.CaughtFine))
                 .Fact("fine_escaped", () => Guide.Money(PolicePursuit.EscapedFine))
                 .Fact("fine_injury", () => Guide.Money(PolicePursuit.InjuryFine))
@@ -666,8 +667,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_careers_degrees_about").Help("reallife_guide_careers_degrees")
                 .Owns(Settings.CareersDegreesId)
                 .Test("reallife_degrees_test_graduate")
-                .Objects("RealLifeOverhaul University Sign")
-                .Data(Careers.CareersStore.Key)
+                .Objects("RealLifeOverhaul University Sign", "RealLifeOverhaul University Room Sign")
+                .Data(Careers.CareersStore.Key, Careers.CareersStore.CampusKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             // The family and others: a grown child at university, tutoring, the player's own academy. It runs with the courses.
@@ -717,6 +718,7 @@ namespace RealLifeOverhaul.Meta
                 // Read from the (now empty) save: the director's own stand-down (footfall and closures put back) runs when the option goes off or the city unloads.
                 .ResetData(() => BusinessState.Load(SaveGameManager.Current.modData, TimeHelper.CurrentDay))
                 .Repair(BusinessDesk.Setup);
+            Interiors.InteriorGuide.Register();   // interiors and decor that matter: three features (the whole, the district standard, the decor's footfall), their switches, save line, tests and Guide figures (Scripts/Interiors)
 
             Features.Add("garage", "reallife_meta_title_garage")
                 .Group("reallife_garage_header")
@@ -1227,6 +1229,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Tech.VentureStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // The tech sector's buildings: server rooms in the player's data centres, the city's tech companies' headquarters with
+            // a lobby, the data centres' frontages and the tech offices' fittings. Only what is seen: nothing of it is saved.
+            Features.Add("tech_sites", "reallife_meta_title_tech_sites")
+                .About("reallife_guide_tech_sites_about").Help("reallife_guide_tech_sites")
+                .Fact("sites_most", () => Guide.Number(Tech.ServerRoomPlan.MostShown))
+                .Fact("sites_companies", () => Guide.Number(Tech.HiringCatalogue.RivalFirms.Length))
+                .Owns(Settings.TechSiteRoomsId, Settings.TechSiteHqId, Settings.TechSiteCloudId, Settings.TechSiteOfficesId)
+                .Test("reallife_sites_test_room", "reallife_sites_test_hq", "reallife_sites_test_floor")
+                .Cleanup(() => Tech.TechSites.Instance?.StopAll(), -1);
             // The car dealership: a business type of the mod's own. Its row stands under the company's header on the options page;
             // the Dealership app is its own. Off, its dealerships do not trade and their cars stay on the lots. It runs only while
             // the economy core does. (Cleaned up before the core: order -2.)

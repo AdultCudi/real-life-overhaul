@@ -47,21 +47,28 @@ namespace RealLifeOverhaul
             private static readonly List<TechStory> Stories = new List<TechStory>(4);
             private static readonly StudySource Classes = new StudySource();
 
-            // The utilities office and the courthouse have chosen their buildings (or their features are off), so the university
-            // can choose one that is neither.
+            // The utilities office, the courthouse and the police stations have chosen their buildings (or their features are
+            // off), so the university can choose one that is none of them, the same on every machine.
             private static bool OthersPicked()
             {
                 Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
                 bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
                 JusticeDirector justice = JusticeDirector.Instance;
                 bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
-                return office && court;
+                bool law = !Settings.LawPrecincts || Law.LawDirector.PrecinctsChosen;   // (the police stations take empty units too)
+                return office && court && law;
             }
 
             internal static void Connect()
             {
                 CareersBridges.HomeInternet = HomeInternet;
                 CareersBridges.OthersPicked = OthersPicked;
+                CareersBridges.Headquarters = (string name, out string street, out int number) =>
+                {
+                    street = null;
+                    number = 0;
+                    return Tech.TechSites.Instance != null && Tech.TechSites.Instance.HeadquartersOf(name, out street, out number);
+                };
                 CareersBridges.Refresher = Refresher;
                 CareersBridges.Standing = Moved;
                 CareersBridges.Reputation = Reputation;

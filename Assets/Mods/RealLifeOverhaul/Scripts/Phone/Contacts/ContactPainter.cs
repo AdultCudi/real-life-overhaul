@@ -75,8 +75,10 @@ namespace RealLifeOverhaul
 
         private static string Folder => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Portraits");
 
+        private static readonly int HotUpdate = HotSpots.Slot("Phone: ContactPainter.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -284,7 +286,7 @@ namespace RealLifeOverhaul
             }
             _drawing = p;
             _drawingSince = Time.realtimeSinceStartup;
-            SessionWatch.Mark("contacts: a face drawn by the game's portrait camera");   // once per look, ever: a render and a read-back
+            using var piece = SessionWatch.Piece("contacts: a face drawn by the game's portrait camera");   // once per look, ever: a render and a read-back
             Action<Sprite> back = sprite => UiClone.Safe(() => Drawn(p, sprite, file));
             int days = p.Look.Age * GameCalendar.DaysPerYear;
             BigAmbitions.Characters.Gender gender = p.Look.Female ? BigAmbitions.Characters.Gender.Female : BigAmbitions.Characters.Gender.Male;

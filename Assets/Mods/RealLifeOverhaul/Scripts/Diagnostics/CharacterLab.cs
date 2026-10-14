@@ -56,8 +56,10 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Diagnostics: CharacterLab.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -199,7 +201,7 @@ namespace RealLifeOverhaul
             else
             {
                 CharacterLighting lighting = quality.Lighting;
-                text.AppendLine("character quality: managed characters " + quality.ManagedCharacters
+                text.AppendLine("character quality: managed characters " + quality.ManagedCharacters + ", others in strand hair with the hair finish " + quality.OtherCharacters
                                 + ", " + HairLook.Describe()
                                 + ", textures sharpened " + CharacterTools.SharpenedCount
                                 + ", lighting " + (lighting == null ? "no set-up found" : (lighting.Applied ? "applied" : "not applied") + " (softened " + lighting.SoftenedLights + ", added " + lighting.AddedLights + ")"));

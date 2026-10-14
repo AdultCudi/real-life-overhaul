@@ -31,8 +31,10 @@ namespace RealLifeOverhaul
         private Rigidbody _hookedBody;
         private float _lastCrashTime = -100f;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: CrashConsequences.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

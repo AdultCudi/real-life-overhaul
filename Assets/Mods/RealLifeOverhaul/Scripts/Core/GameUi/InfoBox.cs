@@ -56,6 +56,21 @@ namespace RealLifeOverhaul.GameUi
             return box;
         }
 
+        /// <summary>
+        /// The same parts, taken from a copy of the white box, written into another object that lays its children out
+        /// itself (a scroll view's content): a page longer than the screen then scrolls. The copy is left empty but for
+        /// its background. Null if the parts no page can do without are missing.
+        /// </summary>
+        public static InfoBox Into(Transform whiteBox, Transform templates, Transform box)
+        {
+            InfoBox made = box != null ? From(whiteBox, templates) : null;
+            if (made != null)
+            {
+                made._box = box;
+            }
+            return made;
+        }
+
         private static GameObject Take(Transform whiteBox, string path, Transform templates, string name)
         {
             Transform part = whiteBox.Find(path);
@@ -221,6 +236,22 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
+        /// A labelled row, as the game writes an employee's "Age: <b>31</b>": the label (a locale key, often a column's
+        /// title), a colon and the value in bold. The one form every app's figures are written in, so that a page reads as a
+        /// list of short rows rather than sentences.
+        /// </summary>
+        public TMP_Text Row(string labelKey, string value)
+        {
+            return RowWords(labelKey.GetLocalization(), value);
+        }
+
+        /// <summary>The same with the label in final words.</summary>
+        public TMP_Text RowWords(string label, string value)
+        {
+            return Line(label + ": <b>" + value + "</b>", null);
+        }
+
+        /// <summary>
         /// A picture in the box (a post's thumbnail), at a width and the height its texture's shape gives, never past the
         /// height given. The texture is the caller's: the box only shows it, and its row goes with the page.
         /// </summary>
@@ -246,6 +277,26 @@ namespace RealLifeOverhaul.GameUi
         public void Headline(string key)
         {
             Headline(key, null);
+        }
+
+        /// <summary>A headline over a grey rule with words already made (a name and a figure), in the box.</summary>
+        public Transform HeadlineWords(string words)
+        {
+            if (_headline == null)
+            {
+                return Line("<b>" + words + "</b>", null).transform;
+            }
+            GameObject headline = Add(_headline, null);
+            var text = headline.GetComponentInChildren<TMP_Text>(true);
+            if (text != null)
+            {
+                UiClone.Words(text, words);
+                for (int i = text.transform.childCount - 1; i >= 0; i--)
+                {
+                    text.transform.GetChild(i).gameObject.SetActive(false);
+                }
+            }
+            return headline.transform;
         }
 
         /// <summary>A headline over a grey rule, in the box or (with a parent) anywhere else. Returns what was made.</summary>

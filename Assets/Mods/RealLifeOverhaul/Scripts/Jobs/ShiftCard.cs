@@ -75,7 +75,7 @@ namespace RealLifeOverhaul
                     UiClone.Fallback("the game's job panel was not found: a shift's figures are shown on the panel over the place of work only");
                     return null;
                 }
-                SessionWatch.Mark("jobs: the shift's panel (a copy of the game's job panel)");
+                using var piece = SessionWatch.Piece("jobs: the shift's panel (a copy of the game's job panel)");
                 Transform dormant = UiClone.Dormant(game.transform, "RealLifeOverhaul Shift Card (asleep)");
                 GameObject panel = UiClone.Asleep(game.panel, dormant, "RealLifeOverhaul Shift Card");
                 if (panel == null)

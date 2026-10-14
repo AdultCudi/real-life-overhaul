@@ -45,6 +45,8 @@ name) and which holds the named type. `OtherMods.Look(logger)` does the walk and
 | Going Public: Français (3794605892) | `BampFrancais` | `BampFrancais.ModEntry` | Rewrites Going Public's own English strings (a transpiler on its methods only). | Nothing: logged only. |
 | Empire Motors (dealership, Workshop 3787690782) | `EmpireMotors` | `EmpireMotors.Core.EmpireMotorsMod` | A car dealership as a business type of its own: stock bought at wholesale, used and at auction, parked as the player's vehicles at the dealership; sold to customers it makes up, with financing, trade-ins and warranties; its own app in the full menu's top bar; a talking desk at the game's own dealership that sells its car add-ons; V in a car for a view from the driver's seat (kept off while this mod's camera key is V); F6, F7, F9, F12. No Harmony. | `Core/EmpireMotors`: see "Empire Motors" below. |
 | Empire Motors: Mustang GT, Empire Motors: BMW G82 (its car add-ons) | `EmpireMustangGT`, `empirebmwg82` | `EmpireMustangGTMod`, `EmpireBMWG82Mod` | Each registers one car (`ModdingAPI.RegisterModVehicleType`) with its lights and a dashboard; the BMW puts itself on Empire Motors' desk. No Harmony. | Logged only; car tuning has a row for each car by its type name (`Driving/CarCatalogue`). |
+| Meaningful Interiors (Workshop 3815057157) | `MeaningfulInteriors` | `MeaningfulInteriors.MeaningfulInteriorsMod` | Sets each neighbourhood's `NeighborhoodData.minimumInteriorScore` (the game's own minimum for walls and floors, checked by `InteriorDesignCustomerDemand`), keeps it there each game hour and puts the game's back on unload; adds products to customers' baskets by editing the coming customers' orders in `CustomerEntriesHelper`'s list; its own Interiors tab in BizMan. No Harmony. | `Scripts/Interiors`: the district standard's footfall and complaints and the basket stay off; the rest of the feature keeps running. See "Meaningful Interiors and Meaningful Ambience" below. |
+| Meaningful Ambience (Workshop 3810641423) | `MeaningfulAmbience` | `MeaningfulAmbience.MeaningfulAmbienceMod` | A decor score from the placed items (its own list of item names); each game hour it adds customers to the hour under way in `CustomerEntriesHelper`'s list, up to the building's limit; office clients up to the free workstations; its own Ambience tab in BizMan. No Harmony. | `Scripts/Interiors`: the decor's footfall stays off; `Core/CustomerDraw` keeps the hour under way when the mod has the day's customers drawn again. See below. |
 
 ## How a foreign camera is seen without a name (`Camera/CameraYield`)
 
@@ -90,6 +92,17 @@ Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What 
 - **Closing a business.** `BuildingRegistration.TemporarilyClose` has a postfix that sends the player's own shop's state to
   everyone at once, and a prefix that routes a merged company's shop to its owner. This mod closes only the player's own
   (through `Mine`), so its closures reach the others.
+- **Other players' cars.** A player may drive another's car: on the driver's machine it is a car of the game's player list
+  with the id `BAMP_` and the owner's id, taken off the save's own list (`VehicleManager.SpawnRemoteVehicle`,
+  `DeregisterGhostFromSave`). `GoingPublic.MineVehicle` tells it by the save's lists (`Core/WhoseCar.Mine`). A car left
+  behind at a crash, an arrest or a prison term is remembered only when it is the player's own (`VehicleTow.LeftBehind`),
+  so another player's car is never towed, impounded or billed for here; the licence stop's impound asks the same. Cars of
+  the traffic pool are put on the road only through `TrafficTools.Load`, which asks the game's `LoadVehicle` only when an
+  idle car of that very prefab is there: with none idle the game takes the first car of that name, whatever it is doing.
+  Going Public's own removals of pool cars (a guest's clear every second, the host's slot freed for a private driver's
+  arrival) skip a car with a scripted route, and every car this mod holds carries one; on a guest this mod takes no car of
+  the pool at all. A private driver's car (the host's may carry another player) is left out of every scene's pick
+  (`TrafficTools.SpokenFor`).
 
 Found by its assembly and `BigAmbitionsMP.MPServer`; then three statics are read by reflection once and called through
 delegates: `MPServer.IsRunning` (host), `MPClient.IsClientInWorld` (guest), `GameStatePatcher.HideFromOwnAssetLists`.
@@ -282,6 +295,65 @@ the stock in the saved records and a day's deduction; NavCheck the three assembl
 Proven (read): everything above about Empire Motors. Inferred (not seen with it installed): that its customers' sales
 reach the statement on the morning after as the mod's own takings do, that a car of the stock driven off the lot keeps its
 street data, and how its button and the pages sit together in the top bar.
+
+## Meaningful Interiors and Meaningful Ambience (`Scripts/Interiors`, `Core/CustomerDraw`)
+
+Read in their decompiled code (`evidence/othermods/MeaningfulInteriors`, `evidence/othermods/MeaningfulAmbience`), never
+run. Neither patches the game; each is one component that reads the game by reflection and works on the hour.
+
+**What this mod's own interiors feature does that they also do, and who keeps it.** "Interiors and decor matter" reads the
+game's interior design score, scores the decor itself and acts through the mod's own levers (business pressure's footfall,
+the city's price tolerance, its complaints, brands, Standing, staff, the tech sector). Two of its parts are what the other
+mods do, and would count customers or baskets twice:
+
+| Part of this mod's | Off while | Why |
+| --- | --- | --- |
+| The district standard's shortfall: its customers lost (6% at most at the default strength, 12% at double) and its complaints | Meaningful Interiors is on | that mod sets each district's minimum and acts on it itself |
+| The standard's reward over it: its customers (3% at most at the default strength, 6% at double) | Meaningful Interiors is on | the same |
+| Bigger baskets: over the standard, each customer's order times a share of the way to 85 (10% at most where the standard is lowest, 6% where it is highest, at the default strength), as that mod's own | Meaningful Interiors is on | that mod adds to baskets itself |
+| The decor's customers (10% by default, as Meaningful Ambience's; 20% at double) | Meaningful Ambience is on | that mod adds customers for decor itself |
+| An office's extra clients, booked an hour ahead | Meaningful Ambience is on | that mod books offices' clients itself |
+
+The rest keeps running (the scores, the price tolerance, wear and its refresh, brands, Standing, staff, offices' hiring and
+bids, the news, the Interior tab with its pages of the items that count, today's customers by where they came from and the
+game's own rules). Four sliders, each from off to double, cover the other mods' ranges (the prices' slider sizes the
+basket as Meaningful Interiors' strength does, Off to 1.25 times and beyond; the decor's 0% to 20% as Meaningful
+Ambience's), so a player can leave both mods out and set the same. Whichever of the two is on, the interior never costs
+an established business more than 6% of its customers at the defaults, nothing of its prices, and every effect comes in
+over 7 days from the day a save first meets these rules (EconomyCheck's InteriorBound and InteriorPhaseIn). The options page draws the rows that do nothing as the game draws a control that cannot be used, with
+"off while ... is switched on" (`Feature.StandsAside`), and the Interior tab says which mod has which part. The rule is
+game-free and checked offline (`InteriorRules.StandardOn`, `BasketOn`, `DecorFootfallOn`; EconomyCheck's InteriorChecks).
+
+**Did this mod break either before?** Checked against what each touches:
+
+- *The neighbourhood data.* Meaningful Interiors writes `NeighborhoodData.minimumInteriorScore`; this mod never wrote
+  it, and still does not (the district view reads the class shares, the zone colour, the demand weight and the parking
+  price; the council writes the parking price only, and puts it back). The interiors feature reads the minimum live, so
+  it sees that mod's figure rather than a cached one. Nothing to fix.
+- *A day's customers drawn again.* This mod has the game draw the day's customers again whenever it changes a business's
+  footfall (each morning, and when an issue starts), and when the rota planner or a brand changes opening hours, through the
+  game's own `UpdateCustomerEntriesForPlayerBusiness`. That throws away every customer not yet served, the hour under way
+  included. Meaningful Ambience adds its customers to the hour under way once, when the hour turns, so a redraw in the
+  middle of an hour lost them until the next. **Fixed on this mod's side**: every redraw now goes through
+  `Core/CustomerDraw.Redraw`, which, while Meaningful Ambience is on, keeps the hour under way exactly as it was (its
+  customers and the game's) and has only the hours after it drawn again. Without that mod the redraw is the game's own.
+  Meaningful Interiors' extra products on the coming customers were thrown away by the same redraw, but that mod looks at
+  the new customers again within two seconds, so it lost nothing that mattered.
+- *Footfall.* Meaningful Ambience works its customers out from the business's live promotion figure, so this mod's footfall
+  changes feed into its figure; it caps the total at the building's limit itself. No double count.
+- *An office's clients.* Meaningful Ambience books an office's extra clients for the next hour; this mod books its own
+  the same way (the game's calculator for offices, never more than the stations staffed then less the clients already
+  booked) only while that mod is off, so an office is never booked twice.
+- *BizMan's tabs.* Both put a tab just before Settings and keep it there every frame; this mod's goes after Marketing (or
+  before Settings where there is none), is added at the end of the game's list of tabs and is placed again only when the
+  game makes that list again, so the three never take turns.
+
+Found by assembly name and `MeaningfulInteriors.MeaningfulInteriorsMod` / `MeaningfulAmbience.MeaningfulAmbienceMod`
+(`Core/OtherMods`); a field read from then on. Diagnostics: `Other mods: 'Meaningful Interiors' is also switched on ...`,
+and `Interiors: ready. ... Meaningful Interiors is on, so the district standard's part and the basket stay off`.
+
+Proven (read): everything above about the two mods. Inferred (not seen with them installed): how the three tabs sit in
+BizMan's row, and that Meaningful Ambience's customers kept through a redraw are served as if nothing had happened.
 
 ## Adding the next one
 

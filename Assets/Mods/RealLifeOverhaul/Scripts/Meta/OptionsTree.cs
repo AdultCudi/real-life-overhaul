@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Meta
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone").Opts("phone_contacts", "phone_skin").Also("call numbers wallpaper")),
+                S("phone").For("phone").Opts("phone_contacts", "phone_skin", "notice_look").Also("call numbers wallpaper notifications toast icons")),
 
             G("city",
                 S("citylife").For("citylife").Main("city_life").Opts("city_density", "city_workers", "city_everyday", "city_interactions")
@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Meta
                 S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police").Buttons("reallife_garage_test_vehicles")
                     .Also("tuning paint parts custom"),
                 S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
-                S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets").Also("pedestrians cars road"),
+                S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets").Opt("tow_trucks", "traffic_accidents").Also("pedestrians cars road tow truck wreck recovery"),
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
@@ -319,12 +319,19 @@ namespace RealLifeOverhaul.Meta
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector").Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
+                S("techsites").For("tech_sites").Opt("tech_site_rooms", "tech_sector").Opts("tech_site_hq").Opt("tech_site_cloud", "tech_sector").Opt("tech_site_offices", "tech_sector")
+                    .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer").Also("car dealership showroom auction wholesale used cars finance warranty"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
                 S("bizkinds").Guide("business").Need("business_pressure").Opts("business_rivals", "business_racket", "business_inspections", "business_staff",
-                    "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition")),
+                    "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition"),
+                S("interiors").For("interiors").Main("interiors").Opts("interiors_prices_strength", "interiors_wear_strength", "interiors_standing", "interiors_staff")
+                    .Also("interior design decor decoration plants paintings lighting wear refresh shabby furniture bizman tab income takings prices slider"),
+                S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_strength", "interiors_basket")
+                    .Also("district standard minimum complaints basket products reward strength slider income customers"),
+                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",

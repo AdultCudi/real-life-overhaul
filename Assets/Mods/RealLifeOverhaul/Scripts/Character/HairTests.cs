@@ -15,6 +15,7 @@ namespace RealLifeOverhaul
     ///    player's detailed character, written to the log whether or not diagnostics are on, and a short notice;
     ///  - "a strong lamp beyond my head for 20 seconds": one warm point light of the mod's own, 3 m beyond the head
     ///    as the camera sees it at a car lamp's height, removed by the engine's own timer;
+    ///  - "a street lamp over my head for 20 seconds": a copy of the nearest street lamp's light, all but over the head;
     ///  - "switch the hair finish off and on": for this session only; the option itself is not touched.
     ///
     /// Per frame: nothing. Each entry does its work once when pressed; the lamp is one light for 20 seconds.
@@ -32,6 +33,12 @@ namespace RealLifeOverhaul
         private const float NoticeSeconds = 9f;
 
         private static readonly Color LampColour = new Color(1f, 0.82f, 0.63f);   // warm: a halogen headlamp beside an amber indicator
+        private static readonly Color StreetLampColour = new Color(1f, 0.86f, 0.7f);
+        private const float StreetLampHeight = 5.5f;     // metres above the feet, when no lamp of the game's is near to copy
+        private const float StreetLampLumens = 40000f;
+        private const float StreetLampOffset = 1f;       // metres beyond the head: the lamp all but over it, as at the stop of the report
+        private static readonly System.Reflection.FieldInfo LampMaxValue =
+            typeof(global::StreetLamp).GetField("maxValue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
         private static GameObject _lamp;
 
@@ -115,6 +122,120 @@ namespace RealLifeOverhaul
                 HairLook.Logger?.Error(e);
                 RemoveLamp();
             }
+        }
+
+        /// <summary>
+        /// "Test: a street lamp over my head for 20 seconds": a copy of the light of the nearest of the game's street lamps
+        /// (its kind, colour, cone, range, brightness and shadows, as the game's settings have them), as high above the
+        /// player's feet as it stands above its own post's foot and a metre to the camera's far side of the head, pointing as
+        /// it points. The case of the report: at night under a lamp at a stop, the head seen from above looked bald.
+        /// </summary>
+        public static void StreetLamp()
+        {
+            try
+            {
+                AppearanceSetter character = Player(out TestRefusal why);
+                PlayerController player = PlayerHelper.PlayerController;
+                if (character == null || player == null)
+                {
+                    Refuse(character == null ? why : TestRefusal.NotLoaded);
+                    return;
+                }
+                RemoveLamp();
+                Vector3 feet = player.transform.position;
+                Vector3 head = feet + Vector3.up * HeadHeight;
+                Light model = NearestStreetLight(feet, out float height, out float distance);
+                Camera camera = Camera.main;
+                Vector3 away = camera != null ? head - camera.transform.position : player.transform.forward;
+                away.y = 0f;
+                away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.forward;
+
+                _lamp = new GameObject(LampName);
+                var light = _lamp.AddComponent<Light>();
+                var data = _lamp.AddComponent<HDAdditionalLightData>();
+                string said;
+                if (model != null)
+                {
+                    light.type = model.type;
+                    light.color = model.color;
+                    light.range = model.range;
+                    light.spotAngle = model.spotAngle;
+                    light.innerSpotAngle = model.innerSpotAngle;
+                    light.shadows = model.shadows;
+                    light.renderingLayerMask = model.renderingLayerMask;
+                    if (model.TryGetComponent(out HDAdditionalLightData modelData))
+                    {
+                        modelData.CopyTo(data);
+                    }
+                    light.intensity = Mathf.Max(model.intensity, LampFullOf(model));
+                    _lamp.transform.rotation = model.transform.rotation;
+                    _lamp.transform.position = new Vector3(head.x, feet.y + height, head.z) + away * StreetLampOffset;
+                    said = "a copy of the street lamp light '" + model.name + "' " + distance.ToString("F0") + " m away (" + model.type + ", intensity "
+                           + light.intensity.ToString("F0") + ", range " + light.range.ToString("F0") + " m, shadows " + light.shadows + ")";
+                }
+                else
+                {
+                    light.type = LightType.Point;
+                    light.color = StreetLampColour;
+                    light.range = LampRange * 2f;
+                    light.shadows = LightShadows.None;
+                    data.SetIntensity(StreetLampLumens, LightUnit.Lumen);
+                    data.range = LampRange * 2f;
+                    height = StreetLampHeight;
+                    _lamp.transform.position = new Vector3(head.x, feet.y + height, head.z) + away * StreetLampOffset;
+                    said = "no street lamp of the game's is near, so a point light of " + StreetLampLumens.ToString("F0") + " lm";
+                }
+                data.affectsVolumetric = false;
+                UnityEngine.Object.Destroy(_lamp, LampSeconds);
+                HairLook.Logger?.Warn("Hair test: " + said + " stands " + height.ToString("F1") + " m above the player's feet, " + StreetLampOffset.ToString("F0")
+                                      + " m beyond the head, for " + LampSeconds.ToString("F0") + " s. " + HairLook.Describe(character));
+                Notifications.Show(NotificationType.Info, "reallife_hair_test_streetlamp", null, NoticeSeconds, null, null, true, false);
+            }
+            catch (Exception e)
+            {
+                HairLook.Logger?.Error(e);
+                RemoveLamp();
+            }
+        }
+
+        // The nearest light of the game's street lamps, how high it hangs above its post's foot and how far it is. Once, on a press.
+        private static Light NearestStreetLight(Vector3 from, out float height, out float distance)
+        {
+            height = StreetLampHeight;
+            distance = 0f;
+            if (!PerfGame.KnowsLamps)
+            {
+                return null;
+            }
+            Light best = null;
+            float nearest = float.MaxValue;
+            foreach (global::StreetLamp lamp in UnityEngine.Object.FindObjectsByType<global::StreetLamp>(FindObjectsSortMode.None))
+            {
+                Light[] lights = lamp != null ? PerfGame.LightsOf(lamp) : null;
+                if (lights == null)
+                {
+                    continue;
+                }
+                foreach (Light light in lights)
+                {
+                    float d = light != null ? (light.transform.position - from).sqrMagnitude : float.MaxValue;
+                    if (d < nearest)
+                    {
+                        nearest = d;
+                        best = light;
+                        height = Mathf.Clamp(light.transform.position.y - lamp.transform.position.y, 2f, 12f);
+                    }
+                }
+            }
+            distance = best != null ? Mathf.Sqrt(nearest) : 0f;
+            return best;
+        }
+
+        // The brightness the game gives a lit street lamp (StreetLamp.maxValue): by day its lights stand at 0.
+        private static float LampFullOf(Light light)
+        {
+            global::StreetLamp lamp = light.GetComponentInParent<global::StreetLamp>();
+            return lamp != null && LampMaxValue != null && LampMaxValue.GetValue(lamp) is float full ? full : 0f;
         }
 
         /// <summary>"Test: switch the hair finish off and on".</summary>

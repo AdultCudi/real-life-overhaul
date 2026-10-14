@@ -420,8 +420,9 @@ PROPS = [
 # prop gets a second sheet, previews/<id>_sides.png, from six sides with what it goes over or beside (kit.turnaround).
 # "parts": ((prop id, (x, y, z), turn), ...) puts other props on it where the code does (a vehicle's wheels).
 SIDES = {}
-EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site"]
+EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 _only = os.environ.get("PROPS_DEV")
+EXTRA = EXTRA + ["tech"]   # the tech sector's buildings (props_tech.py)
 for _name in ([n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "props_" + _name + ".py")):
         _module = __import__("props_" + _name)

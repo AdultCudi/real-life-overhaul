@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Reflection;
+using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
 using UnityEngine;
@@ -33,6 +35,18 @@ namespace RealLifeOverhaul
     /// taken when the bus sets out or as it comes up, it stops on the lane's line as it always has.
     /// It shows what it does: the right indicator as it comes up to its bay, the left one as it
     /// waits to pull out, its doors open while it stands.
+    ///
+    /// HELD UP ON ITS WAY. Its driver brings it to rest exactly at its place when nothing is in its way.
+    /// When something is (a car, somebody in the road, the player), it stands behind it; once it has
+    /// stood still for two seconds with a door by the stop's kerb, or held up by the player near its
+    /// place, it is at the stop where it is (RideRules.StandsWhereItIs): nobody waits for a bus that
+    /// waits for them. Coming up to a stop on the lane's line and pulling away from it, its driver
+    /// knows where the stop's kerb is, so whoever waits on the pavement is never in its way. A car of
+    /// the traffic that stands for the bus while the bus stands for it is told, after four seconds,
+    /// that the bus is not in its way (RideRules.Yield), unless the bus is on its own way ahead. Every
+    /// hold of more than five seconds on the road is written to the log once, with what holds it and
+    /// how far it is from its place (HoldClock: a few comparisons four times a second, the words only
+    /// then).
     ///
     /// Ticked four times a second by the director while it is out; the driver runs in the physics
     /// step only while it drives. Let go where somebody is looking, it drives on along its line
@@ -73,6 +87,20 @@ namespace RealLifeOverhaul
         private const float GapPatience = 15f;
         private const float GapMost = 45f;           // seconds after which a bus that still cannot pull out is let go where it stands
         private const float OnwardMore = 160f;       // metres of line more for a bus let go where somebody is looking: it drives on out of sight
+        private const float StartBackFar = 520f;     // metres of line before the stop it may start from once nothing nearer is out of sight
+        private const float GoOutMost = 240f;        // seconds a bus let go where somebody can see it drives on before it is let go when nobody can, wherever it is
+        private const float LightApart = 15f;        // metres between two lights' stop lines that are the same junction
+        private const float KerbNear = 20f;          // metres along the lane either side of a stop's lane point within which its driver knows where its kerb is
+        private const float StillSpeed = 0.3f;       // m/s under which it is standing still
+        private const float CarClear = 6f;           // metres beyond a car's nose, and
+        private const float CarHalfWay = 1.5f;       // ...either side of its middle, that are the car's own way ahead (RideRules.Yield)
+
+        public static IModLogger Logger;
+
+        private static FieldInfo _carObstacles;      // VehicleComponent.obstacleList: what is in a traffic car's sensor (read once a hold at most)
+        private static bool _carObstaclesLooked;
+        private static int _playerLayer = -2;
+        private readonly RideRules.HoldClock _hold = new RideRules.HoldClock();
 
         private readonly GameObject _host;
         private readonly BusDriver _driver;
@@ -109,6 +137,9 @@ namespace RealLifeOverhaul
         private float _bayAhead;         // ...and ahead of it to pull out
         private BusBay.Curve _curveIn;   // its curve into the bay
         private float _gapSince;
+        private float _holdUntil;        // it stands at its start, out of sight, until then: it keeps the timetable (TransitDirector)
+        private float _driveSeconds;     // its own reckoning of the drive left, as last made while it was driving
+        private float _tickAt;           // when it was last ticked
 
         public TransitBus(GameObject host)
         {
@@ -147,6 +178,12 @@ namespace RealLifeOverhaul
 
         /// <summary>Seconds it took from being put on the road to standing at its stop.</summary>
         public float Took { get; private set; }
+
+        /// <summary>
+        /// Why it stands at its stop where it is and not at its place (held up short of it: RideRules.StandsWhereItIs), for
+        /// the arrival's line; null when it came to rest at its place.
+        /// </summary>
+        public string StoodShort { get; private set; }
 
         /// <summary>What it is, for the log.</summary>
         public string Chassis { get; private set; }
@@ -196,8 +233,99 @@ namespace RealLifeOverhaul
         /// <summary>True while it is out on the street.</summary>
         public bool Held => Vehicle != null && Vehicle.Out;
 
-        /// <summary>True while the bus is in front of the camera within the distance things are looked at.</summary>
-        public bool InView => Vehicle != null && CitySpots.InView(Vehicle.transform.position);
+        /// <summary>True while the player can see the bus: on the screen, not too far, no building between (TransitSight).</summary>
+        public bool InView
+        {
+            get
+            {
+                if (Vehicle == null)
+                {
+                    return false;
+                }
+                Vehicle.Footprint(out Vector3 centre, out Vector3 forward, out float halfLength, out _);
+                return TransitSight.Seen(centre, forward, halfLength);
+            }
+        }
+
+        /// <summary>True while the bus is within TransitSight.NearKeep of the player: it is not taken off the street then, seen or not.</summary>
+        public bool Near => Vehicle != null && TransitSight.Near(Vehicle.transform.position, TransitSight.NearKeep);
+
+        /// <summary>Seconds it still stands at its start before it sets off (it keeps the timetable).</summary>
+        public float HoldLeft => State == Phase.Approaching ? Mathf.Max(0f, _holdUntil - Time.time) : 0f;
+
+        /// <summary>The seconds it was held at its start, all told.</summary>
+        public float Held0 { get; private set; }
+
+        /// <summary>Its own reckoning of the open road to its stop when it was put on the road, and the lit junctions on the way then: what it is judged by when it comes (TransitPlan.Pace.Learn).</summary>
+        public float DriveAtStart { get; private set; }
+        public int LightsAtStart { get; private set; }
+
+        /// <summary>Seconds it has stood at red lights since it was put on the road.</summary>
+        public float AtLights { get; private set; }
+
+        /// <summary>The director's departure line for a bus that waits in its bay for the lane to be clear: written when it goes.</summary>
+        public string DepartureNote;
+        public bool DepartureSound;
+
+        /// <summary>The line it is on while it is out.</summary>
+        public TransitLine Line => _line;
+
+        /// <summary>
+        /// Seconds until it stands at its stop, as the director's estimate has it: its own reckoning of the road (its pace, its
+        /// bends, its bay) at the pace traffic has been making, each lit junction still ahead, what is left of its hold at its
+        /// start, and at a red light what is still to be expected of it (TransitPlan.Pace). -1 when it is not on its way.
+        /// </summary>
+        public float Estimate(TransitPlan.Pace pace)
+        {
+            if (State != Phase.Approaching)
+            {
+                return -1f;
+            }
+            float drive = _driver.Active ? SecondsLeft : _driveSeconds + 2f;   // (pulled up at a light: what was left when it stopped, and the pull away)
+            if (_driver.Active)
+            {
+                _driveSeconds = drive;
+            }
+            return pace.Seconds(drive, LightsAhead(), HoldLeft, Waiting == Hold.Light, WaitingFor);
+        }
+
+        /// <summary>The lit junctions on its route still ahead of it (those the game runs the lights of: near the player).</summary>
+        public int LightsAhead()
+        {
+            int count = 0;
+            float run = 0f;
+            float lastAt = -1000f;
+            int next = Mathf.Max(0, _driver.Active ? _driver.NextPoint : _gate >= 0 ? _gate : 0);
+            for (int i = next; i < _routePoints.Count; i++)
+            {
+                if (i > next)
+                {
+                    run += Vector3.Distance(_route[i], _route[i - 1]);
+                }
+                Waypoint point = _routePoints[i] >= 0 ? TransitMap.Point(_routePoints[i]) : null;
+                if (point == null || !point.stop || !Lit(point) || (Waiting == Hold.Light && i == _gate))
+                {
+                    continue;
+                }
+                if (run - lastAt > LightApart)
+                {
+                    count++;
+                    lastAt = run;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>It stands where it was put for this many seconds before it sets off: it would be early otherwise.</summary>
+        public void HoldFor(float seconds)
+        {
+            if (State != Phase.Approaching || seconds <= 0f)
+            {
+                return;
+            }
+            _holdUntil = Time.time + seconds;
+            Held0 = seconds;
+        }
 
         /// <summary>
         /// Set while the player rides a bus through the city at the game's fast forward (TransitDirector.Journey): the game has
@@ -206,8 +334,9 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool FastRide;
 
-        /// <summary>The street can have a bus on it: the game's traffic is running, or stopped only for a fast-forwarded ride.</summary>
-        public static bool StreetReady => TrafficTools.Ready || (FastRide && TrafficTools.Paused);
+        /// <summary>The street can have a bus on it: the game's traffic is running, or stopped only for the game's fast forward (its own cars are
+        /// taken off then; the buses drive on at its pace, so that a bus the player is watching does not vanish when they speed time up).</summary>
+        public static bool StreetReady => TrafficTools.Ready || TrafficTools.Paused;
 
         /// <summary>True while its doors stand open.</summary>
         public bool DoorsOpen => Vehicle != null && !Vehicle.DoorsShut;
@@ -289,6 +418,7 @@ namespace RealLifeOverhaul
             _bayLooked = false;
             _bayMode = false;
             _bay = BayOpen(next, sendAway: true);
+            StoodShort = null;
             if (_bay)
             {
                 RouteToBay(line, next, from);
@@ -353,7 +483,8 @@ namespace RealLifeOverhaul
         /// <summary>Puts a bus on its line some way before a stop, heading for it. False, with why, if it cannot.</summary>
         /// <param name="mayAppearInView">Only after it could not be done out of view: it may then start in view, far off.</param>
         /// <param name="mostBack">No further back than this many metres of line (to move a bus up past what held it).</param>
-        public bool Send(TransitStop stop, bool mayAppearInView, out string refusal, float mostBack = StartBackMost)
+        /// <param name="prefer">Metres of line before the stop it is best started at (the director's: what the seconds to the timetable's call take to drive).</param>
+        public bool Send(TransitStop stop, bool mayAppearInView, out string refusal, float mostBack = StartBackMost, float prefer = StartBack)
         {
             refusal = null;
             if (State != Phase.Idle)
@@ -361,13 +492,13 @@ namespace RealLifeOverhaul
                 refusal = "the bus is still out";
                 return false;
             }
-            if (!TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            if (!StreetReady || stop == null || stop.Line >= TransitMap.Lines.Count)
             {
                 refusal = "traffic is not running";
                 return false;
             }
             TransitLine line = TransitMap.Lines[stop.Line];
-            float closedBack = CollectStarts(line, stop, mayAppearInView, mostBack);
+            float closedBack = CollectStarts(line, stop, mayAppearInView, mostBack, prefer);
             if (_starts.Count == 0)
             {
                 refusal = closedBack >= 0f
@@ -413,15 +544,22 @@ namespace RealLifeOverhaul
             State = Phase.Approaching;
             Lost = false;
             _since = Time.time;
+            _holdUntil = 0f;
+            Held0 = 0f;
+            AtLights = 0f;
+            _tickAt = Time.time;
             Begin();
             Remaining = _driver.RouteLeft;
+            _driveSeconds = SecondsLeft;
+            DriveAtStart = _driveSeconds;
+            LightsAtStart = LightsAhead();
             return true;
         }
 
         /// <summary>Puts a bus straight onto the lane just past a stop, already leaving: what a rider sees pull away after getting off.</summary>
         public bool SendLeaving(TransitStop stop)
         {
-            if (State != Phase.Idle || !TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            if (State != Phase.Idle || !StreetReady || stop == null || stop.Line >= TransitMap.Lines.Count)
             {
                 return false;
             }
@@ -462,7 +600,7 @@ namespace RealLifeOverhaul
         public bool PutStanding(TransitStop stop, out string refusal)
         {
             refusal = null;
-            if (State != Phase.Idle || !TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            if (State != Phase.Idle || !StreetReady || stop == null || stop.Line >= TransitMap.Lines.Count)
             {
                 refusal = State != Phase.Idle ? "the bus is still out" : "traffic is not running";
                 return false;
@@ -480,11 +618,11 @@ namespace RealLifeOverhaul
             Vector3 front;
             if (bay)
             {
-                front = stop.Lane + stop.Along * -_middleAhead + right * _curveIn.Offset;   // where RouteToBay has it come to rest
+                front = stop.Lane + stop.Along * (stop.Stand - _middleAhead) + right * _curveIn.Offset;   // where RouteToBay has it come to rest
             }
             else
             {
-                front = stop.Lane + stop.Along * -_middleAhead;                           // ...and RouteToLane
+                front = stop.Lane + stop.Along * (stop.Stand - _middleAhead);            // ...and RouteToLane
                 if (SceneParking.InStrip(stop.Lane - stop.Along * (BodyLength * 0.5f + 1f), stop.Lane + stop.Along * (BodyLength * 0.5f + 1f), BodyHalfWidth + 0.2f,
                         _made != null ? _made.Body : null, TrafficTools.VehicleMask) != null)
                 {
@@ -509,12 +647,12 @@ namespace RealLifeOverhaul
 
         // Where it may start: plain lane points of its line before the stop, out of view, none of them before a closed road;
         // the one about StartBack away first, then further back, then nearer. Returns how far back the road is closed, or -1.
-        private float CollectStarts(TransitLine line, TransitStop stop, bool mayAppearInView, float mostBack)
+        private float CollectStarts(TransitLine line, TransitStop stop, bool mayAppearInView, float mostBack, float preferBack)
         {
             _starts.Clear();
             float closedBack = -1f;
             int floor = 1;
-            for (int i = stop.PathIndex; i >= 1 && stop.Metres - line.Metres[i] <= StartBackMost; i--)
+            for (int i = stop.PathIndex; i >= 1 && stop.Metres - line.Metres[i] <= Mathf.Max(mostBack, StartBackMost); i--)
             {
                 Waypoint point = TransitMap.Point(line.Path[i]);
                 if (point != null && point.temporaryDisabled)
@@ -525,7 +663,7 @@ namespace RealLifeOverhaul
                 }
             }
             int ceiling = stop.PathIndex - 3;
-            float prefer = Mathf.Min(StartBack, mostBack);
+            float prefer = Mathf.Clamp(preferBack, StartBackLeast, mostBack);
             int pivot = -1;
             for (int i = ceiling; i >= floor; i--)
             {
@@ -574,21 +712,26 @@ namespace RealLifeOverhaul
             return closedBack;
         }
 
-        private static bool CanStart(TransitLine line, int index, bool unseen)
+        private bool CanStart(TransitLine line, int index, bool unseen)
         {
             Waypoint point = TransitMap.Point(line.Path[index]);
-            if (point == null || point.temporaryDisabled || point.enter || point.exit || point.neighbors == null || point.neighbors.Count == 0
+            Waypoint next = index + 1 < line.Path.Length ? TransitMap.Point(line.Path[index + 1]) : null;
+            if (point == null || next == null || point.temporaryDisabled || point.enter || point.exit || point.neighbors == null || point.neighbors.Count == 0
                 || !TrafficManager.IsNotIntersection(point))
             {
                 return false;
             }
-            bool inView = CitySpots.InView(point.position);
-            if (unseen)
+            // Never within TransitSight.NearKeep of the player, seen or not; out of sight first (the whole body, buildings
+            // taken into account: TransitSight), and in sight only as the test button's last resort, far off.
+            if (TransitSight.Near(point.position, TransitSight.NearKeep))
             {
-                return !inView;
+                return false;
             }
-            // In view only as a last resort, and then never close: nothing appears within 60 m of the player.
-            return inView && CitySpots.Flat(point.position - PlayerHelper.GetPosition()) > 60f * 60f;
+            Vector3 along = next.position - point.position;
+            along.y = 0f;
+            Vector3 middle = point.position + (along.sqrMagnitude > 0.0001f ? along.normalized : Vector3.forward) * _middleAhead;
+            bool seen = TransitSight.Seen(middle, along, BodyLength * 0.5f + 0.5f);
+            return unseen ? !seen : seen && !TransitSight.Near(point.position, 90f);
         }
 
         // The one bus this keeps, made the first time it is asked for.
@@ -648,6 +791,8 @@ namespace RealLifeOverhaul
             _bayRun = 0f;
             BayNote = null;
             SentAway = 0;
+            StoodShort = null;
+            _hold.Clear();
             Chassis = "the mod's own city bus (" + BodyLength.ToString("F1") + " m long, " + (BodyHalfWidth * 2f).ToString("F2") + " wide, wheelbase "
                       + BusVehicle.Wheelbase.ToString("F1") + "; " + (bus.Modelled ? "modelled" : "in plain shapes: the prop bundle has no city_bus yet") + ")";
         }
@@ -685,7 +830,7 @@ namespace RealLifeOverhaul
                           + _bayBehind.ToString("F0") + " m of bay to come in and " + _bayAhead.ToString("F0") + " to pull out, where the stop's has " + stop.BayRoom.ToString("F0") + " and " + stop.BayAhead.ToString("F0");
                 return false;
             }
-            bool free = TransitBays.Free(stop, _bayBehind, _bayAhead, Vehicle != null ? Vehicle.Body : null, sendAway, out string taken, out int sent);
+            bool free = TransitBays.Free(stop.At, _bayBehind, _bayAhead, Vehicle != null ? Vehicle.Body : null, sendAway, out string taken, out int sent);   // (the place's bay: its host's zone)
             SentAway += sent;
             if (!free)
             {
@@ -703,7 +848,7 @@ namespace RealLifeOverhaul
                 Add(line, i);
             }
             _laneNext = stop.PathIndex;
-            _route.Add(stop.Lane + stop.Along * (FinalShort - _middleAhead));
+            _route.Add(stop.Lane + stop.Along * (stop.Stand + FinalShort - _middleAhead));   // (Stand: where neither door lines up with what stays on the kerb)
             _routePoints.Add(-1);
         }
 
@@ -717,7 +862,7 @@ namespace RealLifeOverhaul
             float offset = curve.Offset;
             int points = curve.Points;
             float settle = BusBay.Settle;
-            float leaves = points * BusBay.Step + settle + _middleAhead + 0.5f;   // metres of line before the stop at which the path leaves the lane
+            float leaves = points * BusBay.Step + settle + _middleAhead + 0.5f - stop.Stand;   // metres of line before the stop at which the path leaves the lane
             int i = from;
             for (; i < stop.PathIndex && stop.Metres - line.Metres[i] > leaves; i++)
             {
@@ -726,7 +871,7 @@ namespace RealLifeOverhaul
             _laneNext = i;
             _bayFrom = _route.Count;
             Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
-            Vector3 rest = stop.Lane + stop.Along * -_middleAhead + right * offset;
+            Vector3 rest = stop.Lane + stop.Along * (stop.Stand - _middleAhead) + right * offset;
             for (int k = points; k >= 1; k--)
             {
                 float before = k * BusBay.Step;
@@ -759,8 +904,21 @@ namespace RealLifeOverhaul
             RouteToLane(_line, Stop);
         }
 
-        // On a bay's path the driver knows where the kerb is, so that nobody on the pavement is taken to be in its way
-        // while its nose points at them.
+        // Its front axle on the lane's straight by its stop: within KerbNear along of the stop's lane point, and on the lane.
+        private bool ByStop(Vector3 front)
+        {
+            if (Stop == null)
+            {
+                return false;
+            }
+            Vector3 off = front - Stop.Lane;
+            float along = off.x * Stop.Along.x + off.z * Stop.Along.z;
+            float aside = off.x * Stop.Along.z - off.z * Stop.Along.x;   // (to the right of the lane, towards the kerb, positive)
+            return along > -KerbNear && along < KerbNear && aside > -2f && aside < Stop.KerbAside;
+        }
+
+        // On a bay's path, and on the lane's line by its stop, the driver knows where the kerb is, so that nobody on the
+        // pavement is taken to be in its way while its nose points at them.
         private void BayMode(bool on)
         {
             if (on == _bayMode || Stop == null)
@@ -819,36 +977,48 @@ namespace RealLifeOverhaul
                 Lost = wanted;
                 return;
             }
+            float dt = Mathf.Clamp(now - _tickAt, 0f, 1f);
+            _tickAt = now;
+            if (Waiting == Hold.Light)
+            {
+                AtLights += dt;
+            }
             switch (State)
             {
                 case Phase.Approaching:
                     Drive(now);
                     if (_driver.Arrived && _gate < 0 && !_driver.Active)
                     {
-                        Park();
-                        State = Phase.Standing;
-                        Took = now - _since;
-                        _since = now;
-                        Remaining = 0f;
-                        Waiting = Hold.None;
-                        Vehicle.Indicate(0);
-                        Vehicle.Doors(true);
+                        StandAtStop(now, null);
+                    }
+                    else
+                    {
+                        OnTheWay(now);
                     }
                     break;
 
                 case Phase.Leaving:
                     if (_awaitGap)
                     {
+                        _hold.Clear();   // (in its bay, doors shut, waiting for the lane: the departure's line says how long)
                         AwaitGap(now);
                         break;
                     }
                     Drive(now);
+                    OnTheWay(now);
                     if (_goingOut)
                     {
-                        // Let go where somebody was looking: it goes once nobody is, or once it has driven its line out.
-                        if (!InView || (_driver.Arrived && !_driver.Active && _gate < 0 && now - _since > 5f) || now - _since > LeaveFor)
+                        // Let go where somebody could see it, or near the player: it goes once nobody can and the player is not
+                        // near. At the end of its route it drives on along the road, out of sight; only after GoOutMost, still
+                        // seen, does it stand where it is (it is never taken off where it can be seen).
+                        bool seen = InView || (Near && now - _since < GoOutMost);   // (after GoOutMost only being seen keeps it)
+                        if (!seen)
                         {
                             Release(remove: true);
+                        }
+                        else if (_driver.Arrived && !_driver.Active && _gate < 0 && now - _since < GoOutMost)
+                        {
+                            DriveOn();
                         }
                     }
                     else if ((_driver.Arrived && _gate < 0 && !_driver.Active) || now - _since > LeaveFor)
@@ -856,12 +1026,260 @@ namespace RealLifeOverhaul
                         Release(remove: false);
                     }
                     break;
+
+                default:
+                    _hold.Clear();
+                    break;
             }
+        }
+
+        // It has come to rest at its stop: at its place, or where it was held up short of it (shortWhy).
+        private void StandAtStop(float now, string shortWhy)
+        {
+            if (_driver.Active)
+            {
+                _driver.Stop();
+            }
+            _gate = -1;
+            _gateWhy = Hold.None;
+            Park();
+            State = Phase.Standing;
+            Took = now - _since;
+            _since = now;
+            Remaining = 0f;
+            Waiting = Hold.None;
+            StoodShort = shortWhy;
+            _hold.Clear();
+            Vehicle.Indicate(0);
+            Vehicle.Doors(true);
+        }
+
+        // On the road, four times a second: how long it has stood still. Held up near its stop with a door by its kerb (or by
+        // the player near its place), it is at the stop; behind a car that waits for it, that car is told it is not in its way;
+        // and a hold of more than a few seconds is written to the log once. Nothing but a few comparisons while it moves.
+        private void OnTheWay(float now)
+        {
+            if ((State != Phase.Approaching && State != Phase.Leaving) || Vehicle == null)
+            {
+                _hold.Clear();
+                return;
+            }
+            Vector3 at = Vehicle.transform.position;
+            float still = _hold.At(at.x, at.z, now);
+            if (still < RideRules.StandShortAfter || (_driver.Active && _driver.Speed >= StillSpeed))
+            {
+                return;
+            }
+            Collider by = _driver.HeldBy;
+            if (State == Phase.Approaching && now >= _holdUntil && Stop != null)
+            {
+                bool player = by != null && IsPlayer(by);
+                bool door = DoorOnKerb();
+                if (RideRules.StandsWhereItIs(still, door, player, _driver.PathLeft))
+                {
+                    string why = "held up " + _driver.PathLeft.ToString("F1") + " m of its route short of its place by " + WaitsFor() + "; "
+                                 + (door ? "a door of it by the stop's kerb" : "the player in front of it near its place") + ", it stands there";
+                    StandAtStop(now, why);
+                    return;
+                }
+            }
+            if (by != null && Waiting == Hold.Traffic && !_hold.Yielded && still >= RideRules.YieldAfter)
+            {
+                YieldTo(by, still);
+            }
+            if (!_hold.Logged && still >= RideRules.HoldLogAfter)
+            {
+                _hold.Logged = true;
+                Logger?.Info("Transit check (hold): " + HoldWords(still) + ".");
+            }
+        }
+
+        // A door of it by the stop's kerb (RideRules.DoorOnKerb), as it stands now.
+        private bool DoorOnKerb()
+        {
+            DoorsAlong(out float front, out float middle, out float aside, out float angle);
+            return RideRules.DoorOnKerb(front, middle, aside, angle, Stop.Stand, Stop.KerbAside);
+        }
+
+        // Its doors' middles along the stop's lane from its lane point, the side they are in off the lane's line (towards the
+        // kerb positive), and its angle to the lane.
+        private void DoorsAlong(out float front, out float middle, out float aside, out float angle)
+        {
+            Vehicle.Footprint(out Vector3 centre, out Vector3 forward, out _, out _);
+            Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
+            Vector3 side = Vector3.Cross(Vector3.up, forward) * BusVehicle.HalfWidth;
+            Vector3 frontDoor = centre + forward * BusVehicle.FrontDoorAhead + side - Stop.Lane;
+            Vector3 middleDoor = centre + forward * BusVehicle.MiddleDoorAhead + side - Stop.Lane;
+            front = frontDoor.x * Stop.Along.x + frontDoor.z * Stop.Along.z;
+            middle = middleDoor.x * Stop.Along.x + middleDoor.z * Stop.Along.z;
+            aside = ((frontDoor.x + middleDoor.x) * right.x + (frontDoor.z + middleDoor.z) * right.z) * 0.5f;
+            angle = Vector3.Angle(forward, Stop.Along);
+        }
+
+        private static bool IsPlayer(Collider hit)
+        {
+            if (_playerLayer == -2)
+            {
+                _playerLayer = LayerMask.NameToLayer("Player");
+            }
+            if (_playerLayer >= 0 && hit.gameObject.layer == _playerLayer)
+            {
+                return true;
+            }
+            PlayerController player = PlayerHelper.PlayerController;
+            return player != null && hit.transform.root == player.transform.root;
+        }
+
+        // Standing behind a car of the traffic for some seconds: if the car stands for the bus (the bus is in its sensor) and
+        // the bus is not on the car's own way ahead, the car is told the bus is not in its way, as the game tells its cars of
+        // a pedestrian put away (VehicleComponent.ColliderRemoved). Only this machine's own traffic, never a Going Public
+        // guest's (TrafficTools.Ready), and nothing else of the car is touched. Once a hold.
+        private void YieldTo(Collider by, float still)
+        {
+            Rigidbody body = by.attachedRigidbody;
+            VehicleComponent car = body != null ? body.GetComponent<VehicleComponent>() : null;
+            Collider solid = Vehicle.Solid;
+            if (car == null || solid == null)
+            {
+                return;
+            }
+            bool standing = body.velocity.sqrMagnitude < 0.25f;
+            bool waits = WaitsForBus(car);
+            bool onItsWay = OnCarsWay(car, body);
+            if (!RideRules.Yield(still, TrafficTools.Ready, standing, waits, onItsWay, _hold.Yielded))
+            {
+                return;
+            }
+            _hold.Yielded = true;
+            SpecialDriveActionTypes was = car.GetCurrentAction();
+            car.ColliderRemoved(solid);
+            Logger?.Info("Transit check (hold): the " + (_line != null ? _line.Number : "bus") + " had stood " + still.ToString("F0") + " s behind '" + TrafficTools.Name(car)
+                         + "', a car of the traffic that stood for the bus (" + was + ", the bus in its sensor), and is not on its way ahead: the car is told the bus is not in its way and "
+                         + (WaitsForBus(car) ? "still has it in its sensor: FAIL" : "drives on when nothing else holds it: PASS") + ".");
+        }
+
+        // True when the bus is in the car's sensor (the game's own list of what it stands for).
+        private bool WaitsForBus(VehicleComponent car)
+        {
+            if (!_carObstaclesLooked)
+            {
+                _carObstaclesLooked = true;
+                _carObstacles = typeof(VehicleComponent).GetField("obstacleList", BindingFlags.Instance | BindingFlags.NonPublic);
+            }
+            Collider solid = Vehicle != null ? Vehicle.Solid : null;
+            return solid != null && _carObstacles != null && _carObstacles.GetValue(car) is List<Collider> seen && seen.Contains(solid);
+        }
+
+        // True when the bus is on the car's own way ahead of it: told to go on, it would drive into the bus.
+        private bool OnCarsWay(VehicleComponent car, Rigidbody body)
+        {
+            Vector3 forward = car.transform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.01f)
+            {
+                return true;
+            }
+            forward.Normalize();
+            Vector3 centre = body.worldCenterOfMass;
+            Vector3 nearest = Vehicle.Solid.ClosestPoint(centre) - centre;
+            nearest.y = 0f;
+            float ahead = Vector3.Dot(nearest, forward);
+            float aside = Vector3.Dot(nearest, Vector3.Cross(Vector3.up, forward));
+            return ahead > 0f && ahead < Mathf.Max(car.length, 4f) * 0.5f + CarClear && Mathf.Abs(aside) < CarHalfWay;
+        }
+
+        /// <summary>What it is standing for now, in words for the log: what holds it up, a red light, its doors, or nothing.</summary>
+        public string WaitsFor()
+        {
+            if (State == Phase.Approaching && Time.time < _holdUntil)
+            {
+                return "nothing on the road: it is held at its start, out of sight, to keep the timetable (" + HoldLeft.ToString("F0") + " s more)";
+            }
+            if (_awaitGap)
+            {
+                return "a gap in the lane to pull out of its bay into";
+            }
+            if (State == Phase.Leaving && Vehicle != null && !Vehicle.DoorsShut)
+            {
+                return "its doors to shut";
+            }
+            if (_gate >= 0 && !_driver.Active)
+            {
+                return _gateWhy == Hold.Light ? "a red light at the junction ahead" : _gateWhy == Hold.Closure ? "a road ahead that a scene has closed" : "the place it was told to pull up at";
+            }
+            Collider by = _driver.HeldBy;
+            if (by != null)
+            {
+                return Describe(by) + " within " + (_driver.HeldAhead + 3f).ToString("F0") + " m of its nose";
+            }
+            return _driver.Active ? "nothing in its way (its driver's pace " + _driver.CruiseSpeed.ToString("F1") + " m/s, at " + _driver.Speed.ToString("F1") + ")" : "nothing: its driver has stopped";
+        }
+
+        // What a collider in its way is, for the log.
+        private string Describe(Collider hit)
+        {
+            Rigidbody body = hit.attachedRigidbody;
+            string name = (body != null ? body.gameObject : hit.gameObject).name;
+            string layer = LayerMask.LayerToName(hit.gameObject.layer);
+            VehicleComponent car = body != null ? body.GetComponent<VehicleComponent>() : null;
+            if (car != null)
+            {
+                float speed = body.velocity.magnitude;
+                return "a car of the traffic ('" + TrafficTools.Name(car) + "', " + (speed < 0.5f ? "standing" : "at " + (speed * 3.6f).ToString("F0") + " km/h") + ", its driver: "
+                       + car.GetCurrentAction() + ", " + (WaitsForBus(car) ? "the bus in its sensor: it stands for the bus" : "the bus not in its sensor") + ")";
+            }
+            if (IsPlayer(hit))
+            {
+                return "the player, in the road in front of it";
+            }
+            if (body != null && body.GetComponent<BusVehicle>() != null)
+            {
+                return "another of the mod's buses ('" + name + "')";
+            }
+            switch (layer)
+            {
+                case "Human": return "somebody on foot in the road ('" + name + "')";
+                case "ParkedVehicles": return "a parked car reaching into the lane ('" + name + "')";
+                case "PlayerVehicles": return "a player's car ('" + name + "')";
+                default: return "'" + name + "' on the layer " + layer;
+            }
+        }
+
+        // The hold, in words for the log: where it is against its place, what holds it, who can see it.
+        private string HoldWords(float still)
+        {
+            string line = _line != null ? _line.Number : "bus";
+            string label = Stop != null ? TransitDirector.StopLabel(Stop) : "its stop";
+            string where;
+            if (State == Phase.Approaching && Stop != null)
+            {
+                Measure(out float along, out float aside, out float angle, out _, out _);
+                bool door = DoorOnKerb();
+                where = "on its way to " + label + ", " + _driver.PathLeft.ToString("F1") + " m of its route from where it is to stand (its middle " + Mathf.Abs(along).ToString("F1") + " m "
+                        + (along >= 0f ? "past" : "short of") + " its place, " + Mathf.Abs(aside).ToString("F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
+                        + " off the lane's line, " + angle.ToString("F0") + " degrees off its direction; " + (door ? "a door by the stop's kerb" : "no door by the stop's kerb") + ")";
+            }
+            else
+            {
+                float from = Stop != null ? Mathf.Sqrt(CitySpots.Flat(Vehicle.transform.position - Stop.Lane)) : 0f;
+                where = (_goingOut ? "driving away out of sight from " : "leaving ") + label + ", " + from.ToString("F0") + " m from where it stood there";
+            }
+            return "the " + line + " has stood still for " + still.ToString("F0") + " s " + where + "; it waits for " + WaitsFor() + "; seen: " + (InView ? "yes" : "no")
+                   + ", " + Mathf.Sqrt(CitySpots.Flat(Vehicle.transform.position - PlayerHelper.GetPosition())).ToString("F0") + " m from the player";
         }
 
         // What the driver does not know of: red lights and lane points a scene has closed. And how it is getting on.
         private void Drive(float now)
         {
+            if (State == Phase.Approaching && now < _holdUntil && _driver.Active)
+            {
+                // Held at its start, out of sight, so as to keep the timetable: it stands, engine running, and then sets off.
+                _driver.CruiseSpeed = 0f;
+                _progressAt = now;
+                Waiting = Hold.None;
+                Remaining = _driver.RouteLeft;
+                return;
+            }
             if (_gate >= 0 && !_driver.Active)
             {
                 // It has pulled up where it was told to.
@@ -885,7 +1303,7 @@ namespace RealLifeOverhaul
                     _progressAt = mark;
                     _progressLeft = left;
                 }
-                Remaining = _driver.RouteLeft;
+                Remaining = _driver.Active ? _driver.RouteLeft : _driver.PathLeft;   // (pulled up: still that far from its stop)
                 return;
             }
             if (!_driver.Active)
@@ -944,7 +1362,7 @@ namespace RealLifeOverhaul
                 if (!_bayLooked && lead <= BayLookAt)
                 {
                     _bayLooked = true;
-                    if (next < _bayFrom && !TransitBays.Free(Stop, _bayBehind, _bayAhead, Vehicle.Body, false, out string taken, out _))
+                    if (next < _bayFrom && !TransitBays.Free(Stop.At, _bayBehind, _bayAhead, Vehicle.Body, false, out string taken, out _))
                     {
                         BackToLane("its bay was taken by " + taken + " as it came up");
                         toGo = _driver.RouteLeft;
@@ -957,6 +1375,15 @@ namespace RealLifeOverhaul
                     BayMode(lead <= BayLead);
                     Vehicle.Indicate(lead <= BayIndicate ? 1 : 0);
                 }
+                else
+                {
+                    BayMode(ByStop(position));   // (put back on the lane's line as it came up)
+                }
+            }
+            else if (State == Phase.Approaching || (State == Phase.Leaving && _bayTo == 0 && !_goingOut))
+            {
+                // Coming up to its stop on the lane's line, or pulling away from it: whoever waits on the pavement there is not in its way.
+                BayMode(ByStop(position));
             }
             else if (State == Phase.Leaving && _bayTo > 0)
             {
@@ -1004,7 +1431,7 @@ namespace RealLifeOverhaul
         // Nor are any while the game fast-forwards a ride: its traffic system, the lights with it, stands still meanwhile.
         private static bool Lit(Waypoint point)
         {
-            return !FastRide && CitySpots.Flat(point.position - PlayerHelper.GetPosition()) < LitWithin * LitWithin;
+            return !FastRide && !TrafficTools.Paused && CitySpots.Flat(point.position - PlayerHelper.GetPosition()) < LitWithin * LitWithin;   // (in the game's fast forward its lights stand still)
         }
 
         private bool GateOpen()
@@ -1075,7 +1502,7 @@ namespace RealLifeOverhaul
             Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
             Vector3 offset = centre - Stop.Lane;
             offset.y = 0f;
-            along = Vector3.Dot(offset, Stop.Along);
+            along = Vector3.Dot(offset, Stop.Along) - Stop.Stand;   // (from where it is to stand: Stop.Stand on from the pole)
             aside = Vector3.Dot(offset, right);
             angle = Vector3.Angle(forward, Stop.Along);
             float halfLength = (_noseAhead + _tailBehind) * 0.5f;
@@ -1203,6 +1630,10 @@ namespace RealLifeOverhaul
                 }
             }
             _onwardTo = i;
+            if (i >= line.Path.Length)
+            {
+                Extend(OnwardMetres - RouteMetres());   // (the end of its line: on along the road)
+            }
             _since = now;
             if (_route.Count < 2)
             {
@@ -1227,6 +1658,10 @@ namespace RealLifeOverhaul
                 Add(line, i);
             }
             _onwardTo = i;
+            if (i >= line.Path.Length)
+            {
+                Extend(OnwardMetres - RouteMetres());   // (the end of its line: on along the road, not left standing in it)
+            }
             State = Phase.Leaving;
             _since = Time.time;
             if (_route.Count < 2)
@@ -1250,7 +1685,8 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (!remove && Held && StreetReady && InView && GoOut())
+            // Seen, or near the player: it never just goes. It drives on along the road and is taken off once nobody can see it.
+            if (!remove && Held && StreetReady && (InView || Near) && GoOut())
             {
                 return;
             }
@@ -1275,21 +1711,158 @@ namespace RealLifeOverhaul
             Vehicle.Indicate(0);
             _route.Clear();
             _routePoints.Clear();
+            // On along its line from where it is: the next point of its line ahead of it (on its way to its stop, that is not
+            // the point after the stop: it would cut across to it), and on along the road where the line ends.
             int from = Mathf.Clamp(Mathf.Max(_onwardTo, Stop != null ? Stop.PathIndex + 1 : 0), 0, _line.Path.Length);
+            int ahead = LineIndexFromFront(_line);
+            if (ahead >= 0 && (State == Phase.Approaching || ahead > from))
+            {
+                from = ahead;
+            }
             for (int i = from; i < _line.Path.Length && _line.Metres[i] - _line.Metres[Mathf.Max(0, from - 1)] < OnwardMore; i++)
             {
                 Add(_line, i);
             }
+            Extend(OnwardMore - RouteMetres());
             State = Phase.Leaving;
             _since = Time.time;
             _awaitGap = false;
             if (_route.Count < 2)
             {
-                return true;   // the end of its line: it stands there until nobody is looking
+                _gate = -1;        // (pulled up at a light, say: it is no longer waiting for one)
+                _gateWhy = Hold.None;
+                _driver.Stop();
+                return true;   // nowhere at all to drive to: it stands there until nobody can see it
             }
             Begin();
             Remaining = _driver.RouteLeft;
             return true;
+        }
+
+        // Driving off, at the end of its route and still seen or near: on along the road, out of sight.
+        private void DriveOn()
+        {
+            int had = _route.Count;
+            if (had > 0)
+            {
+                Vector3 last = _route[had - 1];
+                int lane = _routePoints[had - 1];
+                _route.Clear();
+                _routePoints.Clear();
+                _route.Add(last);
+                _routePoints.Add(lane);
+            }
+            Extend(OnwardMore);
+            if (_route.Count >= 2)
+            {
+                _route.RemoveAt(0);
+                _routePoints.RemoveAt(0);
+                Begin();
+                Remaining = _driver.RouteLeft;
+            }
+        }
+
+        // The first point of its line ahead of where its front axle is, or -1.
+        private int LineIndexFromFront(TransitLine line)
+        {
+            Vector3 front = _driver.Front;
+            int best = -1;
+            float nearest = 30f * 30f;
+            for (int i = 0; i + 1 < line.Path.Length; i++)
+            {
+                Waypoint point = TransitMap.Point(line.Path[i]);
+                Waypoint after = TransitMap.Point(line.Path[i + 1]);
+                if (point == null || after == null)
+                {
+                    continue;
+                }
+                Vector3 to = point.position - front;
+                to.y = 0f;
+                Vector3 way = after.position - point.position;
+                way.y = 0f;
+                if (Vector3.Dot(to, way) > 0.5f && to.sqrMagnitude > 4f && to.sqrMagnitude < nearest)
+                {
+                    nearest = to.sqrMagnitude;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        private float RouteMetres()
+        {
+            float metres = 0f;
+            for (int i = 1; i < _route.Count; i++)
+            {
+                metres += Vector3.Distance(_route[i], _route[i - 1]);
+            }
+            return metres;
+        }
+
+        // On along the road graph from the last lane point of its route, as straight on as the road goes, for so many metres:
+        // where its line ends (a terminus by a station) the bus drives on along the street and out of sight, as a bus going to
+        // its depot does, and is not left standing in the road.
+        private void Extend(float metres)
+        {
+            if (metres <= 1f)
+            {
+                return;
+            }
+            int lane = -1;
+            for (int i = _routePoints.Count - 1; i >= 0 && lane < 0; i--)
+            {
+                lane = _routePoints[i];
+            }
+            if (lane < 0 && _route.Count == 0 && _line != null && Stop != null && Stop.PathIndex < _line.Path.Length)
+            {
+                lane = _line.Path[Mathf.Min(_line.Path.Length - 1, Stop.PathIndex)];   // (nothing of its line after the stop: on from the stop's own lane point)
+            }
+            Waypoint point = TransitMap.Point(lane);
+            if (point == null)
+            {
+                return;
+            }
+            Vector3 heading = _route.Count >= 2 ? _route[_route.Count - 1] - _route[_route.Count - 2] : Vehicle != null ? Vehicle.transform.forward : Vector3.forward;
+            heading.y = 0f;
+            heading = heading.sqrMagnitude > 0.0001f ? heading.normalized : Vector3.forward;
+            float done = 0f;
+            for (int guard = 0; done < metres && guard < 300; guard++)
+            {
+                int best = -1;
+                float straightest = -0.2f;   // (never back the way it came)
+                for (int k = 0; point.neighbors != null && k < point.neighbors.Count; k++)
+                {
+                    Waypoint next = TransitMap.Point(point.neighbors[k]);
+                    if (next == null || next.temporaryDisabled || !RoadGraph.Drivable(next))
+                    {
+                        continue;
+                    }
+                    Vector3 way = next.position - point.position;
+                    way.y = 0f;
+                    if (way.sqrMagnitude < 0.01f)
+                    {
+                        continue;
+                    }
+                    float dot = Vector3.Dot(way.normalized, heading);
+                    if (dot > straightest)
+                    {
+                        straightest = dot;
+                        best = point.neighbors[k];
+                    }
+                }
+                if (best < 0)
+                {
+                    break;
+                }
+                Waypoint chosen = TransitMap.Point(best);
+                Vector3 step = chosen.position - point.position;
+                step.y = 0f;
+                done += step.magnitude;
+                heading = step.normalized;
+                _route.Add(chosen.position);
+                _routePoints.Add(best);
+                point = chosen;
+            }
         }
 
         // Taken off the street under it: nothing to undo but the bus itself.

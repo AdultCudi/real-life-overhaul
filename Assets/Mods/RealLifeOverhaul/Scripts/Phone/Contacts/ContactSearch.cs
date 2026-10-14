@@ -229,9 +229,11 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Phone: ContactSearch.Update");
         // Only while the Contacts app shows (the box is part of it): whether the box has the keyboard, and whether the game made its list again.
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

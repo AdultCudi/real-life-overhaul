@@ -220,6 +220,7 @@ namespace RealLifeOverhaul
         private readonly List<Waypoint> _routeScratch = new List<Waypoint>();
         private readonly List<Vector3> _fleePath = new List<Vector3>(256);
         private readonly List<Footprint> _footprints = new List<Footprint>(4);
+        private readonly List<Renderer> _seatScratch = new List<Renderer>(4);   // a wreck's seat, handed with it to the tow truck
 
         private Phase _phase = Phase.None;
         private bool _recheck;       // a scene has ended: the road and its cars are looked at once more, out of doors (Recheck)
@@ -310,8 +311,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: TrafficAccidents.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -1335,7 +1338,7 @@ namespace RealLifeOverhaul
             }
 
             News.Report(NewsKind.Accident, _scene, null, (int)_severity);
-            SessionWatch.Mark("traffic: an accident being staged");
+            using var piece = SessionWatch.Piece("traffic: an accident being staged");
             Logger?.Info($"Accident {(_inPlace ? "scene begun where it happened" : "staged")}: {_severity}, {_wrecks.Count} car(s){(alone ? " (single vehicle)" : "")}, clears within {total:F0} s{(planned ? ", hit-and-run planned" : "")}.");
         }
 
@@ -1795,7 +1798,7 @@ namespace RealLifeOverhaul
         private static bool IsUsable(VehicleComponent car)
         {
             return car != null && car.gameObject.activeInHierarchy && car.presetPath == null
-                   && !TrafficTools.IsAmbulance(car) && car.GetComponent<TaxiController>() == null
+                   && !TrafficTools.IsAmbulance(car) && !TrafficTools.SpokenFor(car)
                    && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex());
         }
 
@@ -3052,9 +3055,9 @@ namespace RealLifeOverhaul
             {
                 Logger?.Info("Accident: scene ended (" + why + ").");
             }
+            string ending = null;   // said once the wrecks are seen to: a tow truck coming for one is said instead
             if (announce && _phase == Phase.Active)
             {
-                string ending;
                 if (_casualtyScene)
                 {
                     ending = _fatal ? "reallife_pedhit_cleared_dead" : "reallife_pedhit_cleared_injured";
@@ -3071,7 +3074,6 @@ namespace RealLifeOverhaul
                         : SevereEndings;
                     ending = endings[Random.Range(0, endings.Length)];
                 }
-                Notice(NotificationType.Info, ending, 7f);
             }
 
             if (_phase == Phase.Active && _attended && _ambulance != null)
@@ -3101,9 +3103,30 @@ namespace RealLifeOverhaul
             _markerLabel = null;   // the next scene names its own marker
 
             bool trafficUp = TrafficManager.HasInstance && TrafficManager.IsInitialized;
+            int towing = 0, towMinutes = 0;
             foreach (Wreck wreck in _wrecks)
             {
+                // A wreck too damaged to drive off is handed to the tow truck (Traffic/Tow/TowService), which takes it away
+                // where it can; where it cannot, it is taken off the road below, as it always was.
+                TowService tow = TowService.Instance;
+                bool forTruck = wreck.Towed && trafficUp && resumeTraffic && !_closing && why != "error" && TrafficTools.Ready
+                                && TrafficTools.IsHeld(wreck.Car) && tow != null && tow.Accepts(wreck.Car);
+                if (forTruck)
+                {
+                    _seatScratch.Clear();
+                    _seatScratch.AddRange(wreck.Seat);
+                }
                 Unpin(wreck);
+                if (forTruck && tow.Take(wreck.Car, _seatScratch, out int minutes))
+                {
+                    towing++;
+                    if (towMinutes == 0)
+                    {
+                        towMinutes = minutes;
+                    }
+                    _released.Add(wreck.Car);
+                    continue;
+                }
                 // A wreck that was already recycled is ordinary traffic again and is left alone.
                 if (trafficUp && TrafficTools.IsHeld(wreck.Car))
                 {
@@ -3125,6 +3148,15 @@ namespace RealLifeOverhaul
                 }
             }
             _wrecks.Clear();
+            _seatScratch.Clear();
+            if (towing > 0 && ending != null)
+            {
+                TowService.TellComing(towMinutes, towing);   // no minutes: it comes when it has finished with the wreck before
+            }
+            else if (ending != null)
+            {
+                Notice(NotificationType.Info, ending, 7f);
+            }
             _recheck = true;   // looked at again on the next tick out of doors (Recheck)
             _leadWreck = null;
             _worstWreck = null;

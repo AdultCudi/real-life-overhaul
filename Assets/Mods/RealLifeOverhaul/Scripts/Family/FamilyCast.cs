@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.Family
 
         private CityPerson Create(Vector3 near)
         {
-            SessionWatch.Mark("people: a character being made");
+            using var piece = SessionWatch.Piece("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, near, Quaternion.identity, _parent);
             character.name = "RealLifeOverhaul Family";
             var fidgets = character.GetComponentInChildren<BoredAnimations>(true);

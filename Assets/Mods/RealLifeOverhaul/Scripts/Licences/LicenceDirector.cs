@@ -146,8 +146,10 @@ namespace RealLifeOverhaul
             return vehicle != null && _car != null && _car.Out && ReferenceEquals(_practical.Car, vehicle);
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Licences: LicenceDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

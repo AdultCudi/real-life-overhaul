@@ -56,12 +56,23 @@ namespace RealLifeOverhaul
     /// changed half a second earlier); time under "coroutines and timers" with the screen black is the game
     /// taking the player into or out of a building; a collection with tens of milliseconds "at work" is the
     /// collector; time under "scripts' Update" with a piece of the mod's work named "in it" is the mod's, and
-    /// the time beside the name says how much of the frame it was.
+    /// the time beside the name says how much of the frame it was. Where "the rest" is large, the engine's step
+    /// it was mostly in is named beside it (Diagnostics/FrameSteps). After that comes "the mod's own scripts in
+    /// it": the time every Update, LateUpdate and FixedUpdate of the mod's and its handlers of the game's events
+    /// took in that frame, with the three that took the most, by feature and method (Core/HotSpots). Time under
+    /// "scripts' Update" that is not under the mod's own scripts is the game's, or another mod's.
+    ///
+    /// The line a minute says the same of the minute: the mod's own scripts' time a frame on average and at the
+    /// most, the three that took the most, and how much of the heap's growth happened under them (every frame
+    /// counted where the runtime counts allocations, else one frame in eight sampled), with the three under which
+    /// it grew the most. A frame in which the heap grows by 8 MB or more at once gets a line of its own, with how
+    /// much of it was under the mod's own scripts and under which.
     ///
     /// Per frame while recording: a dozen reads of numbers the engine and the game already keep (the frame's
     /// time, the collection count, the heap's size, the collector's time, three of the game's flags) and as many
-    /// comparisons; with the step timing on, about thirty reads of the clock more (Diagnostics/FrameSteps).
-    /// Nothing is allocated except for a line that is written.
+    /// comparisons; the mod's own scripts' timing, a few microseconds (Core/HotSpots); with the step timing on,
+    /// some two hundred and fifty reads of the clock more (Diagnostics/FrameSteps). Nothing is allocated except
+    /// for a line that is written.
     /// </summary>
     public sealed class SessionWatch : MonoBehaviour
     {
@@ -74,6 +85,9 @@ namespace RealLifeOverhaul
         private const float CutWindow = 1f;        // seconds before a long frame in which a changed navigation obstacle is counted (the engine cuts about half a second after the change)
         private const float NewsLasts = 5f;        // seconds a walk into or out of a building, or a scene coming or going, is still mentioned in a long frame's line
         private const string RootPrefix = "RealLifeOverhaul";
+        private const float RestNamed = 5f;        // milliseconds of "the rest" above which the engine's step it was mostly in is named
+        private const long Leap = 8L * 1024 * 1024;   // bytes the heap may grow by in one frame before the frame gets a line of its own
+        private const int LeapsPerMinute = 6;
 
         public static IModLogger Logger;
 
@@ -114,6 +128,8 @@ namespace RealLifeOverhaul
         private bool _scenesHooked;
         private int _cuts, _looked, _putBack;  // the counts as they stood when the minute began
         private int _searches, _searchesInPlay;
+        private bool _exact;                   // the runtime counts what the main thread allocates (ExactCount)
+        private int _jumps;                    // lines for a frame in which the heap leapt, in the minute
 
         /// <summary>
         /// Names the large piece of work the mod is starting in this frame, for the long-frame line. A constant
@@ -122,6 +138,31 @@ namespace RealLifeOverhaul
         public static int Mark(string what)
         {
             return Marks.Add(what, Time.frameCount, Time.unscaledTime, Stopwatch.GetTimestamp());
+        }
+
+        /// <summary>
+        /// Names a piece of work as <see cref="Mark"/> does, and says it is done (<see cref="Done"/>) at the end of the block:
+        /// <c>using var piece = SessionWatch.Piece("...");</c>. Then the long-frame line has its time beside its name.
+        /// </summary>
+        public static Work Piece(string what)
+        {
+            return new Work(Mark(what));
+        }
+
+        /// <summary>A piece of work named with <see cref="Piece"/>: done when it is disposed.</summary>
+        public readonly struct Work : IDisposable
+        {
+            private readonly int _mark;
+
+            internal Work(int mark)
+            {
+                _mark = mark;
+            }
+
+            public void Dispose()
+            {
+                Done(_mark);
+            }
         }
 
         /// <summary>
@@ -148,6 +189,7 @@ namespace RealLifeOverhaul
                     TestRefusals.TellKey(Logger, "Session record", "reallife_perf_test_session_off");
                     return;
                 }
+                HotSpots.Settle(Time.frameCount);
                 int collections = GC.CollectionCount(0);
                 long heap = GC.GetTotalMemory(false);
                 watch.Long(Time.unscaledDeltaTime, watch._collectionsLastFrame, collections, watch._heapLastFrame, heap,
@@ -173,6 +215,7 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             _instance = this;
+            HotSpots.FrameSource = () => Time.frameCount;          // what the mod's own scripts' timing reads (Core/HotSpots)
             enabled = false;   // Meta.Dev.Apply switches it on when the option is
         }
 
@@ -185,6 +228,11 @@ namespace RealLifeOverhaul
                 _started = Time.unscaledTime;
             }
             Clear();
+            _exact = ExactCount();
+            HotSpots.HeapSource = _exact ? (Func<long>)GC.GetAllocatedBytesForCurrentThread : () => GC.GetTotalMemory(false);
+            HotSpots.SampleEvery = _exact ? 1 : HotSpots.AllocEvery;
+            HotSpots.Reset();
+            HotSpots.On = true;   // the mod's own scripts are timed from now on (Core/HotSpots)
             _collections = GC.CollectionCount(0);
             _collectionsLastFrame = _collections;
             _heapLastFrame = GC.GetTotalMemory(false);
@@ -219,11 +267,31 @@ namespace RealLifeOverhaul
             }
             Logger?.Info("Session: recording. One line a minute, and one for every frame over " + (LongFrame * 1000f).ToString("F0") + " ms. The collector has "
                          + (GC.MaxGeneration + 1) + " generation(s); its time in a frame is " + (_collector.Valid ? "read from the engine" : "not offered by this build")
-                         + "; the frame's steps are " + (FrameSteps.Installed ? "timed" : "not timed (the option 'Measurements time every step of the frame' is off, or the engine's loop could not be read)") + ".");
+                         + "; the frame's steps are " + (FrameSteps.Installed ? "timed" : "not timed (the option 'Measurements time every step of the frame' is off, or the engine's loop could not be read)")
+                         + "; the mod's own scripts are timed by feature and method, and what they allocate is " + (_exact ? "counted in every frame (the runtime counts it)" : "read from the heap's size, one frame in " + HotSpots.AllocEvery) + ".");
+        }
+
+        // Whether the runtime counts what the main thread allocates (then the heap's growth under each of the mod's scripts
+        // is exact, and read in every frame): a megabyte asked for must show in the count. Once, when the record starts.
+        private static bool ExactCount()
+        {
+            try
+            {
+                long before = GC.GetAllocatedBytesForCurrentThread();
+                var probe = new byte[1 << 20];
+                long after = GC.GetAllocatedBytesForCurrentThread();
+                GC.KeepAlive(probe);
+                return after - before >= 1 << 20;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private void OnDisable()
         {
+            HotSpots.On = false;
             FrameSteps.Want(false);
             if (_collector.Valid)
             {
@@ -264,6 +332,7 @@ namespace RealLifeOverhaul
         private void Clear()
         {
             _frames = 0;
+            _jumps = 0;
             _worst = 0f;
             _over33 = 0;
             _over50 = 0;
@@ -293,6 +362,7 @@ namespace RealLifeOverhaul
 
         private void OnUpdate()
         {
+            HotSpots.Settle(Time.frameCount);   // the mod's own scripts' figures for the frame before this one are complete
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.
             float took = Time.unscaledDeltaTime;
             int collections = GC.CollectionCount(0);
@@ -328,6 +398,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _frames++;
+            HotSpots.Keep(Time.frameCount - 1);   // the frame before this one was play: the mod's own scripts' share of it goes into the minute
             if (heap > heapBefore)
             {
                 _grown += heap - heapBefore;   // what was allocated, less what a collection gave back in the same frame
@@ -351,6 +422,10 @@ namespace RealLifeOverhaul
             }
             try
             {
+                if (heap - heapBefore >= Leap && ++_jumps <= LeapsPerMinute)
+                {
+                    Leapt(heap - heapBefore, took);
+                }
                 if (took > LongFrame)
                 {
                     _long++;
@@ -415,10 +490,35 @@ namespace RealLifeOverhaul
                     }
                 }
                 _line.Append(any ? ", " : string.Empty).Append("the rest ").Append(Mathf.Max(0f, rest).ToString("F0")).Append(" ms");
+                if (rest >= RestNamed && FrameSteps.LastOther(out string step, out float stepMs) && stepMs >= 1f)
+                {
+                    _line.Append(" (the most of it in the frame's step ").Append(step).Append(", ").Append(stepMs.ToString("F0")).Append(" ms)");
+                }
             }
             else
             {
                 _line.Append("not timed");
+            }
+
+            // The mod's own scripts: every Update, LateUpdate and FixedUpdate of its, and its handlers of the game's events.
+            _line.Append("; the mod's own scripts in it: ");
+            double own = HotSpots.FrameMs(frame);
+            if (own <= 0.0)
+            {
+                _line.Append("none ran");
+            }
+            else
+            {
+                _line.Append(own.ToString("F1")).Append(" ms");
+                int named = 0;
+                for (int k = 0; k < 3 && HotSpots.FrameTop(frame, k, out int slot, out double ms) && ms >= 0.05; k++)
+                {
+                    _line.Append(named++ == 0 ? " (" : ", ").Append(HotSpots.Name(slot)).Append(' ').Append(ms.ToString("F1")).Append(" ms");
+                }
+                if (named > 0)
+                {
+                    _line.Append(')');
+                }
             }
 
             // The collector.
@@ -479,6 +579,49 @@ namespace RealLifeOverhaul
                 {
                     _line.Append("not timed) ");
                 }
+                Ago(textFrame, at, frame, began);
+            }
+            if (Marks.Count == 0)
+            {
+                _line.Append("none yet");
+            }
+            _line.Append("; ").Append(Where()).Append('.');
+            Logger?.Info(_line.ToString());
+        }
+
+        // A frame in which the managed heap grew by megabytes at once: how much, and how much of it under the mod's own scripts
+        // (where that frame was a sample of the heap), and under which. A third of a minute's growth came in one such frame
+        // in the 13 October log.
+        private void Leapt(long grown, float took)
+        {
+            int frame = Time.frameCount - 1;
+            _line.Length = 0;
+            _line.Append("Session: the managed heap grew by ").Append(Megabytes(grown)).Append(" MB in one frame of ").Append((took * 1000f).ToString("F0"))
+                .Append(" ms; under the mod's own scripts: ");
+            long own = HotSpots.FrameBytes(frame, out bool sampled);
+            if (!sampled)
+            {
+                _line.Append(HotSpots.FrameMs(frame) > 0.0 ? "not known (not a sampled frame)" : "nothing (none ran)");
+            }
+            else
+            {
+                _line.Append(own / 1024).Append(" KB");
+                for (int k = 0; k < 3 && HotSpots.FrameTopBytes(frame, k, out int slot, out long bytes) && bytes >= 1024; k++)
+                {
+                    _line.Append(k == 0 ? " (" : ", ").Append(HotSpots.Name(slot)).Append(' ').Append(bytes / 1024).Append(" KB");
+                    if (k == 2 || !HotSpots.FrameTopBytes(frame, k + 1, out _, out long next) || next < 1024)
+                    {
+                        _line.Append(')');
+                    }
+                }
+                _line.Append(own * 2 < grown ? "; the rest is the game's, or another mod's" : string.Empty);
+            }
+            _line.Append("; the mod's last pieces of work: ");
+            float began = Time.unscaledTime - took;
+            for (int back = 0; back < Marks.Count; back++)
+            {
+                Marks.Get(back, out string text, out int textFrame, out float at, out _);
+                _line.Append(back > 0 ? ", \"" : "\"").Append(text).Append("\" ");
                 Ago(textFrame, at, frame, began);
             }
             if (Marks.Count == 0)
@@ -550,6 +693,7 @@ namespace RealLifeOverhaul
             _putBack = EventHold.PutBack;
             _searches = SceneFinds.Made;
             _searchesInPlay = SceneFinds.InPlay;
+            OwnScripts(seconds);
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());
             _collections = collections;
@@ -557,6 +701,33 @@ namespace RealLifeOverhaul
         }
 
         private static long Megabytes(long bytes) => bytes / (1024L * 1024L);
+
+        // The minute of the mod's own scripts (Core/HotSpots): their time a frame, the three that took the most, and the
+        // heap's growth under them in the sampled frames, scaled to the minute and set beside the growth of the heap in all.
+        private void OwnScripts(float seconds)
+        {
+            int frames = HotSpots.Frames;
+            _line.Append("; the mod's own scripts: ").Append((frames > 0 ? HotSpots.TotalMs / frames : 0.0).ToString("F2")).Append(" ms a frame on average and ")
+                .Append(HotSpots.WorstFrameMs.ToString("F1")).Append(" ms at most in a frame");
+            for (int k = 0; k < 3 && HotSpots.StretchTop(k, false, out int slot, out double total, out double worst, out _); k++)
+            {
+                _line.Append(k == 0 ? ", the most in the minute: " : ", ").Append(HotSpots.Name(slot)).Append(" (")
+                    .Append((frames > 0 ? total / frames : 0.0).ToString("F2")).Append(" ms a frame, ").Append(worst.ToString("F1")).Append(" ms at worst)");
+            }
+            int sampled = HotSpots.Sampled;
+            if (sampled > 0 && seconds > 0f)
+            {
+                double scale = (double)HotSpots.Frames / sampled / seconds / 1024.0;   // sampled bytes to kilobytes a second
+                _line.Append("; the heap grew under them by ").Append(_exact ? string.Empty : "about ").Append((HotSpots.SampledBytes * scale).ToString("F0"))
+                    .Append(_exact ? " KB a second (every frame counted)" : " KB a second (one frame in " + HotSpots.AllocEvery + " sampled)")
+                    .Append(" of the ").Append((_grown / 1024.0 / seconds).ToString("F0")).Append(" KB a second it grew in all");
+                for (int k = 0; k < 3 && HotSpots.StretchTop(k, true, out int slot, out _, out _, out long bytes) && bytes > 0L; k++)
+                {
+                    _line.Append(k == 0 ? ", the most under " : ", ").Append(HotSpots.Name(slot)).Append(" (").Append((bytes * scale).ToString("F0")).Append(" KB a second)");
+                }
+            }
+            HotSpots.ClearStretch();
+        }
 
         // Every object under a root object of the mod's (they are all named "RealLifeOverhaul ..."), in every loaded
         // scene. What the mod hangs on the game's own objects (a prop in a hand, a part on a car) is not counted.

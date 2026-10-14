@@ -93,5 +93,45 @@ internal static partial class Program
             "internet: the save round-trips exactly, the seed, the prices and the connection too");
         UtilitiesState old = UtilitiesStore.Read("v=1~h:5|3~a:" + UtilitiesStore.Escape("A~1") + "|0|0|1|0|1|0|0|0|0|0|0|0|0|0|0|0|0|0", out version);
         Check(old != null && old.Promo[0] == 1000 && old.Accounts.Count == 1 && old.Accounts[0].Provider == -1, "internet: a line from before the internet reads with no connection and list prices");
+        Grace(old, r);
+    }
+
+    // The grace period: a save meeting the internet for the first time gives the businesses it has a week to get
+    // connected; a business started after that has none; it is saved, moves with a clock not played, and ends once.
+    private static void Grace(UtilitiesState before, UtilitiesState since)
+    {
+        int week = InternetCatalogue.GraceDays;
+        Check(week == 7 && InternetRules.FirstMeeting(null) && InternetRules.FirstMeeting(before) && !InternetRules.FirstMeeting(since),
+            "internet grace: met for the first time with no utilities line or one from before the internet (no seed); not by a line written since");
+
+        var s = new UtilitiesState { Seed = 99 };
+        Check(InternetRules.BeginGrace(s, new string[0], 40) == 0 && s.GraceUntil == 0 && InternetRules.GraceLeft(s, 40) == 0 && !InternetRules.InGrace(s, "A~1", 40),
+            "internet grace: none begins for a save with no business that needs a connection");
+        int covered = InternetRules.BeginGrace(s, new[] { "Web%20St~1", "HQ~2", "Web%20St~1", "" }, 40);
+        Check(covered == 2 && s.GraceUntil == 47 && InternetRules.GraceLeft(s, 40) == week && InternetRules.GraceLeft(s, 46) == 1 && InternetRules.GraceLeft(s, 47) == 0,
+            "internet grace: begun for each business that needs a connection, once each, for seven days of the game's clock");
+        Check(InternetRules.InGrace(s, "HQ~2", 40) && InternetRules.InGrace(s, "HQ~2", 46) && !InternetRules.InGrace(s, "HQ~2", 47) && !InternetRules.InGrace(s, "New~3", 41)
+              && !InternetRules.InGrace(s, null, 41),
+            "internet grace: covers its businesses to the end of its seventh day, never a business started after it began");
+
+        int version;
+        UtilitiesState back = UtilitiesStore.Read(UtilitiesStore.Write(s), out version);
+        Check(back != null && back.GraceUntil == 47 && back.Grace.Count == 2 && back.Grace.Contains("Web%20St~1") && back.Grace.Contains("HQ~2")
+              && UtilitiesStore.Write(back) == UtilitiesStore.Write(s) && !InternetRules.FirstMeeting(back),
+            "internet grace: kept in the save exactly, and a save that has it is not met again");
+        UtilitiesState none = UtilitiesStore.Read(UtilitiesStore.Write(new UtilitiesState { Seed = 5 }), out version);
+        Check(none != null && none.GraceUntil == 0 && none.Grace.Count == 0 && !UtilitiesStore.Write(none).Contains("~g:"),
+            "internet grace: a save without one writes and reads none");
+
+        Check(!InternetRules.MoveGrace(s, 40, 41, true) && !InternetRules.MoveGrace(s, 40, 45, false) && s.GraceUntil == 47 && !InternetRules.MoveGrace(s, -1, 200, true),
+            "internet grace: days played count against it, a long stay alone too; the first look moves nothing");
+        Check(InternetRules.MoveGrace(s, 42, 202, true) && s.GraceUntil == 207 && InternetRules.GraceLeft(s, 202) == 5,
+            "internet grace: a guest's clock set to the host's as they join moves it with the clock, the days left kept");
+        Check(InternetRules.MoveGrace(s, 202, 190, false) && s.GraceUntil == 195 && InternetRules.GraceLeft(s, 190) == 5,
+            "internet grace: a clock put back moves it back, the days left kept");
+
+        Check(!InternetRules.EndGrace(s, 194) && InternetRules.InGrace(s, "HQ~2", 194) && InternetRules.EndGrace(s, 195) && s.GraceUntil == 0 && s.Grace.Count == 0
+              && !InternetRules.EndGrace(s, 196) && !InternetRules.InGrace(s, "HQ~2", 196) && !InternetRules.MoveGrace(s, 196, 300, true),
+            "internet grace: ends on its day, once, and nothing is left of it");
     }
 }

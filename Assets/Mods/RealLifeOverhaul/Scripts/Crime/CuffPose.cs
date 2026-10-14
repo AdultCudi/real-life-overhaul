@@ -118,8 +118,10 @@ namespace RealLifeOverhaul
             pose.enabled = any;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Crime: CuffPose.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

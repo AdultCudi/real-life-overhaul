@@ -499,8 +499,10 @@ namespace RealLifeOverhaul
             _ahead = null;
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Traffic: EmergencyDriver.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

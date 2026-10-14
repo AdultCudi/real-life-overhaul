@@ -26,8 +26,10 @@ namespace RealLifeOverhaul
 
         private float _nextHint;   // when the "not through a door while on a job" hint may be shown again
 
+        private static readonly int HotUpdate = HotSpots.Slot("World: NearbyInteraction.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

@@ -33,7 +33,8 @@ namespace RealLifeOverhaul
 
         private static readonly string[] Weakest =
         {
-            "reallife_biz_figure_service", "reallife_biz_figure_pricing", "reallife_biz_figure_cleanliness", "reallife_biz_figure_facility"
+            "reallife_biz_figure_service", "reallife_biz_figure_pricing", "reallife_biz_figure_cleanliness", "reallife_biz_figure_facility",
+            "reallife_biz_figure_interior"   // 4: the look of the place, short of its district's standard (Scripts/Interiors)
         };
 
         private static BusinessDirector Director => BusinessDirector.Instance;
@@ -94,7 +95,7 @@ namespace RealLifeOverhaul
 
                 case BusinessCatalogue.Complaint:
                     return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.ComplaintDip) ? "reallife_biz_why_no_footfall"
-                        : !test && BusinessGame.Satisfaction(reg) >= BusinessCatalogue.ComplaintBelow && BusinessGame.Cleanliness(reg) >= 55
+                        : !test && BusinessGame.Satisfaction(reg) >= BusinessCatalogue.ComplaintBelow && BusinessGame.Cleanliness(reg) >= 55 && !Shabby(reg)
                             ? "reallife_biz_why_doing_well" : null;
 
                 case BusinessCatalogue.Praise:
@@ -116,6 +117,32 @@ namespace RealLifeOverhaul
                                      || BusinessGame.Cleanliness(reg) < BusinessCatalogue.AwardCleanliness) ? "reallife_biz_why_not_good_enough" : null;
             }
             return "reallife_biz_why_no_footfall";
+        }
+
+        // Short of the district's standard (Scripts/Interiors, through Wiring/InteriorLinks); never while that is not set.
+        private static bool Shabby(BuildingRegistration reg)
+        {
+            try
+            {
+                return BusinessDirector.Shabby != null && BusinessDirector.Shabby(reg);
+            }
+            catch (System.Exception)
+            {
+                return false;
+            }
+        }
+
+        // The cleanliness the inspector judges: the game's own figure unless a worn place's look is set (Scripts/Interiors).
+        private static int Inspected(BuildingRegistration reg, int clean)
+        {
+            try
+            {
+                return BusinessDirector.Inspected != null ? Mathf.Clamp(BusinessDirector.Inspected(reg, clean), 0, clean) : clean;
+            }
+            catch (System.Exception)
+            {
+                return clean;
+            }
         }
 
         public static bool GroupOn(PressureGroup group)
@@ -259,7 +286,7 @@ namespace RealLifeOverhaul
                     break;
                 }
                 case BusinessCatalogue.Complaint:
-                    issue.B = BusinessGame.Weakest(reg);
+                    issue.B = Shabby(reg) ? 4 : BusinessGame.Weakest(reg);
                     issue.A = BusinessCatalogue.ComplaintDip;
                     Director.Effect(reg, issue.A, BusinessCatalogue.ComplaintDays);
                     break;
@@ -388,7 +415,7 @@ namespace RealLifeOverhaul
                     data["count"] = issue.C.ToString();
                     break;
                 case BusinessCatalogue.Complaint:
-                    data["figure"] = Weakest[Mathf.Clamp(issue.B, 0, 3)].GetLocalization();
+                    data["figure"] = Weakest[Mathf.Clamp(issue.B, 0, Weakest.Length - 1)].GetLocalization();
                     data["percent"] = (-issue.A).ToString();
                     data["length"] = BusinessCatalogue.ComplaintDays.ToString();
                     break;
@@ -1124,7 +1151,7 @@ namespace RealLifeOverhaul
                 type = NotificationType.Success;
                 return Done(issue, "reallife_biz_bribe_passed");   // paid off: a formality
             }
-            int clean = BusinessGame.Cleanliness(reg);
+            int clean = Inspected(reg, BusinessGame.Cleanliness(reg));
             data["clean"] = clean.ToString();
             if (InspectorCalls(issue, reg))
             {

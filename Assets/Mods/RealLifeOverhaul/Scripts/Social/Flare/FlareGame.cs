@@ -78,6 +78,12 @@ namespace RealLifeOverhaul.Flare
         /// <summary>Has the company book and pay a campaign of a kind at a business. Default: nothing is booked.</summary>
         public static Func<string, int, bool> Book;
 
+        /// <summary>The company's campaigns at the player's businesses, running or booked, into the list given (filled again on each call). Default: none.</summary>
+        public static Action<List<FlareCampaign>> Campaigns;
+
+        /// <summary>The player ended an influencer's deal: the company's campaign that is the deal (the place, the kind, its first day) ends with it. Default: nothing.</summary>
+        public static Action<string, int, int> EndCampaign;
+
         /// <summary>A business that hired an influencer is hurt by their scandal: its brand hears of it. Default: nothing.</summary>
         public static Action<string> BrandScandal;
 
@@ -141,6 +147,8 @@ namespace RealLifeOverhaul.Flare
             Brands = null;
             Quote = null;
             Book = null;
+            Campaigns = null;
+            EndCampaign = null;
             BrandScandal = null;
             MeetStar = null;
             MeetOnline = null;

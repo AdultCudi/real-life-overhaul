@@ -66,8 +66,10 @@ namespace RealLifeOverhaul
             gameObject.AddComponent<GarageTuning>();
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Garage: GarageDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

@@ -168,7 +168,8 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0 || FlareDirector.FootfallOf(reg) != 0);
+                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0 || FlareDirector.FootfallOf(reg) != 0
+                                            || Interiors.InteriorDirector.FootfallOf(reg) != 0);
                     int own, written;
                     return BusinessDirector.Footfall(reg, !drawn, newDay, out own, out written);
                 }

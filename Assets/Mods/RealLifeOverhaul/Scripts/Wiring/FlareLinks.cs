@@ -116,6 +116,8 @@ namespace RealLifeOverhaul
                 FlareBridges.Brands = Brands;
                 FlareBridges.Quote = Quote;
                 FlareBridges.Book = Book;
+                FlareBridges.Campaigns = Campaigns;
+                FlareBridges.EndCampaign = (place, kind, from) => CompanyDirector.Instance?.EndCampaign(place, kind, from);
                 FlareBridges.BrandScandal = place => BrandsDirector.Instance?.Heard(place, Scandal.Influencer);
                 FlareBridges.MeetStar = MeetStar;
                 FlareBridges.MeetOnline = MeetOnline;
@@ -261,7 +263,7 @@ namespace RealLifeOverhaul
                     }
                     if (!CampaignRules.CanBook(shop.File))
                     {
-                        why = "reallife_flare_hire_busy";
+                        why = FlareDirector.BusyWhy;
                         return false;
                     }
                     if (!company.Promoted(shop))
@@ -303,6 +305,33 @@ namespace RealLifeOverhaul
                 {
                     Fault("FlareLinks.Book", e);
                     return false;
+                }
+            }
+
+            // The company's campaigns at the player's businesses, running or booked, for Flare's Business tab and its hiring page.
+            private static void Campaigns(List<FlareCampaign> into)
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    IReadOnlyList<CompanyShop> shops = company != null && company.Running && company.On(CompanyPart.Marketing) ? company.Shops : null;
+                    for (int i = 0; shops != null && i < shops.Count; i++)
+                    {
+                        int kind, from, to;
+                        bool started;
+                        if (CampaignRules.Busy(shops[i].File, 0, out kind, out from, out to, out started))
+                        {
+                            into.Add(new FlareCampaign
+                            {
+                                Place = shops[i].File.Place, Name = shops[i].Name, Campaign = CompanyText.Campaign(kind), Kind = kind, From = from, To = to,
+                                Percent = shops[i].File.PushPercent, OnFlare = CampaignRules.HiredOnFlare(kind)
+                            });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Campaigns", e);
                 }
             }
 

@@ -104,7 +104,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < StartTries && i < RouteScratch.Count - 2 && car == null; i++)
             {
                 start = i;
-                car = TrafficManager.Instance.LoadVehicle(prefab, RouteScratch[i]);
+                car = TrafficTools.Load(prefab, RouteScratch[i]);   // an idle car of that prefab, never one taken by its model
             }
             if (car == null)
             {
@@ -415,21 +415,38 @@ namespace RealLifeOverhaul
             return Kind == UnitKind.Ambulance ? "an ambulance released" : Kind == UnitKind.Police ? "a patrol car released" : "a car the mod was driving released";
         }
 
-        // The game's traffic includes an ambulance, and nothing else will do: a van with a beacon is not one.
-        // LoadVehicle borrows a busy instance if no idle one exists, so the ambulance may be in use as traffic.
+        // The game's traffic includes an ambulance, and nothing else will do: a van with a beacon is not one. An idle one
+        // of the pool; else one driving as plain traffic out of sight, which is taken off the road there first, that very
+        // car. Never by its model: with none idle the game's LoadVehicle would take the first ambulance of the pool whatever
+        // it is doing, the other unit's at its scene or one driving in view (TrafficTools.Load).
         private static GameObject PickAmbulancePrefab()
         {
             List<VehicleComponent> pool = Manager.GetVehicleList();
             LogPool(pool);
+            VehicleComponent driving = null;
             for (int i = 0; i < pool.Count; i++)
             {
                 VehicleComponent car = pool[i];
-                if (TrafficTools.IsAmbulance(car) && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex()))
+                if (!TrafficTools.IsAmbulance(car))
+                {
+                    continue;
+                }
+                if (!car.gameObject.activeInHierarchy)
                 {
                     return car.prefab;
                 }
+                if (driving == null && car.presetPath == null && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex())
+                    && car.visibilityScript != null && car.visibilityScript.IsNotInView() && !CitySpots.InView(car.transform.position))
+                {
+                    driving = car;
+                }
             }
-            return null;
+            if (driving == null)
+            {
+                return null;
+            }
+            TrafficTools.Remove(driving, "an ambulance taken from out of sight to answer a call");
+            return driving.gameObject.activeInHierarchy ? null : driving.prefab;
         }
 
         // There is no police car in the traffic pool. The Crown-Victoria-style sedan stands in,

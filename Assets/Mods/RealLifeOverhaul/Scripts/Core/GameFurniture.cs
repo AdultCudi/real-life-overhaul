@@ -25,6 +25,8 @@ namespace RealLifeOverhaul
     ///
     /// COST. One copy per piece, made when it is first wanted and kept: the prefab is the game's own, loaded once per
     /// game session by the game's own cache (PrefabHelper). Nothing here runs by itself, and a copy has no script at all.
+    /// A building fitted out from end to end (FitOut/FitView) copies from a template instead: the stripped copy of each
+    /// prefab made once and kept asleep, so that every further copy is one instantiation of a few renderers.
     /// </summary>
     internal static class GameFurniture
     {
@@ -83,6 +85,70 @@ namespace RealLifeOverhaul
             copy.SetActive(false);
             copy.transform.SetParent(parent, false);
             return copy.transform;
+        }
+
+        // ---------------------------------------------------------------- templates: a stripped copy kept, copies made of it
+
+        private static readonly Dictionary<string, Transform> Templates = new Dictionary<string, Transform>(64, StringComparer.Ordinal);
+        private static readonly Dictionary<string, Bounds> TemplateBounds = new Dictionary<string, Bounds>(64, StringComparer.Ordinal);
+
+        /// <summary>True once a template of the prefab has been made (or found missing): <see cref="Copy"/> is then cheap.</summary>
+        public static bool HasTemplate(string prefab) => Templates.ContainsKey(prefab);
+
+        /// <summary>
+        /// The kept, stripped copy of a prefab that copies are made from, made the first time it is asked for (the costly
+        /// part: the game's loading of the prefab and the stripping); null if the game has none. It stays asleep under the
+        /// holder that is switched off, its drawn bounds with it. One per prefab, until <see cref="Forget"/>.
+        /// </summary>
+        public static Transform Template(string prefab, out Bounds bounds)
+        {
+            if (Templates.TryGetValue(prefab, out Transform made))
+            {
+                TemplateBounds.TryGetValue(prefab, out bounds);
+                return made;
+            }
+            made = Make(prefab, null);
+            bounds = default;
+            if (made != null)
+            {
+                made.SetParent(_asleep, false);
+                made.name = "Template " + prefab;
+                bounds = LocalBounds(made);
+                TemplateBounds[prefab] = bounds;
+            }
+            Templates[prefab] = made;   // (a prefab the game does not have is remembered as missing, and said once)
+            return made;
+        }
+
+        /// <summary>
+        /// A copy of the game's item to look at, switched off, under <paramref name="parent"/>, made from its template: one
+        /// instantiation of a copy with no script on it, no load and no stripping. Null if the game has no such prefab.
+        /// </summary>
+        public static Transform Copy(string prefab, Transform parent)
+        {
+            Transform template = Template(prefab, out _);
+            if (template == null)
+            {
+                return null;
+            }
+            Transform copy = UnityEngine.Object.Instantiate(template, parent, false);
+            copy.name = "Game " + prefab;
+            copy.gameObject.SetActive(false);
+            return copy;
+        }
+
+        /// <summary>The templates let go of (the city going): what they hold of the game's assets is free to be unloaded.</summary>
+        public static void Forget()
+        {
+            foreach (KeyValuePair<string, Transform> pair in Templates)
+            {
+                if (pair.Value != null)
+                {
+                    UnityEngine.Object.Destroy(pair.Value.gameObject);
+                }
+            }
+            Templates.Clear();
+            TemplateBounds.Clear();
         }
 
         /// <summary>The name of the empty children a copy is given where the game's own item has its sitting positions.</summary>

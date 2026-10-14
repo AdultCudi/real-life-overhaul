@@ -80,7 +80,7 @@ namespace RealLifeOverhaul
 
         private static void Run()
         {
-            SessionWatch.Mark("the game is saving (the mod writes its state into the save first)");
+            using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
             bool timed = Meta.Dev.Verbose;
             float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
             for (int i = 0; i < Handlers.Count; i++)

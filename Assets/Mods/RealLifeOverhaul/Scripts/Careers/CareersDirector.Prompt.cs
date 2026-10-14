@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Careers
         private PlayerActivityUI _activityUi;
 
         /// <summary>True while the class panel is up, and in the frame its button ran.</summary>
-        public static bool TakesInteractKey => Instance != null && Instance._classDoor != null && Instance._classDoor.TakesKey;
+        public static bool TakesInteractKey => Instance != null && (Instance._classDoor != null && Instance._classDoor.TakesKey || Instance._interior != null && Instance._interior.TakesKey);
 
         private bool DeskBusy => _desk != null && _desk.Open;
 
@@ -67,9 +67,9 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; !busy && i < _study.Courses.Count && offer < 0; i++)
             {
                 Enrolment e = _study.Courses[i];
-                if (e == null || e.Def == null || AtTheSchool(e, false) && AtTheSchool(e, true))
+                if (e == null || e.Def == null || AtTheSchool(e, false) && AtTheSchool(e, true) || InRooms(e))
                 {
-                    continue;
+                    continue;   // (at the school's desks, or in the university's classrooms: no panel in place)
                 }
                 string classWhy = AtTheSchool(e, false) ? "reallife_study_why_not_school" : CanAttend(e, out _);
                 string examWhy = AtTheSchool(e, true) ? "reallife_study_why_exam_school" : CanSit(e);
@@ -182,8 +182,8 @@ namespace RealLifeOverhaul.Careers
         // Once a second: the game's study panel is watched while the player is inside the school on a course there.
         private void DeskTick()
         {
-            bool watch = false;
-            if (_studyOn && CareersGame.InSchool())
+            bool watch = _studyOn && _interior != null && _interior.Floor > 0;   // (the university's classrooms: always, so no course of the game's opens there)
+            if (!watch && _studyOn && CareersGame.InSchool())
             {
                 for (int i = 0; i < _study.Courses.Count && !watch; i++)
                 {
@@ -208,8 +208,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Careers: CareersDirector.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -227,9 +229,20 @@ namespace RealLifeOverhaul.Careers
 
         private void OnLateUpdate()
         {
-            if (!_deskWatch || _activityUi == null)
+            _interior?.Card(false);   // (one reference comparison: the game's card over the university)
+            bool rooms = _interior != null && _interior.Floor > 0;   // (from the frame the player is on a floor: no course of the game's opens there)
+            if (!_deskWatch && !rooms)
             {
                 return;
+            }
+            if (_activityUi == null)
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                _activityUi = uis != null ? uis.playerActivityUI : null;
+                if (_activityUi == null)
+                {
+                    return;
+                }
             }
             IPlayerActivity now = _activityUi.GetCurrentActivity;
             if (ReferenceEquals(now, _deskSeen))
@@ -241,7 +254,19 @@ namespace RealLifeOverhaul.Careers
             {
                 try
                 {
-                    SchoolDesk desk = SchoolDesk.Take(_activityUi, game, this, DeskOfferNow());
+                    SchoolDesk.DeskOffer offer;
+                    if (_interior != null && _interior.Floor > 0)
+                    {
+                        int room = _interior.RoomOf(SchoolDesk.DoorOf(game));
+                        offer = RoomOffer(room > 0 ? room : 1);
+                        Logger?.Info("Careers: a classroom door of the university, floor " + _interior.Floor + " room " + room + ": " + (offer.Course >= 0 ? StudyCatalogue.Find(offer.Course).Key : "no course")
+                                     + (offer.Can ? ", " + (offer.Exam ? "the exam" : "the class") + " can be begun." : ", nothing to begin now (" + offer.Key + ")."));
+                    }
+                    else
+                    {
+                        offer = DeskOfferNow();
+                    }
+                    SchoolDesk desk = SchoolDesk.Take(_activityUi, game, this, offer);
                     if (desk != null)
                     {
                         _deskSeen = desk;
@@ -390,7 +415,9 @@ namespace RealLifeOverhaul.Careers
                         + (CareersGame.InSchool() ? "inside the school" : BuildingManager.IsInsideBuilding ? "inside a building" : "out of doors");
             }
             Logger?.Info("Careers: class due for " + c.Key + " at " + hour.ToString("00") + ":00 on day " + day + "; " + where + "; "
-                         + (why == null ? "it can be joined now (" + (AtTheSchool(e, false) ? "Study at a desk" : "the panel where the player stands") + ")." : "it cannot be joined now: " + why + "."));
+                         + (InRooms(e) ? "held on floor " + CampusRules.FloorOf(c.Id) + ", room " + CampusRules.RoomOf(c.Id) + " (the player is " + (_interior.Floor > 0 ? "on floor " + _interior.Floor : "not on a floor")
+                            + ", the university " + (_interior.OpenNow() ? "open" : "closed") + "); " : string.Empty)
+                         + (why == null ? "it can be joined now (" + (AtTheSchool(e, false) ? "Study at a desk" : InRooms(e) ? "the classroom's door" : "the panel where the player stands") + ")." : "it cannot be joined now: " + why + "."));
             int notice = StudyRules.ClassNotice(why);
             if (notice == 0)
             {
@@ -399,6 +426,12 @@ namespace RealLifeOverhaul.Careers
             string course = CareersText.Course(c.Id);
             if (notice == 1)
             {
+                if (InRooms(e))
+                {
+                    Tell(NotificationType.Info, "reallife_campus_note_class_room", Data("course", course, "floor", CampusRules.FloorOf(c.Id).ToString(), "room", CampusRules.RoomOf(c.Id).ToString()),
+                        TabStudying, CampusApp.CourseRow + c.Id);
+                    return;
+                }
                 Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk" : "reallife_study_note_class_here",
                     Data("course", course, "key", Keys.Label(KeyAction.Interact)), TabStudying, CampusApp.CourseRow + c.Id);
                 return;

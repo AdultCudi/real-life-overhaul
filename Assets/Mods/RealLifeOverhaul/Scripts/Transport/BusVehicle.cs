@@ -42,7 +42,7 @@ namespace RealLifeOverhaul
     ///
     /// One per <see cref="TransitBus"/>, made the first time it is sent out and switched off in between.
     /// </summary>
-    public sealed class BusVehicle : MonoBehaviour
+    public sealed class BusVehicle : MonoBehaviour, IDrivenVehicle
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusVehicle", typeof(BusVehicle));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
@@ -122,6 +122,14 @@ namespace RealLifeOverhaul
         public bool Out => gameObject.activeSelf;
 
         public Rigidbody Body => _body;
+
+        // What its driver measures it by (IDrivenVehicle): the constants above.
+        public Transform Frame => transform;
+        float IDrivenVehicle.FrontAxleAhead => AxleFront;
+        float IDrivenVehicle.RearAxleAhead => AxleRear;
+        float IDrivenVehicle.AxleSpan => Wheelbase;
+        float IDrivenVehicle.NoseBeyondAxle => NoseAhead;
+        float IDrivenVehicle.HalfBreadth => HalfWidth;
         public Collider Solid => _solid;
 
         // ---------------------------------------------------------------- making it
@@ -486,8 +494,10 @@ namespace RealLifeOverhaul
             _indicate = side;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Transport: BusVehicle.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

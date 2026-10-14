@@ -16,10 +16,12 @@ namespace RealLifeOverhaul
     /// every place, and "set destination".
     ///
     ///   kind (row)                   places                                                    ticked   in street
-    ///   Bus stops                    every stop of the bus network (TransitMap.Stops)          by count no
+    ///   Bus stops                    every place of the bus network (TransitMap.Places)        by count no
     ///   Hotels                       the eight hotels (Hotels.Sites)                           yes      yes
     ///   Courthouse                   the courthouse (Courthouse.Front)                         yes      yes
     ///   Places to study              the university, the game's school, the hospitals' wards   yes      yes
+    ///   Tech companies               the city's tech companies' headquarters (Tech/Sites)      yes      yes
+    ///   Your cloud                   the player's data centres: the cloud's regions            yes      no
     ///   Driving schools              the learner-plate boards (LicenceDesks)                   yes      yes
     ///   Bike hire and two-wheelers   docks, bicycle racks, motorbike stands (BikePlaces.All)   yes      no
     ///   Custom shops                 the repair stations whose bays the custom shop works at   yes      no
@@ -222,7 +224,7 @@ namespace RealLifeOverhaul
                 Id = "bus_stops", TitleKey = "reallife_map_row_bus_stops", Colour = TransitDirector.StopColour, Icon = MapIcon.Bus,
                 TickedByDefault = count => count <= ManyStops,
                 Enabled = () => Settings.Buses,
-                Stamp = () => TransitMap.Ready ? 1 + TransitMap.Stops.Count : 0,
+                Stamp = () => TransitMap.Ready ? 1 + TransitMap.Places.Count : 0,
                 Fill = BusStops
             });
             // Travel: the hotels (which used to add markers of their own).
@@ -233,7 +235,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     TravelDirector travel = TravelDirector.Instance;
-                    return travel != null && travel.Hotels != null ? 1 + travel.Hotels.Sites.Count : 0;
+                    return travel != null && travel.Hotels != null ? 1 + travel.Hotels.Sites.Count + travel.Hotels.Moves * 64L : 0;   // (read again when one moves)
                 },
                 Fill = HotelSites
             });
@@ -245,7 +247,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     JusticeDirector justice = JusticeDirector.Instance;
-                    return justice != null && justice.Court != null && justice.Court.Usable ? 2 : 0;
+                    return justice != null && justice.Court != null && justice.Court.Usable ? 2 + justice.Court.Moves * 4L : 0;   // (read again when it moves)
                 },
                 Fill = places =>
                 {
@@ -265,7 +267,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) : 0;
+                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) + utilities.Office.Moves * 4L : 0;   // (read again when it moves)
                 },
                 Fill = places =>
                 {
@@ -286,6 +288,22 @@ namespace RealLifeOverhaul
                 Enabled = () => Settings.CareersStudy,
                 Stamp = StudyStamp,
                 Fill = StudyPlaces
+            });
+            // Tech: the city's tech companies, each in a building of its own (Tech/Sites/Headquarters), where their jobs are.
+            _links.Add(new Link
+            {
+                Id = "tech_hq", TitleKey = "reallife_map_row_tech_hq", Colour = new Color(0.18f, 0.42f, 0.82f), Icon = MapIcon.Tower, InStreet = true,
+                Enabled = () => Settings.TechSiteHq,
+                Stamp = () => Tech.TechSites.Instance != null ? Tech.TechSites.Instance.HeadquartersStamp : 0,
+                Fill = places => Tech.TechSites.Instance.HeadquartersPlaces(places)
+            });
+            // Tech: the player's data centres, the regions of their cloud (a hyperscaler shows them all).
+            _links.Add(new Link
+            {
+                Id = "tech_cloud", TitleKey = "reallife_map_row_cloud", Colour = new Color(0.08f, 0.62f, 0.68f), Icon = MapIcon.Cloud,
+                Enabled = () => Settings.TechSiteCloud && Settings.TechSector,
+                Stamp = () => Tech.TechSites.Instance != null ? Tech.TechSites.Instance.CloudStamp : 0,
+                Fill = places => Tech.TechSites.Instance.CloudPlaces(places)
             });
             // Licences: the learner-plate boards at the school buildings (found a few buildings a second).
             _links.Add(new Link
@@ -554,8 +572,10 @@ namespace RealLifeOverhaul
 
         private static void BusStops(List<MapPlace> places)
         {
-            List<TransitStop> stops = TransitMap.Stops;
+            // One marker a place: a place several lines stop at names them all.
+            List<TransitStop> stops = TransitMap.Places;
             string pattern = T("reallife_map_bus_stop");
+            string shared = T("reallife_map_bus_stop_lines");
             for (int i = 0; i < stops.Count; i++)
             {
                 TransitStop stop = stops[i];
@@ -564,9 +584,11 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 TransitLine line = stop.Line >= 0 && stop.Line < TransitMap.Lines.Count ? TransitMap.Lines[stop.Line] : null;
-                string name = pattern.Replace("{line}", line != null ? line.Number : string.Empty)
-                    .Replace("{to}", line != null && !string.IsNullOrEmpty(line.ToKey) ? line.To : string.Empty)
-                    .Replace("{name}", stop.Name ?? (stop.Order + 1).ToString());
+                string name = stop.Calls.Count > 1
+                    ? shared.Replace("{lines}", TransitMap.Numbers(stop, ", ")).Replace("{name}", stop.Name ?? (stop.Order + 1).ToString())
+                    : pattern.Replace("{line}", line != null ? line.Number : string.Empty)
+                        .Replace("{to}", line != null && !string.IsNullOrEmpty(line.ToKey) ? line.To : string.Empty)
+                        .Replace("{name}", stop.Name ?? (stop.Order + 1).ToString());
                 places.Add(new MapPlace(stop.Sign, name));
             }
         }

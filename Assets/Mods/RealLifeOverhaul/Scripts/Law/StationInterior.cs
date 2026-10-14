@@ -241,6 +241,7 @@ namespace RealLifeOverhaul.Law
             Furnish(desk, bench, cell);   // the game's own furniture round all of it (StationInterior.Furnish.cs)
             _nextPeople = 0f;
             BeginCast(desk);              // its people, seated and at work at once, under the fade (StationInterior.Cast.cs)
+            BeginFill();                  // what floor is still bare, a city office's back rooms, a little a frame (StationInterior.Fill.cs)
             _logger?.Info($"Law: {precinct.Name}: inside: room {_length:F1} m deep from the door: {_fitted}.");
         }
 
@@ -285,6 +286,7 @@ namespace RealLifeOverhaul.Law
             {
                 return;
             }
+            TickFill(now);
             _sergeant.Tick(now);
             _visitor.Tick(now);
             for (int i = 0; i < _staff.Length; i++)
@@ -365,6 +367,7 @@ namespace RealLifeOverhaul.Law
                     Show(_desks[i], false);
                 }
                 EndCast();
+                EndFill();
                 HideFurniture();
                 RestoreLook();
             }

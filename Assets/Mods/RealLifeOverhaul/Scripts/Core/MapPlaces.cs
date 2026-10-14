@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>The glyphs a map category can be given without bringing a sprite of its own. Each is drawn in code, once, white on nothing.</summary>
     public enum MapIcon
     {
-        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Custom
+        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Tower, Cloud, Coin, House, Heart, Custom
     }
 
     /// <summary>One place of the mod's on the city map.</summary>
@@ -1047,6 +1047,7 @@ namespace RealLifeOverhaul
             if (_gameLooking && !looking)
             {
                 _lightLook++;   // the game's look at every building is over
+                RealLifeOverhaul.SpecialBuildings.Unlist();   // the mod's buildings are not to let nor for sale: out of those rows (lit again below where a row of ours wants them)
             }
             _gameLooking = looking;
             for (int i = 0; i < Lights.Count; i++)
@@ -1090,8 +1091,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the driver
 
+        private static readonly int HotOnMap = HotSpots.Slot("Core: MapPlaces.OnMap");
         private static void OnMap(bool open)
         {
+            using var hotSpot = HotSpots.Time(HotOnMap);
             _mapOpen = open;
             _lightLook++;   // (every place is lit afresh on the map that has just opened)
             _gameLooking = false;
@@ -1306,10 +1309,12 @@ namespace RealLifeOverhaul
                 }
             }
 
+            private static readonly int HotLateUpdate = HotSpots.Slot("Core: Driver.LateUpdate");
             // After the game's own work of the frame: its look at the buildings (GameManager.Update), and the card it writes
             // the moment a building comes under the mouse or is picked.
             private void LateUpdate()
             {
+                using var hotSpot = HotSpots.Time(HotLateUpdate);
                 if (FrameGuard.Off)
                 {
                     enabled = false;   // (its feature was switched off after its faults: Core/Guard)
@@ -1493,6 +1498,52 @@ namespace RealLifeOverhaul
                     Rect(true, 17f, 15f, 27f, 18f);
                     Rect(true, 34f, 22f, 47f, 36.5f);
                     Rect(true, 34f, 15f, 47f, 18f);
+                    break;
+                case MapIcon.Tower:
+                    // An office tower: its block, three columns of windows, the door at its foot (y runs up).
+                    Rect(true, 14f, 4f, 50f, 60f);
+                    for (int floor = 0; floor < 5; floor++)
+                    {
+                        for (int column = 0; column < 3; column++)
+                        {
+                            Rect(false, 19f + column * 10f, 18f + floor * 8.4f, 25f + column * 10f, 23.5f + floor * 8.4f);
+                        }
+                    }
+                    Rect(false, 28f, 4f, 36f, 13f);
+                    break;
+                case MapIcon.Cloud:
+                    // A cloud over a rack's two lit servers.
+                    Disc(true, 22f, 40f, 11f);
+                    Disc(true, 36f, 45f, 13f);
+                    Disc(true, 47f, 37f, 9f);
+                    Rect(true, 12f, 30f, 54f, 40f);
+                    Rect(true, 18f, 6f, 46f, 15f);
+                    Rect(true, 18f, 18f, 46f, 27f);
+                    Rect(false, 21f, 9f, 25f, 12f);
+                    Rect(false, 21f, 21f, 25f, 24f);
+                    break;
+                case MapIcon.Coin:
+                    // A coin: its rim, and a dollar sign struck on its face in six strokes.
+                    Ring(32f, 32f, 27f, 5f);
+                    Line(true, 23f, 43f, 41f, 43f, 4.5f);
+                    Line(true, 23f, 43f, 23f, 32f, 4.5f);
+                    Line(true, 23f, 32f, 41f, 32f, 4.5f);
+                    Line(true, 41f, 32f, 41f, 21f, 4.5f);
+                    Line(true, 41f, 21f, 23f, 21f, 4.5f);
+                    Line(true, 32f, 13f, 32f, 51f, 4.5f);
+                    break;
+                case MapIcon.House:
+                    // A house: its roof, its walls, the door (y runs up).
+                    Poly(true, 4, 32, 32, 58, 60, 32);
+                    Rect(true, 12f, 6f, 52f, 34f);
+                    Rect(false, 27f, 6f, 37f, 22f);
+                    Rect(true, 42f, 44f, 48f, 56f);
+                    break;
+                case MapIcon.Heart:
+                    // A heart: two lobes and the point below them.
+                    Disc(true, 21f, 40f, 13f);
+                    Disc(true, 43f, 40f, 13f);
+                    Poly(true, 9, 36, 55, 36, 32, 8);
                     break;
                 default:
                     Rect(true, 24f, 7f, 40f, 57f);

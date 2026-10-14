@@ -19,8 +19,10 @@ namespace RealLifeOverhaul
         private bool _imperial;
         private bool _shown;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Driving: Speedometer.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

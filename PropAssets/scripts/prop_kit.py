@@ -453,6 +453,51 @@ _stage = None
 _placed = []
 
 
+def use_gpu():
+    """Renders on the NVIDIA card, never the integrated one: Cycles set to OptiX (CUDA if OptiX will not start) on the NVIDIA
+    devices only, and the previews' EEVEE, which draws on whichever card Blender's own GPU context is on, says which that is.
+    Printed once a run, so a run on the wrong card shows."""
+    try:
+        prefs = bpy.context.preferences.addons["cycles"].preferences
+        for kind in ("OPTIX", "CUDA"):
+            try:
+                prefs.compute_device_type = kind
+                prefs.get_devices()
+            except Exception:
+                continue
+            if any(d.type == kind and "NVIDIA" in d.name for d in prefs.devices):
+                break
+        for d in prefs.devices:
+            d.use = d.type == prefs.compute_device_type and "NVIDIA" in d.name
+        for scene in bpy.data.scenes:
+            scene.cycles.device = "GPU"
+        cycles = ", ".join(d.name for d in prefs.devices if d.use) or "no NVIDIA device"
+    except Exception as e:
+        cycles = "not set (%s)" % e
+    global _cycles_said
+    _cycles_said = cycles
+
+
+_cycles_said = None
+_gpu_said = False
+
+
+def _say_gpu():
+    """After the first render, when EEVEE's drawing context is up: the card it drew on."""
+    global _gpu_said
+    if _gpu_said:
+        return
+    _gpu_said = True
+    try:
+        import gpu
+        drawing = "%s %s" % (gpu.platform.vendor_get(), gpu.platform.renderer_get())
+    except Exception as e:
+        drawing = "unknown (%s)" % e
+    print("render device: EEVEE drew on %s; Cycles is set to %s" % (drawing, _cycles_said))
+    if "NVIDIA" not in drawing.upper():
+        print("render device: WARNING, not the NVIDIA card (start Blender with --gpu-backend vulkan, or set Blender to the NVIDIA card in Windows' graphics settings)")
+
+
 def new_scene(ground=(0.20, 0.20, 0.21)):
     """The preview stage, emptied of props: a neutral ground, daylight and a camera. Made once per run."""
     global _stage
@@ -464,6 +509,7 @@ def new_scene(ground=(0.20, 0.20, 0.21)):
     if _stage:
         return _stage
     bpy.ops.wm.read_factory_settings(use_empty=True)
+    use_gpu()
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.eevee.taa_render_samples = 32
@@ -566,6 +612,7 @@ def render(scene, path, width=480, height=480):
     scene.render.resolution_x, scene.render.resolution_y = width, height
     scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
+    _say_gpu()
 
 
 def compact(image, path):

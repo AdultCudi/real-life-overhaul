@@ -59,6 +59,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A degree the business sponsors for a professional: its fee now, whole money, or 0 with the university closed (Careers). Default: none.</summary>
         public static Func<int> DegreeFee;
 
+        /// <summary>
+        /// True once the features that take one of the city's buildings before the tech companies' headquarters have chosen
+        /// theirs (the utilities office, the courthouse, the police stations, the university: Wiring/TechLinks), so that a
+        /// headquarters is never one of them. Default: true.
+        /// </summary>
+        public static Func<bool> OthersPicked;
+
 
         public static int CourseShare()
         {
@@ -84,6 +91,54 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>Thousandths a professional's morale heads higher for the comfort of their workplace, by its place, 0 to 100 (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<string, int> Comfort;
+
+        /// <summary>What the player's best office adds to the esteem candidates on the jobs board feel, 0 to 3 (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<int> Office;
+
+        /// <summary>Thousandths a firm's bids weigh better for its office, by its place, 0 to 50 (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<string, int> OfficeBid;
+
+        public static int ComfortAt(string place)
+        {
+            try
+            {
+                return Comfort != null ? Math.Max(0, Math.Min(100, Comfort(place))) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>The esteem candidates feel: the player's as an employer and their best office's, -10 to 10.</summary>
+        public static int HiringEsteem()
+        {
+            int office;
+            try
+            {
+                office = Office != null ? Math.Max(0, Math.Min(3, Office())) : 0;
+            }
+            catch (Exception)
+            {
+                office = 0;
+            }
+            return Math.Max(-10, Math.Min(10, EsteemNow() + office));
+        }
+
+        public static int OfficeBidAt(string place)
+        {
+            try
+            {
+                return OfficeBid != null ? Math.Max(0, Math.Min(50, OfficeBid(place))) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static int EsteemNow()
         {
             try
@@ -99,6 +154,9 @@ namespace RealLifeOverhaul.Tech
         public static void Reset()
         {
             Esteem = null;
+            Comfort = null;
+            Office = null;
+            OfficeBid = null;
             Rival = null;
             Standing = null;
             Held = null;
@@ -114,6 +172,7 @@ namespace RealLifeOverhaul.Tech
             Founder = null;
             CourseShareBp = null;
             DegreeFee = null;
+            OthersPicked = null;
         }
     }
 }

@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Flare
         Headline = 24,     // the City Ledger's own account: a headline of the morning paper
         Issue = 25,        // the player about an issue in the city (safety after a crime, the roads after a crash)
         Campaign = 26,     // the player about their own run for office or their office (Civic/CivicOffice, through Wiring/FlareLinks)
-        Graduated = 27     // the player graduated at the university's ceremony (Careers, through Wiring/FlareLinks)
+        Graduated = 27,    // the player graduated at the university's ceremony (Careers, through Wiring/FlareLinks)
+        Interior = 28      // a business of the player's with a striking interior (Scripts/Interiors, through Wiring/InteriorLinks)
     }
 
     /// <summary>The issues a post can raise, as Flare knows them (Wiring/FlareLinks turns them into the council's own).</summary>
@@ -394,6 +395,21 @@ namespace RealLifeOverhaul.Flare
         public bool Ended;           // the player ended it (a scandal), or it ran out
 
         public bool On(int day) => !Ended && day >= From && day <= To;
+    }
+
+    /// <summary>
+    /// A campaign of the company's at one of the player's businesses, running or booked, as Flare is told of it
+    /// (Wiring/FlareLinks): read when the Business tab is written, never kept.
+    /// </summary>
+    public struct FlareCampaign
+    {
+        public string Place;
+        public string Name;          // the business
+        public string Campaign;      // the campaign, in words
+        public int Kind;             // the company's CampaignKind
+        public int From, To;         // the first and the last day
+        public int Percent;          // the customers it adds
+        public bool OnFlare;         // hired on Flare; otherwise booked from the Company app
     }
 
     /// <summary>What the daily round did, for the one log line.</summary>

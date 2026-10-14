@@ -145,6 +145,20 @@ namespace RealLifeOverhaul.Meta
             return text.ToString();
         }
 
+        /// <summary>
+        /// The last line of an app's page: the Guide's page that explains it, named as the Guide's list names it
+        /// ("Guide: <b>Stock market</b>"). Every app ends its pages this way, so that what a figure means and how a
+        /// rule works is read in the Guide and the page itself holds only the figures and the actions. A few strings,
+        /// written with the page (on a click).
+        /// </summary>
+        public static void Point(GameUi.InfoBox box, string featureTitleKey)
+        {
+            if (box != null)
+            {
+                box.Row("reallife_guide_app", featureTitleKey.GetLocalization());
+            }
+        }
+
         // ---------------------------------------------------------------- facts and mark-up
 
         /// <summary>An amount of money as the game writes it.</summary>

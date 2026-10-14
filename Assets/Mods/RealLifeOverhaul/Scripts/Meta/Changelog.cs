@@ -24,10 +24,10 @@ namespace RealLifeOverhaul.Meta
     public static class Changelog
     {
         /// <summary>The version this table was last brought up to; used when the assembly carries no version of its own.</summary>
-        public const string Latest = "0.7.3";
+        public const string Latest = "0.9.12";
 
         /// <summary>Order of a row for work merged after the last numbered version: above the newest numbered row, below the next one.</summary>
-        public const int Unnumbered = 7035;   // OrderOf(Latest) + 5: it moves up with Latest
+        public const int Unnumbered = 9125;   // OrderOf(Latest) + 5: it moves up with Latest
 
         public sealed class Entry
         {
@@ -46,6 +46,27 @@ namespace RealLifeOverhaul.Meta
         public static readonly Entry[] All =
         {
             new Entry(Unnumbered, "reallife_changes_next_title", "reallife_changes_next"),
+            new Entry(9120, "reallife_changes_009_12_title", "reallife_changes_009_12"),
+            new Entry(9110, "reallife_changes_009_11_title", "reallife_changes_009_11"),
+            new Entry(9100, "reallife_changes_009_10_title", "reallife_changes_009_10"),
+            new Entry(9090, "reallife_changes_009_9_title", "reallife_changes_009_9"),
+            new Entry(9080, "reallife_changes_009_8_title", "reallife_changes_009_8"),
+            new Entry(9070, "reallife_changes_009_7_title", "reallife_changes_009_7"),
+            new Entry(9060, "reallife_changes_009_6_title", "reallife_changes_009_6"),
+            new Entry(9050, "reallife_changes_009_5_title", "reallife_changes_009_5"),
+            new Entry(9040, "reallife_changes_009_4_title", "reallife_changes_009_4"),
+            new Entry(9030, "reallife_changes_009_3_title", "reallife_changes_009_3"),
+            new Entry(9020, "reallife_changes_009_2_title", "reallife_changes_009_2"),
+            new Entry(9010, "reallife_changes_009_1_title", "reallife_changes_009_1"),
+            new Entry(9000, "reallife_changes_009_0_title", "reallife_changes_009_0"),
+            new Entry(8020, "reallife_changes_008_2_title", "reallife_changes_008_2"),
+            new Entry(8010, "reallife_changes_008_1_title", "reallife_changes_008_1"),
+            new Entry(8000, "reallife_changes_008_0_title", "reallife_changes_008_0"),
+            new Entry(7080, "reallife_changes_007_8_title", "reallife_changes_007_8"),
+            new Entry(7070, "reallife_changes_007_7_title", "reallife_changes_007_7"),
+            new Entry(7060, "reallife_changes_007_6_title", "reallife_changes_007_6"),
+            new Entry(7050, "reallife_changes_007_5_title", "reallife_changes_007_5"),
+            new Entry(7040, "reallife_changes_007_4_title", "reallife_changes_007_4"),
             new Entry(7030, "reallife_changes_007_3_title", "reallife_changes_007_3"),
             new Entry(7020, "reallife_changes_007_2_title", "reallife_changes_007_2"),
             new Entry(7010, "reallife_changes_007_1_title", "reallife_changes_007_1"),

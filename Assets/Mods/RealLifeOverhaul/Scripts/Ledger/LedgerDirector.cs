@@ -114,8 +114,10 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Ledger: LedgerDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

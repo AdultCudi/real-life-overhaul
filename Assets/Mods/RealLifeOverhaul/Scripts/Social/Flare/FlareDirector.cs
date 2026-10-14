@@ -257,9 +257,11 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- the hour and the day
 
+        private static readonly int HotOnHour = HotSpots.Slot("Social: FlareDirector.OnHour");
         // GlobalEvents.onNewHour: a promotion, a ballot or an endorsement since the last hour becomes a draft.
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (!Running || Save == null)
             {
                 return;
@@ -309,9 +311,11 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Social: FlareDirector.OnDay");
         // GlobalEvents.onNewDay: after the game's daily run, so yesterday's statement of every business is there.
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (!Running || Save == null)
             {
                 return;

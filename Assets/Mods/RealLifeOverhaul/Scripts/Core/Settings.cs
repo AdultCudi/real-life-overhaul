@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
         public const string AccidentFrequencyId = "accident_frequency";
         public const string AccidentNoticesId = "accident_notices";
         public const string AccidentMarkerId = "accident_marker";
+        public const string TowTrucksId = "tow_trucks";
         public const string SirenId = "siren";
         public const string PoliceId = "police";
         public const string PolicePursuitId = "police_pursuit";
@@ -46,6 +47,7 @@ namespace RealLifeOverhaul
         public const string SolidStreetsId = "solid_streets";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
+        public const string NoticeLookId = "notice_look";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
         public const string CarTuningId = "car_tuning";
         public const string CarTopSpeedId = "car_top_speed";
@@ -121,6 +123,10 @@ namespace RealLifeOverhaul
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
         public const string TechStartupsId = "tech_startups";
+        public const string TechSiteRoomsId = "tech_site_rooms";
+        public const string TechSiteHqId = "tech_site_hq";
+        public const string TechSiteCloudId = "tech_site_cloud";
+        public const string TechSiteOfficesId = "tech_site_offices";
         public const string EconomyDealerId = "economy_dealer";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
@@ -227,6 +233,23 @@ namespace RealLifeOverhaul
         public const string BusinessCustomersId = "business_customers";
         public const string BusinessAuditId = "business_audit";
         public const string BusinessOpportunitiesId = "business_opportunities";
+        public const string InteriorsId = "interiors";
+        public const string InteriorsStandardStrengthId = "interiors_standard_strength";
+        public const string InteriorsDecorStrengthId = "interiors_decor_strength";
+        public const string InteriorsPricesStrengthId = "interiors_prices_strength";
+        public const string InteriorsWearStrengthId = "interiors_wear_strength";
+        public const string InteriorsBasketId = "interiors_basket";
+        // The drop-downs the four sliders above replaced (0.8.2 to 0.9.10), read while a slider has no saved value yet so
+        // that a choice made there is kept (InteriorRules' "Was" tables); the reward's had no slider of its own to go to.
+        private const string StandardLevelWas = "interiors_standard_level", DecorLevelWas = "interiors_decor_level", PricesLevelWas = "interiors_prices_level", WearLevelWas = "interiors_wear_level";
+        // The switches those drop-downs replaced (0.8.0): read when neither has a saved choice, so that a part switched
+        // off stays off. They have no row of their own any more.
+        private const string StandardSwitchWas = "interiors_standard", DecorSwitchWas = "interiors_decor", PricesSwitchWas = "interiors_prices", WearSwitchWas = "interiors_wear";
+        // Set once the basket's and the decor's old defaults (off, and 5%: level 1) were moved to the new ones (MoveInteriorDefaults). No row of its own.
+        private const string InteriorDefaultsMoved = "interiors_defaults_moved";
+        private const int DecorChoiceWas = 1, DecorChoiceNow = 2;   // (the decor drop-down's 5% and 10%)
+        public const string InteriorsStandingId = "interiors_standing";
+        public const string InteriorsStaffId = "interiors_staff";
         public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
@@ -247,6 +270,7 @@ namespace RealLifeOverhaul
         public static bool TrafficAccidents = true;
         public static bool AccidentNotices = true;   // the notifications (and their sound) as an accident of other people's unfolds; off, it still happens
         public static bool AccidentMarker = true;    // the game's destination marker on an accident, and so the route to it
+        public static bool TowTrucks = true;         // a tow truck takes a wreck away once its scene has cleared (Traffic/Tow); off, the wreck simply goes
         public static int AccidentFrequency = 2;     // 1 = rare, 10 = constant
         public static bool Siren = true;
         public static bool Police = true;            // patrol cars attend accidents and chase hit-and-run drivers
@@ -269,6 +293,7 @@ namespace RealLifeOverhaul
         public static bool SmoothThrottle = true;    // the throttle key eases the pedal down instead of flooring it
         public static bool Speedometer = true;
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
+        public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour (Core/GameUi/NoticeLook); off: they look like the game's
         public static bool CarCamera = true;     // chase camera while driving
         public static int CarCameraDistance = 8; // metres behind the car
         public static int CameraHeight = 15;     // look-at height above the player's feet, in tenths of a metre
@@ -339,6 +364,10 @@ namespace RealLifeOverhaul
         public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
         public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
         public static bool TechSector = true;            // the tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs of the player's, products with customers and recurring revenue, client contracts and tenders, outages and breaches, in the Tech app (off: those businesses earn nothing of their own; their files are kept) (Scripts/Tech/Firms)
+        public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside: rows of racks by its tier and the racks bought, cooling, power, trays, a raised floor, status lights, technicians; amber and dim in an outage (Scripts/Tech/Sites)
+        public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters: its name on the map, the GPS and the card, a furnished lobby and the rest of its floor fitted out (Scripts/FitOut), and the jobs there (Scripts/Tech/Sites)
+        public static bool TechSiteCloud = true;         // the player's data centres signed outside with the cloud's name, with a security booth and a barrier where there is room, and on the map as "Your cloud" (Scripts/Tech/Sites)
+        public static bool TechSiteOffices = true;       // a few tech fittings (a server closet, a developer's desk, a whiteboard) in an office a tech firm of the player's runs in, where there is room (Scripts/Tech/Sites)
         public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
         public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
@@ -466,6 +495,14 @@ namespace RealLifeOverhaul
         public static bool BusinessCustomers = true;
         public static bool BusinessAudit = true;
         public static bool BusinessOpportunities = true;
+        public static bool Interiors = true;                // how a business looks counts: the game's interior design score, a decor score from the placed items, wear, the district's standard, and a BizMan tab (off: none of the parts below, and the tab is gone) (Scripts/Interiors)
+        public static int InteriorsStandardStrength = 100;  // (InteriorRules.StrengthDefault) per cent, 0 off to 200 double: each district's standard, what falling short of it costs (customers, complaints: 6% at most at 100) and being over it brings (with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static int InteriorsDecorStrength = 100;     // per cent, 0 off to 200 double: the customers decor brings (10% at a decor score of 100 at 100), and an office's clients (with Meaningful Ambience on: nothing) (Scripts/Interiors)
+        public static int InteriorsPricesStrength = 100;    // per cent, 0 off to 200 double: what a nicer place lets a shop charge: the price the district bears over the standard (3% at most at 100) and the basket's share (Scripts/Interiors)
+        public static int InteriorsWearStrength = 100;      // per cent, 0 off to 200 double: how fast finishes wear and get dirty (Scripts/Interiors)
+        public static bool InteriorsBasket = true;          // over the standard each customer takes more products the shop has in stock, by the size of their order (it adds to the game's own list of the hour's customers) (with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
+        public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
 
         private static string _modId;
@@ -512,6 +549,7 @@ namespace RealLifeOverhaul
             TrafficAccidents = Bool(modId, TrafficAccidentsId, TrafficAccidents);
             AccidentNotices = Bool(modId, AccidentNoticesId, AccidentNotices);
             AccidentMarker = Bool(modId, AccidentMarkerId, AccidentMarker);
+            TowTrucks = Bool(modId, TowTrucksId, TowTrucks);
             AccidentFrequency = Int(modId, AccidentFrequencyId, AccidentFrequency);
             Siren = Bool(modId, SirenId, Siren);
             Police = Bool(modId, PoliceId, Police);
@@ -529,6 +567,7 @@ namespace RealLifeOverhaul
             SolidStreets = Bool(modId, SolidStreetsId, SolidStreets);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
+            NoticeLook = Bool(modId, NoticeLookId, NoticeLook);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
             CarTopSpeed = Int(modId, CarTopSpeedId, CarTopSpeed);
             CarAcceleration = Int(modId, CarAccelerationId, CarAcceleration);
@@ -611,6 +650,10 @@ namespace RealLifeOverhaul
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
+            TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);
+            TechSiteHq = Bool(modId, TechSiteHqId, TechSiteHq);
+            TechSiteCloud = Bool(modId, TechSiteCloudId, TechSiteCloud);
+            TechSiteOffices = Bool(modId, TechSiteOfficesId, TechSiteOffices);
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
@@ -717,6 +760,15 @@ namespace RealLifeOverhaul
             BusinessCustomers = Bool(modId, BusinessCustomersId, BusinessCustomers);
             BusinessAudit = Bool(modId, BusinessAuditId, BusinessAudit);
             BusinessOpportunities = Bool(modId, BusinessOpportunitiesId, BusinessOpportunities);
+            Interiors = Bool(modId, InteriorsId, Interiors);
+            MoveInteriorDefaults(modId);
+            InteriorsStandardStrength = Strength(modId, InteriorsStandardStrengthId, StandardLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.StandardWas, StandardSwitchWas, InteriorsStandardStrength);
+            InteriorsDecorStrength = Strength(modId, InteriorsDecorStrengthId, DecorLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.DecorWas, DecorSwitchWas, InteriorsDecorStrength);
+            InteriorsPricesStrength = Strength(modId, InteriorsPricesStrengthId, PricesLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.PricesWas, PricesSwitchWas, InteriorsPricesStrength);
+            InteriorsWearStrength = Strength(modId, InteriorsWearStrengthId, WearLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.WearWas, WearSwitchWas, InteriorsWearStrength);
+            InteriorsBasket = Bool(modId, InteriorsBasketId, InteriorsBasket);
+            InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
+            InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
         }
 
         /// <summary>
@@ -747,6 +799,50 @@ namespace RealLifeOverhaul
                 UnityEngine.PlayerPrefs.SetInt(key, on ? 1 : 0);
             }
             return changed;
+        }
+
+        /// <summary>
+        /// Once only (the marker below): the basket came on by default and the customers decor brings went from 5% to 10%,
+        /// as the other authors' Meaningful Interiors and Meaningful Ambience have them. A saved basket still at its old
+        /// default (off) is switched on, and a saved decor choice still at its old default (5%) moves to 10%. Any other
+        /// value stays as it is, and whatever is chosen afterwards is never touched again.
+        /// </summary>
+        private static void MoveInteriorDefaults(string modId)
+        {
+            string done = Key(modId, InteriorDefaultsMoved);
+            if (UnityEngine.PlayerPrefs.GetInt(done, 0) != 0)
+            {
+                return;
+            }
+            string basket = Key(modId, InteriorsBasketId), decor = Key(modId, DecorLevelWas);
+            if (UnityEngine.PlayerPrefs.HasKey(basket) && UnityEngine.PlayerPrefs.GetInt(basket, 0) == 0)
+            {
+                UnityEngine.PlayerPrefs.SetInt(basket, 1);
+            }
+            if (UnityEngine.PlayerPrefs.HasKey(decor) && UnityEngine.PlayerPrefs.GetInt(decor, 0) == DecorChoiceWas)
+            {
+                UnityEngine.PlayerPrefs.SetInt(decor, DecorChoiceNow);
+            }
+            UnityEngine.PlayerPrefs.SetInt(done, 1);
+        }
+
+        /// <summary>
+        /// A strength slider of the interiors (per cent, 0 to 200): its saved value; while it has none, the drop-down it
+        /// replaced as its slider figure (a choice made there is kept); while neither has one, off if the switch before
+        /// them was switched off, and otherwise the default. Nothing is written: the old rows stay as they were.
+        /// </summary>
+        private static int Strength(string modId, string id, string levelWas, int[] was, string switchWas, int fallback)
+        {
+            string key = Key(modId, id), old = Key(modId, levelWas);
+            if (UnityEngine.PlayerPrefs.HasKey(key))
+            {
+                return global::RealLifeOverhaul.Interiors.InteriorRules.Clamp(UnityEngine.PlayerPrefs.GetInt(key, fallback), global::RealLifeOverhaul.Interiors.InteriorRules.StrengthLeast, global::RealLifeOverhaul.Interiors.InteriorRules.StrengthMost);
+            }
+            if (UnityEngine.PlayerPrefs.HasKey(old))
+            {
+                return global::RealLifeOverhaul.Interiors.InteriorRules.Was(was, UnityEngine.PlayerPrefs.GetInt(old, 0));
+            }
+            return Bool(modId, switchWas, true) ? fallback : 0;
         }
 
         // Same key format the game uses when it saves mod options.

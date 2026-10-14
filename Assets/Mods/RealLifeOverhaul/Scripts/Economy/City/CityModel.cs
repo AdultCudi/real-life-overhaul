@@ -507,6 +507,15 @@ namespace RealLifeOverhaul.Economy
             return income * Spend(state.Cycle, level) / 1000;
         }
 
+        /// <summary>
+        /// What a district bears at one business, thousandths: the district's tolerance with the business's own part on it
+        /// (its interior, Scripts/Interiors), that part kept to a tenth either way whatever is asked.
+        /// </summary>
+        public static int WithBears(int tolerance, int bears)
+        {
+            return (int)((long)tolerance * (1000 + Math.Max(-100, Math.Min(100, bears))) / 1000);
+        }
+
         /// <summary>A business's prices against what its district bears, in thousandths (1000: exactly what it bears), from its prices against the game's own.</summary>
         public static int Against(int priceRatio, int tolerance)
         {

@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Flare
         public const int FeedRows = 20;            // the Feed shows this many
 
         // ---- what a post is worth, thousandths, by FlareSource (Life: a friend's own, worth nothing to the player)
-        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800, 950 };
+        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800, 950, 850 };
         public const int WithFriend = 250;         // a friend tagged in it
         public const int InsideShop = 100;         // a picture taken in one of the player's businesses
 
@@ -76,7 +76,8 @@ namespace RealLifeOverhaul.Flare
             { 1000, 1000, 1000, 1000 },   // Headline
             {  800,  900, 1150,  950 },   // Issue
             { 1050, 1000, 1100,  800 },   // Campaign: proud of one's own run is fine; cheek about it less so
-            { 1150, 1150, 1000,  950 }    // Graduated: cheerful and proud both suit it
+            { 1150, 1150, 1000,  950 },   // Graduated: cheerful and proud both suit it
+            { 1100, 1100,  950, 1000 }    // Interior: a place to be proud of; cheek about it is fine too
         };
         public const int BadFit = 650;             // a fit under this goes badly
         public const int GoodFit = 1150;           // ...one at or over this is well liked: a point of reputation
@@ -575,6 +576,38 @@ namespace RealLifeOverhaul.Flare
         public static int SponsoredCost(int reach, int reputation)
         {
             return (int)((long)reach * (1100 - 2 * Clamp(reputation, 0, 100)) / 1000);
+        }
+
+        // ---------------------------------------------------------------- the company's campaigns on the Business tab
+
+        /// <summary>
+        /// Whether a campaign of the company's is one of Flare's own deals still on (the same business, kind and first
+        /// day): that one already has its row as a deal. Any other campaign gets a row of its own, so the Business tab
+        /// shows everything that keeps a business from a new hire.
+        /// </summary>
+        public static bool IsDeal(FlareFile f, string place, int kind, int from)
+        {
+            for (int i = 0; f != null && i < f.Hires.Count; i++)
+            {
+                FlareHire h = f.Hires[i];
+                if (!h.Ended && h.Kind == kind && h.From == from && string.Equals(h.Place, place, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The key that says how a campaign was booked: from the Company app, or hired on Flare.</summary>
+        public static string BusyKey(bool onFlare)
+        {
+            return onFlare ? "reallife_flare_busy_flare" : "reallife_flare_busy_company";
+        }
+
+        /// <summary>The key that says when: running until its last day, or booked for its day or days.</summary>
+        public static string BusyWhenKey(int day, int from, int to)
+        {
+            return day >= from ? "reallife_flare_busy_running" : from >= to ? "reallife_flare_busy_booked_day" : "reallife_flare_busy_booked_days";
         }
 
         // ---------------------------------------------------------------- the rest of the city

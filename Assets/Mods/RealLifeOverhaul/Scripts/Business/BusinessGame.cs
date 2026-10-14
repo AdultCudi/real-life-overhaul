@@ -45,6 +45,14 @@ namespace RealLifeOverhaul
         /// </summary>
         public static Func<BuildingRegistration, int> Ambient;
 
+        /// <summary>
+        /// What the business's interior adds to its footfall, in per cent of customers (set by Wiring/InteriorLinks; nothing
+        /// while it is not set): a part of its own beside the ambient one, kept inside <see cref="BusinessCatalogue.InteriorMostDip"/>
+        /// and <see cref="BusinessCatalogue.InteriorMostBoost"/>, so that the decor's strongest choice is not lost under what
+        /// the city's economy and the rest of the mod add.
+        /// </summary>
+        public static Func<BuildingRegistration, int> Interior;
+
         /// <summary>The last business <see cref="Footfall"/> wrote: its own promotion figure and what was written.</summary>
         public static int LastOwn, LastWritten;
 
@@ -378,14 +386,16 @@ namespace RealLifeOverhaul
                 }
                 int own = reg.promotion.total;
                 int ambient = Ambient != null ? Ambient(reg) : 0;
-                reg.promotion.total = BusinessCatalogue.Written(own, percent, ambient, SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier);
+                int interior = Interior != null ? Interior(reg) : 0;
+                reg.promotion.total = BusinessCatalogue.Written(own, percent, ambient, interior, SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier);
                 LastOwn = own;
                 LastWritten = reg.promotion.total;
                 if (regenerate)
                 {
-                    CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, TimeHelper.GetDayOfWeek());
+                    CustomerDraw.Redraw(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
                     Logger?.Info("Business: footfall at " + Name(reg) + " " + (percent >= 0 ? "+" : string.Empty) + percent + " %"
-                                 + (ambient != 0 ? " and " + (ambient > 0 ? "+" : string.Empty) + ambient + " % from the city's economy" : string.Empty) + ": promotion " + own + " -> "
+                                 + (ambient != 0 ? " and " + (ambient > 0 ? "+" : string.Empty) + ambient + " % from the city's economy" : string.Empty)
+                                 + (interior != 0 ? " and " + (interior > 0 ? "+" : string.Empty) + interior + " % from its interior" : string.Empty) + ": promotion " + own + " -> "
                                  + reg.promotion.total + ".");
                 }
                 return true;

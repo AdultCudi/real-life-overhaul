@@ -211,7 +211,7 @@ namespace RealLifeOverhaul
             {
                 TrafficTools.Remove(pick, "a taxi taken from out of sight to answer a call");
             }
-            VehicleComponent car = TrafficManager.Instance.LoadVehicle(prefab, start);
+            VehicleComponent car = TrafficTools.Load(prefab, start);   // an idle taxi of that prefab (the one just taken off is one), never one taken by its model
             if (car == null)
             {
                 startTaken = true;

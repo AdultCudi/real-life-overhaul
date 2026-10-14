@@ -415,7 +415,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            why = _bank.Running ? "reallife_ob_why_already" : _bank.State == OwnBankState.Closed ? "reallife_ob_why_closed_before" : null;
+            why = _bank.Running ? "reallife_ob_why_already" : OwnBankGame.AgainWhy(_bank);   // (a bank the regulator closed: a year, then a recovered integrity)
             BuildingRegistration hq = OwnBankGame.Headquarters();
             if (why == null && OwnBankBridges.Qualified != null && !OwnBankBridges.Qualified())
             {
@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Economy
                 why = "reallife_ob_why_no_hq";
             }
             int level = Prices.Level;
-            long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level);
+            long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, _bank.Closures);
             if (why == null && licence + capital > OwnBankGame.Cash)
             {
                 why = "reallife_ob_why_no_cash";

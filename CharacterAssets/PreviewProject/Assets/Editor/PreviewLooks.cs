@@ -86,6 +86,8 @@ namespace CharacterPreview
             settings.AlphaGain = Option(options, "gain", settings.AlphaGain);
             settings.WantedCore = Option(options, "want", settings.WantedCore);
             settings.Bounded = Option(options, "bounded", settings.Bounded ? 1f : 0f) > 0.5f;
+            settings.Deep = Option(options, "deep", settings.Deep);                                  // 1 = before 13 October
+            settings.KeepCover = Option(options, "keep", settings.KeepCover ? 1f : 0f) > 0.5f;     // 0 = before 13 October
             bool maps = Option(options, "maps", 1f) > 0.5f;
             Texture2D mask = maps ? Texture("hair_strand_mask", true) : null;
             Texture2D normal = maps ? Texture("hair_strand_normal", true) : null;
@@ -113,7 +115,7 @@ namespace CharacterPreview
                         if (settings.AlphaGain > 0f && strands)
                         {
                             Texture source = finished.GetTexture("_BaseColorMap");
-                            string key = source.name + settings.AlphaGain + "/" + settings.WantedCore;
+                            string key = source.name + settings.AlphaGain + "/" + settings.WantedCore + "/" + settings.Deep + "/" + settings.KeepCover;
                             if (!Textures.TryGetValue(key, out Texture2D denser))
                             {
                                 denser = HairFinish.Denser(source, settings, out HairRules.Cover cover);

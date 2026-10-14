@@ -57,8 +57,10 @@ namespace RealLifeOverhaul
         private TextMeshProUGUI _clock;
         private int _clockMinute = -1;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Phone: PhoneSkin.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

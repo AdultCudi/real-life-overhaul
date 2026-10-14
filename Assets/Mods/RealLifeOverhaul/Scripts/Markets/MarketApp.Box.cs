@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Markets
     public sealed partial class MarketApp
     {
         private const string CompanyRow = "co:", HoldingRow = "po:", SectorRow = "ix:", OrderRow = "or:", TradeRow = "tr:";
-        private const int NewsInBox = 5, TypedLength = 12;
+        private const int NewsInBox = 3, TypedLength = 12;   // the news in the box: the three newest (the Ledger's markets page has the rest)
         private const int QtyDefault = 10;
 
         private static readonly string[] SideKeys = { "reallife_mkt_side_buy", "reallife_mkt_side_sell" };
@@ -84,8 +84,8 @@ namespace RealLifeOverhaul.Markets
         {
             int today = Bp(s.IndexLast, s.IndexPrevClose);
             box.Title(MarketText.T("reallife_mkt_index"));
-            box.Line(MarketText.Fill("reallife_mkt_box_index", "level", IndexWords(s.IndexLast), "change", MarketText.Change(today)));
             StatusLine(box);
+            box.Line(MarketText.Fill("reallife_mkt_box_index", "level", IndexWords(s.IndexLast), "change", MarketText.Change(today)));
             box.Line(MarketText.Fill("reallife_mkt_box_rate", "rate", (s.Env.RateBp / 100f).ToString("0.00", CultureInfo.CurrentCulture) + "%",
                 "inflation", (s.Env.InflationBp / 100f).ToString("0.0", CultureInfo.CurrentCulture) + "%"));
             box.Headline("reallife_mkt_box_news");
@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Markets
                 box.Line(MarketText.T("reallife_mkt_box_no_news"));
             }
             OwnButton(box);
+            Meta.Guide.Point(box, GuideTitle);
 
             TableRow index = Row(SectorRow, -1);
             WriteIndex(index, MarketText.T("reallife_mkt_index"), s.IndexLast, s.IndexPrevClose, s.IndexDaily, null);
@@ -152,13 +153,14 @@ namespace RealLifeOverhaul.Markets
         private void WriteIndexBox(InfoBox box, MarketState s)
         {
             box.Title(MarketText.T("reallife_mkt_index"));
+            StatusLine(box);
             int today = Bp(s.IndexLast, s.IndexPrevClose);
             box.Line(MarketText.Fill("reallife_mkt_box_index", "level", IndexWords(s.IndexLast), "change", MarketText.Change(today)));
             box.Line(MarketText.Fill("reallife_mkt_box_range", "low", IndexWords(s.IndexLow), "high", IndexWords(s.IndexHigh)));
-            StatusLine(box);
-            box.Line(MarketText.T("reallife_mkt_box_index_about"));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_mkt_back", () => UiClone.Safe(ClosePage));
+            box.Line(MarketText.T("reallife_mkt_box_index_about"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- Companies and the watch list
@@ -195,9 +197,10 @@ namespace RealLifeOverhaul.Markets
                 row.Set(8, held != 0 ? Count(held) : string.Empty, held);
             }
             box.Title(MarketText.T(watched ? "reallife_mkt_tab_watch" : "reallife_mkt_tab_companies"));
-            box.Line(MarketText.Fill(watched ? "reallife_mkt_box_watched" : "reallife_mkt_box_listed", "count", listed.ToString(), "up", up.ToString(), "down", down.ToString()));
             StatusLine(box);
+            box.Line(MarketText.Fill(watched ? "reallife_mkt_box_watched" : "reallife_mkt_box_listed", "count", listed.ToString(), "up", up.ToString(), "down", down.ToString()));
             box.Line(MarketText.T(watched ? "reallife_mkt_box_watch_help" : "reallife_mkt_box_companies_help"));
+            Meta.Guide.Point(box, GuideTitle);
             return watched ? MarketTables.Watch : MarketTables.Companies;
         }
 
@@ -232,9 +235,10 @@ namespace RealLifeOverhaul.Markets
             else
             {
                 box.Title(MarketText.T("reallife_mkt_tab_orders"));
-                box.Line(MarketText.Fill("reallife_mkt_box_orders", "count", open.ToString(), "most", MarketCatalogue.OrdersMost.ToString()));
                 StatusLine(box);
+                box.Line(MarketText.Fill("reallife_mkt_box_orders", "count", open.ToString(), "most", MarketCatalogue.OrdersMost.ToString()));
                 box.Line(MarketText.T("reallife_mkt_box_orders_help"));
+                Meta.Guide.Point(box, GuideTitle);
             }
             return MarketTables.Orders;
         }
@@ -243,6 +247,12 @@ namespace RealLifeOverhaul.Markets
         {
             Stock k = s.Stock(o.StockId);
             box.Title(k != null ? k.Name : string.Empty);
+            box.Line(MarketText.Fill("reallife_mkt_order_state", "state", MarketText.T(StateKeys[(int)o.State]),
+                "lasts", o.Life == OrderLife.Day ? MarketText.T(LifeKeys[0]) : MarketText.Fill("reallife_mkt_until_day", "day", o.ExpireDay.ToString())));
+            if (o.Why != OrderWhy.None && !o.IsOpen)
+            {
+                box.Line(MarketText.Why(o.Why));
+            }
             box.Line(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", MarketText.T(TypeKeys[(int)o.Type])));
             if (o.Type == OrderType.Limit)
             {
@@ -255,12 +265,6 @@ namespace RealLifeOverhaul.Markets
             if (o.Filled > 0)
             {
                 box.Line(MarketText.Fill("reallife_mkt_order_filled", "count", Count(o.Filled), "price", MarketText.Price((int)(o.FilledValue * 100 / o.Filled))));
-            }
-            box.Line(MarketText.Fill("reallife_mkt_order_state", "state", MarketText.T(StateKeys[(int)o.State]),
-                "lasts", o.Life == OrderLife.Day ? MarketText.T(LifeKeys[0]) : MarketText.Fill("reallife_mkt_until_day", "day", o.ExpireDay.ToString())));
-            if (o.Why != OrderWhy.None && !o.IsOpen)
-            {
-                box.Line(MarketText.Why(o.Why));
             }
             Transform buttons = box.ButtonRow();
             if (o.IsOpen && !o.Forced)
@@ -282,6 +286,7 @@ namespace RealLifeOverhaul.Markets
                     Refresh();
                 }));
             }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- Portfolio
@@ -321,6 +326,7 @@ namespace RealLifeOverhaul.Markets
             }
             WriteAccount(box, s, worth, cost, dividends);
             OwnButton(box);
+            Meta.Guide.Point(box, GuideTitle);
             return MarketTables.Portfolio;
         }
 
@@ -328,6 +334,11 @@ namespace RealLifeOverhaul.Markets
         {
             Account a = s.Account;
             box.Title(MarketText.T(a.Margin ? "reallife_mkt_account_margin" : "reallife_mkt_account_cash"));
+            if (a.Margin && a.CallDay > 0)
+            {
+                box.Line(MarketText.Fill("reallife_mkt_account_call", "amount", MarketText.Money(a.CallAmount), "day", a.CallDay.ToString()));
+            }
+            StatusLine(box);
             box.Line(MarketText.Fill("reallife_mkt_account_worth", "worth", MarketText.Money(worth), "cost", MarketText.Money(cost), "gain", MarketText.Money(worth - cost)));
             box.Line(MarketText.Fill("reallife_mkt_account_dividends", "dividends", MarketText.Money(a.Dividends), "commission", MarketText.Money(a.Commission)));
             Transform buttons = null;
@@ -337,10 +348,7 @@ namespace RealLifeOverhaul.Markets
                 long power = Math.Max(0, equity * 100 / MarketCatalogue.InitialMarginPct - gross);
                 box.Line(MarketText.Fill("reallife_mkt_account_cash_line", "cash", MarketText.Money(a.Cash), "equity", MarketText.Money(equity)));
                 box.Line(MarketText.Fill("reallife_mkt_account_margin_line", "need", MarketText.Money(need), "power", MarketText.Money(power)));
-                if (a.CallDay > 0)
-                {
-                    box.Line(MarketText.Fill("reallife_mkt_account_call", "amount", MarketText.Money(a.CallAmount), "day", a.CallDay.ToString()));
-                }
+                box.Line(MarketText.Fill("reallife_mkt_account_withdrawable", "amount", MarketText.Money(_director.MostWithdrawable())));
                 if (a.Interest + a.BorrowFees > 0)
                 {
                     box.Line(MarketText.Fill("reallife_mkt_account_costs", "interest", MarketText.Money(a.Interest), "fees", MarketText.Money(a.BorrowFees)));
@@ -363,7 +371,6 @@ namespace RealLifeOverhaul.Markets
                         Notifications.ShowError("reallife_mkt_note_withdraw_refused", null, false);
                     }
                 });
-                box.Line(MarketText.Fill("reallife_mkt_account_withdrawable", "amount", MarketText.Money(_director.MostWithdrawable())));
             }
             else if (Settings.MarketsMargin)
             {
@@ -376,10 +383,6 @@ namespace RealLifeOverhaul.Markets
                         Notifications.ShowError("reallife_mkt_note_deposit_refused", null, false);
                     }
                 });
-            }
-            else
-            {
-                StatusLine(box);
             }
         }
 
@@ -433,6 +436,7 @@ namespace RealLifeOverhaul.Markets
                 box.Line(MarketText.Fill("reallife_mkt_history_costs", "paid", MarketText.Money(a.DividendsPaid), "interest", MarketText.Money(a.Interest), "fees", MarketText.Money(a.BorrowFees)));
             }
             box.Line(MarketText.Fill("reallife_mkt_history_kept", "count", MarketCatalogue.TradesKept.ToString()));
+            Meta.Guide.Point(box, GuideTitle);
             return MarketTables.History;
         }
 
@@ -519,6 +523,7 @@ namespace RealLifeOverhaul.Markets
                 Refresh();
             }));
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_mkt_back", () => UiClone.Safe(ClosePage));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // A limit's or a stop's price as typed, or the quote's to begin with (a limit to buy at the offer, to sell at the bid).

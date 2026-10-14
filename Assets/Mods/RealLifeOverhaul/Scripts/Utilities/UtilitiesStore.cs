@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Utilities
     /// <summary>
     /// The utilities' accounts in the save (GameInstance.modData), one line: "v=2~h:" the days, "~a:" the accounts, each
     /// its place (escaped, so that no divider can break the line) and its figures, "~n:" the player's broadband company
-    /// (none in a line of version 1). A line that cannot be read gives no state (the director starts afresh from the
+    /// (none in a line of version 1), "~g:" the internet's grace period while it runs (its end, then the places it covers,
+    /// escaped; none in a line from before it). A line that cannot be read gives no state (the director starts afresh from the
     /// player's places); figures out of range are brought within it.
     /// </summary>
     public static class UtilitiesStore
@@ -81,6 +82,14 @@ namespace RealLifeOverhaul.Utilities
                 for (int h = 0; h < n.History.Length; h++)
                 {
                     t.Append('|').Append(n.History[h].ToString(Inv));
+                }
+            }
+            if (s.GraceUntil > 0 && s.Grace.Count > 0)
+            {
+                t.Append("~g:").Append(s.GraceUntil.ToString(Inv));
+                for (int g = 0; g < s.Grace.Count; g++)
+                {
+                    t.Append('|').Append(Escape(s.Grace[g]));
                 }
             }
             return t.ToString();
@@ -160,6 +169,19 @@ namespace RealLifeOverhaul.Utilities
                 else if (section.StartsWith("n:", StringComparison.Ordinal))
                 {
                     ReadNetwork(section.Substring(2).Split('|'), s.Network);
+                }
+                else if (section.StartsWith("g:", StringComparison.Ordinal))
+                {
+                    string[] c = section.Substring(2).Split('|');
+                    for (int g = 1; g < c.Length; g++)
+                    {
+                        string place = Unescape(c[g]);
+                        if (!string.IsNullOrEmpty(place) && !s.Grace.Contains(place))
+                        {
+                            s.Grace.Add(place);
+                        }
+                    }
+                    s.GraceUntil = s.Grace.Count > 0 ? Math.Max(0, I(c, 0)) : 0;
                 }
                 else if (section.StartsWith("a:", StringComparison.Ordinal) && section.Length > 2)
                 {

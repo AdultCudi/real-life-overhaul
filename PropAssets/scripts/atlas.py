@@ -185,7 +185,7 @@ SWATCHES = {
     "paper": ((0.93, 0.92, 0.88), 0.0, 0.18, 0.1),
     "cardboard": ((0.62, 0.47, 0.30), 0.0, 0.12, 0.4),
 }
-SWATCH_SIZE = (56, 96)
+SWATCH_SIZE = (40, 80)     # a swatch is one finish and its grime, read 7 px in from its edges: smaller swatches leave the atlas room for more modules
 
 
 def paint_swatch(name):
@@ -1038,7 +1038,7 @@ LIFE_DECALS = {
 #
 # They are painted in this order after everything above, each from where the shared random stream then stands, so
 # adding a module at the end (or a region at the end of the last) leaves every earlier region as it was.
-EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site"]
+EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 
 
 def extra_modules():
@@ -1047,6 +1047,9 @@ def extra_modules():
     only = os.environ.get("PROPS_DEV")
     names = [n.strip() for n in only.split(",") if n.strip()] if only else EXTRA
     return [__import__("paint_" + name) for name in names if os.path.exists(os.path.join(HERE, "paint_" + name + ".py"))]
+
+
+EXTRA.append("tech")       # the tech sector's buildings (paint_tech.py): a module of its own, painted after the others
 
 
 def build():

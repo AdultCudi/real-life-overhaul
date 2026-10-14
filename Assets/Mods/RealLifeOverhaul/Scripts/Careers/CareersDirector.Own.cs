@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed partial class CareersDirector
     {
-        public const int TabOwn = 4;
+        public const int TabOwn = 5;
         private const string ContractKey = "reallife_transaction_own_contract";
         private const string RegisterKey = "reallife_transaction_own_register";
 

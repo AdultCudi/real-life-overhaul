@@ -19,13 +19,18 @@ namespace RealLifeOverhaul
     ///    every strand writes depth, so hair hides what is behind it and sorts correctly, while the soft
     ///    edge of each strand still blends;
     ///  - with a copy of its strand texture whose alpha is multiplied until most of every strand is solid
-    ///    (<see cref="HairRules.Gain"/>, measured once from the texture itself);
+    ///    (<see cref="HairRules.Gain"/>, measured once from the texture itself), whose colour is darker at the faint
+    ///    edge of each strand (<see cref="HairRules.Shade"/>: the game's strand textures are plain white, so under one
+    ///    strong lamp, with nothing of the hair casting a shadow, the crown was one smooth patch, read as a bald scalp),
+    ///    and whose mipmaps keep as much of the strands solid as the full size has (<see cref="HairRules.CoverScale"/>:
+    ///    plain mipmaps melt the cores into haze with distance, and the skull shows through);
     ///  - with strand maps the game leaves empty: a smoothness mask and a normal map of fine streaks, which
     ///    break the highlight up into strands that run along the hair;
     ///  - with back-light and highlight that follow the hair colour and are bounded against lit skin
     ///    (<see cref="HairRules.Rule"/>): black hair stays black with a lamp behind it.
     ///
-    /// Cost: one extra depth-only draw per layer, for the characters it is applied to. Nothing per frame.
+    /// Cost: one extra depth-only draw per layer, for the characters it is applied to. Nothing per frame. The first wear
+    /// of a strand texture in a scene: one read-back and one pass over its texels and mipmaps on the CPU.
     /// </summary>
     internal static class HairFinish
     {
@@ -74,11 +79,22 @@ namespace RealLifeOverhaul
             /// 11 October: back-light the hair colour lifted a quarter towards white, the highlight unbounded.
             /// </summary>
             public bool Bounded;
+            /// <summary>
+            /// Under 1: the copy's colour is darkened towards this at the faint edge of every strand (<see cref="HairRules.Shade"/>).
+            /// 1 = the game's colour throughout, as before 13 October (white: hair under a strong lamp was one smooth patch).
+            /// </summary>
+            public float Deep;
+            /// <summary>
+            /// The copy's mipmaps keep the share of the strands that is solid (<see cref="HairRules.CoverScale"/>). Off = plain
+            /// mipmaps, as before 13 October: with distance the strand cores melt into haze and the skull shows through.
+            /// </summary>
+            public bool KeepCover;
 
             public static Settings Default => new Settings
             {
                 CoreAlpha = 0.95f, EdgeAlpha = 0.04f, StrandTiling = new Vector2(3f, 1f), NormalStrength = 0.6f, Calm = 1f,
-                AlphaGain = HairRules.BaseGain, WantedCore = HairRules.WantedCore, Bounded = true
+                AlphaGain = HairRules.BaseGain, WantedCore = HairRules.WantedCore, Bounded = true,
+                Deep = HairRules.DeepShade, KeepCover = true
             };
         }
 
@@ -196,15 +212,92 @@ namespace RealLifeOverhaul
                 ? Mathf.Max(settings.AlphaGain, HairRules.Gain(Histogram, settings.CoreAlpha, settings.EdgeAlpha, settings.WantedCore))
                 : settings.AlphaGain;
             cover = HairRules.Measure(Histogram, gain, settings.CoreAlpha, settings.EdgeAlpha);
+
+            // Level 0: alpha multiplied, colour shaded by how solid the strand is as painted.
+            var alpha = new float[pixels.Length];   // each level's alpha as averaged, before any keeping of the cover
+            double drawn = 0, shaded = 0;
             for (int i = 0; i < pixels.Length; i++)
             {
-                pixels[i].a = (byte)Mathf.Min(255f, pixels[i].a * gain);
+                float painted = pixels[i].a / 255f;
+                float a = Mathf.Min(1f, painted * gain);
+                float shade = HairRules.Shade(painted, settings.Deep);
+                pixels[i].r = (byte)(pixels[i].r * shade + 0.5f);
+                pixels[i].g = (byte)(pixels[i].g * shade + 0.5f);
+                pixels[i].b = (byte)(pixels[i].b * shade + 0.5f);
+                pixels[i].a = (byte)(a * 255f + 0.5f);
+                alpha[i] = a;
+                drawn += a;
+                shaded += a * shade;
             }
-            copy.SetPixels32(pixels);
+            cover.Shade = drawn > 0 ? (float)(shaded / drawn) : 1f;
+            cover.FarScale = 1f;
+            copy.SetPixels32(pixels, 0);
+
+            // The mipmaps, made here rather than by the engine: colour averaged by how much of each texel is drawn (so
+            // the empty space between strands lends the hair none of its colour), alpha averaged and then, with
+            // KeepCover, multiplied until as much of the level is solid as of the full size.
+            int w = width, h = height;
+            for (int level = 1; level < copy.mipmapCount; level++)
+            {
+                int cw = Mathf.Max(1, w >> 1), ch = Mathf.Max(1, h >> 1);
+                var next = new Color32[cw * ch];
+                var nextAlpha = new float[cw * ch];
+                System.Array.Clear(Histogram, 0, Histogram.Length);
+                for (int y = 0; y < ch; y++)
+                {
+                    int y0 = Mathf.Min(2 * y, h - 1), y1 = Mathf.Min(2 * y + 1, h - 1);
+                    for (int x = 0; x < cw; x++)
+                    {
+                        int x0 = Mathf.Min(2 * x, w - 1), x1 = Mathf.Min(2 * x + 1, w - 1);
+                        int i00 = y0 * w + x0, i01 = y0 * w + x1, i10 = y1 * w + x0, i11 = y1 * w + x1;
+                        float a00 = alpha[i00], a01 = alpha[i01], a10 = alpha[i10], a11 = alpha[i11];
+                        float sum = a00 + a01 + a10 + a11;
+                        float r, g, b;
+                        if (sum > 1e-5f)
+                        {
+                            r = (pixels[i00].r * a00 + pixels[i01].r * a01 + pixels[i10].r * a10 + pixels[i11].r * a11) / sum;
+                            g = (pixels[i00].g * a00 + pixels[i01].g * a01 + pixels[i10].g * a10 + pixels[i11].g * a11) / sum;
+                            b = (pixels[i00].b * a00 + pixels[i01].b * a01 + pixels[i10].b * a10 + pixels[i11].b * a11) / sum;
+                        }
+                        else
+                        {
+                            r = (pixels[i00].r + pixels[i01].r + pixels[i10].r + pixels[i11].r) * 0.25f;
+                            g = (pixels[i00].g + pixels[i01].g + pixels[i10].g + pixels[i11].g) * 0.25f;
+                            b = (pixels[i00].b + pixels[i01].b + pixels[i10].b + pixels[i11].b) * 0.25f;
+                        }
+                        float averaged = sum * 0.25f;
+                        int k = y * cw + x;
+                        nextAlpha[k] = averaged;
+                        next[k] = new Color32((byte)(r + 0.5f), (byte)(g + 0.5f), (byte)(b + 0.5f), 0);
+                        Histogram[Mathf.Clamp((int)(averaged * 255f + 0.5f), 0, 255)]++;
+                    }
+                }
+                float scale = settings.KeepCover ? HairRules.CoverScale(Histogram, settings.CoreAlpha, cover.Core) : 1f;
+                if (level == HairRules.FarLevel)
+                {
+                    cover.FarCorePlain = HairRules.SolidAt(Histogram, settings.CoreAlpha, 1f);
+                    cover.FarCore = HairRules.SolidAt(Histogram, settings.CoreAlpha, scale);
+                    cover.FarScale = scale;
+                }
+                for (int k = 0; k < next.Length; k++)
+                {
+                    next[k].a = (byte)(Mathf.Min(1f, nextAlpha[k] * scale) * 255f + 0.5f);
+                }
+                copy.SetPixels32(next, level);
+                // The next level averages this one's colour and its alpha as averaged (not as kept): keeping is done per level.
+                pixels = next;
+                alpha = nextAlpha;
+                w = cw;
+                h = ch;
+            }
+            if (copy.mipmapCount <= HairRules.FarLevel)
+            {
+                cover.FarCorePlain = cover.FarCore = cover.Core;
+            }
             copy.wrapMode = source.wrapMode;
             copy.filterMode = FilterMode.Trilinear;
             copy.anisoLevel = 8;
-            copy.Apply(true, false);
+            copy.Apply(false, false);      // the mipmaps are ours: the engine must not make its own over them
             copy.Compress(false);          // DXT5: a quarter of the memory; strand alpha survives it well
             copy.Apply(false, true);       // and no longer readable: the CPU copy is dropped
             return copy;

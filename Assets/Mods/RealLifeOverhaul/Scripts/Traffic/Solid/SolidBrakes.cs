@@ -125,8 +125,10 @@ namespace RealLifeOverhaul
             End();
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Traffic: SolidBrakes.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

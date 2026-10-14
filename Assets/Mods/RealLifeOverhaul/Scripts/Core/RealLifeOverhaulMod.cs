@@ -4,6 +4,7 @@ using BAModAPI;
 using BigAmbitions.Mods;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Districts;
+using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Permadeath;
 using UnityEngine;
 
@@ -133,6 +134,8 @@ namespace RealLifeOverhaul
                     v => Settings.AccidentNotices = v)
                 .AddToggle(Settings.AccidentMarkerId, "reallife_accident_waypoint", Settings.AccidentMarker,
                     v => Settings.AccidentMarker = v)
+                .AddToggle(Settings.TowTrucksId, "reallife_tow_trucks", Settings.TowTrucks,
+                    v => Settings.TowTrucks = v)
                 .AddToggle(Settings.PoliceId, "reallife_police", Settings.Police,
                     v => Settings.Police = v)
                 .AddSlider(Settings.PolicePresenceId, "reallife_police_presence", 0, 10, Settings.PolicePresence,
@@ -165,11 +168,15 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
+                .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
+                    v => Settings.NoticeLook = v)
+                .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
                 .AddButton("reallife_test_accident_moderate", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Moderate))
                 .AddButton("reallife_test_accident_severe", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Severe))
+                .AddButton("reallife_test_tow_truck", () => TowService.Instance?.Test())
                 .AddButton("reallife_test_ragdoll", () => PedestrianIncidents.Instance?.TestNearest())
                 .AddButton("reallife_test_ped_incident", () => PedestrianIncidents.Instance?.StageNow())
                 .AddButton("reallife_test_streets_speeder", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Speeder))
@@ -302,6 +309,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_desk", () => BusinessDirector.Instance?.TestDesk())
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
+                .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -806,6 +814,17 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
+                .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
+                    v => Settings.TechSiteRooms = v)
+                .AddToggle(Settings.TechSiteHqId, "reallife_sites_hq", Settings.TechSiteHq,
+                    v => Settings.TechSiteHq = v)
+                .AddToggle(Settings.TechSiteCloudId, "reallife_sites_cloud", Settings.TechSiteCloud,
+                    v => Settings.TechSiteCloud = v)
+                .AddToggle(Settings.TechSiteOfficesId, "reallife_sites_offices", Settings.TechSiteOffices,
+                    v => Settings.TechSiteOffices = v)
+                .AddButton("reallife_sites_test_room", () => Tech.TechSites.Instance?.TestRoom())
+                .AddButton("reallife_sites_test_hq", () => Tech.TechSites.Instance?.TestHeadquarters())
+                .AddButton("reallife_sites_test_floor", () => Tech.TechSites.Instance?.TestFloor())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -1008,6 +1027,7 @@ namespace RealLifeOverhaul
             Guard.Step("VehicleTow", () => VehicleTow.Logger = context.Logger);
             Guard.Step("CrashConsequences", () => CrashConsequences.Logger = context.Logger);
             Guard.Step("TrafficAccidents", () => TrafficAccidents.Logger = context.Logger);
+            Guard.Step("TowService", () => TowService.Logger = context.Logger);
             Guard.Step("TrafficTools", () => TrafficTools.Logger = context.Logger);
             Guard.Step("TrafficEffects", () => TrafficEffects.Logger = context.Logger);
             Guard.Step("ResponseUnit", () => ResponseUnit.Logger = context.Logger);
@@ -1076,6 +1096,10 @@ namespace RealLifeOverhaul
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
             Guard.Step("the font's prewarm", () => ScenePrewarm.Add("game UI: the game's font being found", FindFont));
+            Guard.Step("the bus stops' prewarm", () => ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm));
+            Guard.Step("GameUi.NoticeLook", () => GameUi.NoticeLook.Logger = context.Logger);
+            Guard.Step("GameUi.NoticeLook", () => _root.AddComponent<GameUi.NoticeLook>());   // the mod's notifications told from the game's by a picture of their kind on the mod's colour (Core/GameUi/NoticeLook): nothing per frame, a few writes per notification shown
+            Guard.Step("the notices' prewarm", () => ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm));
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => _root.AddComponent<OverlayGuard>());   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
@@ -1091,6 +1115,7 @@ namespace RealLifeOverhaul
             Guard.Step("RagdollSystem", () => _root.AddComponent<RagdollSystem>());   // before anyone who throws people down
             Guard.Step("ActorPool", () => _root.AddComponent<ActorPool>());   // before the scenes that put people on the street
             Guard.Step("TrafficAccidents", () => _root.AddComponent<TrafficAccidents>());
+            Guard.Step("TowService", () => _root.AddComponent<TowService>());   // the tow truck that takes a cleared scene's wrecks away (Traffic/Tow): disabled while there is nothing to tow
             Guard.Step("PolicePursuit", () => _root.AddComponent<PolicePursuit>());
             Guard.Step("StreetCrime", () => _root.AddComponent<StreetCrime>());
             Guard.Step("CrimeDirector", () => _root.AddComponent<CrimeDirector>());   // the scenes StreetCrime now forwards to
@@ -1160,6 +1185,10 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.CompanyDirector", () => _root.AddComponent<Economy.CompanyDirector>());   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             Guard.Step("Tech.TechDirector", () => _root.AddComponent<Tech.TechDirector>());   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
             Guard.Step("Careers.CareersDirector", () => _root.AddComponent<Careers.CareersDirector>());   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
+            Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
+            Guard.Step("FitOut.FitOutDirector", () => _root.AddComponent<FitOut.FitOutDirector>());   // the mod's buildings fitted out across their whole floor while the player is in one, a little a frame (Scripts/FitOut): before the features whose floors it builds
+            Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
+            Guard.Step("Tech.TechSites", () => _root.AddComponent<Tech.TechSites>());   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
             Guard.Step("Economy.EstateDirector", () => Economy.EstateDirector.Logger = context.Logger);
             Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
             Guard.Step("Economy.EstateDirector", () => _root.AddComponent<Economy.EstateDirector>());   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
@@ -1209,6 +1238,9 @@ namespace RealLifeOverhaul
             Guard.Step("PerfDirector", () => _root.AddComponent<PerfDirector>());   // performance tweaks for the base game, and the two measurements (their keys are development aids)
             Guard.Step("MapLinks", () => _root.AddComponent<MapLinks>());   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
             Guard.Step("Districts.DistrictView", () => _root.AddComponent<Districts.DistrictView>());   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
+            Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
+            Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            Guard.Step("Interiors.InteriorDirector", () => _root.AddComponent<Interiors.InteriorDirector>());   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
             // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.

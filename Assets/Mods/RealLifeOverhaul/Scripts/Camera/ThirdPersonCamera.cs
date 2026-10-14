@@ -138,8 +138,10 @@ namespace RealLifeOverhaul
             CameraYield.Reset();   // a new city: nothing has been seen of another mod's camera in it yet
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Camera: ThirdPersonCamera.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)

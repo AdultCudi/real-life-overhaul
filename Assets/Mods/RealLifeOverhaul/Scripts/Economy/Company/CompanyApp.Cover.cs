@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(CompanyText.T("reallife_co_cover_what_theft"));
                 box.Line(CompanyText.T("reallife_co_cover_what_liability"));
                 box.Line(CompanyText.T("reallife_co_cover_pick"));
+                Guide(box);
             }
         }
 
@@ -87,18 +88,10 @@ namespace RealLifeOverhaul.Economy
         {
             int id = c.Id;
             box.Title(CompanyText.T("reallife_co_claim_title", "cover", CompanyText.Cover(c.Kind), "business", c.Name));
-            box.Line(CompanyText.T(c.Kind == (int)CoverKind.Fire ? "reallife_co_claim_what_fire" : c.Kind == (int)CoverKind.Theft ? "reallife_co_claim_what_theft" : "reallife_co_claim_what_liability",
-                "day", c.Day.ToString(), "amount", CompanyText.Money(c.Loss)));
-            box.Line(FinanceText.Pair("reallife_co_claim_insurer", CompanyText.Insurer(c.Insurer)));
-            box.Line(FinanceText.Pair("reallife_co_claim_most", CompanyText.Money(CompanyCatalogue.CoverMost[c.Kind])));
-            box.Line(FinanceText.Pair("reallife_co_claim_excess", CompanyText.Money(c.Excess)));
-            box.Line(FinanceText.Pair("reallife_co_claim_pays", CompanyText.Money(c.Payout)));
             switch (c.Stage)
             {
                 case ClaimStage.Open:
                     box.Line(CompanyText.T("reallife_co_claim_open", "day", (c.Day + CompanyCatalogue.ClaimWindowDays).ToString(), "days", CompanyCatalogue.InsurerPayDays[c.Insurer].ToString()));
-                    box.Line(CompanyText.T("reallife_co_claim_counts", "most", (CompanyCatalogue.InsurerClaimsMost[c.Insurer] - 1).ToString(), "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading)));
-                    InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_co_claim_do", () => _director.FileClaim(id));
                     break;
                 case ClaimStage.Filed:
                     box.Line(CompanyText.T("reallife_co_claim_filed", "day", c.PayDay.ToString()));
@@ -109,6 +102,17 @@ namespace RealLifeOverhaul.Economy
                 default:
                     box.Line(CompanyText.T("reallife_co_claim_lapsed"));
                     break;
+            }
+            box.Line(CompanyText.T(c.Kind == (int)CoverKind.Fire ? "reallife_co_claim_what_fire" : c.Kind == (int)CoverKind.Theft ? "reallife_co_claim_what_theft" : "reallife_co_claim_what_liability",
+                "day", c.Day.ToString(), "amount", CompanyText.Money(c.Loss)));
+            box.Line(FinanceText.Pair("reallife_co_claim_insurer", CompanyText.Insurer(c.Insurer)));
+            box.Line(FinanceText.Pair("reallife_co_claim_most", CompanyText.Money(CompanyCatalogue.CoverMost[c.Kind])));
+            box.Line(FinanceText.Pair("reallife_co_claim_excess", CompanyText.Money(c.Excess)));
+            box.Line(FinanceText.Pair("reallife_co_claim_pays", CompanyText.Money(c.Payout)));
+            if (c.Stage == ClaimStage.Open)
+            {
+                box.Line(CompanyText.T("reallife_co_claim_counts", "most", (CompanyCatalogue.InsurerClaimsMost[c.Insurer] - 1).ToString(), "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading)));
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_co_claim_do", () => _director.FileClaim(id));
             }
             BackButton(box);
         }
@@ -159,6 +163,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_policy_buy", () => _director.BuyCover(place, kind, chosen));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
     }
 }

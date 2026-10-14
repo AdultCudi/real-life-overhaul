@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("services: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("services: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, ServicesDirector.AppId);
             _table = DataTable.On(_shell, "Services");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(ServicesTables.Off))
@@ -283,9 +283,17 @@ namespace RealLifeOverhaul.Economy
             return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
         }
 
+        /// <summary>The foot of a picked thing's page: the way back, then the Guide's page.</summary>
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
+        }
+
+        // The Guide's page for the tab that shows: selling a business, or the cleaning service for the rest.
+        private void Guide(InfoBox box)
+        {
+            Meta.Guide.Point(box, _tab == ServicesDirector.TabSale ? "reallife_meta_title_economy_sale" : "reallife_meta_title_economy_cleaning");
         }
     }
 }

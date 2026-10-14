@@ -207,8 +207,10 @@ namespace RealLifeOverhaul.Fame
 
         // ---------------------------------------------------------------- the hour and the day
 
+        private static readonly int HotOnHour = HotSpots.Slot("Fame: FameDirector.OnHour");
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (!Running || Save == null)
             {
                 return;
@@ -223,9 +225,11 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Fame: FameDirector.OnDay");
         // GlobalEvents.onNewDay: after the game's daily run, so yesterday's statement of every business is there.
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (!Running || Save == null)
             {
                 return;
