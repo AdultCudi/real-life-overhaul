@@ -187,6 +187,7 @@ government
 job_board
 menu_save
 notification_destination_set
+persona_education_not_started
 playeractivityui_time_remaining
 poi_custom_location
 rival

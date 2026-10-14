@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
+        private static FieldInfo _doorField, _placeField;
+        private static MethodInfo _setActivity;
         private static bool _failed;
 
         private readonly StudyActivity _inner;
@@ -80,17 +82,45 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True while it runs the mod's class (from the press of its button until it is over).</summary>
         public bool Open => _mine && _state != PlayerActivityState.Finished;
 
+        /// <summary>True if the game's study activity and panel have the three members a desk of ours needs (looked up once).</summary>
+        public static bool Works => Resolve();
+
+        // The game's members, all three looked up together the first time any is wanted. (Once the door's alone was looked
+        // up first, when a classroom of the university was opened; the other two were then never looked up, the desk was
+        // taken for broken, and every classroom door after it gave the game's own course, "Office Businesses" at room 4.)
+        private static bool Resolve()
+        {
+            if (_failed)
+            {
+                return false;
+            }
+            if (_doorField != null && _placeField != null && _setActivity != null)
+            {
+                return true;
+            }
+            _doorField = GameContract.StudyDoor.Field;   // (the game's private pieces, resolved once as the mod starts: Core/GameContract)
+            _placeField = GameContract.StudyPlace.Field;
+            _setActivity = GameContract.CurrentActivity.Setter;
+            if (_doorField == null || _placeField == null || _setActivity == null)
+            {
+                _failed = true;
+                CareersDirector.Logger?.Warn("Careers: the game's study activity is not as this version expects (" + (_doorField == null ? "its door" : _placeField == null ? "its desk" : "the panel's activity")
+                                             + " is not there); classes at the school and the university are attended with the Attend button where the player stands instead.");
+                return false;
+            }
+            return true;
+        }
+
         /// <summary>The classroom door the game's study activity was opened at, or null.</summary>
         public static EntityController DoorOf(StudyActivity game)
         {
-            if (_failed || game == null)
+            if (game == null || !Resolve())
             {
                 return null;
             }
             try
             {
-                FieldInfo doorField = GameContract.StudyDoor.Field;   // (the game's private piece, resolved once: Core/GameContract)
-                return doorField != null ? doorField.GetValue(game) as EntityController : null;
+                return _doorField.GetValue(game) as EntityController;
             }
             catch (Exception)
             {
@@ -100,37 +130,32 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>
         /// The game's panel has just opened its own study activity at a desk of the school: it is handed to a desk of ours
-        /// with the offer. Returns it, or null if the game's activity is not as expected (then nothing is changed).
+        /// with the offer. Returns it, or null if the game's activity is not as expected (then nothing is changed). A desk
+        /// without its chair or its way out (a layout the game changed) is refused alone; the others still work.
         /// </summary>
         public static SchoolDesk Take(PlayerActivityUI ui, StudyActivity game, CareersDirector director, DeskOffer offer)
         {
-            if (_failed || ui == null || game == null || offer == null)
+            if (ui == null || game == null || offer == null || !Resolve())
             {
                 return null;
             }
             try
             {
-                // The game's private pieces, resolved once (Core/GameContract). All three are read here every time: DoorOf,
-                // which the university's floors ask first, once kept only the door, and this then took the other two for gone.
-                FieldInfo doorField = GameContract.StudyDoor.Field;
-                FieldInfo placeField = GameContract.StudyPlace.Field;
-                MethodInfo setActivity = GameContract.CurrentActivity.Setter;
-                var door = doorField != null ? doorField.GetValue(game) as EntityController : null;
-                var place = placeField != null ? placeField.GetValue(game) as StudyDiploma : null;
-                if (door == null || place == null || place.chair == null || place.exitPosition == null || setActivity == null)
+                var door = _doorField.GetValue(game) as EntityController;
+                var place = _placeField.GetValue(game) as StudyDiploma;
+                if (door == null || place == null || place.chair == null || place.exitPosition == null)
                 {
-                    _failed = true;
-                    CareersDirector.Logger?.Warn("Careers: the game's study desks are not as this version expects; classes at the school are attended from the Campus app instead.");
+                    CareersDirector.Logger?.Warn("Careers: a study desk of the game's has " + (door == null ? "no door" : place == null ? "no desk" : place.chair == null ? "no chair" : "no way out")
+                                                 + " (" + (door != null ? door.name : "?") + "); it is left to the game.");
                     return null;
                 }
                 var desk = new SchoolDesk(game, door, place, director, offer);
-                setActivity.Invoke(ui, new object[] { desk });
+                _setActivity.Invoke(ui, new object[] { desk });
                 ui.UpdateActivityDisplay();
                 return desk;
             }
             catch (Exception e)
             {
-                _failed = true;
                 CareersDirector.Logger?.Error(e);
                 return null;
             }

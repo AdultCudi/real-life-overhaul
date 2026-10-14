@@ -86,6 +86,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart QuestionBox = ContractBook.Part("question_box", null, "the mod's questions in the game's question box");
         public static readonly GamePart BuildRead = ContractBook.Part("build_read", null, "reading which build of the game this is");
         public static readonly GamePart AppOpening = ContractBook.Part("app_opening", "phone", "the game's own first steps when an app of the mod's opens");
+        public static readonly GamePart ClassroomMarks = ContractBook.Part("classroom_marks", "careers_study", "the marks over the university's classroom doors");
+        public static readonly GamePart PersonaCourses = ContractBook.Part("persona_courses", "careers_study", "the mod's courses in the Persona app's education box");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -289,6 +291,17 @@ namespace RealLifeOverhaul
 
         // Transport/TransitBus: what a traffic car of the game's stands for (its sensor's list)
         public static readonly GameMember CarObstacles = Field(BusYield, Plugins, "GleyTrafficSystem.VehicleComponent", "obstacleList", "List<Collider>");
+
+        // Careers/CampusMarks: the game's icons over items, lent to the university's classroom doors
+        public static readonly GameMember IconPool = Field(ClassroomMarks, Game, "Player.HUD.ItemWarningIcons.ItemWarningIconManager", "_iconPool", "ObjectPool<ItemWarningIcon>");
+        public static readonly GameMember IconsActive = Field(ClassroomMarks, Game, "Player.HUD.ItemWarningIcons.ItemWarningIconManager", "_activeIcons", "Dictionary<Int32,ItemWarningIcon>");
+        public static readonly GameMember IconVisuals = Method(ClassroomMarks, Game, "Player.HUD.ItemWarningIcons.ItemWarningIconManager", "GetIconVisuals", "ValueTuple<Sprite,Sprite,Boolean>", "WarningIconType");
+
+        // Careers/PersonaEducation: the Persona app's education box and its rows
+        public static readonly GameMember EducationTemplate = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfo", "educationEntryTemplate", "EducationInfoEntry");
+        public static readonly GameMember EducationHeader = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "headerLabel", "TextLocalizationComponent");
+        public static readonly GameMember EducationStatus = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "statusLabel", "TextLocalizationComponent");
+        public static readonly GameMember EducationCheck = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "checkmarkObj", "GameObject");
 
         // Character/HairTests: a lit street lamp's brightness (else the test lamp keeps its own)
         public static readonly GameMember LampMaxValue = Optional(Field(HairLampTest, Game, "StreetLamp", "maxValue", "Single"));
