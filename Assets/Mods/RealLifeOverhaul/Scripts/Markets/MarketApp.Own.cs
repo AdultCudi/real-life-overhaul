@@ -262,7 +262,7 @@ namespace RealLifeOverhaul.Markets
 
         private void Publish(string name, int walk, string least)
         {
-            HudConfirm.Show("reallife_lst_confirm_publish".Localize(new { name }),
+            GameConfirm.Show("reallife_lst_confirm_publish".Localize(new { name }),
                 "reallife_lst_confirm_publish_body".Localize(new { name, share = MarketText.Percent(_floatBp), days = ListingCatalogue.BookDays.ToString(), least }),
                 () => UiClone.Safe(() =>
                 {
@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Markets
 
         private void Withdraw()
         {
-            HudConfirm.Show("reallife_lst_confirm_withdraw", "reallife_lst_confirm_withdraw_body", () => UiClone.Safe(() =>
+            GameConfirm.Show("reallife_lst_confirm_withdraw", "reallife_lst_confirm_withdraw_body", () => UiClone.Safe(() =>
             {
                 _director.Withdraw();
                 Refresh();
@@ -490,7 +490,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             string title = action == OwnAction.BuyBack ? "reallife_lst_confirm_buyback" : action == OwnAction.Issue ? "reallife_lst_confirm_issue" : "reallife_lst_confirm_private";
-            HudConfirm.Show(title.Localize(new { name = k.Name }),
+            GameConfirm.Show(title.Localize(new { name = k.Name }),
                 (title + "_body").Localize(new
                 {
                     count = Count(q.Shares), price = MarketText.Price(q.Cents), value = MarketText.Money(q.Value), reserve = MarketText.Money(q.Reserve), fee = MarketText.Money(q.Fee),
@@ -559,7 +559,7 @@ namespace RealLifeOverhaul.Markets
                 Step(q.Why);
                 return;
             }
-            HudConfirm.Show((shares > 0 ? "reallife_lst_confirm_buy" : "reallife_lst_confirm_sell").Localize(new { name = k.Name }),
+            GameConfirm.Show((shares > 0 ? "reallife_lst_confirm_buy" : "reallife_lst_confirm_sell").Localize(new { name = k.Name }),
                 "reallife_lst_confirm_deal_body".Localize(new
                 {
                     count = Count(q.Shares), price = MarketText.Price(q.Cents), value = MarketText.Money(q.Value), reserve = MarketText.Money(q.Reserve), fee = MarketText.Money(q.Fee),

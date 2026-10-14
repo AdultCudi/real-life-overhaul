@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Meta
             }
             // The hospital trip and police custody are coroutines that cannot be cut short cleanly; sleep and
             // activities run the game's clock.
-            if (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
+            if (GameMembers.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
                 || CasinoBoatManager.IsOnCasinoBoat || SubwaySystem.IsRiding || PoliceAttention.IsBusy)
             {
                 return "reallife_meta_tool_busy".GetLocalization();

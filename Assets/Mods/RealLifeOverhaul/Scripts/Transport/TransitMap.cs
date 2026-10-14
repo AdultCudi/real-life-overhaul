@@ -875,8 +875,8 @@ namespace RealLifeOverhaul
         {
             var line = new TransitLine
             {
-                FromKey = Stations[from].GetNameKey(),
-                ToKey = Stations[to].GetNameKey(),
+                FromKey = GameMembers.NameKey(Stations[from]),
+                ToKey = GameMembers.NameKey(Stations[to]),
                 Path = PathScratch.ToArray(),
                 Metres = new float[PathScratch.Count]
             };

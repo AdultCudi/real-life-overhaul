@@ -92,7 +92,7 @@ namespace RealLifeOverhaul
                 _confirm = false;
                 Confirm();
             }
-            if (ThirdPersonCamera.IsUiOpen() || Helpers.FuneralHelper.PlayerDead)
+            if (ThirdPersonCamera.IsUiOpen() || GameMembers.PlayerDead)
             {
                 return;   // (the funeral is the one scene of the game's that is filmed by cameras outside its own list: CemeteryFuneralSetup)
             }

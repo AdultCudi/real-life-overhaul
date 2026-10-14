@@ -389,7 +389,7 @@ namespace RealLifeOverhaul
                 return;
             }
             bool open = Window.IsOpen;
-            bool wrong = BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || EnergyHelper.goingToHospital || FuneralHelper.PlayerDead
+            bool wrong = BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || EnergyHelper.goingToHospital || GameMembers.PlayerDead
                          || (TravelState.InRoom && !Settings.Hotels) || (TravelState.Away && !Settings.Holidays)
                          || (!open && !_skipping && !Stay.Busy && !Holidays.Busy && !Stay.PlainSleep && !Holidays.Auto);
             if (wrong)

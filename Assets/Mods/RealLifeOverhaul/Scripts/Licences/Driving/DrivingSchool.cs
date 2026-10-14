@@ -371,7 +371,7 @@ namespace RealLifeOverhaul
             {
                 CityBuildingController building = buildings[_next];
                 if (building == null || building.building == null || building.building.SpecialService == null
-                    || building.building.SpecialService.businessTypeName != SchoolType || building.building.locatedInsidePrivateFenceIndex >= 0)
+                    || building.building.SpecialService.businessTypeName != SchoolType || GameMembers.Fenced(building.building))
                 {
                     continue;
                 }

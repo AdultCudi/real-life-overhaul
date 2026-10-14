@@ -351,7 +351,7 @@ namespace RealLifeOverhaul
 
         private bool Suits(CityBuildingController candidate, SiteKind kind)
         {
-            if (!CivicCity.HasDoor(candidate) || candidate.building.locatedInsidePrivateFenceIndex >= 0)
+            if (!CivicCity.HasDoor(candidate) || GameMembers.Fenced(candidate.building))
             {
                 return false;
             }

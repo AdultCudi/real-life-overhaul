@@ -352,6 +352,8 @@ namespace RealLifeOverhaul.Meta
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
                 .Test("reallife_test_block_say", BlockTests.Say)
+                .Test("reallife_test_build_notice", GameBuild.TestNotice)   // the notice a game older than the mod gets (Core/GameBuild)
+                .Test("reallife_test_build_box", GameConfirm.TestOwnBox)    // a question the way the mod asks on such a game (Core/GameConfirm)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
             // Going Public, the multiplayer mod: what this mod does differently in one of its sessions (Core/GoingPublic). The rows

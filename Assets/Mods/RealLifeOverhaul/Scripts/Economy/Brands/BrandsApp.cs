@@ -341,7 +341,7 @@ namespace RealLifeOverhaul.Economy.Brands
         // Anything that costs or cannot be undone is asked first, with the game's own question.
         private static void Confirm(string titleKey, string bodyKey, object data, Action yes, bool negative)
         {
-            HudConfirm.Show(titleKey.Localize(), bodyKey.Localize(data), () => UiClone.Safe(yes), null, null, null, false, negative);
+            GameConfirm.Show(titleKey.Localize(), bodyKey.Localize(data), () => UiClone.Safe(yes), null, null, null, false, negative);
         }
 
         private static string Standards(int points)

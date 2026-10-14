@@ -615,6 +615,10 @@ namespace RealLifeOverhaul.Nav
         /// <summary>The route has changed: <see cref="RouteX"/> and <see cref="RouteZ"/> hold this many points.</summary>
         public void Route(int count)
         {
+            if (_route == null)
+            {
+                return;   // the panel's objects are destroyed with the scene before the director is (the game quitting)
+            }
             if (count < 2)
             {
                 _route.Clear();

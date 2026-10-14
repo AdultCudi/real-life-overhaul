@@ -113,7 +113,7 @@ namespace RealLifeOverhaul
             First.Repeat(Reach, 2.5f, 4f, CharacterEmojiName.CommonRedAngry, 0.6f);
             int asked = ++_asked;
             _answered = false;
-            HudConfirm.Show("reallife_crime_mugged_header", Permadeath.Mortality.MuggingBody("reallife_crime_mugged_body"),
+            GameConfirm.Show("reallife_crime_mugged_header", Permadeath.Mortality.MuggingBody("reallife_crime_mugged_body"),
                 () => Answer(asked, true), () => Answer(asked, false),
                 "reallife_crime_mugged_comply", "reallife_crime_mugged_resist", allowConfirmationSkip: false);
             _promptOpen = true;

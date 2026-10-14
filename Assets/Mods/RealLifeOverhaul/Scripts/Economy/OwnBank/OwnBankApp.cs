@@ -606,7 +606,7 @@ namespace RealLifeOverhaul.Economy
         // The game's own question before a large sum is spent (or the bank sold): on yes, done, and any refusal said.
         private void Ask(LanguageChangeEventDataHolder title, LanguageChangeEventDataHolder body, string confirmKey, bool negative, Func<string> act)
         {
-            UiClone.Safe(() => HudConfirm.Show(title, body, () => UiClone.Safe(() =>
+            UiClone.Safe(() => GameConfirm.Show(title, body, () => UiClone.Safe(() =>
             {
                 string why = act();
                 if (why != null)

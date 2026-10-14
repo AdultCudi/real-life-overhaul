@@ -260,7 +260,7 @@ namespace RealLifeOverhaul.Economy
             else if (better)
             {
                 int upSetUp = nextSetUp, upHosting = nextHosting;
-                InfoBox.Button(first, InfoBox.Positive, "reallife_online_button_better", () => HudConfirm.Show(
+                InfoBox.Button(first, InfoBox.Positive, "reallife_online_button_better", () => GameConfirm.Show(
                     "reallife_online_confirm_better_title".Localize(new { quality = OnlineText.Quality(next) }),
                     "reallife_online_confirm_better_body".Localize(new { amount = OnlineText.Money(Mathf.Max(0, upSetUp - setUp) * 100), hosting = OnlineText.Money(upHosting * 100) }),
                     () => UiClone.Safe(() => _director.Upgrade(key, next))));
@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(second, InfoBox.Additional, "reallife_online_button_rename", () =>
                     uis.textInputUi.Show("reallife_online_rename_placeholder", "common_confirm", text => UiClone.Safe(() => _director.Rename(key, text)), null, shop.Name, false, OnlineCatalogue.NameMost));
             }
-            InfoBox.Button(second, InfoBox.Negative, "reallife_online_button_shut", () => HudConfirm.Show(
+            InfoBox.Button(second, InfoBox.Negative, "reallife_online_button_shut", () => GameConfirm.Show(
                 "reallife_online_confirm_shut_title".Localize(new { name = shop.Name }), "reallife_online_confirm_shut_body".Localize(new { orders = shop.Orders.Count.ToString() }),
                 () => UiClone.Safe(() =>
                 {
@@ -320,7 +320,7 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             if (state.Shops.Count < OnlineCatalogue.ShopsMost)
             {
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_open", () => HudConfirm.Show(
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_open", () => GameConfirm.Show(
                     "reallife_online_confirm_open_title".Localize(new { business = name }),
                     "reallife_online_confirm_open_body".Localize(new { quality = OnlineText.Quality(quality), amount = OnlineText.Money(setUp * 100), hosting = OnlineText.Money(hosting * 100) }),
                     () => UiClone.Safe(() =>

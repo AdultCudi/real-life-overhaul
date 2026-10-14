@@ -215,7 +215,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             LoanQuote quote = PhoneLending.Quote(bank, amount, CreditLedger.Score.Value);
-            HudConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
+            GameConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
                 "reallife_econ_confirm_body".Localize(new
                 {
                     amount = FinanceText.Money(amount), lender = bank.Name, rate = quote.AnnualRate.ToString("0.#"), payment = FinanceText.Money(quote.DailyPayment),
@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Economy
             string kindName = FinanceText.T(ProductCatalogue.KindKeys[(int)kind]);
             Lender bank = Bank;
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_open", () =>
-                HudConfirm.Show("reallife_econ_confirm_open_title".Localize(new { kind = kindName }),
+                GameConfirm.Show("reallife_econ_confirm_open_title".Localize(new { kind = kindName }),
                     "reallife_econ_confirm_open_body".Localize(new
                     {
                         kind = kindName, limit = FinanceText.Money(offer.Most), rate = (offer.RateBp / 100f).ToString("0.#"), lender = bank.Name, detail = FinanceApp.Detail(kind)
@@ -360,7 +360,7 @@ namespace RealLifeOverhaul.Economy
             Lender bank = Bank;
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_apply", () =>
-                HudConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
+                GameConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
                     "reallife_econ_confirm_business".Localize(new
                     {
                         amount = FinanceText.Money(amount), lender = bank.Name, business = shop.BusinessName, rate = quote.AnnualRate.ToString("0.#"),
@@ -438,7 +438,7 @@ namespace RealLifeOverhaul.Economy
             string kindName = FinanceText.T(ProductCatalogue.KindKeys[(int)kind]);
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_finance_approve", () =>
-                HudConfirm.Show("reallife_econ_confirm_finance_title".Localize(new { kind = kindName }),
+                GameConfirm.Show("reallife_econ_confirm_finance_title".Localize(new { kind = kindName }),
                     (kind == ProductKind.Mortgage ? "reallife_econ_confirm_home" : "reallife_econ_confirm_car").Localize(new
                     {
                         amount = FinanceText.Money(amount), lender = bank.Name, deposit = deposit + "%", own = FinanceText.Money(own), days = term.ToString(),
@@ -487,7 +487,7 @@ namespace RealLifeOverhaul.Economy
             Lender bank = Bank;
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_consolidate_do", () =>
-                HudConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
+                GameConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
                     "reallife_econ_confirm_consolidate".Localize(new
                     {
                         count = count.ToString(), owed = FinanceText.Money(before.Owed), amount = FinanceText.Money(after.Owed), lender = bank.Name, rate = quote.AnnualRate.ToString("0.#"),

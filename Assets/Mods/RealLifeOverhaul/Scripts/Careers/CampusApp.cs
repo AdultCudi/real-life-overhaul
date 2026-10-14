@@ -527,7 +527,7 @@ namespace RealLifeOverhaul.Careers
             }
             Transform more = box.ButtonRow();
             string name = CareersText.Course(id);
-            InfoBox.Button(more, InfoBox.Negative, "reallife_campus_button_withdraw", () => HudConfirm.Show(
+            InfoBox.Button(more, InfoBox.Negative, "reallife_campus_button_withdraw", () => GameConfirm.Show(
                 "reallife_campus_confirm_withdraw_title".Localize(new { name }), "reallife_campus_confirm_withdraw_body".Localize(),
                 () => UiClone.Safe(() =>
                 {

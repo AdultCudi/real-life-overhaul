@@ -498,7 +498,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            EntityController target = _card.TargetController;
+            EntityController target = GameMembers.TargetOf(_card);
             if (ReferenceEquals(target, _carded))
             {
                 return;
@@ -506,7 +506,14 @@ namespace RealLifeOverhaul
             _carded = target;
             if (!ReferenceEquals(target, null))
             {
-                Card(target as CityBuildingController);
+                try
+                {
+                    Card(target as CityBuildingController);
+                }
+                catch (Exception e) when (GameMembers.StandsDown(e, "the special buildings' names on the game's building card"))
+                {
+                    _cardFailed = true;   // (a game that lacks something the card names would fail at every building looked at)
+                }
             }
         }
 

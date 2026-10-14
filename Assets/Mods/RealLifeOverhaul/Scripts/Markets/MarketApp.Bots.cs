@@ -165,7 +165,7 @@ namespace RealLifeOverhaul.Markets
         {
             int size = _botSize, stop = _botStop, loss = _botLoss;
             long capital = _botCapital;
-            HudConfirm.Show(
+            GameConfirm.Show(
                 "reallife_mkt_bot_confirm_hire".Localize(new { firm = f.Name }),
                 "reallife_mkt_bot_confirm_hire_body".Localize(new
                 {
@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Markets
 
         private void ConfirmDismiss(BotFirm f)
         {
-            HudConfirm.Show(
+            GameConfirm.Show(
                 "reallife_mkt_bot_confirm_dismiss".Localize(new { firm = f.Name }),
                 "reallife_mkt_bot_confirm_dismiss_body".Localize(new { firm = f.Name }),
                 () => UiClone.Safe(() =>

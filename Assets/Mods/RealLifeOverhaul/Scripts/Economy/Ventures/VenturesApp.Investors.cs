@@ -236,7 +236,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 return;
             }
             string name = _director.NameOf(offer.InvestorId);
-            HudConfirm.Show("reallife_ven_confirm_accept_title".Localize(new { name }),
+            GameConfirm.Show("reallife_ven_confirm_accept_title".Localize(new { name }),
                 (offer.ForNew ? "reallife_ven_confirm_accept_new" : "reallife_ven_confirm_accept").Localize(new
                 {
                     name,
@@ -381,7 +381,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 return;
             }
             string name = _director.NameOf(deal.InvestorId);
-            HudConfirm.Show("reallife_ven_confirm_buy_out_title".Localize(new { name }),
+            GameConfirm.Show("reallife_ven_confirm_buy_out_title".Localize(new { name }),
                 (deal.Stage == DealStage.Called ? "reallife_ven_confirm_pay_off" : "reallife_ven_confirm_buy_out").Localize(new
                 {
                     name,

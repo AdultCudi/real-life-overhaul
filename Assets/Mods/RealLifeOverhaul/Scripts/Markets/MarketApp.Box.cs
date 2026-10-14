@@ -658,7 +658,7 @@ namespace RealLifeOverhaul.Markets
             OrderType type = _type;
             OrderLife life = _life;
             long qty = _qty;
-            HudConfirm.Show(
+            GameConfirm.Show(
                 (side == OrderSide.Buy ? "reallife_mkt_confirm_buy" : "reallife_mkt_confirm_sell").Localize(new { name = k.Name }),
                 "reallife_mkt_confirm_body".Localize(new
                 {

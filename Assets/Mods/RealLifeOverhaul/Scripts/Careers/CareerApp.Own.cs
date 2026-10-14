@@ -138,7 +138,7 @@ namespace RealLifeOverhaul.Careers
         {
             Job j = _director.Work != null ? _director.Work.Job : null;
             string employer = j != null ? CareersText.Employer(j.Post.Employer) : string.Empty;
-            HudConfirm.Show("reallife_own_confirm_title".Localize(new { employer }), bodyKey.Localize(new { days = j != null ? ProRules.NoticeDays(j.Rank, j.Post.Rank).ToString() : "0" }),
+            GameConfirm.Show("reallife_own_confirm_title".Localize(new { employer }), bodyKey.Localize(new { days = j != null ? ProRules.NoticeDays(j.Rank, j.Post.Rank).ToString() : "0" }),
                 () => UiClone.Safe(() => Do(act)), null, null, null, true, true);
         }
 

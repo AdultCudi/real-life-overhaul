@@ -324,7 +324,7 @@ namespace RealLifeOverhaul
             _lastScam = which;
             _scamDay = TimeHelper.CurrentDay;
             int asked = ++_scamAsked;
-            HudConfirm.Show("reallife_crime_scam_header", ScamBodies[which],
+            GameConfirm.Show("reallife_crime_scam_header", ScamBodies[which],
                 () => Answer(asked, true), () => Answer(asked, false),
                 "reallife_crime_scam_yes", "reallife_crime_scam_no", allowConfirmationSkip: false);
             return true;

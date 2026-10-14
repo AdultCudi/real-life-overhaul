@@ -291,7 +291,7 @@ namespace RealLifeOverhaul
                 Abort("the player is no longer there", put: false);
                 return;
             }
-            if (RagdollSystem.Holds(_body) || EnergyHelper.goingToHospital || FuneralHelper.PlayerDead || UI.Load.LoadScene.isLoading)
+            if (RagdollSystem.Holds(_body) || EnergyHelper.goingToHospital || GameMembers.PlayerDead || UI.Load.LoadScene.isLoading)
             {
                 Abort("the player was knocked over, taken to hospital or the game is loading", put: false);
                 return;

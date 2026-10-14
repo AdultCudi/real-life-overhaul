@@ -44,6 +44,9 @@ namespace RealLifeOverhaul
             Economy.Dealership.DealerType.Logger = log;
             Economy.Dealership.DealerType.Register();   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
             Meta.Dev.Gated(context);   // (the option has been read now)
+            GameMembers.Logger = context.Logger;
+            GameConfirm.Logger = context.Logger;
+            GameBuild.Start(context.Logger);   // the game's build against the one this version is made for: a line in Player.log, and the notice for an older game (Core/GameBuild)
             Tech.TechTypes.Logger = context.Logger;
             Tech.TechTypes.Register();   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
@@ -1007,6 +1010,8 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
+            GameMembers.Logger = context.Logger;   // what an older game lacks is said once (Core/GameMembers)
+            GameConfirm.Logger = context.Logger;
             Tech.TechTypes.Register();   // (furnished as the game's web development agency once its type is known)
             Careers.AcademyType.Register();   // (furnished as the game's recruitment office once its type is known)
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)

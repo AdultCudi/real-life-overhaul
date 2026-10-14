@@ -326,7 +326,7 @@ namespace RealLifeOverhaul.Interiors
             }
             if (_business.bizManSettings != null && _business.bizManSettings.HasUnsavedChanges)
             {
-                HudConfirm.Show(null, "change_character_clothes_unsaved_changes_warning", () => UiClone.Safe(() => Show(Id)), null, null, null, true, true);
+                GameConfirm.Show(null, "change_character_clothes_unsaved_changes_warning", () => UiClone.Safe(() => Show(Id)), null, null, null, true, true);
                 return;
             }
             Show(Id);

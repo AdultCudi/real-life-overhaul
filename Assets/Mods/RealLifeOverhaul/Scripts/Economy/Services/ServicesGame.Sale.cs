@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.Economy
                 return SaleBlock.NotABusiness;
             }
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
-            if (uis == null || UI.Load.LoadScene.isLoading || FuneralHelper.PlayerDead || EnergyHelper.goingToHospital || (uis.timeMachine != null && uis.timeMachine.isRunning))
+            if (uis == null || UI.Load.LoadScene.isLoading || GameMembers.PlayerDead || EnergyHelper.goingToHospital || (uis.timeMachine != null && uis.timeMachine.isRunning))
             {
                 return SaleBlock.Busy;   // the game is in the middle of something of its own: a load, a time skip, the way to hospital
             }

@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Meta
     /// Meta's part of a city load: one call from RealLifeOverhaulCity when the features have been started, one
     /// when they are unloaded. After the save's mod data has been read it runs the check for leftovers, adds the
     /// guide's phone contact and, the first time on this computer or after a change of version, shows the
-    /// welcome panel. It waits for these on a half-second timer and then stops: nothing of it runs afterwards.
+    /// welcome panel. It waits for these on a half-second timer and then stops: nothing of it runs afterwards. On a game
+    /// older than the build this version is made for, a second such wait shows that notice once a session (Core/GameBuild).
     /// </summary>
     public static class MetaCity
     {
@@ -33,6 +34,10 @@ namespace RealLifeOverhaul.Meta
                 _generation++;
                 GuideApp.Begin(_generation);
                 MetaUi.Instance.Run(Watch(_generation));
+                if (GameBuild.CityDue)
+                {
+                    MetaUi.Instance.Run(BuildWatch(_generation));
+                }
             }
             catch (Exception e)
             {
@@ -101,6 +106,38 @@ namespace RealLifeOverhaul.Meta
             if (generation == _generation && Welcome.Due)
             {
                 Welcome.Open(false);
+            }
+        }
+
+        // The notice for a game older than the build this version is made for (Core/GameBuild), once a session: a wait of
+        // its own, so that nothing of the load waits for it and nothing of the load can keep it from coming.
+        private static IEnumerator BuildWatch(int generation)
+        {
+            var wait = new WaitForSecondsRealtime(0.5f);
+            float giveUp = Time.realtimeSinceStartup + GiveUpAfter;
+            while (generation == _generation && !Ready())
+            {
+                if (Time.realtimeSinceStartup > giveUp)
+                {
+                    yield break;
+                }
+                yield return wait;
+            }
+            // Not on top of the first seconds of a load or of another question; a menu or a pause is waited out for half a
+            // minute at most, since on such a game what tells the mod the city is quiet may itself be missing.
+            float earliest = Time.realtimeSinceStartup + 4f;
+            float latest = earliest + 30f;
+            while (generation == _generation && (Time.realtimeSinceStartup < earliest || GameConfirm.IsOpen || (Time.realtimeSinceStartup < latest && !Quiet())))
+            {
+                if (Time.realtimeSinceStartup > giveUp)
+                {
+                    yield break;
+                }
+                yield return wait;
+            }
+            if (generation == _generation && GameBuild.CityDue)
+            {
+                GameBuild.ShowInCity();
             }
         }
 
