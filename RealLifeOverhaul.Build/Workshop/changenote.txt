@@ -1,5 +1,5 @@
-0.11.1
+0.11.2
 
 Fixed
-- The mod's companies and institutions no longer have the game's For rent sign outside. Each tech company's headquarters has its own sign and logo in the company's colours, lit after dark like the game's signs. City Utilities, the courthouse and the university keep their boards as their one sign, and police stations and hotels keep their own.
-- The city map's Buildings for rent rows, such as Office, and Buildings for sale no longer list the mod's buildings, so they show only places you can rent or buy.
+- The mod's buildings took every empty office in the city, so there was none left to rent. The 12 tech companies now share 3 office towers, a floor each, so the mod holds 3 office buildings for them where it held 12, and the rest are to let. Choose a floor at a tower's door, or take the lift inside; a job at one of them is on its company's floor. A building the mod holds is on the market again as soon as its feature is switched off, on a page already open too.
+- Where a district with offices has fewer than two to let, some of its empty shops are offices while the mod runs, so there are always at least two to choose from.
