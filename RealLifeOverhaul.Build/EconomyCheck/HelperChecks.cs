@@ -18,6 +18,7 @@ internal static partial class Program
         }
         HelperAgency();
         HelperClassStart();
+        HelperRejectReason();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -119,6 +120,45 @@ internal static partial class Program
         Check(filled.Length <= 240, "helpers, class: filled with a long course and place, " + filled.Length + " characters, over 240");
         HelperText("reallife_study_opt_class_start", "class");
         HelperText("reallife_opt_tip_careers_class_start", "class");
+    }
+
+    // ---------------------------------------------------------------- 3. the reason for a rejection
+
+    private static void HelperRejectReason()
+    {
+        Check(ProRules.ScoreShort(46, false) == ProRules.ScreenPass - 46 && ProRules.ScoreShort(46, true) == ProRules.OfferPass - 46,
+            "helpers, rejection: the points short of the screening's pass, or of the interview's");
+        Check(ProRules.ScoreShort(ProRules.ScreenPass, false) == 0 && ProRules.ScoreShort(ProRules.OfferPass + 9, true) == 0 && ProRules.ScoreShort(100, false) == 0,
+            "helpers, rejection: a score at or over what they wanted is not short (it was close)");
+        Check(ProRules.ScoreShort(0, false) == ProRules.ScreenPass && ProRules.ScoreShort(-5, true) == ProRules.OfferPass, "helpers, rejection: never more short than the whole pass");
+        bool agrees = true;
+        for (int score = 0; score <= 100; score++)
+        {
+            agrees &= (ProRules.ScoreShort(score, false) == 0) == ProRules.Screened(score, 0) || score == 0;
+            agrees &= (ProRules.ScoreShort(score, true) == 0) == ProRules.Offered(score, 0) || score == 0;
+            agrees &= ProRules.ScoreShort(score, true) >= ProRules.ScoreShort(score, false);
+        }
+        Check(agrees, "helpers, rejection: 'close' is said exactly when the score passes with no luck either way, at both steps");
+
+        HelperNote("reallife_work_note_rejected_why", "rejection", "employer", "title", "why");
+        HelperNote("reallife_work_note_chosen_why", "rejection", "employer", "why");
+        HelperText("reallife_work_why_short", "rejection", "points");
+        HelperText("reallife_work_why_short_one", "rejection");
+        HelperText("reallife_work_why_close", "rejection");
+        HelperText("reallife_work_opt_reject_reason", "rejection");
+        HelperText("reallife_opt_tip_careers_reject_reason", "rejection");
+        string employer = new string('e', 28), title = new string('t', 34);
+        foreach (string why in new[] { HelperFill("reallife_work_why_short", "points", "12"), HelperFill("reallife_work_why_short_one"), HelperFill("reallife_work_why_close") })
+        {
+            foreach (string key in new[] { "reallife_work_note_rejected_why", "reallife_work_note_chosen_why" })
+            {
+                string all = HelperFill(key, "employer", employer, "title", title, "why", why);
+                Check(all.Length <= 240, "helpers, rejection: " + key + " with its reason is " + all.Length + " characters, over 240");
+            }
+        }
+        string example = HelperFill("reallife_work_note_rejected_why", "employer", "BlueStone Imports", "title", "Junior Accountant", "why", HelperFill("reallife_work_why_short", "points", "4"));
+        Check(example.StartsWith("BlueStone Imports turned down your application", StringComparison.Ordinal) && example.Contains("about 4 points short of the score they wanted"),
+            "helpers, rejection: the example reads as asked (" + example + ")");
     }
 
     // ---------------------------------------------------------------- the texts

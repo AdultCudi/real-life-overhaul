@@ -18236,5 +18236,12 @@
   "reallife_work_note_agency_ends": "你在招聘办公室的登记今天到期。请到它的任一办公楼内重新登记，以保留额外的职位空缺。",
   "reallife_study_opt_class_start": "课程开始而你不在场时提醒",
   "reallife_opt_tip_careers_class_start": "你的某节课开始时，如果你不在开课的学校或大学内，就发出通知，每节课一次。关闭时使用原先的“课程已在别处开始”提示。",
-  "reallife_study_note_class_starts": "你的{course}课现在在{place}开始。门还会开{late}，之后就算缺课。"
+  "reallife_study_note_class_starts": "你的{course}课现在在{place}开始。门还会开{late}，之后就算缺课。",
+  "reallife_work_opt_reject_reason": "被拒的原因",
+  "reallife_opt_tip_careers_reject_reason": "雇主拒绝你的申请时，通知会说明你离他们要求的分数还差几分，或者只是差一点。关闭时只说被拒。",
+  "reallife_work_note_rejected_why": "{employer}拒绝了你对{title}的申请。{why}",
+  "reallife_work_note_chosen_why": "{employer}已为{title}选定了其他人。{why}",
+  "reallife_work_why_short": "你离他们要求的分数还差约{points}分；更高的技能、熟人推荐或招聘办公室都会有帮助。",
+  "reallife_work_why_short_one": "你离他们要求的分数只差约1分；更高的技能、熟人推荐或招聘办公室都会有帮助。",
+  "reallife_work_why_close": "按平均水平你的分数是够的，所以只是差一点：当天的运气不在你这边。"
 }

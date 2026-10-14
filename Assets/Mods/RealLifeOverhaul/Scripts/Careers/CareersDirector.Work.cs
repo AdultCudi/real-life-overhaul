@@ -710,7 +710,7 @@ namespace RealLifeOverhaul.Careers
                         else
                         {
                             a.Reject(day);
-                            Tell2(NotificationType.Info, "reallife_work_note_rejected", Data("employer", employer, "title", title), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+                            TurnedDown(a, employer, title, false);
                         }
                         break;
                     case ApplyStep.Interview:
@@ -739,6 +739,23 @@ namespace RealLifeOverhaul.Careers
                         break;
                 }
             }
+        }
+
+        // An employer's no, at the screening or after the interview, with the reason when the option is on: how many points
+        // of score the application was short of what they wanted (ProRules.ScoreShort), or that it was close (luck).
+        private void TurnedDown(Application a, string employer, string title, bool interview)
+        {
+            if (!Settings.CareersRejectReason)
+            {
+                Tell2(NotificationType.Info, interview ? "reallife_work_note_not_after_interview" : "reallife_work_note_rejected",
+                    interview ? Data("employer", employer) : Data("employer", employer, "title", title), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+                return;
+            }
+            int shortBy = ProRules.ScoreShort(a.Score, interview);
+            string why = shortBy == 0 ? CareersText.T("reallife_work_why_close")
+                : shortBy == 1 ? CareersText.T("reallife_work_why_short_one") : CareersText.T("reallife_work_why_short", "points", shortBy.ToString());
+            Tell2(NotificationType.Info, interview ? "reallife_work_note_chosen_why" : "reallife_work_note_rejected_why", Data("employer", employer, "title", title, "why", why),
+                TabApplications, CareerApp.ApplicationRow + a.Post.Id);
         }
 
         /// <summary>A day, or the next weekday after it.</summary>
@@ -821,7 +838,7 @@ namespace RealLifeOverhaul.Careers
             else
             {
                 a.Reject(day);
-                Tell2(NotificationType.Info, "reallife_work_note_not_after_interview", Data("employer", CareersText.Employer(a.Post.Employer)), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+                TurnedDown(a, CareersText.Employer(a.Post.Employer), CareersText.Title(a.Post.Prof, a.Post.Rank), true);
             }
         }
 

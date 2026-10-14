@@ -195,6 +195,16 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True if the interview brings an offer.</summary>
         public static bool Offered(int score, int luck) => score > 0 && score + TalentCatalogue.Clamp(luck, -InterviewLuck, InterviewLuck) >= OfferPass;
 
+        /// <summary>
+        /// The points of score an application was short of what the employer wanted at the step that turned it down
+        /// (<see cref="ScreenPass"/> at the screening, <see cref="OfferPass"/> after the interview), before luck: 0 when the
+        /// score was enough on average and the day's luck turned it down (it was close).
+        /// </summary>
+        public static int ScoreShort(int score, bool interview)
+        {
+            return Math.Max(0, (interview ? OfferPass : ScreenPass) - Math.Max(0, score));
+        }
+
         /// <summary>The luck of a step of an application, the same on a reload.</summary>
         public static int Luck(int seed, int id, int step, int most) => TechRandom.Range(seed, 8101, id, step, -most, most);
 
