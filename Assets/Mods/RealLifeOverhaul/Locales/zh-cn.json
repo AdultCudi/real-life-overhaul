@@ -18011,5 +18011,6 @@
   "reallife_planner_way_about_foot": "按你所在位置的距离估算：步行大约 {walk}，开车或打车 {drive}。",
   "reallife_planner_repeat_once": "一次",
   "reallife_planner_repeat_daily": "每天",
-  "reallife_planner_repeat_weekly": "每周{day}"
+  "reallife_planner_repeat_weekly": "每周{day}",
+  "reallife_planner_glance_hint_week": "点击某一天或某个条目查看详情。"
 }

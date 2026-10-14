@@ -18011,5 +18011,6 @@
   "reallife_planner_way_about_foot": "By the distance from where you are: about {walk} on foot, {drive} by car or taxi.",
   "reallife_planner_repeat_once": "Once",
   "reallife_planner_repeat_daily": "Every day",
-  "reallife_planner_repeat_weekly": "Every week on {day}"
+  "reallife_planner_repeat_weekly": "Every week on {day}",
+  "reallife_planner_glance_hint_week": "Click a day or an entry for its details."
 }

@@ -18011,5 +18011,6 @@
   "reallife_planner_way_about_foot": "Pela distância de onde você está: cerca de {walk} a pé, {drive} de carro ou táxi.",
   "reallife_planner_repeat_once": "Uma vez",
   "reallife_planner_repeat_daily": "Todo dia",
-  "reallife_planner_repeat_weekly": "Toda semana, {day}"
+  "reallife_planner_repeat_weekly": "Toda semana, {day}",
+  "reallife_planner_glance_hint_week": "Clique em um dia ou em uma entrada para ver os detalhes."
 }

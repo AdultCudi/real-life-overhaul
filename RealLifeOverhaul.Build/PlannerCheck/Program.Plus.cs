@@ -451,7 +451,7 @@ internal static partial class Program
         "reallife_planner_glance_free_span", "reallife_planner_glance_clashes", "reallife_planner_glance_due_today", "reallife_planner_glance_due_day",
         "reallife_planner_glance_due_week", "reallife_planner_glance_planned", "reallife_planner_add_entry", "reallife_planner_detail_clash_reach", "reallife_planner_way_here",
         "reallife_planner_way_late", "reallife_planner_way_about_car", "reallife_planner_way_about_foot", "reallife_planner_repeat_once", "reallife_planner_repeat_daily",
-        "reallife_planner_repeat_weekly", "reallife_guide_planner"
+        "reallife_planner_repeat_weekly", "reallife_planner_glance_hint_week", "reallife_guide_planner"
     };
 
     private static void Texts()

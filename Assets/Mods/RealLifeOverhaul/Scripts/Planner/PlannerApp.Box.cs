@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Planner
 
         private void DayButtons(InfoBox box, int day)
         {
-            box.Line(PlannerText.T("reallife_planner_glance_hint"));
+            box.Line(PlannerText.T(_tab == WeekTab ? "reallife_planner_glance_hint_week" : "reallife_planner_glance_hint"));
             Transform row = box.ButtonRow();
             InfoBox.Button(row, InfoBox.Positive, "reallife_planner_add_entry", () => EditNote(null, day));
         }
