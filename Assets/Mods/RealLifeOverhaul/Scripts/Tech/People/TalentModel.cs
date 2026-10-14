@@ -94,5 +94,23 @@ namespace RealLifeOverhaul.Tech
             }
             return null;
         }
+
+        /// <summary>
+        /// Every file by its id into a dictionary given (emptied first): the first of an id, as <see cref="Of"/> finds it;
+        /// a file with no id is left out. A read of the player's 600 professionals then asks a dictionary for each
+        /// employee's file, not a pass of compares (180,000 of them).
+        /// </summary>
+        public void Index(Dictionary<string, Profile> into)
+        {
+            into.Clear();
+            for (int i = 0; i < People.Count; i++)
+            {
+                Profile p = People[i];
+                if (p != null && p.Id != null && !into.ContainsKey(p.Id))
+                {
+                    into.Add(p.Id, p);
+                }
+            }
+        }
     }
 }

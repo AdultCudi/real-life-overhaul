@@ -409,7 +409,7 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < _employers.Count; i++)
             {
                 EmployerRef e = _employers[i];
-                if (e.Kind == EmployerKind.Rival && ProCatalogue.Employs(p, e.Type) && WorkGame.RivalName(e.Rival) == company)
+                if (e.Kind == EmployerKind.Rival && ProCatalogue.Holds(e.Professions, p, e.Type) && WorkGame.RivalName(e.Rival) == company)
                 {
                     return e;
                 }
@@ -444,7 +444,7 @@ namespace RealLifeOverhaul.Careers
                 _fit.Clear();
                 for (int i = 0; i < _employers.Count; i++)
                 {
-                    if (ProCatalogue.Employs(p, _employers[i].Type))
+                    if (ProCatalogue.Holds(_employers[i].Professions, p, _employers[i].Type))
                     {
                         _fit.Add(_employers[i]);
                     }

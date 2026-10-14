@@ -18,7 +18,8 @@ namespace RealLifeOverhaul
     /// player is riding; four times a second it looks whether the game's panel is wanted at a dock, a rack or
     /// a stand, and whether an open list may stay open; once a second it puts builds on cars the game has
     /// spawned since, lights underglow after
-    /// dark and looks after the two-wheelers. Everything it shows is the game's own interface (the game's
+    /// dark and looks after the two-wheelers. With the Garage off, the player's cars are walked once to take
+    /// off what was on them, then not again until something changes (a few flags a second). Everything it shows is the game's own interface (the game's
     /// panel at a repair bay, at a dock and at a stand, the game's list window, its colour picker, its
     /// destination marker): it reads no key and draws nothing. Anything unexpected is logged once, everything
     /// is put back and the Garage stays off for the session.
@@ -39,6 +40,7 @@ namespace RealLifeOverhaul
         private float _nextPoliceLook;
         private bool _wet;
         private VehicleController _shopWanted;   // the test button was pressed on the options page: the shop opens when the menus are closed
+        private int _offStamp = -1;              // with the Garage off: the stamp a whole walk over the player's cars last left every one at (-1: none since it was on)
 
         public GarageShop Shop => _shop;
 
@@ -162,12 +164,20 @@ namespace RealLifeOverhaul
             bool dark = looks && Settings.GarageUnderglow && gm.timeOfDayController != null && gm.timeOfDayController.ShouldOutdoorLightsBeOn();
             int stamp = GarageState.Version * 8 + (looks ? 1 : 0) + (handling ? 2 : 0) + (_wet ? 4 : 0);
 
-            List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
-            for (int i = 0; i < all.Count; i++)
+            // With the Garage off the walk only takes builds off cars: once every car is at the off stamp (and none was passed
+            // over in the shop), a car the game spawns after has nothing of the Garage's on it, so there is nothing to walk for.
+            List<VehicleController> all = on || stamp != _offStamp ? VehicleHelper.AllPlayerVehicles : null;
+            bool passed = false;
+            for (int i = 0; all != null && i < all.Count; i++)
             {
                 VehicleController vehicle = all[i];
-                if (!(vehicle is CarController) || vehicle.vehicleInstance == null || !GoingPublic.MineVehicle(vehicle) || (_shop.IsOpen && _shop.Car == vehicle))
+                if (!(vehicle is CarController) || vehicle.vehicleInstance == null || !GoingPublic.MineVehicle(vehicle))
                 {
+                    continue;
+                }
+                if (_shop.IsOpen && _shop.Car == vehicle)
+                {
+                    passed = true;   // (the car in the shop: seen to when the shop closes)
                     continue;
                 }
                 GarageBuild build = on ? GarageState.Of(vehicle.vehicleInstance.id) : null;
@@ -192,6 +202,10 @@ namespace RealLifeOverhaul
                 {
                     car.LightGlow(dark);
                 }
+            }
+            if (all != null)
+            {
+                _offStamp = !on && !passed ? stamp : -1;
             }
 
             LoudExhaust(gm);

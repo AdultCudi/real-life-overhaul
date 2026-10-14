@@ -113,6 +113,7 @@ internal static partial class Program
         Dealer();
         ShowroomFloor();
         Markets();
+        MarketPace();   // the open and the close in pieces, the catch-up's budget, the worth taken apart once (MarketPaceChecks.cs)
         Listing();
         Ledger();
         Newsstand();
@@ -127,6 +128,8 @@ internal static partial class Program
         Hiring();
         Tech();
         Careers();
+        WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
+        LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
         CartQueue();
         Work();
         Desks();

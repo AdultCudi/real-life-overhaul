@@ -14,9 +14,12 @@ namespace RealLifeOverhaul.Markets
     ///
     /// A one-second timer on the real clock waits for the save, opens the market (from the save, or a new one with the
     /// old market's shares brought over once) and keeps the save's handler in place. Each frame the market is played up
-    /// to the game's own moment, a few hundred company-steps at most a frame: time that passes in a sleep or a skip is
+    /// to the game's own moment for about a millisecond at most (<see cref="BudgetMs"/>; more behind a loading screen or a
+    /// pause): a step of the session is 0.1 to 0.2 ms, and the open and the close (about 1 to 3 ms in all) are worked
+    /// through a company at a time over a few frames (MarketEngine.Midway). Time that passes in a sleep or a skip is
     /// played out step by step within a few frames, and while the market is behind the clock no order is taken
-    /// (OrderWhy.Behind), so nobody can trade at a price the market has already moved past.
+    /// (OrderWhy.Behind), so nobody can trade at a price the market has already moved past. Anything that changes the
+    /// market from outside, or writes it, plays a moment half played out first (<see cref="FinishMoment"/>).
     ///
     /// IN A GOING PUBLIC SESSION the market is the city's, one for every player (Core/SharedCity, part M; Markets/
     /// MarketShare): the host plays it as alone and sends the new lines of its tape; a guest's market is the host's,
@@ -34,7 +37,9 @@ namespace RealLifeOverhaul.Markets
         private static readonly FeatureGuard FrameGuard = Guard.For("markets", "MarketDirector", typeof(MarketDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
         public const string AppId = "RealLifeStocks";
-        private const int WorkPerFrame = 3000;           // company-steps a frame at most (a step of the session is one for every listed company)
+        private const double BudgetMs = 1.0;             // milliseconds of a played frame the market may take to catch up with the clock (a piece more at most)
+        private const double HiddenBudgetMs = 8.0;       // ...and of a frame behind a loading screen or a pause (SceneFinds.Hidden)
+        private const int MidwayWaitFrames = 120;        // frames the second's work waits at most for a moment half played (it takes a few; what it changes plays it out anyway)
         private const float FrontierEvery = 1f;          // real seconds between writing the furthest moment played to the tape
         private const int StartWaitSeconds = 10;         // how long a new market waits for the wiring before it opens with nothing of the old one
 
@@ -102,6 +107,7 @@ namespace RealLifeOverhaul.Markets
                 Ready = () => Running && Save != null && ReferenceEquals(Save, _save),
                 Write = () =>
                 {
+                    _engine.Finish();   // (a moment half played is played out first: MarketEngine.Midway)
                     Flush();   // (the tape's lines up to now are in the market sent; the guests that follow have them with the next update)
                     return MarketShare.Write(_engine.State, _engine.Tape);
                 },
@@ -146,6 +152,10 @@ namespace RealLifeOverhaul.Markets
                 {
                     yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
                 }
+                for (int frames = 0; _running && _engine != null && _engine.Midway && frames < MidwayWaitFrames; frames++)
+                {
+                    yield return null;   // a moment half played is played out first (a few frames): the second's work never sees half of one
+                }
                 try
                 {
                     Slow();
@@ -186,6 +196,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
+            FinishMoment();   // (waited for above; one comparison)
             SaveHook.Keep(_onSave);
             MarketBridges.Poll?.Invoke(_say);   // (a guest that follows the host's market hears nothing of its own: the tape's events are the host's)
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // (for the rest of a day that had a shared trade: a replay of it takes every move from the tape)
@@ -221,21 +232,17 @@ namespace RealLifeOverhaul.Markets
             }
             try
             {
-                long target = Target();
-                if (_following)
+                long target = Goal();
+                if (_engine.State.Now < target || _engine.Midway)
                 {
-                    target = Math.Min(target, _hostFrontier);   // the host's furthest moment: the market goes no further while it follows
-                    if (_checks.Count >= 2 && _checks[0] > _engine.State.Now && _checks[0] < target)
-                    {
-                        target = _checks[0];   // a moment the host checked: played to, looked at, then on
-                    }
-                }
-                if (_engine.State.Now < target)
-                {
-                    int work = WorkPerFrame;
-                    bool there = _engine.RunTo(target, ref work);
+                    long was = _engine.State.Now;
+                    bool there = _engine.RunFor(target, (long)((SceneFinds.Hidden ? HiddenBudgetMs : BudgetMs) * System.Diagnostics.Stopwatch.Frequency / 1000.0));
+                    bool moved = _engine.State.Now != was || there == Behind;
                     Behind = !there;
-                    Moved();
+                    if (moved)
+                    {
+                        Moved();   // (a frame that only worked on a moment half played changed nothing the app shows)
+                    }
                     if (_following)
                     {
                         Checked();
@@ -251,6 +258,21 @@ namespace RealLifeOverhaul.Markets
             {
                 Fault("the market's step", e);
             }
+        }
+
+        // The moment the market is played to now: the game's clock, and for a guest never past the host's furthest moment.
+        private long Goal()
+        {
+            long target = Target();
+            if (_following)
+            {
+                target = Math.Min(target, _hostFrontier);   // the host's furthest moment: the market goes no further while it follows
+                if (_checks.Count >= 2 && _checks[0] > _engine.State.Now && _checks[0] < target)
+                {
+                    target = _checks[0];   // a moment the host checked: played to, looked at, then on
+                }
+            }
+            return target;
         }
 
         /// <summary>The moment of the market's grid the game's clock has reached.</summary>
@@ -389,6 +411,7 @@ namespace RealLifeOverhaul.Markets
         {
             if (keep && _running && Save != null && ReferenceEquals(Save, _save))
             {
+                _engine.Finish();   // (a moment half played is played out first: MarketEngine.Midway)
                 MarketStore.Save(Save.modData, _engine.State);
                 MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
             }
@@ -445,12 +468,15 @@ namespace RealLifeOverhaul.Markets
             Logger?.Warn("Stock market: switched off for this session after an error in " + where + ". Prices stand still and nothing is traded; what the save holds of the market is untouched.");
         }
 
+        private static readonly int HotSave = HotSpots.Slot("Markets: MarketDirector.OnSave");
         private void OnSave()
         {
+            using var hotSpot = HotSpots.Time(HotSave);   // the market and its tape written whole (Core/HotSpots)
             try
             {
                 if (_running && Save != null && ReferenceEquals(Save, _save))
                 {
+                    _engine.Finish();   // (a moment half played is played out first: MarketEngine.Midway)
                     Flush();   // (the lines on their way, to the file and to the guests, before the tape is written whole)
                     MarketStore.Save(Save.modData, _engine.State);
                     MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
@@ -472,6 +498,10 @@ namespace RealLifeOverhaul.Markets
             {
                 _shared.Length = 0;
                 return null;
+            }
+            if (_engine.Midway)
+            {
+                return null;   // (a moment half played: its lines and its check go with the next update, once it is played out)
             }
             string lines = _shared.Length > 0 ? _shared.ToString() : null;
             _shared.Length = 0;
@@ -509,6 +539,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
+            _engine.Finish();   // (a moment half played is played out first: MarketEngine.Midway)
             if (!whole)
             {
                 if (!_following || !MarketShare.Follow(_engine.Tape, text, _checks, ref _hostFrontier))
@@ -599,6 +630,7 @@ namespace RealLifeOverhaul.Markets
             _checks.Clear();
             if (_engine != null)
             {
+                _engine.Finish();   // (a moment half played is played out as the guest's: MarketEngine.Midway)
                 _engine.TradeSink = null;
                 _engine.State.Following = false;
                 Logger?.Info("Stock market: the host's market is no longer followed; it goes on alone from day " + _engine.State.Day + " phase " + _engine.State.Phase + ".");
@@ -626,6 +658,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>An order placed: filled at once if it can be, else it waits. Null with the reason if it cannot be placed.</summary>
         public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool test, out OrderWhy why, bool closing = false)
         {
+            FinishMoment();
             why = OrderWhy.Closed;
             if (!Running)
             {
@@ -669,6 +702,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>An open order cancelled; false if it is not open (or orders are held after a load).</summary>
         public bool Cancel(int orderId)
         {
+            FinishMoment();
             if (!Running || Behind || _engine.Held)
             {
                 return false;
@@ -681,6 +715,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A company on or off the watch list; false if the list is full.</summary>
         public bool Watch(int stockId, bool on)
         {
+            FinishMoment();
             MarketState s = State;
             if (s == null || s.Stock(stockId) == null)
             {
@@ -705,6 +740,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Money paid from the player's cash into the margin account; the first payment opens it (at least the opening sum).</summary>
         public bool Deposit(long amount)
         {
+            FinishMoment();
             MarketState s = State;
             if (s == null || amount <= 0 || !Settings.MarketsMargin || Behind || _engine.Held)
             {
@@ -748,6 +784,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Money taken out of the margin account into the player's cash; the account closes when it has nothing left and nothing is borrowed.</summary>
         public bool Withdraw(long amount)
         {
+            FinishMoment();
             MarketState s = State;
             if (s == null || amount <= 0 || Behind || _engine.Held || amount > MostWithdrawable())
             {
@@ -765,6 +802,28 @@ namespace RealLifeOverhaul.Markets
             }
             Moved();
             return true;
+        }
+
+        /// <summary>
+        /// A moment of the market half played (MarketEngine.Midway: the open or the close, worked through over a few
+        /// frames) played out at once: every method that changes the market from outside asks for this first, so the
+        /// moment is played exactly as in one frame. Nothing when none is (one comparison).
+        /// </summary>
+        private void FinishMoment()
+        {
+            if (!Running || !_engine.Midway)
+            {
+                return;
+            }
+            _engine.Finish();
+            if (_following)
+            {
+                Checked();
+            }
+            if (Behind && _engine.State.Now >= Goal())
+            {
+                Behind = false;   // (caught up with the clock, as it was when a moment was played in one frame)
+            }
         }
 
         // ---------------------------------------------------------------- what the market tells

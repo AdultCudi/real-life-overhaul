@@ -75,9 +75,25 @@ namespace RealLifeOverhaul.Markets
         private static readonly Queue<Job> Jobs = new Queue<Job>(8);
         private static bool _writing;
 
+        // The last tape's file and first line, made once for it (on the game's thread) rather than for every append, about
+        // once a second while the market trades: the data folder is a call into the engine and a new string each time.
+        private static ulong _namedId;
+        private static string _namedPath, _namedFirst;
+
         public static string PathOf(ulong id)
         {
-            return Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Market", id.ToString("X16") + ".tape");
+            Name(id);
+            return _namedPath;
+        }
+
+        private static void Name(ulong id)
+        {
+            if (_namedPath == null || _namedId != id)
+            {
+                _namedPath = Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Market", id.ToString("X16") + ".tape");
+                _namedFirst = "T1 " + id.ToString("X16") + "\n";
+                _namedId = id;
+            }
         }
 
         public static MarketTape Read(ulong id)
@@ -101,7 +117,8 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            Enqueue(new Job { Path = PathOf(id), Text = lines, First = "T1 " + id.ToString("X16") + "\n" });
+            Name(id);
+            Enqueue(new Job { Path = _namedPath, Text = lines, First = _namedFirst });
         }
 
         public static void Rewrite(ulong id, string whole)

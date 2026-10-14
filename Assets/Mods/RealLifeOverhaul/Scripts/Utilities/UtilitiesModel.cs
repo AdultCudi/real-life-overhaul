@@ -68,4 +68,75 @@ namespace RealLifeOverhaul.Utilities
             return null;
         }
     }
+
+    /// <summary>
+    /// The accounts by place and service, for a pass that adds or takes away no account and changes none's place or
+    /// service (the day's use, the hour's effects): <see cref="UtilitiesState.Find"/>'s answer, the first of the list,
+    /// from a dictionary. Built in one pass over the accounts (about 900 for 300 places), against a pass of compares for
+    /// every look-up (two or three a place an hour: some 270,000 compares); nothing is allocated after the first build.
+    /// A business closed or opened by the hour's pass (Business/) touches no account. Game-free.
+    /// </summary>
+    public sealed class AccountIndex
+    {
+        private readonly Dictionary<string, Account>[] _by = new Dictionary<string, Account>[UtilitiesCatalogue.AllServices];
+        private UtilitiesState _of;
+
+        public AccountIndex()
+        {
+            for (int i = 0; i < _by.Length; i++)
+            {
+                _by[i] = new Dictionary<string, Account>(64, StringComparer.Ordinal);
+            }
+        }
+
+        /// <summary>Built again from the accounts as they are now.</summary>
+        public void Build(UtilitiesState state)
+        {
+            _of = state;
+            for (int i = 0; i < _by.Length; i++)
+            {
+                _by[i].Clear();
+            }
+            for (int i = 0; state != null && i < state.Accounts.Count; i++)
+            {
+                Account a = state.Accounts[i];
+                int s = a != null ? (int)a.Service : -1;
+                if (a != null && a.Place != null && s >= 0 && s < _by.Length && !_by[s].ContainsKey(a.Place))
+                {
+                    _by[s].Add(a.Place, a);   // (the first of a place and service, as Find has it)
+                }
+            }
+        }
+
+        /// <summary>
+        /// An account just added to the list in place of the one its place had for its service (none, or one closed and
+        /// taken out): the answer for that place and service from now on. The list never holds two accounts of a place and
+        /// service (the store reads none twice; Sync and BuyNet add one only where Find had none), so it is Find's answer.
+        /// </summary>
+        public void Put(UtilitiesState state, Account a)
+        {
+            int s = a != null ? (int)a.Service : -1;
+            if (!ReferenceEquals(_of, state) || a.Place == null || s < 0 || s >= _by.Length)
+            {
+                _of = null;   // (built again at the next answer)
+                return;
+            }
+            _by[s][a.Place] = a;
+        }
+
+        /// <summary>The account of a place for a service, as <see cref="UtilitiesState.Find"/> gives it.</summary>
+        public Account Find(UtilitiesState state, string place, Service service)
+        {
+            int s = (int)service;
+            if (place == null || s < 0 || s >= _by.Length || state == null)
+            {
+                return state != null ? state.Find(place, service) : null;
+            }
+            if (!ReferenceEquals(_of, state))
+            {
+                Build(state);
+            }
+            return _by[s].TryGetValue(place, out Account a) && a.Service == service && string.Equals(a.Place, place, StringComparison.Ordinal) ? a : null;
+        }
+    }
 }

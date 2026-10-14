@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public void StopAll()
         {
+            FinishMoment();
             try
             {
                 if (_running && Save != null && ReferenceEquals(Save, _save))
@@ -79,6 +80,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>For the save tools: the save's line has been removed, and so is what was read from it.</summary>
         public void Forget()
         {
+            FinishMoment();
             _running = false;
             _engine = null;
             _save = null;
@@ -92,6 +94,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: the Stocks app opened on the market's tab.</summary>
         public void TestOpen()
         {
+            FinishMoment();
             const string Test = "Open the Stocks app";
             if (!TestReady(Test, false))
             {
@@ -114,6 +117,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public void TestNews(bool crisis)
         {
+            FinishMoment();
             string test = crisis ? "A crisis at a company" : "A windfall at a company";
             if (!TestReady(test, true))
             {
@@ -132,6 +136,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: a takeover bid for a company the player holds, else one they watch, else the largest listed, made as a real one is.</summary>
         public void TestBid()
         {
+            FinishMoment();
             const string Test = "A takeover bid";
             if (!TestReady(Test, true))
             {

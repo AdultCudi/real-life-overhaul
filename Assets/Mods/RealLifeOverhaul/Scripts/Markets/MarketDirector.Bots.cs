@@ -27,22 +27,31 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             int selling = 0;
+            bool changed = false;
             for (int i = _engine.State.Bots.Count - 1; i >= 0; i--)
             {
                 Bot b = _engine.State.Bots[i];
-                if (!_engine.Dismiss(b.Firm, out BotWhy why) && why == BotWhy.OwnShares && b.Status != BotStatus.SellingUp)
+                if (_engine.Dismiss(b.Firm, out BotWhy why))
                 {
-                    _engine.SellUp(b.Firm, out _);   // (shares of the player's own company: sold by its rules, then let go here)
+                    changed = true;
+                }
+                else if (why == BotWhy.OwnShares && b.Status != BotStatus.SellingUp)
+                {
+                    changed |= _engine.SellUp(b.Firm, out _);   // (shares of the player's own company: sold by its rules, then let go here)
                 }
                 selling += why == BotWhy.OwnShares ? 1 : 0;
             }
             if (selling != _botsSelling)
             {
                 _botsSelling = selling;
+                changed = true;
                 Logger?.Info("Stock market: trading bots switched off; every bot was let go and what it held is the player's own now"
                              + (selling > 0 ? ", but for " + selling + " selling its shares of the player's own company first, by its founder's rules." : "."));
             }
-            Moved();
+            if (changed)
+            {
+                Moved();   // (only when a bot went or began to sell up: a bot still selling, as it was, changes nothing the app shows)
+            }
         }
 
         // What every ask of a bot needs: the market running, caught up and not held after a load.
@@ -54,6 +63,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A firm's bot hired with so much of the player's cash to trade and its settings. Null with the reason when it cannot be.</summary>
         public Bot HireBot(int firm, long capital, int size, int stop, int loss, out BotWhy why)
         {
+            FinishMoment();
             why = !Settings.MarketsBots ? BotWhy.Off : BotReady();
             if (why != BotWhy.None)
             {
@@ -78,6 +88,7 @@ namespace RealLifeOverhaul.Markets
 
         public bool SetBot(int firm, int size, int stop, int loss, out BotWhy why)
         {
+            FinishMoment();
             why = BotReady();
             bool done = why == BotWhy.None && _engine.SetBot(firm, size, stop, loss, out why);
             Moved();
@@ -86,6 +97,7 @@ namespace RealLifeOverhaul.Markets
 
         public bool SellUpBot(int firm, out BotWhy why)
         {
+            FinishMoment();
             why = BotReady();
             bool done = why == BotWhy.None && _engine.SellUp(firm, out why);
             Moved();
@@ -94,6 +106,7 @@ namespace RealLifeOverhaul.Markets
 
         public bool RestartBot(int firm, out BotWhy why)
         {
+            FinishMoment();
             why = !Settings.MarketsBots ? BotWhy.Off : BotReady();
             bool done = why == BotWhy.None && _engine.Restart(firm, out why);
             Moved();
@@ -102,6 +115,7 @@ namespace RealLifeOverhaul.Markets
 
         public bool DismissBot(int firm, out BotWhy why)
         {
+            FinishMoment();
             why = BotReady();
             bool done = why == BotWhy.None && _engine.Dismiss(firm, out why);
             Moved();
@@ -111,6 +125,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The shares a bot trades: its strategy's market, the companies picked for it, or those the player holds.</summary>
         public bool SetBotScope(int firm, BotScope scope, out BotWhy why)
         {
+            FinishMoment();
             why = BotReady();
             bool done = why == BotWhy.None && _engine.SetScope(firm, scope, out why);
             Moved();
@@ -120,6 +135,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A company picked for a bot, or taken off its picks.</summary>
         public bool PickForBot(int firm, int stockId, bool on, out BotWhy why)
         {
+            FinishMoment();
             why = BotReady();
             bool done = why == BotWhy.None && _engine.PickFor(firm, stockId, on, out why);
             Moved();
@@ -129,6 +145,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A bot's payouts to the player: the share of its new profit and how often.</summary>
         public bool SetBotPayout(int firm, int pct, BotPayEvery every, out BotWhy why)
         {
+            FinishMoment();
             why = BotReady();
             bool done = why == BotWhy.None && _engine.SetPayout(firm, pct, every, out why);
             Moved();
@@ -270,6 +287,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test button: every bot's month closed now, as at a month's end: its statement, its fee and its share of any profit.</summary>
         public void TestBotMonth()
         {
+            FinishMoment();
             const string Test = "A month's statement for my bots";
             if (!TestReady(Test, true))
             {

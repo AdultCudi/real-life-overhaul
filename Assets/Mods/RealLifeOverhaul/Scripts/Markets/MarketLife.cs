@@ -283,7 +283,13 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public static double LogFairOf(Stock s, in MarketEnv env, int day, int year)
         {
-            double fair = MarketValuation.Fair(s, env) + Accrued(s, day, year);
+            return LogFairAt(s, MarketValuation.Fair(s, env), day, year);
+        }
+
+        /// <summary>The same, from the business's worth a share already worked out (<see cref="MarketValuation.Fair"/>, or its <see cref="MarketValuation.Terms"/> at the company's outlook).</summary>
+        public static double LogFairAt(Stock s, double worth, int day, int year)
+        {
+            double fair = worth + Accrued(s, day, year);
             if (s.BidCents > 0)
             {
                 double bid = s.BidCents / 100.0;

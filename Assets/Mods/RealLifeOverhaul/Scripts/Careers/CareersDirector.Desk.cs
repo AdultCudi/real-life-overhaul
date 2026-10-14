@@ -196,8 +196,25 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The place key of where the player is: the building's, and on a tower's floor that company's floor's.</summary>
-        private static string DeskPlace(BuildingRegistration reg) => HqTowers.FloorPlace(TalentGame.Place(reg), CareersBridges.FloorHereNow());
+        /// <summary>
+        /// The place key of where the player is: the building's, and on a tower's floor that company's floor's. Asked for
+        /// every second inside the job's building: made again only when the building or the floor changed (the building's
+        /// key is TalentGame.Place's own, kept per building).
+        /// </summary>
+        private string DeskPlace(BuildingRegistration reg)
+        {
+            string place = TalentGame.Place(reg);
+            string floor = CareersBridges.FloorHereNow();
+            if (_deskPlace == null || !ReferenceEquals(place, _deskPlaceOf) || !string.Equals(floor, _deskPlaceFloor, StringComparison.Ordinal))
+            {
+                _deskPlaceOf = place;
+                _deskPlaceFloor = floor;
+                _deskPlace = HqTowers.FloorPlace(place, floor);
+            }
+            return _deskPlace;
+        }
+
+        private string _deskPlace, _deskPlaceOf, _deskPlaceFloor;   // the last place key of where the player is, the building's key and the floor's company it was made from
 
         private int DeskSeed(Job j) => (int)TechRandom.Hash(StudySeed, DeskSalt, DeskRules.JobKey(j));
 

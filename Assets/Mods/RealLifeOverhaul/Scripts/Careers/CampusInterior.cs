@@ -69,9 +69,12 @@ namespace RealLifeOverhaul.Careers
     /// GOING PUBLIC. The building is the same on every machine (Careers/CampusBuilding); everything here is the machine's
     /// own: the interior, the floors, the doors' flags. Nothing is sent and nothing of anyone's is changed.
     ///
-    /// THE COST. Nothing per frame but, while the player stands within a few metres of the door outside and it is open, one
-    /// flag of the building manager read each frame (so the game's own click is seen before the game loads the structure);
-    /// once a second the panels, the doors and the five rooms' marks; the furniture over four frames when a floor is entered.
+    /// THE COST. Per frame (from CareersDirector.LateUpdate) the game's card over a building: its target read and compared
+    /// with the last (the card itself kept, found again only with a new city), a fraction of a microsecond; while the player
+    /// stands within a few metres of the door outside and it is open, one flag of the building manager read each frame (so
+    /// the game's own click is seen before the game loads the structure); once a second the panels, the doors and the five
+    /// rooms' marks, the card's hours written again only when they or the label changed, the panels' buttons and texts from
+    /// kept lists and arguments; the furniture over four frames when a floor is entered.
     /// </summary>
     internal sealed class CampusInterior
     {
@@ -91,7 +94,13 @@ namespace RealLifeOverhaul.Careers
         private readonly Action[] _liftPress = new Action[4];
         private readonly int[] _doorFloor = new int[4];
         private readonly int[] _liftFloor = new int[4];
-        private readonly Dictionary<string, object> _args = new Dictionary<string, object>(16);
+        private readonly Dictionary<long, object> _args = new Dictionary<long, object>(16);   // a floor button's arguments by class, floor and course
+        private readonly List<int> _floorList = new List<int>(CampusRules.Floors);              // the floors a panel offers, made again in place each second
+        private Func<string> _doorWhat, _liftWhat;   // what the door's and the lift's panels say in the log (made once)
+        private bool _doorWhatOpen;
+        private BuildingResume _card;                 // the game's building card, kept until the city goes
+        private long _cardHours = long.MinValue;      // what the card's hours were written from (HoursStamp)...
+        private string _cardText;                     // ...and the label's text just after: written again only if either has changed
         private readonly EducationDoorController[] _rooms = new EducationDoorController[CampusRules.RoomsPerFloor];
         private readonly Transform[] _chairs = new Transform[CampusRules.RoomsPerFloor];   // each room's chair, found as the game's door finds it
         private readonly GameObject[] _signs = new GameObject[CampusRules.RoomsPerFloor];
@@ -277,6 +286,26 @@ namespace RealLifeOverhaul.Careers
             return save != null && (CampusRules.OpenAt(save.Day, CareersGame.MinuteOfDay) || _director.UniversityBusinessNow(out _));
         }
 
+        // Everything HoursLine's words are made from, as one number (the same number, the same words in a language).
+        private static long HoursStamp(bool open)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return 0L;
+            }
+            int day = save.Day;
+            if (open)
+            {
+                return (1L << 60) | (uint)Math.Max(CampusRules.Closes(day), save.Hour + 1);
+            }
+            if (!CampusRules.NextOpening(day, CareersGame.MinuteOfDay, out int openDay, out int openHour))
+            {
+                return 2L << 60;
+            }
+            return (openDay == day ? 3L << 60 : 4L << 60) | ((long)(uint)openDay << 8) | (uint)(openHour & 0xFF);
+        }
+
         /// <summary>When it closes today (an hour) or, closed, when it opens next, in words for the card, the door and the app.</summary>
         public string HoursLine(bool open)
         {
@@ -307,7 +336,9 @@ namespace RealLifeOverhaul.Careers
             int classFloor = _director.UniversityBusinessNow(out int classCourse) ? CampusRules.FloorOf(classCourse) : 0;
             FloorButtons(panel, _doorPress, _doorFloor, _doorPage, 0, open, classFloor, classCourse);
             Vector3 standing = player.transform.position;
-            if (_door.Show(Campus.Door, standing, 2.2f, () => "at the door of " + Campus.Name + (open ? ", open" : ", closed")) && !open && _toldClosed != SaveGameManager.Current.Day * 100 + SaveGameManager.Current.Hour)
+            _doorWhatOpen = open;
+            if (_door.Show(Campus.Door, standing, 2.2f, _doorWhat ?? (_doorWhat = () => "at the door of " + Campus.Name + (_doorWhatOpen ? ", open" : ", closed")))
+                && !open && _toldClosed != SaveGameManager.Current.Day * 100 + SaveGameManager.Current.Hour)
             {
                 _toldClosed = SaveGameManager.Current.Day * 100 + SaveGameManager.Current.Hour;
                 _logger?.Info("Careers: the player is at the university's door at " + Clock() + " and it is closed (" + HoursLine(false) + "); the floors are offered greyed.");
@@ -329,13 +360,14 @@ namespace RealLifeOverhaul.Careers
             panel.Lines(CareersText.T("reallife_study_campus_university"), CareersText.T("reallife_campus_lift_here", "floor", Floor.ToString()), null, WorldPanel.White());
             int classFloor = _director.UniversityBusinessNow(out int classCourse) ? CampusRules.FloorOf(classCourse) : 0;
             FloorButtons(panel, _liftPress, _liftFloor, _liftPage, Floor, true, classFloor, classCourse);
-            _lift.Show(_spawn, standing, 2.1f, () => "the lift on floor " + Floor);
+            _lift.Show(_spawn, standing, 2.1f, _liftWhat ?? (_liftWhat = () => "the lift on floor " + Floor));
         }
 
         // Up to four buttons: the floors (leaving out the one the player is on), or three and "more floors" when they do not fit.
         private void FloorButtons(WorldPanel panel, Action[] press, int[] floors, int page, int skip, bool enabled, int classFloor, int classCourse)
         {
-            var list = new List<int>(CampusRules.Floors);
+            List<int> list = _floorList;
+            list.Clear();
             for (int f = 1; f <= CampusRules.Floors; f++)
             {
                 if (f != skip)
@@ -365,13 +397,14 @@ namespace RealLifeOverhaul.Careers
                 floors[slot] = floor;
                 bool here = floor == classFloor;
                 string key = here ? "reallife_campus_floor_class" : "reallife_campus_floor";
-                panel.Button(slot, key, Args(key, floor, here ? classCourse : -1), press[slot], enabled, here || slot == 0);
+                panel.Button(slot, key, Args(here, floor, here ? classCourse : -1), press[slot], enabled, here || slot == 0);
             }
         }
 
-        private object Args(string key, int floor, int course)
+        // A floor button's arguments, made once for each (the class's key or the floor's, the floor, the course).
+        private object Args(bool here, int floor, int course)
         {
-            string id = key + "#" + floor + "#" + course;
+            long id = ((here ? 1L : 0L) << 62) | ((long)(uint)floor << 31) | (uint)(course + 1);
             if (!_args.TryGetValue(id, out object args))
             {
                 args = course >= 0 ? (object)new { floor = floor.ToString(), course = CareersText.Course(course) } : new { floor = floor.ToString() };
@@ -1164,10 +1197,18 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The game's card over the building: the university's hours in place of the game's line, and no owners' lines.</summary>
         public void Card(bool force)
         {
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            BuildingResume card = uis != null ? uis.buildingResume : null;
+            BuildingResume card = _card;
+            if (card == null)
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                card = _card = uis != null ? uis.buildingResume : null;   // (kept: the card lives as long as the city)
+                if (card == null)
+                {
+                    return;
+                }
+            }
             CampusBuilding campus = Campus;
-            if (card == null || campus == null || campus.Building == null)
+            if (campus == null || campus.Building == null)
             {
                 return;
             }
@@ -1176,6 +1217,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
+            bool turned = !ReferenceEquals(target, _carded);
             _carded = target;
             if (!ReferenceEquals(target, campus.Building) || !CareersDirector.UniversityOpen || SpecialBuildings.NameFor(campus.Building) == null)
             {
@@ -1187,9 +1229,18 @@ namespace RealLifeOverhaul.Careers
                 if (card.openStateLabel != null)
                 {
                     card.openStateLabel.gameObject.SetActive(true);
-                    card.openStateLabel.Prefix = string.Empty;
-                    card.openStateLabel.SetData(LanguageChangeEventDataHolder.Create("reallife_campus_card_state", new { state = HoursLine(open) }, "common_closed"));
-                    card.openStateLabel.TextContainer.color = open ? WorldPanel.Green() : WorldPanel.Red();
+                    long hours = HoursStamp(open);
+                    TMP_Text shown = card.openStateLabel.TextContainer;
+                    if (turned || hours != _cardHours || shown == null || !ReferenceEquals(shown.text, _cardText))
+                    {
+                        // (written again when the card turned to it, the hours changed, or the game wrote its own line over it:
+                        // on the hour and when a building changes hands, BuildingResume.UpdateDetails)
+                        card.openStateLabel.Prefix = string.Empty;
+                        card.openStateLabel.SetData(LanguageChangeEventDataHolder.Create("reallife_campus_card_state", new { state = HoursLine(open) }, "common_closed"));
+                        card.openStateLabel.TextContainer.color = open ? WorldPanel.Green() : WorldPanel.Red();
+                        _cardHours = hours;
+                        _cardText = card.openStateLabel.TextContainer.text;
+                    }
                 }
                 card.rivalBuildingOwner?.gameObject.SetActive(false);
                 card.rivalBusinessOwner?.gameObject.SetActive(false);
