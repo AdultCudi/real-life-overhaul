@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Markets
                     }
                     total += OwnSettled(log);   // the player's own listed company taken private at its last price (MarketDirector.Own.cs)
                     total += BotsSettled(log);  // the player's bots' shares (MarketDirector.Bots.cs)
+                    total += BondsSettled(log); // the player's bonds (MarketDirector.Bonds.cs)
                     if (total > 0)
                     {
                         _world.Wallet.Give(total, MarketMoney.Sold, string.Empty);

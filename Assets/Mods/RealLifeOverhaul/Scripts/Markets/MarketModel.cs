@@ -414,6 +414,7 @@ namespace RealLifeOverhaul.Markets
         public readonly List<MarketNews> News = new List<MarketNews>(32);   // the last few days' pieces
         public readonly List<DividendDue> Dues = new List<DividendDue>(8);  // dividends worked out at a record day, to be paid
         public readonly List<Bot> Bots = new List<Bot>(4);                  // the trading bots the player has hired (MarketBots), one a firm
+        public readonly BondBook Bonds = new BondBook();                    // the bonds the player holds (Markets/Bonds): never in the city's line
         public int BusinessDay;                  // the last day of the calendar the companies' business has been run for
 
         // The player's own company (Markets/Listing). Me is who the player of this machine is (a hash of their save, set by

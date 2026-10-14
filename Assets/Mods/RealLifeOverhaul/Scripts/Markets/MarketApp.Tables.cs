@@ -68,16 +68,17 @@ namespace RealLifeOverhaul.Markets
             .Filter("reallife_mkt_filter_orders", OrderStates)
             .Empty("reallife_mkt_empty_orders");
 
-        /// <summary>Portfolio: 0 company, 1 shares, 2 cost a share, 3 price, 4 worth, 5 gain or loss, 6 the gain in per cent, 7 dividends.</summary>
+        /// <summary>Portfolio: 0 company, 1 shares, 2 cost a share, 3 price, 4 worth, 5 gain or loss, 6 the gain in per cent, 7 dividends, 8 the next payment.</summary>
         public static readonly TableSpec Portfolio = new TableSpec("Stocks", "Portfolio")
-            .Column("reallife_mkt_col_company", 440f, TableSort.Text, flexible: true)
-            .Column("reallife_mkt_col_shares", 190f, TableSort.Number)
-            .Column("reallife_mkt_col_cost_share", 220f, TableSort.Money)
-            .Column("reallife_mkt_col_price", 200f, TableSort.Money)
-            .Column("reallife_mkt_col_worth", 230f, TableSort.Money, sums: true)
-            .Column("reallife_mkt_col_gain", 230f, TableSort.Money, sums: true)
-            .Column("reallife_mkt_col_gain_pct", 170f, TableSort.Number)
-            .Column("reallife_mkt_col_dividends", 230f, TableSort.Money, sums: true, right: true)
+            .Column("reallife_mkt_col_company", 380f, TableSort.Text, flexible: true)
+            .Column("reallife_mkt_col_shares", 160f, TableSort.Number)
+            .Column("reallife_mkt_col_cost_share", 190f, TableSort.Money)
+            .Column("reallife_mkt_col_price", 170f, TableSort.Money)
+            .Column("reallife_mkt_col_worth", 210f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_gain", 200f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_gain_pct", 150f, TableSort.Number)
+            .Column("reallife_mkt_col_dividends", 200f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_next_pay", 260f, TableSort.Date, right: true)
             .Filter("reallife_mkt_filter_sectors", MarketCatalogue.SectorKeys)
             .Empty("reallife_mkt_empty_portfolio");
 
@@ -91,6 +92,24 @@ namespace RealLifeOverhaul.Markets
             .Column("reallife_mkt_bot_col_fall", 170f, TableSort.Number)
             .Column("reallife_mkt_bot_col_trades", 150f, TableSort.Number)
             .Column("reallife_mkt_col_state", 220f, TableSort.Text, right: true);
+
+        // ---- bonds on offer and held (the Bonds tab's filter)
+        public const int BondsOffered = 0, BondsHeld = 1;
+        private static readonly string[] BondStates = { "reallife_mkt_bond_filter_offers", "reallife_mkt_bond_filter_held" };
+
+        /// <summary>Bonds: 0 bond, 1 kind, 2 its term (on offer) or its end, 3 rate, 4 pays, 5 price for each 100, 6 held, 7 worth, 8 the next payment.</summary>
+        public static readonly TableSpec Bonds = new TableSpec("Stocks", "Bonds")
+            .Column("reallife_mkt_bond_col_bond", 400f, TableSort.Text, flexible: true)
+            .Column("reallife_mkt_bond_col_kind", 190f, TableSort.Text)
+            .Column("reallife_mkt_bond_col_ends", 170f, TableSort.Number)
+            .Column("reallife_mkt_bond_col_rate", 140f, TableSort.Number)
+            .Column("reallife_mkt_bond_col_pays", 190f, TableSort.Text)
+            .Column("reallife_mkt_col_price", 150f, TableSort.Number)
+            .Column("reallife_mkt_col_held", 190f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_worth", 190f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_next_pay", 260f, TableSort.Date, right: true)
+            .Filter("reallife_mkt_bond_filter_all", BondStates)
+            .Empty("reallife_mkt_bond_empty");
 
         /// <summary>The player's own company on its way: 0 what it takes, 1 needed, 2 the company's, 3 met.</summary>
         public static readonly TableSpec ListingNeeds = new TableSpec("Stocks", "Your company: what it takes")

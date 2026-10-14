@@ -336,6 +336,7 @@ namespace RealLifeOverhaul.Markets
                     hand.Done?.Invoke();
                 }
             }
+            JoinNew(state, fresh);   // (companies of the catalogue a save's market never had: MarketDirector.Bonds.cs)
             if (state.YearDays != GameCalendar.DaysPerYear && fresh == false)
             {
                 Logger?.Warn("Stock market: the save's year is " + GameCalendar.DaysPerYear + " days and its market's " + state.YearDays + "; the market keeps its own.");
@@ -343,6 +344,7 @@ namespace RealLifeOverhaul.Markets
             MarketTape tape = MarketTapeFile.Read(state.Id);
             _engine = new MarketEngine(state, tape, _world);
             _engine.BotTold = _botTold;
+            HookBonds();   // (its bonds' news: MarketDirector.Bonds.cs)
             _engine.HoldAfterLoad();
             OwnStarted(save);   // (the player's own company: who they are, and their company back if a save made as a guest left it aside)
             _frontierWritten = tape.Frontier;
@@ -531,6 +533,7 @@ namespace RealLifeOverhaul.Markets
             ulong was = _engine.State.Id;
             _engine = new MarketEngine(state, tape, _world);
             _engine.BotTold = _botTold;
+            HookBonds();   // (its bonds' news: MarketDirector.Bonds.cs)
             _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
             state.Following = true;   // (the player's own company is set aside meanwhile: MarketShare.Adopt)

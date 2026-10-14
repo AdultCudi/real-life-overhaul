@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Markets
     ///      dividend paid to the player (MarketNewsKind.Paid). A bot's shares are written into the player's holding of part p as well
     ///      (each holding of b says so), and taken out of it again here: a version that does not know bots reads them as
     ///      the player's own shares, bought with the player's money, and nothing is lost.
+    ///   f the player's bonds (Markets/Bonds/BondStore). Never in the city's line.
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
     /// founder, its name and sector, its reserve, board and meetings): another player's is in the city's line too.
     ///
@@ -242,6 +243,11 @@ namespace RealLifeOverhaul.Markets
             {
                 t.Append("~b:");
                 Bots(t, s);
+            }
+            if (!city && s.Bonds.Holdings.Count > 0)
+            {
+                t.Append("~f:");
+                BondStore.Write(t, s.Bonds);   // the player's bonds (Markets/Bonds/BondStore)
             }
             if (!city && s.Listing != null && !s.Listing.Empty)
             {
@@ -825,6 +831,9 @@ namespace RealLifeOverhaul.Markets
                         break;
                     case 'b':
                         bots = body;
+                        break;
+                    case 'f':
+                        BondStore.Read(body, s.Bonds);
                         break;
                     case 'y':
                         {

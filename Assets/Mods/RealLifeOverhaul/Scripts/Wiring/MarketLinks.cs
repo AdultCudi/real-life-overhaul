@@ -31,7 +31,9 @@ namespace RealLifeOverhaul
         ///            breaking (polled once a second by the director)
         ///   Rivals   the game's named rivals (Ventures' reader of them)
         ///   Old      the old market's file (Ventures'): the live one while Ventures runs, else the save's copy
-        ///   Planner  results of the companies held or watched, dividends coming, a margin call, orders that lapse
+        ///   Banks    the city's three largest banks (Economy/Lending, BankTerms.Banks): a deposit at each (Markets/Bonds)
+        ///   Planner  results of the companies held or watched, dividends coming, a margin call, orders that lapse,
+        ///            bonds' payments and ends
         /// </summary>
         public static class MarketLinks
         {
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Rivals = Rivals;
                 MarketBridges.Old = Old;
                 MarketBridges.Poll = Poll;
+                MarketBridges.Banks = Banks;
                 News.Reported += Reported;
                 FireLosses.Billed += Fire;
                 PlannerDirector.Instance?.AddSource(Source);
@@ -289,6 +292,27 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // ---------------------------------------------------------------- the banks of the bonds' deposits
+
+            // The city's three largest banks, the largest first: the ranks the bank apps and their terms have (BankRules).
+            private static void Banks(List<string> names)
+            {
+                names.Clear();
+                try
+                {
+                    IReadOnlyList<Lender> banks = BankTerms.Banks;
+                    for (int i = 0; banks != null && i < banks.Count && i < BondCatalogue.BanksMost; i++)
+                    {
+                        names.Add(banks[i] != null ? banks[i].Name : null);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("MarketLinks.Banks", e);
+                    names.Clear();
+                }
+            }
+
             // ---------------------------------------------------------------- the rivals and the old market
 
             private static void Rivals(List<string> names, List<string> ids)
@@ -350,8 +374,9 @@ namespace RealLifeOverhaul
             /// <summary>
             /// The stock market's rows in the Planner: a quarter's results of a company the player holds or watches (on
             /// the morning they come out, before the open), a dividend coming to the player (on its pay day), a margin
-            /// call (met by that day's close) and an order that lapses (on its last day). It reads the market and changes
-            /// nothing. Ids: 1 results, 2 a dividend (both with the company's id), 3 the margin call, 4 an order (its id).
+            /// call (met by that day's close), an order that lapses (on its last day) and a bond's next payment or its end.
+            /// It reads the market and changes nothing. Ids: 1 results, 2 a dividend (both with the company's id), 3 the
+            /// margin call, 4 an order (its id), 5 a bond (its number).
             /// </summary>
             private sealed class MarketSource : IPlannerSource
             {
@@ -394,6 +419,22 @@ namespace RealLifeOverhaul
                         e.Title = PlannerText.T("reallife_mkt_plan_dividend_title", "name", k != null ? k.Name : string.Empty);
                         e.What = PlannerText.T(due.Cents >= 0 ? "reallife_mkt_plan_dividend_what" : "reallife_mkt_plan_dividend_owed");
                         e.Money = PlannerText.T(due.Cents >= 0 ? "reallife_planner_pays" : "reallife_planner_costs", "amount", MarketText.Money(money));
+                    }
+                    for (int i = 0; i < s.Bonds.Holdings.Count; i++)
+                    {
+                        BondHolding h = s.Bonds.Holdings[i];
+                        BondDef d = BondCatalogue.Find(h.Def);
+                        int day = BondRules.NextPayDay(h);
+                        PlannerEntry e = d != null && day > 0 ? into.Add(Id, 5, h.Id, PlannerCategory.Money, day) : null;
+                        if (e == null || !into.WantText)
+                        {
+                            continue;
+                        }
+                        bool end = h.Paid + 1 >= h.Payments;
+                        long cents = BondRules.InterestCents(h, d) + (end ? h.Face : 0);
+                        e.Title = PlannerText.T(end ? "reallife_mkt_plan_bond_end_title" : "reallife_mkt_plan_bond_title", "name", BondText.Name(h));
+                        e.What = PlannerText.T(end ? "reallife_mkt_plan_bond_end_what" : "reallife_mkt_plan_bond_what");
+                        e.Money = PlannerText.T("reallife_planner_pays", "amount", BondText.Money(cents));
                     }
                     Account a = s.Account;
                     if (a.Margin && a.CallDay > 0)
