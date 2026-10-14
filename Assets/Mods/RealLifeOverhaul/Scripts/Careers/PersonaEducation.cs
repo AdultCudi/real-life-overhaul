@@ -23,11 +23,21 @@ namespace RealLifeOverhaul.Careers
     /// WHAT IS ADDED. A component of the mod's sits on the box. When the box is switched on it waits one frame (so the
     /// game has made its rows and let go of the old ones, the mod's with them) and then makes more copies of the same
     /// template, as the game does: for each group of the mod's courses a heading (its name in bold, the count of its
-    /// courses, no row background), then the group's courses, each with its standing in the game's own row: not started
-    /// (the game's own words), the classes so far and the next, the exam or retake to sit, an instalment owed, completed
-    /// with its grade (and the game's tick), failed with the mark, withdrawn, barred. The rows' texts are keys the game's
-    /// localizer fills, so they follow a change of language. The box sits in the game's own scrolling column; if it ever
-    /// does not, only the courses begun are listed. Nothing is kept: the game lets the rows go the next time.
+    /// courses where the status mark would be, no row background and no mark), then the group's courses, each with its
+    /// standing in the game's own row: not started (the game's own words), the classes so far and the next, the exam or
+    /// retake to sit, an instalment owed, completed with its grade (and the game's tick), failed with the mark, withdrawn,
+    /// barred. The rows' texts are keys the game's localizer fills, so they follow a change of language. Nothing is kept:
+    /// the game lets the rows go the next time.
+    ///
+    /// THE BOX'S HEIGHT. Persona's left column (CharacterStats: a ScrollRect whose Content is a VerticalLayoutGroup that
+    /// does not control its children's heights, with a ContentSizeFitter) stacks Energy, Hunger, Happiness and Education
+    /// by their rectangles. The Education box is a fixed 1320 by 690 (its LayoutElement and its rectangle), made for the
+    /// game's five rows; only its inner list (Content: a VerticalLayoutGroup and a ContentSizeFitter) grows. So rows added
+    /// to the list were drawn past the box's white, and the column's scroll ended where the box did. After the rows are
+    /// made the box is given the height they need (EducationRules.BoxHeight: the game's white under them kept) and the
+    /// column is laid out again, so it scrolls to the last row; on each open the box first goes back to the game's own
+    /// height. The rows' heights are the template's, so a change of language does not move them. If the rows are ever not
+    /// straight in the box, or the box not in a scrolling column, only the courses begun are listed.
     ///
     /// The template and the row's three parts are private to the game's box and row: they are looked up once. If they are
     /// not there (a game that changed them), the box keeps the game's rows alone, with one line in the log.
@@ -47,6 +57,7 @@ namespace RealLifeOverhaul.Careers
 
         private readonly List<EducationRow> _rows = new List<EducationRow>(64);
         private EducationInfo _box;
+        private float _baseHeight = -1f;   // the game's own height of the box, as it was before the mod sized it
 
         /// <summary>Once a second while studying is on: the component is put on the game's education box if it is not there yet.</summary>
         internal static void Keep()
@@ -118,6 +129,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_box != null && isActiveAndEnabled)
                 {
+                    Size(-1f);   // the game's own height while the game's rows stand alone (last time's rows go this frame)
                     StartCoroutine(Build());
                 }
             }
@@ -160,7 +172,20 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            bool scrolls = _box.GetComponentInParent<ScrollRect>() != null;
+            var list = template.transform.parent as RectTransform;
+            var boxRect = _box.transform as RectTransform;
+            float rowsTop = 0f, gameRows = 0f;
+            if (list != null && boxRect != null && list.parent == boxRect)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(list);   // the game's rows alone, laid out as they are drawn
+                rowsTop = boxRect.rect.yMax - (list.localPosition.y + list.rect.yMax);
+                gameRows = list.rect.height;
+            }
+            else
+            {
+                list = null;   // (rows not straight in the box: it cannot be sized to them, so only the begun ones)
+            }
+            bool scrolls = list != null && _box.GetComponentInParent<ScrollRect>() != null;
             int courses = EducationRules.Rows(f, CareersDirector.Offered, !scrolls, save.Day, _rows);
             int headings = 0;
             for (int i = 0; i < _rows.Count; i++)
@@ -190,7 +215,7 @@ namespace RealLifeOverhaul.Careers
                     {
                         back.enabled = false;   // a heading, not a course: on the box's own white
                     }
-                    check?.SetActive(false);
+                    Heading(made as RectTransform, header, status, check);
                     continue;
                 }
                 CourseDef c = StudyCatalogue.Find(row.Course);
@@ -198,10 +223,87 @@ namespace RealLifeOverhaul.Careers
                 Set(status, EducationRules.StatusKey(row.Status), Words(c, row.Status));
                 check?.SetActive(row.Status.State == EducationState.Passed);
             }
+            float height = -1f;
+            if (list != null && _rows.Count > 0)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(list);   // every row now: the list's height as it is drawn
+                height = EducationRules.BoxHeight(BaseHeight(), rowsTop, gameRows, list.rect.height);
+            }
+            Size(height);
             if (Meta.Dev.Verbose)
             {
                 CareersDirector.Logger?.Info("Careers check (Persona education): after the game's own courses, " + courses + " of the mod's in " + headings + " groups"
-                                             + (scrolls ? ", in the game's scrolling column" : ", the begun ones only (the box does not scroll)") + ": PASS");
+                                             + (scrolls ? ", in the game's scrolling column, the box " + Mathf.RoundToInt(boxRect.rect.height) + " high for its rows"
+                                                        : ", the begun ones only (the box does not scroll)") + ": PASS");
+            }
+        }
+
+        // The box's game height, read the first time before the mod sizes it.
+        private float BaseHeight()
+        {
+            if (_baseHeight < 0f && _box != null && _box.transform is RectTransform r)
+            {
+                _baseHeight = r.rect.height;
+            }
+            return _baseHeight;
+        }
+
+        // The box made the height its rows need (below 0: the game's own), and Persona's column laid out again to it, so
+        // its white holds every row and its scroll reaches the last. The column's layout sizes the box by its rectangle
+        // (it does not control its children's heights), and the box's LayoutElement says the same height.
+        private void Size(float height)
+        {
+            if (!(_box != null && _box.transform is RectTransform r))
+            {
+                return;
+            }
+            float game = BaseHeight();
+            if (height < 0f)
+            {
+                height = game;
+            }
+            if (Mathf.Approximately(r.rect.height, height))
+            {
+                return;
+            }
+            r.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+            LayoutElement fixedSize = r.GetComponent<LayoutElement>();
+            if (fixedSize != null && fixedSize.preferredHeight >= 0f)
+            {
+                fixedSize.preferredHeight = height;
+            }
+            LayoutRebuilder.MarkLayoutForRebuild(r);   // (up to the column's own list, whose fitter sets how far it scrolls)
+        }
+
+        // A heading row: no status mark (the grey ring is the mark's background, the tick inside it), the count where the
+        // mark stood, and the name given the width the count does not need, so a long group name stays on one line.
+        private static void Heading(RectTransform row, TextLocalizationComponent header, TextLocalizationComponent status, GameObject check)
+        {
+            Transform mark = check != null ? check.transform.parent : null;
+            if (mark != null && mark != row)
+            {
+                mark.gameObject.SetActive(false);
+            }
+            else
+            {
+                check?.SetActive(false);
+            }
+            var name = header.TextContainer != null ? header.TextContainer.rectTransform : null;
+            var count = status.TextContainer != null ? status.TextContainer.rectTransform : null;
+            if (row == null || name == null || count == null)
+            {
+                return;
+            }
+            float right = -count.anchoredPosition.x;
+            if (mark is RectTransform m && m != row)
+            {
+                right = Mathf.Max(0f, -m.anchoredPosition.x - m.rect.width * (1f - m.pivot.x));   // the mark's right edge
+            }
+            count.anchoredPosition = new Vector2(-right, count.anchoredPosition.y);
+            float width = EducationRules.HeadingNameWidth(row.rect.width, name.anchoredPosition.x, right);
+            if (width > name.rect.width)
+            {
+                name.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             }
         }
 
