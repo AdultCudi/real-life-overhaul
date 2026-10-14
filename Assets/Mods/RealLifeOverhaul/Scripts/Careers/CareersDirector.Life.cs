@@ -323,9 +323,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return why;
             }
-            Job j = Work.Job;
-            return Offer(new Sitting(this, SittingKind.Overtime, 0, LifeRules.OvertimeMinutes, CareersText.Fill("reallife_work_skip_title", "title", CareersText.Title(j.Post.Prof, j.Post.Rank),
-                "employer", CareersText.Employer(j.Post.Employer)), true, CareersText.T("reallife_life_skip_overtime"), CareersText.T("reallife_work_skip_pay", "pay", CareersText.Rate(Prices.At(j.Pay)))));
+            return Offer(LateSitting(Work.Job));
         }
 
         // ---------------------------------------------------------------- office matters

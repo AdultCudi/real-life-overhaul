@@ -125,6 +125,7 @@ internal static partial class Program
         Tech();
         Careers();
         Work();
+        Desks();
         Life();
         Own();
         FamilyStudy();

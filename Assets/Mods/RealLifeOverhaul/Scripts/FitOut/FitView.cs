@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.FitOut
     ///                  finds the wall, lamps where one finds the ceiling; then what stands is cut out of the walkable
     ///                  floor, a few pieces a frame (the game's own carving)
     ///   the people     <see cref="FitCast"/>: staff at the desks, a few walking, looked after once a second
+    ///   your desk      where a job of the player's is worked on this floor (<see cref="FitDesks"/>), one of its desks
+    ///                  is the player's: picked by the seed the careers give, the same every visit, and nobody of the
+    ///                  cast sits there
     ///
     /// THE COST. Behind the game's black screen at the door a frame may take up to <see cref="HiddenBudgetMs"/> of the
     /// work, in play <see cref="BudgetMs"/>: no frame of the building is a long one the player sees (a template's first
@@ -85,6 +88,7 @@ namespace RealLifeOverhaul.FitOut
             public Transform At;
             public FitUse Use;
             public Vector3 Stand;
+            public Transform Desk, Chair;   // what the seat is drawn up to, and the chair it is on
         }
 
         private readonly IModLogger _logger;
@@ -108,6 +112,9 @@ namespace RealLifeOverhaul.FitOut
         private int _frames;
         private double _workMs;
         private bool _hidden;
+        private string _deskPlace;   // the building, while one of its desks is the player's
+        private int _deskSeed = -1;
+        private FitDesk _desk;
 
         public FitView(IModLogger logger)
         {
@@ -143,6 +150,13 @@ namespace RealLifeOverhaul.FitOut
             }
             _request = request;
             _host = host;
+            BuildingRegistration reg = request.Building.buildingRegistration;
+            _deskPlace = reg != null ? TalentGame.Place(reg) : null;
+            _deskSeed = FitDesks.Ask(_deskPlace);
+            if (_deskSeed >= 0)
+            {
+                FitDesks.Going(_deskPlace);
+            }
             _root = new GameObject("RealLifeOverhaul Fit-out").transform;
             _said.Length = 0;
             _frames = 0;
@@ -358,6 +372,14 @@ namespace RealLifeOverhaul.FitOut
             }
             Ready = true;
             _running = null;
+            if (_desk != null)
+            {
+                FitDesks.Stands(_desk);
+            }
+            else if (_deskSeed >= 0)
+            {
+                FitDesks.Down(_deskPlace);   // (no desk with a seat stands: the careers look elsewhere)
+            }
             try
             {
                 Built?.Invoke(this);
@@ -601,15 +623,46 @@ namespace RealLifeOverhaul.FitOut
                     Transform seat = _seatScratch[k];
                     if (RoomMeasure.Spot(seat.position + seat.forward * 0.55f, out Vector3 stand) || RoomMeasure.Spot(seat.position, out stand))
                     {
-                        _seats.Add(new Seat { At = seat, Use = p.Use, Stand = stand });
+                        _seats.Add(new Seat { At = seat, Use = p.Use, Stand = stand, Chair = piece, Desk = p.Anchor >= 0 && p.Anchor < made.Length ? made[p.Anchor] : null });
                     }
                 }
             }
+            int mine = PlayerSeat();
             _seatsView.Clear();
             for (int i = 0; i < _seats.Count; i++)
             {
-                _seatsView.Add(new FitCast.SeatPlace { At = _seats[i].At, Use = _seats[i].Use, Stand = _seats[i].Stand });
+                if (i != mine)
+                {
+                    _seatsView.Add(new FitCast.SeatPlace { At = _seats[i].At, Use = _seats[i].Use, Stand = _seats[i].Stand });
+                }
             }
+        }
+
+        // The player's desk among the seats at a desk with something on it, in the plan's order: the seed's pick (-1 for none, or none wanted).
+        private int PlayerSeat()
+        {
+            _desk = null;
+            if (_deskSeed < 0)
+            {
+                return -1;
+            }
+            int count = 0;
+            for (int i = 0; i < _seats.Count; i++)
+            {
+                count += _seats[i].Use == FitUse.Desk && _seats[i].Desk != null ? 1 : 0;
+            }
+            int pick = FitDesks.Pick(count, _deskSeed);
+            for (int i = 0; i < _seats.Count && pick >= 0; i++)
+            {
+                if (_seats[i].Use != FitUse.Desk || _seats[i].Desk == null || pick-- > 0)
+                {
+                    continue;
+                }
+                Seat s = _seats[i];
+                _desk = new FitDesk { Seat = s.At, Desk = s.Desk, Chair = s.Chair, Stand = s.Stand, Place = _deskPlace, Kind = _request.Kind };
+                return i;
+            }
+            return -1;
         }
 
         private readonly List<FitCast.SeatPlace> _seatsView = new List<FitCast.SeatPlace>(64);
@@ -764,6 +817,13 @@ namespace RealLifeOverhaul.FitOut
                 _logger?.Error(e);
             }
             _running = null;
+            if (_deskPlace != null)
+            {
+                FitDesks.Down(_deskPlace);
+            }
+            _deskPlace = null;
+            _deskSeed = -1;
+            _desk = null;
             _cuts.Clear();
             _seats.Clear();
             _seatsView.Clear();

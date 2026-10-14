@@ -279,7 +279,7 @@ namespace RealLifeOverhaul.FitOut
                             into.Pieces.RemoveRange(first, into.Pieces.Count - first);
                             continue;
                         }
-                        if (w.Site.ZoneLamps)
+                        if (w.Site.ZoneLamps && !IsPreset(w.Site.Kind))   // (a preset stands in a room the game has lit)
                         {
                             Lamps(w, b, into.Zones);
                         }

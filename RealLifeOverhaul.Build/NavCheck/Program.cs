@@ -57,6 +57,7 @@ internal static partial class Program
         Tow();
         TechSites();
         Fits();
+        FitPresets();
         Cars();
         Builds();
         if (Array.IndexOf(args, "--sites") >= 0)

@@ -9,7 +9,15 @@ namespace RealLifeOverhaul.FitOut
     {
         TechOffice,    // a tech company's headquarters: open-plan desks, meeting rooms, a kitchen, a lounge, printers, a server closet
         CivicOffice,   // a city office or the back of a police station: desks, filing, an interview table, a break corner, waiting seats
-        DataCentre     // the floor of a data centre round its server hall: stores, a workbench, a staff desk, a break corner
+        DataCentre,    // the floor of a data centre round its server hall: stores, a workbench, a staff desk, a break corner
+
+        // The presets of a working day's desk (Careers: a job whose employer's building has no station of the game's that
+        // suits it): one small room of its kind on the floor the building leaves free, round what the game furnished it with.
+        OfficeRow,     // an office's: a row of desks, each with a computer and a chair, colleagues at some
+        Ward,          // a hospital's nurses' station: two desks with computers and chairs, medical cabinets
+        Classroom,     // the school's teacher's desk: a computer, a chair, a cabinet
+        ServiceDesk,   // the council's service desks: a computer, a visitor's chair, filing
+        BackOffice     // a business's back office desk: a computer, a cabinet, a bin
     }
 
     /// <summary>What a piece of a fit-out is to the plan.</summary>
@@ -410,6 +418,17 @@ namespace RealLifeOverhaul.FitOut
                     crew.Waiting = waitingSeats > 0 ? 1 : 0;
                     crew.Walking = stops >= 2 ? 1 : 0;
                     break;
+                case FitKind.OfficeRow:
+                    crew.AtDesks = Clamp(deskSeats, 0, 3);   // (the player's own desk is not among the seats given)
+                    break;
+                case FitKind.Ward:
+                case FitKind.ServiceDesk:
+                    crew.AtDesks = deskSeats > 0 ? 1 : 0;    // a colleague at the other desk
+                    break;
+                case FitKind.Classroom:
+                case FitKind.BackOffice:
+                    break;                                   // the player's desk alone
+
                 default:
                     crew.AtDesks = deskSeats > 0 ? 1 : 0;
                     break;
