@@ -67,7 +67,7 @@ The Guide's "Known limits" page has the full list.
 [list]
 [*]On the options page, under Troubleshooting, switch on "Developer diagnostics" and make the problem happen again.
 [*]Attach Player.log from that session. It is in %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions and is overwritten when the game starts again.
-[*]Add a screenshot, what you were doing, what you expected, the mod version (0.17.2) and which other mods are on.
+[*]Add a screenshot, what you were doing, what you expected, the mod version (0.18.0) and which other mods are on.
 [*]For stutter: switch diagnostics on before you start, play until it happens, and send Player.log with your processor, graphics card and memory.
 [/list]
 
