@@ -61,6 +61,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class RecklessDrivers : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "RecklessDrivers", typeof(RecklessDrivers));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.25f;
         private const float SettleMost = 14f;        // seconds a settled car is given to reach a moment at which handing it back will not show
         private const float EaseMost = 4f;           // ...and then to pull up, if none came
@@ -164,6 +166,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.time;
             if (_struck)
             {
@@ -226,7 +245,7 @@ namespace RealLifeOverhaul
         {
             Logger?.Error(e);
             EndNow("an error");
-            if (_working && GameMembers.StandsDown(e, "reckless drivers"))
+            if (_working && Guard.StandsDown(e, "reckless drivers"))
             {
                 _working = false;   // (a game that lacks something they name would fail at every look)
             }

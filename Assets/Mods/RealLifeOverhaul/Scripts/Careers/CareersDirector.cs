@@ -44,9 +44,9 @@ namespace RealLifeOverhaul.Careers
             Instance = this;
             CareersGame.Logger = Logger;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
-            StartCoroutine(Tick());
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -393,7 +393,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A notification of the game's that opens the Campus app on a tab with a row picked.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
-            Notifications.Show(type, key, data, 10f, null, () => OpenCampus(tab, pick), true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(() => OpenCampus(tab, pick)), true, false);
         }
 
         internal static Dictionary<string, string> Data(string a, string av, string b = null, string bv = null, string c = null, string cv = null)

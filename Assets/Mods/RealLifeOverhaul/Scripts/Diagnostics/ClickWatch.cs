@@ -17,6 +17,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ClickWatch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "ClickWatch", typeof(ClickWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
 
         private static readonly List<RaycastResult> Under = new List<RaycastResult>(8);
@@ -29,6 +31,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (!Meta.Dev.Verbose || !Input.GetMouseButtonUp(0) || Time.unscaledTime < _next)
             {
                 return;

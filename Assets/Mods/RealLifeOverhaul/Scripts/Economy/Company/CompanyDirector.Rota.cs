@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Economy
         private readonly RotaAdvisor _rotaAdvisor = new RotaAdvisor();
         private readonly RotaLadder _rotaLadder = new RotaLadder();
         private readonly Dictionary<string, int> _rotaModes = new Dictionary<string, int>(8);   // the player's choice for a business: staff first or lean (RotaStore)
-        private bool _rotaModesUnread;              // the save holds a line of choices this version cannot read: it is left as it is until a choice is made
+        private bool _rotaModesUnread;              // the save holds a line of choices this version cannot read: it is kept as it is (Core/SaveLines)
         private readonly int[] _rotaPromotion = new int[RotaCatalogue.Days];
         private readonly bool[] _rotaBarred = new bool[RotaCatalogue.Cells];
         private readonly Stopwatch _rotaClock = new Stopwatch();
@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.Economy
             {
                 _rotaWorking = true;
                 RotaBegin();
-                StartCoroutine(RotaWork());
+                StartCoroutine(Guard.Routine(RotaWork()));
             }
         }
 
@@ -415,7 +415,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Warn("Company test: " + _rotaTestFilled + " rota(s) filled, " + _rotaTestShifts + " shift(s) written; the weeks as they were are kept for 'Test: put every rota back'.");
                 Notifications.Show(NotificationType.Info, "reallife_rota_test_filled", new Dictionary<string, string> { { "count", _rotaTestFilled.ToString() }, { "shifts", _rotaTestShifts.ToString() } },
-                    9f, null, () => Open(TabRota, null), true, false);
+                    9f, null, Guard.Wrap(() => Open(TabRota, null)), true, false);
                 Changed();
                 return true;
             }
@@ -819,7 +819,8 @@ namespace RealLifeOverhaul.Economy
             _rotaModesUnread = save != null && save.modData != null && save.modData.TryGetValue(RotaStore.Key, out text) && !RotaStore.Read(text, _rotaModes);
             if (_rotaModesUnread)
             {
-                Logger?.Warn("Company: the staff rota planner's choices in this save are not of a version this one reads; every business weighs for itself until a choice is made, and the line is left as it is until then.");
+                SaveLines.Unreadable(save.modData, RotaStore.Key, "its version is not one this version of the mod reads");   // (put back as it was read at every save)
+                Logger?.Warn("Company: the staff rota planner's choices in this save are not of a version this one reads; every business weighs for itself this session, and the line is kept in the save as it is.");
             }
             else if (Verbose)
             {
@@ -1119,7 +1120,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             Logger?.Warn("Company test: " + back + " rota(s) put back as they were.");
-            Notifications.Show(NotificationType.Info, "reallife_rota_test_put_back", new Dictionary<string, string> { { "count", back.ToString() } }, 7f, null, () => Open(TabRota, null), true, false);
+            Notifications.Show(NotificationType.Info, "reallife_rota_test_put_back", new Dictionary<string, string> { { "count", back.ToString() } }, 7f, null, Guard.Wrap(() => Open(TabRota, null)), true, false);
             Changed();
         }
     }

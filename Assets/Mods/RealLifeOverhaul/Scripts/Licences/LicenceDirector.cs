@@ -24,6 +24,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class LicenceDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("licences", "LicenceDirector", typeof(LicenceDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const string FeeTransaction = "reallife_transaction_licence_fee";
 
         public static IModLogger Logger;
@@ -148,6 +150,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.unscaledTime;
             if (_broken)
             {

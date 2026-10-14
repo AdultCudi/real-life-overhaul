@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class Stretcher : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "Stretcher", typeof(Stretcher));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const float HalfLength = 1f;
         public const float HandleReach = 0.55f;     // metres from an end of the bed to whoever holds it
         private const float BedHeight = 0.7f;       // top of the mattress above the road
@@ -977,6 +979,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             try
             {
                 float dt = Time.deltaTime;

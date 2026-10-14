@@ -61,6 +61,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public partial class SolidStreets : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "SolidStreets", typeof(SolidStreets));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const byte Walker = 0, Figure = 1, Actor = 2, Body = 3;
         private const float ReportEvery = 60f;
         private const float GlanceFor = 0.6f;        // seconds a car stays watched after it was last within a second of somebody
@@ -175,6 +177,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.time;
             if (now < _next)
             {

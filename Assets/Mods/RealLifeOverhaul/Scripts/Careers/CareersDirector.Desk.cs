@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Careers
             }
             catch (Exception e)
             {
-                if (!GameMembers.StandsDown(e, "the desks of professional jobs"))
+                if (!Guard.StandsDown(e, "the desks of professional jobs"))
                 {
                     Logger?.Error(e);
                     Logger?.Warn("Careers: the desks of professional jobs are off for this session after the error above; the Career app starts a working day instead.");
@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (_onDeskEnter == null)
             {
-                _onDeskEnter = _ => DeskEntered();
+                _onDeskEnter = Guard.Wrap<Address>(_ => DeskEntered());   // (a fault here never reaches the game's own handlers: Core/Guard)
             }
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onDeskEnter, ref _deskEnterSeen);
             DeskGame.Install();
@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Careers
             if (!_deskSoon && !_deskOff && _workOn && isActiveAndEnabled)
             {
                 _deskSoon = true;
-                StartCoroutine(DeskSoon());
+                StartCoroutine(Guard.Routine(DeskSoon()));
             }
         }
 

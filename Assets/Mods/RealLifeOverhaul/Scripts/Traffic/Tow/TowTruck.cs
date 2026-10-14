@@ -27,6 +27,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TowTruck : MonoBehaviour, IDrivenVehicle
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TowTruck", typeof(TowTruck));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const float AxleFront = TowRules.AxleFront;
         public const float AxleRear = TowRules.AxleRear;
         public const float Wheelbase = AxleFront - AxleRear;
@@ -392,6 +394,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (Time.time - _posedAt > 0.1f)
             {
                 // Standing (nobody poses it): the springs settle it level, so that its bed is the truck's own at work.

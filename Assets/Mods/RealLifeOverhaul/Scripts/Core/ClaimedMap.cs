@@ -45,7 +45,9 @@ namespace RealLifeOverhaul
             try
             {
                 DistributedWork<CityBuildingController> work = CityMapFilters.Work;
-                FieldInfo field = typeof(DistributedWork<CityBuildingController>).GetField("_updateAction", Hidden);
+                // (the contract's piece says whether the game's queue still has its step; the field itself is read on the
+                // queue's own type, a generic type's instance: Core/GameContract.MapLookStep)
+                FieldInfo field = GameContract.ClaimedRows.Off ? null : typeof(DistributedWork<CityBuildingController>).GetField("_updateAction", Hidden);
                 var step = field != null && work != null ? field.GetValue(work) as Action<CityBuildingController> : null;
                 if (step == null)
                 {
@@ -80,7 +82,7 @@ namespace RealLifeOverhaul
             {
                 FrontSigns.Unlit(building);
             }
-            catch (Exception e) when (GameMembers.StandsDown(e, "the mod's buildings left out of the city map's rows of units to let"))
+            catch (Exception e) when (Guard.StandsDown(e, "the mod's buildings left out of the city map's rows of units to let"))
             {
                 _failed = true;
             }

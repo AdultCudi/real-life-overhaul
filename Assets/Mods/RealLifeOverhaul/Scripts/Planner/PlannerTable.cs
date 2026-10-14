@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Planner
     /// </summary>
     public sealed class PlannerTable : BaTable<PlannerCellView, PlannerRow>
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerTable", typeof(PlannerTable));   // the game's calls of it (Core/Guard)
+
         private bool _started;
 
         public override void Start()
@@ -43,7 +45,18 @@ namespace RealLifeOverhaul.Planner
 
         protected override string GetDataId(PlannerRow model)
         {
-            return model.Id;
+            if (FrameGuard.Off)
+            {
+                return string.Empty;
+            }
+            try
+            {
+                return model.Id;
+            }
+            catch (System.Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, string.Empty);
+            }
         }
 
         /// <summary>
@@ -86,6 +99,8 @@ namespace RealLifeOverhaul.Planner
     /// </summary>
     public sealed class PlannerCellView : BaTableCellView<PlannerRow>
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerCellView", typeof(PlannerCellView));   // the game's calls of it (Core/Guard)
+
         public static Color SelectedColour = new Color(0.741f, 0.78f, 0.812f, 1f);
 
         private TMP_Text _when, _what, _where, _status;
@@ -133,30 +148,41 @@ namespace RealLifeOverhaul.Planner
 
         public override void SetData(PlannerRow row)
         {
-            if (!gameObject.activeSelf)
+            if (FrameGuard.Off)
             {
-                gameObject.SetActive(true);   // a new row is a copy of a template that sleeps
+                return;
             }
-            Bind();
-            _row = row;
-            Write(_when, row.When);
-            Write(_what, row.What);
-            Write(_where, row.Where);
-            Write(_status, row.Status);
-            if (_what != null)
+            try
             {
-                _what.fontStyle = row.Kind == RowKind.DayHeader ? FontStyles.Bold : FontStyles.Normal;
+                if (!gameObject.activeSelf)
+                {
+                    gameObject.SetActive(true);   // a new row is a copy of a template that sleeps
+                }
+                Bind();
+                _row = row;
+                Write(_when, row.When);
+                Write(_what, row.What);
+                Write(_where, row.Where);
+                Write(_status, row.Status);
+                if (_what != null)
+                {
+                    _what.fontStyle = row.Kind == RowKind.DayHeader ? FontStyles.Bold : FontStyles.Normal;
+                }
+                bool picture = row.Icon != null && row.Kind == RowKind.Entry;
+                if (_iconHolder != null && _iconHolder.activeSelf != picture)
+                {
+                    _iconHolder.SetActive(picture);
+                }
+                if (picture && _icon != null)
+                {
+                    _icon.sprite = row.Icon;
+                }
+                Look(false);
             }
-            bool picture = row.Icon != null && row.Kind == RowKind.Entry;
-            if (_iconHolder != null && _iconHolder.activeSelf != picture)
+            catch (System.Exception fault)
             {
-                _iconHolder.SetActive(picture);
+                Guard.Fail(FrameGuard, fault);
             }
-            if (picture && _icon != null)
-            {
-                _icon.sprite = row.Icon;
-            }
-            Look(false);
         }
 
         private static void Write(TMP_Text text, string words)
@@ -170,18 +196,36 @@ namespace RealLifeOverhaul.Planner
         // The table calls this after it has reset a reused row's colours: the row's own look goes on last.
         public override void ResetVisuals()
         {
-            Look(false);
+            try
+            {
+                Look(false);
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public override void VisualizeSelected(bool selected)
         {
-            if (_row == null || _row.Kind != RowKind.Entry || backgroundImage == null)
+            if (FrameGuard.Off)
             {
-                Look(false);   // a heading is not something to select
                 return;
             }
-            base.VisualizeSelected(selected);
-            Look(selected);
+            try
+            {
+                if (_row == null || _row.Kind != RowKind.Entry || backgroundImage == null)
+                {
+                    Look(false);   // a heading is not something to select
+                    return;
+                }
+                base.VisualizeSelected(selected);
+                Look(selected);
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         private void Look(bool selected)

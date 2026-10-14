@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The owner's check of the mod against a version of the game, run by the gate, and at once after a game update.
+       Given the game's Managed folder (default: the Steam install below, or the first argument), it checks
+         1. the game's build on disk (resources.assets, as the game's main menu reads it) against GameBuild.MadeFor: after
+            a game update this fails until the mod has been checked against the new game and MadeFor raised;
+         2. every piece of the game contract (Scripts/Core/GameContract.cs) against the game's assemblies on disk: what is
+            missing or has changed, and which parts of the mod, and which features, that would switch off;
+         3. every reference the built mod (bin/Release/RealLifeOverhaul.dll) makes into the game's and Unity's assemblies:
+            a type, field or method that is not there would stop the code that uses it, and it lists who uses it;
+         4. the mod's own check of its code as it starts (Core/ModImage, Core/ModScan) against .NET's reader and against
+            the game on disk: what the running mod would find missing, and the features it would switch off; the same
+            against a game that lacks what a player's Build 3675 lacked; every method that reads such a member called
+            inside a try; every Update, LateUpdate, FixedUpdate and OnGUI guarded; every coroutine run inside the guard;
+            every method the game calls through its interfaces and base classes, every delegate of the mod's handed to
+            the game, every page of a dialog, maker of a dialog and options page given to it, behind the guard;
+         5. every key of the game's own texts and data the mod's code names (GameKeys.txt) against the game's en.json,
+            and that the list is complete;
+       and runs the checks of the contract's logic: a missing piece switches off the right parts and only those, a run
+       of faults switches a feature off, a save line that cannot be read is kept as it was, the build rules.
+       Compiles the mod's own game-free files, so it checks exactly what ships.
+       Run: dotnet run -c Release (from this folder) [Managed folder]. Exit code 0 = all checks passed. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>RealLifeOverhaul</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ContractBook.cs" Link="Mod\ContractBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameContract.cs" Link="Mod\GameContract.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FeatureGuard.cs" Link="Mod\FeatureGuard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SaveLines.cs" Link="Mod\SaveLines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameBuild.cs" Link="Mod\GameBuild.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FeatureOwners.cs" Link="Mod\FeatureOwners.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModImage.cs" Link="Mod\ModImage.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModScan.cs" Link="Mod\ModScan.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="GameKeys.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

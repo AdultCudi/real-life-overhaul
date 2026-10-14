@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class TrafficAccidents : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TrafficAccidents", typeof(TrafficAccidents));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public enum Severity { Minor, Moderate, Severe }
 
         private const float CheckInterval = 20f;
@@ -313,6 +315,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             TrafficWatch.Tick(Time.time);   // one comparison a frame; looks at the traffic five times a second
             if (_lacking)
             {
@@ -328,7 +347,7 @@ namespace RealLifeOverhaul
                 // the accidents name would come back at every look: they stop for the session, the watch on the traffic goes on.
                 Logger?.Error(e);
                 Clear(resumeTraffic: true, announce: false, why: "error");
-                _lacking = GameMembers.StandsDown(e, "traffic accidents");
+                _lacking = Guard.StandsDown(e, "traffic accidents");
             }
         }
 

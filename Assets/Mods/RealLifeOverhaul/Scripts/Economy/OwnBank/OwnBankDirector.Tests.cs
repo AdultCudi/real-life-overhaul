@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Economy
         {
             Logger?.Warn("Own bank test: " + what + ". " + Describe() + ".");   // asked for by a button: written whether or not diagnostics are on
             Changed();
-            Notifications.Show(NotificationType.Info, "reallife_ob_test_done", null, 7f, null, () => Open(tab), true, false);
+            Notifications.Show(NotificationType.Info, "reallife_ob_test_done", null, 7f, null, Guard.Wrap(() => Open(tab)), true, false);
             Open(tab);
         }
 

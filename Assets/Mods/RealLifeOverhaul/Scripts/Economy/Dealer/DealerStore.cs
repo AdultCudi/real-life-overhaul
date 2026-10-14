@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return null;
             }
-            return Read(text, out version);
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
         }
 
         public static string Write(DealerState s)

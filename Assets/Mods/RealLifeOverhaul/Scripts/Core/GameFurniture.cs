@@ -166,7 +166,7 @@ namespace RealLifeOverhaul
             if (!_sittingLooked)
             {
                 _sittingLooked = true;
-                _sittingPositions = typeof(ItemController).GetField("sittingPositions", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                _sittingPositions = GameContract.SittingPositions.Field;   // (resolved once: Core/GameContract)
                 if (_sittingPositions == null)
                 {
                     Logger?.Info("Game furniture: the game's items have no list of sitting positions any more; nobody is seated on a copy.");

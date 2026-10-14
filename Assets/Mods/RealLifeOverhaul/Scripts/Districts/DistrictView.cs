@@ -39,6 +39,8 @@ namespace RealLifeOverhaul.Districts
     /// </summary>
     public sealed class DistrictView : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("districtview", "DistrictView", typeof(DistrictView));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string ChoiceId = "districts";
         private const string Mod = "reallife";       // the start of every key; a layer's words are its id after one of the stems below
         private const float PointEvery = 0.1f;       // seconds (real time) between looks at what the mouse is over
@@ -79,8 +81,8 @@ namespace RealLifeOverhaul.Districts
         private void Awake()
         {
             Instance = this;
-            _onMap = OnMap;
-            _onDay = OnDay;
+            _onMap = Guard.Wrap<bool>(OnMap);
+            _onDay = Guard.Wrap(OnDay);
             _onSave = OnSave;
             enabled = false;   // (LateUpdate only while a layer shows)
         }
@@ -112,7 +114,7 @@ namespace RealLifeOverhaul.Districts
                 Fail(e);
                 return;
             }
-            StartCoroutine(Look());
+            StartCoroutine(Guard.Routine(Look()));
         }
 
         private void OnDestroy()
@@ -171,6 +173,10 @@ namespace RealLifeOverhaul.Districts
                     save.modData.TryGetValue(DistrictLog.Key, out line);
                 }
                 _log = DistrictLog.Read(line);
+                if (!DistrictLog.Readable(line))
+                {
+                    SaveLines.Unreadable(save.modData, DistrictLog.Key, "its version is not one this version of the mod reads");   // (kept as it was read: Core/SaveLines)
+                }
                 _log.Prune(save.Day);
                 _logSave = save;
                 _logLoaded = true;
@@ -359,6 +365,23 @@ namespace RealLifeOverhaul.Districts
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (_broken || !_mapOpen)
             {
                 enabled = false;

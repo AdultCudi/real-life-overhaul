@@ -30,6 +30,8 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed partial class CareersDirector
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "CareersDirector", typeof(CareersDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private DoorPanel _classDoor;
         private Action _onClassDoor;
         private int _classShown = -1;      // course * 2 + (exam ? 1 : 0) the panel is up for, or -1
@@ -215,21 +217,30 @@ namespace RealLifeOverhaul.Careers
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
             if (_watchOff)
             {
                 return;
             }
             try
             {
-                Watch();
+                OnLateUpdate();
             }
-            catch (Exception e) when (GameMembers.StandsDown(e, "the university's building card and the watch on its desks"))
+            catch (Exception e) when (Guard.StandsDown(e, "the university's building card and the watch on its desks"))
             {
                 _watchOff = true;
             }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
         }
 
-        private void Watch()
+        private void OnLateUpdate()
         {
             _interior?.Card(false);   // (one reference comparison: the game's card over the university)
             bool rooms = _interior != null && _interior.Floor > 0;   // (from the frame the player is on a floor: no course of the game's opens there)

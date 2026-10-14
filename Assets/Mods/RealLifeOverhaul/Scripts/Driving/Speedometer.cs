@@ -9,6 +9,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class Speedometer : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "Speedometer", typeof(Speedometer));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float MetresPerSecondToKmh = 3.6f;
         private const float MetresPerSecondToMph = 2.23694f;
 
@@ -21,6 +23,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
             if (vehicle != _vehicle)

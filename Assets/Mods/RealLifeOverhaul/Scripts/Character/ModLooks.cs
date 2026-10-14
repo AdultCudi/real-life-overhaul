@@ -382,7 +382,7 @@ namespace RealLifeOverhaul
         {
             if (_selectedField == null)
             {
-                _selectedField = typeof(AppearanceSetter).GetField("_selectedMeshRenderers", BindingFlags.NonPublic | BindingFlags.Instance);
+                _selectedField = GameContract.WornRenderers.Field;   // (resolved once: Core/GameContract)
             }
             var selected = _selectedField?.GetValue(character) as Dictionary<AppearanceElementType, SkinnedMeshRenderer>;
             if (selected == null)

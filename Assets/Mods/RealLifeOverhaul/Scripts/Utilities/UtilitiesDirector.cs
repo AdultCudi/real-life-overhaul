@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Utilities
     /// </summary>
     public sealed class UtilitiesDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("utilities", "UtilitiesDirector", typeof(UtilitiesDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string AppId = "RealLifeOverhaulUtilities";
         private static readonly string[] AppGlyphs = { "Icon-Electricity", "Icon-Energy", "Icon-Lightbulb", "Icon-Building" };
         private const int CatchUpDays = 7;          // a long jump (a stay in hospital, a trip) is added up day by day for at most a week
@@ -184,6 +186,23 @@ namespace RealLifeOverhaul.Utilities
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;

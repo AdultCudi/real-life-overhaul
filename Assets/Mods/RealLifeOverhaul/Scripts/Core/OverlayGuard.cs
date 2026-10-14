@@ -23,19 +23,21 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class OverlayGuard : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "OverlayGuard", typeof(OverlayGuard));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
 
         private const int MostSaid = 5;
 
-        private static readonly FieldInfo SimpleField = typeof(OverlayManager).GetField("simpleOverlay", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-        private static readonly FieldInfo DetailedField = typeof(OverlayManager).GetField("detailedOverlay", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        private static readonly FieldInfo SimpleField = GameContract.OverlaySimple.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo DetailedField = GameContract.OverlayDetailed.Field;
 
         private static OverlayManager _manager;
         private static SimpleOverlay _simple;
         private static DetailedOverlay _detailed;
         private static bool _failed;
         private static int _said;
-        private static readonly Action OnTimeMachineEnded = Check;
+        private static readonly Action OnTimeMachineEnded = Guard.Wrap(FrameGuard, Check);   // (a fault here never reaches the game's own handlers: Core/Guard)
 
         /// <summary>
         /// Puts away the game's card if it is over the given thing (or a part of it), whether or not the interface is on
@@ -95,6 +97,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (!_failed && !GameManager.isCitySceneBeingUnloaded)
             {
                 Check();

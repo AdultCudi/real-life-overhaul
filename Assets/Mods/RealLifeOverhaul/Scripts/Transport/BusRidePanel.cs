@@ -30,7 +30,9 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class BusRidePanel : IPlayerActivity
     {
-        private static readonly FieldInfo ToggleField = typeof(PlayerActivityUI).GetField("fastForwardToggle", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusRidePanel", typeof(BusRidePanel));   // the game's calls of it (Core/Guard)
+
+        private static readonly FieldInfo ToggleField = GameContract.FastForward.Field;   // (resolved once: Core/GameContract)
         private static bool _toggleTold;
 
         private readonly TransitDirector _host;
@@ -76,7 +78,7 @@ namespace RealLifeOverhaul
                 return null;
             }
             panel._state = PlayerActivityState.MovingTowardsActivity;
-            host.StartCoroutine(panel.Begin());
+            host.StartCoroutine(Guard.Routine(panel.Begin()));
             return panel;
         }
 
@@ -194,39 +196,71 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the game's contract
 
         public bool RequiresEnergy() => false;
-        public PlayerActivityState GetState() => _state;
+        public PlayerActivityState GetState()
+        {
+            if (FrameGuard.Off)
+            {
+                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+            }
+            try
+            {
+                return _state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+                return Guard.Ended(this);
+            }
+        }
         public PlayerActivityState GetStateBeforeFinishing() => _before;
-        public void ChangeState(PlayerActivityState state) { _state = state; }
+        public void ChangeState(PlayerActivityState state)
+        {
+            try
+            {
+                _state = state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
         public void Perform(int minutes) { }
 
         public void Finish()
         {
-            if (_state == PlayerActivityState.Finished)
-            {
-                return;
-            }
-            _before = _state;
-            _state = PlayerActivityState.Finished;
-            bool began = _began;
-            _began = false;
             try
             {
-                if (_closing)
+                if (_state == PlayerActivityState.Finished)
                 {
-                    StopFastForward();
+                    return;
                 }
-                else if (_skip)
+                _before = _state;
+                _state = PlayerActivityState.Finished;
+                bool began = _began;
+                _began = false;
+                try
                 {
-                    _host.JourneySkip("the player skipped the rest on the game's panel");
+                    if (_closing)
+                    {
+                        StopFastForward();
+                    }
+                    else if (_skip)
+                    {
+                        _host.JourneySkip("the player skipped the rest on the game's panel");
+                    }
+                    else if (began)
+                    {
+                        _host.JourneyPanelGone();   // (the game closed it: out of energy, say; the ride goes on, without the panel)
+                    }
                 }
-                else if (began)
+                catch (Exception e)
                 {
-                    _host.JourneyPanelGone();   // (the game closed it: out of energy, say; the ride goes on, without the panel)
+                    TransitDirector.Logger?.Error(e);
                 }
             }
-            catch (Exception e)
+            catch (Exception fault)
             {
-                TransitDirector.Logger?.Error(e);
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
@@ -243,23 +277,45 @@ namespace RealLifeOverhaul
 
         public LabelInfo GetHeadlineLabel()
         {
-            (string key, object arguments) title = _host.JourneyHeadline();
-            return new LabelInfo(title.key, title.arguments, GameUi.WorldPanel.White());
+            if (FrameGuard.Off)
+            {
+                return Guard.Blank();
+            }
+            try
+            {
+                (string key, object arguments) title = _host.JourneyHeadline();
+                return new LabelInfo(title.key, title.arguments, GameUi.WorldPanel.White());
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
 
         public LabelInfo[] GetLabels() => null;
 
         public ButtonInfo[] GetButtons()
         {
-            if (_state != PlayerActivityState.Running && _state != PlayerActivityState.Started)
+            if (FrameGuard.Off)
             {
-                return null;
+                return (ButtonInfo[])null;
             }
-            if (_host.JourneyOffAsked)
+            try
             {
-                return _asked ?? (_asked = new[] { new ButtonInfo("BusRideStayOn", "reallife_bus_ride_stay_on", "gray", StayOn, PlayerAction.Cancel) });
+                if (_state != PlayerActivityState.Running && _state != PlayerActivityState.Started)
+                {
+                    return null;
+                }
+                if (_host.JourneyOffAsked)
+                {
+                    return _asked ?? (_asked = new[] { new ButtonInfo("BusRideStayOn", "reallife_bus_ride_stay_on", "gray", Guard.Way(StayOn), PlayerAction.Cancel) });
+                }
+                return _riding ?? (_riding = new[] { new ButtonInfo("BusRideGetOff", "reallife_bus_ride_get_off", "gray", Guard.Way(GetOff), PlayerAction.Cancel) });
             }
-            return _riding ?? (_riding = new[] { new ButtonInfo("BusRideGetOff", "reallife_bus_ride_get_off", "gray", GetOff, PlayerAction.Cancel) });
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
+            }
         }
 
         private void GetOff()
@@ -272,21 +328,102 @@ namespace RealLifeOverhaul
             _host.JourneyStayOn();
         }
 
-        public bool HasFastForward() => RideRules.FastForwardOffered(_state == PlayerActivityState.Running || _state == PlayerActivityState.Started, GoingPublic.ClockShared);
-        public bool HasTimeMachine() => RideRules.SkipOffered(_state == PlayerActivityState.Running || _state == PlayerActivityState.Started);
-        public int GetRemainingMinutesForTimeMachine() => Mathf.Max(1, Mathf.RoundToInt(_host.JourneyMinutesLeft()));
+        public bool HasFastForward()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return RideRules.FastForwardOffered(_state == PlayerActivityState.Running || _state == PlayerActivityState.Started, GoingPublic.ClockShared);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+        public bool HasTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return RideRules.SkipOffered(_state == PlayerActivityState.Running || _state == PlayerActivityState.Started);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+        public int GetRemainingMinutesForTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return Mathf.Max(1, Mathf.RoundToInt(_host.JourneyMinutesLeft()));
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
 
         // The game's time-skip button: not its time machine at once, but the ride's own fade (the panel finishes this at once
         // for a goal already past, and the director takes the rest from there: Finish).
         public Timestamp GetTimeMachineGoal()
         {
-            _skip = true;
-            return new Timestamp(Mathf.Max(0f, TimeHelper.NowInMinutes() - 10f));
+            if (FrameGuard.Off)
+            {
+                return TimeHelper.Now();
+            }
+            try
+            {
+                _skip = true;
+                return new Timestamp(Mathf.Max(0f, TimeHelper.NowInMinutes() - 10f));
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, TimeHelper.Now());
+            }
         }
 
         public bool HasProgressBar() => _state == PlayerActivityState.Running || _state == PlayerActivityState.Started;
-        public float GetProgressBarPercentageValue() => 100f * _host.JourneyProgress;
-        public (string key, object arguments) GetProgressBarLabel() => _host.JourneyBarLabel();
+        public float GetProgressBarPercentageValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0f;
+            }
+            try
+            {
+                return 100f * _host.JourneyProgress;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
+        public (string key, object arguments) GetProgressBarLabel()
+        {
+            if (FrameGuard.Off)
+            {
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                return _host.JourneyBarLabel();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
 
         public bool HasSlider() => false;
         public int GetMinSliderValue() => 0;

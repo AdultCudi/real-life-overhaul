@@ -142,7 +142,7 @@ namespace RealLifeOverhaul
             }
             TravelAgentDialog.Host = this;
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_travelagent_calldialogtype");
-            CallDialogFactory.RegisterDialog(dialogType, () => new TravelAgentDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new TravelAgentDialog()));
             InstanceBehavior<UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -1049,17 +1049,17 @@ namespace RealLifeOverhaul
             npcNameKey = TravelPhone.AgentId;
             if (Host == null || !Settings.Holidays || TravelState.Away)
             {
-                DialogController.current.ShowEntry(Say(TravelText.T("reallife_travel_agent_off")));
+                DialogController.current.ShowEntry(Guard.Entry(Say(TravelText.T("reallife_travel_agent_off"))));
                 return;
             }
             if (GoingPublic.ClockShared && !TravelState.HasTicket)
             {
-                DialogController.current.ShowEntry(Say(TravelText.T("reallife_gp_travel_agent")));   // no trips in a Going Public session (Core/GoingPublic)
+                DialogController.current.ShowEntry(Guard.Entry(Say(TravelText.T("reallife_gp_travel_agent"))));   // no trips in a Going Public session (Core/GoingPublic)
                 return;
             }
             if (TravelState.HasTicket)
             {
-                DialogController.current.ShowEntry(Ticket());
+                DialogController.current.ShowEntry(Guard.Entry(Ticket()));
                 return;
             }
             Offers.Clear();
@@ -1071,7 +1071,7 @@ namespace RealLifeOverhaul
                 }
             }
             Host.Companions(Companions);
-            DialogController.current.ShowEntry(Offer(0, TravelText.T(TravelText.Pick(TravelCatalogue.AgentGreetings)) + " "));
+            DialogController.current.ShowEntry(Guard.Entry(Offer(0, TravelText.T(TravelText.Pick(TravelCatalogue.AgentGreetings)) + " ")));
         }
 
         private static DialogEntry Say(string text)

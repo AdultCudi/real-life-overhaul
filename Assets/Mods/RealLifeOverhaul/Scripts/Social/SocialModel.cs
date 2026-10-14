@@ -505,6 +505,17 @@ namespace RealLifeOverhaul
             {
                 read = false;   // a record this version cannot read: a new cast rather than a broken one
             }
+            if (!read && data != null)
+            {
+                // The record is kept as it is for a version that can read it (Core/SaveLines): its two lines, and what hangs on them.
+                SaveLines.Unreadable(data, KeyMain, "it could not be read");
+                if (SaveLines.IsKept(data, KeyMain))
+                {
+                    SaveLines.Unreadable(data, KeyPeople, "its record could not be read");
+                    SaveLines.Unreadable(data, KeyPlan, "its record could not be read");
+                    SaveLines.Unreadable(data, KeyOffer, "its record could not be read");
+                }
+            }
             if (!read)
             {
                 Reset();

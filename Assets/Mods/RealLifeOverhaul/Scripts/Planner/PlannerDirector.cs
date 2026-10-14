@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Planner
     /// </summary>
     public sealed class PlannerDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerDirector", typeof(PlannerDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string AppId = "RealLifePlanner";
         private const int BadgeMinutes = 120;      // the badge counts what begins within two hours
 
@@ -91,7 +93,7 @@ namespace RealLifeOverhaul.Planner
             PlannerStore.Reset();
             Samples = false;
             _onSave = OnSave;
-            _onHour = OnHour;
+            _onHour = Guard.Wrap(OnHour);
         }
 
         private void OnDestroy()
@@ -115,6 +117,23 @@ namespace RealLifeOverhaul.Planner
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.unscaledTime;
             if (now < _next)
             {
@@ -206,7 +225,7 @@ namespace RealLifeOverhaul.Planner
             if (!PlannerStore.Welcomed)
             {
                 PlannerStore.Welcomed = true;
-                Notifications.Show(NotificationType.Info, "reallife_planner_welcome", null, 10f, "reallife_planner_welcome", Open, true, false);
+                Notifications.Show(NotificationType.Info, "reallife_planner_welcome", null, 10f, "reallife_planner_welcome", Guard.Wrap(Open), true, false);
             }
         }
 
@@ -380,7 +399,7 @@ namespace RealLifeOverhaul.Planner
                 };
                 EntryId id = entry.Id;
                 Notifications.Show(late ? NotificationType.Warning : NotificationType.Info, late ? "reallife_planner_reminder_late" : "reallife_planner_reminder",
-                    data, 12f, null, () => OpenAt(id), true, false);
+                    data, 12f, null, Guard.Wrap(() => OpenAt(id)), true, false);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Planner: reminder sent for " + id.Source + " " + id.A + " ('" + entry.Title + "', " + data["when"] + ")"
@@ -446,7 +465,7 @@ namespace RealLifeOverhaul.Planner
             }
             _lastHour = TimeHelper.CurrentHour;
             OnHour();
-            Notifications.Show(NotificationType.Info, "reallife_planner_test_filled", null, 8f, null, Open, true, false);
+            Notifications.Show(NotificationType.Info, "reallife_planner_test_filled", null, 8f, null, Guard.Wrap(Open), true, false);
         }
 
         /// <summary>"Test: clear the Planner's samples".</summary>

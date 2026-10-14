@@ -729,7 +729,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A notification of the game's that opens the Property app on a tab, with something picked.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
-            Notifications.Show(type, key, data, 11f, null, () => Open(tab, pick), true, false);
+            Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
         }
 
         internal static Dictionary<string, string> Data(string name, string value, string name2 = null, string value2 = null, string name3 = null, string value3 = null)

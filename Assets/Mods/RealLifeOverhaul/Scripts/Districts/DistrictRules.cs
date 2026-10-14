@@ -303,6 +303,12 @@ namespace RealLifeOverhaul.Districts
             return w.ToString();
         }
 
+        /// <summary>True when a line is one this version reads: none, or one of its own version.</summary>
+        public static bool Readable(string line)
+        {
+            return string.IsNullOrEmpty(line) || line.Split(';')[0] == Version;
+        }
+
         public static DistrictLog Read(string line)
         {
             var log = new DistrictLog();

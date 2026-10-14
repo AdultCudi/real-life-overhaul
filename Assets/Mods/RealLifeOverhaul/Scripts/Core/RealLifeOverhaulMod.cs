@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using BAModAPI;
 using BigAmbitions.Mods;
@@ -37,20 +37,19 @@ namespace RealLifeOverhaul
             }
             _started = context.ModId;
             IModLogger log = context.Logger;
+            Guard.Logger = log;   // (every step below that can fail is one of Guard.Step: one that fails costs the mod only itself)
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on (read below; OptionsLayout.Organise applies it)
             _context = context;
             Keys.Logger = context.Logger;
             Settings.Load(context.ModId);
             Economy.Dealership.DealerType.Logger = log;
-            Economy.Dealership.DealerType.Register();   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
+            Guard.Step("the car dealership's business type", () => Economy.Dealership.DealerType.Register());   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
             Meta.Dev.Gated(context);   // (the option has been read now)
-            GameMembers.Logger = context.Logger;
-            GameConfirm.Logger = context.Logger;
-            GameBuild.Start(context.Logger);   // the game's build against the one this version is made for: a line in Player.log, and the notice for an older game (Core/GameBuild)
+            Guard.Start(context.Logger);   // the game contract resolved once, the game's build against the one this version is made for, the mod's code checked against this game, and the notice for an older game (Core/Guard, Core/GameBuild)
             Tech.TechTypes.Logger = context.Logger;
-            Tech.TechTypes.Register();   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
+            Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
-            Careers.AcademyType.Register();   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
+            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -118,7 +117,7 @@ namespace RealLifeOverhaul
                 .AddHeader("reallife_looks_header")
                 .AddToggle(Settings.CharacterNewLooksId, "reallife_character_new_looks", Settings.CharacterNewLooks,
                     v => Settings.CharacterNewLooks = v)
-                .AddLooks()
+                .Guarded(o => o.AddLooks())
                 .AddSplitter()
                 .AddHeader("reallife_life_header")
                 .AddToggle(Settings.LifeEventsId, "reallife_life_events", Settings.LifeEvents,
@@ -311,7 +310,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_desk", () => BusinessDirector.Instance?.TestDesk())
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
-                .AddInteriors()   // interiors and decor that matter (Scripts/Interiors)
+                .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -617,7 +616,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_garage_test_motorbike", () => GarageDirector.Instance?.TestBike(BikeKind.StandardMotorbike))
                 .AddButton("reallife_garage_test_sport_motorbike", () => GarageDirector.Instance?.TestBike(BikeKind.SportMotorbike))
                 .AddSplitter()
-                .AddJustice()
+                .Guarded(o => o.AddJustice())
                 .AddSplitter()
                 .AddHeader("reallife_licences_header")
                 .AddToggle(Settings.DrivingLicenceId, "reallife_lic_opt_required", Settings.DrivingLicence,
@@ -887,7 +886,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_nav_test_base_marks", () => Nav.NavDirector.Instance?.TestBaseMarks())
                 .AddButton("reallife_nav_test_base_again", () => Nav.NavDirector.Instance?.TestBaseAgain())
                 .AddSplitter()
-                .AddDistrictView()   // the district view on the city map (Scripts/Districts)
+                .Guarded(o => o.AddDistrictView())   // the district view on the city map (Scripts/Districts)
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
                     v => Settings.Civic = v)
@@ -954,13 +953,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
                 .AddSplitter()
-                .AddPermadeath()   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
-                .AddRoommates()
-                .AddControls()
-                .AddPerformance();
+                .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
+                .Guarded(o => o.AddRoommates())
+                .Guarded(o => o.AddControls())
+                .Guarded(o => o.AddPerformance());
 
             // Meta puts the finished page in order (sections, presets, guide, test tools); rows are still added above.
-            OptionsService.Register(context.ModId, Meta.OptionsLayout.Organise(context, options));
+            OptionsService.Register(context.ModId, Guard.Rows(Guard.Organised(context, options)));   // (the page as it was added, if putting it in order fails)
             log.Info("Real Life Overhaul " + Meta.Changelog.Version + " initialised.");
             return Task.CompletedTask;
         }
@@ -1014,253 +1013,252 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
-            GameMembers.Logger = context.Logger;   // what an older game lacks is said once (Core/GameMembers)
-            GameConfirm.Logger = context.Logger;
-            Tech.TechTypes.Register();   // (furnished as the game's web development agency once its type is known)
-            Careers.AcademyType.Register();   // (furnished as the game's recruitment office once its type is known)
-            OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
-            GoingPublic.Logger = context.Logger;
-            GoingPublicLink.Logger = context.Logger;
-            SharedCity.Logger = context.Logger;
-            GoingPublic.Reset();
-            GoingPublic.Look();   // a Going Public session is known before any feature starts (Core/GoingPublic)
-            CameraYield.Logger = context.Logger;
-            EmpireView.Logger = context.Logger;
-            GameUi.WorldPanel.Logger = context.Logger;
-            ThirdPersonCamera.Logger = context.Logger;
-            VisualEnhancer.Logger = context.Logger;
-            NearbyInteraction.Logger = context.Logger;
-            ChaseCamera.Logger = context.Logger;
-            PoiDirection.Logger = context.Logger;
-            ModState.Logger = context.Logger;
-            LifeEvents.Logger = context.Logger;
-            VehicleTow.Logger = context.Logger;
-            CrashConsequences.Logger = context.Logger;
-            TrafficAccidents.Logger = context.Logger;
-            TowService.Logger = context.Logger;
-            TrafficTools.Logger = context.Logger;
-            TrafficEffects.Logger = context.Logger;
-            ResponseUnit.Logger = context.Logger;
-            SceneCordon.Logger = context.Logger;
-            AccidentCast.Logger = context.Logger;
-            Shapes.Logger = context.Logger;
-            PropLibrary.Logger = context.Logger;
-            MapPlaces.Logger = context.Logger;
-            SpecialBuildings.Logger = context.Logger;
-            MapLinks.Logger = context.Logger;
-            Districts.DistrictView.Logger = context.Logger;
-            Districts.DistrictPanel.Logger = context.Logger;
-            PropLibrary.Load(context);   // the modelled props, read in the background; plain shapes until they are there
-            PolicePursuit.Logger = context.Logger;
-            ActorPool.Logger = context.Logger;
-            StreetCrime.Logger = context.Logger;
-            CrimeDirector.Logger = context.Logger;
-            PoliceAttention.Logger = context.Logger;
-            BeatPatrol.Logger = context.Logger;
-            PolicePresence.Logger = context.Logger;
-            RagdollSystem.Logger = context.Logger;
-            PedestrianIncidents.Logger = context.Logger;
-            CarStrikes.Logger = context.Logger;
-            HornReactions.Logger = context.Logger;
-            Crossings.Logger = context.Logger;
-            RecklessDrivers.Logger = context.Logger;
-            SolidStreets.Logger = context.Logger;
-            SolidGame.Logger = context.Logger;
-            Jaywalker.Logger = context.Logger;
-            PlayerKnockdown.Logger = context.Logger;
-            PhoneContacts.Logger = context.Logger;
-            GameFurniture.Logger = context.Logger;
-            ContactPictures.Logger = context.Logger;
-            ContactSearch.Logger = context.Logger;
-            CityLifeDirector.Logger = context.Logger;
-            ClipLibrary.Logger = context.Logger;
-            ClipLibrary.Load(context);   // the mod's own animation clips, read in the background
-            JobDirector.Logger = context.Logger;
-            Law.LawDirector.Logger = context.Logger;
-            TransitDirector.Logger = context.Logger;
-            TaxiDirector.Logger = context.Logger;
-            CarOwnership.Logger = context.Logger;
-            Events.EventDirector.Logger = context.Logger;
-            SocialDirector.Logger = context.Logger;
-            BusinessDirector.Logger = context.Logger;
-            JusticeDirector.Logger = context.Logger;
-            Licences.Logger = context.Logger;
-            LicenceDirector.Logger = context.Logger;
-            CivicDirector.Logger = context.Logger;
-            Family.FamilyDirector.Logger = context.Logger;
-            Tech.TechDirector.Logger = context.Logger;
-            Tech.RolesApp.Logger = context.Logger;
-            Tech.HiringGame.Logger = context.Logger;
-            Tech.FirmsGame.Logger = context.Logger;
-            Tech.TechApp.Logger = context.Logger;
-            Careers.CareersDirector.Logger = context.Logger;
-            Careers.CampusApp.Logger = context.Logger;
+            Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // (furnished as the game's web development agency once its type is known)
+            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // (furnished as the game's recruitment office once its type is known)
+            Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
+            Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
+            Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
+            Guard.Step("SharedCity", () => SharedCity.Logger = context.Logger);
+            Guard.Step("Going Public", () => GoingPublic.Reset());
+            Guard.Step("Going Public", () => GoingPublic.Look());   // a Going Public session is known before any feature starts (Core/GoingPublic)
+            Guard.Step("CameraYield", () => CameraYield.Logger = context.Logger);
+            Guard.Step("EmpireView", () => EmpireView.Logger = context.Logger);
+            Guard.Step("GameUi.WorldPanel", () => GameUi.WorldPanel.Logger = context.Logger);
+            Guard.Step("ThirdPersonCamera", () => ThirdPersonCamera.Logger = context.Logger);
+            Guard.Step("VisualEnhancer", () => VisualEnhancer.Logger = context.Logger);
+            Guard.Step("NearbyInteraction", () => NearbyInteraction.Logger = context.Logger);
+            Guard.Step("ChaseCamera", () => ChaseCamera.Logger = context.Logger);
+            Guard.Step("PoiDirection", () => PoiDirection.Logger = context.Logger);
+            Guard.Step("ModState", () => ModState.Logger = context.Logger);
+            Guard.Step("LifeEvents", () => LifeEvents.Logger = context.Logger);
+            Guard.Step("VehicleTow", () => VehicleTow.Logger = context.Logger);
+            Guard.Step("CrashConsequences", () => CrashConsequences.Logger = context.Logger);
+            Guard.Step("TrafficAccidents", () => TrafficAccidents.Logger = context.Logger);
+            Guard.Step("TowService", () => TowService.Logger = context.Logger);
+            Guard.Step("TrafficTools", () => TrafficTools.Logger = context.Logger);
+            Guard.Step("TrafficEffects", () => TrafficEffects.Logger = context.Logger);
+            Guard.Step("ResponseUnit", () => ResponseUnit.Logger = context.Logger);
+            Guard.Step("SceneCordon", () => SceneCordon.Logger = context.Logger);
+            Guard.Step("AccidentCast", () => AccidentCast.Logger = context.Logger);
+            Guard.Step("Shapes", () => Shapes.Logger = context.Logger);
+            Guard.Step("PropLibrary", () => PropLibrary.Logger = context.Logger);
+            Guard.Step("MapPlaces", () => MapPlaces.Logger = context.Logger);
+            Guard.Step("SpecialBuildings", () => SpecialBuildings.Logger = context.Logger);
+            Guard.Step("MapLinks", () => MapLinks.Logger = context.Logger);
+            Guard.Step("Districts.DistrictView", () => Districts.DistrictView.Logger = context.Logger);
+            Guard.Step("Districts.DistrictPanel", () => Districts.DistrictPanel.Logger = context.Logger);
+            Guard.Step("the modelled props", () => PropLibrary.Load(context));   // the modelled props, read in the background; plain shapes until they are there
+            Guard.Step("PolicePursuit", () => PolicePursuit.Logger = context.Logger);
+            Guard.Step("ActorPool", () => ActorPool.Logger = context.Logger);
+            Guard.Step("StreetCrime", () => StreetCrime.Logger = context.Logger);
+            Guard.Step("CrimeDirector", () => CrimeDirector.Logger = context.Logger);
+            Guard.Step("PoliceAttention", () => PoliceAttention.Logger = context.Logger);
+            Guard.Step("BeatPatrol", () => BeatPatrol.Logger = context.Logger);
+            Guard.Step("PolicePresence", () => PolicePresence.Logger = context.Logger);
+            Guard.Step("RagdollSystem", () => RagdollSystem.Logger = context.Logger);
+            Guard.Step("PedestrianIncidents", () => PedestrianIncidents.Logger = context.Logger);
+            Guard.Step("CarStrikes", () => CarStrikes.Logger = context.Logger);
+            Guard.Step("HornReactions", () => HornReactions.Logger = context.Logger);
+            Guard.Step("Crossings", () => Crossings.Logger = context.Logger);
+            Guard.Step("RecklessDrivers", () => RecklessDrivers.Logger = context.Logger);
+            Guard.Step("SolidStreets", () => SolidStreets.Logger = context.Logger);
+            Guard.Step("SolidGame", () => SolidGame.Logger = context.Logger);
+            Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
+            Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
+            Guard.Step("PhoneContacts", () => PhoneContacts.Logger = context.Logger);
+            Guard.Step("GameFurniture", () => GameFurniture.Logger = context.Logger);
+            Guard.Step("ContactPictures", () => ContactPictures.Logger = context.Logger);
+            Guard.Step("ContactSearch", () => ContactSearch.Logger = context.Logger);
+            Guard.Step("CityLifeDirector", () => CityLifeDirector.Logger = context.Logger);
+            Guard.Step("ClipLibrary", () => ClipLibrary.Logger = context.Logger);
+            Guard.Step("the animation clips", () => ClipLibrary.Load(context));   // the mod's own animation clips, read in the background
+            Guard.Step("JobDirector", () => JobDirector.Logger = context.Logger);
+            Guard.Step("Law.LawDirector", () => Law.LawDirector.Logger = context.Logger);
+            Guard.Step("TransitDirector", () => TransitDirector.Logger = context.Logger);
+            Guard.Step("TaxiDirector", () => TaxiDirector.Logger = context.Logger);
+            Guard.Step("CarOwnership", () => CarOwnership.Logger = context.Logger);
+            Guard.Step("Events.EventDirector", () => Events.EventDirector.Logger = context.Logger);
+            Guard.Step("SocialDirector", () => SocialDirector.Logger = context.Logger);
+            Guard.Step("BusinessDirector", () => BusinessDirector.Logger = context.Logger);
+            Guard.Step("JusticeDirector", () => JusticeDirector.Logger = context.Logger);
+            Guard.Step("Licences", () => Licences.Logger = context.Logger);
+            Guard.Step("LicenceDirector", () => LicenceDirector.Logger = context.Logger);
+            Guard.Step("CivicDirector", () => CivicDirector.Logger = context.Logger);
+            Guard.Step("Family.FamilyDirector", () => Family.FamilyDirector.Logger = context.Logger);
+            Guard.Step("Tech.TechDirector", () => Tech.TechDirector.Logger = context.Logger);
+            Guard.Step("Tech.RolesApp", () => Tech.RolesApp.Logger = context.Logger);
+            Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
+            Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
+            Guard.Step("Tech.TechApp", () => Tech.TechApp.Logger = context.Logger);
+            Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
+            Guard.Step("Careers.CampusApp", () => Careers.CampusApp.Logger = context.Logger);
 
             _root = new GameObject(RootName);
-            SessionWatch.Logger = context.Logger;
-            _root.AddComponent<SessionWatch>();   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
-            _root.AddComponent<GoingPublicWatch>();   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
-            _root.AddComponent<ScenePrewarm>();   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
-            ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm);
-            ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);
-            ScenePrewarm.Add("game UI: the game's font being found", FindFont);
-            ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm);
-            GameUi.NoticeLook.Logger = context.Logger;
-            _root.AddComponent<GameUi.NoticeLook>();   // the mod's notifications told from the game's by a picture of their kind on the mod's colour (Core/GameUi/NoticeLook): nothing per frame, a few writes per notification shown
-            ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm);
-            ClickWatch.Logger = context.Logger;
-            OverlayGuard.Logger = context.Logger;
-            _root.AddComponent<OverlayGuard>();   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
-            _root.AddComponent<SpecialNames>();   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
-            _root.AddComponent<ClickWatch>();     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
-            _root.AddComponent<ThirdPersonCamera>();
-            _root.AddComponent<VisualEnhancer>();
-            _root.AddComponent<NearbyInteraction>();
-            _root.AddComponent<ChaseCamera>();
-            _root.AddComponent<PoiDirection>();   // the game's place markers, when what they mark is behind the camera
-            _root.AddComponent<LifeEvents>();
-            _root.AddComponent<CrashConsequences>();
-            _root.AddComponent<RagdollSystem>();   // before anyone who throws people down
-            _root.AddComponent<ActorPool>();   // before the scenes that put people on the street
-            _root.AddComponent<TrafficAccidents>();
-            _root.AddComponent<TowService>();   // the tow truck that takes a cleared scene's wrecks away (Traffic/Tow): disabled while there is nothing to tow
-            _root.AddComponent<PolicePursuit>();
-            _root.AddComponent<StreetCrime>();
-            _root.AddComponent<CrimeDirector>();   // the scenes StreetCrime now forwards to
-            _root.AddComponent<PoliceAttention>();
-            _root.AddComponent<BeatPatrol>();
-            _root.AddComponent<PolicePresence>();
-            _root.AddComponent<PedestrianIncidents>();
-            _root.AddComponent<CarStrikes>();
-            _root.AddComponent<HornReactions>();     // people answer the player's horn (People/HornReactions)
-            _root.AddComponent<RecklessDrivers>();   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
-            _root.AddComponent<SolidStreets>();      // traffic sees people in the road (Traffic/Solid); after HornReactions, CarStrikes and RecklessDrivers
-            _root.AddComponent<PlayerKnockdown>();
-            _root.AddComponent<CityLifeDirector>();   // people at work and about their day: its own pool of eight
-            _root.AddComponent<JobDirector>();   // jobs the player takes themselves (Scripts/Jobs)
-            HomeDirector.Logger = context.Logger;
-            _root.AddComponent<HomeDirector>();   // home life and health (Scripts/Home); after LifeEvents and the city life director, whose clip player it shares
-            _root.AddComponent<Law.LawDirector>();   // precincts, custody, the record and reputation (Scripts/Law)
-            _root.AddComponent<TransitDirector>();   // bus stops, buses and the subway journey (Scripts/Transport)
-            _root.AddComponent<TaxiDirector>();   // a taxi called from the phone: a real taxi of the game driven to the player's street (Scripts/Transport/Taxi)
-            _root.AddComponent<CarOwnership>();   // servicing, wear, breakdowns, insurance, the word in the game's vehicle panel for what a car needs (Scripts/Transport)
-            Leisure.LeisureDirector.Logger = context.Logger;
-            _root.AddComponent<Leisure.LeisureDirector>();   // things to do for fun, the clothes rack, night life, the sound bed, photo mode (Scripts/Leisure)
-            _root.AddComponent<Events.EventDirector>();   // fires, weather that matters, street events (Scripts/Events): after CityLifeDirector, whose clip player it uses
-            _root.AddComponent<SocialDirector>();   // the people in the player's life, outings, the morning paper (Scripts/Social)
-            TravelDirector.Logger = context.Logger;
-            _root.AddComponent<TravelDirector>();   // hotels and holidays (Scripts/Travel)
-            _root.AddComponent<BusinessDirector>();   // pressure on the player's businesses (Scripts/Business)
-            _root.AddComponent<JusticeDirector>();   // courts, lawyers, sentences and prison (Scripts/Justice)
-            _root.AddComponent<LicenceDirector>();   // driving licences: the school, the tests, points and what a stop finds (Scripts/Licences)
-            GameUi.UiClone.Logger = context.Logger;
-            GameUi.GameSprites.Logger = context.Logger;
-            GameUi.AppIconPainter.Logger = context.Logger;
-            GameUi.PhoneApp.Logger = context.Logger;
-            GameUi.PhoneGridPager.Logger = context.Logger;
-            GameUi.AppShell.Logger = context.Logger;
-            GameUi.InfoBox.Logger = context.Logger;
-            Planner.PlannerApp.Logger = context.Logger;
-            Planner.PlannerDirector.Logger = context.Logger;
-            _root.AddComponent<Planner.PlannerDirector>();   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
-            Economy.EconomyDirector.Logger = context.Logger;
-            Economy.FinanceApp.Logger = context.Logger;
-            _root.AddComponent<Economy.EconomyDirector>();   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
-            Economy.BanksDirector.Logger = context.Logger;
-            _root.AddComponent<Economy.BanksDirector>();   // the bank apps: one for each of the city's three largest banks, a front on the same credit desk (Scripts/Economy/Banks)
-            Economy.CityEconomyDirector.Logger = context.Logger;
-            _root.AddComponent<Economy.CityEconomyDirector>();   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
-            Economy.Ventures.VenturesDirector.Logger = context.Logger;
-            Economy.Ventures.VenturesApp.Logger = context.Logger;
-            _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch and the Ventures app (Scripts/Economy/Ventures)
-            Markets.MarketDirector.Logger = context.Logger;
-            Markets.MarketTapeFile.Logger = context.Logger;
-            Markets.MarketApp.Logger = context.Logger;
-            _root.AddComponent<Markets.MarketDirector>();   // the city's stock market and the Stocks app (Scripts/Markets): after Ventures, whose old market it takes over
-            Ledger.LedgerDirector.Logger = context.Logger;
-            _root.AddComponent<Ledger.LedgerDirector>();   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
-            Economy.OnlineDirector.Logger = context.Logger;
-            Economy.OnlineApp.Logger = context.Logger;
-            Economy.Dealership.DealerDirector.Logger = context.Logger;
-            Economy.Dealership.DealerApp.Logger = context.Logger;
-            _root.AddComponent<Economy.Dealership.DealerDirector>();   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
-            _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
-            Economy.CompanyDirector.Logger = context.Logger;
-            Economy.CompanyApp.Logger = context.Logger;
-            Economy.ServicesDirector.Logger = context.Logger;
-            Economy.ServicesApp.Logger = context.Logger;
-            _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
-            _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
-            _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
-            _root.AddComponent<Careers.CareersDirector>();   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
-            FitOut.FitOutDirector.Logger = context.Logger;
-            _root.AddComponent<FitOut.FitOutDirector>();   // the mod's buildings fitted out across their whole floor while the player is in one, a little a frame (Scripts/FitOut): before the features whose floors it builds
-            Tech.TechSites.Logger = context.Logger;
-            Offices.Conversions.Logger = context.Logger;
-            _root.AddComponent<Offices.Conversions>();   // more offices to rent: some empty shops in the office districts are offices while the mod runs (Scripts/Offices): a look once a second, the choice on a change
-            _root.AddComponent<Tech.TechSites>();   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
-            Economy.EstateDirector.Logger = context.Logger;
-            Economy.EstateApp.Logger = context.Logger;
-            _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
-            Economy.OwnBankDirector.Logger = context.Logger;
-            _root.AddComponent<Economy.OwnBankDirector>();   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
-            Economy.Brands.BrandsDirector.Logger = context.Logger;
-            Economy.Brands.BrandsApp.Logger = context.Logger;
-            _root.AddComponent<Economy.Brands.BrandsDirector>();   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
-            Nav.NavGraph.Logger = context.Logger;
-            Nav.NavMarks.Logger = context.Logger;
-            Nav.NavHud.Logger = context.Logger;
-            Nav.NavBase.Logger = context.Logger;
-            Nav.NavCityMap.Logger = context.Logger;
-            Nav.NavDirector.Logger = context.Logger;
-            _root.AddComponent<Nav.NavDirector>();   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
-            _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
-            Utilities.UtilitiesDirector.Logger = context.Logger;
-            Utilities.UtilitiesApp.Logger = context.Logger;
-            _root.AddComponent<Utilities.UtilitiesDirector>();   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
-            _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
-            Roommates.RoommateDirector.Attach(_root, context.Logger);   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
-            Flare.FlareDirector.Logger = context.Logger;
-            Flare.FlareApp.Logger = context.Logger;
-            _root.AddComponent<Flare.FlareDirector>();   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
-            Fame.FameDirector.Logger = context.Logger;
-            _root.AddComponent<Fame.FameDirector>();   // Standing, a city that reacts to the player's success (Scripts/Fame): after Flare and the company, so that its day reads theirs
-            PermadeathDirector.Logger = context.Logger;
-            _root.AddComponent<PermadeathDirector>();   // an ending the player chooses: a death after warnings, the obituary, the save ended (Scripts/Permadeath)
-            CarTuning.Logger = context.Logger;
-            SpeedReading.Logger = context.Logger;
-            CarMeasure.Logger = context.Logger;
-            _root.AddComponent<CarTuning>();
-            _root.AddComponent<Speedometer>();
-            GarageDirector.Logger = context.Logger;
-            GarageShop.Logger = context.Logger;
-            GarageCar.Logger = context.Logger;
-            GarageTuning.Logger = context.Logger;
-            TwoWheelers.Logger = context.Logger;
-            BikeMount.Logger = context.Logger;
-            BikePlaces.Logger = context.Logger;
-            _root.AddComponent<GarageDirector>();   // the custom shop, builds on the player's cars, bicycles and motorbikes (Scripts/Garage)
-            PhoneSkin.Logger = context.Logger;
-            _root.AddComponent<PhoneSkin>();
-            PhoneUiDump.Logger = context.Logger;
-            _root.AddComponent<PhoneUiDump>();   // a development aid: its key does nothing unless "Developer diagnostics" is on
-            PerfDirector.Logger = context.Logger;
-            _root.AddComponent<PerfDirector>();   // performance tweaks for the base game, and the two measurements (their keys are development aids)
-            _root.AddComponent<MapLinks>();   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
-            _root.AddComponent<Districts.DistrictView>();   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
-            Interiors.InteriorDirector.Logger = context.Logger;
-            CustomerDraw.Logger = context.Logger;
-            _root.AddComponent<Interiors.InteriorDirector>();   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
-            Wiring.Connect(context.Logger, _root);   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
+            Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // what Core/Guard has to tell, once the HUD is there
+            Guard.Step("SessionWatch", () => SessionWatch.Logger = context.Logger);
+            Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
+            Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
+            Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
+            Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
+            Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
+            Guard.Step("the font's prewarm", () => ScenePrewarm.Add("game UI: the game's font being found", FindFont));
+            Guard.Step("the bus stops' prewarm", () => ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm));
+            Guard.Step("GameUi.NoticeLook", () => GameUi.NoticeLook.Logger = context.Logger);
+            Guard.Step("GameUi.NoticeLook", () => Guard.Add<GameUi.NoticeLook>(_root));   // the mod's notifications told from the game's by a picture of their kind on the mod's colour (Core/GameUi/NoticeLook): nothing per frame, a few writes per notification shown
+            Guard.Step("the notices' prewarm", () => ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm));
+            Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
+            Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
+            Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
+            Guard.Step("ClickWatch", () => Guard.Add<ClickWatch>(_root));     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
+            Guard.Step("ThirdPersonCamera", () => Guard.Add<ThirdPersonCamera>(_root));
+            Guard.Step("VisualEnhancer", () => Guard.Add<VisualEnhancer>(_root));
+            Guard.Step("NearbyInteraction", () => Guard.Add<NearbyInteraction>(_root));
+            Guard.Step("ChaseCamera", () => Guard.Add<ChaseCamera>(_root));
+            Guard.Step("PoiDirection", () => Guard.Add<PoiDirection>(_root));   // the game's place markers, when what they mark is behind the camera
+            Guard.Step("LifeEvents", () => Guard.Add<LifeEvents>(_root));
+            Guard.Step("CrashConsequences", () => Guard.Add<CrashConsequences>(_root));
+            Guard.Step("RagdollSystem", () => Guard.Add<RagdollSystem>(_root));   // before anyone who throws people down
+            Guard.Step("ActorPool", () => Guard.Add<ActorPool>(_root));   // before the scenes that put people on the street
+            Guard.Step("TrafficAccidents", () => Guard.Add<TrafficAccidents>(_root));
+            Guard.Step("TowService", () => Guard.Add<TowService>(_root));   // the tow truck that takes a cleared scene's wrecks away (Traffic/Tow): disabled while there is nothing to tow
+            Guard.Step("PolicePursuit", () => Guard.Add<PolicePursuit>(_root));
+            Guard.Step("StreetCrime", () => Guard.Add<StreetCrime>(_root));
+            Guard.Step("CrimeDirector", () => Guard.Add<CrimeDirector>(_root));   // the scenes StreetCrime now forwards to
+            Guard.Step("PoliceAttention", () => Guard.Add<PoliceAttention>(_root));
+            Guard.Step("BeatPatrol", () => Guard.Add<BeatPatrol>(_root));
+            Guard.Step("PolicePresence", () => Guard.Add<PolicePresence>(_root));
+            Guard.Step("PedestrianIncidents", () => Guard.Add<PedestrianIncidents>(_root));
+            Guard.Step("CarStrikes", () => Guard.Add<CarStrikes>(_root));
+            Guard.Step("HornReactions", () => Guard.Add<HornReactions>(_root));     // people answer the player's horn (People/HornReactions)
+            Guard.Step("RecklessDrivers", () => Guard.Add<RecklessDrivers>(_root));   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
+            Guard.Step("SolidStreets", () => Guard.Add<SolidStreets>(_root));      // traffic sees people in the road (Traffic/Solid); after HornReactions, CarStrikes and RecklessDrivers
+            Guard.Step("PlayerKnockdown", () => Guard.Add<PlayerKnockdown>(_root));
+            Guard.Step("CityLifeDirector", () => Guard.Add<CityLifeDirector>(_root));   // people at work and about their day: its own pool of eight
+            Guard.Step("JobDirector", () => Guard.Add<JobDirector>(_root));   // jobs the player takes themselves (Scripts/Jobs)
+            Guard.Step("HomeDirector", () => HomeDirector.Logger = context.Logger);
+            Guard.Step("HomeDirector", () => Guard.Add<HomeDirector>(_root));   // home life and health (Scripts/Home); after LifeEvents and the city life director, whose clip player it shares
+            Guard.Step("Law.LawDirector", () => Guard.Add<Law.LawDirector>(_root));   // precincts, custody, the record and reputation (Scripts/Law)
+            Guard.Step("TransitDirector", () => Guard.Add<TransitDirector>(_root));   // bus stops, buses and the subway journey (Scripts/Transport)
+            Guard.Step("TaxiDirector", () => Guard.Add<TaxiDirector>(_root));   // a taxi called from the phone: a real taxi of the game driven to the player's street (Scripts/Transport/Taxi)
+            Guard.Step("CarOwnership", () => Guard.Add<CarOwnership>(_root));   // servicing, wear, breakdowns, insurance, the word in the game's vehicle panel for what a car needs (Scripts/Transport)
+            Guard.Step("Leisure.LeisureDirector", () => Leisure.LeisureDirector.Logger = context.Logger);
+            Guard.Step("Leisure.LeisureDirector", () => Guard.Add<Leisure.LeisureDirector>(_root));   // things to do for fun, the clothes rack, night life, the sound bed, photo mode (Scripts/Leisure)
+            Guard.Step("Events.EventDirector", () => Guard.Add<Events.EventDirector>(_root));   // fires, weather that matters, street events (Scripts/Events): after CityLifeDirector, whose clip player it uses
+            Guard.Step("SocialDirector", () => Guard.Add<SocialDirector>(_root));   // the people in the player's life, outings, the morning paper (Scripts/Social)
+            Guard.Step("TravelDirector", () => TravelDirector.Logger = context.Logger);
+            Guard.Step("TravelDirector", () => Guard.Add<TravelDirector>(_root));   // hotels and holidays (Scripts/Travel)
+            Guard.Step("BusinessDirector", () => Guard.Add<BusinessDirector>(_root));   // pressure on the player's businesses (Scripts/Business)
+            Guard.Step("JusticeDirector", () => Guard.Add<JusticeDirector>(_root));   // courts, lawyers, sentences and prison (Scripts/Justice)
+            Guard.Step("LicenceDirector", () => Guard.Add<LicenceDirector>(_root));   // driving licences: the school, the tests, points and what a stop finds (Scripts/Licences)
+            Guard.Step("GameUi.UiClone", () => GameUi.UiClone.Logger = context.Logger);
+            Guard.Step("GameUi.GameSprites", () => GameUi.GameSprites.Logger = context.Logger);
+            Guard.Step("GameUi.AppIconPainter", () => GameUi.AppIconPainter.Logger = context.Logger);
+            Guard.Step("GameUi.PhoneApp", () => GameUi.PhoneApp.Logger = context.Logger);
+            Guard.Step("GameUi.PhoneGridPager", () => GameUi.PhoneGridPager.Logger = context.Logger);
+            Guard.Step("GameUi.AppShell", () => GameUi.AppShell.Logger = context.Logger);
+            Guard.Step("GameUi.InfoBox", () => GameUi.InfoBox.Logger = context.Logger);
+            Guard.Step("Planner.PlannerApp", () => Planner.PlannerApp.Logger = context.Logger);
+            Guard.Step("Planner.PlannerDirector", () => Planner.PlannerDirector.Logger = context.Logger);
+            Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
+            Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
+            Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
+            Guard.Step("Economy.EconomyDirector", () => Guard.Add<Economy.EconomyDirector>(_root));   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
+            Guard.Step("Economy.BanksDirector", () => Economy.BanksDirector.Logger = context.Logger);
+            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));   // the bank apps: one for each of the city's three largest banks, a front on the same credit desk (Scripts/Economy/Banks)
+            Guard.Step("Economy.CityEconomyDirector", () => Economy.CityEconomyDirector.Logger = context.Logger);
+            Guard.Step("Economy.CityEconomyDirector", () => Guard.Add<Economy.CityEconomyDirector>(_root));   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
+            Guard.Step("Economy.Ventures.VenturesDirector", () => Economy.Ventures.VenturesDirector.Logger = context.Logger);
+            Guard.Step("Economy.Ventures.VenturesApp", () => Economy.Ventures.VenturesApp.Logger = context.Logger);
+            Guard.Step("Economy.Ventures.VenturesDirector", () => Guard.Add<Economy.Ventures.VenturesDirector>(_root));   // investors, the pitch and the Ventures app (Scripts/Economy/Ventures)
+            Guard.Step("Markets.MarketDirector", () => Markets.MarketDirector.Logger = context.Logger);
+            Guard.Step("Markets.MarketTapeFile", () => Markets.MarketTapeFile.Logger = context.Logger);
+            Guard.Step("Markets.MarketApp", () => Markets.MarketApp.Logger = context.Logger);
+            Guard.Step("Markets.MarketDirector", () => Guard.Add<Markets.MarketDirector>(_root));   // the city's stock market and the Stocks app (Scripts/Markets): after Ventures, whose old market it takes over
+            Guard.Step("Ledger.LedgerDirector", () => Ledger.LedgerDirector.Logger = context.Logger);
+            Guard.Step("Ledger.LedgerDirector", () => Guard.Add<Ledger.LedgerDirector>(_root));   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
+            Guard.Step("Economy.OnlineDirector", () => Economy.OnlineDirector.Logger = context.Logger);
+            Guard.Step("Economy.OnlineApp", () => Economy.OnlineApp.Logger = context.Logger);
+            Guard.Step("Economy.Dealership.DealerDirector", () => Economy.Dealership.DealerDirector.Logger = context.Logger);
+            Guard.Step("Economy.Dealership.DealerApp", () => Economy.Dealership.DealerApp.Logger = context.Logger);
+            Guard.Step("Economy.Dealership.DealerDirector", () => Guard.Add<Economy.Dealership.DealerDirector>(_root));   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
+            Guard.Step("Economy.OnlineDirector", () => Guard.Add<Economy.OnlineDirector>(_root));   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
+            Guard.Step("Economy.CompanyDirector", () => Economy.CompanyDirector.Logger = context.Logger);
+            Guard.Step("Economy.CompanyApp", () => Economy.CompanyApp.Logger = context.Logger);
+            Guard.Step("Economy.ServicesDirector", () => Economy.ServicesDirector.Logger = context.Logger);
+            Guard.Step("Economy.ServicesApp", () => Economy.ServicesApp.Logger = context.Logger);
+            Guard.Step("Economy.ServicesDirector", () => Guard.Add<Economy.ServicesDirector>(_root));   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
+            Guard.Step("Economy.CompanyDirector", () => Guard.Add<Economy.CompanyDirector>(_root));   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
+            Guard.Step("Tech.TechDirector", () => Guard.Add<Tech.TechDirector>(_root));   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
+            Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
+            Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
+            Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // the mod's buildings fitted out across their whole floor while the player is in one, a little a frame (Scripts/FitOut): before the features whose floors it builds
+            Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
+            Guard.Step("Offices.Conversions", () => Offices.Conversions.Logger = context.Logger);
+            Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // more offices to rent: some empty shops in the office districts are offices while the mod runs (Scripts/Offices): a look once a second, the choice on a change
+            Guard.Step("Tech.TechSites", () => Guard.Add<Tech.TechSites>(_root));   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
+            Guard.Step("Economy.EstateDirector", () => Economy.EstateDirector.Logger = context.Logger);
+            Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
+            Guard.Step("Economy.EstateDirector", () => Guard.Add<Economy.EstateDirector>(_root));   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
+            Guard.Step("Economy.OwnBankDirector", () => Economy.OwnBankDirector.Logger = context.Logger);
+            Guard.Step("Economy.OwnBankDirector", () => Guard.Add<Economy.OwnBankDirector>(_root));   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
+            Guard.Step("Economy.Brands.BrandsDirector", () => Economy.Brands.BrandsDirector.Logger = context.Logger);
+            Guard.Step("Economy.Brands.BrandsApp", () => Economy.Brands.BrandsApp.Logger = context.Logger);
+            Guard.Step("Economy.Brands.BrandsDirector", () => Guard.Add<Economy.Brands.BrandsDirector>(_root));   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
+            Guard.Step("Nav.NavGraph", () => Nav.NavGraph.Logger = context.Logger);
+            Guard.Step("Nav.NavMarks", () => Nav.NavMarks.Logger = context.Logger);
+            Guard.Step("Nav.NavHud", () => Nav.NavHud.Logger = context.Logger);
+            Guard.Step("Nav.NavBase", () => Nav.NavBase.Logger = context.Logger);
+            Guard.Step("Nav.NavCityMap", () => Nav.NavCityMap.Logger = context.Logger);
+            Guard.Step("Nav.NavDirector", () => Nav.NavDirector.Logger = context.Logger);
+            Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
+            Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // city government, elections and construction sites (Scripts/Civic): its own cast of five
+            Guard.Step("Utilities.UtilitiesDirector", () => Utilities.UtilitiesDirector.Logger = context.Logger);
+            Guard.Step("Utilities.UtilitiesApp", () => Utilities.UtilitiesApp.Logger = context.Logger);
+            Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
+            Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
+            Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
+            Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
+            Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
+            Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
+            Guard.Step("Fame.FameDirector", () => Fame.FameDirector.Logger = context.Logger);
+            Guard.Step("Fame.FameDirector", () => Guard.Add<Fame.FameDirector>(_root));   // Standing, a city that reacts to the player's success (Scripts/Fame): after Flare and the company, so that its day reads theirs
+            Guard.Step("PermadeathDirector", () => PermadeathDirector.Logger = context.Logger);
+            Guard.Step("PermadeathDirector", () => Guard.Add<PermadeathDirector>(_root));   // an ending the player chooses: a death after warnings, the obituary, the save ended (Scripts/Permadeath)
+            Guard.Step("CarTuning", () => CarTuning.Logger = context.Logger);
+            Guard.Step("SpeedReading", () => SpeedReading.Logger = context.Logger);
+            Guard.Step("CarMeasure", () => CarMeasure.Logger = context.Logger);
+            Guard.Step("CarTuning", () => Guard.Add<CarTuning>(_root));
+            Guard.Step("Speedometer", () => Guard.Add<Speedometer>(_root));
+            Guard.Step("GarageDirector", () => GarageDirector.Logger = context.Logger);
+            Guard.Step("GarageShop", () => GarageShop.Logger = context.Logger);
+            Guard.Step("GarageCar", () => GarageCar.Logger = context.Logger);
+            Guard.Step("GarageTuning", () => GarageTuning.Logger = context.Logger);
+            Guard.Step("TwoWheelers", () => TwoWheelers.Logger = context.Logger);
+            Guard.Step("BikeMount", () => BikeMount.Logger = context.Logger);
+            Guard.Step("BikePlaces", () => BikePlaces.Logger = context.Logger);
+            Guard.Step("GarageDirector", () => Guard.Add<GarageDirector>(_root));   // the custom shop, builds on the player's cars, bicycles and motorbikes (Scripts/Garage)
+            Guard.Step("PhoneSkin", () => PhoneSkin.Logger = context.Logger);
+            Guard.Step("PhoneSkin", () => Guard.Add<PhoneSkin>(_root));
+            Guard.Step("PhoneUiDump", () => PhoneUiDump.Logger = context.Logger);
+            Guard.Step("PhoneUiDump", () => Guard.Add<PhoneUiDump>(_root));   // a development aid: its key does nothing unless "Developer diagnostics" is on
+            Guard.Step("PerfDirector", () => PerfDirector.Logger = context.Logger);
+            Guard.Step("PerfDirector", () => Guard.Add<PerfDirector>(_root));   // performance tweaks for the base game, and the two measurements (their keys are development aids)
+            Guard.Step("MapLinks", () => Guard.Add<MapLinks>(_root));   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
+            Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
+            Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
+            Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
+            Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
             // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.
-            Looks.Reset();
-            CityLifeDirector.Instance?.Prewarm();
-            ActorPool.Instance?.Prewarm();
+            Guard.Step("the looks", () => Looks.Reset());
+            Guard.Step("the city life prewarm", () => CityLifeDirector.Instance?.Prewarm());
+            Guard.Step("the street pool prewarm", () => ActorPool.Instance?.Prewarm());
             // And every search of the whole scene a feature would otherwise make the first time it needs its answer,
             // a frame of over 100 ms each in the middle of play (Core/SceneFinds).
-            ScenePrewarm.Begin();
-            Meta.MetaCity.Begin(context, _root);   // the check for leftovers, the guide's contact, the welcome panel
+            Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
+            Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
             context.Logger.Info("City features started.");
             return Task.CompletedTask;
         }
@@ -1281,16 +1279,16 @@ namespace RealLifeOverhaul
                 return Task.CompletedTask;   // this copy started nothing
             }
             _running = null;
-            Meta.MetaCity.End();
-            Wiring.Disconnect();   // every bridge back to its stand-alone default
+            Guard.Step("the options page in the city", () => Meta.MetaCity.End());
+            Guard.Step("the wiring", () => Wiring.Disconnect());   // every bridge back to its stand-alone default
             if (_root != null)
             {
                 _root.name = RootName + " (closing)";   // it is gone at the end of the frame: a city loaded before then must not take it for a second copy
                 UnityEngine.Object.Destroy(_root);
                 _root = null;
             }
-            MapPlaces.Shutdown();
-            PropLibrary.Dispose();
+            Guard.Step("the map places", () => MapPlaces.Shutdown());
+            Guard.Step("the modelled props", () => PropLibrary.Dispose());
             return Task.CompletedTask;
         }
     }

@@ -103,6 +103,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CharacterQuality : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("character", "CharacterQuality", typeof(CharacterQuality));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float SearchSeconds = 0.5f;
         private const int CreationSearchAttempts = 60;   // each one walks the (small) creation scene
         private const int CitySearchAttempts = 600;      // each one is a single lookup; the city can take minutes to load
@@ -173,6 +175,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 if (_searchesLeft > 0 && Time.unscaledTime >= _nextSearch)
@@ -310,8 +329,8 @@ namespace RealLifeOverhaul
             }
 
             // The preview's lights sit under an object the game switches on and off with the screen.
-            var setUp = CharacterTools.ReadField<GameObject>(preview, "setUp");
-            var camera = CharacterTools.ReadField<Camera>(preview, "previewCamera");
+            var setUp = CharacterTools.ReadField<GameObject>(preview, GameContract.PreviewSetUp);   // (resolved once: Core/GameContract)
+            var camera = CharacterTools.ReadField<Camera>(preview, GameContract.PreviewCamera);
             Transform parent = setUp != null ? setUp.transform : null;
             Light[] lights = setUp != null ? setUp.GetComponentsInChildren<Light>(true) : Array.Empty<Light>();
             if (parent == null || lights.Length == 0)

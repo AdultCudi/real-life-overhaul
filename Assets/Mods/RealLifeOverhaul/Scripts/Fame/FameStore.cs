@@ -69,6 +69,16 @@ namespace RealLifeOverhaul.Fame
         {
             string text, press, city;
             FameFile f = data != null && data.TryGetValue(FileKey, out text) ? Read(text) : null;
+            if (f == null)
+            {
+                // A record that cannot be read (damaged, or of a later version) is kept as it is, its three lines together (Core/SaveLines).
+                SaveLines.Unreadable(data, FileKey, "it could not be read");
+                if (SaveLines.IsKept(data, FileKey))
+                {
+                    SaveLines.Unreadable(data, PressKey, "its record could not be read");
+                    SaveLines.Unreadable(data, CityKey, "its record could not be read");
+                }
+            }
             if (f != null && data.TryGetValue(PressKey, out press))
             {
                 ReadPress(f, press);

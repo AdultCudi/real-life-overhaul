@@ -37,7 +37,6 @@ namespace RealLifeOverhaul.GameUi
     {
         public static IModLogger Logger;
 
-        private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
         private const float MarkerUp = 4.5f;   // metres over the place, as the mod's other markers stand (MapPlaces)
         private static readonly string[] Harmless = { "ButtonEffects", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter" };
         private static FieldInfo _blobField, _plateButtonField;
@@ -336,7 +335,7 @@ namespace RealLifeOverhaul.GameUi
                 if (row.Button != null)
                 {
                     row.Button.onClick = new Button.ButtonClickedEvent();
-                    row.Button.onClick.AddListener(() => Picked(index));
+                    row.Button.onClick.AddListener(Guard.Listener(() => Picked(index)));
                 }
                 var pointer = made.AddComponent<MapPickerEntry>();
                 pointer.Owner = this;
@@ -437,8 +436,8 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (_blobField == null)
                 {
-                    _blobField = typeof(PointOfInterest).GetField("blobImage", Hidden);
-                    _plateButtonField = typeof(PointOfInterest).GetField("button", Hidden);
+                    _blobField = GameContract.PoiBlob.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                    _plateButtonField = GameContract.PoiButton.Field;
                 }
                 var dismiss = _plateButtonField != null ? _plateButtonField.GetValue(mark.Poi) as Button : null;
                 if (dismiss != null)
@@ -804,12 +803,31 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>On the window's own object, so it runs only while the window is open: <see cref="MapPicker"/> once a frame.</summary>
     public sealed class MapPickerWatch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MapPickerWatch", typeof(MapPickerWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public MapPicker Owner;
 
         private static readonly int HotUpdate = HotSpots.Slot("Core: MapPickerWatch.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (Owner == null)
             {
                 return;

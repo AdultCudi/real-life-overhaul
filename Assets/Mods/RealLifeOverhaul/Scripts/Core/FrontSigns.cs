@@ -123,7 +123,7 @@ namespace RealLifeOverhaul
                     Look(front);
                 }
             }
-            catch (Exception e) when (GameMembers.StandsDown(e, "the signs on the mod's buildings"))
+            catch (Exception e) when (Guard.StandsDown(e, "the signs on the mod's buildings"))
             {
                 _failed = true;
             }
@@ -506,7 +506,7 @@ namespace RealLifeOverhaul
         {
             if (_types == null)
             {
-                _types = typeof(BuildingSignController).GetField("wideSignTypes", Hidden);
+                _types = GameContract.SignTypes.Field;   // (resolved once as the mod starts: Core/GameContract)
             }
             var types = _types != null ? _types.GetValue(sign) as WideSignTypes : null;
             WideSignType[] all = types != null ? types.signTypes : null;
@@ -540,7 +540,7 @@ namespace RealLifeOverhaul
             }
             if (_face == null)
             {
-                _face = typeof(BuildingLogoSignController).GetField("logoSignRenderer", Hidden);
+                _face = GameContract.LogoFace.Field;
             }
             Renderer face = _face != null ? _face.GetValue(sign) as Renderer : null;
             return face != null ? face : sign.GetComponentInChildren<Renderer>(true);
@@ -592,7 +592,7 @@ namespace RealLifeOverhaul
             };
             // Not a player's business: the game keeps none of what it draws for this name in its own cache, and writes the
             // pictures only into the folder given (BusinessLogoGenerator.GenerateBusinessLogo).
-            BusinessLogoGenerator.Create(logo.Name, settings, logo.Path, false, () => Made(logo));
+            BusinessLogoGenerator.Create(logo.Name, settings, logo.Path, false, Guard.Listener(() => Made(logo)));   // (the game calls it when the picture is made: Core/Guard)
         }
 
         private static void Made(Logo logo)

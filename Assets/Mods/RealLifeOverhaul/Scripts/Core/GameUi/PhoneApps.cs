@@ -101,9 +101,9 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
                 string templateUsed;
-                Transform hudTemplate = Template(phone, typeof(SmartphoneUI), phone.transform, typeof(SmartphoneAppButton), out templateUsed);
+                Transform hudTemplate = Template(phone, GameContract.HudAppTemplate, phone.transform, typeof(SmartphoneAppButton), out templateUsed);
                 string menuTemplateUsed;
-                Transform menuTemplate = Template(menu, typeof(FullMenu), menu.transform, typeof(FullMenuAppButton), out menuTemplateUsed);
+                Transform menuTemplate = Template(menu, GameContract.MenuAppTemplate, menu.transform, typeof(FullMenuAppButton), out menuTemplateUsed);
                 if (hudTemplate == null || menuTemplate == null || hudTemplate.parent == null || menuTemplate.parent == null)
                 {
                     UiClone.Fallback("the phone's app button was not found (" + (hudTemplate == null ? "HUD phone" : "full menu") + "), so '" + def.Id + "' is not added");
@@ -200,12 +200,12 @@ namespace RealLifeOverhaul.GameUi
         // The button each phone copies for its apps: its private "appButtonTemplate"; failing that the object of that
         // name; failing that any button of the right kind (a copy of a live button works the same: the click the game
         // adds in code is not copied with it).
-        private static Transform Template(object owner, Type type, Transform under, Type buttonType, out string used)
+        private static Transform Template(object owner, GameMember templateField, Transform under, Type buttonType, out string used)
         {
             used = "appButtonTemplate";
             try
             {
-                FieldInfo field = type.GetField("appButtonTemplate", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                FieldInfo field = templateField.Field;   // (resolved once: Core/GameContract)
                 var template = field != null ? field.GetValue(owner) as Transform : null;
                 if (template != null && template.GetComponent(buttonType) != null)
                 {
@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.GameUi
         // An open that failed: said once for the app, with the member a game lacks or the error (whose whole text follows).
         private void Failed(Exception e)
         {
-            if (GameMembers.Missing(e))
+            if (Guard.Missing(e))
             {
                 Unopened("this game lacks " + GameBuild.MemberOf(e.Message) + " (the game is Build " + GameBuild.Running + ", the mod is made for Build " + GameBuild.MadeFor + ")");
                 return;
@@ -362,17 +362,17 @@ namespace RealLifeOverhaul.GameUi
             {
                 OutlineOff();
             }
-            catch (Exception e) when (GameMembers.Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
-                GameMembers.DoesWithout(e, "the HUD phone's outline when an app of the mod's is opened");
+                Guard.DoesWithout(e, "the HUD phone's outline when an app of the mod's is opened");
             }
             try
             {
                 CardClosed();
             }
-            catch (Exception e) when (GameMembers.Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
-                GameMembers.DoesWithout(e, "closing the building card when an app of the mod's is opened");
+                Guard.DoesWithout(e, "closing the building card when an app of the mod's is opened");
             }
         }
 
@@ -405,9 +405,9 @@ namespace RealLifeOverhaul.GameUi
             {
                 BizManChanges(out unsaved, out nameless);
             }
-            catch (Exception e) when (GameMembers.Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
-                GameMembers.DoesWithout(e, "BizMan's settings not saved when an app of the mod's is opened");
+                Guard.DoesWithout(e, "BizMan's settings not saved when an app of the mod's is opened");
                 return false;   // a game without them has none to keep
             }
             if (!unsaved)
@@ -420,9 +420,9 @@ namespace RealLifeOverhaul.GameUi
                 {
                     NameFirst();
                 }
-                catch (Exception e) when (GameMembers.Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
-                    GameMembers.DoesWithout(e, "the game's word that a business needs a name before BizMan's settings are left");
+                    Guard.DoesWithout(e, "the game's word that a business needs a name before BizMan's settings are left");
                 }
                 return true;
             }
@@ -630,6 +630,8 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>A fade of one canvas group on the unscaled clock (the game is paused while the menu is open). Switched on only while it lasts.</summary>
     public sealed class PanelFade : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PanelFade", typeof(PanelFade));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private CanvasGroup _group;
         private float _from, _for;
 
@@ -646,6 +648,23 @@ namespace RealLifeOverhaul.GameUi
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float t = _group != null && _for > 0f ? (Time.unscaledTime - _from) / _for : 1f;
             if (_group != null)
             {

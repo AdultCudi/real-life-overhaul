@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed class DeskPointer : EntityController
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "DeskPointer", typeof(DeskPointer));   // the game's calls of it (Core/Guard)
+
         public const string Header = "reallife_desk_cta_header";
 
         private static readonly List<Renderer> Found = new List<Renderer>(16);
@@ -84,14 +86,17 @@ namespace RealLifeOverhaul.Careers
 
         public override bool ShouldReactToIoEnter()
         {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
             try
             {
                 return primaryInteractionEnabled && CareersDirector.Instance != null && base.ShouldReactToIoEnter();
             }
             catch (System.Exception e)
             {
-                CareersDirector.Logger?.Error(e);
-                return false;
+                return Guard.Failed(FrameGuard, e, false);
             }
         }
 
@@ -110,14 +115,21 @@ namespace RealLifeOverhaul.Careers
             }
             catch (System.Exception e)
             {
-                CareersDirector.Logger?.Error(e);
+                Guard.Fail(FrameGuard, e);
             }
-            for (int i = 0; renderers != null && i < renderers.Length; i++)
+            try
             {
-                if (renderers[i] != null)
+                for (int i = 0; renderers != null && i < renderers.Length; i++)
                 {
-                    renderers[i].gameObject.layer = _layers[i];
+                    if (renderers[i] != null)
+                    {
+                        renderers[i].gameObject.layer = _layers[i];
+                    }
                 }
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e);
             }
         }
 

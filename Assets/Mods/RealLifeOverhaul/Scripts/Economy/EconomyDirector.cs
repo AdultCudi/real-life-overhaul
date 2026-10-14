@@ -54,6 +54,9 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Action AfterHour, AfterDay;
 
+        // The game's new hour and new day for the economy and every feature that follows it (AfterHour, AfterDay).
+        private static readonly FeatureGuard Ticks = Guard.For(null, "EconomyDirector's hour and day");
+
         private readonly GameLoans _loans = new GameLoans();
         private readonly List<LoanView> _live = new List<LoanView>(8);
         private readonly List<LoanFinding> _findings = new List<LoanFinding>(8);
@@ -92,11 +95,11 @@ namespace RealLifeOverhaul.Economy
             _deskSave = _desk.BeforeSave;
             _deskRefused = _desk.Refused;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(Ticks, OnHour);   // (the economy's hour and day are every economic feature's: a guard of their own, not the credit file's)
+            _onDay = Guard.Wrap(Ticks, OnDay);
             _onGrade = OnGrade;
             _onPosted = OnPosted;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -152,7 +155,7 @@ namespace RealLifeOverhaul.Economy
                         Fault("the timer", e);
                     }
                 }
-                Second?.Invoke();
+                Guard.Each(Second);   // each feature's second in a try of its own (Core/Guard)
             }
         }
 
@@ -419,7 +422,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the hour", e);
             }
-            AfterHour?.Invoke();
+            Guard.Each(AfterHour);
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Economy: EconomyDirector.OnDay");
@@ -439,7 +442,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the day", e);
             }
-            AfterDay?.Invoke();
+            Guard.Each(AfterDay);
             try
             {
                 // The game built yesterday's statement before the mod's day: the costs booked for it since are put into it.
@@ -558,7 +561,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     { "amount", FinanceText.Money(missedAmount) }, { "points", Mathf.Abs(missEffect).ToString() },
                     { "score", score.ToString() }, { "grade", FinanceText.Grade(CreditLedger.Grade) }
-                }, 12f, "reallife_econ_note_missed", OpenCredit, true, false);
+                }, 12f, "reallife_econ_note_missed", Guard.Wrap(OpenCredit), true, false);
             }
             Badge();
         }
@@ -613,7 +616,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         { "score", score.ToString() }, { "grade", FinanceText.Grade(now) }, { "was", FinanceText.Grade(was) },
                         { "threshold", CreditCatalogue.LendingThreshold.ToString() }
-                    }, 10f, null, OpenCredit, true, false);
+                    }, 10f, null, Guard.Wrap(OpenCredit), true, false);
                 if (Verbose)
                 {
                     Logger?.Info("Economy: the grade changed from " + was + " to " + now + " at " + score + ".");
@@ -729,7 +732,7 @@ namespace RealLifeOverhaul.Economy
             {
                 { "score", score.Value.ToString() }, { "grade", FinanceText.Grade(score.Grade) },
                 { "threshold", CreditCatalogue.LendingThreshold.ToString() }, { "tips", FinanceText.Tips(score, _tips) }
-            }, 14f, "reallife_econ_note_refused", OpenCredit, true, false);
+            }, 14f, "reallife_econ_note_refused", Guard.Wrap(OpenCredit), true, false);
         }
 
         // ---------------------------------------------------------------- the phone
@@ -936,7 +939,7 @@ namespace RealLifeOverhaul.Economy
             Notifications.Show(NotificationType.Info, "reallife_econ_test_done", new Dictionary<string, string>
             {
                 { "what", FinanceText.T(what) }, { "score", CreditLedger.Score.Value.ToString() }, { "grade", FinanceText.Grade(CreditLedger.Grade) }
-            }, 8f, null, OpenCredit, true, false);
+            }, 8f, null, Guard.Wrap(OpenCredit), true, false);
         }
 
         /// <summary>"Test: show my credit report in the log".</summary>

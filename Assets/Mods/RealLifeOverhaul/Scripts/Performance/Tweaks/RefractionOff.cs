@@ -55,8 +55,9 @@ namespace RealLifeOverhaul
             _again = false;
             _users = string.Empty;
             Begin();
-            GlobalEvents.onEnterBuilding += OnBuilding;
-            GlobalEvents.onExitBuilding += OnBuilding;
+            _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            GlobalEvents.onEnterBuilding += _onBuilding;
+            GlobalEvents.onExitBuilding += _onBuilding;
             _hooked = true;
             Reconcile();
         }
@@ -112,6 +113,8 @@ namespace RealLifeOverhaul
 
         private void OnBuilding(Address address) => Reconcile();
 
+        private System.Action<Address> _onBuilding;
+
         // On the timer too: the building flag is the game's, and this follows it whatever changed it.
         protected override void Tick(float now)
         {
@@ -159,8 +162,8 @@ namespace RealLifeOverhaul
             if (_hooked)
             {
                 _hooked = false;
-                GlobalEvents.onEnterBuilding -= OnBuilding;
-                GlobalEvents.onExitBuilding -= OnBuilding;
+                GlobalEvents.onEnterBuilding -= _onBuilding;
+                GlobalEvents.onExitBuilding -= _onBuilding;
             }
             if (_off)
             {

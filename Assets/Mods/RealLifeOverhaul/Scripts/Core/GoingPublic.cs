@@ -461,10 +461,29 @@ namespace RealLifeOverhaul
     /// <summary>The one per-frame call of <see cref="GoingPublic"/>: a comparison with the real clock and a look once a second, and the shared city's inbox (a field read).</summary>
     public sealed class GoingPublicWatch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("multiplayer", "GoingPublicWatch", typeof(GoingPublicWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private static readonly int HotUpdate = HotSpots.Slot("Core: GoingPublicWatch.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             GoingPublic.Tick();
             SharedCity.Frame();   // (a field read while nothing of the shared city's has come)
         }

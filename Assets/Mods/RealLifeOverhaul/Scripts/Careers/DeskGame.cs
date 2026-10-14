@@ -251,22 +251,31 @@ namespace RealLifeOverhaul.Careers
 
         private sealed class Behaviour : ICtaBehavior
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "DeskGame.Behaviour", typeof(Behaviour));   // the game's calls of it (Core/Guard)
+
             // (asked by the game for whatever the pointer is on: a fault here would break its pointer, so none leaves)
             public override bool ShouldShow(EntityController entityController)
             {
+                if (FrameGuard.Off)
+                {
+                    return false;
+                }
                 try
                 {
                     return Offers(entityController);
                 }
                 catch (Exception e)
                 {
-                    CareersDirector.Logger?.Error(e);
-                    return false;
+                    return Guard.Failed(FrameGuard, e, false);
                 }
             }
 
             public override (string, Action) GetCta(EntityController entityController)
             {
+                if (FrameGuard.Off)
+                {
+                    return (string.Empty, null);
+                }
                 try
                 {
                     if (!Offers(entityController))
@@ -278,8 +287,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 catch (Exception e)
                 {
-                    CareersDirector.Logger?.Error(e);
-                    return (string.Empty, null);
+                    return Guard.Failed(FrameGuard, e, (string.Empty, (Action)null));
                 }
             }
         }
@@ -320,7 +328,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                FieldInfo field = typeof(CtaManager).GetField("CtaBehaviors", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                FieldInfo field = GameContract.CtaBehaviours.Field;   // (resolved once: Core/GameContract)
                 _list = field != null ? field.GetValue(null) as List<ICtaBehavior> : null;
                 if (_list == null)
                 {
@@ -387,7 +395,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
-            station.MoveTowardsEntity(() => then());
+            station.MoveTowardsEntity(Guard.Listener(() => then()));
             return true;
         }
 
@@ -399,7 +407,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
-            player.SetGoal(place, () => then());
+            player.SetGoal(place, Guard.Listener(() => then()));
             return true;
         }
 

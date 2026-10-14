@@ -47,7 +47,7 @@ namespace RealLifeOverhaul
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_career_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new CareerDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new CareerDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_career_welcome"), notify: false);
@@ -84,7 +84,7 @@ namespace RealLifeOverhaul
         {
             At = employer;
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
-            CallDialogFactory.RegisterDialog(dialogType, () => new CareerDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new CareerDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul
                 JobDirector.Logger?.Error(e);
                 entry = PhoneContacts.Closing("reallife_career_no_off");
             }
-            DialogController.current.ShowEntry(entry);
+            DialogController.current.ShowEntry(Guard.Entry(entry));
         }
 
         private static CareerDirector Career => JobDirector.Instance != null ? JobDirector.Instance.Career : null;

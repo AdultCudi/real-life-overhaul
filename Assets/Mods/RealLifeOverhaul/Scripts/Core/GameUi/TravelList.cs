@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     Row clicked = row;
                     row.Button.onClick = new Button.ButtonClickedEvent();
-                    row.Button.onClick.AddListener(() => Picked(clicked));
+                    row.Button.onClick.AddListener(Guard.Listener(() => Picked(clicked)));
                 }
                 _rows.Add(row);
             }
@@ -480,12 +480,31 @@ namespace RealLifeOverhaul.GameUi
     [DefaultExecutionOrder(-31000)]
     public sealed class TravelListKeys : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "TravelListKeys", typeof(TravelListKeys));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public TravelList Owner;
 
         private static readonly int HotUpdate = HotSpots.Slot("Core: TravelListKeys.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (Owner == null || !Owner.IsOpen)
             {
                 return;

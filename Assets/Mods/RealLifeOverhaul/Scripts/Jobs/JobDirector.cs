@@ -12,6 +12,7 @@ using UI.Load;
 using UI.Notification;
 using UI.Overlays;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -32,6 +33,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class JobDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("jobs", "JobDirector", typeof(JobDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.2f;
         private const float CrashSpeed = 3f;         // m/s of closing speed that counts as a crash on the job
         private const float CrashGap = 2.5f;         // seconds between two crashes that both count
@@ -170,6 +173,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_broken)
             {
                 // Jobs are off for the session, but a van that was out on hire is still seen back.
@@ -798,7 +818,8 @@ namespace RealLifeOverhaul
             Unhook();
             if (car != null && car.vehicleController != null)
             {
-                car.vehicleController.onCollision.AddListener(OnCollision);
+                _onCollision = _onCollision ?? Guard.Listener<Collision>(OnCollision);   // (made once, through the guard: a fault never reaches the vehicle's own listeners)
+                car.vehicleController.onCollision.AddListener(_onCollision);
                 _hookedCar = car;
             }
         }
@@ -807,10 +828,12 @@ namespace RealLifeOverhaul
         {
             if (_hookedCar != null && _hookedCar.vehicleController != null)
             {
-                _hookedCar.vehicleController.onCollision.RemoveListener(OnCollision);
+                _hookedCar.vehicleController.onCollision.RemoveListener(_onCollision);
             }
             _hookedCar = null;
         }
+
+        private UnityAction<Collision> _onCollision;
 
         private void OnCollision(Collision collision)
         {

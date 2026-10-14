@@ -1237,7 +1237,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A notification that opens the Career app on a tab with a row picked.</summary>
         internal void Tell2(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
-            Notifications.Show(type, key, data, 10f, null, () => OpenCareer(tab, pick), true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(() => OpenCareer(tab, pick)), true, false);
         }
     }
 }

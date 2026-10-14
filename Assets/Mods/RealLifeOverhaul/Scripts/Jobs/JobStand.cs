@@ -133,7 +133,7 @@ namespace RealLifeOverhaul
             _since = now;
             _busyUntil = 0f;
             _token++;
-            _host.StartCoroutine(Settle(player, _token, away));
+            _host.StartCoroutine(Guard.Routine(Settle(player, _token, away)));
         }
 
         // The last step: per frame, only while it lasts.

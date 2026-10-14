@@ -35,6 +35,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ContactSearch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactSearch", typeof(ContactSearch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int Longest = 24;                 // characters
         private const float Gap = 16f;                  // between the buttons, the box and the list, on the game's canvas
 
@@ -66,8 +68,8 @@ namespace RealLifeOverhaul
                 }
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 ContactsApp app = uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;
-                Button mark = app != null ? Field<Button>(app, typeof(ContactsApp), "markAllAsReadButton") : null;
-                TMP_InputField template = uis != null && uis.textInputUi != null ? Field<TMP_InputField>(uis.textInputUi, typeof(TextInputUI), "inputField") : null;
+                Button mark = app != null ? Field<Button>(app, GameContract.ContactsMarkAll) : null;
+                TMP_InputField template = uis != null && uis.textInputUi != null ? Field<TMP_InputField>(uis.textInputUi, GameContract.TextInputField) : null;
                 if (app == null || mark == null || template == null || mark.transform.parent == null)
                 {
                     UiClone.Fallback("the Contacts app or the game's text field is not built as expected, so the contacts have no search box");
@@ -98,9 +100,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static T Field<T>(object owner, Type type, string name) where T : class
+        // A private field of the game's, through its line of the game contract (resolved once: Core/GameContract).
+        private static T Field<T>(object owner, GameMember member) where T : class
         {
-            FieldInfo field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            FieldInfo field = member.Field;
             return field != null ? field.GetValue(owner) as T : null;
         }
 
@@ -231,6 +234,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             bool typing = _input != null && _input.isFocused;
             if (typing != _typing)
             {

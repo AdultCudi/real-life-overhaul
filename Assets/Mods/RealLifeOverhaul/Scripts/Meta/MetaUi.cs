@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public sealed class MetaUi : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MetaUi", typeof(MetaUi));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static readonly Color Dim = new Color(0f, 0f, 0f, 0.62f);
         public static readonly Color Window = new Color(0.05f, 0.06f, 0.085f, 0.985f);
         public static readonly Color Bar = new Color(0.09f, 0.11f, 0.15f, 1f);
@@ -187,6 +189,23 @@ namespace RealLifeOverhaul.Meta
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 if (_open.Count == 0)
@@ -289,7 +308,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>Runs something on the next frame: for what must not happen inside a button's own click.</summary>
         public void NextFrame(Action action)
         {
-            StartCoroutine(After(action));
+            StartCoroutine(Guard.Routine(After(action)));
         }
 
         private static IEnumerator After(Action action)
@@ -307,7 +326,7 @@ namespace RealLifeOverhaul.Meta
 
         public Coroutine Run(IEnumerator routine)
         {
-            return StartCoroutine(routine);
+            return StartCoroutine(Guard.Routine(routine));
         }
 
         /// <summary>A message with an OK button, or with the buttons given (label key, what it does; the panel closes first).</summary>

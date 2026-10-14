@@ -86,6 +86,7 @@ namespace RealLifeOverhaul.Meta
             public int SwitchesOn;
             public int Switches;
             public string Suffix = string.Empty;   // what stands after its name
+            public string[] Features;              // the features of Meta/FeatureList it is the section of (for Core/Guard's note)
             public string Shown;                   // the suffix that is on the button now
 
             // For the search: made on the first letters typed after the page was drawn.
@@ -351,6 +352,7 @@ namespace RealLifeOverhaul.Meta
             built.Add(new ButtonOption("reallife_meta_export_button", ExportNow));
             built.Add(new ButtonOption("reallife_meta_import_button", AskImport));
             built.Add(new ButtonOption("reallife_meta_welcome_button", () => Welcome.Open(true)));
+            built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off (Core/Guard)
             Features.Find("diagnostics")?.AddTest(LayoutTestKey, TestLayout);
 
             var rows = new List<PlanRow>(built.Count);
@@ -381,7 +383,7 @@ namespace RealLifeOverhaul.Meta
                     }
                     else
                     {
-                        into = new Section { Id = "s:" + placed.Tree.Id, TitleKey = placed.Tree.TitleKey, Words = placed.Tree.Words, Parent = top };
+                        into = new Section { Id = "s:" + placed.Tree.Id, TitleKey = placed.Tree.TitleKey, Words = placed.Tree.Words, Parent = top, Features = placed.Tree.Features };
                         top.Children.Add(into);
                     }
                     foreach (int index in placed.Rows)
@@ -944,12 +946,35 @@ namespace RealLifeOverhaul.Meta
             }
             else if (section.IsStart)
             {
-                section.Suffix = ":  " + Presets.CurrentName();
+                section.Suffix = ":  " + Presets.CurrentName() + (Guard.AnyOff ? "   (" + Guard.Note(null) + ")" : string.Empty);
             }
             else
             {
                 section.Suffix = all == 0 ? string.Empty : _countFormat.Replace("{on}", on.ToString()).Replace("{total}", all.ToString());
+                string note = GuardNote(section);
+                if (note != null)
+                {
+                    section.Suffix += "   (" + note + ")";   // a part of it is off after a game update, or it was switched off after its faults
+                }
             }
+        }
+
+        // Core/Guard's note for the first of a section's features that has a part off, or null.
+        private static string GuardNote(Section section)
+        {
+            if (section.Features == null)
+            {
+                return null;
+            }
+            foreach (string feature in section.Features)
+            {
+                string note = Guard.Note(feature);
+                if (note != null)
+                {
+                    return note;
+                }
+            }
+            return null;
         }
 
         // The text after the name on a section's button, written only when it is another one.
@@ -1108,7 +1133,7 @@ namespace RealLifeOverhaul.Meta
                 if (_plain != null && OptionsService.RegisteredEntries.ContainsKey(_modId))
                 {
                     _testsShown = Settings.ShowTestTools;
-                    OptionsService.Register(_modId, _testsShown ? _withTests : _plain);
+                    OptionsService.Register(_modId, Guard.Rows(_testsShown ? _withTests : _plain));
                 }
             });
         }

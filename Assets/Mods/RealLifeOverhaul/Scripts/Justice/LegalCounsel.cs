@@ -379,7 +379,7 @@ namespace RealLifeOverhaul
                 Contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_legal_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
                 Contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new LegalDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new LegalDialog()));
                 if (Contact.messagesQueue == null || Contact.messagesQueue.Count == 0)
                 {
                     Contact.SendMessage(new TextMessage("reallife_text_legal_welcome"), notify: false);
@@ -416,7 +416,7 @@ namespace RealLifeOverhaul
         {
             LegalDialog.AtFirm = firm;
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
-            CallDialogFactory.RegisterDialog(dialogType, () => new LegalDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new LegalDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -462,15 +462,15 @@ namespace RealLifeOverhaul
             JusticeDirector director = JusticeDirector.Instance;
             if (director == null || !Justice.Active)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_justice_call_off"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_justice_call_off")));
                 return;
             }
             if (_here != null)
             {
-                DialogController.current.ShowEntry(AtDesk());
+                DialogController.current.ShowEntry(Guard.Entry(AtDesk()));
                 return;
             }
-            DialogController.current.ShowEntry(Root());
+            DialogController.current.ShowEntry(Guard.Entry(Root()));
         }
 
         private static DialogEntry Raw(string text)

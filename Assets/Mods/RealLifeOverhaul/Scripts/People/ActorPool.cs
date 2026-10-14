@@ -45,6 +45,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class ActorPool : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "ActorPool", typeof(ActorPool));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         /// <summary>Hard cap on mod characters alive at once, across all scenes.</summary>
         public const int MaxActors = 12;
 
@@ -128,6 +130,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 Camera camera = GameManager.GetMainCamera();
@@ -304,7 +323,7 @@ namespace RealLifeOverhaul
         {
             if (_refresh == null && gameObject.activeInHierarchy && (_uniformsDue || AnyStale()))
             {
-                _refresh = StartCoroutine(Tending());
+                _refresh = StartCoroutine(Guard.Routine(Tending()));
             }
         }
 

@@ -30,6 +30,8 @@ namespace RealLifeOverhaul.Ledger
     /// </summary>
     public sealed partial class LedgerDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerDirector", typeof(LedgerDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
         public static LedgerDirector Instance { get; private set; }
 
@@ -69,7 +71,7 @@ namespace RealLifeOverhaul.Ledger
             Instance = this;
             _onSave = OnSave;
             _payWeek = PayWeek;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -116,6 +118,23 @@ namespace RealLifeOverhaul.Ledger
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_state == null || _broken || _kiosks == null)
             {
                 return;

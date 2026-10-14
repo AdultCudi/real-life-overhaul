@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Economy
         private Action _second, _onSave, _onDay;
         private int _warnedDay = -1;
         private int _watchTold = int.MinValue;   // the day the regulator's watch was last told (once a month at most, as a ratio hovers on the line)
-        private bool _keepLine;                  // the save has a line of the bank's that could not be read: it is left there, never written over with none
+        private bool _keepLine;                  // the save has a line of the bank's that could not be read: it is kept as it is (Core/SaveLines)
         private string _beforeTests;   // the bank's line before the first test of the session, for "put my bank back"
         private readonly BankDay _day = new BankDay();
         private readonly List<FundQuote> _quotes = new List<FundQuote>(160);
@@ -160,7 +160,8 @@ namespace RealLifeOverhaul.Economy
             _keepLine = fresh && line != null;
             if (_keepLine)
             {
-                Logger?.Warn("Own bank: the save's line for the bank could not be read; it is left in the save as it is, and the feature starts with no bank.");
+                SaveLines.Unreadable(save.modData, OwnBankStore.Key, "it could not be read");   // (put back as it was read at every save)
+                Logger?.Warn("Own bank: the save's line for the bank could not be read; it is kept in the save as it is, and the feature starts with no bank this session.");
             }
             bank = bank ?? new OwnBank();
             bool mended = OwnBankStore.Mend(bank);
@@ -593,7 +594,7 @@ namespace RealLifeOverhaul.Economy
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 11f, null, () => Open(tab), true, false);
+            Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab)), true, false);
         }
 
         // A piece for the City Ledger: tomorrow's paper if this morning's is out (after six), else this morning's.

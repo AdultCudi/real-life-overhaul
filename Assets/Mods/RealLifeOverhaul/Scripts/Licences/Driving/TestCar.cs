@@ -73,8 +73,8 @@ namespace RealLifeOverhaul
         private bool _haveSpot;
         private int _freed;             // exits the school has had to finish since the player last got out
 
-        private static readonly FieldInfo TargetsField = typeof(EntityController).GetField("navMeshTargets", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static readonly FieldInfo BlockersField = typeof(PlayerController).GetField("_activeNavigationBlockers", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo TargetsField = GameContract.NavTargets.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo BlockersField = GameContract.NavBlockers.Field;
 
         public TestCar(MonoBehaviour host, IModLogger logger)
         {
@@ -251,7 +251,7 @@ namespace RealLifeOverhaul
                             Licences.Toast(NotificationType.Warning, "reallife_lic_car_not_yours", 8f);
                         }
                         _seeingOut = true;
-                        _host.StartCoroutine(SeeOut(_car));
+                        _host.StartCoroutine(Guard.Routine(SeeOut(_car)));
                     }
                     return;
                 }
@@ -616,7 +616,7 @@ namespace RealLifeOverhaul
             List<VehicleInstance> all = SaveGameManager.Current.VehicleInstances;
             if (all != null && all.Remove(_instance) && _host != null && _host.isActiveAndEnabled)
             {
-                _host.StartCoroutine(PutBack(_instance));
+                _host.StartCoroutine(Guard.Routine(PutBack(_instance)));
             }
         }
 

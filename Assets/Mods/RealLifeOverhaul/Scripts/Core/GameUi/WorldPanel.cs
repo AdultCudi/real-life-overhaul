@@ -31,6 +31,8 @@ namespace RealLifeOverhaul.GameUi
     /// </summary>
     public sealed partial class WorldPanel : IOverlay
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "WorldPanel", typeof(WorldPanel));   // the game's calls of it (Core/Guard)
+
         public static IModLogger Logger;
 
         private static WorldPanel _current;            // the one last handed to the game
@@ -158,8 +160,8 @@ namespace RealLifeOverhaul.GameUi
                 if (_slotKey[i] != null)
                 {
                     _buttons[at++] = _slotArgs[i] != null
-                        ? new ButtonInfo(SlotName[i], _slotKey[i], _slotArgs[i], _slotBlue[i] ? "blue" : "gray", _slotAction[i], SlotAction[i], _slotOn[i])
-                        : new ButtonInfo(SlotName[i], _slotKey[i], _slotBlue[i] ? "blue" : "gray", _slotAction[i], SlotAction[i], _slotOn[i]);
+                        ? new ButtonInfo(SlotName[i], _slotKey[i], _slotArgs[i], _slotBlue[i] ? "blue" : "gray", Guard.Wrap(_slotAction[i]), SlotAction[i], _slotOn[i])
+                        : new ButtonInfo(SlotName[i], _slotKey[i], _slotBlue[i] ? "blue" : "gray", Guard.Wrap(_slotAction[i]), SlotAction[i], _slotOn[i]);
                 }
             }
             _buttonsChanged = true;
@@ -252,8 +254,7 @@ namespace RealLifeOverhaul.GameUi
                 else if (OverlayUI.IsVisible)
                 {
                     // The interface went first (the city is unloading): the game's flag must not be left saying a box is up.
-                    MethodInfo set = typeof(OverlayUI).GetProperty("IsVisible", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetSetMethod(true);
-                    set?.Invoke(null, new object[] { false });
+                    GameContract.OverlayVisible.Setter?.Invoke(null, new object[] { false });   // (its private setter, resolved once: Core/GameContract)
                 }
             }
             catch (Exception e)
@@ -266,9 +267,20 @@ namespace RealLifeOverhaul.GameUi
 
         Vector3 IOverlay.GetTargetPosition()
         {
-            // (The step aside from the game's building box is in the world's own measure, so the game's own
-            // WorldToScreenPoint puts the box beside it: WorldPanel.Beside.cs.)
-            return ReferenceEquals(_current, this) ? Home() + _shift : Home();
+            if (FrameGuard.Off)
+            {
+                return Vector3.zero;
+            }
+            try
+            {
+                // (The step aside from the game's building box is in the world's own measure, so the game's own
+                // WorldToScreenPoint puts the box beside it: WorldPanel.Beside.cs.)
+                return ReferenceEquals(_current, this) ? Home() + _shift : Home();
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Vector3.zero);
+            }
         }
 
         // The place the panel stands over, before any step aside.
@@ -336,7 +348,7 @@ namespace RealLifeOverhaul.GameUi
                 _looked = true;
                 try
                 {
-                    MethodInfo method = typeof(OverlayUI).GetMethod("SetUpHeader", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Type.EmptyTypes, null);
+                    MethodInfo method = GameContract.OverlayHeader.Method;   // (resolved once: Core/GameContract)
                     _setUpHeader = method != null ? (Action<OverlayUI>)Delegate.CreateDelegate(typeof(Action<OverlayUI>), method, false) : null;
                 }
                 catch (Exception e)

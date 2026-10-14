@@ -28,6 +28,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "ThirdPersonCamera", typeof(ThirdPersonCamera));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float MinMoveSpeed = 0.6f;   // m/s before the camera starts swinging behind
         private const float MinDistance = 2.5f;
         private const float MinPitch = -60f;       // out of doors; under 0 the view looks up, to the tops of the buildings
@@ -84,8 +86,7 @@ namespace RealLifeOverhaul
         private const float LookBehindHoldTime = 0.2f;   // a shorter right click stays the game's own right-click action
 
         // The game flags a right-button drag here to stop the release from also firing a right-click action.
-        private static readonly FieldInfo RightButtonHeldField =
-            typeof(MouseController).GetField("RightButtonHeld", BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly FieldInfo RightButtonHeldField = GameContract.RightButtonHeld.Field;   // (resolved once: Core/GameContract)
 
         private float _rightHeldFor;
 
@@ -143,11 +144,16 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
             try
             {
-                Frame();
+                OnUpdate();
             }
-            catch (System.Exception e) when (GameMembers.StandsDown(e, "the third-person camera"))
+            catch (System.Exception e) when (Guard.StandsDown(e, "the third-person camera"))
             {
                 enabled = false;
                 try
@@ -162,9 +168,13 @@ namespace RealLifeOverhaul
                     Logger?.Error(second);
                 }
             }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
         }
 
-        private void Frame()
+        private void OnUpdate()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm == null || gm.playerController == null)

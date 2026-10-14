@@ -266,7 +266,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                MethodInfo method = typeof(SaveGameManager).GetMethod("CanSave", BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo method = GameContract.CanSave.Method;   // (resolved once: Core/GameContract)
                 return method == null || (bool)method.Invoke(null, null);
             }
             catch (Exception)
@@ -368,6 +368,7 @@ namespace RealLifeOverhaul.Meta
 
         private static void RemoveData(GameInstance save, Removed removed)
         {
+            SaveLines.Forget();   // the player takes the mod's data out: the lines kept as they were read go too (Core/SaveLines)
             if (save.modData == null)
             {
                 return;
@@ -482,6 +483,12 @@ namespace RealLifeOverhaul.Meta
         private static int _leftAtSave = -1;
         private static Removed _removedNow;
 
+        // The two hooks on the game's save event, through the guard and never skipped (Core/Guard): a hook that throws
+        // would stop the game's other hooks of the save. Made once, since the event compares what it is given.
+        private static Action _purgeCall, _versionCall;
+        private static Action PurgeCall => _purgeCall ?? (_purgeCall = Guard.Way(PurgeOnSave));
+        private static Action VersionCall => _versionCall ?? (_versionCall = Guard.Way(WriteVersion));
+
         // Runs inside the game's save event, after every feature's own hook (it is attached last), so that nothing
         // a feature writes there reaches the file. Stays attached for the rest of the session.
         private static void PurgeOnSave()
@@ -564,8 +571,8 @@ namespace RealLifeOverhaul.Meta
             {
                 MetaLog.Error(e);
             }
-            GlobalEvents.onSaveGame -= PurgeOnSave;
-            GlobalEvents.onSaveGame += PurgeOnSave;
+            GlobalEvents.onSaveGame -= PurgeCall;
+            GlobalEvents.onSaveGame += PurgeCall;
 
             // The features themselves go: their own OnDestroy puts back whatever they changed on the game's objects,
             // exactly as when the game unloads the mod.
@@ -600,8 +607,8 @@ namespace RealLifeOverhaul.Meta
             {
                 Purge(removed);
                 RefreshGame();
-                GlobalEvents.onSaveGame -= PurgeOnSave;   // last in line, after anything attached since
-                GlobalEvents.onSaveGame += PurgeOnSave;
+                GlobalEvents.onSaveGame -= PurgeCall;   // last in line, after anything attached since
+                GlobalEvents.onSaveGame += PurgeCall;
 
                 // (d) the save on disk, under its own name.
                 _leftAtSave = -1;
@@ -971,7 +978,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                FieldInfo field = typeof(HappinessHelper).GetField("Modifiers", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
                 return field?.GetValue(null) is Dictionary<string, HappinessModifier> registry
                        && registry.ContainsKey(ModState.Sick) && registry.ContainsKey(ModState.MoodDownBig);
             }
@@ -1016,8 +1023,8 @@ namespace RealLifeOverhaul.Meta
             {
                 return;
             }
-            GlobalEvents.onSaveGame -= WriteVersion;
-            GlobalEvents.onSaveGame += WriteVersion;
+            GlobalEvents.onSaveGame -= VersionCall;
+            GlobalEvents.onSaveGame += VersionCall;
         }
 
         /// <summary>

@@ -35,7 +35,9 @@ internal static partial class Program
 
         string lamps = Source(scripts, @"Performance\Tweaks\StaleLampLights.cs");
         Check(lamps.Length > 0 && !lamps.Contains("SceneFinds.") && lamps.Contains("PerfGame.Lamps("), "prewarm: the street lamps come from the game's own culling list, never a search of the scene");
-        Check(Source(scripts, @"Performance\PerfGame.cs").Contains("GetField(\"_cullables\""), "prewarm: the game's culling list is read through its field, looked up once");
+        Check(Source(scripts, @"Performance\PerfGame.cs").Contains("GameContract.CullList.Field")
+              && Source(scripts, @"Core\GameContract.cs").Contains("\"Culling.CullingGroupController\", \"_cullables\""),
+            "prewarm: the game's culling list is read through its field, looked up once (a line of the game contract: Core/GameContract)");
 
         string sky = Source(scripts, @"Performance\Tweaks\SkyThrottle.cs");
         Check(Body(sky, "protected override void Prewarm()").Contains("SceneFinds.All<Volume>") && Body(sky, "private void Sweep()").Contains("kept ?"), "prewarm: the skies are searched for behind the loading screen and the switch-on uses what was found");

@@ -281,7 +281,7 @@ namespace RealLifeOverhaul.Economy
                 bool hurt = EconomyBridges.Assault != null && EconomyBridges.Assault(ProductCatalogue.SharkInjuryHours, ProductCatalogue.SharkInjuryEnergy, "reallife_econ_note_shark_assault");
                 SharkRules.Pay(debt, taken);
                 debt.Waiting = SharkAct.None;
-                Notifications.Show(NotificationType.Error, "reallife_econ_note_shark_taken", Data("amount", FinanceText.Money(taken), "left", FinanceText.Money(debt.Owed)), 14f, null, _openLender, true, false);
+                Notifications.Show(NotificationType.Error, "reallife_econ_note_shark_taken", Data("amount", FinanceText.Money(taken), "left", FinanceText.Money(debt.Owed)), 14f, null, Guard.Wrap(_openLender), true, false);
                 if (Verbose)
                 {
                     Logger?.Info("Economy check (private lender, day " + day + "): the borrower was set upon in the street (" + (hurt ? "hurt as a mugging hurts" : "no injury could be given") + "); "
@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Economy
             int bill = SharkRules.DamageBill(debt.Owed);
             _wallet.Force(bill, Money.SharkDamage, shop.BusinessName);
             debt.Waiting = SharkAct.None;
-            Notifications.Show(NotificationType.Error, "reallife_econ_note_shark_damage", Data("business", shop.BusinessName, "amount", FinanceText.Money(bill)), 14f, null, _openLender, true, false);
+            Notifications.Show(NotificationType.Error, "reallife_econ_note_shark_damage", Data("business", shop.BusinessName, "amount", FinanceText.Money(bill)), 14f, null, Guard.Wrap(_openLender), true, false);
             if (Verbose)
             {
                 Logger?.Info("Economy check (private lender, day " + day + "): " + shop.BusinessName + " was damaged: a repair bill of " + bill + " (" + debt.Owed + " still owed): PASS");

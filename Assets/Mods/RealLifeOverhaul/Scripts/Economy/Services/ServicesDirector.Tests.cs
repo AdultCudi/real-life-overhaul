@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Economy
         {
             Logger?.Warn("Services test: " + what + ".");   // asked for by a button: written whether or not diagnostics are on
             Changed();
-            Notifications.Show(NotificationType.Info, "reallife_svc_test_done", null, 7f, null, () => Open(tab, pick), true, false);
+            Notifications.Show(NotificationType.Info, "reallife_svc_test_done", null, 7f, null, RealLifeOverhaul.Guard.Wrap(() => Open(tab, pick)), true, false);
             Open(tab, pick);
         }
 
@@ -294,7 +294,7 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Services check (a sale on paper, " + name + "): the value is its goodwill and its things, what is left is the price less investors and loans, and nothing of the game's was written: " + (sums ? "PASS" : "FAIL: the sums do not add up"));
                 Changed();
                 Notifications.Show(NotificationType.Info, "reallife_svc_test_paper", new System.Collections.Generic.Dictionary<string, string>(2) { { "business", name }, { "amount", ServicesText.Money(price) } }, 9f, null,
-                    () => Open(TabSale, "sell:" + place), true, false);
+                    RealLifeOverhaul.Guard.Wrap(() => Open(TabSale, "sell:" + place)), true, false);
                 Open(TabSale, "sell:" + place);
             });
         }

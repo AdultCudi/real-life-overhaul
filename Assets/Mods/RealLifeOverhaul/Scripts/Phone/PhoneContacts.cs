@@ -52,7 +52,7 @@ namespace RealLifeOverhaul
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, descriptionKey, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-            CallDialogFactory.RegisterDialog(dialogType, dialog);
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(dialog));
             if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
             {
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
@@ -83,7 +83,7 @@ namespace RealLifeOverhaul
         public EmergencyDialog()
         {
             npcNameKey = "reallife-911";
-            DialogController.current.ShowEntry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
             {
                 messageData = "reallife_911_greeting".Localize(),
                 ConfirmTextOverride = (Events.EventDirector.FireBurning ? "reallife_911_report_fire" : ReportLabel(CrimeDirector.Reportable())).Localize(),
@@ -91,7 +91,7 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_911_ambulance",
                 OnSecondOption = AskAmbulance,
                 OnCancel = PhoneContacts.HangUp
-            });
+            }));
         }
 
         // The first choice names whatever is actually happening near the caller.
@@ -170,16 +170,16 @@ namespace RealLifeOverhaul
             npcNameKey = "reallife-doctor";
             if (!ModState.IsSick)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_doctor_healthy"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_doctor_healthy")));
                 return;
             }
-            DialogController.current.ShowEntry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
             {
                 messageData = "reallife_doctor_offer".Localize(new { amount = ((float)LifeEvents.DoctorFee).ToCurrencyFormat() }),
                 ConfirmTextOverride = "reallife_doctor_pay".Localize(),
                 OnConfirm = Treat,
                 OnCancel = PhoneContacts.HangUp
-            });
+            }));
         }
 
         private static DialogEntry Treat()
@@ -200,10 +200,10 @@ namespace RealLifeOverhaul
             npcNameKey = "reallife-friend";
             if (ModState.LastFriendCallDay == TimeHelper.CurrentDay)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_friend_again"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_friend_again")));
                 return;
             }
-            DialogController.current.ShowEntry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
             {
                 messageData = "reallife_friend_greeting".Localize(),
                 ConfirmTextOverride = "reallife_friend_chat".Localize(),
@@ -214,7 +214,7 @@ namespace RealLifeOverhaul
                     return PhoneContacts.Closing("reallife_friend_bye");
                 },
                 OnCancel = PhoneContacts.HangUp
-            });
+            }));
         }
     }
 
@@ -225,10 +225,10 @@ namespace RealLifeOverhaul
             npcNameKey = "reallife-mom";
             if (ModState.LastMomCallDay == TimeHelper.CurrentDay)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_mom_again"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_mom_again")));
                 return;
             }
-            DialogController.current.ShowEntry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
             {
                 messageData = "reallife_mom_greeting".Localize(),
                 ConfirmTextOverride = "reallife_mom_chat".Localize(),
@@ -239,7 +239,7 @@ namespace RealLifeOverhaul
                     return PhoneContacts.Closing(ModState.IsSick ? "reallife_mom_bye_sick" : "reallife_mom_bye");
                 },
                 OnCancel = PhoneContacts.HangUp
-            });
+            }));
         }
     }
 }

@@ -589,7 +589,7 @@ namespace RealLifeOverhaul
             }
             else if (Ctx.Director != null && Ctx.Director.isActiveAndEnabled)
             {
-                Ctx.Director.StartCoroutine(WalkAfter(person, person.Lease, after));
+                Ctx.Director.StartCoroutine(Guard.Routine(WalkAfter(person, person.Lease, after)));
             }
         }
 

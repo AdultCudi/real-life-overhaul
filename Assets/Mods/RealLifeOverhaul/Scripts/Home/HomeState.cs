@@ -215,6 +215,7 @@ namespace RealLifeOverhaul
             string[] parts = text.Split(';');
             if (parts.Length < 2 || parts[0] != Version)
             {
+                SaveLines.Unreadable(data, Key, "it is not of a version this one knows");   // (kept as it is: Core/SaveLines)
                 return;   // a line this build does not know: the defaults, never a failed load
             }
             for (int i = 1; i < parts.Length; i++)

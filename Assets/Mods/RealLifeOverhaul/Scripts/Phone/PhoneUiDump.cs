@@ -14,6 +14,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PhoneUiDump : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "PhoneUiDump", typeof(PhoneUiDump));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int MaxDepth = 7;
         private const int MaxLinesPerRoot = 900;
 
@@ -23,6 +25,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (!Keys.Down(KeyAction.PhoneDump))
             {
                 return;

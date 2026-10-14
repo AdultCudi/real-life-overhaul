@@ -24,7 +24,7 @@ namespace RealLifeOverhaul
     {
         private const string MopItem = "ba:itemname_mop";   // the item the game's cleaning station hands over
 
-        private static readonly MethodInfo Click = typeof(MopController).GetMethod("OnFloorCellClick", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly MethodInfo Click = GameContract.MopClick.Method;   // (resolved once: Core/GameContract)
 
         private readonly IModLogger _logger;
         private UnityAction<DirtSpotObject> _onCell;
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _onCell = cell => mop.UseAtPlayerPosition();   // the game's public call, for the cell under the player
+                _onCell = Guard.Listener<DirtSpotObject>(cell => mop.UseAtPlayerPosition());   // the game's public call, for the cell under the player
                 _logger?.Warn("Jobs: the mop's click method was not found; the mop cleans the cell under the player instead.");
             }
             _event.AddListener(_onCell);

@@ -52,7 +52,7 @@ namespace RealLifeOverhaul
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_cityhall_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new CityHallDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new CityHallDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_cityhall_welcome"), notify: false);
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul
         public static void OpenBallot()
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(BallotName);
-            CallDialogFactory.RegisterDialog(dialogType, () => new BallotDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new BallotDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -78,7 +78,7 @@ namespace RealLifeOverhaul
         {
             NoticeSite = site;
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(NoticeName);
-            CallDialogFactory.RegisterDialog(dialogType, () => new SiteNoticeDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new SiteNoticeDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -153,10 +153,10 @@ namespace RealLifeOverhaul
             CivicDirector director = CivicDirector.Instance;
             if (director == null || !director.Running)
             {
-                DialogController.current.ShowEntry(CityHallPhone.Closing(CivicText.T("reallife_civic_closed")));
+                DialogController.current.ShowEntry(Guard.Entry(CityHallPhone.Closing(CivicText.T("reallife_civic_closed"))));
                 return;
             }
-            DialogController.current.ShowEntry(Topic(0));
+            DialogController.current.ShowEntry(Guard.Entry(Topic(0)));
         }
 
         private static CivicGovernment Gov => CivicDirector.Instance != null ? CivicDirector.Instance.Government : null;
@@ -756,7 +756,7 @@ namespace RealLifeOverhaul
         public BallotDialog()
         {
             npcNameKey = CityHallPhone.ContactId;
-            DialogController.current.ShowEntry(Ballot(0));
+            DialogController.current.ShowEntry(Guard.Entry(Ballot(0)));
         }
 
         private static DialogEntry Ballot(int index)
@@ -802,12 +802,12 @@ namespace RealLifeOverhaul
             SiteState site = CityHallPhone.NoticeSite;
             if (director == null || site == null || director.Works.Find(site.Id) == null)
             {
-                DialogController.current.ShowEntry(CityHallPhone.Closing(CivicText.T("reallife_civic_site_gone")));
+                DialogController.current.ShowEntry(Guard.Entry(CityHallPhone.Closing(CivicText.T("reallife_civic_site_gone"))));
                 return;
             }
             int id = site.Id;
-            DialogController.current.ShowEntry(CityHallPhone.Page(CityHallDialog.SiteText(director.Works, site, false),
-                "reallife_civic_button_site_actions", () => CityHallDialog.SiteAction(id, 0, -1)));
+            DialogController.current.ShowEntry(Guard.Entry(CityHallPhone.Page(CityHallDialog.SiteText(director.Works, site, false),
+                "reallife_civic_button_site_actions", () => CityHallDialog.SiteAction(id, 0, -1))));
         }
     }
 

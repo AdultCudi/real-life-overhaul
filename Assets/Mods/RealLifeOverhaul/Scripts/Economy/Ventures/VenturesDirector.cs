@@ -71,11 +71,11 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             Instance = this;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
             _openInvestors = () => Open(VenturesPhone.Investors);
             _fileClaim = amount => EconomyBridges.FileClaim != null ? EconomyBridges.FileClaim(amount) : 0;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -842,7 +842,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 10f, null, click, true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(click), true, false);
         }
 
         internal void Detail(string what)

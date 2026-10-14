@@ -218,7 +218,7 @@ namespace RealLifeOverhaul
                 }
                 _state = State.Loading;
                 AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(path);
-                opening.completed += _ => Opened(opening);
+                opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening));
             }
             catch (Exception e)
             {
@@ -237,7 +237,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 AssetBundleRequest reading = _bundle.LoadAssetAsync<TextAsset>(CatalogueName);
-                reading.completed += _ => Catalogued(reading);
+                reading.completed += Guard.Way<AsyncOperation>(_ => Catalogued(reading));
             }
             catch (Exception e)
             {
@@ -312,7 +312,7 @@ namespace RealLifeOverhaul
                 {
                     string captured = name;
                     AssetBundleRequest request = _bundle.LoadAssetAsync<Texture2D>(name);
-                    request.completed += _ => SharedArrived(captured, request);
+                    request.completed += Guard.Way<AsyncOperation>(_ => SharedArrived(captured, request));
                 }
             }
             catch (Exception e)
@@ -524,7 +524,7 @@ namespace RealLifeOverhaul
             bool mesh = key[0] == 'm';
             string name = key.Substring(2);
             AssetBundleRequest request = mesh ? _bundle.LoadAssetAsync<Mesh>(name) : _bundle.LoadAssetAsync<Texture2D>(name);
-            request.completed += _ =>
+            request.completed += Guard.Way<AsyncOperation>(_ =>
             {
                 try
                 {
@@ -553,7 +553,7 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Error(e);
                 }
-            };
+            });
         }
 
         // Every look that was waiting and now has all it needs is ready to wear.

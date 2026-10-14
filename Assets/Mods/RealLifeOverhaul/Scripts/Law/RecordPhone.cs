@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Law
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_records_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_records_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new RecordsDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new RecordsDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_records_welcome"), notify: false);
@@ -55,10 +55,10 @@ namespace RealLifeOverhaul.Law
             npcNameKey = RecordPhone.ContactId;
             if (!LawState.Loaded)
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_records_closed"));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_records_closed")));
                 return;
             }
-            DialogController.current.ShowEntry(Summary());
+            DialogController.current.ShowEntry(Guard.Entry(Summary()));
         }
 
         private static DialogEntry Summary()

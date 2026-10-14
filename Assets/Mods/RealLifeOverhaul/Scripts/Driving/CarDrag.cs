@@ -10,6 +10,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class CarDrag : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarDrag", typeof(CarDrag));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private Rigidbody _body;
         private float _coefficient;   // newtons per (m/s) squared
 
@@ -30,6 +32,23 @@ namespace RealLifeOverhaul
         private void FixedUpdate()
         {
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
+        {
             if (_body == null)
             {
                 enabled = false;   // the car was taken away under us

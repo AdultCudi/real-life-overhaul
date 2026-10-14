@@ -30,6 +30,8 @@ namespace RealLifeOverhaul
     /// </summary>
     internal sealed class SolidBrakes : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "SolidBrakes", typeof(SolidBrakes));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private struct Slot
         {
             public VehicleComponent Car;
@@ -127,6 +129,23 @@ namespace RealLifeOverhaul
         private void FixedUpdate()
         {
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
+        {
             float step = Time.fixedDeltaTime;
             for (int i = 0; i < _count; i++)
             {

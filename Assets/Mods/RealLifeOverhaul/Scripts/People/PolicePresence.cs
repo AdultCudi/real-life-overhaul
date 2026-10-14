@@ -28,6 +28,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PolicePresence : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "PolicePresence", typeof(PolicePresence));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float CheckInterval = 4f;
         private const float TickInterval = 0.5f;
         private const float MinDistance = 45f;
@@ -103,6 +105,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.time;
             bool anything = _carOut || _postOut;
             if (now < (anything ? Mathf.Min(_nextTick, _nextCheck) : _nextCheck))
@@ -128,7 +147,7 @@ namespace RealLifeOverhaul
                 // after the first on a game that lacks something it names (that one would come back at every look).
                 Logger?.Error(e);
                 Clear();
-                if (GameMembers.StandsDown(e, "police presence on the street"))
+                if (Guard.StandsDown(e, "police presence on the street"))
                 {
                     enabled = false;
                 }

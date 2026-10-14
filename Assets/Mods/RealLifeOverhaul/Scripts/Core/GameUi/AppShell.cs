@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
 using EnhancedUI.EnhancedScroller;
@@ -190,21 +191,41 @@ namespace RealLifeOverhaul.GameUi
         }
 
         // The row MyEmployees fills its table with: the "prefab" of the table's controller (BaTable.prefab, public).
-        // Read by name, so that a change to those classes costs this app its rows and not the mod its start.
+        // Through the game contract (Core/GameContract), so that a change to those classes costs this app its rows and not
+        // the mod its start.
         private static GameObject RowOf(GameObject myEmployees)
         {
+            Type table = GameContract.EmployeeTable.Type;
+            FieldInfo field = GameContract.EmployeeTableRow.Field;
+            if (table == null || field == null)
+            {
+                return null;
+            }
             MonoBehaviour[] scripts = myEmployees.GetComponentsInChildren<MonoBehaviour>(true);
             for (int i = 0; i < scripts.Length; i++)
             {
-                if (scripts[i] == null || scripts[i].GetType().Name != "EmployeeScrollerController")
+                if (scripts[i] == null || scripts[i].GetType() != table)
                 {
                     continue;
                 }
-                FieldInfo field = scripts[i].GetType().GetField("prefab", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
-                var prefab = field != null ? field.GetValue(scripts[i]) as Component : null;
+                var prefab = field.GetValue(scripts[i]) as Component;
                 return prefab != null ? prefab.gameObject : null;
             }
             return null;
+        }
+
+        // The colour field of a row's script, looked up once for each kind of row (the game's BaTableCellView<T>,
+        // checked by the game contract; null for a script that has none).
+        private static readonly Dictionary<Type, FieldInfo> RowColourFields = new Dictionary<Type, FieldInfo>(4);
+
+        private static FieldInfo RowColourOf(Type type)
+        {
+            if (!RowColourFields.TryGetValue(type, out FieldInfo field))
+            {
+                field = GameContract.RowChosenColour.Ok ? type.GetField(GameContract.RowChosenColour.Name, BindingFlags.Instance | BindingFlags.Public) : null;
+                RowColourFields[type] = field;
+            }
+            return field;
         }
 
         private void ReadRowColours()
@@ -212,7 +233,7 @@ namespace RealLifeOverhaul.GameUi
             MonoBehaviour[] scripts = RowPrefab.GetComponents<MonoBehaviour>();
             for (int i = 0; i < scripts.Length; i++)
             {
-                FieldInfo field = scripts[i] != null ? scripts[i].GetType().GetField("selectedBackgroundColor", BindingFlags.Instance | BindingFlags.Public) : null;
+                FieldInfo field = scripts[i] != null ? RowColourOf(scripts[i].GetType()) : null;
                 if (field != null && field.FieldType == typeof(Color))
                 {
                     RowSelected = (Color)field.GetValue(scripts[i]);

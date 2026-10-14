@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Economy
 
         private void Note(NotificationType type, string key, Dictionary<string, string> data, Action click = null, float seconds = 12f)
         {
-            Notifications.Show(type, key, data, seconds, null, click ?? _openAccounts, true, false);
+            Notifications.Show(type, key, data, seconds, null, Guard.Wrap(click ?? _openAccounts), true, false);
         }
 
         private static Dictionary<string, string> Data(string a, string av, string b = null, string bv = null, string c = null, string cv = null, string d = null, string dv = null)

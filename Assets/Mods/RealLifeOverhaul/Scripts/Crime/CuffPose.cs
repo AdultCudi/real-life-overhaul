@@ -20,6 +20,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class CuffPose : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "CuffPose", typeof(CuffPose));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int Slots = 2;
 
         private sealed class Cuffed
@@ -120,6 +122,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             try
             {
                 bool any = false;

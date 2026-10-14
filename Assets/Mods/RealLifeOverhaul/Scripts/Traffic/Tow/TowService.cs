@@ -39,6 +39,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TowService : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TowService", typeof(TowService));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickEvery = 0.25f;
         private const int QueueMost = 3;              // wrecks waiting at once; any more go as they always went
         private const float RetryEvery = 4f;          // seconds between tries to put the truck on the road
@@ -286,6 +288,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.time;
             try
             {
@@ -798,6 +817,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (_carried)
             {
                 Carry();

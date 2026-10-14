@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class PhotoMode : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "PhotoMode", typeof(PhotoMode));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private struct Filter
         {
             public string NameKey;
@@ -151,6 +153,23 @@ namespace RealLifeOverhaul.Leisure
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;

@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public sealed partial class NavDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "NavDirector", typeof(NavDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float Tick = 0.25f;
         private const float MarksEvery = 2f;
         private const double SliceMilliseconds = 0.4;   // of one frame, for a search under way
@@ -132,7 +134,7 @@ namespace RealLifeOverhaul.Nav
         {
             Instance = this;
             NavMarks.Reset();
-            _onMap = OnMap;
+            _onMap = Guard.Wrap<bool>(OnMap);
             OtherMods.Look(Logger);   // (done once for the city already; this costs a loop over the table)
             _voogle = OtherMods.VoogleRoute.Loaded;
         }
@@ -157,6 +159,23 @@ namespace RealLifeOverhaul.Nav
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_broken)
             {
                 return;

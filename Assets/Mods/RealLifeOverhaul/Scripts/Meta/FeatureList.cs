@@ -352,6 +352,7 @@ namespace RealLifeOverhaul.Meta
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
                 .Test("reallife_test_block_say", BlockTests.Say)
+                .Test("reallife_test_guard_fault", Guard.TestFault)   // five faults of a test entry point: the line in Player.log and the notice (Core/Guard)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)   // the notice a game older than the mod gets (Core/GameBuild)
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)    // a question the way the mod asks on such a game (Core/GameConfirm)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
@@ -1182,6 +1183,7 @@ namespace RealLifeOverhaul.Meta
             Economy.RotaGuide.AddFacts(Features.Add("economy_rota", "reallife_meta_title_economy_rota")
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
+                .Data(Economy.RotaStore.Key)   // (its line of choices: named when a save's line of it cannot be read, Core/SaveLines)
                 .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
 
             // Property: a market that moves, letting, works, selling, an agency, a hotel and car hire. Off, every building's

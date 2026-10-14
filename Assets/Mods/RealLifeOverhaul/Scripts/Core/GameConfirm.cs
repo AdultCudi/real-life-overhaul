@@ -13,17 +13,17 @@ namespace RealLifeOverhaul
     /// parameters; a build of the game before it (Build 3675) has no such method, and on it every method of the mod that
     /// asked a question could not be compiled at all, the opening of each of the mod's apps among them (Core/GameUi/PhoneApps).
     ///
-    /// So the game's method is named only here, in a small method of its own. On a game without it the first call
-    /// says so once in Player.log, and from then on the running game's own Show is found (once) and called with the
-    /// same answers: its parameters matched by name, then by place, any it has beyond these given their defaults.
-    /// Where none can be found the box is not shown, and that is said once; nothing is done in its place.
+    /// So the game's method is named only here, in a small method of its own. It is a line of the game contract
+    /// (Core/GameContract: ConfirmByKey, ConfirmByData), resolved as the mod starts: on a game without it
+    /// <see cref="Known"/> says so before any question is asked (and a call that finds it missing anyway says so once),
+    /// and the running game's own Show is found (once) and called with the same answers: its parameters matched by
+    /// name, then by place, any it has beyond these given their defaults. Where none can be found the box is not shown,
+    /// and that is said once; nothing is done in its place.
     ///
     /// Cost: one call more than the game's own; the search is made once, and only on a game that needs it.
     /// </summary>
     public static class GameConfirm
     {
-        public static IModLogger Logger;
-
         private const string TestKey = "reallife_test_build_box";
         private const string TestBodyKey = "reallife_test_build_box_body";
         private const string OkKey = "reallife_opt_ok";
@@ -32,6 +32,19 @@ namespace RealLifeOverhaul
         private static bool _looked, _toldOwn, _toldNone;
         private static MethodInfo _byKey, _byData;
         private static ParameterInfo[] _byKeyParameters, _byDataParameters;
+
+        /// <summary>From Core/Guard as the mod starts, once the contract is resolved: a game that lacks the Show the mod is built with is asked the way round from the first question.</summary>
+        public static void Known()
+        {
+            if (GameContract.ConfirmByKey.Missing || GameContract.ConfirmByData.Missing)
+            {
+                _direct = false;
+            }
+            _noOpen = GameContract.ConfirmOpen.Missing;
+            _noListening = GameContract.ConfirmListening.Missing;
+        }
+
+        private static bool _noOpen, _noListening;   // the box's two flags this game lacks (Core/GameContract)
 
         // The answers in the order of the game's own parameters.
         private static readonly string[] Names = { "headerKey", "bodyKey", "onConfirmAction", "onCancelAction", "confirmKey", "cancelKey", "allowConfirmationSkip", "isNegative" };
@@ -55,6 +68,8 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool TryShow(LanguageChangeEventDataHolder headerData, LanguageChangeEventDataHolder bodyData, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
+            onConfirmAction = Answer(onConfirmAction);
+            onCancelAction = Answer(onCancelAction);
             if (_direct)
             {
                 try
@@ -74,8 +89,8 @@ namespace RealLifeOverhaul
                 return true;
             }
             // A game whose Show takes keys only: the texts are put together here and shown as they are.
-            return TryShow(headerData.Key != null ? headerData.ToString() : null, bodyData.Key != null ? bodyData.ToString() : null,
-                           onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
+            return ByKey(headerData.Key != null ? headerData.ToString() : null, bodyData.Key != null ? bodyData.ToString() : null,
+                         onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
 
         /// <summary>
@@ -83,6 +98,18 @@ namespace RealLifeOverhaul
         /// has no question box the mod can call, so that nothing was shown.
         /// </summary>
         public static bool TryShow(string headerKey, string bodyKey, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
+        {
+            return ByKey(headerKey, bodyKey, Answer(onConfirmAction), Answer(onCancelAction), confirmKey, cancelKey, allowConfirmationSkip, isNegative);
+        }
+
+        // An answer of the question box runs inside the guard of the class it is written in (Core/Guard): a fault of it
+        // never reaches the game's own box, and counts for that class as its other entry points' do. Once for each question.
+        private static Action Answer(Action answer)
+        {
+            return answer != null ? Guard.Wrap(answer) : null;
+        }
+
+        private static bool ByKey(string headerKey, string bodyKey, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
             if (_direct)
             {
@@ -115,13 +142,18 @@ namespace RealLifeOverhaul
         {
             get
             {
+                if (_noOpen)
+                {
+                    return false;
+                }
                 try
                 {
                     return Open();
                 }
-                catch (Exception e) when (GameMembers.Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
-                    GameMembers.DoesWithout(e, "whether the game's question box is up");
+                    _noOpen = true;
+                    Guard.DoesWithout(e, "whether the game's question box is up");
                     return false;
                 }
             }
@@ -135,13 +167,18 @@ namespace RealLifeOverhaul
         {
             get
             {
+                if (_noListening)
+                {
+                    return true;
+                }
                 try
                 {
                     return Listening();
                 }
-                catch (Exception e) when (GameMembers.Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
-                    GameMembers.DoesWithout(e, "whether the game's question box is there");
+                    _noListening = true;
+                    Guard.DoesWithout(e, "whether the game's question box is there");
                     return true;
                 }
             }
@@ -161,11 +198,11 @@ namespace RealLifeOverhaul
                     return;
                 }
                 Call(_byKey, _byKeyParameters, Names, new object[] { TestKey, TestBodyKey, null, null, OkKey, null, false, false });
-                Logger?.Info("Game build check (test, question box): asked through the running game's own " + Describe(_byKeyParameters) + ", its parameters matched by name: PASS.");
+                Guard.Logger?.Info("Game build check (test, question box): asked through the running game's own " + Describe(_byKeyParameters) + ", its parameters matched by name: PASS.");
             }
             catch (Exception e)
             {
-                (Logger ?? GameMembers.Logger)?.Error(e);
+                Guard.Logger?.Error(e);
             }
         }
 
@@ -199,13 +236,13 @@ namespace RealLifeOverhaul
         // with the skip key held) is the caller's, as it always was.
         private static bool Lacks(Exception e)
         {
-            return GameMembers.Missing(e) && e.Message != null && e.Message.IndexOf("HudConfirm", StringComparison.Ordinal) >= 0;
+            return Guard.Missing(e) && e.Message != null && e.Message.IndexOf("HudConfirm", StringComparison.Ordinal) >= 0;
         }
 
         private static void NotDirect(Exception e)
         {
             _direct = false;
-            GameMembers.DoesWithout(e, "the mod's questions", "they are asked through the running game's own question box instead");
+            Guard.DoesWithout(e, "the mod's questions", "they are asked through the running game's own question box instead");
         }
 
         // ---------------------------------------------------------------- the running game's Show, by reflection
@@ -233,7 +270,17 @@ namespace RealLifeOverhaul
                 return _byKey != null || _byData != null;
             }
             _looked = true;
-            foreach (MethodInfo method in TypeOfBox().GetMethods(BindingFlags.Public | BindingFlags.Static))
+            Type box;
+            try
+            {
+                box = TypeOfBox();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the game's question box", "the mod's questions are not shown");
+                return false;
+            }
+            foreach (MethodInfo method in box.GetMethods(BindingFlags.Public | BindingFlags.Static))
             {
                 if (method.Name != "Show")
                 {
@@ -327,7 +374,7 @@ namespace RealLifeOverhaul
 
         private static void Say(string line)
         {
-            IModLogger logger = Logger ?? GameMembers.Logger;
+            IModLogger logger = Guard.Logger;
             if (logger != null)
             {
                 logger.Warn(line);

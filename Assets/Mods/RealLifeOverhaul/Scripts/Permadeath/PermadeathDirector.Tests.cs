@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Permadeath
             }
             Gather(_story, DeathCause.Test);
             Logger?.Info(Test + " test: " + _story.Write());
-            StartCoroutine(Reading());
+            StartCoroutine(Guard.Routine(Reading()));
         }
 
         private IEnumerator Reading()
@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Permadeath
                 return;
             }
             Logger?.Info(Test + " test: the fade, the obituary of a test, then back to the game; nothing is saved.");
-            StartCoroutine(Dying(DeathCause.Test, false));
+            StartCoroutine(Guard.Routine(Dying(DeathCause.Test, false)));
         }
 
         /// <summary>

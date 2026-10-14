@@ -26,6 +26,8 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     internal sealed class DeskWork : IPlayerActivity
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "DeskWork", typeof(DeskWork));   // the game's calls of it (Core/Guard)
+
         private readonly CareersDirector _director;
         private readonly EmployeeStationController _station;   // the game's station or the home computer; or null, and
         private readonly FitDesk _desk;                         // ...a fitted desk of the mod's
@@ -86,7 +88,7 @@ namespace RealLifeOverhaul.Careers
             _length = Math.Max(1, sitting.SkipMinutes);
             _done = 0;
             _state = PlayerActivityState.MovingTowardsActivity;
-            _director.StartCoroutine(Walk());
+            _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
         // As WorkActivity: a frame later the last step to the station; there, set to work.
@@ -155,38 +157,78 @@ namespace RealLifeOverhaul.Careers
 
         public bool BlocksAutoSave() => true;
 
-        public PlayerActivityState GetState() => _state;
+        public PlayerActivityState GetState()
+        {
+            if (FrameGuard.Off)
+            {
+                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+            }
+            try
+            {
+                return _state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+                return Guard.Ended(this);
+            }
+        }
 
         public PlayerActivityState GetStateBeforeFinishing() => _before;
 
         public void ChangeState(PlayerActivityState state)
         {
-            _state = state;
+            try
+            {
+                _state = state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public void Perform(int minutes)
         {
-            if (_state != PlayerActivityState.Running)
+            if (FrameGuard.Off)
             {
                 return;
             }
-            _done += minutes;
-            _sitting?.SkipWorked(Math.Min(_done, _length));
-            if (_done >= _length)
+            try
             {
-                Finish();
+                if (_state != PlayerActivityState.Running)
+                {
+                    return;
+                }
+                _done += minutes;
+                _sitting?.SkipWorked(Math.Min(_done, _length));
+                if (_done >= _length)
+                {
+                    Finish();
+                }
+                else if (_desk != null && Time.time >= _nextType)
+                {
+                    DeskGame.Type();
+                    _nextType = Time.time + UnityEngine.Random.Range(5f, 10f);
+                }
             }
-            else if (_desk != null && Time.time >= _nextType)
+            catch (Exception fault)
             {
-                DeskGame.Type();
-                _nextType = Time.time + UnityEngine.Random.Range(5f, 10f);
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         /// <summary>Over: by the end of the time, Stop working, the game calling it off. The minutes worked are settled.</summary>
         public void Finish()
         {
-            End(true);
+            try
+            {
+                End(true);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         /// <summary>The job is stopping for a reason of its own (it ended, the part was switched off): over, and nothing more is said to it.</summary>
@@ -258,7 +300,18 @@ namespace RealLifeOverhaul.Careers
 
         public LabelInfo GetHeadlineLabel()
         {
-            return _sitting != null && _state != PlayerActivityState.NotStarted ? DeskGame.Label(_sitting.SkipTitle, 0) : _title;
+            if (FrameGuard.Off)
+            {
+                return Guard.Blank();
+            }
+            try
+            {
+                return _sitting != null && _state != PlayerActivityState.NotStarted ? DeskGame.Label(_sitting.SkipTitle, 0) : _title;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, Guard.Blank());
+            }
         }
 
         public LabelInfo[] GetLabels()
@@ -268,28 +321,39 @@ namespace RealLifeOverhaul.Careers
 
         public ButtonInfo[] GetButtons()
         {
-            switch (_state)
+            if (FrameGuard.Off)
             {
-                case PlayerActivityState.NotStarted:
-                    if (_offer == null)
-                    {
-                        int n = 1 + (_canStart ? 1 : 0) + (_canLate ? 1 : 0), k = 0;
-                        _offer = new ButtonInfo[n];
-                        _offer[k++] = new ButtonInfo("CancelRealLifeWork", "common_cancel", "gray", Cancel, PlayerAction.Cancel);
-                        if (_canStart)
+                return (ButtonInfo[])null;
+            }
+            try
+            {
+                switch (_state)
+                {
+                    case PlayerActivityState.NotStarted:
+                        if (_offer == null)
                         {
-                            _offer[k++] = new ButtonInfo("StartRealLifeWork", "workui_start", "blue", StartDay, PlayerAction.Confirm);
+                            int n = 1 + (_canStart ? 1 : 0) + (_canLate ? 1 : 0), k = 0;
+                            _offer = new ButtonInfo[n];
+                            _offer[k++] = new ButtonInfo("CancelRealLifeWork", "common_cancel", "gray", Guard.Way(Cancel), PlayerAction.Cancel);
+                            if (_canStart)
+                            {
+                                _offer[k++] = new ButtonInfo("StartRealLifeWork", "workui_start", "blue", Guard.Wrap(StartDay), PlayerAction.Confirm);
+                            }
+                            if (_canLate)
+                            {
+                                _offer[k] = new ButtonInfo("LateRealLifeWork", "reallife_life_button_late", "blue", Guard.Wrap(StartLate), _canStart ? PlayerAction.SecondaryInteract : PlayerAction.Confirm);
+                            }
                         }
-                        if (_canLate)
-                        {
-                            _offer[k] = new ButtonInfo("LateRealLifeWork", "reallife_life_button_late", "blue", StartLate, _canStart ? PlayerAction.SecondaryInteract : PlayerAction.Confirm);
-                        }
-                    }
-                    return _offer;
-                case PlayerActivityState.Running:
-                    return _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeWork", "workui_stop", "gray", Finish, PlayerAction.Cancel) });
-                default:
-                    return null;
+                        return _offer;
+                    case PlayerActivityState.Running:
+                        return _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeWork", "workui_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) });
+                    default:
+                        return null;
+                }
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
             }
         }
 
@@ -299,7 +363,21 @@ namespace RealLifeOverhaul.Careers
 
         public int GetRemainingMinutesForTimeMachine() => Math.Max(0, _length - _done);
 
-        public Timestamp GetTimeMachineGoal() => TimeHelper.Now().AddMinutes(GetRemainingMinutesForTimeMachine());
+        public Timestamp GetTimeMachineGoal()
+        {
+            if (FrameGuard.Off)
+            {
+                return TimeHelper.Now();
+            }
+            try
+            {
+                return TimeHelper.Now().AddMinutes(GetRemainingMinutesForTimeMachine());
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, TimeHelper.Now());
+            }
+        }
 
         public bool HasProgressBar() => _state == PlayerActivityState.Running;
 
@@ -307,8 +385,19 @@ namespace RealLifeOverhaul.Careers
 
         public (string key, object arguments) GetProgressBarLabel()
         {
-            int left = Math.Max(0, _length - _done);
-            return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            if (FrameGuard.Off)
+            {
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                int left = Math.Max(0, _length - _done);
+                return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
         }
 
         public bool HasSlider() => false;

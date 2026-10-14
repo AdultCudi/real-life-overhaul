@@ -383,6 +383,7 @@ namespace RealLifeOverhaul
                 catch (System.Exception)
                 {
                     Clear();   // a damaged line costs the career, never the load
+                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
                 }
             }
         }

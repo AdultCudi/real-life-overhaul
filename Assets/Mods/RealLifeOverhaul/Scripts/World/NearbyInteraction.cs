@@ -13,6 +13,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class NearbyInteraction : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "NearbyInteraction", typeof(NearbyInteraction));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float DoorRange = 5f;
         private const float VehicleRange = 4.5f;
         private const float BuildingSearchRadius = 14f;
@@ -28,6 +30,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             // A job's key prompt is on screen, or the job has the key for the whole shift (flyers on foot): the key is its.
             if (!Settings.EnterWithKey || JobDirector.TakesInteractKey || TransitDirector.TakesInteractKey || CarOwnership.TakesInteractKey || HomeDirector.TakesInteractKey || GarageDirector.TakesInteractKey || Leisure.LeisureDirector.TakesInteractKey || SocialDirector.TakesInteractKey || TravelDirector.TakesInteractKey || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey || Law.LawDirector.TakesInteractKey || Roommates.RoommateDirector.TakesInteractKey || Ledger.LedgerDirector.TakesInteractKey || Careers.CareersDirector.TakesInteractKey || Tech.TechSites.TakesInteractKey)
             {
@@ -62,7 +81,7 @@ namespace RealLifeOverhaul
             {
                 if (vehicle != null)
                 {
-                    StartCoroutine(EnterVehicle(vehicle));
+                    StartCoroutine(Guard.Routine(EnterVehicle(vehicle)));
                 }
                 else if (Time.unscaledTime >= _nextHint)
                 {
@@ -77,7 +96,7 @@ namespace RealLifeOverhaul
             }
             else if (vehicle != null)
             {
-                StartCoroutine(EnterVehicle(vehicle));
+                StartCoroutine(Guard.Routine(EnterVehicle(vehicle)));
             }
         }
 

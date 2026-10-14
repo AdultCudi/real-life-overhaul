@@ -247,8 +247,8 @@ namespace RealLifeOverhaul.Fame
             _asks = asks;
             _good = _hard = 0;
             var type = (CallDialogType)ModEnumHash.GetSafeHash(InPersonType);
-            CallDialogFactory.RegisterDialog(type, () => new FameTalkDialog());
-            uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, closed, with);
+            CallDialogFactory.RegisterDialog(type, Guard.Maker(() => new FameTalkDialog()));
+            uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(closed), with);
             return true;
         }
 
@@ -349,7 +349,7 @@ namespace RealLifeOverhaul.Fame
                 FameDirector.Logger?.Error(e);
                 first = new DialogEntry { messageData = "reallife_fame_talk_line".Localize(new { text = FameText.T("reallife_fame_talk_gone") }) };
             }
-            DialogController.current.ShowEntry(first);
+            DialogController.current.ShowEntry(Guard.Entry(first));
         }
     }
 }

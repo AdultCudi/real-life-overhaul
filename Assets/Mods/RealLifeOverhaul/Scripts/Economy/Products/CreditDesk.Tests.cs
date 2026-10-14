@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Economy
 
         private void TestSaid(string key, string a = null, string av = null, string b = null, string bv = null)
         {
-            Notifications.Show(NotificationType.Info, key, a != null ? Data(a, av, b, bv) : null, 10f, null, _openAccounts, true, false);
+            Notifications.Show(NotificationType.Info, key, a != null ? Data(a, av, b, bv) : null, 10f, null, Guard.Wrap(_openAccounts), true, false);
         }
 
         private CreditAccount TestAccount(ProductKind kind)

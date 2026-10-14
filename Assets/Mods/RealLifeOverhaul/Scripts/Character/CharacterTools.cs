@@ -25,8 +25,6 @@ namespace RealLifeOverhaul
         private const int TextureAniso = 8;
         private const int SmallTexture = 64;   // the game's flat placeholder textures are 64 px
 
-        private static readonly BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-
         private static readonly List<Material> MaterialScratch = new List<Material>(8);
         private static readonly List<int> PropertyScratch = new List<int>(16);
         private static readonly List<Component> ComponentScratch = new List<Component>(16);
@@ -107,13 +105,12 @@ namespace RealLifeOverhaul
         {
             try
             {
-                Type type = typeof(PortraitGenerator);
-                var generator = type.GetField("_instance", Hidden)?.GetValue(null) as PortraitGenerator;
+                var generator = GameContract.PortraitInstance.Field?.GetValue(null) as PortraitGenerator;   // (resolved once: Core/GameContract)
                 if (generator == null)
                 {
                     return null;
                 }
-                return type.GetField("portraitAppearanceSetter", Hidden)?.GetValue(generator) as AppearanceSetter;
+                return GameContract.PortraitCharacter.Field?.GetValue(generator) as AppearanceSetter;
             }
             catch (Exception)
             {
@@ -169,11 +166,12 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        public static T ReadField<T>(object owner, string field) where T : class
+        /// <summary>A private field of the game's, read through its line of the game contract (null when it is not there).</summary>
+        public static T ReadField<T>(object owner, GameMember field) where T : class
         {
             try
             {
-                return owner?.GetType().GetField(field, Hidden | BindingFlags.Public)?.GetValue(owner) as T;
+                return owner != null && field.Field != null ? field.Field.GetValue(owner) as T : null;
             }
             catch (Exception)
             {

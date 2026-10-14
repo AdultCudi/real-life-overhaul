@@ -97,7 +97,7 @@ namespace RealLifeOverhaul
                     Page(LedgerId, "reallife_social_ledger_desc", "reallife_ledger_calldialogtype", () => new LedgerDialog(), "reallife_social_ledger_welcome");
                 }
                 var scene = (CallDialogType)ModEnumHash.GetSafeHash("reallife_socialscene_calldialogtype");
-                CallDialogFactory.RegisterDialog(scene, () => new SceneDialog());
+                CallDialogFactory.RegisterDialog(scene, Guard.Maker(() => new SceneDialog()));
             }
             catch (Exception e)
             {
@@ -123,7 +123,7 @@ namespace RealLifeOverhaul
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypes[person.Index]);
             contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
             int index = person.Index;
-            CallDialogFactory.RegisterDialog(dialogType, () => new PersonDialog(index));
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new PersonDialog(index)));
             if (welcome && (contact.messagesQueue == null || contact.messagesQueue.Count == 0))
             {
                 contact.SendMessage(new TextMessage(SocialCatalogue.OriginWelcome[(int)person.Origin], SocialLife.Data(person)), notify: false);
@@ -166,8 +166,8 @@ namespace RealLifeOverhaul
         public static void OpenInPerson(ThirdPersonCharacter with, Action onClosed)
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_socialscene_calldialogtype");
-            CallDialogFactory.RegisterDialog(dialogType, () => new SceneDialog());
-            InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog, null, onClosed, with);
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new SceneDialog()));
+            InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(onClosed), with);
         }
 
         public static bool DialogOpen
@@ -184,7 +184,7 @@ namespace RealLifeOverhaul
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, description, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             contact.callDialogTypeOverride = dialogType;
-            CallDialogFactory.RegisterDialog(dialogType, dialog);
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(dialog));
             if (welcomeKey != null && (contact.messagesQueue == null || contact.messagesQueue.Count == 0))
             {
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);

@@ -6,6 +6,7 @@ using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -952,7 +953,8 @@ namespace RealLifeOverhaul
             Unhook();
             if (car != null && car.vehicleController != null)
             {
-                car.vehicleController.onCollision.AddListener(OnCollision);
+                _onCollision = _onCollision ?? Guard.Listener<Collision>(OnCollision);   // (made once, through the guard: a fault never reaches the vehicle's own listeners)
+                car.vehicleController.onCollision.AddListener(_onCollision);
                 _hooked = car;
             }
         }
@@ -961,10 +963,12 @@ namespace RealLifeOverhaul
         {
             if (_hooked != null && _hooked.vehicleController != null)
             {
-                _hooked.vehicleController.onCollision.RemoveListener(OnCollision);
+                _hooked.vehicleController.onCollision.RemoveListener(_onCollision);
             }
             _hooked = null;
         }
+
+        private UnityAction<Collision> _onCollision;
 
         private void OnCollision(Collision collision)
         {

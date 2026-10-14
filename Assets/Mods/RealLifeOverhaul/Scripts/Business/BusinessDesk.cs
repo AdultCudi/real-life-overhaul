@@ -47,7 +47,7 @@ namespace RealLifeOverhaul
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.Business, "reallife_contact_business_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                CallDialogFactory.RegisterDialog(dialogType, () => new BusinessDeskDialog());
+                CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new BusinessDeskDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_business_welcome"), notify: false);
@@ -94,7 +94,7 @@ namespace RealLifeOverhaul
         {
             Focus = issue;
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
-            CallDialogFactory.RegisterDialog(dialogType, () => new BusinessDeskDialog());
+            CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new BusinessDeskDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
                 BusinessDirector.Logger?.Error(e);
                 entry = PhoneContacts.Closing("reallife_biz_desk_off");
             }
-            DialogController.current.ShowEntry(entry);
+            DialogController.current.ShowEntry(Guard.Entry(entry));
         }
 
         private static bool RacketListed =>

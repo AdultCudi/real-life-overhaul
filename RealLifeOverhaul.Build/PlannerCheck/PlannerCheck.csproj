@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Planner\PlannerModel.cs" Link="Mod\PlannerModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Planner\PlannerStore.cs" Link="Mod\PlannerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SaveLines.cs" Link="Mod\SaveLines.cs" />
   </ItemGroup>
 
 </Project>

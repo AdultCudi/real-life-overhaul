@@ -12,31 +12,55 @@ namespace RealLifeOverhaul.Ledger
     /// </summary>
     public sealed class NewsstandWheel : MonoBehaviour, IScrollHandler, IBeginDragHandler
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "NewsstandWheel", typeof(NewsstandWheel));   // the game's calls of it (Core/Guard)
+
         internal NewsstandGlide Glide;
         internal float Step = 120f;     // canvas units a notch
         private float _unit = 120f;     // the wheel's delta for one notch, as learnt
 
         public void OnScroll(PointerEventData data)
         {
-            if (Glide != null && data != null)
+            if (FrameGuard.Off)
             {
-                // A notch of the wheel is 1 from one input module, 6 or 120 from others: the smallest step seen is taken
-                // for one notch (between 1 and 120), so the page moves the same few lines a notch whichever it is.
-                float d = data.scrollDelta.y;
-                if (d == 0f)
+                return;
+            }
+            try
+            {
+                if (Glide != null && data != null)
                 {
-                    return;
+                    // A notch of the wheel is 1 from one input module, 6 or 120 from others: the smallest step seen is taken
+                    // for one notch (between 1 and 120), so the page moves the same few lines a notch whichever it is.
+                    float d = data.scrollDelta.y;
+                    if (d == 0f)
+                    {
+                        return;
+                    }
+                    _unit = Mathf.Clamp(Mathf.Min(_unit, Mathf.Abs(d)), 1f, 120f);
+                    Glide.By(-Mathf.Clamp(d / _unit, -5f, 5f) * Step);
                 }
-                _unit = Mathf.Clamp(Mathf.Min(_unit, Mathf.Abs(d)), 1f, 120f);
-                Glide.By(-Mathf.Clamp(d / _unit, -5f, 5f) * Step);
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
         public void OnBeginDrag(PointerEventData data)
         {
-            if (Glide != null)
+            if (FrameGuard.Off)
             {
-                Glide.Stop();
+                return;
+            }
+            try
+            {
+                if (Glide != null)
+                {
+                    Glide.Stop();
+                }
+            }
+            catch (System.Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
     }
@@ -48,6 +72,8 @@ namespace RealLifeOverhaul.Ledger
     /// </summary>
     public sealed class NewsstandGlide : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "NewsstandGlide", typeof(NewsstandGlide));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float Speed = 14f;       // how quickly it closes on the target: most of the way in a sixth of a second
 
         internal ScrollRect Scroll;
@@ -91,6 +117,23 @@ namespace RealLifeOverhaul.Ledger
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (Scroll == null || Scroll.content == null)
             {
                 enabled = false;

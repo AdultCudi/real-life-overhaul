@@ -199,7 +199,15 @@ namespace RealLifeOverhaul
             Loaded = true;
             if (data != null && data.TryGetValue(Key, out string text) && !string.IsNullOrEmpty(text))
             {
-                Parse(text);
+                try
+                {
+                    Parse(text);
+                }
+                catch (System.Exception)
+                {
+                    Clear();   // a damaged line costs this save's jobs, never the load
+                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
+                }
             }
             if (Day == 0)
             {

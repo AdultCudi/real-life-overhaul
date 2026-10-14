@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Ledger
     /// </summary>
     public sealed class LedgerPointer : EntityController
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerPointer", typeof(LedgerPointer));   // the game's calls of it (Core/Guard)
+
         public const string Header = "reallife_ledger_cta_header";
 
         private int[] _layers;
@@ -73,25 +75,43 @@ namespace RealLifeOverhaul.Ledger
 
         public override bool ShouldReactToIoEnter()
         {
-            return primaryInteractionEnabled && LedgerDirector.Instance != null && LedgerDirector.Instance.Running;
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return primaryInteractionEnabled && LedgerDirector.Instance != null && LedgerDirector.Instance.Running;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
         }
 
         // As the game's, and then the outlined paper goes back to the layer it came from.
         public override void OnIoExit()
         {
-            onIoExitEvent.Invoke();
-            onIoExitEvent.RemoveAllListeners();
-            OverlayManager overlays = InstanceBehavior<OverlayManager>.Instance;
-            if (overlays != null && overlays.IsShowingOverlayOverItem(this))
+            try
             {
-                overlays.HideSimpleOverlayAndClearCta();
-            }
-            for (int i = 0; renderers != null && i < renderers.Length; i++)
-            {
-                if (renderers[i] != null)
+                onIoExitEvent.Invoke();
+                onIoExitEvent.RemoveAllListeners();
+                OverlayManager overlays = InstanceBehavior<OverlayManager>.Instance;
+                if (overlays != null && overlays.IsShowingOverlayOverItem(this))
                 {
-                    renderers[i].gameObject.layer = _layers[i];
+                    overlays.HideSimpleOverlayAndClearCta();
                 }
+                for (int i = 0; renderers != null && i < renderers.Length; i++)
+                {
+                    if (renderers[i] != null)
+                    {
+                        renderers[i].gameObject.layer = _layers[i];
+                    }
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
 
@@ -116,14 +136,38 @@ namespace RealLifeOverhaul.Ledger
 
         private sealed class Behaviour : ICtaBehavior
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerCta.Behaviour", typeof(Behaviour));   // the game's calls of it (Core/Guard)
+
             public override bool ShouldShow(EntityController entityController)
             {
-                return entityController is LedgerPointer;
+                if (FrameGuard.Off)
+                {
+                    return false;
+                }
+                try
+                {
+                    return entityController is LedgerPointer;
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(FrameGuard, fault, false);
+                }
             }
 
             public override (string, Action) GetCta(EntityController entityController)
             {
-                return entityController is LedgerPointer ? (Read, Click) : ("", null);
+                if (FrameGuard.Off)
+                {
+                    return (string.Empty, (Action)null);
+                }
+                try
+                {
+                    return entityController is LedgerPointer ? (Read, Click) : ("", null);
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(FrameGuard, fault, (string.Empty, (Action)null));
+                }
             }
         }
 
@@ -145,7 +189,7 @@ namespace RealLifeOverhaul.Ledger
             }
             try
             {
-                FieldInfo field = typeof(CtaManager).GetField("CtaBehaviors", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                FieldInfo field = GameContract.CtaBehaviours.Field;   // (resolved once: Core/GameContract)
                 _list = field != null ? field.GetValue(null) as List<ICtaBehavior> : null;
                 if (_list == null)
                 {

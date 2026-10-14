@@ -28,6 +28,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PlayerKnockdown : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "PlayerKnockdown", typeof(PlayerKnockdown));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float SenseInterval = 0.1f;
         private const float SenseRadius = 0.55f;        // around the chest: the vehicle has to be touching
         private const float MinSpeed = 2f;              // m/s; slower than this is a bump, not a hit
@@ -79,6 +81,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.time;
             if (_down)
             {

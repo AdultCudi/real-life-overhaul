@@ -5,6 +5,7 @@ using GleyTrafficSystem;
 using NWH.VehiclePhysics2.Damage;
 using UI.Notification;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -15,6 +16,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CrashConsequences : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
         // Impact speeds in m/s (relative velocity of the two colliders).
         private const float LiabilitySpeed = 7f;    // ~25 km/h
@@ -33,6 +36,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             var gm = InstanceBehavior<GameManager>.Instance;
             var car = gm != null ? gm.selectedVehicle as CarController : null;
             if (car == _hookedCar)
@@ -42,7 +62,8 @@ namespace RealLifeOverhaul
             Unhook();
             if (car != null && car.vehicleController != null)
             {
-                car.vehicleController.onCollision.AddListener(OnCollision);
+                _onCollision = _onCollision ?? Guard.Listener<Collision>(OnCollision);   // (made once, through the guard: a fault never reaches the vehicle's own listeners)
+                car.vehicleController.onCollision.AddListener(_onCollision);
                 _hookedCar = car;
                 _hookedBody = car.GetComponent<Rigidbody>();   // looked up once per vehicle
             }
@@ -57,11 +78,13 @@ namespace RealLifeOverhaul
         {
             if (_hookedCar != null && _hookedCar.vehicleController != null)
             {
-                _hookedCar.vehicleController.onCollision.RemoveListener(OnCollision);
+                _hookedCar.vehicleController.onCollision.RemoveListener(_onCollision);
             }
             _hookedCar = null;
             _hookedBody = null;
         }
+
+        private UnityAction<Collision> _onCollision;
 
         private void OnCollision(Collision collision)
         {

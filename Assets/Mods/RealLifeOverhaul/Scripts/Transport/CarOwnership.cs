@@ -46,6 +46,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class CarOwnership : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "CarOwnership", typeof(CarOwnership));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float DriveTick = 0.5f;
         private const float IdleTick = 1f;
         private const float LowFuel = 0.15f;
@@ -111,7 +113,7 @@ namespace RealLifeOverhaul
             Instance = this;
             CarGarage.Reset();
             _roadside = new CarRoadside(this);
-            _cut = CutPedal;
+            _cut = Guard.Listener(CutPedal);   // (each physics step of the vehicle's input: a fault never reaches the vehicle's own: Core/Guard)
             _onHelp = HelpClicked;
             CarDash.Logger = Logger;
             GameUi.WorldPanel.Logger = Logger;
@@ -163,6 +165,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;
@@ -793,7 +812,7 @@ namespace RealLifeOverhaul
                 Notifications.ShowInsufficientMoney();
                 return false;
             }
-            StartCoroutine(Service(_car, _record, _kind, _serviceTotal, ServiceMinutes(_serviceItems)));
+            StartCoroutine(Guard.Routine(Service(_car, _record, _kind, _serviceTotal, ServiceMinutes(_serviceItems))));
             return true;
         }
 

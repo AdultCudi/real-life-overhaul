@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Interiors
     /// in) first read the save, from which an established business's effects come in. A line of its own so that a save
     /// read again by an older version of the mod keeps every business's file; a save without it meets the rules on the
     /// day it is first read.
+    ///
+    /// A line that is there but that this version cannot read at all (damaged, or of a later version whose shape it does
+    /// not know) is kept in the save exactly as it was read (Core/SaveLines, <see cref="Load"/>): it is never written over.
     /// </summary>
     public sealed class InteriorStore
     {
@@ -113,6 +116,43 @@ namespace RealLifeOverhaul.Interiors
                  .Append(',').Append(f.FirstDay.ToString(CultureInfo.InvariantCulture));
             }
             return w.ToString();
+        }
+
+        /// <summary>
+        /// Both lines of a save read (either may be missing). A line this version cannot read at all gives an empty store
+        /// or unset rules for the session, and is kept in the save as it was read (Core/SaveLines).
+        /// </summary>
+        public static InteriorStore Load(Dictionary<string, string> data)
+        {
+            string line = null, rules = null;
+            if (data != null)
+            {
+                data.TryGetValue(Key, out line);
+                data.TryGetValue(RulesKey, out rules);
+            }
+            InteriorStore store = Read(line);
+            if (!Readable(line))
+            {
+                SaveLines.Unreadable(data, Key, "its version is not one this version of the mod reads");
+            }
+            store.ReadRules(rules);
+            if (!string.IsNullOrEmpty(rules) && store.RulesFrom == InteriorFile.Unset)
+            {
+                SaveLines.Unreadable(data, RulesKey, "it could not be read");
+            }
+            return store;
+        }
+
+        /// <summary>True for a missing or empty line, and for one of the two versions this version of the mod reads.</summary>
+        public static bool Readable(string line)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                return true;
+            }
+            int bar = line.IndexOf('|');
+            string version = bar >= 0 ? line.Substring(0, bar) : line;
+            return version == Version || version == VersionOne;
         }
 
         public static InteriorStore Read(string line)

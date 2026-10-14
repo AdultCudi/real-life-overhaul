@@ -6,6 +6,7 @@ using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul.Leisure
 {
@@ -29,6 +30,8 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class LeisureSound : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "LeisureSound", typeof(LeisureSound));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int Rate = 22050;
         private const int Layers = 4;
         private const int Birds = 0, Crickets = 1, Hum = 2, Crowd = 3;
@@ -153,6 +156,23 @@ namespace RealLifeOverhaul.Leisure
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;
@@ -300,7 +320,7 @@ namespace RealLifeOverhaul.Leisure
                 TestRefusals.Tell(Logger, "Ambient sound", TestRefusal.NotLoaded, 0, "the loops are still being made");
                 return;
             }
-            sound.StartCoroutine(sound.Audition());
+            sound.StartCoroutine(Guard.Routine(sound.Audition()));
         }
 
         private System.Collections.IEnumerator Audition()
@@ -338,7 +358,8 @@ namespace RealLifeOverhaul.Leisure
             else if (!_hooked)
             {
                 _hooked = true;
-                gm.radioPlayer.onNewSong.AddListener(OnSong);
+                _onSong = _onSong ?? Guard.Listener<string>(OnSong);   // (made once, through the guard: Core/Guard)
+                gm.radioPlayer.onNewSong.AddListener(_onSong);
             }
         }
 
@@ -352,9 +373,11 @@ namespace RealLifeOverhaul.Leisure
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm != null && gm.radioPlayer != null)
             {
-                gm.radioPlayer.onNewSong.RemoveListener(OnSong);
+                gm.radioPlayer.onNewSong.RemoveListener(_onSong);
             }
         }
+
+        private UnityAction<string> _onSong;
 
         private void OnSong(string song)
         {

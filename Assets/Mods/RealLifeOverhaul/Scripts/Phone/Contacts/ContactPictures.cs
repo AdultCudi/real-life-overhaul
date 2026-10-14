@@ -171,7 +171,7 @@ namespace RealLifeOverhaul
             if (!_predefinedLooked)
             {
                 _predefinedLooked = true;
-                _predefined = typeof(ContactsApp).GetField("PredefinedContactIconSprites", BindingFlags.NonPublic | BindingFlags.Static);
+                _predefined = GameContract.ContactIcons.Field;   // (resolved once: Core/GameContract)
                 if (_predefined == null || _predefined.FieldType != typeof(Dictionary<string, Sprite>))
                 {
                     _predefined = null;

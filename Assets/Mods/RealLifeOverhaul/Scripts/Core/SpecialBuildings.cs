@@ -12,6 +12,7 @@ using UI.CurrentBuilding;
 using UI.Guiders;
 using UI.InGameUI;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -365,7 +366,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class SpecialNames : MonoBehaviour
     {
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "SpecialNames", typeof(SpecialNames));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const string ToLet = "common_available_for_rent";   // the game's state line on the card for a unit to let
         private const string NotToLet = "reallife_claimed_card";
 
@@ -409,20 +411,21 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             _instance = this;
-            _onEnter = _ => StartCoroutine(Soon());
-            _onMap = open =>
+            // The game's events get these through Core/Guard: a fault here never reaches the game's own handlers.
+            _onEnter = Guard.Wrap<Address>(_ => StartCoroutine(Guard.Routine(Soon())));
+            _onMap = Guard.Wrap<bool>(open =>
             {
                 if (open)
                 {
                     Search();
                 }
-            };
-            _onLanguage = () =>
+            });
+            _onLanguage = Guard.Wrap(() =>
             {
                 SpecialBuildings.Forget();
                 _searchOptions = null;
                 Changed();
-            };
+            });
             try
             {
                 LocalizorManager.OnLanguageChanged = (Action)Delegate.Combine(LocalizorManager.OnLanguageChanged, _onLanguage);
@@ -435,7 +438,7 @@ namespace RealLifeOverhaul
 
         private void Start()
         {
-            StartCoroutine(Look());
+            StartCoroutine(Guard.Routine(Look()));
         }
 
         private void OnDestroy()
@@ -445,7 +448,7 @@ namespace RealLifeOverhaul
                 LocalizorManager.OnLanguageChanged = (Action)Delegate.Remove(LocalizorManager.OnLanguageChanged, _onLanguage);
                 if (_destination != null)
                 {
-                    _destination.onClick.RemoveListener(Guiders);
+                    _destination.onClick.RemoveListener(_guiders);
                 }
             }
             catch (Exception)
@@ -513,13 +516,14 @@ namespace RealLifeOverhaul
             {
                 if (_destination != null)
                 {
-                    _destination.onClick.RemoveListener(Guiders);
+                    _destination.onClick.RemoveListener(_guiders);
                 }
                 _card = card;
                 _destination = card != null ? card.setDestinationButton : null;
                 if (_destination != null)
                 {
-                    _destination.onClick.AddListener(Guiders);   // (after the game's own: its listener is the button's own)
+                    _guiders = _guiders ?? Guard.Listener(Guiders);   // (made once, through the guard: Core/Guard)
+                    _destination.onClick.AddListener(_guiders);   // (after the game's own: its listener is the button's own)
                 }
             }
             bool on = SpecialBuildings.Active;
@@ -547,6 +551,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (ReferenceEquals(_card, null) || _cardFailed)
             {
                 return;
@@ -563,7 +584,7 @@ namespace RealLifeOverhaul
                 {
                     Card(target as CityBuildingController);
                 }
-                catch (Exception e) when (GameMembers.StandsDown(e, "the special buildings' names on the game's building card"))
+                catch (Exception e) when (Guard.StandsDown(e, "the special buildings' names on the game's building card"))
                 {
                     _cardFailed = true;   // (a game that lacks something the card names would fail at every building looked at)
                 }
@@ -612,6 +633,8 @@ namespace RealLifeOverhaul
 
         // Each guider set to an address: the special name on its marker, or the game's own words back where a name was
         // put and is no longer wanted. A few comparisons a second.
+        private UnityAction _guiders;
+
         private void Guiders()
         {
             List<DirectionGuider> all = GuidersManager.AllGuiders;
@@ -663,7 +686,7 @@ namespace RealLifeOverhaul
                 _inside = hud != null ? hud.currentBuildingUI : null;
                 if (_headlineField == null)
                 {
-                    _headlineField = typeof(CurrentBuildingUI).GetField("headlineLabel", Hidden);
+                    _headlineField = GameContract.BuildingHeadline.Field;   // (resolved once: Core/GameContract)
                 }
                 _headline = _inside != null && _headlineField != null ? _headlineField.GetValue(_inside) as TextMeshProUGUI : null;
             }
@@ -716,10 +739,10 @@ namespace RealLifeOverhaul
             {
                 if (_searchListField == null)
                 {
-                    _searchListField = typeof(CityMapFilters).GetField("_searchableBuildings", Hidden);
-                    _searchDropField = typeof(CityMapFilters).GetField("searchDropdown", Hidden);
-                    _optionsField = typeof(UI.Elements.Dropdown).GetField("_options", Hidden);
-                    _populate = typeof(CityMapFilters).GetMethod("PopulateSearchDropdown", Hidden);
+                    _searchListField = GameContract.SearchBuildings.Field;   // (the game's private pieces, resolved once: Core/GameContract)
+                    _searchDropField = GameContract.SearchDropdown.Field;
+                    _optionsField = GameContract.DropdownOptions.Field;
+                    _populate = GameContract.SearchPopulate.Method;
                 }
                 var listed = _searchListField != null ? _searchListField.GetValue(filters) as List<CityBuildingController> : null;
                 var drop = _searchDropField != null ? _searchDropField.GetValue(filters) as UI.Elements.Dropdown : null;

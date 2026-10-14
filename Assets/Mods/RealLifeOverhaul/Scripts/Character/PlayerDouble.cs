@@ -29,6 +29,8 @@ namespace RealLifeOverhaul
     [DefaultExecutionOrder(10000)]   // after the game's own LateUpdate work on the player's bones
     public class PlayerDouble : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("character", "PlayerDouble", typeof(PlayerDouble));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float RetrySeconds = 1f;
         private const int MinMatchedBones = 24;       // of the 40 in the city skeleton
         private const float MaxBoneGap = 0.25f;       // metres between a copied joint and the player's, at player scale 1
@@ -121,6 +123,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             try
             {
                 Tick();

@@ -132,9 +132,9 @@ namespace RealLifeOverhaul.Careers
                 _doorPress[i] = _door.Press(() => DoorPressed(slot));
                 _liftPress[i] = _lift.Press(() => LiftPressed(slot));
             }
-            _onEnter = Entered;
-            _onExit = Left;
-            _onNotice = Noticed;
+            _onEnter = Guard.Wrap<Address>(Entered);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onExit = Guard.Wrap<Address>(Left);
+            _onNotice = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(Noticed);
             _marks = new CampusMarks(logger);
         }
 
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Careers
             if (open && flat < WatchReach && !_watching)
             {
                 _watching = true;
-                _director.StartCoroutine(WatchClick());
+                _director.StartCoroutine(Guard.Routine(WatchClick()));
             }
             else if ((!open || flat >= WatchReach) && _watching)
             {
@@ -509,7 +509,7 @@ namespace RealLifeOverhaul.Careers
             asset.BuildingSize = SizeD;
             asset.BuildingVersion = SchoolVersion;
             _mutated = true;
-            _director.StartCoroutine(Settle());
+            _director.StartCoroutine(Guard.Routine(Settle()));
             if (Meta.Dev.Verbose)
             {
                 _logger?.Info("Careers check (university way in): " + why + ": the building read as D1 until the game has loaded it (was " + _wasSize + " " + _wasVersion + "): PASS");
@@ -611,7 +611,7 @@ namespace RealLifeOverhaul.Careers
                 _shadow = Shadow(manager.buildingRegistration, campus);
                 manager.buildingRegistration = _shadow;
                 manager.isOpen = OpenNow();
-                _director.StartCoroutine(Lay(++_built, _goCourse));
+                _director.StartCoroutine(Guard.Routine(Lay(++_built, _goCourse)));
                 _goCourse = -1;
             }
             catch (Exception e)
@@ -653,7 +653,7 @@ namespace RealLifeOverhaul.Careers
             if (open)
             {
                 _logger?.Info("Careers: the player is inside the university's building without its floors (a save made inside, or a way in the mod did not see); taken to floor 1.");
-                _director.StartCoroutine(Again());
+                _director.StartCoroutine(Guard.Routine(Again()));
             }
             else
             {
@@ -1037,7 +1037,7 @@ namespace RealLifeOverhaul.Careers
                 Tell("reallife_study_why_busy");
                 return;
             }
-            _director.StartCoroutine(Lift(floor, course));
+            _director.StartCoroutine(Guard.Routine(Lift(floor, course)));
         }
 
         private IEnumerator Lift(int floor, int course)
@@ -1102,7 +1102,7 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_game_busy";
             }
             _logger?.Info("Careers: the player walks to floor " + floor + ", room " + room + " for " + StudyCatalogue.Find(course).Key + ".");
-            player.SetGoal(door, () =>
+            player.SetGoal(door, Guard.Listener(() =>
             {
                 try
                 {
@@ -1115,7 +1115,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     _logger?.Error(e);
                 }
-            });
+            }));
             return null;
         }
 

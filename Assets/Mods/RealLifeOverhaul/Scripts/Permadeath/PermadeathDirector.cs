@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Permadeath
     /// </summary>
     public sealed partial class PermadeathDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("permadeath", "PermadeathDirector", typeof(PermadeathDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
         public static PermadeathDirector Instance { get; private set; }
 
@@ -64,7 +66,7 @@ namespace RealLifeOverhaul.Permadeath
             _onClosed = PageClosed;
             _onChanged = Resync;
             Settings.Changed += _onChanged;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -79,7 +81,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 // What follows must be done whatever this did: on a game lacking something Hold names it failed, and the
                 // switch below was left on for the next game begun (Core/GameMembers).
-                if (!GameMembers.DoesWithout(e, "letting the player walk again as the city closes"))
+                if (!Guard.DoesWithout(e, "letting the player walk again as the city closes"))
                 {
                     Logger?.Error(e);
                 }
@@ -97,6 +99,23 @@ namespace RealLifeOverhaul.Permadeath
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (!_pageUp)
             {
                 return;
@@ -148,7 +167,7 @@ namespace RealLifeOverhaul.Permadeath
             }
             if (PermadeathRules.Ended(PermadeathState.Dead, PermadeathState.Armed, _elsewhere))
             {
-                StartCoroutine(Ended());
+                StartCoroutine(Guard.Routine(Ended()));
                 return;
             }
             if (save.Day != _day)
@@ -477,7 +496,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 return false;
             }
-            StartCoroutine(Dying(cause, true));
+            StartCoroutine(Guard.Routine(Dying(cause, true)));
             return true;
         }
 

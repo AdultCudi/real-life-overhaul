@@ -50,17 +50,21 @@ namespace RealLifeOverhaul
             _hooked = on;
             if (on)
             {
-                GlobalEvents.onCityMapToggle += OnMapToggled;
-                GlobalEvents.onCityMapClosed += Reconcile;
+                GlobalEvents.onCityMapToggle += MapToggled;
+                GlobalEvents.onCityMapClosed += MapClosed;
             }
             else
             {
-                GlobalEvents.onCityMapToggle -= OnMapToggled;
-                GlobalEvents.onCityMapClosed -= Reconcile;
+                GlobalEvents.onCityMapToggle -= MapToggled;
+                GlobalEvents.onCityMapClosed -= MapClosed;
             }
         }
 
         private static void OnMapToggled(bool open) => Reconcile();
+
+        // The game's events get these: a fault here never reaches the game's own handlers of the map (Core/Guard).
+        private static readonly System.Action<bool> MapToggled = Guard.Wrap<bool>(OnMapToggled);
+        private static readonly System.Action MapClosed = Guard.Wrap(Reconcile);
 
         /// <summary>Brings the camera in line: also follows the game to a new main camera and a changed far plane.</summary>
         public static void Reconcile()

@@ -36,23 +36,36 @@ namespace RealLifeOverhaul.Meta
         /// <summary>The row that makes the box. The game has no text field on this page, so it is built here.</summary>
         private sealed class SearchRow : ModOption
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.SearchRow", typeof(SearchRow));   // the game's calls of it (Core/Guard)
+
             public SearchRow() : base(null, string.Empty)
             {
             }
 
             public override void SpawnUi(Transform parent, string modId)
             {
-                if (_searchFailed || parent == null)
+                if (FrameGuard.Off)
                 {
                     return;
                 }
                 try
                 {
-                    _box = SearchBox.Make(parent, Last(parent));
+                    if (_searchFailed || parent == null)
+                    {
+                        return;
+                    }
+                    try
+                    {
+                        _box = SearchBox.Make(parent, Last(parent));
+                    }
+                    catch (Exception e)
+                    {
+                        SearchFailed(e);
+                    }
                 }
-                catch (Exception e)
+                catch (Exception fault)
                 {
-                    SearchFailed(e);
+                    Guard.Fail(FrameGuard, fault);
                 }
             }
         }
@@ -396,8 +409,8 @@ namespace RealLifeOverhaul.Meta
                 _field.enabled = false;
                 _field.enabled = true;
                 _field.onValueChanged.AddListener(Changed);
-                _field.onSelect.AddListener(Selected);
-                _field.onDeselect.AddListener(Deselected);
+                _field.onSelect.AddListener(Guard.Listener<string>(Selected));   // (the two with no try of their own: through the guard, Core/Guard)
+                _field.onDeselect.AddListener(Guard.Listener<string>(Deselected));
                 _field.onEndEdit.AddListener(Ended);
 
                 _top = gameObject.AddComponent<ScrollToTop>();
@@ -610,6 +623,8 @@ namespace RealLifeOverhaul.Meta
         /// </summary>
         private sealed class ScrollToTop : MonoBehaviour
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.ScrollToTop", typeof(OptionsLayout.ScrollToTop));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
             public ScrollRect Scroll;
 
             private GameObject _anchor;
@@ -630,6 +645,23 @@ namespace RealLifeOverhaul.Meta
             private void LateUpdate()
             {
                 using var hotSpot = HotSpots.Time(HotLateUpdate);
+                if (FrameGuard.Off)
+                {
+                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    return;
+                }
+                try
+                {
+                    OnLateUpdate();
+                }
+                catch (System.Exception e)
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+            }
+
+            private void OnLateUpdate()
+            {
                 try
                 {
                     Place();

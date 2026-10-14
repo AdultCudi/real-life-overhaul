@@ -107,8 +107,8 @@ namespace RealLifeOverhaul
             _pay = Pay;
             _stock = Stock;
             _mix = MixOpen;
-            _onMixing = Mixing;
-            _onMixed = Mixed;
+            _onMixing = Guard.Wrap<Color>(Mixing);   // (the game's paint picker calls them: Core/Guard)
+            _onMixed = Guard.Wrap<Color>(Mixed);
         }
 
         public bool IsOpen => _open;
@@ -1123,17 +1123,41 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class GarageDragArea : MonoBehaviour, IDragHandler, IScrollHandler
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "GarageDragArea", typeof(GarageDragArea));   // the game's calls of it (Core/Guard)
+
         public Action<Vector2> Dragged;
         public Action<float> Scrolled;
 
         public void OnDrag(PointerEventData data)
         {
-            Dragged?.Invoke(data.delta);
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                Dragged?.Invoke(data.delta);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public void OnScroll(PointerEventData data)
         {
-            Scrolled?.Invoke(data.scrollDelta.y);
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                Scrolled?.Invoke(data.scrollDelta.y);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
     }
 }

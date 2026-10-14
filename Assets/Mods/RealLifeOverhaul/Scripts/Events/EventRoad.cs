@@ -475,6 +475,8 @@ namespace RealLifeOverhaul.Events
     /// </summary>
     internal sealed class BarFlash : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("events", "BarFlash", typeof(BarFlash));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public Renderer Left;
         public Renderer Right;
         public float Interval;
@@ -485,6 +487,23 @@ namespace RealLifeOverhaul.Events
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             int shown = Interval > 0f && Mathf.FloorToInt(Time.unscaledTime / Interval) % 2 == 0 ? 0 : 1;
             if (shown != _shown)
             {

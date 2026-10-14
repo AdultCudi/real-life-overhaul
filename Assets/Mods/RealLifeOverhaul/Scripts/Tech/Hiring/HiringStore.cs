@@ -33,10 +33,11 @@ namespace RealLifeOverhaul.Tech
             }
             try
             {
-                return Read(text, out version);
+                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
             }
             catch (Exception)
             {
+                SaveLines.Unreadable(data, Key, "it could not be read");
                 return null;
             }
         }

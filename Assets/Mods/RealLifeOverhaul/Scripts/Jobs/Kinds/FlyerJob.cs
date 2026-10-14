@@ -438,7 +438,7 @@ namespace RealLifeOverhaul
                 // Someone standing about stays where they are and is the game's throughout: they only turn, and turn back after.
                 _turned = true;
                 _turnedFrom = person.transform.rotation;
-                Ctx.Director.StartCoroutine(Turn(person.transform, Facing(person.transform.position, player), 0.25f));
+                Ctx.Director.StartCoroutine(Guard.Routine(Turn(person.transform, Facing(person.transform.position, player), 0.25f)));
             }
             Ctx.TurnPlayer(person.transform.position);
 
@@ -629,7 +629,7 @@ namespace RealLifeOverhaul
             {
                 if (Ctx != null && Ctx.Director != null && Ctx.Director.isActiveAndEnabled)
                 {
-                    Ctx.Director.StartCoroutine(Turn(person.transform, _turnedFrom, 0.3f));
+                    Ctx.Director.StartCoroutine(Guard.Routine(Turn(person.transform, _turnedFrom, 0.3f)));
                 }
                 else
                 {

@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Tech
             {
                 if (!_lifting && isActiveAndEnabled)
                 {
-                    StartCoroutine(Lift(floor));
+                    StartCoroutine(Guard.Routine(Lift(floor)));
                 }
             };
             _fronts = new Frontages(Logger);
@@ -87,10 +87,10 @@ namespace RealLifeOverhaul.Tech
             _hqFloor = new FitOut.FitView(Logger);
             _hqFloor.Built += HqFloorBuilt;
             _office = new OfficeView(Logger);
-            _onEnter = _ => Soon();
-            _onExit = _ => Soon();
-            StartCoroutine(Tick());
-            StartCoroutine(Lights());
+            _onEnter = Guard.Wrap<Address>(_ => Soon());   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onExit = Guard.Wrap<Address>(_ => Soon());
+            StartCoroutine(Guard.Routine(Tick()));
+            StartCoroutine(Guard.Routine(Lights()));
         }
 
         private void OnDestroy()
@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Tech
             if (!_soon && isActiveAndEnabled)
             {
                 _soon = true;
-                StartCoroutine(SoonAfter());
+                StartCoroutine(Guard.Routine(SoonAfter()));
             }
         }
 

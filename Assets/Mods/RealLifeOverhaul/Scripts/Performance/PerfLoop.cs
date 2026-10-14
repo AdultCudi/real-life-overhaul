@@ -63,6 +63,8 @@ namespace RealLifeOverhaul
         private int _begun = -1;          // the camera whose 'begin' was the last callback, or -1
         private int _contexts;
         private bool _hooked;
+        private Action<ScriptableRenderContext, List<Camera>> _onBeginContext, _onEndContext;   // made once, through the guard: a fault never reaches the render pipeline (Core/Guard)
+        private Action<ScriptableRenderContext, Camera> _onBeginCamera, _onEndCamera;
 
         public bool IsOpen => _installed;
 
@@ -122,10 +124,14 @@ namespace RealLifeOverhaul
             PlayerLoop.SetPlayerLoop(timedLoop);
             _installed = true;
 
-            RenderPipelineManager.beginContextRendering += OnBeginContext;
-            RenderPipelineManager.beginCameraRendering += OnBeginCamera;
-            RenderPipelineManager.endCameraRendering += OnEndCamera;
-            RenderPipelineManager.endContextRendering += OnEndContext;
+            _onBeginContext = _onBeginContext ?? Guard.Wrap<ScriptableRenderContext, List<Camera>>(OnBeginContext);
+            _onBeginCamera = _onBeginCamera ?? Guard.Wrap<ScriptableRenderContext, Camera>(OnBeginCamera);
+            _onEndCamera = _onEndCamera ?? Guard.Wrap<ScriptableRenderContext, Camera>(OnEndCamera);
+            _onEndContext = _onEndContext ?? Guard.Wrap<ScriptableRenderContext, List<Camera>>(OnEndContext);
+            RenderPipelineManager.beginContextRendering += _onBeginContext;
+            RenderPipelineManager.beginCameraRendering += _onBeginCamera;
+            RenderPipelineManager.endCameraRendering += _onEndCamera;
+            RenderPipelineManager.endContextRendering += _onEndContext;
             _hooked = true;
         }
 
@@ -135,10 +141,10 @@ namespace RealLifeOverhaul
             if (_hooked)
             {
                 _hooked = false;
-                RenderPipelineManager.beginContextRendering -= OnBeginContext;
-                RenderPipelineManager.beginCameraRendering -= OnBeginCamera;
-                RenderPipelineManager.endCameraRendering -= OnEndCamera;
-                RenderPipelineManager.endContextRendering -= OnEndContext;
+                RenderPipelineManager.beginContextRendering -= _onBeginContext;
+                RenderPipelineManager.beginCameraRendering -= _onBeginCamera;
+                RenderPipelineManager.endCameraRendering -= _onEndCamera;
+                RenderPipelineManager.endContextRendering -= _onEndContext;
             }
             if (!_installed)
             {

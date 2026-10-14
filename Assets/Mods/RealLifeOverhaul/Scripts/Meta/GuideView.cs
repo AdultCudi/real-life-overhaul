@@ -28,6 +28,8 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public sealed class GuideTable : BaTable<GuideCellView, GuideRow>
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideTable", typeof(GuideTable));   // the game's calls of it (Core/Guard)
+
         private bool _started;
 
         public override void Start()
@@ -39,12 +41,34 @@ namespace RealLifeOverhaul.Meta
 
         public override float GetCellViewSize(EnhancedScroller scroller, int dataIndex)
         {
-            return dataIndex >= 0 && dataIndex < data.Count ? data[dataIndex].Height : 100f;
+            if (FrameGuard.Off)
+            {
+                return 100f;
+            }
+            try
+            {
+                return dataIndex >= 0 && dataIndex < data.Count ? data[dataIndex].Height : 100f;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 100f);
+            }
         }
 
         protected override string GetDataId(GuideRow model)
         {
-            return model.Id ?? model.Text;
+            if (FrameGuard.Off)
+            {
+                return string.Empty;
+            }
+            try
+            {
+                return model.Id ?? model.Text;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, string.Empty);
+            }
         }
 
         /// <summary>Shows these rows. The first time the app opens this runs before the scroller has woken up: the rows are kept and Start shows them.</summary>
@@ -67,6 +91,8 @@ namespace RealLifeOverhaul.Meta
     /// <summary>A row: the game's MyEmployees row with one cell left, wrapped, written from a <see cref="GuideRow"/>.</summary>
     public sealed class GuideCellView : BaTableCellView<GuideRow>
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideCellView", typeof(GuideCellView));   // the game's calls of it (Core/Guard)
+
         private TMP_Text _text;
         private GuideRow _row;
         private bool _bound;
@@ -93,34 +119,63 @@ namespace RealLifeOverhaul.Meta
 
         public override void SetData(GuideRow row)
         {
-            if (!gameObject.activeSelf)
+            if (FrameGuard.Off)
             {
-                gameObject.SetActive(true);
+                return;
             }
-            Bind();
-            _row = row;
-            if (_text != null)
+            try
             {
-                _text.text = row.Text ?? string.Empty;
-                _text.fontStyle = row.Look == GuideView.Heading || row.Look == GuideView.Topic ? FontStyles.Bold : FontStyles.Normal;
+                if (!gameObject.activeSelf)
+                {
+                    gameObject.SetActive(true);
+                }
+                Bind();
+                _row = row;
+                if (_text != null)
+                {
+                    _text.text = row.Text ?? string.Empty;
+                    _text.fontStyle = row.Look == GuideView.Heading || row.Look == GuideView.Topic ? FontStyles.Bold : FontStyles.Normal;
+                }
+                Look(false);
             }
-            Look(false);
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public override void ResetVisuals()
         {
-            Look(false);
+            try
+            {
+                Look(false);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         public override void VisualizeSelected(bool selected)
         {
-            if (_row == null || _row.Look != GuideView.Topic || backgroundImage == null)
+            if (FrameGuard.Off)
             {
-                Look(false);   // a line of text is not something to select
                 return;
             }
-            base.VisualizeSelected(selected);
-            Look(selected);
+            try
+            {
+                if (_row == null || _row.Look != GuideView.Topic || backgroundImage == null)
+                {
+                    Look(false);   // a line of text is not something to select
+                    return;
+                }
+                base.VisualizeSelected(selected);
+                Look(selected);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
         private void Look(bool selected)

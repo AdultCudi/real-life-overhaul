@@ -44,9 +44,9 @@ namespace RealLifeOverhaul.Tech
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
-            StartCoroutine(Tick());
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -311,7 +311,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A notification of the game's that opens the Open Roles app on a tab with a row picked.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
-            Notifications.Show(type, key, data, 10f, null, () => OpenRoles(tab, pick), true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(() => OpenRoles(tab, pick)), true, false);
         }
 
         /// <summary>Something changed: the open apps are written again.</summary>

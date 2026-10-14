@@ -401,7 +401,7 @@ namespace RealLifeOverhaul
                 return;
             }
             city.cityMap.ToggleSubwayMode(true);
-            _host.StartCoroutine(PickOnMap(to));
+            _host.StartCoroutine(Guard.Routine(PickOnMap(to)));
         }
 
         // The game's map pauses the game's clock: this waits on the interface's.
@@ -449,7 +449,7 @@ namespace RealLifeOverhaul
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_transit_desc", null, false, true);
                 var dialogType = (Dialogs.CallDialogType)ModEnumHash.GetSafeHash("reallife_transit_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
-                Dialogs.CallDialogFactory.RegisterDialog(dialogType, () => new TransitDialog());
+                Dialogs.CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new TransitDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage("reallife_text_transit_welcome"), notify: false);
@@ -504,7 +504,7 @@ namespace RealLifeOverhaul
                 entry.ConfirmTextOverride = "reallife_transit_call_thanks".Localize();
                 entry.OnConfirm = () => PhoneContacts.Closing("reallife_transit_call_bye");
             }
-            DialogController.current.ShowEntry(entry);
+            DialogController.current.ShowEntry(Guard.Entry(entry));
         }
     }
 

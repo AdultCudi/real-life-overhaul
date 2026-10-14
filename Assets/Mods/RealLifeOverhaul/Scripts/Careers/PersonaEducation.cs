@@ -49,7 +49,6 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed class PersonaEducation : MonoBehaviour
     {
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
         private static FieldInfo _template, _header, _status, _check;
         private static bool _resolved, _works, _noBox;
         private static PersonaEducation _on;
@@ -101,10 +100,10 @@ namespace RealLifeOverhaul.Careers
             _resolved = true;
             try
             {
-                _template = typeof(EducationInfo).GetField("educationEntryTemplate", Hidden);
-                _header = typeof(EducationInfoEntry).GetField("headerLabel", Hidden);
-                _status = typeof(EducationInfoEntry).GetField("statusLabel", Hidden);
-                _check = typeof(EducationInfoEntry).GetField("checkmarkObj", Hidden);
+                _template = GameContract.EducationTemplate.Field;   // (the game's private pieces, resolved once as the mod starts: Core/GameContract)
+                _header = GameContract.EducationHeader.Field;
+                _status = GameContract.EducationStatus.Field;
+                _check = GameContract.EducationCheck.Field;
                 _works = _template != null && _header != null && _status != null && _check != null;
             }
             catch (Exception e)
@@ -130,7 +129,7 @@ namespace RealLifeOverhaul.Careers
                 if (_box != null && isActiveAndEnabled)
                 {
                     Size(-1f);   // the game's own height while the game's rows stand alone (last time's rows go this frame)
-                    StartCoroutine(Build());
+                    StartCoroutine(Guard.Routine(Build()));
                 }
             }
             catch (Exception e)
@@ -148,7 +147,7 @@ namespace RealLifeOverhaul.Careers
             {
                 Fill();
             }
-            catch (Exception e) when (GameMembers.StandsDown(e, "the mod's courses in the Persona app's education box"))
+            catch (Exception e) when (Guard.StandsDown(e, "the mod's courses in the Persona app's education box"))
             {
                 _works = false;
             }

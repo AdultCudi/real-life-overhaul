@@ -91,9 +91,9 @@ namespace RealLifeOverhaul.Economy
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogNames[which]);
             switch (which)
             {
-                case Collections: CallDialogFactory.RegisterDialog(dialogType, () => new CollectionsDialog()); break;
-                case Lender: CallDialogFactory.RegisterDialog(dialogType, () => new LenderDialog()); break;
-                default: CallDialogFactory.RegisterDialog(dialogType, () => new DebtAdviceDialog()); break;
+                case Collections: CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new CollectionsDialog())); break;
+                case Lender: CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new LenderDialog())); break;
+                default: CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new DebtAdviceDialog())); break;
             }
             return dialogType;
         }
@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Economy
             {
                 // the notification below still tells them
             }
-            Notifications.Show(NotificationType.Warning, key, data, 14f, null, click, true, false);
+            Notifications.Show(NotificationType.Warning, key, data, 14f, null, Guard.Wrap(click), true, false);
         }
 
         internal static string Money(float amount)
@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Economy
         public CollectionsDialog()
         {
             npcNameKey = DebtPhone.ContactIds[DebtPhone.Collections];
-            DialogController.current.ShowEntry(DebtPhone.Safe(First));
+            DialogController.current.ShowEntry(Guard.Entry(DebtPhone.Safe(First)));
         }
 
         private static DialogEntry First()
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Economy
         public LenderDialog()
         {
             npcNameKey = DebtPhone.ContactIds[DebtPhone.Lender];
-            DialogController.current.ShowEntry(DebtPhone.Safe(First));
+            DialogController.current.ShowEntry(Guard.Entry(DebtPhone.Safe(First)));
         }
 
         private static DialogEntry First()
@@ -356,7 +356,7 @@ namespace RealLifeOverhaul.Economy
         public DebtAdviceDialog()
         {
             npcNameKey = DebtPhone.ContactIds[DebtPhone.Advice];
-            DialogController.current.ShowEntry(DebtPhone.Safe(First));
+            DialogController.current.ShowEntry(Guard.Entry(DebtPhone.Safe(First)));
         }
 
         private static DialogEntry First()

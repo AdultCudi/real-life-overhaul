@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Events
     /// </summary>
     public sealed class EventDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("events", "EventDirector", typeof(EventDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const string StateKey = "reallife:events";
         private const string BulletinId = "reallife-bulletin";
         private const float RollInterval = 20f;
@@ -166,6 +168,23 @@ namespace RealLifeOverhaul.Events
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;
@@ -615,6 +634,10 @@ namespace RealLifeOverhaul.Events
                         FireDamage.ClosedKey = parts[5];
                         FireDamage.ReopenAt = reopen;
                     }
+                }
+                else
+                {
+                    SaveLines.Unreadable(save.modData, StateKey, "it has fewer parts than this version of the mod reads");   // (kept as it was read: Core/SaveLines)
                 }
             }
             EventCalendar.Salt = salt != 0 ? salt : Random.Range(1, int.MaxValue);

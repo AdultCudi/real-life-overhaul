@@ -842,7 +842,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A notification of the game's that opens the Tech app on a tab with a row picked.</summary>
         internal void Tell2(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
-            Notifications.Show(type, key, data, 10f, null, () => OpenTech(tab, pick), true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(() => OpenTech(tab, pick)), true, false);
         }
     }
 }

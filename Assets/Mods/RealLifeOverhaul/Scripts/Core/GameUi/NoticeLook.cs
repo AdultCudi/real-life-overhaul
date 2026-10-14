@@ -113,8 +113,8 @@ namespace RealLifeOverhaul.GameUi
         private void Awake()
         {
             Instance = this;
-            _onShow = Shown;
-            _onRow = RowShown;
+            _onShow = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(Shown);   // (the game's own events: Core/Guard)
+            _onRow = new CellViewVisibilityChangedDelegate(Guard.Wrap<EnhancedScrollerCellView>(RowShown));
         }
 
         private void OnDestroy()
@@ -420,7 +420,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 look.StopCoroutine(look._test);
             }
-            look._test = look.StartCoroutine(look.ShowEach());
+            look._test = look.StartCoroutine(Guard.Routine(look.ShowEach()));
         }
 
         private IEnumerator ShowEach()

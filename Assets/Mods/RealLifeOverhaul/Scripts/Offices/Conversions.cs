@@ -88,8 +88,8 @@ namespace RealLifeOverhaul.Offices
         private void Awake()
         {
             Instance = this;
-            _onChange = OnChange;
-            StartCoroutine(Tick());
+            _onChange = Guard.Wrap<Address>(OnChange);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Offices
                 {
                     Slow();
                 }
-                catch (Exception e) when (GameMembers.StandsDown(e, "empty shops as offices"))
+                catch (Exception e) when (Guard.StandsDown(e, "empty shops as offices"))
                 {
                     _failed = true;
                     StopAll();
@@ -393,7 +393,8 @@ namespace RealLifeOverhaul.Offices
             string text = null;
             if (save.modData != null && save.modData.TryGetValue(ConversionStore.Key, out text) && !ConversionStore.Read(text, _kept))
             {
-                Logger?.Warn("Offices: the save's line of shops kept as offices could not be read (" + ConversionStore.Key + "); only shops with an office business in them are offices at load.");
+                SaveLines.Unreadable(save.modData, ConversionStore.Key, "it could not be read");   // (put back as it was read at every save: Core/SaveLines)
+                Logger?.Warn("Offices: the save's line of shops kept as offices could not be read (" + ConversionStore.Key + "); only shops with an office business in them are offices at load, and the line is kept in the save as it is.");
             }
         }
 

@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Events
             if (!_intensitySearched)
             {
                 _intensitySearched = true;
-                _intensityField = typeof(RainHelper).GetField("NextRainMaxIntensity", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+                _intensityField = GameContract.RainIntensity.Field;   // (resolved once: Core/GameContract)
                 if (_intensityField == null || _intensityField.FieldType != typeof(float))
                 {
                     _intensityField = null;

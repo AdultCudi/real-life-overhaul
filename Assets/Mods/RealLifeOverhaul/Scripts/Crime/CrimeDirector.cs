@@ -26,6 +26,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CrimeDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "CrimeDirector", typeof(CrimeDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         internal const int CashLeast = 60;   // a crime against the player needs this much on them, at the start's prices
         private const float CheckInterval = 20f;
         private const float TickInterval = 0.25f;
@@ -115,6 +117,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             float now = Time.time;
             if (_scene != null)
             {
@@ -164,7 +183,7 @@ namespace RealLifeOverhaul
         {
             Logger?.Error(e);
             EndScene();
-            if (GameMembers.StandsDown(e, "crime in the street"))
+            if (Guard.StandsDown(e, "crime in the street"))
             {
                 enabled = false;   // (a game that lacks something it names would fail at every look)
             }

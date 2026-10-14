@@ -29,7 +29,6 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     internal sealed class CampusMarks
     {
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
         private static FieldInfo _poolField, _activeField;
         private static MethodInfo _visuals;
         private static bool _resolved, _works;
@@ -149,10 +148,9 @@ namespace RealLifeOverhaul.Careers
             _resolved = true;
             try
             {
-                Type t = typeof(ItemWarningIconManager);
-                _poolField = t.GetField("_iconPool", Hidden);
-                _activeField = t.GetField("_activeIcons", Hidden);
-                _visuals = t.GetMethod("GetIconVisuals", Hidden, null, new[] { typeof(WarningIconType) }, null);
+                _poolField = GameContract.IconPool.Field;   // (the game's private pieces, resolved once as the mod starts: Core/GameContract)
+                _activeField = GameContract.IconsActive.Field;
+                _visuals = GameContract.IconVisuals.Method;
                 _works = _poolField != null && _activeField != null && _visuals != null
                          && typeof(ObjectPool<ItemWarningIcon>).IsAssignableFrom(_poolField.FieldType) && typeof(Dictionary<int, ItemWarningIcon>).IsAssignableFrom(_activeField.FieldType);
             }

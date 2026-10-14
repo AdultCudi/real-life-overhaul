@@ -44,6 +44,8 @@ namespace RealLifeOverhaul.Roommates
     /// </summary>
     public sealed partial class RoommateDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("home_roommates", "RoommateDirector", typeof(RoommateDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string TestKey = "reallife:home_roommate_before_tests";
 
         private const float AwayEvery = 60f;      // seconds between looks while the player is not in the home with a roommate
@@ -110,7 +112,7 @@ namespace RealLifeOverhaul.Roommates
             Instance = this;
             _flat = new RoommateFlat(transform, Logger);
             _onSave = OnSave;
-            _onEnter = OnEnter;
+            _onEnter = Guard.Wrap<Address>(OnEnter);
         }
 
         private void OnDestroy()
@@ -136,6 +138,23 @@ namespace RealLifeOverhaul.Roommates
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_flat.Out)
             {
                 _flat.Frame(Time.deltaTime);

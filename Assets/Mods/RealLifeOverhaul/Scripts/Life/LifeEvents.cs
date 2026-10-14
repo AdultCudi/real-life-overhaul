@@ -82,7 +82,7 @@ namespace RealLifeOverhaul
             if (Time.unscaledTime >= _nextHookCheck)
             {
                 _nextHookCheck = Time.unscaledTime + 2f;
-                SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+                SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed; run whatever is off, for the mod's moods must leave the save
             }
 
             if (TimeHelper.CurrentHour != _lastHour)
@@ -101,7 +101,7 @@ namespace RealLifeOverhaul
                     Logger?.Error(e);
                     // On a game that lacks something the hour names it would fail every hour: the hour's work stops for the
                     // session, while the save hook and the mod's state above go on.
-                    _hoursOff = GameMembers.StandsDown(e, "life events and the end of a sickness on the hour");
+                    _hoursOff = Guard.StandsDown(e, "life events and the end of a sickness on the hour");
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul
                 List<HappinessModifierData> removed = ModState.BeforeSave();
                 if (removed.Count > 0)
                 {
-                    StartCoroutine(RestoreAfterSave(removed));
+                    StartCoroutine(RestoreAfterSave(removed));   // (not behind a feature's guard: the moods of every feature go back after the save whatever is off)
                 }
             }
             catch (Exception e)
@@ -153,7 +153,7 @@ namespace RealLifeOverhaul
                     FireRandomEvent();
                 }
             }
-            catch (Exception e) when (GameMembers.StandsDown(e, "life events"))
+            catch (Exception e) when (Guard.StandsDown(e, "life events"))
             {
                 _eventsOff = true;   // (a game that lacks something an event names would fail at every hour)
             }
@@ -264,7 +264,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public void SendToHospital()
         {
-            StartCoroutine(HospitalRoutine());
+            StartCoroutine(Guard.Routine(HospitalRoutine()));
         }
 
         private IEnumerator HospitalRoutine()

@@ -106,6 +106,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class SessionWatch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "SessionWatch", typeof(SessionWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float Every = 60f;           // seconds between two lines
         private const float LongFrame = 0.080f;    // seconds: a frame this long gets a line of its own
         private const int LongFramesPerMinute = 12;   // lines for long frames in one minute; the rest are only counted
@@ -155,6 +157,8 @@ namespace RealLifeOverhaul
         private bool _sceneLoaded;
         private string _sceneName;
         private bool _scenesHooked;
+        private UnityEngine.Events.UnityAction<Scene, LoadSceneMode> _loaded;
+        private UnityEngine.Events.UnityAction<Scene> _unloaded;
         private int _cuts, _looked, _putBack;  // the counts as they stood when the minute began
         private int _searches, _searchesInPlay;
         private bool _exact;                   // the runtime counts what the main thread allocates (ExactCount)
@@ -297,8 +301,10 @@ namespace RealLifeOverhaul
                 if (!_scenesHooked)
                 {
                     _scenesHooked = true;
-                    SceneManager.sceneLoaded += OnSceneLoaded;
-                    SceneManager.sceneUnloaded += OnSceneUnloaded;
+                    _loaded = _loaded ?? Guard.Listener<Scene, LoadSceneMode>(OnSceneLoaded);   // (made once, through the guard: Core/Guard)
+                    _unloaded = _unloaded ?? Guard.Listener<Scene>(OnSceneUnloaded);
+                    SceneManager.sceneLoaded += _loaded;
+                    SceneManager.sceneUnloaded += _unloaded;
                 }
                 FrameSteps.Want(true);
                 _timing = TimingOffered();
@@ -467,8 +473,8 @@ namespace RealLifeOverhaul
             if (_scenesHooked)
             {
                 _scenesHooked = false;
-                SceneManager.sceneLoaded -= OnSceneLoaded;
-                SceneManager.sceneUnloaded -= OnSceneUnloaded;
+                SceneManager.sceneLoaded -= _loaded;
+                SceneManager.sceneUnloaded -= _unloaded;
             }
         }
 
@@ -518,6 +524,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             HotSpots.Settle(Time.frameCount);   // the mod's own scripts' figures for the frame before this one are complete
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.

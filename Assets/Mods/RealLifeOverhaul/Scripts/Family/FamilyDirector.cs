@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Family
     /// </summary>
     public sealed class FamilyDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("family", "FamilyDirector", typeof(FamilyDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const string ShotsFolder = "RealLifeOverhaul_shots";
 
         private struct Question
@@ -135,6 +137,23 @@ namespace RealLifeOverhaul.Family
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;
@@ -499,7 +518,7 @@ namespace RealLifeOverhaul.Family
             {
                 return false;
             }
-            StartCoroutine(Wrap(routine));
+            StartCoroutine(Guard.Routine(Wrap(routine)));
             return true;
         }
 
@@ -603,7 +622,7 @@ namespace RealLifeOverhaul.Family
         {
             if (isActiveAndEnabled)
             {
-                StartCoroutine(Free(action));
+                StartCoroutine(Guard.Routine(Free(action)));
             }
         }
 
@@ -1024,7 +1043,7 @@ namespace RealLifeOverhaul.Family
             }
             try
             {
-                FieldInfo field = typeof(HappinessHelper).GetField("Modifiers", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
                 var registry = field?.GetValue(null) as Dictionary<string, HappinessModifier>;
                 if (registry == null)
                 {
@@ -1055,7 +1074,7 @@ namespace RealLifeOverhaul.Family
         {
             try
             {
-                FieldInfo field = typeof(HappinessHelper).GetField("Modifiers", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
                 var registry = field?.GetValue(null) as Dictionary<string, HappinessModifier>;
                 return registry != null && registry.ContainsKey(Married);
             }

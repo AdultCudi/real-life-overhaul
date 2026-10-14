@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TravelDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("travel", "TravelDirector", typeof(TravelDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const NavigationBlocker Block = NavigationBlocker.PaidActivity;   // one of the game's own, used by nothing that can run at the same time
         private const float SkipPatience = 240f;                                  // real seconds a time skip may take before it is given up on
 
@@ -127,6 +129,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_failed)
             {
                 return;
@@ -249,6 +268,10 @@ namespace RealLifeOverhaul
                 data.TryGetValue(TravelState.SaveKey, out saved);
             }
             TravelState.Read(saved);
+            if (!string.IsNullOrEmpty(saved) && saved.IndexOf('=') < 0)
+            {
+                SaveLines.Unreadable(data, TravelState.SaveKey, "none of it could be read");   // (kept as it was read: Core/SaveLines)
+            }
             _lastHour = TimeHelper.CurrentHour;
             _lastDay = TimeHelper.CurrentDay;
             if (TravelState.StreakDay == 0)
@@ -262,7 +285,7 @@ namespace RealLifeOverhaul
                          + " agencies=" + Holidays.AgencyCount + " hotels=" + Hotels.Sites.Count + ".");
             if (TravelState.Away || TravelState.InRoom)
             {
-                StartCoroutine(ResumeSoon());
+                StartCoroutine(Guard.Routine(ResumeSoon()));
             }
         }
 
@@ -455,7 +478,7 @@ namespace RealLifeOverhaul
 
         public Coroutine Run(IEnumerator routine)
         {
-            return StartCoroutine(Guarded(routine));
+            return StartCoroutine(Guard.Routine(Guarded(routine)));
         }
 
         // A routine of the stay or the trip: a fault in it ends in the street, never in a frozen panel.

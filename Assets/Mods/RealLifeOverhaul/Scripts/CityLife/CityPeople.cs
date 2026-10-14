@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class CityPeople : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityPeople", typeof(CityPeople));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const int MaxPeople = 8;
 
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
@@ -270,6 +272,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 Camera camera = GameManager.GetMainCamera();
@@ -319,6 +338,23 @@ namespace RealLifeOverhaul
         private void FixedUpdate()
         {
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
+        {
             _skip = !_skip;
             if (_skip || _strikesFailed || !Settings.Ragdolls)
             {
@@ -434,7 +470,7 @@ namespace RealLifeOverhaul
         {
             if (_tending == null && gameObject.activeInHierarchy)
             {
-                _tending = StartCoroutine(Tending());
+                _tending = StartCoroutine(Guard.Routine(Tending()));
             }
         }
 

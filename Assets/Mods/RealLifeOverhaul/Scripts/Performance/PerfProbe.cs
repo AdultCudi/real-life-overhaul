@@ -84,6 +84,7 @@ namespace RealLifeOverhaul
         private long _layoutTotal, _graphicTotal;
         private int _uiFrames;
         private bool _uiHooked;
+        private Canvas.WillRenderCanvases _countUi;
         private string _uiNote;
 
         public bool Running { get; private set; }
@@ -314,17 +315,17 @@ namespace RealLifeOverhaul
             {
                 if (_layoutQueue == null)
                 {
-                    const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
                     CanvasUpdateRegistry registry = CanvasUpdateRegistry.instance;
-                    _layoutQueue = typeof(CanvasUpdateRegistry).GetField("m_LayoutRebuildQueue", Hidden)?.GetValue(registry) as IList<ICanvasElement>;
-                    _graphicQueue = typeof(CanvasUpdateRegistry).GetField("m_GraphicRebuildQueue", Hidden)?.GetValue(registry) as IList<ICanvasElement>;
+                    _layoutQueue = GameContract.LayoutQueue.Field?.GetValue(registry) as IList<ICanvasElement>;   // (resolved once: Core/GameContract)
+                    _graphicQueue = GameContract.GraphicQueue.Field?.GetValue(registry) as IList<ICanvasElement>;
                 }
                 if (_layoutQueue == null || _graphicQueue == null)
                 {
                     _uiNote = "the UI system's rebuild queues could not be reached in this version";
                     return;
                 }
-                Canvas.preWillRenderCanvases += CountUi;
+                _countUi = _countUi ?? new Canvas.WillRenderCanvases(Guard.Wrap(CountUi));   // (made once, through the guard: Core/Guard)
+                Canvas.preWillRenderCanvases += _countUi;
                 _uiHooked = true;
             }
             catch (Exception e)
@@ -338,7 +339,7 @@ namespace RealLifeOverhaul
             if (_uiHooked)
             {
                 _uiHooked = false;
-                Canvas.preWillRenderCanvases -= CountUi;
+                Canvas.preWillRenderCanvases -= _countUi;
             }
         }
 

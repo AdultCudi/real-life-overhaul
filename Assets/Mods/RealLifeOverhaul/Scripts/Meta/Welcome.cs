@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Meta
                 bool update = seen != null && Changelog.Compare(seen, Changelog.Version) < 0;
                 var data = new Dictionary<string, string>(1) { { "version", Changelog.Version } };
                 string notice = update ? "reallife_meta_welcome_note_update" : "reallife_meta_welcome_note_first";
-                Notifications.Show(NotificationType.Info, notice, data, 14f, notice, GuideApp.OpenWhatChanged, true, false);
+                Notifications.Show(NotificationType.Info, notice, data, 14f, notice, Guard.Wrap(GuideApp.OpenWhatChanged), true, false);
                 MetaLog.Info("welcome shown (" + (update ? "after " + seen : "first run") + ").");
                 if (Dev.Verbose)
                 {

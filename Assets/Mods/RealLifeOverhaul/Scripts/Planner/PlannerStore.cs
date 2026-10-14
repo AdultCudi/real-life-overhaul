@@ -44,6 +44,8 @@ namespace RealLifeOverhaul.Planner
     /// <summary>
     /// The Planner's part of a save: three lines in the save's modData, read and written here and nowhere else.
     /// A line that is damaged loses only the records that cannot be read; nothing here ever throws on what it is given.
+    /// A line of which nothing at all can be read (of a later version's shape, or damaged through) is kept in the save
+    /// exactly as it was read (Core/SaveLines): it is never written over.
     /// </summary>
     public static class PlannerStore
     {
@@ -248,6 +250,7 @@ namespace RealLifeOverhaul.Planner
             string text;
             if (data.TryGetValue(Key, out text) && !string.IsNullOrEmpty(text))
             {
+                int read = 0;
                 foreach (string part in text.Split(';'))
                 {
                     int eq = part.IndexOf('=');
@@ -260,6 +263,7 @@ namespace RealLifeOverhaul.Planner
                     {
                         continue;
                     }
+                    read++;
                     switch (part.Substring(0, eq))
                     {
                         case "next": NextNoteId = Math.Max(1, value); break;
@@ -267,30 +271,55 @@ namespace RealLifeOverhaul.Planner
                         case "lead": DefaultLead = Lead(value, ReminderLead.HourBefore); break;
                         case "hello": Welcomed = value != 0; break;
                         case "seen": SeenStamp = value; break;
+                        default: read--; break;
                     }
+                }
+                if (read == 0)
+                {
+                    SaveLines.Unreadable(data, Key, "none of its settings could be read");
                 }
             }
             if (data.TryGetValue(NotesKey, out text) && !string.IsNullOrEmpty(text))
             {
+                int read = 0;
                 foreach (string record in text.Split(';'))
                 {
                     PlannerNote note = ReadNote(record);
-                    if (note != null && Note(note.Id) == null && Notes.Count < MostNotes)
+                    if (note == null)
+                    {
+                        continue;
+                    }
+                    read++;
+                    if (Note(note.Id) == null && Notes.Count < MostNotes)
                     {
                         Notes.Add(note);
                         NextNoteId = Math.Max(NextNoteId, note.Id + 1);
                     }
                 }
+                if (read == 0)
+                {
+                    SaveLines.Unreadable(data, NotesKey, "none of its notes could be read");
+                }
             }
             if (data.TryGetValue(RemindersKey, out text) && !string.IsNullOrEmpty(text))
             {
+                int read = 0;
                 foreach (string record in text.Split(';'))
                 {
                     PlannerReminder reminder;
-                    if (ReadReminder(record, out reminder) && ReminderIndex(reminder.Entry) < 0 && Reminders.Count < MostReminders)
+                    if (!ReadReminder(record, out reminder))
+                    {
+                        continue;
+                    }
+                    read++;
+                    if (ReminderIndex(reminder.Entry) < 0 && Reminders.Count < MostReminders)
                     {
                         Reminders.Add(reminder);
                     }
+                }
+                if (read == 0)
+                {
+                    SaveLines.Unreadable(data, RemindersKey, "none of its reminders could be read");
                 }
             }
         }

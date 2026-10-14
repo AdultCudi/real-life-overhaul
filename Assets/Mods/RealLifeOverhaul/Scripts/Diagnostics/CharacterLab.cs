@@ -49,6 +49,8 @@ namespace RealLifeOverhaul
 
     public class CharacterLab : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "CharacterLab", typeof(CharacterLab));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int MaxCharacters = 3;      // others near the camera, after the ones the character work is about
         private const int MaxBoneLines = 160;
 
@@ -58,6 +60,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (!Keys.Down(KeyAction.CharacterReport))
             {
                 return;

@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.FitOut
             _frames = 0;
             _workMs = 0;
             Ready = false;
-            _running = host.StartCoroutine(Build());
+            _running = host.StartCoroutine(Guard.Routine(Build()));
             return true;
         }
 

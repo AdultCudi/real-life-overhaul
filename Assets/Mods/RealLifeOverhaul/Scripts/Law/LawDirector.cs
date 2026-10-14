@@ -26,6 +26,8 @@ namespace RealLifeOverhaul.Law
     /// </summary>
     public sealed class LawDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("law", "LawDirector", typeof(LawDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 1f;
         private const float ThanksChance = 1f / 75f;     // per second on foot near people, for somebody well liked, once a day at most
         private const float ThanksWithin = 6f;
@@ -145,6 +147,23 @@ namespace RealLifeOverhaul.Law
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 if (_entered || _exited)
@@ -178,7 +197,7 @@ namespace RealLifeOverhaul.Law
                 {
                     Logger?.Error(inner);
                 }
-                bool lacking = GameMembers.StandsDown(e, "the police precincts, custody and the record");   // (that fault would come back at every tick)
+                bool lacking = Guard.StandsDown(e, "the police precincts, custody and the record");   // (that fault would come back at every tick)
                 if (lacking || ++_faults >= 3)
                 {
                     if (!lacking)

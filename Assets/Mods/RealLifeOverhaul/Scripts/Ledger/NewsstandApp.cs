@@ -969,7 +969,7 @@ namespace RealLifeOverhaul.Ledger
                 return;
             }
             _later = true;
-            _director.StartCoroutine(Later());
+            _director.StartCoroutine(Guard.Routine(Later()));
         }
 
         private IEnumerator Later()

@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class GarageTuning : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "GarageTuning", typeof(GarageTuning));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float MaxTopKmh = 350f;   // as Driving/CarTuning
 
         public static IModLogger Logger;
@@ -94,6 +96,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_claimed || _failed)
             {
                 if (_applied != null)
@@ -138,6 +157,23 @@ namespace RealLifeOverhaul
         private void FixedUpdate()
         {
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
+        {
             if (_dragDelta == 0f || _body == null)
             {
                 return;

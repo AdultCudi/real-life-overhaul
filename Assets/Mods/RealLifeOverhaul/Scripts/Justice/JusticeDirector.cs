@@ -36,6 +36,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class JusticeDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("justice", "JusticeDirector", typeof(JusticeDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int MostOpenCases = 3;
         private const int StaleAfter = 25;          // seconds (of the game running) without a sign of life before a routine is taken for dead
 
@@ -129,6 +131,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_broken && !Holding)
             {
                 return;
@@ -421,7 +440,7 @@ namespace RealLifeOverhaul
 
             if (JusticeState.InPrison)
             {
-                StartCoroutine(Routine(_prison.Serve()));
+                StartCoroutine(Guard.Routine(Routine(_prison.Serve())));
             }
             else if (JusticeState.JailHoursPending > 0)
             {
@@ -498,7 +517,7 @@ namespace RealLifeOverhaul
             if (!taken)
             {
                 _lawHolds = false;
-                StartCoroutine(Routine(_prison.Custody(hours, toCourt, null)));
+                StartCoroutine(Guard.Routine(Routine(_prison.Custody(hours, toCourt, null))));
             }
             if (Meta.Dev.Verbose)
             {

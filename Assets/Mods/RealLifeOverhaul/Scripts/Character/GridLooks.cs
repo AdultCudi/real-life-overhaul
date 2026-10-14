@@ -53,7 +53,6 @@ namespace RealLifeOverhaul
     /// </summary>
     internal sealed class GridLooks
     {
-        private const BindingFlags Any = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const int SwatchSize = 48;
         private const string OurName = "RealLifeOverhaul";
 
@@ -123,10 +122,11 @@ namespace RealLifeOverhaul
                     logger?.Info("Looks: the game's " + screen + " was not found as expected; the mod's garments are not added to its grids (the options page still has them).");
                     return null;
                 }
-                var picker = typeof(CharacterCustomizer).GetField("elementPicker", Any)?.GetValue(customizer) as ElementPicker;
-                var shown = typeof(CharacterCustomizer).GetField("onSubCategoryChanged", Any)?.GetValue(customizer) as UnityEvent<AppearanceElementType>;
-                var template = picker != null ? typeof(ElementPicker).GetField("entryTemplate", Any)?.GetValue(picker) as Transform : null;
-                FieldInfo mark = typeof(ElementPicker).GetField("_currentSelectedOutline", Any);
+                // The game's private fields, resolved once (Core/GameContract): null when a game update took one away.
+                var picker = GameContract.CustomizerPicker.Field?.GetValue(customizer) as ElementPicker;
+                var shown = GameContract.CustomizerShown.Field?.GetValue(customizer) as UnityEvent<AppearanceElementType>;
+                var template = picker != null ? GameContract.PickerTemplate.Field?.GetValue(picker) as Transform : null;
+                FieldInfo mark = GameContract.PickerOutline.Field;
                 if (picker == null || shown == null || template == null || template.parent == null || mark == null || mark.FieldType != typeof(GameObject)
                     || template.Find("Selected") == null || template.GetComponent<Button>() == null)
                 {
@@ -154,8 +154,8 @@ namespace RealLifeOverhaul
             _categoryShown = categoryShown;
             _mode = mode;
             _choose = choose;
-            _onCategoryShown = OnCategoryShown;
-            _onColour = OnColour;
+            _onCategoryShown = Guard.Listener<AppearanceElementType>(OnCategoryShown);   // (a fault here never reaches the game's own listeners: Core/Guard)
+            _onColour = Guard.Listener<int>(OnColour);
             _tag = "reallife_creator_tag".GetLocalization();
             TMP_Text sample = customizer.GetComponentInChildren<TMP_Text>(true);
             _font = sample != null ? sample.font : null;
@@ -360,7 +360,7 @@ namespace RealLifeOverhaul
             tile.Mark.transform.SetAsLastSibling();
 
             Button button = entry.GetComponent<Button>();
-            button.onClick.AddListener(() => OnTile(tile));
+            button.onClick.AddListener(Guard.Listener(() => OnTile(tile)));
             entry.gameObject.SetActive(true);
             return tile;
         }

@@ -122,7 +122,7 @@ namespace RealLifeOverhaul
             if (!_benchSitterLooked)
             {
                 _benchSitterLooked = true;
-                _benchSitter = typeof(OutsideBenchController).GetField("_npc", BindingFlags.Instance | BindingFlags.NonPublic);
+                _benchSitter = GameContract.BenchSitter.Field;   // (resolved once: Core/GameContract)
             }
             if (_benchSitter == null)
             {

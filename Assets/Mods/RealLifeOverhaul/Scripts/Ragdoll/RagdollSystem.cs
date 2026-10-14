@@ -20,6 +20,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class RagdollSystem : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "RagdollSystem", typeof(RagdollSystem));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const int MaxActive = 6;   // a ragdoll is 11 bodies and 10 joints while it falls (a second or two) and nothing simulated once at rest: six falling at once is 66 bodies for that moment
         public const int MaxStill = 8;    // bodies lying with nothing on their bones: each is one drawn character with its animator off
         public const int MaxBodies = MaxActive + MaxStill;
@@ -257,6 +259,23 @@ namespace RealLifeOverhaul
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 bool any = false;

@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
-            _onEnter = OnEnter;
+            _onEnter = Guard.Wrap<Address>(OnEnter);
             EconomyDirector.Second += _second;
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
@@ -770,7 +770,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
-            Notifications.Show(type, key, data, 11f, null, () => Open(tab, pick), true, false);
+            Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
         }
 
         public void Open(int tab, string pick)
