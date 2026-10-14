@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Tech
     {
         private const int PageCap = 0, PageRaise = 1;
         private static readonly long[] FundSteps = { 1000000, 5000000, 25000000, 100000000 };   // cents at the start's prices
-        private int _fundStep = 1, _chief;
+        private int _fundStep = 1;
         private readonly List<Person> _chiefs = new List<Person>(16);
 
         // ---------------------------------------------------------------- startups
@@ -258,7 +258,7 @@ namespace RealLifeOverhaul.Tech
             Transform more = box.ButtonRow();
             if (c != null && c.VcSeats > 0)
             {
-                InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_sell", () => HudConfirm.Show("reallife_vc_confirm_sell_title", "reallife_vc_confirm_sell_body",
+                InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_sell", () => GameConfirm.Show("reallife_vc_confirm_sell_title", "reallife_vc_confirm_sell_body",
                     () => UiClone.Safe(() => Do(() => _director.SellShares(place))), null, null, null, true, true));
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_listing", () => Do(() => _director.PrepareListing(place)));
@@ -302,7 +302,7 @@ namespace RealLifeOverhaul.Tech
                 int index = i;
                 box.Line(TechText.Fill("reallife_vc_sheet_line", "vc", VentureCatalogue.Firms[TalentCatalogue.Clamp(t.Vc, 0, VentureCatalogue.FirmCount - 1)].Name, "amount", TechText.Cents(_director.Level(t.Amount)),
                     "pre", TechText.Cents(_director.Level(t.Pre)), "share", TechText.Mille(t.EquityMille), "board", TechText.T(t.Board ? "reallife_vc_sheet_board" : "reallife_vc_sheet_no_board"), "day", t.Lapse.ToString()));
-                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_vc_button_take_sheet", () => HudConfirm.Show("reallife_vc_confirm_sheet_title", "reallife_vc_confirm_sheet_body",
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_vc_button_take_sheet", () => GameConfirm.Show("reallife_vc_confirm_sheet_title", "reallife_vc_confirm_sheet_body",
                     () => UiClone.Safe(() => Do(() => _director.TakeSheet(place, index))), null, null, null, true, false));
             }
             Meta.Guide.Point(box, StartupsGuide);

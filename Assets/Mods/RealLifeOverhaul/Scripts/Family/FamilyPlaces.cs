@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Family
                 for (int i = 0; i < buildings.Length; i++)
                 {
                     CityBuildingController building = buildings[i];
-                    if (building == null || building.building == null || building.building.locatedInsidePrivateFenceIndex >= 0
+                    if (building == null || building.building == null || GameMembers.Fenced(building.building)
                         || !Matches(TypeOf(building), kinds[k]) || !Door(building, out Vector3 door))
                     {
                         continue;

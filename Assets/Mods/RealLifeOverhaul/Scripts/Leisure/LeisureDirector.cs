@@ -599,7 +599,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 refusalKey = "reallife_test_refused_not_loaded";
             }
-            else if (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
+            else if (GameMembers.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
                      || GameManager.IsAnyMiniGameActive() || PhotoMode.Active || PoliceAttention.IsBusy || gm.playerController.NavigationDisabled)
             {
                 refusalKey = "reallife_leisure_no_now";
@@ -748,7 +748,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 return true;
             }
-            if (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
+            if (GameMembers.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
                 || PoliceAttention.IsBusy || JobDirector.OnShift || PlayerHelper.IsUsingVehicle || !Enabled(_activity.Kind)
                 || RagdollSystem.Holds(gm.playerController.Character))
             {

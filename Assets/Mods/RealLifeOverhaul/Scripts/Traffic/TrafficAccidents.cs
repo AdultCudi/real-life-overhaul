@@ -333,17 +333,25 @@ namespace RealLifeOverhaul
         private void OnUpdate()
         {
             TrafficWatch.Tick(Time.time);   // one comparison a frame; looks at the traffic five times a second
+            if (_lacking)
+            {
+                return;
+            }
             try
             {
                 Tick();
             }
             catch (Exception e)
             {
-                // Clear leaves no scene behind, so a fault cannot repeat every frame.
+                // Clear leaves no scene behind, so a fault cannot repeat every frame. One on a game that lacks something
+                // the accidents name would come back at every look: they stop for the session, the watch on the traffic goes on.
                 Logger?.Error(e);
                 Clear(resumeTraffic: true, announce: false, why: "error");
+                _lacking = GameMembers.StandsDown(e, "traffic accidents");
             }
         }
+
+        private bool _lacking;
 
         private void Tick()
         {
@@ -484,7 +492,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                TestRefusal why = TestRefusals.Street();
+                TestRefusal why = _lacking ? TestRefusal.FeatureOff : TestRefusals.Street();
                 if (why == TestRefusal.None && _phase != Phase.None)
                 {
                     why = TestRefusal.SceneActive;
@@ -636,7 +644,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                if (_phase != Phase.None || casualty == null || !ModState.Loaded || !TrafficTools.Ready)
+                if (_lacking || _phase != Phase.None || casualty == null || !ModState.Loaded || !TrafficTools.Ready)
                 {
                     return false;
                 }
@@ -769,7 +777,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                if (_phase != Phase.None || first == null || !first.gameObject.activeInHierarchy || !ModState.Loaded || !TrafficTools.Ready
+                if (_lacking || _phase != Phase.None || first == null || !first.gameObject.activeInHierarchy || !ModState.Loaded || !TrafficTools.Ready
                     || Wiring.Scenes.AnyBut(Wiring.Scene.Accident))
                 {
                     return false;

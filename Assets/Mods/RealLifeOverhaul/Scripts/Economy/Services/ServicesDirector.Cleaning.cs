@@ -903,7 +903,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            HudConfirm.Show("reallife_svc_confirm_end_title".Localize(new { business = c.Name }), "reallife_svc_confirm_end_body".Localize(new { business = c.Name }), () => Guard("ending a contract", () =>
+            GameConfirm.Show("reallife_svc_confirm_end_title".Localize(new { business = c.Name }), "reallife_svc_confirm_end_body".Localize(new { business = c.Name }), () => Guard("ending a contract", () =>
             {
                 CleaningClient still = _state != null ? _state.Client(place) : null;
                 if (still == null || !still.Outside)

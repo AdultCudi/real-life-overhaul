@@ -377,7 +377,7 @@ namespace RealLifeOverhaul
             {
                 BuildingRegistration registration = building.buildingRegistration;
                 if (registration == null || building.building == null || !registration.HasEstablishedBusiness
-                    || building.building.locatedInsidePrivateFenceIndex >= 0 || registration.businessTypeName == null
+                    || GameMembers.Fenced(building.building) || registration.businessTypeName == null
                     || registration.businessTypeName == "ba:businesstype_empty" || !building.building.requiredDLC.DlcIsOwned())
                 {
                     return false;

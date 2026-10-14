@@ -88,6 +88,10 @@ namespace RealLifeOverhaul
             if (TimeHelper.CurrentHour != _lastHour)
             {
                 _lastHour = TimeHelper.CurrentHour;
+                if (_hoursOff)
+                {
+                    return;
+                }
                 try
                 {
                     OnNewHour();
@@ -95,9 +99,15 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Logger?.Error(e);
+                    // On a game that lacks something the hour names it would fail every hour: the hour's work stops for the
+                    // session, while the save hook and the mod's state above go on.
+                    _hoursOff = GameMembers.StandsDown(e, "life events and the end of a sickness on the hour");
                 }
             }
         }
+
+        private bool _hoursOff;    // the whole hour's work stood down (Core/GameMembers)
+        private bool _eventsOff;   // the events' roll stood down, the sickness's end on the hour goes on
 
         private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
 
@@ -132,13 +142,20 @@ namespace RealLifeOverhaul
             }
             SetSickDrain(ModState.IsSick);
 
-            if (!Settings.LifeEvents || !IsSafeForEvent())
+            if (_eventsOff || !Settings.LifeEvents)
             {
                 return;
             }
-            if (Random.value < Settings.EventFrequency / WakingHoursPerWeek)
+            try
             {
-                FireRandomEvent();
+                if (IsSafeForEvent() && Random.value < Settings.EventFrequency / WakingHoursPerWeek)
+                {
+                    FireRandomEvent();
+                }
+            }
+            catch (Exception e) when (GameMembers.StandsDown(e, "life events"))
+            {
+                _eventsOff = true;   // (a game that lacks something an event names would fail at every hour)
             }
         }
 
@@ -146,7 +163,7 @@ namespace RealLifeOverhaul
         public static bool IsSafeForEvent()
         {
             var uis = InstanceBehavior<UIs>.Instance;
-            return uis != null && !LoadScene.isLoading && !FuneralHelper.PlayerDead && !EnergyHelper.goingToHospital
+            return uis != null && !LoadScene.isLoading && !GameMembers.PlayerDead && !EnergyHelper.goingToHospital
                    && !uis.timeMachine.isRunning && !PlayerActivityUI.IsPanelOpen && !HudConfirm.isOpen
                    && DialogController.current == null && !CasinoBoatManager.IsOnCasinoBoat && !SubwaySystem.IsRiding
                    && !uis.gameSpeed.Paused;

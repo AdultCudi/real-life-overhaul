@@ -73,7 +73,19 @@ namespace RealLifeOverhaul.Permadeath
         {
             SaveHook.Drop(_onSave);
             Settings.Changed -= _onChanged;
-            PermadeathGame.Hold(false, false);
+            try
+            {
+                PermadeathGame.Hold(false, false);
+            }
+            catch (Exception e)
+            {
+                // What follows must be done whatever this did: on a game lacking something Hold names it failed, and the
+                // switch below was left on for the next game begun (Core/GameMembers).
+                if (!GameMembers.DoesWithout(e, "letting the player walk again as the city closes"))
+                {
+                    Logger?.Error(e);
+                }
+            }
             PermadeathGame.ClearWeak();
             PermadeathState.Reset();
             Settings.SetPermadeath(false);   // in the main menu the switch is no save's: on there, it is for the next game begun
@@ -398,7 +410,7 @@ namespace RealLifeOverhaul.Permadeath
                 return;
             }
             _asking = true;
-            HudConfirm.Show("reallife_pd_ask_header", "reallife_pd_ask_body", () =>
+            GameConfirm.Show("reallife_pd_ask_header", "reallife_pd_ask_body", () =>
             {
                 _asking = false;
                 if (PermadeathRules.Switches(true, PermadeathState.Armed, PermadeathState.Dead, GoingPublic.InSession) && PermadeathState.Loaded)

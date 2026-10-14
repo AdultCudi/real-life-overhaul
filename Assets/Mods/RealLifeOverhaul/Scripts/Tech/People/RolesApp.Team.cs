@@ -331,13 +331,13 @@ namespace RealLifeOverhaul.Tech
             if (p.NoticeEnd == 0)
             {
                 string name = person.Name;
-                InfoBox.Button(buttons, InfoBox.Negative, "reallife_roles_button_lay_off", () => HudConfirm.Show(
+                InfoBox.Button(buttons, InfoBox.Negative, "reallife_roles_button_lay_off", () => GameConfirm.Show(
                     "reallife_roles_confirm_lay_off_title".Localize(new { name }),
                     "reallife_roles_confirm_lay_off_body".Localize(new { notice = TalentRules.NoticeDays(p, day, year).ToString(), severance = TechText.Cents(severance) }),
                     () => UiClone.Safe(() => Do(() => _director.LetGo(key, false))), null, null, null, true, true));
                 if (TalentRules.FairDismissal(p, day, year))
                 {
-                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_roles_button_dismiss", () => HudConfirm.Show(
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_roles_button_dismiss", () => GameConfirm.Show(
                         "reallife_roles_confirm_dismiss_title".Localize(new { name }), "reallife_roles_confirm_dismiss_body".Localize(),
                         () => UiClone.Safe(() =>
                         {

@@ -444,20 +444,30 @@ namespace RealLifeOverhaul
 
         private void RemoveTiles()
         {
-            // The grid must never be left remembering a mark of ours that is about to go: it switches that mark off on its next click.
-            var current = _markField.GetValue(_picker) as GameObject;
-            bool ours = false;
-            for (int i = 0; i < _tiles.Count; i++)
+            // The grid must never be left remembering a mark of ours that is about to go: it switches that mark off on its next
+            // click. When the city closes, the game's screen goes before this is told (the leisure director's OnDestroy), and
+            // there is then no grid left to hand a mark back to: only what is still there of ours is destroyed.
+            if (_picker != null && _template != null)
             {
-                ours |= ReferenceEquals(_tiles[i].Mark, current);
-            }
-            if (ours || current == null)
-            {
-                _markField.SetValue(_picker, _gameMark != null ? _gameMark : _template.Find("Selected").gameObject);
-            }
-            else
-            {
-                _gameMark = current;
+                var current = _markField.GetValue(_picker) as GameObject;
+                bool ours = false;
+                for (int i = 0; i < _tiles.Count; i++)
+                {
+                    ours |= ReferenceEquals(_tiles[i].Mark, current);
+                }
+                if (ours || current == null)
+                {
+                    Transform selected = _gameMark != null ? null : _template.Find("Selected");
+                    GameObject mark = _gameMark != null ? _gameMark : selected != null ? selected.gameObject : null;
+                    if (mark != null)
+                    {
+                        _markField.SetValue(_picker, mark);
+                    }
+                }
+                else
+                {
+                    _gameMark = current;
+                }
             }
             for (int i = 0; i < _tiles.Count; i++)
             {

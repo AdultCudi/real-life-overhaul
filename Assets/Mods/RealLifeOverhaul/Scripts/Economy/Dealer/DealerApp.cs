@@ -281,7 +281,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         // Anything that costs or cannot be undone is asked first, with the game's own question.
         private static void Confirm(string titleKey, string body, Action yes, bool negative)
         {
-            HudConfirm.Show(titleKey.GetLocalization(), body, () => UiClone.Safe(yes), null, null, null, false, negative);
+            GameConfirm.Show(titleKey.GetLocalization(), body, () => UiClone.Safe(yes), null, null, null, false, negative);
         }
 
         // The dealership a car bought goes to: the one chosen, if it has room; a selector among those with room if there are several.

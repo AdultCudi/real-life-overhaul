@@ -1,4 +1,5 @@
-0.9.14
+0.10.1
 
 Fixed
-- Staff at a tech firm never got any work done, because the hours they worked were lost before the day's work was shared out. Every hour on a shift at an open business now counts, and is kept in the save. The Company app's rota now plans shifts for tech firms; a firm's page and a contract's page in the Tech app say who worked yesterday and, if nobody did, why and how to put it right; a notification says so when a contract is taken on that nobody can work on, or falls behind; and Start a product is on the Products tab, with what each kind needs. Programmers at a web development agency now work on its websites too, new staff at a tech firm get roles that do its work, and the Guide's tech sector page sets up a firm step by step.
+- On an older build of the game, none of the mod's apps opened on the phone, and much else of the mod stopped working, such as the camera, careers and the police on the street. The apps now open on such a game, the parts that need what it lacks switch off quietly, and the mod says in the main menu and when a save is loaded that the game needs updating, and how to update it in Steam.
+- In Portuguese, the Open Roles, Career and Tech apps kept their English names.

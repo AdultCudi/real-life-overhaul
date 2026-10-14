@@ -197,9 +197,13 @@ namespace RealLifeOverhaul.Law
                 {
                     Logger?.Error(inner);
                 }
-                if (++_faults >= 3)
+                bool lacking = GameMembers.StandsDown(e, "the police precincts, custody and the record");   // (that fault would come back at every tick)
+                if (lacking || ++_faults >= 3)
                 {
-                    Logger?.Warn("Law: switched off for this session after repeated errors (see above). Fines and stops go on as before; nobody is held.");
+                    if (!lacking)
+                    {
+                        Logger?.Warn("Law: switched off for this session after repeated errors (see above). Fines and stops go on as before; nobody is held.");
+                    }
                     _custody.enabled = false;   // (Custody.Ready is then false: every route falls back to what it did before)
                     enabled = false;
                 }

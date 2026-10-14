@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Careers
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
             return uis != null && !PlayerActivity.PlayerActivityUI.IsPanelOpen && (uis.timeMachine == null || !uis.timeMachine.isRunning)
-                   && string.IsNullOrEmpty(Save != null ? Save.ActiveVehicleId : null) && !FuneralHelper.PlayerDead && !EnergyHelper.goingToHospital;
+                   && string.IsNullOrEmpty(Save != null ? Save.ActiveVehicleId : null) && !GameMembers.PlayerDead && !EnergyHelper.goingToHospital;
         }
 
         private static CityManager _schoolOf;

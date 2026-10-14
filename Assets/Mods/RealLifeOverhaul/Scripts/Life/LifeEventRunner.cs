@@ -98,7 +98,7 @@ namespace RealLifeOverhaul
             // the game's box takes a plain key for them).
             int cost = lifeEvent.CostNow;
             var figures = new { cost = ((float)cost).ToCurrencyFormat(), sum = ((float)lifeEvent.QuoteNow).ToCurrencyFormat() };
-            HudConfirm.Show(new LanguageChangeEventDataHolder { Key = lifeEvent.HeaderKey },
+            GameConfirm.Show(new LanguageChangeEventDataHolder { Key = lifeEvent.HeaderKey },
                 new LanguageChangeEventDataHolder { Key = lifeEvent.BodyKey, Arguments = figures },
                 () => Guarded(() =>
                 {

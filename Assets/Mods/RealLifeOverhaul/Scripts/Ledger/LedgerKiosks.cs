@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.Ledger
             for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController b = all[i];
-                if (b == null || b == own || b.building == null || b.building.locatedInsidePrivateFenceIndex >= 0 || !Door(b, out Vector3 at))
+                if (b == null || b == own || b.building == null || GameMembers.Fenced(b.building) || !Door(b, out Vector3 at))
                 {
                     continue;
                 }
@@ -551,7 +551,7 @@ namespace RealLifeOverhaul.Ledger
             for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController b = all[i];
-                if (b == null || b.building == null || b.building.locatedInsidePrivateFenceIndex >= 0 || !Door(b, out Vector3 door))
+                if (b == null || b.building == null || GameMembers.Fenced(b.building) || !Door(b, out Vector3 door))
                 {
                     continue;
                 }

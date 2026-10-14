@@ -557,12 +557,12 @@ namespace RealLifeOverhaul.Careers
             if (j.NoticeEnd <= 0)
             {
                 string employer = CareersText.Employer(j.Post.Employer);
-                InfoBox.Button(leave, InfoBox.Negative, "reallife_career_button_resign", () => HudConfirm.Show(
+                InfoBox.Button(leave, InfoBox.Negative, "reallife_career_button_resign", () => GameConfirm.Show(
                     "reallife_career_confirm_resign_title".Localize(new { employer }),
                     "reallife_career_confirm_resign_body".Localize(new { days = ProRules.NoticeDays(j.Rank, j.Post.Rank).ToString() }),
                     () => UiClone.Safe(() => Do(_director.Resign)), null, null, null, true, true));
             }
-            InfoBox.Button(leave, InfoBox.Negative, "reallife_career_button_walk_out", () => HudConfirm.Show(
+            InfoBox.Button(leave, InfoBox.Negative, "reallife_career_button_walk_out", () => GameConfirm.Show(
                 "reallife_career_confirm_walk_title".Localize(), "reallife_career_confirm_walk_body".Localize(),
                 () => UiClone.Safe(() => Do(_director.WalkOut)), null, null, null, true, true));
             Meta.Guide.Point(box, LifeGuide);

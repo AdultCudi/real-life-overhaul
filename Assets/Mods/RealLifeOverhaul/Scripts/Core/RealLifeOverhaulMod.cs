@@ -45,7 +45,10 @@ namespace RealLifeOverhaul
             Economy.Dealership.DealerType.Logger = log;
             Guard.Step("the car dealership's business type", () => Economy.Dealership.DealerType.Register());   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
             Meta.Dev.Gated(context);   // (the option has been read now)
+            GameMembers.Logger = context.Logger;
+            GameConfirm.Logger = context.Logger;
             Guard.Start(context.Logger);   // the game contract resolved once, the game's build read (Core/Guard)
+            GameBuild.Start(context.Logger);   // the game's build against the one this version is made for: a line in Player.log, and the notice for an older game (Core/GameBuild)
             Tech.TechTypes.Logger = context.Logger;
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
@@ -717,10 +720,13 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsMargin = v)
                 .AddToggle(Settings.MarketsListingId, "reallife_lst_opt", Settings.MarketsListing,
                     v => Settings.MarketsListing = v)
+                .AddToggle(Settings.MarketsBotsId, "reallife_mkt_bot_opt", Settings.MarketsBots,
+                    v => Settings.MarketsBots = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
                 .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
+                .AddButton("reallife_mkt_bot_test_month", () => Markets.MarketDirector.Instance?.TestBotMonth())
                 .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
                 .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())
                 .AddButton("reallife_lst_test_meeting", () => Markets.MarketDirector.Instance?.TestOwnMeeting())
@@ -1006,6 +1012,8 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
+            Guard.Step("GameMembers", () => GameMembers.Logger = context.Logger);   // what an older game lacks is said once (Core/GameMembers)
+            Guard.Step("GameConfirm", () => GameConfirm.Logger = context.Logger);
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // (furnished as the game's web development agency once its type is known)
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // (furnished as the game's recruitment office once its type is known)
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)

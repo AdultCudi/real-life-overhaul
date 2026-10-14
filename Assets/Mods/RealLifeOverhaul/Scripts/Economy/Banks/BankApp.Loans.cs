@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Economy
             int whole = Mathf.CeilToInt(loan.remainingAmount);
             AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Min(whole, loan.dailyPayment), amount => PaidLoan(desk, m, amount));
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () =>
-                HudConfirm.Show("reallife_bank_confirm_payoff_title".Localize(new { bank = Bank.Name }),
+                GameConfirm.Show("reallife_bank_confirm_payoff_title".Localize(new { bank = Bank.Name }),
                     "reallife_bank_confirm_payoff".Localize(new { amount = FinanceText.Money(whole), bank = Bank.Name }),
                     () => UiClone.Safe(() => PaidLoan(desk, m, whole)), null, "reallife_econ_account_pay_off", "common_cancel", false, false));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bank_daily_payment", OpenEconoView);

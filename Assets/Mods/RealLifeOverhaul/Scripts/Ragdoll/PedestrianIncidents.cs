@@ -119,6 +119,10 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Error(e);
                     ClearAll();
+                    if (GameMembers.StandsDown(e, "people hit by traffic"))
+                    {
+                        enabled = false;   // (a game that lacks what a staging names would fail at every look)
+                    }
                 }
                 return;
             }
@@ -137,6 +141,10 @@ namespace RealLifeOverhaul
                 // ClearAll leaves nobody down, so a fault cannot repeat.
                 Logger?.Error(e);
                 ClearAll();
+                if (GameMembers.StandsDown(e, "people hit by traffic"))
+                {
+                    enabled = false;
+                }
             }
         }
 

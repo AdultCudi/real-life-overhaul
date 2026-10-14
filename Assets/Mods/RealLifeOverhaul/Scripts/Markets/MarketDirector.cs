@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Markets
         private long _checkedAt;
         private long _hostFrontier;                                // a guest: the furthest moment the host has played
         private Action<int, int, long> _tradeSink;
+        private Action<BotNote> _botTold;
 
         /// <summary>Raised after the market has moved on or something the player did changed it (the app shows it again).</summary>
         public event Action Changed;
@@ -93,6 +94,7 @@ namespace RealLifeOverhaul.Markets
             _say = (kind, a, b) => _engine?.Event(kind, a, b);
             _world = new MarketGameWorld(this);
             _tradeSink = (stock, micros, shares) => SharedCity.Ask('M', "i|" + stock + "|" + micros + "|" + shares);
+            _botTold = BotHeard;
             StartCoroutine(Tick());
             SharedCity.Register(new SharedCityPart
             {
@@ -182,6 +184,7 @@ namespace RealLifeOverhaul.Markets
             MarketBridges.Poll?.Invoke(_say);   // (a guest that follows the host's market hears nothing of its own: the tape's events are the host's)
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // (for the rest of a day that had a shared trade: a replay of it takes every move from the tape)
             OwnSecond();
+            BotsSecond();
             InstallApp();
         }
 
@@ -332,6 +335,7 @@ namespace RealLifeOverhaul.Markets
             }
             MarketTape tape = MarketTapeFile.Read(state.Id);
             _engine = new MarketEngine(state, tape, _world);
+            _engine.BotTold = _botTold;
             _engine.HoldAfterLoad();
             OwnStarted(save);   // (the player's own company: who they are, and their company back if a save made as a guest left it aside)
             _frontierWritten = tape.Frontier;
@@ -519,6 +523,7 @@ namespace RealLifeOverhaul.Markets
             }
             ulong was = _engine.State.Id;
             _engine = new MarketEngine(state, tape, _world);
+            _engine.BotTold = _botTold;
             _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
             state.Following = true;   // (the player's own company is set aside meanwhile: MarketShare.Adopt)
@@ -594,7 +599,7 @@ namespace RealLifeOverhaul.Markets
         // ---------------------------------------------------------------- what the player does
 
         /// <summary>What an order would come to now, and whether it can be placed (nothing is changed).</summary>
-        public Estimate Estimate(int stockId, OrderSide side, OrderType type, long qty, int limitCents, int stopCents)
+        public Estimate Estimate(int stockId, OrderSide side, OrderType type, long qty, int limitCents, int stopCents, bool closing = false)
         {
             if (!Running)
             {
@@ -605,11 +610,11 @@ namespace RealLifeOverhaul.Markets
                 return new Estimate { Why = OrderWhy.Behind };
             }
             MarketState s = _engine.State;
-            return MarketTrading.Check(s, s.Stock(stockId), side, type, qty, limitCents, stopCents, _world.Wallet.Cash, CommissionLeast, Trading, _engine.Held, s.Phase);
+            return MarketTrading.Check(s, s.Stock(stockId), side, type, qty, limitCents, stopCents, _world.Wallet.Cash, CommissionLeast, Trading, _engine.Held, s.Phase, closing);
         }
 
         /// <summary>An order placed: filled at once if it can be, else it waits. Null with the reason if it cannot be placed.</summary>
-        public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool test, out OrderWhy why)
+        public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool test, out OrderWhy why, bool closing = false)
         {
             why = OrderWhy.Closed;
             if (!Running)
@@ -621,17 +626,18 @@ namespace RealLifeOverhaul.Markets
                 why = OrderWhy.Behind;
                 return null;
             }
-            if (!Settings.MarketsMargin && _engine.State.Account.Margin && !Closes(stockId, side, qty))
+            if (!Settings.MarketsMargin && _engine.State.Account.Margin && !closing && !Closes(stockId, side, qty))
             {
                 why = OrderWhy.NoMargin;   // (with margin trading off an account that is open is only wound down)
                 return null;
             }
             try
             {
-                Order order = _engine.Place(stockId, side, type, life, qty, limitCents, stopCents, Trading, _engine.Held, test, out why);
+                Order order = _engine.Place(stockId, side, type, life, qty, limitCents, stopCents, Trading, _engine.Held, test, out why, closing);
                 if (Verbose && order != null)
                 {
-                    Logger?.Info("Stock market check (order " + order.Id + "): " + side + " " + qty + " of " + stockId + " (" + type + ", " + life + ") is " + order.State + ": PASS");
+                    Logger?.Info("Stock market check (order " + order.Id + "): " + side + " " + qty + " of " + stockId + " (" + type + (closing ? ", closing" : string.Empty) + ", " + life + ") is "
+                                 + order.State + ": PASS");
                 }
                 Moved();
                 return order;
@@ -806,6 +812,14 @@ namespace RealLifeOverhaul.Markets
             if (order.Forced)
             {
                 Queue(NotificationType.Warning, "reallife_mkt_note_forced", "name", stock.Name, "count", qty.ToString());
+                return;
+            }
+            if (order.Closing)
+            {
+                // A stop loss says where it was set: a gap or a fast fall takes it under.
+                Queue(order.Type == OrderType.Stop ? NotificationType.Warning : NotificationType.Success,
+                    order.Type == OrderType.Stop ? "reallife_mkt_note_stop_loss" : "reallife_mkt_note_take_profit", "name", stock.Name, "count", qty.ToString(), "price", MarketText.Price(cents),
+                    "stop", MarketText.Price(order.StopCents));
                 return;
             }
             Queue(NotificationType.Success, order.Side == OrderSide.Buy ? "reallife_mkt_note_bought" : "reallife_mkt_note_sold", "name", stock.Name, "count", qty.ToString(),

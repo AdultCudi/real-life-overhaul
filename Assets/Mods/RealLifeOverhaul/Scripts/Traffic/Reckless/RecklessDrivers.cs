@@ -245,7 +245,11 @@ namespace RealLifeOverhaul
         {
             Logger?.Error(e);
             EndNow("an error");
-            if (++_faults >= 3 && _working)
+            if (_working && GameMembers.StandsDown(e, "reckless drivers"))
+            {
+                _working = false;   // (a game that lacks something they name would fail at every look)
+            }
+            else if (++_faults >= 3 && _working)
             {
                 _working = false;
                 Logger?.Warn("Reckless drivers: switched off for this session after repeated errors (see above); accidents are staged out of view as before.");

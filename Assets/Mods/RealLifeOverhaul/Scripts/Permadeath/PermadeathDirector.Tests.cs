@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Permadeath
                 TestRefusals.TellKey(Logger, Test, "reallife_pd_refused_session");
                 return;
             }
-            HudConfirm.Show("reallife_pd_test_die_header", "reallife_pd_test_die_body", () =>
+            GameConfirm.Show("reallife_pd_test_die_header", "reallife_pd_test_die_body", () =>
             {
                 if (PermadeathState.Armed && !PermadeathState.Dead && !GoingPublic.InSession && !_ending)
                 {

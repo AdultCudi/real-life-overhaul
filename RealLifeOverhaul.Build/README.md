@@ -683,6 +683,30 @@ mod reads the game's build (`GameVersion.buildNumber`) and, when the game is new
 the notice if something is off. The layers the mod names (`GameContract.Layers`) are the game's project settings, not in
 its assemblies: the running mod checks those as it starts.
 
+### The game's build, and a game that lacks members (`Core/GameBuild`, `Core/GameMembers`, `Core/GameConfirm`)
+
+The mod is compiled against one build of the game, `GameBuild.MadeFor` (3682). Under Mono a method that names a member
+the running game does not have cannot be compiled: it throws at every call, and everything else that method does is
+lost. A player on Build 3675 had no mod app open (`PhoneApp.Open` named the newer eight-parameter `HudConfirm.Show`)
+while the camera and careers threw every frame. What follows from that:
+
+- **The build check** (`Core/GameBuild.cs`, game-free, and `Core/GameBuild.Notice.cs`). At game start the running build
+  (`GameVersion.GetCurrent().buildNumber`, the number the main menu shows) is compared with `MadeFor`: one warning in
+  Player.log for an older or a newer game; for an older one, the game's own question box in the main menu and once more
+  when a save is loaded, saying the mod needs the current game and how to update it in Steam (`reallife_build_old_*`).
+  Options > Tests > Diagnostics shows that notice, and asks a question the way the mod asks on an older game.
+- **The guard** (`Core/GameMembers.cs`). The members Build 3675 lacked (`Helpers.FuneralHelper`,
+  `Building.locatedInsidePrivateFenceIndex`, `BuildingResume.TargetController`, `SubwayStation.GetNameKey`) are named
+  only there, each in a small method of its own with an answer that fits a game without it, and the question box only
+  in `Core/GameConfirm.cs`, which finds the running game's own `Show` once when the mod's is missing. The entry points
+  that met them call `GameMembers.StandsDown(e, part)` in their catch: a missing member is said once and that part stops
+  for the session, instead of failing every frame. A failed click on an app says why, once per app (`Game UI: the app`).
+- **NavCheck** (`BuildCheck.cs`) holds all of it: the rules, the build of the game the mod is built against (read from its
+  resources as the main menu reads it) against `MadeFor`, every member in `GameBuild.Isolated` found in the game's
+  assemblies with its exact parameters, the five named nowhere else in the sources, and every guarded entry point still
+  guarded. After a game update it fails until `MadeFor` is set to the new build: build and check the mod against the
+  new game first.
+
 ## Adding a crime
 
 1. **Catalogue entry** in `Scripts/Crime/CrimeCatalogue.cs`: an id, its family, where it can happen
@@ -4697,6 +4721,10 @@ Performance is a requirement, not a nice-to-have.
 - Anything changed on a game object (materials, renderer flags, lights, textures) is recorded and put
   back when the option is switched off and when the scene ends. A feature that meets something
   unexpected logs once, restores the game's own state and stays off; it never throws per frame.
+- A question goes through `GameConfirm.Show` (the same parameters as the game's `HudConfirm.Show`), and the members an
+  older build of the game lacked through `Core/GameMembers`; nothing else names them (NavCheck fails if it does). A new
+  member of the game that may not be in every build is read the same way: in a small method of its own, inside a try
+  whose catch asks `GameMembers.Missing` (see "The game's build, and a game that lacks members").
 - The stretcher and its crew never go anywhere by a navigation agent. It is wheeled along a line worked out
   beforehand (`People/CrewPath`), and it is the stretcher that moves its crew (`Stretcher.Wheel`): every frame
   it puts whoever pushes on the line, itself an arm's length ahead pointing from them to its own place on the
@@ -7311,6 +7339,95 @@ longest: a selector, about eight lines and three rows of buttons); the game's te
 notifications' length. That the statements' addresses compare as the mod's other readers compare them (`Books.Key`). That
 `ServicesGame.Complete` hands a business over cleanly on the day of a takeover, as it does for a sale. How the figures feel
 in play: the requirements against what businesses earn, how often investors and bids come.
+
+## Economy: orders that wait and trading bots (`Scripts/Markets`)
+
+Stop losses, take profits and limits on the Stocks app's ticket, and trading bots the player can hire (option "Trading
+bots", id `markets_bots`, under the stock market's header, on by default). No Update and no Harmony patch: the orders fill
+and the bots trade on the market's own steps (`MarketEngine.cs`, `MarketEngine.Bots.cs`), the option is looked at on the
+market director's one-second timer, and the Stocks app writes the Bots tab when it is opened.
+
+### Orders
+
+| Kind on the ticket | What it is | Fills |
+| --- | --- | --- |
+| At the market | `OrderType.Market` | at once at the offer or the bid, moved by its size |
+| Limit (to buy or to sell) | `OrderType.Limit` | at its limit or the step's first price if better, once the step's range reached it; a quarter of the step's volume at most |
+| Stop loss | `OrderType.Stop`, `Order.Closing` | once the step's bid (a buy: the offer) reached it, at the market's price the step ends on (`MarketTrading.MarketPrice`): the next price, under the stop after a fast fall; at the open, the open's price (a gap) |
+| Take profit | `OrderType.Limit`, `Order.Closing` | as a limit |
+
+A closing order is placed only on what is held (`OrderWhy.NothingHeld`, `NoShares`) and on the far side of the price
+(`StopSide`: a sale's stop under the bid; `ProfitSide`: a sale's limit over the bid), holds nothing back from other orders
+(`MarketTrading.Reserved`), never fills for more than is held at its moment (`MarketEngine.Closable`: no short is opened in a
+margin account), and when nothing is held after a fill the others on the company are cancelled (`CloseClosing`). Each lasts
+the day or until cancelled (60 market days), and the Orders tab lists them with the cancel button as before. A plain stop
+(a version before closing orders, or a stop to open a position) now fills the same way: at the next price, not at its own.
+
+### Bots
+
+| File | What it is |
+| --- | --- |
+| `MarketBots.cs` | the four firms (`BotFirm`), `Bot`, `BotHolding`, `BotOrder`; every figure; the strategies' scores and exits; `Decide`; the fill booked (`Fill`); the room a company leaves; splits |
+| `MarketEngine.Bots.cs` | hiring, settings, selling up, starting again, letting go; the open, each step and the close; the month's fee and share (`Settle`); dividends and a company leaving; `BotNote` for the director |
+| `MarketDirector.Bots.cs` | the option, the asks from the app, the notifications, the dividend tax on a bot's dividends, the save tools, the test |
+| `MarketApp.Bots.cs` | the Bots tab and its box; a bot's holdings on Portfolio, its trades marked on History |
+| `TradingGuide.cs` | the Guide page's figures |
+
+| Firm | Strategy | Rule (on daily closes) | Fee a month | Share of new profit | To begin with |
+| --- | --- | --- | --- | --- | --- |
+| Meridian Trend Partners | trend following | in while close > SMA 20 > SMA 50, out under SMA 50; large and mid | 0.20% of its worth | 20% | 20% a holding, stop 10%, loss 35% |
+| Quayside Reversion Fund | mean reversion | in at RSI(5) < 30 over SMA 50, out at RSI(5) > 60 or after 10 market days; large and mid | 0.15% | 20% | 20%, 10%, 35% |
+| Larkspur Momentum | momentum | the best gains over 60 market days to a week ago, held for a month; small too | 0.20% | 25% | 25%, 15%, 50% |
+| Harbourline Income | dividend income | the highest yields of four profitable quarters that covered them, turned over monthly; large and mid | 0.10% | 10% | 10%, none, 35% |
+
+Settings: 10, 20, 25, 50 or 100% of its worth a holding; a stop 5, 10, 15 or 25% under what a holding cost, or none; the
+most it may lose 20, 35, 50, 75 or 90% of its capital (`Base`). Least capital 2500, least fee 5 a month, no purchase under
+100 (all at the start's prices). A firm's fee is for the market days it traded in the month (none while stopped); its share
+is of the worth over the high-water mark, which then moves up. Both are forced from the player's cash
+(`reallife_transaction_shares_bot_fee`, `_bot_share`) and taken from the bot's money.
+
+- **Money.** A bot trades the player's own cash, up to its capital: each purchase and sale is `wallet.Take`/`Give` with the
+  player's own keys (`shares_bought`, `_sold`, `_commission`, the name "company (firm)"), so it is in the game's
+  transactions and under investments in Finance exactly as a trade in a cash account. `Bot.Cash` is what of its money is not
+  in shares; a purchase the player's cash cannot pay for is not made (one notification a day). A margin account is not used.
+  Its dividends are paid to the player's cash and taxed as theirs (`DividendTax`), without a notification for each.
+- **Timing.** It decides at each close (and when hired or started while the market is shut) on the closes and results out
+  by then, and trades at the first step of the next session at `MarketPrice` of that moment: sales first. Stops are looked
+  at against the open's bid and each step's low, and sold at the market's price then; the floor after each step and at the
+  open, everything sold at the market then (a gap goes under it).
+- **What protects the market.** No foresight (the next session's secret does not exist at the close it decides at); the
+  spread, the size's move and the commission on every trade; its trades' lasting move and volume put on the price as the
+  player's (`ImpactPermanent`), counted in the player's recent trading (`Stock.Impact`), so the player's own next trade
+  pays for them too; the player's holding and every bot's together held to a tenth of a company (`MarketBots.Room`); no
+  player's company, no company under a bid, nothing listed under 20 market days; nothing changed while the market is
+  behind or held after a load.
+- **Going Public.** Bots live in the save's line only (never the city's), come into the host's market with a guest
+  (`MarketShare.Adopt`) and trade there as the player does: a host's bot trade is a tape event (`EventTrade`,
+  `EventVolume`), a guest's goes to the host as the player's `i|stock|micros|shares` request. Nothing new is sent.
+
+### The save
+
+Part `b` of `reallife:markets`, one record a bot: firm, status, capital, base, money, settings, days, peak and drawdown,
+high-water mark, record, month, then its holdings (`id,shares,cost,stop,opened,gain,merged`) and what it waits to trade.
+A bot's shares are also written into the player's holding of part `p` (the holding's `merged` field says so) and taken out
+again on reading, so a version that knows no bots reads them as the player's own shares, paid for with the player's money.
+A dividend owed on a bot's shares is a record of `d` with the firm after it (an older version pays it to the player); a
+bot's trade in `t` has the firm after it; a closing order in `o` has a 1 after it (an older version reads a stop or a limit).
+A line without bots and closing orders is written exactly as before.
+
+### Tests
+
+Options page: "A month's statement for my trading bots now". EconomyCheck (`MarketChecks5.cs`): closing orders' rules and
+gaps; the bots' rules, every fill at the price of its moment and booked as the player's, decided before the next day's
+secret, the same on two machines, moving prices and shared as a player's trade, fees and the high-water mark, the floor and
+a jump through it, splits, a company leaving, letting go, the save's line (and read without part `b`), 24 seeds of two
+60-day years for each strategy: losses and gains in every one, none beating holding the market with its dividends.
+
+### Not verified (the game could not be run)
+
+That seven tabs fit the Stocks app's bar, and the Bots tab's box (four lines, three selectors and a row of buttons) the
+white box; the game's text box for the capital; the notifications on screen; the transactions' names in Finance and
+EconoView; how the bots feel over a long game.
 
 ## Economy: running a business
 

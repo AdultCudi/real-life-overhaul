@@ -35,7 +35,7 @@ namespace RealLifeOverhaul
                 BuildingRegistration registration = building != null ? building.buildingRegistration : null;
                 return registration != null && building.building != null && !registration.RentedByPlayer
                        && registration.businessTypeName != "ba:businesstype_empty" && registration.HasEstablishedBusiness
-                       && building.building.locatedInsidePrivateFenceIndex < 0
+                       && !GameMembers.Fenced(building.building)
                        && BuildingHelper.CanEnterBuilding(building.building.Address)
                        && registration.GetEntranceFeeForPlayer() <= 0f          // nobody pays to get in to work
                        && building.building.requiredDLC.DlcIsOwned()

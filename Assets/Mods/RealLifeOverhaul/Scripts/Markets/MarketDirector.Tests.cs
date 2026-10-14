@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Markets
                         log.Append(" the margin account's ").Append(s.Account.Cash).Append(';');
                     }
                     total += OwnSettled(log);   // the player's own listed company taken private at its last price (MarketDirector.Own.cs)
+                    total += BotsSettled(log);  // the player's bots' shares (MarketDirector.Bots.cs)
                     if (total > 0)
                     {
                         _world.Wallet.Give(total, MarketMoney.Sold, string.Empty);

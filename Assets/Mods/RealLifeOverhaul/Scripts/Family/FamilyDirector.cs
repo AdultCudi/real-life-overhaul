@@ -360,7 +360,7 @@ namespace RealLifeOverhaul.Family
         internal static bool CanAct()
         {
             return !ThirdPersonCamera.IsUiOpen() && DialogController.current == null && !JobDirector.TakesInteractKey
-                   && !FuneralHelper.PlayerDead && LifeEvents.IsSafeForEvent();
+                   && !GameMembers.PlayerDead && LifeEvents.IsSafeForEvent();
         }
 
         /// <summary>
@@ -503,7 +503,7 @@ namespace RealLifeOverhaul.Family
 
         private void Put(Question q)
         {
-            HudConfirm.Show(FamilyText.Say(q.Header, q.Fill), FamilyText.Say(q.Body, q.Fill),
+            GameConfirm.Show(FamilyText.Say(q.Header, q.Fill), FamilyText.Say(q.Body, q.Fill),
                 () => Guarded(q.OnYes), () => Guarded(q.OnNo), q.Yes, q.No, false);
         }
 

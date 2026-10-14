@@ -1088,7 +1088,7 @@ namespace RealLifeOverhaul
             }
             _asked = _trips[direct > 0 ? direct - 1 : 0];
             Logger?.Info("Transit check (stop list): the game's list could not be made, so the game's question is asked for the one ride to " + StopLabel(_asked.To) + ": FAIL.");
-            HudConfirm.Show(TransitText.T("reallife_transit_list_title", "name", StopName(_served)),
+            GameConfirm.Show(TransitText.T("reallife_transit_list_title", "name", StopName(_served)),
                 TransitText.T("reallife_transit_ask_one", "name", StopName(_asked.To), "minutes", Mathf.CeilToInt(_asked.Minutes).ToString(),
                     "fare", TransitState.HasPass ? TransitText.T("reallife_transit_list_fare_pass") : TransitText.Money(TransitState.BusFare)),
                 _onAsked, null, null, null, false);

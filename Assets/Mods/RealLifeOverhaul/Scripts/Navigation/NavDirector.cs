@@ -454,7 +454,7 @@ namespace RealLifeOverhaul.Nav
                 return false;   // the game switches the phone off with the rest of its HUD (a menu, the interior designer, a mini game, a scene)
             }
             if (CityMap.IsOpen || FullMenu.IsOpen || UI.MiniMenu.MiniMenu.IsOpen || Options.IsVisible || BuildingPreview.isPreviewing || InteriorDesignerUI.IsOpen
-                || GameManager.IsAnyMiniGameActive() || FuneralHelper.IsFuneralActive || EnergyHelper.goingToHospital || (uis.timeMachine != null && uis.timeMachine.isRunning))
+                || GameManager.IsAnyMiniGameActive() || GameMembers.FuneralActive || EnergyHelper.goingToHospital || (uis.timeMachine != null && uis.timeMachine.isRunning))
             {
                 return false;
             }

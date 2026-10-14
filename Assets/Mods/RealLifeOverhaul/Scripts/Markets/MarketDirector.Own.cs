@@ -704,20 +704,21 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- tax on dividends
 
-        // A dividend the player was paid: the tax withheld from it, at the rate the council's business tax sets.
-        private void DividendTax(Stock stock, long amount)
+        // A dividend the player was paid: the tax withheld from it, at the rate the council's business tax sets. With
+        // 'cash' it was paid into the player's cash whatever the account (a trading bot's). What was withheld.
+        private long DividendTax(Stock stock, long amount, bool cash = false)
         {
             MarketState s = _engine != null ? _engine.State : null;
             if (s == null || amount <= 0)
             {
-                return;
+                return 0;
             }
             long tax = ListingVotes.DividendTax(amount, s.Env.Lever(MarketInputs.BusinessTaxLever));
             if (tax <= 0)
             {
-                return;
+                return 0;
             }
-            if (s.Account.Margin)
+            if (s.Account.Margin && !cash)
             {
                 s.Account.Cash -= tax;   // (paid into the account, withheld from it)
             }
@@ -725,6 +726,7 @@ namespace RealLifeOverhaul.Markets
             {
                 _world.Wallet.Force(tax, ListingMoney.DividendTax, stock != null ? stock.Name : string.Empty);
             }
+            return tax;
         }
 
         // ---------------------------------------------------------------- the save tools

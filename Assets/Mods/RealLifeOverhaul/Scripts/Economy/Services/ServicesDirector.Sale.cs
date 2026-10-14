@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Economy
                 string body = ServicesText.Fill("reallife_svc_confirm_sell_body", "business", name, "buyer", buyerName, "price", ServicesText.Money(price),
                     "paid", parts > 1 ? ServicesText.Fill("reallife_svc_confirm_paid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString()) : ServicesText.T("reallife_svc_confirm_paid_once"),
                     "terms", terms);
-                HudConfirm.Show("reallife_svc_confirm_sell_title".Localize(new { business = name }), "reallife_svc_confirm_sell_text".Localize(new { text = body }),
+                GameConfirm.Show("reallife_svc_confirm_sell_title".Localize(new { business = name }), "reallife_svc_confirm_sell_text".Localize(new { text = body }),
                     () => SaleGuard("completing a sale", () => Sell(place, price, parts, keepsStaff, clauseDays, buyer, buyerName)), null, null, null, false, true);
             });
         }

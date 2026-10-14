@@ -353,6 +353,8 @@ namespace RealLifeOverhaul.Meta
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
                 .Test("reallife_test_block_say", BlockTests.Say)
                 .Test("reallife_test_guard_fault", Guard.TestFault)   // five faults of a test entry point: the line in Player.log and the notice (Core/Guard)
+                .Test("reallife_test_build_notice", GameBuild.TestNotice)   // the notice a game older than the mod gets (Core/GameBuild)
+                .Test("reallife_test_build_box", GameConfirm.TestOwnBox)    // a question the way the mod asks on such a game (Core/GameConfirm)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
             // Going Public, the multiplayer mod: what this mod does differently in one of its sessions (Core/GoingPublic). The rows
@@ -1146,6 +1148,7 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
             Markets.ListingGuide.Register();   // the player's own company on the market: its switch, its tests and its Guide figures (Scripts/Markets/Listing; its data is the market's line)
+            Markets.TradingGuide.Register();   // orders that wait and trading bots: their switch, their test and their Guide figures (Scripts/Markets; their data is the market's line)
 
             // The bank apps: one for each of the city's three largest banks, each a front on the credit desk. They keep no data:
             // off, no bank app is on the phone and every account and loan stays as it is. They run only while the economy core does.

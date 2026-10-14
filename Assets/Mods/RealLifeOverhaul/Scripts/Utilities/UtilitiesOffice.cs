@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 CityBuildingController building = buildings[i];
                 if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
-                    || building.building.locatedInsidePrivateFenceIndex >= 0 || building.building.SpecialService != null
+                    || GameMembers.Fenced(building.building) || building.building.SpecialService != null
                     || building.building.BuildingType != "ba:buildingtype_office" || (taken != null && taken(building))
                     || SpecialBuildings.Holds(building)    // (one another feature has made its own: the university, if it was chosen while the utilities were off)
                     || SpecialBuildings.Players(building)) // (one the player rents or owns stays theirs)

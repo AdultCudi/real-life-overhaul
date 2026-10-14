@@ -179,7 +179,7 @@ namespace RealLifeOverhaul
                 {
                     CityBuildingController building = buildings[i];
                     if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
-                        || building.building.locatedInsidePrivateFenceIndex >= 0 || SpecialBuildings.Players(building))   // (one the player rents or owns stays theirs)
+                        || GameMembers.Fenced(building.building) || SpecialBuildings.Players(building))   // (one the player rents or owns stays theirs)
                     {
                         continue;
                     }

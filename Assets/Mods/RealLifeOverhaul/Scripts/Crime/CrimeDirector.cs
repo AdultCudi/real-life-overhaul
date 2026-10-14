@@ -183,7 +183,11 @@ namespace RealLifeOverhaul
         {
             Logger?.Error(e);
             EndScene();
-            if (++_faults >= MaxFaults)
+            if (GameMembers.StandsDown(e, "crime in the street"))
+            {
+                enabled = false;   // (a game that lacks something it names would fail at every look)
+            }
+            else if (++_faults >= MaxFaults)
             {
                 Logger?.Warn("Crime: switched off for this session after repeated errors (see above).");
                 enabled = false;

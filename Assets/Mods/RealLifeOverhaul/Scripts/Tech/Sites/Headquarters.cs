@@ -165,7 +165,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < buildings.Length; i++)
             {
                 CityBuildingController b = buildings[i];
-                if (b == null || b.building == null || b.building.BuildingType != Office || b.building.SpecialService != null || b.building.locatedInsidePrivateFenceIndex >= 0
+                if (b == null || b.building == null || b.building.BuildingType != Office || b.building.SpecialService != null || GameMembers.Fenced(b.building)
                     || (int)b.building.requiredDLC != 0 || b.building.IsHamptonsHouse() || b.entranceDoors == null || b.entranceDoors.Length == 0 || b.building.totalSqm <= 0)
                 {
                     continue;

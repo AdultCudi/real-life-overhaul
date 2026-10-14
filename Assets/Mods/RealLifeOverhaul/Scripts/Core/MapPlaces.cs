@@ -1183,6 +1183,7 @@ namespace RealLifeOverhaul
             private readonly WaitForSecondsRealtime _second = new WaitForSecondsRealtime(1f);
             private BuildingResume _card;
             private EntityController _carded;
+            private bool _cardOff;   // the card's lines stood down: this game lacks something they name (Core/GameMembers)
             private int _hookIn;
 
             private void Start()
@@ -1202,13 +1203,23 @@ namespace RealLifeOverhaul
             {
                 while (true)
                 {
+                    bool lacking = false;
                     try
                     {
                         Tick();
                     }
                     catch (Exception e)
                     {
-                        Logger?.Error(e);
+                        // A game that lacks something the look names would fail at every one: said once, and the look stops.
+                        lacking = GameMembers.StandsDown(e, "the mod's places on the city map");
+                        if (!lacking)
+                        {
+                            Logger?.Error(e);
+                        }
+                    }
+                    if (lacking)
+                    {
+                        yield break;
                     }
                     yield return _second;
                 }
@@ -1344,11 +1355,11 @@ namespace RealLifeOverhaul
                         Logger?.Error(e);
                     }
                 }
-                if (ReferenceEquals(_card, null))
+                if (ReferenceEquals(_card, null) || _cardOff)
                 {
                     return;
                 }
-                EntityController target = _card.TargetController;
+                EntityController target = GameMembers.TargetOf(_card);
                 if (ReferenceEquals(target, _carded))
                 {
                     return;
@@ -1356,7 +1367,14 @@ namespace RealLifeOverhaul
                 _carded = target;
                 if (!ReferenceEquals(target, null))
                 {
-                    Card(_card, target);
+                    try
+                    {
+                        Card(_card, target);
+                    }
+                    catch (Exception e) when (GameMembers.StandsDown(e, "the mod's lines on the game's building card"))
+                    {
+                        _cardOff = true;
+                    }
                 }
             }
         }

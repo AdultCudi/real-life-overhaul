@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                HudConfirm.Show(titleKey.Localize(), TextKey.Localize(new { text = body }), () =>
+                GameConfirm.Show(titleKey.Localize(), TextKey.Localize(new { text = body }), () =>
                 {
                     try
                     {
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Meta
                 {
                     try
                     {
-                        HudConfirm.Show(titleKey.Localize(), TextKey.Localize(new { text }), null, null, "reallife_opt_ok", null, false, false);
+                        GameConfirm.Show(titleKey.Localize(), TextKey.Localize(new { text }), null, null, "reallife_opt_ok", null, false, false);
                     }
                     catch (Exception e)
                     {

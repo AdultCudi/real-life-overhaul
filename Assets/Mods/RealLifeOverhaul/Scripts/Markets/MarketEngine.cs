@@ -561,6 +561,7 @@ namespace RealLifeOverhaul.Markets
             }
             State.RateSeenBp = env.RateBp;
             OpenOrders(day);
+            BotsOpen();   // the player's bots: stops the night went through, and their floors (MarketEngine.Bots.cs)
             Margin(day, MarketCatalogue.PhaseOpen);
         }
 
@@ -799,6 +800,7 @@ namespace RealLifeOverhaul.Markets
             State.IndexLow = Math.Min(State.IndexLow, index);
             State.IndexLast = index;
             RestingOrders(day, k);
+            BotsStep(day, k);
             Margin(day, MarketCatalogue.PhaseOpen + k);
         }
 
@@ -918,6 +920,7 @@ namespace RealLifeOverhaul.Markets
             Interest(day);
             Margin(day, MarketCatalogue.PhaseClose);
             Expire(day);
+            BotsClose(day);
             CloseNews(day);
             for (int i = 0; i < State.Stocks.Count; i++)
             {
@@ -1008,6 +1011,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     State.Dues.Add(new DividendDue { StockId = s.Id, Cents = p.Shares * s.DeclaredCents, PayDay = s.PayDay, Test = p.Test });
                 }
+                BotDues(s);
                 // The company pays it out of its book (a player's company: out of its reserve).
                 s.Equity -= s.Shares * s.DeclaredCents / 100.0;
                 if (s.Own != null)
@@ -1024,6 +1028,11 @@ namespace RealLifeOverhaul.Markets
                 }
                 State.Dues.RemoveAt(i);
                 Stock s = State.Stock(due.StockId);
+                if (due.Bot > 0)
+                {
+                    BotDividend(due, s, day);   // (a bot's shares: paid to the player, into the bot's money)
+                    continue;
+                }
                 Position p = State.Position(due.StockId);
                 if (due.Cents > 0)
                 {
@@ -1299,6 +1308,7 @@ namespace RealLifeOverhaul.Markets
                 State.Positions.Remove(p);
                 _world.Paid(TradeKind.Payout, s, held > 0 ? money : -money);
             }
+            BotsLeave(s, day);
             for (int i = 0; i < State.Orders.Count; i++)
             {
                 Order o = State.Orders[i];
@@ -1386,10 +1396,11 @@ namespace RealLifeOverhaul.Markets
         /// An order the player places now: checked, made, and if it is at the market while the market trades (or a limit
         /// already met) filled at once. Null with the reason when it cannot be placed.
         /// </summary>
-        public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool open, bool held, bool test, out OrderWhy why)
+        public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool open, bool held, bool test, out OrderWhy why,
+            bool closing = false)
         {
             Stock s = State.Stock(stockId);
-            Order order = MarketTrading.Place(State, s, side, type, life, qty, limitCents, stopCents, _world.Wallet.Cash, _world.CommissionLeast, open, held, State.Phase, test, out why);
+            Order order = MarketTrading.Place(State, s, side, type, life, qty, limitCents, stopCents, _world.Wallet.Cash, _world.CommissionLeast, open, held, State.Phase, test, out why, closing);
             if (order == null || !open)
             {
                 return order;
@@ -1429,21 +1440,68 @@ namespace RealLifeOverhaul.Markets
             }
             if (city)
             {
-                int micros = MarketInputs.TradeMicros(kept);
-                int shares = (int)Math.Min(qty, int.MaxValue);
-                if (TradeSink != null)
-                {
-                    TradeSink(s.Id, micros, qty);
-                }
-                else if (!Replaying)
-                {
-                    Event(MarketInputs.EventTrade, s.Id, micros);
-                    Event(MarketInputs.EventVolume, s.Id, shares);
-                }
+                Shared(s, kept, qty);
             }
             s.Last = s.MidCents;
+            if (!o.Forced && State.Held(s.Id) == 0)
+            {
+                CloseClosing(s.Id, o.Id);   // nothing held now: a stop loss or take profit left on it has nothing to close
+                if (o.Closing && o.IsOpen)
+                {
+                    o.State = OrderState.Filled;   // (it closed what there was: it is done)
+                }
+            }
             _world.Filled(o, s, qty, cents);
             return true;
+        }
+
+        // A trade's lasting move in a Going Public session: to the host (a guest), or on the tape for every market at the next moment (the host).
+        private void Shared(Stock s, double kept, long qty)
+        {
+            int micros = MarketInputs.TradeMicros(kept);
+            int shares = (int)Math.Min(qty, int.MaxValue);
+            if (TradeSink != null)
+            {
+                TradeSink(s.Id, micros, qty);
+            }
+            else if (!Replaying)
+            {
+                Event(MarketInputs.EventTrade, s.Id, micros);
+                Event(MarketInputs.EventVolume, s.Id, shares);
+            }
+        }
+
+        // Every open stop loss and take profit on a company, but one, cancelled: there is nothing left for them to close.
+        private void CloseClosing(int stockId, int but)
+        {
+            for (int i = 0; i < State.Orders.Count; i++)
+            {
+                Order other = State.Orders[i];
+                if (other.IsOpen && other.Closing && other.StockId == stockId && other.Id != but)
+                {
+                    other.State = OrderState.Cancelled;
+                    other.Why = OrderWhy.NothingHeld;
+                }
+            }
+        }
+
+        // What of a stop loss or a take profit can be filled now: what is left of it, never more than is still held. With
+        // nothing held it is done: filled as far as it went, else cancelled.
+        private long Closable(Order o, long wanted)
+        {
+            if (!o.Closing)
+            {
+                return wanted;
+            }
+            long held = State.Held(o.StockId);
+            long holding = o.Side == OrderSide.Sell ? Math.Max(0L, held) : Math.Max(0L, -held);
+            long qty = Math.Min(wanted, holding);
+            if (qty <= 0)
+            {
+                o.State = o.Filled > 0 ? OrderState.Filled : OrderState.Cancelled;
+                o.Why = o.Filled > 0 ? OrderWhy.None : OrderWhy.NothingHeld;
+            }
+            return qty;
         }
 
         /// <summary>The host: a guest's trade, to be played by every market at the next moment of the grid (bounded as a trade can be).</summary>
@@ -1481,14 +1539,23 @@ namespace RealLifeOverhaul.Markets
                     case OrderType.Limit:
                         if (buying ? q.Ask <= o.LimitCents : q.Bid >= o.LimitCents)
                         {
-                            FillNow(s, o, Math.Min(o.Left, room), buying ? q.Ask : q.Bid, MarketCatalogue.PhaseOpen);
+                            long qty = Closable(o, Math.Min(o.Left, room));
+                            if (qty > 0)
+                            {
+                                FillNow(s, o, qty, buying ? q.Ask : q.Bid, MarketCatalogue.PhaseOpen);
+                            }
                         }
                         break;
                     case OrderType.Stop:
                         if (buying ? q.Ask >= o.StopCents : q.Bid <= o.StopCents)
                         {
+                            // A gap through the stop: it goes at the open's price, whatever the stop was.
                             o.Triggered = true;
-                            FillNow(s, o, o.Left, MarketTrading.MarketPrice(State, s, buying, o.Left, MarketCatalogue.PhaseOpen), MarketCatalogue.PhaseOpen);
+                            long qty = Closable(o, o.Left);
+                            if (qty > 0)
+                            {
+                                FillNow(s, o, qty, MarketTrading.MarketPrice(State, s, buying, qty, MarketCatalogue.PhaseOpen), MarketCatalogue.PhaseOpen);
+                            }
                         }
                         break;
                 }
@@ -1515,30 +1582,27 @@ namespace RealLifeOverhaul.Markets
                 int bidOpen = (int)Math.Floor(bar.O * (1.0 - half)), bidLow = (int)Math.Floor(bar.L * (1.0 - half)), bidHigh = (int)Math.Floor(bar.H * (1.0 - half));
                 if (o.Type == OrderType.Limit)
                 {
-                    if (buying && askLow <= o.LimitCents)
+                    if (buying ? askLow <= o.LimitCents : bidHigh >= o.LimitCents)
                     {
-                        FillNow(s, o, Math.Min(o.Left, room), Math.Min(o.LimitCents, askOpen), phase);
-                    }
-                    else if (!buying && bidHigh >= o.LimitCents)
-                    {
-                        FillNow(s, o, Math.Min(o.Left, room), Math.Max(o.LimitCents, Math.Max(1, bidOpen)), phase);
+                        long qty = Closable(o, Math.Min(o.Left, room));
+                        if (qty > 0)
+                        {
+                            FillNow(s, o, qty, buying ? Math.Min(o.LimitCents, askOpen) : Math.Max(o.LimitCents, Math.Max(1, bidOpen)), phase);
+                        }
                     }
                 }
                 else if (o.Type == OrderType.Stop)
                 {
-                    if (buying && askHigh >= o.StopCents)
+                    // Reached in the step: from then it is an order at the market, filled at the market's price the step
+                    // ends on (the next price), with its move: the stop's own price only if the market is there.
+                    if (buying ? askHigh >= o.StopCents : bidLow <= o.StopCents)
                     {
                         o.Triggered = true;
-                        double impact = MarketTrading.Impact(State, s, o.Left);
-                        int at = (int)Math.Ceiling(Math.Max(o.StopCents, askOpen) * (1.0 + impact));
-                        FillNow(s, o, o.Left, at, phase);
-                    }
-                    else if (!buying && bidLow <= o.StopCents)
-                    {
-                        o.Triggered = true;
-                        double impact = MarketTrading.Impact(State, s, o.Left);
-                        int at = Math.Max(1, (int)Math.Floor(Math.Min(o.StopCents, Math.Max(1, bidOpen)) * (1.0 - impact)));
-                        FillNow(s, o, o.Left, at, phase);
+                        long qty = Closable(o, o.Left);
+                        if (qty > 0)
+                        {
+                            FillNow(s, o, qty, MarketTrading.MarketPrice(State, s, buying, qty, phase), phase);
+                        }
                     }
                 }
             }

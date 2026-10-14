@@ -1299,7 +1299,7 @@ namespace RealLifeOverhaul
             {
                 return SceneBreak.Loading;
             }
-            if (FuneralHelper.PlayerDead)
+            if (GameMembers.PlayerDead)
             {
                 return SceneBreak.PlayerDead;
             }
@@ -1380,7 +1380,7 @@ namespace RealLifeOverhaul
             UIs uis = InstanceBehavior<UIs>.Instance;
             GameInstance save = SaveGameManager.Current;
             return uis != null && save != null && !LoadScene.isLoading && !BuildingManager.IsInsideBuilding && TrafficTools.Street
-                   && (uis.timeMachine == null || !uis.timeMachine.isRunning) && !JobDirector.OnShift && !FuneralHelper.PlayerDead && !EnergyHelper.goingToHospital;
+                   && (uis.timeMachine == null || !uis.timeMachine.isRunning) && !JobDirector.OnShift && !GameMembers.PlayerDead && !EnergyHelper.goingToHospital;
         }
 
         private void RefreshContext(GameManager gm, float now)
@@ -1726,7 +1726,7 @@ namespace RealLifeOverhaul
             {
                 why = TestRefusal.OnJob;
             }
-            if (why == TestRefusal.None && street && (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital))
+            if (why == TestRefusal.None && street && (GameMembers.PlayerDead || EnergyHelper.goingToHospital))
             {
                 why = TestRefusal.ScreenBusy;
             }

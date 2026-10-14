@@ -159,13 +159,16 @@ version: the guest is told once and keeps its own city), Resync (a part came out
 | W building sites | every site, none anybody's own | whole, each hour | the guest's own refit (ids from 1,000,000), when its shopfront was refitted, what is next door |
 | N notices | (nothing) | the city's toasts and stories of the hours just run | the polls opening (each guest's own polling place) |
 | S street events' calendar | the salt the calendar and the weather's spells are drawn from | (never changes) | |
-| M stock market (`Markets/MarketShare`) | `MarketStore`'s city line (every company with all its candles, the indices, the news) and the tape from that day | the tape's new lines (day's secret, city of the day, events, the frontier) and a check of the prices | holdings, orders, trades, watch list, account, dividends owed, recent trading |
+| M stock market (`Markets/MarketShare`) | `MarketStore`'s city line (every company with all its candles, the indices, the news) and the tape from that day | the tape's new lines (day's secret, city of the day, events, the frontier) and a check of the prices | holdings, orders, trades, watch list, account, dividends owed, recent trading, trading bots |
 
 The market is exact (the same state, secret, city and events give the same moments to the cent), so a guest's market plays
 the host's tape and never passes the host's furthest moment: no price is ever sent. Every player's trades move the one
 market: in a session a trade's lasting move is an event on the host's tape (`EventTrade`, `EventVolume`) that every market
 plays at the next moment; a day played in a session and replayed after a load takes those moves from the tape, once. Each
 update carries the host's prices at its moment (a checksum); a guest that comes out different asks for the market again.
+A player's trading bots (`Markets/MarketBots`) are theirs, as their holdings are: in their own save's line, carried into
+the host's market by `MarketShare.Adopt`, never in the city's line; their trades go to the tape as the player's own do
+(the host's as events, a guest's as its `i|stock|micros|shares` request), so nothing new is sent.
 
 **A player's own listed company** (`Markets/Listing`) is a company of the market like any other, with its founder's hash
 (`OwnListing.Owner`; `MarketState.Me` is this machine's player). The host's company is in the city's line and every guest

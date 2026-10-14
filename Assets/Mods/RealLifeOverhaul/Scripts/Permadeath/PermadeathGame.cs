@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Permadeath
         private static bool Busy()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
-            return !Ready || FuneralHelper.PlayerDead || FuneralHelper.IsFuneralActive || EnergyHelper.goingToHospital
+            return !Ready || GameMembers.PlayerDead || GameMembers.FuneralActive || EnergyHelper.goingToHospital
                    || uis == null || (uis.timeMachine != null && uis.timeMachine.isRunning);
         }
 
@@ -322,7 +322,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 if (on && dead)
                 {
-                    FuneralHelper.PlayerDead = true;
+                    GameMembers.PlayerDead = true;
                 }
                 PlayerController player = PlayerHelper.PlayerController;
                 if (player == null)

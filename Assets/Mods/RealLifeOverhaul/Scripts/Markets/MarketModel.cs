@@ -178,7 +178,11 @@ namespace RealLifeOverhaul.Markets
     public enum OrderWhy
     {
         None = 0, Closed, Held, Behind, NoShares, NoMoney, TooLarge, HoldingLimit, NotListed, NoBorrow, NoMargin, BelowMargin, BadPrice, TooMany,
-        Halted, Expired, Cancelled, CompanyGone, Forced, Count
+        Halted, Expired, Cancelled, CompanyGone, Forced,
+        NothingHeld,    // a stop loss or a take profit with nothing (left) to close
+        StopSide,       // a stop loss on the wrong side of the price: to sell it is under the bid, to buy back over the offer
+        ProfitSide,     // a take profit on the wrong side: to sell it is over the bid, to buy back under the offer
+        Count
     }
 
     /// <summary>An order to buy or sell. Prices in cents.</summary>
@@ -201,6 +205,7 @@ namespace RealLifeOverhaul.Markets
         public bool Triggered;       // a stop has been reached and is now an order at the market
         public bool Test;
         public bool Forced;          // the broker's own order (a margin call)
+        public bool Closing;         // a stop loss (a stop) or a take profit (a limit): it only ever closes what is held, and holds nothing back for other orders
 
         public long Left => Qty - Filled;
         public bool IsOpen => State == OrderState.Open;
@@ -220,6 +225,7 @@ namespace RealLifeOverhaul.Markets
         public long Value;           // money in (more than nothing) or out, before commission
         public long Fee;
         public bool Test;
+        public int Bot;              // a trading bot's (its firm, MarketBots), 0 the player's own
     }
 
     /// <summary>The player's account with the broker.</summary>
@@ -319,6 +325,7 @@ namespace RealLifeOverhaul.Markets
         public long Cents;           // the whole sum, in cents: shares held at the record day times the dividend (under nothing: owed)
         public int PayDay;
         public bool Test;
+        public int Bot;              // on a trading bot's holding (its firm): paid to the player and into the bot's money; 0 the player's own
     }
 
     /// <summary>What kind of piece the market has for the paper or a notification. Saved as a number.</summary>
@@ -404,6 +411,7 @@ namespace RealLifeOverhaul.Markets
         public readonly Account Account = new Account();
         public readonly List<MarketNews> News = new List<MarketNews>(32);   // the last few days' pieces
         public readonly List<DividendDue> Dues = new List<DividendDue>(8);  // dividends worked out at a record day, to be paid
+        public readonly List<Bot> Bots = new List<Bot>(4);                  // the trading bots the player has hired (MarketBots), one a firm
         public int BusinessDay;                  // the last day of the calendar the companies' business has been run for
 
         // The player's own company (Markets/Listing). Me is who the player of this machine is (a hash of their save, set by

@@ -143,10 +143,15 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // Clear leaves nothing out, so a fault cannot repeat; after three there is no presence this session.
+                // Clear leaves nothing out, so a fault cannot repeat; after three there is no presence this session, and
+                // after the first on a game that lacks something it names (that one would come back at every look).
                 Logger?.Error(e);
                 Clear();
-                if (++_faults >= 3)
+                if (GameMembers.StandsDown(e, "police presence on the street"))
+                {
+                    enabled = false;
+                }
+                else if (++_faults >= 3)
                 {
                     Logger?.Warn("Police presence: switched off for this session after repeated errors (see above).");
                     enabled = false;
