@@ -473,11 +473,11 @@ namespace RealLifeOverhaul.Economy
             ProductAnswer answer = desk.Consolidation(Bank, out before, out after, out quote, out count);
             if (before.Owed > 0)
             {
-                box.Line(FinanceText.T("reallife_econ_consolidate_line", "owed", FinanceText.Money(before.Owed), "daily", FinanceText.Money(before.Daily), "days", before.Days.ToString())
-                         + " " + FinanceText.Pair("reallife_econ_consolidate_cost", FinanceText.Money(before.Cost)));
+                box.Line(FinanceText.T("reallife_econ_consolidate_line", "owed", FinanceText.Money(before.Owed), "daily", FinanceText.Money(before.Daily), "days", before.Days.ToString()));
+                box.Row("reallife_econ_consolidate_cost", FinanceText.Money(before.Cost));
                 box.Headline("reallife_econ_consolidate_then");
-                box.Line(FinanceText.T("reallife_econ_consolidate_line", "owed", FinanceText.Money(after.Owed), "daily", FinanceText.Money(after.Daily), "days", after.Days.ToString())
-                         + " " + FinanceText.Pair("reallife_econ_consolidate_cost", FinanceText.Money(after.Cost)));
+                box.Line(FinanceText.T("reallife_econ_consolidate_line", "owed", FinanceText.Money(after.Owed), "daily", FinanceText.Money(after.Daily), "days", after.Days.ToString()));
+                box.Row("reallife_econ_consolidate_cost", FinanceText.Money(after.Cost), after.Cost < before.Cost ? CellTone.Green : CellTone.Yellow);
                 box.Note(FinanceText.T("reallife_econ_consolidate_rate", "rate", quote.AnnualRate.ToString("0.#"), "fee", FinanceText.Money(quote.Fee)));
             }
             if (answer != ProductAnswer.Yes)

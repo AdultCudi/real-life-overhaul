@@ -37,6 +37,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FeatureOwners.cs" Link="Mod\FeatureOwners.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModImage.cs" Link="Mod\ModImage.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModScan.cs" Link="Mod\ModScan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\LookRules.cs" Link="Mod\LookRules.cs" />
   </ItemGroup>
 
   <ItemGroup>

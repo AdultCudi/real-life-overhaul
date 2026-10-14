@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.GameUi
         {
             EndSection();
             GameObject header = Add(_headerT);
-            header.transform.GetChild(0).GetComponent<Image>().color = _accent;
+            header.transform.Find("Accent").GetComponent<Image>().color = _accent;   // (by name: a text grows children of its own when it draws)
             var title = header.GetComponent<TMP_Text>();
             title.text = words ?? string.Empty;
             _headerText = title;
@@ -110,7 +110,7 @@ namespace RealLifeOverhaul.GameUi
             GameObject chip = Add(_chipT, _chips);
             Color paint = Paint(tone);
             chip.GetComponent<Image>().color = new Color(paint.r, paint.g, paint.b, 0.16f);
-            var text = chip.transform.GetChild(0).GetComponent<TMP_Text>();
+            var text = chip.transform.Find("Text").GetComponent<TMP_Text>();
             text.color = tone == CellTone.Plain ? _accent : Ink(tone);
             text.text = words;
             if (_headerText != null && _chips.parent == _headerText.transform)
@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.GameUi
             Vector4 margin = text.margin;
             margin.x = Indent;
             text.margin = margin;
-            var fill = (RectTransform)text.transform.GetChild(0).GetChild(0);
+            var fill = (RectTransform)text.transform.Find("Bar/Fill");
             float f = LookRules.Clamp(share);
             fill.anchorMax = new Vector2(f, 1f);
             fill.offsetMin = fill.offsetMax = Vector2.zero;
@@ -260,7 +260,7 @@ namespace RealLifeOverhaul.GameUi
             Vector4 margin = text.margin;
             margin.x = indent + LookRules.MarkSize + 14f;
             text.margin = margin;
-            var mark = text.transform.GetChild(0).GetComponent<Image>();
+            var mark = text.transform.Find("Mark").GetComponent<Image>();
             var rect = (RectTransform)mark.transform;
             rect.anchoredPosition = new Vector2(indent, rect.anchoredPosition.y);
             if (met && _tick != null)
