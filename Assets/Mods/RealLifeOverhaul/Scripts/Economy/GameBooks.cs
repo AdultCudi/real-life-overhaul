@@ -46,6 +46,10 @@ namespace RealLifeOverhaul.Economy
     /// car bought (ba:transaction_vehiclebought), an inspection, the auction's fee and preparing a car a row among its
     /// goods, warranty claims another (DealerLines), and its order book's day has the takings and a customer for each car
     /// sold. Its costs are marked deductible when they are paid, so the game's tax deducts them itself.
+    ///
+    /// A day's transactions are found once a day by a walk of the game's history (<see cref="Day"/>): every reader of a
+    /// morning shares it, kept up to date with what is booked after, so each further reading walks the history only by
+    /// reference. The figures of a refresh are added up in dictionaries and arrays kept from one refresh to the next.
     /// </summary>
     public static class GameBooks
     {
@@ -84,6 +88,25 @@ namespace RealLifeOverhaul.Economy
             return t != null && t.transactionType != null && t.transactionType.StartsWith(OurKeys, StringComparison.Ordinal);
         }
 
+        private static readonly DayCut<Transaction> Days = new DayCut<Transaction>(t => t.timestamp != null ? t.timestamp.Day : int.MinValue);
+        private static readonly Dictionary<Address, float[]> ByAddress = new Dictionary<Address, float[]>(64);
+        private static readonly Dictionary<string, float> ByCategory = new Dictionary<string, float>(32, StringComparer.Ordinal);
+        private static readonly List<float[]> Lines = new List<float[]>(64);   // the figures of the addresses of a day, kept for the next day's
+        private static int _linesUsed;
+
+        /// <summary>
+        /// The game's transactions dated on a day (GameInstance.Transactions, oldest first), in its order: what every reader of
+        /// a morning walked the whole history of 25,000 to 35,000 for, four or five times (the city's day figures, each
+        /// statement brought up to date, the dealerships' deduction, what leaves tomorrow). The history is walked in full once a
+        /// day, and after that only past what was seen at the last asking (Core/LookupRules DayCut). A list kept here: read it,
+        /// never change or keep it.
+        /// </summary>
+        public static List<Transaction> Day(int day)
+        {
+            GameInstance save = SaveGameManager.Current;
+            return Days.Of(save != null ? save.Transactions : null, day, save != null ? save.Day - 6 : int.MaxValue);
+        }
+
         /// <summary>The day's statement brought up to date with what was booked for it since it was made. False if there is none, or nothing changed.</summary>
         public static bool Refresh(int day)
         {
@@ -107,8 +130,11 @@ namespace RealLifeOverhaul.Economy
             }
 
             // The day's transactions, once, summed as the game sums them (FinancialSummaryHelper.CreateFinancialSummary).
-            var byAddress = new Dictionary<Address, float[]>();
-            var byCategory = new Dictionary<string, float>();
+            Dictionary<Address, float[]> byAddress = ByAddress;
+            Dictionary<string, float> byCategory = ByCategory;
+            byAddress.Clear();
+            byCategory.Clear();
+            _linesUsed = 0;
             Dictionary<Address, Dictionary<string, float>> goods = null;   // the mod's rows among a business's goods: by address, then by row
             Func<string, bool> takings = EconomyBridges.Takings;
             Func<string, string> costRow = EconomyBridges.CostRow;
@@ -123,12 +149,10 @@ namespace RealLifeOverhaul.Economy
             OwnRegs.Clear();
             DealerDay.Clear();
             DealerTakings = DealerCosts = 0f;
-            foreach (Transaction t in save.Transactions)
+            List<Transaction> ofDay = Day(day);
+            for (int n = 0; n < ofDay.Count; n++)
             {
-                if (t == null || t.timestamp == null || t.timestamp.Day != day)
-                {
-                    continue;
-                }
+                Transaction t = ofDay[n];
                 DealerLine dealer = Dealers.Count > 0 ? EmpireMotors.LineOf(t, Dealers.Count) : DealerLine.None;
                 if (dealer != DealerLine.None)
                 {
@@ -162,7 +186,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (!byAddress.TryGetValue(t.address, out float[] line))
                 {
-                    line = new float[Width];
+                    line = Line();
                     byAddress[t.address] = line;
                 }
                 if (categories != null)
@@ -299,6 +323,18 @@ namespace RealLifeOverhaul.Economy
             return byCategory.TryGetValue(category, out float sum) ? sum : 0f;
         }
 
+        // An address's figures of the day, nothing in them: one kept from an earlier refresh, or a new one.
+        private static float[] Line()
+        {
+            if (_linesUsed == Lines.Count)
+            {
+                Lines.Add(new float[Width]);
+            }
+            float[] line = Lines[_linesUsed++];
+            Array.Clear(line, 0, line.Length);
+            return line;
+        }
+
         // A transaction of an Empire Motors dealership's, into the day's figures of the dealership at its address, or with
         // none, a share into each of the player's dealerships: takings among its own takings, a cost in its row among the goods.
         private static void Dealer(Transaction t, DealerLine kind, Dictionary<Address, float[]> byAddress, ref Dictionary<Address, Dictionary<string, float>> goods)
@@ -316,7 +352,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (!byAddress.TryGetValue(at, out float[] line))
                     {
-                        line = new float[Width];
+                        line = Line();
                         byAddress[at] = line;
                     }
                     line[OwnSales] += amount;
@@ -392,12 +428,10 @@ namespace RealLifeOverhaul.Economy
                 return 0f;
             }
             float stock = 0f, running = 0f;
-            foreach (Transaction t in save.Transactions)
+            List<Transaction> ofDay = Day(day);
+            for (int n = 0; n < ofDay.Count; n++)
             {
-                if (t == null || t.timestamp == null || t.timestamp.Day != day)
-                {
-                    continue;
-                }
+                Transaction t = ofDay[n];
                 DealerLine line = EmpireMotors.LineOf(t, Dealers.Count);
                 stock += line == DealerLine.Stock ? t.amount : 0f;
                 running += line == DealerLine.Running ? t.amount : 0f;

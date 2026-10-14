@@ -176,7 +176,11 @@ namespace RealLifeOverhaul.Economy.Brands
 
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(16);
         private static readonly List<BrandShop> Before = new List<BrandShop>(16);
+        private static readonly Dictionary<BuildingRegistration, int> BeforeAt = new Dictionary<BuildingRegistration, int>(16, ReferenceComparer<BuildingRegistration>.Instance);   // a shop of before by its business: the first
         private static readonly List<EmployeeInstance> Staff = new List<EmployeeInstance>(16);
+        private static readonly KeyedSums<Address> Skills = new KeyedSums<Address>();   // the staff's main skill by the business they work at, for one read of the shops
+        private static readonly HashSet<Address> SkillFaults = new HashSet<Address>();
+        private static bool _skillsRead, _skillsFault;
         private static readonly List<BuildingRegistration> One = new List<BuildingRegistration>(1);
         private static readonly List<MapPlace> MarksWaiting = new List<MapPlace>(16);
         private static MapPlaces.Category _marks;
@@ -282,6 +286,15 @@ namespace RealLifeOverhaul.Economy.Brands
             Before.Clear();
             Before.AddRange(into);   // (a shop that is still the player's keeps its object, and with it what was last asked for and written there)
             into.Clear();
+            BeforeAt.Clear();
+            for (int k = 0; k < Before.Count; k++)
+            {
+                if (Before[k].Reg != null && !BeforeAt.ContainsKey(Before[k].Reg))
+                {
+                    BeforeAt.Add(Before[k].Reg, k);   // (the first shop of each business: what a walk along them finds)
+                }
+            }
+            _skillsRead = false;   // (the staff are read for this pass when the first shop with a file asks)
             for (int i = 0; i < state.Members.Count; i++)
             {
                 state.Members[i].Seen = false;
@@ -295,14 +308,11 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 BuildingRegistration reg = Regs[i];
                 BrandShop shop = null;
-                for (int k = 0; k < Before.Count; k++)
+                if (BeforeAt.TryGetValue(reg, out int at))
                 {
-                    if (ReferenceEquals(Before[k].Reg, reg))
-                    {
-                        shop = Before[k];
-                        Before.RemoveAt(k);
-                        break;
-                    }
+                    shop = Before[at];
+                    Before[at] = null;   // (taken: not given to the pool below)
+                    BeforeAt.Remove(reg);
                 }
                 if (shop == null)
                 {
@@ -344,12 +354,19 @@ namespace RealLifeOverhaul.Economy.Brands
             Regs.Clear();
             for (int i = 0; i < Before.Count; i++)
             {
+                if (Before[i] == null)
+                {
+                    continue;
+                }
                 Before[i].Reg = null;
                 Before[i].File = null;
                 Before[i].Chain = null;
                 pool.Add(Before[i]);
             }
             Before.Clear();
+            BeforeAt.Clear();
+            Skills.Clear();
+            _skillsRead = false;
             for (int i = state.Members.Count - 1; i >= 0; i--)
             {
                 if (!state.Members[i].Seen)
@@ -463,13 +480,30 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // The mean of the staff's main skill, as the game counts skill (0 to 100); 50 for a shop the player runs alone.
+        // The mean of the staff's main skill, as the game counts skill (0 to 100); 50 for a shop the player runs alone. From
+        // one pass over the game's employees for the whole read of the shops (ReadSkills), a look-up a shop: the walk of
+        // every employee for every shop with a file is made only for a business with no address (the game's query then
+        // takes everyone).
         private static int Skill(BuildingRegistration reg)
         {
+            Address address = reg.Address;
+            if (!ReferenceEquals(address, null) && !(string.IsNullOrEmpty(address.streetName) && address.streetNumber == 0))
+            {
+                if (!_skillsRead)
+                {
+                    ReadSkills();
+                }
+                if (_skillsFault || SkillFaults.Contains(address))
+                {
+                    return 50;   // (the game's own query, or the look at one of the shop's employees, fails: as the walk did)
+                }
+                int at = Skills.At(address);
+                return at >= 0 && Skills.Counts[at] > 0 ? Mathf.Clamp(Mathf.RoundToInt(Skills.Sums[at] / Skills.Counts[at]), 0, 100) : 50;
+            }
             Staff.Clear();
             try
             {
-                EmployeeHelper.GetEmployeeInstances(new EmployeeInstancesQueryInfo { withAssignedAddress = reg.Address, excludeBeingReplaced = true }, Staff);
+                EmployeeHelper.GetEmployeeInstances(new EmployeeInstancesQueryInfo { withAssignedAddress = address, excludeBeingReplaced = true }, Staff);
                 float sum = 0f;
                 int count = 0;
                 for (int i = 0; i < Staff.Count; i++)
@@ -490,6 +524,49 @@ namespace RealLifeOverhaul.Economy.Brands
             finally
             {
                 Staff.Clear();
+            }
+        }
+
+        // Every employee the game's query gives a business (EmployeeHelper.GetEmployeeInstances: assigned there, not being
+        // replaced) with a main skill: its value added to that business's sum, in the game's own order of its employees, so
+        // that each mean is the walk's to the last bit. One pass for the read of the shops, made when the first shop asks.
+        private static void ReadSkills()
+        {
+            _skillsRead = true;
+            _skillsFault = false;
+            Skills.Clear();
+            SkillFaults.Clear();
+            List<EmployeeInstance> all = EmployeeHelper.GetEmployeeInstances();
+            if (all == null)
+            {
+                return;
+            }
+            try
+            {
+                for (int i = 0; i < all.Count; i++)
+                {
+                    EmployeeInstance e = all[i];
+                    Address at = e.assignedAddress;   // (an empty place in the game's list fails its query for every shop: so does this, below)
+                    if (at == null || e.isBeingReplaced)
+                    {
+                        continue;   // (Address == null: none, or the game's "no address", which is no business's)
+                    }
+                    try
+                    {
+                        if (!e.IsCandidate && e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null)
+                        {
+                            Skills.Add(at, e.characterData.skills[0].value);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        SkillFaults.Add(at);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                _skillsFault = true;
             }
         }
 
@@ -538,18 +615,6 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 return 0;
             }
-        }
-
-        public static BrandShop ShopAt(List<BrandShop> shops, string place)
-        {
-            for (int i = 0; i < shops.Count; i++)
-            {
-                if (string.Equals(shops[i].Place, place, StringComparison.Ordinal))
-                {
-                    return shops[i];
-                }
-            }
-            return null;
         }
 
         // ---------------------------------------------------------------- the city: districts, buildings to let, the game's customer formula

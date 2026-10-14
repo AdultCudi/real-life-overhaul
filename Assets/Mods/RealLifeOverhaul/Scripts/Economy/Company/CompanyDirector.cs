@@ -61,6 +61,9 @@ namespace RealLifeOverhaul.Economy
 
         private readonly List<CompanyShop> _shops = new List<CompanyShop>(16);
         private readonly List<CompanyShop> _pool = new List<CompanyShop>(16);
+        private readonly ListIndex<CompanyShop, string> _places = new ListIndex<CompanyShop, string>(PlaceOf, StringComparer.Ordinal);   // a business of _shops by its place
+        private readonly ListIndex<CompanyShop, BuildingRegistration> _regs = new ListIndex<CompanyShop, BuildingRegistration>(RegOf, ReferenceComparer<BuildingRegistration>.Instance);
+        private int _read;   // the reads of _shops so far: an index made before the last one is made again
         private readonly List<CompanyAlert> _alerts = new List<CompanyAlert>(16);
         private readonly bool[] _partBroken = new bool[(int)CompanyPart.Count];
 
@@ -334,6 +337,7 @@ namespace RealLifeOverhaul.Economy
             _index = Prices.Level;
             _cycle = CityEconomy.State;
             CompanyGame.ReadShops(_state, _shops, _pool, day, ranBefore, out added, out dropped);
+            _read++;
             CompanyGame.ReadBooks(_shops, day);
             for (int i = 0; countLoss && i < _shops.Count; i++)
             {
@@ -364,7 +368,7 @@ namespace RealLifeOverhaul.Economy
             List<StaffFile> staff = _state.Staff;
             for (int i = 0; i < staff.Count; i++)
             {
-                CompanyShop shop = CompanyGame.ShopAt(_shops, staff[i].Place);
+                CompanyShop shop = ShopAt(staff[i].Place);
                 if (shop != null)
                 {
                     shop.Staff++;
@@ -400,6 +404,7 @@ namespace RealLifeOverhaul.Economy
                 _pool.Add(_shops[i]);
             }
             _shops.Clear();
+            _read++;
             _alerts.Clear();
             RotaStop();
             if (!unloading)
@@ -671,19 +676,22 @@ namespace RealLifeOverhaul.Economy
         public static int FootfallOf(BuildingRegistration reg)
         {
             CompanyDirector d = Instance;
-            if (d == null || !d._running || d._holding || d._broken || Save == null)
+            if (d == null || !d._running || d._holding || d._broken || Save == null || reg == null)
             {
                 return 0;
             }
-            List<CompanyShop> shops = d._shops;
-            for (int i = 0; i < shops.Count; i++)
-            {
-                if (ReferenceEquals(shops[i].Reg, reg))
-                {
-                    return d.Footfall(shops[i], Save.Day);
-                }
-            }
-            return 0;
+            CompanyShop shop = d._regs.First(d._shops, reg, d._read);   // (a look-up: asked on every figure of every business written)
+            return shop != null ? d.Footfall(shop, Save.Day) : 0;
+        }
+
+        private static string PlaceOf(CompanyShop shop)
+        {
+            return shop.File != null ? shop.File.Place : null;
+        }
+
+        private static BuildingRegistration RegOf(CompanyShop shop)
+        {
+            return shop.Reg;
         }
 
         private void WriteFootfall(CompanyShop shop, int asked, bool redraw, bool newDay)
@@ -922,9 +930,16 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- for the app and the parts
 
+        /// <summary>The business at a place, as a walk of today's businesses finds it: a look-up (Core/LookupRules ListIndex), made again with each read of them.</summary>
         internal CompanyShop ShopAt(string place)
         {
-            return CompanyGame.ShopAt(_shops, place);
+            return _places.First(_shops, place, _read);
+        }
+
+        /// <summary>Where in today's businesses the one at a place is; -1 if none.</summary>
+        internal int ShopIndex(string place)
+        {
+            return _places.At(_shops, place, _read);
         }
 
         internal string ShopName(string place)

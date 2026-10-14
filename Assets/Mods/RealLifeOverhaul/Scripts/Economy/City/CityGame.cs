@@ -94,36 +94,56 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// One of the city's lines for a day: the game's own figure, and where the game booked it, by address, the category
     /// the day's statement keeps it under and whether the game's tax deducts it, so that the line can be booked where
-    /// its parts were and be deducted where they were.
+    /// its parts were and be deducted where they were. Each part is found by a dictionary (Core/LookupRules KeyedSums):
+    /// the day's wages alone are one transaction an employee, thousands, which used to be compared with every part so far.
     /// </summary>
     internal sealed class DayLine
     {
         public float Total;
-        public readonly List<Address> Addresses = new List<Address>();
-        public readonly List<string> Categories = new List<string>();
-        public readonly List<bool> Deductible = new List<bool>();
-        public readonly List<float> Figures = new List<float>();
+        private readonly KeyedSums<DayKey> _parts = new KeyedSums<DayKey>(DayKey.Comparer);
+
+        /// <summary>The parts' figures, in the order each was first booked.</summary>
+        public List<float> Figures => _parts.Sums;
+
+        public Address AddressAt(int i) => _parts.Keys[i].Address;
+        public string CategoryAt(int i) => _parts.Keys[i].Category;
+        public bool DeductibleAt(int i) => _parts.Keys[i].Deductible;
 
         public void Add(Address address, string category, float figure, bool deductible = false)
         {
             Total += figure;
-            for (int i = 0; i < Figures.Count; i++)
+            _parts.Add(new DayKey { Address = address, Category = category, Deductible = deductible }, figure);
+        }
+    }
+
+    /// <summary>
+    /// A part of a day's line: the address (none for the player's own), the category and whether it is deducted. The same
+    /// part as the game's own address test makes one (Address.Equals: the street and the number; no address is only no
+    /// address), the same category text, the same deduction.
+    /// </summary>
+    internal struct DayKey
+    {
+        public Address Address;
+        public string Category;
+        public bool Deductible;
+
+        public static readonly IEqualityComparer<DayKey> Comparer = new KeyComparer();
+
+        private sealed class KeyComparer : IEqualityComparer<DayKey>
+        {
+            public bool Equals(DayKey a, DayKey b)
             {
-                if (Same(Addresses[i], address) && Categories[i] == category && Deductible[i] == deductible)
+                return a.Deductible == b.Deductible && a.Category == b.Category
+                       && (ReferenceEquals(a.Address, b.Address) || (!ReferenceEquals(a.Address, null) && !ReferenceEquals(b.Address, null) && a.Address.Equals(b.Address)));
+            }
+
+            public int GetHashCode(DayKey k)
+            {
+                unchecked
                 {
-                    Figures[i] += figure;
-                    return;
+                    return ((ReferenceEquals(k.Address, null) ? 0 : k.Address.GetHashCode()) * 397 ^ (k.Category != null ? k.Category.GetHashCode() : 0)) * 2 + (k.Deductible ? 1 : 0);
                 }
             }
-            Addresses.Add(address);
-            Categories.Add(category);
-            Deductible.Add(deductible);
-            Figures.Add(figure);
-        }
-
-        private static bool Same(Address a, Address b)
-        {
-            return ReferenceEquals(a, b) || (!ReferenceEquals(a, null) && !ReferenceEquals(b, null) && a.Equals(b));
         }
     }
 
@@ -177,7 +197,9 @@ namespace RealLifeOverhaul.Economy
         private static readonly List<Item> Priced = new List<Item>(512);
         private static readonly List<int> PricedKind = new List<int>(512);
         private static readonly List<float> PricedOwn = new List<float>(512);
-        private static readonly HashSet<string> Monopolies = new HashSet<string>();
+        private static readonly HashSet<string> Monopolies = new HashSet<string>();   // as texts, only while a name holds '@' (ReadMonopolies)
+        private static readonly HashSet<(string, string)> MonopolyPairs = new HashSet<(string, string)>();
+        private static bool _monopolyTexts;
         private static readonly int[] KindCount = new int[MacroCatalogue.SupplyKinds];
         private static readonly int[] Factors = new int[MacroCatalogue.SupplyKinds];   // today's factor of each kind, while the prices are written
 
@@ -379,6 +401,7 @@ namespace RealLifeOverhaul.Economy
             PricedKind.Clear();
             PricedOwn.Clear();
             Monopolies.Clear();
+            MonopolyPairs.Clear();
         }
 
         // ---------------------------------------------------------------- the player's businesses
@@ -474,10 +497,15 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The game lets the one seller of a product in a neighbourhood charge more (ItemHelper.CalculateMaxAcceptablePrice): the same allowance is made here.
+        // The game lets the one seller of a product in a neighbourhood charge more (ItemHelper.CalculateMaxAcceptablePrice): the
+        // same allowance is made here. Each monopoly is kept as its product and neighbourhood, so a price line is looked up
+        // with no text made for it (a business's ten price lines, every business, each time the figures are applied). The
+        // game's names hold no '@'; were one to, its monopolies are kept as the texts they used to be, which match the same.
         private static void ReadMonopolies(GameInstance save)
         {
             Monopolies.Clear();
+            MonopolyPairs.Clear();
+            _monopolyTexts = false;
             List<ProductMarketEntry> entries = save.productMarketEntries;
             for (int i = 0; entries != null && i < entries.Count; i++)
             {
@@ -487,10 +515,27 @@ namespace RealLifeOverhaul.Economy
                     NeighborhoodDemand demand = entry.demandValues[k];
                     if (demand != null && demand.hasPlayerMonopoly && !string.IsNullOrEmpty(demand.neighborhood))
                     {
-                        Monopolies.Add(entry.itemName + "@" + demand.neighborhood);
+                        MonopolyPairs.Add((entry.itemName, demand.neighborhood));
+                        _monopolyTexts |= (entry.itemName != null && entry.itemName.IndexOf('@') >= 0) || demand.neighborhood.IndexOf('@') >= 0;
                     }
                 }
             }
+            if (_monopolyTexts)
+            {
+                foreach ((string item, string district) pair in MonopolyPairs)
+                {
+                    Monopolies.Add(pair.item + "@" + pair.district);
+                }
+            }
+        }
+
+        private static bool Monopoly(string item, string district)
+        {
+            if (MonopolyPairs.Count == 0)
+            {
+                return false;
+            }
+            return _monopolyTexts ? Monopolies.Contains(item + "@" + district) : MonopolyPairs.Contains((item, district));
         }
 
         // A business's prices against the game's own price for its neighbourhood (the default market price times the
@@ -522,7 +567,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                float bears = good.Market * (index + (Monopolies.Count > 0 && Monopolies.Contains(price.itemName + "@" + district) ? MacroCatalogue.MonopolyAllowance / 1000f : 0f));
+                float bears = good.Market * (index + (Monopoly(price.itemName, district) ? MacroCatalogue.MonopolyAllowance / 1000f : 0f));
                 sum += price.price / bears;
                 count++;
             }
@@ -533,9 +578,9 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// What the game's own run took in rent and wages and paid in takings for a day, from its transactions of that
-        /// day (BusinessHelper.RunDaily and EmployeeHelper.PayDailyWages date them on the day that has ended). One pass
-        /// over the game's transaction history. The mod's own adjustments have no category and another type, so they
-        /// are never counted.
+        /// day (BusinessHelper.RunDaily and EmployeeHelper.PayDailyWages date them on the day that has ended): the day's
+        /// transactions as GameBooks.Day keeps them (the morning's one walk of the history). The mod's own adjustments
+        /// have no category and another type, so they are never counted.
         /// </summary>
         public static DayBooks DayFigures(int day)
         {
@@ -546,12 +591,10 @@ namespace RealLifeOverhaul.Economy
                 return books;
             }
             Func<string, bool> givenBack = EconomyBridges.GivenBack;
-            foreach (Transaction t in save.Transactions)
+            List<Transaction> ofDay = GameBooks.Day(day);
+            for (int i = 0; i < ofDay.Count; i++)
             {
-                if (t == null || t.timestamp == null || t.timestamp.Day != day)
-                {
-                    continue;
-                }
+                Transaction t = ofDay[i];
                 // (The mod's own costs under the game's categories, a raise say, are at today's prices already: the game's alone are adjusted.)
                 if (GameBooks.Ours(t))
                 {
