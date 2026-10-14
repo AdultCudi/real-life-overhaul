@@ -1,4 +1,7 @@
-0.12.4
+0.13.0
+
+New
+- BizMan's start screen shows the competitors in the city for the mod's tech firms and the training academy, and each tech firm has a Competitors page in the Tech app: who you are up against, how your products compare and where they are. A council tender names the companies bidding against you.
 
 Fixed
-- Grant share options no longer makes new shares while nobody works at the firm, and options already granted that way go to the firm's staff as soon as it has some.
+- A tech firm that makes products had no Register button on its page in the Tech app, so it could not join the data protection register.
