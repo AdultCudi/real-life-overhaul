@@ -301,6 +301,85 @@ namespace RealLifeOverhaul.Careers
 
         public static Profession Find(int id) => id >= 0 && id < All.Length ? All[id] : null;
 
+        /// <summary>
+        /// True if a business type employs a profession, as <see cref="Employs"/> says, from a set of the professions kept
+        /// for each type: the city's thousand-odd businesses are of a few dozen types, and the day's vacancies ask of each
+        /// many times (25 professions' stems as IndexOf each: some 40,000 a day). One dictionary hit and a bit after the
+        /// type's first time. On the game's thread only.
+        /// </summary>
+        public static bool EmploysKept(Profession p, string type)
+        {
+            int bit = p != null ? p.Id : -1;
+            if (bit < 0 || bit >= 64 || bit >= All.Length || !ReferenceEquals(All[bit], p))
+            {
+                return Employs(p, type);   // (a profession that is not the catalogue's own at its place: asked whole)
+            }
+            return (Kept(type) & (1L << bit)) != 0;
+        }
+
+        /// <summary>The professions a business type employs, a bit each by their place in the catalogue (kept per type); every bit for a catalogue of more than 64.</summary>
+        public static long EmployedBy(string type)
+        {
+            return All.Length > 64 ? -1L : Kept(type);
+        }
+
+        /// <summary>True if a set from <see cref="EmployedBy"/> of a type holds a profession: what <see cref="Employs"/> says of the type, a bit test.</summary>
+        public static bool Holds(long set, Profession p, string type)
+        {
+            int bit = p != null ? p.Id : -1;
+            if (All.Length > 64 || bit < 0 || bit >= All.Length || !ReferenceEquals(All[bit], p))
+            {
+                return Employs(p, type);
+            }
+            return (set & (1L << bit)) != 0;
+        }
+
+        /// <summary>True if a business type employs any profession of the catalogue (from the same kept sets).</summary>
+        public static bool AnyEmploys(string type)
+        {
+            if (All.Length > 64)
+            {
+                for (int p = 0; p < All.Length; p++)
+                {
+                    if (Employs(All[p], type))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return Kept(type) != 0L;
+        }
+
+        private const int KeptMost = 1024;   // types kept at most (the game has under a hundred)
+        private static readonly System.Collections.Generic.Dictionary<string, long> KeptSets = new System.Collections.Generic.Dictionary<string, long>(64);
+
+        // The professions of the catalogue (its first 64, by place) a type employs, a bit each.
+        private static long Kept(string type)
+        {
+            if (string.IsNullOrEmpty(type))
+            {
+                return 0L;
+            }
+            if (KeptSets.TryGetValue(type, out long set))
+            {
+                return set;
+            }
+            set = 0L;
+            for (int p = 0; p < All.Length && p < 64; p++)
+            {
+                if (Employs(All[p], type))
+                {
+                    set |= 1L << p;
+                }
+            }
+            if (KeptSets.Count < KeptMost)
+            {
+                KeptSets[type] = set;
+            }
+            return set;
+        }
+
         /// <summary>True if a business type employs a profession (a part of the type's name, as the game writes it).</summary>
         public static bool Employs(Profession p, string type)
         {

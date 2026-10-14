@@ -217,8 +217,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        private static readonly int HotSave = HotSpots.Slot("Careers: CareersDirector.OnSave");
         private void OnSave()
         {
+            using var hotSpot = HotSpots.Time(HotSave);   // the careers' lines written (Core/HotSpots)
             try
             {
                 if (Save == null)

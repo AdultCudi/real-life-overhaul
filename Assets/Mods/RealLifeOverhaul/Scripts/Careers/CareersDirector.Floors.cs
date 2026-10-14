@@ -114,6 +114,9 @@ namespace RealLifeOverhaul.Careers
             _interior = null;
         }
 
+        private string _campusNow, _campusNowStreet;   // the university's building as the save writes it, and the street it was made from...
+        private int _campusNowNumber;                  // ...and the number
+
         // The university's building against the one the save had: a move is written to the log and told once.
         private void CampusMoved()
         {
@@ -121,7 +124,13 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            string now = _campus.Street + "|" + _campus.Number;
+            if (_campusNow == null || !ReferenceEquals(_campusNowStreet, _campus.Street) || _campusNowNumber != _campus.Number)
+            {
+                _campusNowStreet = _campus.Street;
+                _campusNowNumber = _campus.Number;
+                _campusNow = _campus.Street + "|" + _campus.Number;   // (made once for the building, not each second)
+            }
+            string now = _campusNow;
             if (!_campusRead)
             {
                 _campusRead = true;

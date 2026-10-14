@@ -128,6 +128,7 @@ internal static partial class Program
         Hiring();
         Tech();
         Careers();
+        WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
         CartQueue();
         Work();
         Desks();

@@ -403,7 +403,7 @@ namespace RealLifeOverhaul.Careers
             {
                 BuildingRegistration reg = _mine[i];
                 string type = reg.businessTypeName ?? string.Empty;
-                if (ProCatalogue.Employs(p, type) || type == "ba:businesstype_headquarters")
+                if (ProCatalogue.EmploysKept(p, type) || type == "ba:businesstype_headquarters")
                 {
                     return reg;
                 }

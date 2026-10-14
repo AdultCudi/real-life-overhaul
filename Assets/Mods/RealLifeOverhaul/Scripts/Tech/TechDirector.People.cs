@@ -34,7 +34,10 @@ namespace RealLifeOverhaul.Tech
         private readonly List<Person> _people = new List<Person>(64);
         private readonly List<EmployeeInstance> _employees = new List<EmployeeInstance>(64);
         private readonly HashSet<string> _ids = new HashSet<string>();   // the game's employees read (into _people, or passed over), by id
-        private readonly Dictionary<string, int> _mentorRoom = new Dictionary<string, int>(32);
+        private readonly Dictionary<(string Place, int Family), int> _mentorRoom = new Dictionary<(string Place, int Family), int>(32);   // a business's room for juniors by family (no key text made)
+        private readonly Dictionary<string, Profile> _fileOf = new Dictionary<string, Profile>(64);   // the files by id, as ReadPeople reads them (the first of an id, as TalentFile.Of)
+        private Dictionary<Profile, Person> _personOf = new Dictionary<Profile, Person>(64);        // each file's Person of the last read, used again by the next...
+        private Dictionary<Profile, Person> _personNext = new Dictionary<Profile, Person>(64);      // ...which fills this one, then the two change places
         private readonly int[] _wanted = new int[8];
         private int _layoffs, _layoffsDay = -1;
         private TalentFile _talent;
@@ -95,6 +98,9 @@ namespace RealLifeOverhaul.Tech
             _peopleOn = false;
             _people.Clear();
             _ids.Clear();
+            _fileOf.Clear();
+            _personOf.Clear();
+            _personNext.Clear();
             if (!unloading && _rolesApp != null)
             {
                 _rolesApp.Remove();
@@ -122,9 +128,15 @@ namespace RealLifeOverhaul.Tech
         {
             _people.Clear();
             _ids.Clear();
+            _fileOf.Clear();
             for (int i = 0; i < _talent.People.Count; i++)
             {
-                _talent.People[i].Seen = _talent.People[i].Payroll;
+                Profile file = _talent.People[i];
+                file.Seen = file.Payroll;
+                if (file.Id != null && !_fileOf.ContainsKey(file.Id))
+                {
+                    _fileOf.Add(file.Id, file);   // (the first of an id, as TalentFile.Of finds it)
+                }
             }
             TalentGame.Employees(_employees);
             int made = 0;
@@ -132,7 +144,7 @@ namespace RealLifeOverhaul.Tech
             {
                 EmployeeInstance e = _employees[i];
                 _ids.Add(e.id);   // (one passed over is not read again on the hour)
-                Profile p = _talent.Of(e.id);
+                Profile p = e.id != null && _fileOf.TryGetValue(e.id, out Profile known) ? known : null;
                 if (p == null)
                 {
                     if (_talent.People.Count >= TalentStore.PeopleMost)
@@ -145,6 +157,10 @@ namespace RealLifeOverhaul.Tech
                         continue;
                     }
                     _talent.People.Add(p);
+                    if (p.Id != null && !_fileOf.ContainsKey(p.Id))
+                    {
+                        _fileOf.Add(p.Id, p);
+                    }
                     made++;
                 }
                 p.Seen = true;
@@ -162,12 +178,29 @@ namespace RealLifeOverhaul.Tech
                     _people.Add(Read(p, null, day));
                 }
             }
+            Dictionary<Profile, Person> last = _personOf;
+            _personOf = _personNext;
+            _personNext = last;
+            _personNext.Clear();   // (a file no longer read lets its Person go)
             return made;
         }
 
+        // A professional read again: the Person of the file's last read, filled again from the start (one made the first
+        // time), so a read of 600 makes no objects.
         private Person Read(Profile p, EmployeeInstance e, int day)
         {
-            var person = new Person { File = p, Game = e };
+            if (!_personOf.TryGetValue(p, out Person person) && !_personNext.TryGetValue(p, out person))
+            {
+                person = new Person();
+            }
+            _personNext[p] = person;
+            person.File = p;
+            person.Game = e;
+            person.At = null;
+            person.Name = person.Business = person.Skill = string.Empty;
+            person.MainPoints = 0;
+            person.HoursYesterday = 0;
+            person.Mentored = false;
             if (e != null)
             {
                 person.At = TalentGame.Business(e);
@@ -496,7 +529,7 @@ namespace RealLifeOverhaul.Tech
                 Profile p = _people[i].File;
                 if (p.Level >= TalentCatalogue.Senior && p.NoticeEnd == 0 && p.Place.Length > 0)
                 {
-                    string key = p.Place + "#" + (int)p.Def.Family;
+                    var key = (p.Place, (int)p.Def.Family);
                     int room;
                     _mentorRoom.TryGetValue(key, out room);
                     _mentorRoom[key] = room + TalentCatalogue.MentorsEach;
@@ -511,7 +544,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
-                string key = p.Place + "#" + (int)p.Def.Family;
+                var key = (p.Place, (int)p.Def.Family);
                 int room;
                 if (_mentorRoom.TryGetValue(key, out room) && room > 0)
                 {

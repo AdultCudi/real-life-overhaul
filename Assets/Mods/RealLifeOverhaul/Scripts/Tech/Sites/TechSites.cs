@@ -29,8 +29,9 @@ namespace RealLifeOverhaul.Tech
     /// is sent over Going Public's connection: every machine builds its own from the same city (the headquarters are the
     /// same for everyone; another player's building is never touched).
     ///
-    /// The cost: no Update. A one-second timer on the real clock (which room the player is in, the headquarters, the
-    /// frontage near the player) and a half-second one that changes two materials' colour while the player is in a
+    /// The cost: no Update. A one-second timer on the real clock (which room the player is in: a reference compare and the
+    /// building's place key, kept per building by TalentGame.Place, or a few flags with every view off; the headquarters,
+    /// the frontage near the player) and a half-second one that changes two materials' colour while the player is in a
     /// server room, and does one comparison otherwise. A room is measured and built once on the way in, under the game's
     /// fade. A fault switches the part it was in off for the session with one line in the log.
     /// </summary>
@@ -246,6 +247,11 @@ namespace RealLifeOverhaul.Tech
 
         private void Inside(int day)
         {
+            if (!Settings.TechSiteRooms && !Settings.TechSiteHq && !Settings.TechSiteOffices && _inside == null && _preview == null && !_testFloor && !_lifting
+                && !_room.Active && !_lobby.Active && !_hqFloor.Active && !_office.Active && _floors.In == null)
+            {
+                return;   // every view off and nothing of one standing: a few flags (the building is looked at again once one is on)
+            }
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             bool inside = BuildingManager.IsInsideBuilding && manager != null && !manager.enteringBuilding && !manager.exitingBuilding
                           && !Parking.UndergroundParking.UndergroundParkingManager.IsInsideParking && manager.buildingRegistration != null;
