@@ -113,6 +113,10 @@ namespace RealLifeOverhaul.Offices
                 {
                     continue;
                 }
+                while (StartLine.Holds(StartSeats.Offices))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -148,8 +152,10 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Offices: Conversions.Tick");
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
             GameInstance save = SaveGameManager.Current;
             if (save == null || LoadScene.isLoading || GameManager.isCitySceneBeingUnloaded || Meta.SaveTools.Dormant)
             {

@@ -22,7 +22,8 @@ namespace RealLifeOverhaul
     ///   collector at work 212 ms in the minute and 3.1 ms at most in a frame; engine memory 2950 MB; mod objects
     ///   345 (118 shown) under 6 roots; people 2 out, 12 made of 12; city people 3 out, 8 made of 8, city props
     ///   made 14; looks built in the minute 1 (1 while playing), since the city loaded 23 (3 while playing);
-    ///   frames over 80 ms: 2, of them 2 behind the game's black screen (into or out of a building) and 0 seen;
+    ///   frames over 80 ms: 2, of them 2 behind the game's black screen (into or out of a building) or its loading
+    ///   screen and 0 seen;
     ///   the mod's navigation obstacles changed in the minute 0; handlers put back on the game's events 0
     ///   (changed events looked into 3); searches of the whole scene 0 (0 while playing); on foot in the street,
     ///   game hour 9.
@@ -58,9 +59,15 @@ namespace RealLifeOverhaul
     /// collector; time under "scripts' Update" with a piece of the mod's work named "in it" is the mod's, and
     /// the time beside the name says how much of the frame it was. Where "the rest" is large, the engine's step
     /// it was mostly in is named beside it (Diagnostics/FrameSteps). After that comes "the mod's own scripts in
-    /// it": the time every Update, LateUpdate and FixedUpdate of the mod's and its handlers of the game's events
-    /// took in that frame, with the three that took the most, by feature and method (Core/HotSpots). Time under
-    /// "scripts' Update" that is not under the mod's own scripts is the game's, or another mod's.
+    /// it": the time every Update, LateUpdate and FixedUpdate of the mod's, its handlers of the game's events and
+    /// its directors' one-second ticks took in that frame, with the three that took the most, by feature and
+    /// method (Core/HotSpots). Time under "scripts' Update" or "coroutines and timers" that is not under the mod's
+    /// own scripts is the game's, or another mod's.
+    ///
+    /// "Its screen was black or fading" is said, and the frame is not counted as one the player saw, while the
+    /// game's black screen (UI.UiFader) or its loading screen (UI.Load.LoadingScreen) was up, or coming or going,
+    /// in the frame: the loading screen is still there, fading out for 0.8 s, after the game has said the save is
+    /// loaded (LoadScene.isLoading false), which is when the record starts counting frames again.
     ///
     /// With the step timing on, the frame is cut where the engine itself cuts it (just after it updates the time,
     /// Diagnostics/FrameSteps), so the parts add up to the frame: the named groups, "waiting for the last frame to be
@@ -98,7 +105,8 @@ namespace RealLifeOverhaul
     /// its frames over 33 ms counted by the same rules as the long-frame line.
     ///
     /// Per frame while recording: a dozen reads of numbers the engine and the game already keep (the frame's
-    /// time, the collection count, the heap's size, the collector's time, three of the game's flags) and as many
+    /// time, the collection count, the heap's size, the collector's time, three of the game's flags, one look in its
+    /// register of singletons for the loading screen) and as many
     /// comparisons; the mod's own scripts' timing, a few microseconds (Core/HotSpots); with the step timing on,
     /// some two hundred and fifty reads of the clock more and four calls into kernel32 (Diagnostics/FrameSteps,
     /// Diagnostics/MachineClock); where the build offers the engine's frame timing, two calls into it. Nothing is
@@ -136,7 +144,7 @@ namespace RealLifeOverhaul
         private int _over33;
         private int _over50;
         private int _long;                     // frames over LongFrame in the minute
-        private int _longHidden;               // of them, behind the game's black screen
+        private int _longHidden;               // of them, behind the game's black screen or its loading screen
         private int _collections;
         private int _collectionsLastFrame;
         private int _looks;
@@ -149,6 +157,8 @@ namespace RealLifeOverhaul
         private long _grown;                   // bytes the managed heap grew by, frame over frame, in the minute
         private long _collectorNanos, _collectorWorst;
         private bool _insideLastFrame, _fadedLastFrame, _savingLastFrame;
+        private bool _loadingLastFrame;        // the game's loading screen was there (up or fading out) at the last look
+        private bool _loadingUnread;           // this build's loading screen could not be read: left out from then on
         private float _buildingAt = -1000f;    // when the player was last seen to have gone into or come out of a building
         private int _buildingFrame = -1000;
         private bool _buildingIn;
@@ -238,7 +248,8 @@ namespace RealLifeOverhaul
                 int collections = GC.CollectionCount(0);
                 long heap = GC.GetTotalMemory(false);
                 watch.Long(Time.unscaledDeltaTime, watch._collectionsLastFrame, collections, watch._heapLastFrame, heap,
-                    watch._collector.Valid ? watch._collector.LastValue : 0L, UI.UiFader.isFading || watch._fadedLastFrame, SaveGameManager.SavingGameInProgress);
+                    watch._collector.Valid ? watch._collector.LastValue : 0L,
+                    FrameRules.Screen(UI.UiFader.isFading, watch._fadedLastFrame, watch.LoadingThere(), watch._loadingLastFrame), SaveGameManager.SavingGameInProgress);
                 watch.Minute(collections);
                 PerfDirector.Notify("reallife_perf_test_session_done", 8f);
             }
@@ -554,8 +565,12 @@ namespace RealLifeOverhaul
             long collectorNanos = _collector.Valid ? _collector.LastValue : 0L;   // the frame before this one, complete
             bool inside = BuildingManager.IsInsideBuilding;
             bool faded = UI.UiFader.isFading;
+            bool loading = LoadingThere();
             bool saving = SaveGameManager.SavingGameInProgress;
-            bool hidden = faded || _fadedLastFrame;   // the game's black screen was up, or coming or going, during the frame
+            // The game's black screen or its loading screen was up, or coming or going, during the frame: the loading screen
+            // fades out for 0.8 s after the game has set isLoading false (UI.Load.LoadingScreen.LoadAsyncScenes).
+            FrameScreen screen = FrameRules.Screen(faded, _fadedLastFrame, loading, _loadingLastFrame);
+            bool hidden = screen != FrameScreen.Clear;
             bool saved = saving || _savingLastFrame;
             if (inside != _insideLastFrame)
             {
@@ -565,6 +580,7 @@ namespace RealLifeOverhaul
             }
             _insideLastFrame = inside;
             _fadedLastFrame = faded;
+            _loadingLastFrame = loading;
             _savingLastFrame = saving;
             if (UI.Load.LoadScene.isLoading || Time.timeScale <= 0f || !Application.isFocused)
             {
@@ -613,7 +629,7 @@ namespace RealLifeOverhaul
                     _longHidden += hidden ? 1 : 0;
                     if (_long <= LongFramesPerMinute)   // the rest are counted in the minute's line; a bad minute does not fill the log
                     {
-                        Long(took, collectionsBefore, collections, heapBefore, heap, collectorNanos, hidden, saved);
+                        Long(took, collectionsBefore, collections, heapBefore, heap, collectorNanos, screen, saved);
                     }
                 }
                 if (Time.unscaledTime - _since >= Every)
@@ -628,7 +644,32 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void Long(float took, int collectionsBefore, int collections, long heapBefore, long heap, long collectorNanos, bool hidden, bool saved)
+        // Whether the game's loading screen is there: from the moment it is made until it has faded out and is destroyed
+        // (UI.Load.LoadingScreen.LoadAsyncScenes), read from the game's own register of its singletons (no search). A build
+        // in which it cannot be read leaves it out from then on, with one line, and the record goes on as before.
+        private bool LoadingThere()
+        {
+            if (_loadingUnread)
+            {
+                return false;
+            }
+            try
+            {
+                return LoadingScreenUp();
+            }
+            catch (Exception e)
+            {
+                _loadingUnread = true;
+                Logger?.Warn("Session: the game's loading screen cannot be read in this build (" + e.GetType().Name + "); a frame while it fades out is counted as one the player saw.");
+                return false;
+            }
+        }
+
+        // In a method of its own: a build without the loading screen's type fails here alone (Mono compiles a method whole).
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static bool LoadingScreenUp() => InstanceBehavior<UI.Load.LoadingScreen>.IsInitialized;
+
+        private void Long(float took, int collectionsBefore, int collections, long heapBefore, long heap, long collectorNanos, FrameScreen screen, bool saved)
         {
             // The time is that of the frame before this one: work named in this very frame is not what made it long.
             int frame = Time.frameCount - 1;
@@ -728,9 +769,7 @@ namespace RealLifeOverhaul
             _line.Append(", heap ").Append(Megabytes(heapBefore)).Append(" MB before and ").Append(Megabytes(heap)).Append(" MB after");
 
             // The game.
-            _line.Append("; the game: ").Append(hidden
-                ? "its screen was black or fading (its own walk into or out of a building: not seen as a stutter)"
-                : "its screen was clear");
+            _line.Append("; the game: ").Append(FrameRules.ScreenWords(screen));
             if (began - _buildingAt < NewsLasts)
             {
                 _line.Append(_buildingIn ? ", the player went into a building " : ", the player came out of a building ");
@@ -873,7 +912,7 @@ namespace RealLifeOverhaul
             // The stutters that were seen, and the two things that must stand still: obstacles of the mod's that cut the
             // navigation mesh, and handlers put back on the game's events (a holder that puts itself back every second shows as 60).
             _line.Append("; frames over ").Append((LongFrame * 1000f).ToString("F0")).Append(" ms: ").Append(_long).Append(", of them ").Append(_longHidden)
-                .Append(" behind the game's black screen (into or out of a building) and ").Append(_long - _longHidden).Append(" seen")
+                .Append(" behind the game's black screen (into or out of a building) or its loading screen and ").Append(_long - _longHidden).Append(" seen")
                 .Append("; the mod's navigation obstacles changed in the minute ").Append(MeshCuts.Total - _cuts)
                 .Append("; handlers put back on the game's events ").Append(EventHold.PutBack - _putBack).Append(" (changed events looked into ").Append(EventHold.Looked - _looked).Append(')');
             // Searches of the whole scene (Core/SceneFinds): each is a frame of about 110 ms, so none belongs in play.

@@ -104,14 +104,14 @@ namespace RealLifeOverhaul.Economy
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
-            EconomyDirector.Second += _second;
+            EconomyDirector.Follow(StartSeats.Estate, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
 
         private void OnDestroy()
         {
-            EconomyDirector.Second -= _second;
+            EconomyDirector.Unfollow(_second);
             EconomyDirector.AfterHour -= _onHour;
             EconomyDirector.AfterDay -= _onDay;
             SaveHook.Drop(_onSave);
@@ -180,8 +180,10 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- once a second (the credit side's timer)
 
+        private static readonly int HotSecond = HotSpots.Slot("Economy: EstateDirector.Second");
         private void EachSecond()
         {
+            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
             if (_broken)
             {
                 return;

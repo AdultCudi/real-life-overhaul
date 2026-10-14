@@ -110,6 +110,10 @@ namespace RealLifeOverhaul.Tech
             while (true)
             {
                 yield return second;
+                while (StartLine.Holds(StartSeats.TechSites))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -178,8 +182,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Tech: TechSites.Slow");
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick, and the look just after a door (Core/HotSpots)
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;

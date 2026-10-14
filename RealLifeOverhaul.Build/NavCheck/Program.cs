@@ -13,7 +13,7 @@ using RealLifeOverhaul.Nav;
 // the phone (TaxiCheck.cs), the rules of the horn and the reckless drivers (StreetCheck.cs),
 // the minimap's buildings and water (BaseCheck.cs), and the small rules of the panels, the bars and the
 // camera's stand-down (PolishCheck.cs), the ambulance crew's way as geometry (CrewCheck.cs; with --crew it prints what a
-// planning's worth of ways costs), the game-free parts of the work against long frames (HitchCheck.cs), and getting out of the driving school's car (CarExitCheck.cs), and the furnished police station's walkways and cast (StationCheck.cs), and the tow truck's bed, pull and stand (TowCheck.cs), and the tech sector's buildings (TechSiteCheck.cs), and the empty shops made offices (OfficeConversionCheck.cs), and the fit-out of the mod's buildings (FitCheck.cs; with --fit it draws the plans), and whose a car is in a Going Public session and which car of the traffic pool may be put on the road (CarCheck.cs), and which way the player turns for sightseeing's selfie (SightseeingCheck.cs).
+// planning's worth of ways costs), the game-free parts of the work against long frames (HitchCheck.cs), and getting out of the driving school's car (CarExitCheck.cs), and the furnished police station's walkways and cast (StationCheck.cs), and the tow truck's bed, pull and stand (TowCheck.cs), and the tech sector's buildings (TechSiteCheck.cs), and the empty shops made offices (OfficeConversionCheck.cs), and the fit-out of the mod's buildings (FitCheck.cs; with --fit it draws the plans), and whose a car is in a Going Public session and which car of the traffic pool may be put on the road (CarCheck.cs), and the first second after a save loads: the directors' first loads one a frame, and the loading screen counted as hidden (StartCheck.cs), and which way the player turns for sightseeing's selfie (SightseeingCheck.cs).
 internal static partial class Program
 {
     private static int _failed, _run;
@@ -62,6 +62,7 @@ internal static partial class Program
         FitPresets();
         Cars();
         Frames();
+        Starts();
         Sightseeing();
         if (Array.IndexOf(args, "--sites") >= 0)
         {

@@ -17594,5 +17594,7 @@
   "reallife_changes_011_4_title": "0.11.4",
   "reallife_changes_011_4": "Fixed: the pause the first time you get into a car, and most of the pause just after a save loads, both caused by the mod. The work behind them is now done while the loading screen is still up, or read from lists the game keeps itself, and the logos of the phone's contacts are drawn faster.",
   "reallife_changes_012_0_title": "0.12.0",
-  "reallife_changes_012_0": "Ready for game updates: as the game starts, Real Life Overhaul checks every piece of Big Ambitions it relies on, switches off only the parts that stand on a piece the game lacks, and says which in one notice, with how to update the game in Steam when it is the older one. Everything else keeps working, a part that meets a missing piece later stops once instead of failing every frame, and a saved record the mod cannot read is kept in the save untouched."
+  "reallife_changes_012_0": "Ready for game updates: as the game starts, Real Life Overhaul checks every piece of Big Ambitions it relies on, switches off only the parts that stand on a piece the game lacks, and says which in one notice, with how to update the game in Steam when it is the older one. Everything else keeps working, a part that meets a missing piece later stops once instead of failing every frame, and a saved record the mod cannot read is kept in the save untouched.",
+  "reallife_changes_012_1_title": "0.12.1",
+  "reallife_changes_012_1": "Fixed: a short freeze just as the loading screen goes, when the parts of the mod that read the save all started at the same moment; they now start one after another. Developer diagnostics: a frame while the loading screen is still fading out is no longer counted as a pause you see."
 }
