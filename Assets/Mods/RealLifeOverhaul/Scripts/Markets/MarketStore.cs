@@ -27,6 +27,12 @@ namespace RealLifeOverhaul.Markets
     ///      (each holding of b says so), and taken out of it again here: a version that does not know bots reads them as
     ///      the player's own shares, bought with the player's money, and nothing is lost.
     ///   f the player's bonds (Markets/Bonds/BondStore). Never in the city's line.
+    ///   g the player's worked orders and dividends waiting to be put back (MarketEngine.Invest.cs): an order's fields as in
+    ///      part o, then whether it is worked or a payout put back, its money, the day it stopped and its last day's slices.
+    ///      Apart from part o, so that a version before them never fills a worked order whole at the open; read back, every
+    ///      order takes its place by its number again. Never in the city's line.
+    ///   A holding of part p may end with the share of each dividend it puts back, a line of part t with the worked order it
+    ///   is the day's slices of and whether it was bought with a dividend put back (each written only when there is one).
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
     /// founder, its name and sector, its reserve, board and meetings): another player's is in the city's line too.
     ///
@@ -136,6 +142,10 @@ namespace RealLifeOverhaul.Markets
                 t.Append(written++ > 0 ? ";" : string.Empty).Append(p.StockId.ToString(Inv));
                 L(t, shares, cost, p.Dividends, p.Realised);
                 Join(t, p.Test ? 1 : 0, p.OpenedDay);
+                if (p.Reinvest > 0)
+                {
+                    Join(t, p.Reinvest);   // the share of each dividend put back (a version before it reads none)
+                }
             }
             for (int i = 0; i < s.Bots.Count && !city; i++)
             {
@@ -156,13 +166,17 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             t.Append("~o:");
+            int worked = 0;
             for (int i = 0, n = 0; i < s.Orders.Count && !city; i++)
             {
                 Order o = s.Orders[i];
-                t.Append(n++ > 0 ? ";" : string.Empty).Append(o.Id.ToString(Inv));
-                Join(t, o.StockId, (int)o.Side, (int)o.Type, (int)o.Life);
-                L(t, o.Qty, o.Filled, o.FilledValue);
-                Join(t, o.LimitCents, o.StopCents, o.PlacedDay, o.PlacedPhase, o.ExpireDay, (int)o.State, (int)o.Why, o.Triggered ? 1 : 0, o.Test ? 1 : 0, o.Forced ? 1 : 0);
+                if (o.Worked || o.Back)
+                {
+                    worked++;   // (part g)
+                    continue;
+                }
+                t.Append(n++ > 0 ? ";" : string.Empty);
+                OrderFields(t, o);
                 if (o.Closing)
                 {
                     Join(t, 1);   // a stop loss or a take profit (a version before them reads a stop or a limit)
@@ -178,9 +192,13 @@ namespace RealLifeOverhaul.Markets
                 Join(t, r.PriceCents);
                 L(t, r.Value, r.Fee);
                 Join(t, r.Test ? 1 : 0);
-                if (r.Bot > 0)
+                if (r.Bot > 0 || r.Order > 0 || r.Back)
                 {
                     Join(t, r.Bot);
+                }
+                if (r.Order > 0 || r.Back)
+                {
+                    Join(t, r.Order, r.Back ? 1 : 0);   // a worked order's day of slices, a dividend put back (a version before them reads a trade)
                 }
             }
             t.Append("~w:");
@@ -254,6 +272,11 @@ namespace RealLifeOverhaul.Markets
                 t.Append("~f:");
                 BondStore.Write(t, s.Bonds);   // the player's bonds (Markets/Bonds/BondStore)
             }
+            if (!city && worked > 0)
+            {
+                t.Append("~g:");
+                WorkedOrders(t, s);   // worked orders and dividends to put back (MarketEngine.Invest.cs)
+            }
             if (!city && s.Listing != null && !s.Listing.Empty)
             {
                 t.Append("~l:");
@@ -265,6 +288,91 @@ namespace RealLifeOverhaul.Markets
             }
             return t.ToString();
         }
+
+        // ---------------------------------------------------------------- orders
+
+        // An order's own fields, as part o has had them from the first version: its number first.
+        private static void OrderFields(StringBuilder t, Order o)
+        {
+            t.Append(o.Id.ToString(Inv));
+            Join(t, o.StockId, (int)o.Side, (int)o.Type, (int)o.Life);
+            L(t, o.Qty, o.Filled, o.FilledValue);
+            Join(t, o.LimitCents, o.StopCents, o.PlacedDay, o.PlacedPhase, o.ExpireDay, (int)o.State, (int)o.Why, o.Triggered ? 1 : 0, o.Test ? 1 : 0, o.Forced ? 1 : 0);
+        }
+
+        // Part g: worked orders and dividends to put back, each an order's fields, then what it is, its money, the day it
+        // stopped and its last day's slices.
+        private static void WorkedOrders(StringBuilder t, MarketState s)
+        {
+            int n = 0;
+            for (int i = 0; i < s.Orders.Count; i++)
+            {
+                Order o = s.Orders[i];
+                if (!o.Worked && !o.Back)
+                {
+                    continue;
+                }
+                t.Append(n++ > 0 ? ";" : string.Empty);
+                OrderFields(t, o);
+                Join(t, o.Closing ? 1 : 0, o.Worked ? 1 : 0, o.Back ? 1 : 0);
+                L(t, o.Budget);
+                Join(t, o.EndDay, o.DayOf);
+                L(t, o.DayQty, o.DayValue);
+            }
+        }
+
+        // An order's own fields read back; null for one that cannot be (no number, no shares, a limit or a stop with no price).
+        // A payout put back has no shares yet (they are worked out at the open): 'back' lets it through.
+        private static Order ReadOrder(string[] c, bool back)
+        {
+            if (c.Length < 18 || I(c, 0) <= 0 || (L(c, 5) <= 0 && !back))
+            {
+                return null;
+            }
+            var o = new Order
+            {
+                Id = I(c, 0), StockId = I(c, 1), Side = (OrderSide)Clamp(I(c, 2), 0, 1), Type = (OrderType)Clamp(I(c, 3), 0, 2), Life = (OrderLife)Clamp(I(c, 4), 0, 1),
+                Qty = Math.Max(0, L(c, 5)), Filled = Math.Max(0, Math.Min(L(c, 5), L(c, 6))), FilledValue = Math.Max(0, L(c, 7)), LimitCents = Math.Max(0, I(c, 8)),
+                StopCents = Math.Max(0, I(c, 9)), PlacedDay = I(c, 10), PlacedPhase = I(c, 11), ExpireDay = I(c, 12), State = (OrderState)Clamp(I(c, 13), 0, 4),
+                Why = (OrderWhy)Clamp(I(c, 14), 0, (int)OrderWhy.Count - 1), Triggered = I(c, 15) != 0, Test = I(c, 16) != 0, Forced = I(c, 17) != 0, Closing = I(c, 18) != 0
+            };
+            if ((o.Type == OrderType.Limit && o.LimitCents <= 0) || (o.Type == OrderType.Stop && o.StopCents <= 0))
+            {
+                return null;
+            }
+            o.Closing &= o.Type != OrderType.Market;
+            return o;
+        }
+
+        // Part g read back: a worked order (at the market, until it is done) or a payout put back (at the market, for the day, with its money).
+        private static void ReadWorked(MarketState s, string body)
+        {
+            foreach (string record in Records(body))
+            {
+                string[] c = record.Split('|');
+                bool worked = I(c, 19) != 0, back = !worked && I(c, 20) != 0;
+                Order o = (worked || back) && s.Orders.Count < MarketCatalogue.OrdersMost * 2 ? ReadOrder(c, back) : null;
+                if (o == null || s.Order(o.Id) != null || (back && Math.Max(0, L(c, 21)) <= 0))
+                {
+                    continue;
+                }
+                o.Type = OrderType.Market;
+                o.Closing = false;
+                o.Worked = worked;
+                o.Back = back;
+                o.Life = worked ? OrderLife.UntilDone : OrderLife.Day;
+                o.Budget = back ? Math.Max(0, L(c, 21)) : 0;
+                o.EndDay = Math.Max(0, I(c, 22));
+                o.DayOf = Math.Max(0, I(c, 23));
+                o.DayQty = Math.Max(0, L(c, 24));
+                o.DayValue = Math.Max(0, L(c, 25));
+                s.Orders.Add(o);
+            }
+            // (every order in its place again: the market fills them in the order they were placed, by their numbers)
+            s.Orders.Sort(ById);
+        }
+
+        private static readonly Comparison<Order> ById = (a, b) => a.Id.CompareTo(b.Id);
 
         // ---------------------------------------------------------------- the player's trading bots
 
@@ -692,7 +800,7 @@ namespace RealLifeOverhaul.Markets
             }
             var s = new MarketState();
             bool header = false;
-            string suspended = null, bots = null;
+            string suspended = null, bots = null, worked = null;
             for (int p = 1; p < parts.Length; p++)
             {
                 string part = parts[p];
@@ -721,32 +829,23 @@ namespace RealLifeOverhaul.Markets
                             string[] c = record.Split('|');
                             if (c.Length >= 5 && I(c, 0) > 0 && L(c, 1) != 0 && s.Position(I(c, 0)) == null)
                             {
-                                s.Positions.Add(new Position { StockId = I(c, 0), Shares = L(c, 1), Cost = Math.Max(0, L(c, 2)), Dividends = L(c, 3), Realised = L(c, 4), Test = I(c, 5) != 0, OpenedDay = I(c, 6) });
+                                s.Positions.Add(new Position { StockId = I(c, 0), Shares = L(c, 1), Cost = Math.Max(0, L(c, 2)), Dividends = L(c, 3), Realised = L(c, 4), Test = I(c, 5) != 0, OpenedDay = I(c, 6),
+                                    Reinvest = L(c, 1) > 0 ? InvestRules.ReinvestOf(Clamp(I(c, 7), 0, 100)) : 0 });
                             }
                         }
                         break;
                     case 'o':
                         foreach (string record in Records(body))
                         {
-                            string[] c = record.Split('|');
-                            if (c.Length < 18 || I(c, 0) <= 0 || L(c, 5) <= 0 || s.Orders.Count >= MarketCatalogue.OrdersMost * 2)
+                            Order o = s.Orders.Count < MarketCatalogue.OrdersMost * 2 ? ReadOrder(record.Split('|'), false) : null;
+                            if (o != null)
                             {
-                                continue;
+                                s.Orders.Add(o);
                             }
-                            var o = new Order
-                            {
-                                Id = I(c, 0), StockId = I(c, 1), Side = (OrderSide)Clamp(I(c, 2), 0, 1), Type = (OrderType)Clamp(I(c, 3), 0, 2), Life = (OrderLife)Clamp(I(c, 4), 0, 1),
-                                Qty = L(c, 5), Filled = Math.Max(0, Math.Min(L(c, 5), L(c, 6))), FilledValue = Math.Max(0, L(c, 7)), LimitCents = Math.Max(0, I(c, 8)), StopCents = Math.Max(0, I(c, 9)),
-                                PlacedDay = I(c, 10), PlacedPhase = I(c, 11), ExpireDay = I(c, 12), State = (OrderState)Clamp(I(c, 13), 0, 4), Why = (OrderWhy)Clamp(I(c, 14), 0, (int)OrderWhy.Count - 1),
-                                Triggered = I(c, 15) != 0, Test = I(c, 16) != 0, Forced = I(c, 17) != 0, Closing = I(c, 18) != 0
-                            };
-                            if ((o.Type == OrderType.Limit && o.LimitCents <= 0) || (o.Type == OrderType.Stop && o.StopCents <= 0))
-                            {
-                                continue;
-                            }
-                            o.Closing &= o.Type != OrderType.Market;
-                            s.Orders.Add(o);
                         }
+                        break;
+                    case 'g':
+                        worked = body;
                         break;
                     case 't':
                         foreach (string record in Records(body))
@@ -755,7 +854,7 @@ namespace RealLifeOverhaul.Markets
                             if (c.Length >= 9 && s.Trades.Count < MarketCatalogue.TradesKept)
                             {
                                 s.Trades.Add(new Trade { Day = I(c, 0), Phase = I(c, 1), StockId = I(c, 2), Kind = (TradeKind)Clamp(I(c, 3), 0, 9), Qty = L(c, 4), PriceCents = I(c, 5), Value = L(c, 6), Fee = L(c, 7), Test = I(c, 8) != 0,
-                                    Bot = MarketBots.Firm(I(c, 9)) != null ? I(c, 9) : 0 });
+                                    Bot = MarketBots.Firm(I(c, 9)) != null ? I(c, 9) : 0, Order = Math.Max(0, I(c, 10)), Back = I(c, 11) != 0 });
                             }
                         }
                         break;
@@ -868,6 +967,10 @@ namespace RealLifeOverhaul.Markets
             {
                 ReadBots(s, bots);   // (after the holdings: their shares are taken out of the player's)
                 Unmerge(s);
+            }
+            if (worked != null)
+            {
+                ReadWorked(s, worked);   // (after part o: every order back in its place by its number)
             }
             if (s.Listing != null && suspended != null && ReadStockLine(suspended, s.YearDays) != null)
             {

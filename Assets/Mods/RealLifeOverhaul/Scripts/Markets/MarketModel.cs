@@ -164,13 +164,15 @@ namespace RealLifeOverhaul.Markets
         public long Realised;        // gains and losses taken so far
         public bool Test;
         public int OpenedDay;
+        public int Reinvest;         // per cent of each dividend, after tax, put back into the same company at the next open (InvestRules.ReinvestOf); 0 none
     }
 
     public enum OrderSide { Buy = 0, Sell = 1 }
 
     public enum OrderType { Market = 0, Limit = 1, Stop = 2 }
 
-    public enum OrderLife { Day = 0, UntilCancelled = 1 }
+    /// <summary>How long an order stands. Saved as a number. UntilDone is a worked order's alone (Order.Worked): it is never in the save's part o.</summary>
+    public enum OrderLife { Day = 0, UntilCancelled = 1, UntilDone = 2 }
 
     public enum OrderState { Open = 0, Filled = 1, Cancelled = 2, Expired = 3, Refused = 4 }
 
@@ -182,6 +184,7 @@ namespace RealLifeOverhaul.Markets
         NothingHeld,    // a stop loss or a take profit with nothing (left) to close
         StopSide,       // a stop loss on the wrong side of the price: to sell it is under the bid, to buy back over the offer
         ProfitSide,     // a take profit on the wrong side: to sell it is over the bid, to buy back under the offer
+        Switched,       // worked orders, or dividends put back, were switched off in the options (Settings.MarketsLarge, MarketsReinvest)
         Count
     }
 
@@ -207,6 +210,17 @@ namespace RealLifeOverhaul.Markets
         public bool Forced;          // the broker's own order (a margin call)
         public bool Closing;         // a stop loss (a stop) or a take profit (a limit): it only ever closes what is held, and holds nothing back for other orders
 
+        // A worked order (MarketEngine.Invest.cs): at the market, larger than one order may be, filled a slice of each step's
+        // trading at a time until it is done, stopped or cancelled. Its life is UntilDone. A payout put back (Back): a purchase
+        // at the next open with the share of a dividend the player chose, its shares (Qty) worked out then from its Budget.
+        public bool Worked;
+        public bool Back;
+        public long Budget;          // a payout put back: the money it buys with
+        public int EndDay;           // the day a worked order stopped (kept for the app ten days after)
+        public int DayOf;            // a worked order: the last day it filled a slice...
+        public long DayQty, DayValue;    // ...and the shares and money of that day's slices (the day's notification at the close)
+        public int SlicePct;         // (never saved) that day's largest slice against its step's trading, per cent: the self-check
+
         public long Left => Qty - Filled;
         public bool IsOpen => State == OrderState.Open;
     }
@@ -226,6 +240,8 @@ namespace RealLifeOverhaul.Markets
         public long Fee;
         public bool Test;
         public int Bot;              // a trading bot's (its firm, MarketBots), 0 the player's own
+        public int Order;            // a worked order's line (its id): a day's slices of it on one line; 0 for any other
+        public bool Back;            // bought with a dividend put back
     }
 
     /// <summary>The player's account with the broker.</summary>

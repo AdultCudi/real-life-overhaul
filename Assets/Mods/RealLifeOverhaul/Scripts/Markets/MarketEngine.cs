@@ -1009,6 +1009,7 @@ namespace RealLifeOverhaul.Markets
             State.IndexLow = Math.Min(State.IndexLow, index);
             State.IndexLast = index;
             RestingOrders(day, k);
+            WorkedOrders(day, k);   // each worked order's slice of the step's trading (MarketEngine.Invest.cs)
             BotsStep(day, k);
             Margin(day, MarketCatalogue.PhaseOpen + k);
         }
@@ -1138,6 +1139,7 @@ namespace RealLifeOverhaul.Markets
             Interest(day);
             Margin(day, MarketCatalogue.PhaseClose);
             Expire(day);
+            WorkedClose(day);   // each worked order's day, told (MarketEngine.Invest.cs)
         }
 
         // The close's last piece, after the bots: the day's news, and old news goes.
@@ -1233,52 +1235,60 @@ namespace RealLifeOverhaul.Markets
                     continue;
                 }
                 State.Dues.RemoveAt(i);
-                Stock s = State.Stock(due.StockId);
-                if (due.Bot > 0)
+                PayDue(due, day);
+            }
+        }
+
+        // A dividend owed, paid: to the player (a bot's shares: into the bot's money too), or by them on shares sold short;
+        // the share of it the holding puts back is bought at the next open (MarketEngine.Invest.cs).
+        private void PayDue(in DividendDue due, int day)
+        {
+            Stock s = State.Stock(due.StockId);
+            if (due.Bot > 0)
+            {
+                BotDividend(due, s, day);   // (a bot's shares: paid to the player, into the bot's money)
+                return;
+            }
+            Position p = State.Position(due.StockId);
+            if (due.Cents > 0)
+            {
+                long money = due.Cents / 100;   // rounded down
+                if (money <= 0)
                 {
-                    BotDividend(due, s, day);   // (a bot's shares: paid to the player, into the bot's money)
-                    continue;
+                    return;
                 }
-                Position p = State.Position(due.StockId);
-                if (due.Cents > 0)
+                if (State.Account.Margin)
                 {
-                    long money = due.Cents / 100;   // rounded down
-                    if (money <= 0)
-                    {
-                        continue;
-                    }
-                    if (State.Account.Margin)
-                    {
-                        State.Account.Cash += money;
-                    }
-                    else
-                    {
-                        _world.Wallet.Give(money, MarketMoney.Dividend, s != null ? s.Name : string.Empty);
-                    }
-                    State.Account.Dividends += money;
-                    if (p != null)
-                    {
-                        p.Dividends += money;
-                    }
-                    MarketTrading.AddTrade(State, new Trade { Day = day, Phase = MarketCatalogue.PhaseClose, StockId = due.StockId, Kind = TradeKind.Dividend, Value = money, Test = due.Test });
-                    if (!due.Test)
-                    {
-                        Say(new MarketNews { Day = day, Kind = MarketNewsKind.Paid, Stock = due.StockId, A = (int)Math.Min(int.MaxValue, money) });   // (the player's own news: MarketEngine.Bots.cs)
-                    }
-                    _world.Paid(TradeKind.Dividend, s, money);
+                    State.Account.Cash += money;
                 }
-                else if (due.Cents < 0)
+                else
                 {
-                    long money = (-due.Cents + 99) / 100;   // rounded up: what a short owes the lender
-                    State.Account.Cash -= money;
-                    State.Account.DividendsPaid += money;
-                    if (p != null)
-                    {
-                        p.Dividends -= money;
-                    }
-                    MarketTrading.AddTrade(State, new Trade { Day = day, Phase = MarketCatalogue.PhaseClose, StockId = due.StockId, Kind = TradeKind.DividendPaid, Value = -money, Test = due.Test });
-                    _world.Paid(TradeKind.DividendPaid, s, money);
+                    _world.Wallet.Give(money, MarketMoney.Dividend, s != null ? s.Name : string.Empty);
                 }
+                State.Account.Dividends += money;
+                if (p != null)
+                {
+                    p.Dividends += money;
+                }
+                MarketTrading.AddTrade(State, new Trade { Day = day, Phase = MarketCatalogue.PhaseClose, StockId = due.StockId, Kind = TradeKind.Dividend, Value = money, Test = due.Test });
+                if (!due.Test)
+                {
+                    Say(new MarketNews { Day = day, Kind = MarketNewsKind.Paid, Stock = due.StockId, A = (int)Math.Min(int.MaxValue, money) });   // (the player's own news: MarketEngine.Bots.cs)
+                }
+                _world.Paid(TradeKind.Dividend, s, money);
+                PutBack(s, p, money, day, due.Test);
+            }
+            else if (due.Cents < 0)
+            {
+                long money = (-due.Cents + 99) / 100;   // rounded up: what a short owes the lender
+                State.Account.Cash -= money;
+                State.Account.DividendsPaid += money;
+                if (p != null)
+                {
+                    p.Dividends -= money;
+                }
+                MarketTrading.AddTrade(State, new Trade { Day = day, Phase = MarketCatalogue.PhaseClose, StockId = due.StockId, Kind = TradeKind.DividendPaid, Value = -money, Test = due.Test });
+                _world.Paid(TradeKind.DividendPaid, s, money);
             }
         }
 
@@ -1640,12 +1650,13 @@ namespace RealLifeOverhaul.Markets
             return o.Side == OrderSide.Buy ? q.Ask <= o.LimitCents : q.Bid >= o.LimitCents;
         }
 
-        private bool FillNow(Stock s, Order o, long qty, int cents, int phase)
+        // ('least' the least commission when it is not the day's: a worked order's slices after its first pay none, MarketEngine.Invest.cs)
+        private bool FillNow(Stock s, Order o, long qty, int cents, int phase, int least = -1)
         {
             // A trade's lasting move is the city's in a session, and so it is on a day played again that was played in one
             // (its tape has the move: the fill played again must not add it a second time).
             bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
-            if (!MarketTrading.Fill(State, s, o, qty, cents, _world.CommissionLeast, _world.Wallet, phase, !city, out double kept))
+            if (!MarketTrading.Fill(State, s, o, qty, cents, least >= 0 ? least : _world.CommissionLeast, _world.Wallet, phase, !city, out double kept))
             {
                 o.State = o.Filled > 0 ? OrderState.Cancelled : OrderState.Refused;
                 o.Why = o.Side == OrderSide.Buy ? (State.Account.Margin ? OrderWhy.BelowMargin : OrderWhy.NoMoney) : (State.Account.Margin ? OrderWhy.BelowMargin : OrderWhy.NoShares);
@@ -1749,7 +1760,14 @@ namespace RealLifeOverhaul.Markets
                 switch (o.Type)
                 {
                     case OrderType.Market:
-                        FillNow(s, o, o.Left, MarketTrading.MarketPrice(State, s, buying, o.Left, MarketCatalogue.PhaseOpen), MarketCatalogue.PhaseOpen);
+                        if (o.Back)
+                        {
+                            BackNow(o, s, MarketCatalogue.PhaseOpen);   // a dividend put back: as many shares as its money buys (MarketEngine.Invest.cs)
+                        }
+                        else if (!o.Worked)   // (a worked order's slices are the steps': WorkedOrders)
+                        {
+                            FillNow(s, o, o.Left, MarketTrading.MarketPrice(State, s, buying, o.Left, MarketCatalogue.PhaseOpen), MarketCatalogue.PhaseOpen);
+                        }
                         break;
                     case OrderType.Limit:
                         if (buying ? q.Ask <= o.LimitCents : q.Bid >= o.LimitCents)
@@ -1823,19 +1841,24 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // At the close: orders for the day, and orders until cancelled that have stood their time, expire.
+        // At the close: orders for the day, and orders until cancelled that have stood their time, expire (a worked order
+        // never does: it stands until it is done, stopped or cancelled).
         private void Expire(int day)
         {
             for (int i = State.Orders.Count - 1; i >= 0; i--)
             {
                 Order o = State.Orders[i];
-                if (o.IsOpen && o.ExpireDay <= day)
+                if (o.IsOpen && o.Life != OrderLife.UntilDone && o.ExpireDay <= day)
                 {
                     o.State = OrderState.Expired;
                     o.Why = OrderWhy.Expired;
                 }
+                if (!o.IsOpen && o.Worked && o.EndDay <= 0)
+                {
+                    o.EndDay = day;   // (one cancelled, or its company gone: kept from the day it ended)
+                }
                 // Finished orders are kept a while for the app, then go.
-                if (!o.IsOpen && day - o.PlacedDay > 10)
+                if (!o.IsOpen && day - Math.Max(o.PlacedDay, o.EndDay) > 10)
                 {
                     State.Orders.RemoveAt(i);
                 }
