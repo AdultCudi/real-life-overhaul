@@ -174,6 +174,7 @@ internal static partial class Program
         MarketCity();
         MarketNoFreeLunch();
         MarketCost();
+        MarketTrading2();   // stop losses, take profits and trading bots (MarketChecks5.cs)
         Console.WriteLine("  the stock market: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 }

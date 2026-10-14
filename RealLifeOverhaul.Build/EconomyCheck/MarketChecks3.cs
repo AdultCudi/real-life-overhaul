@@ -347,7 +347,8 @@ internal static partial class Program
 
     private static void MarketLimitsAndStops()
     {
-        int limitFills = 0, badLimit = 0, stopFills = 0, badStop = 0, untouched = 0, early = 0;
+        int limitFills = 0, badLimit = 0, stopFills = 0, badStop = 0, untouched = 0, early = 0, underStop = 0;
+        double stopSlip = 0.0;
         for (ulong seed = 31; seed <= 36; seed++)
         {
             var world = new MarketWorld(seed);
@@ -390,6 +391,9 @@ internal static partial class Program
                     {
                         continue;
                     }
+                    // (another order of the company filled in the same step moved the price a little for this one: its lasting move)
+                    bool another = orders.Count(x => x.s == s && x.o.Filled > filledBefore[x.o.Id]) > 1;
+                    double moved = another ? MarketCatalogue.ImpactPermanent * MarketCatalogue.ImpactTemporary * MarketTrading.DayVol(m.State, s) * Math.Sqrt(200.0 / Math.Max(1.0, s.Adv)) : 0.0;
                     Candle bar = s.Bars[s.BarCount - 1];
                     double half = MarketTrading.HalfSpread(m.State, s, m.State.Phase);
                     TradeKind kind = o.Side == OrderSide.Buy ? TradeKind.Bought : TradeKind.Sold;
@@ -403,9 +407,13 @@ internal static partial class Program
                     }
                     else
                     {
+                        // At the market's price the step ended on (the next price), less its move: never better than that bid.
                         stopFills++;
                         int bidLow = (int)Math.Floor(bar.L * (1.0 - half));
-                        badStop += price > o.StopCents || bidLow > o.StopCents ? 1 : 0;
+                        int bidLast = (int)Math.Floor(bar.C * (1.0 - half) * (1.0 + moved)) + (another ? 1 : 0);
+                        badStop += price > bidLast || bidLow > o.StopCents ? 1 : 0;
+                        stopSlip += (price - o.StopCents) / (double)o.StopCents;
+                        underStop += price < o.StopCents ? 1 : 0;
                     }
                 }
             }
@@ -422,7 +430,10 @@ internal static partial class Program
             }
         }
         Check(limitFills > 20 && badLimit == 0, "market: a limit to buy fills only when the offer reached it, at it or better (" + limitFills + " fills, " + badLimit + " wrong)");
-        Check(stopFills > 20 && badStop == 0, "market: a stop to sell fills only when the bid reached it, at it or worse (" + stopFills + " fills, " + badStop + " wrong)");
+        Check(stopFills > 20 && badStop == 0, "market: a stop to sell fills only when the bid reached it, at the market's next price: the step's last bid less its move (" + stopFills + " fills, "
+              + badStop + " wrong)");
+        Check(stopFills > 0 && stopSlip / stopFills < 0.0 && underStop > 0, "market: a stop is not a price promised: on average it goes under the stop ("
+              + (stopSlip / Math.Max(1, stopFills) * 100.0).ToString("0.00") + "%), " + underStop + " of " + stopFills + " under it");
         Check(early == 0, "market: a limit the market never reached is never filled");
         Console.WriteLine("  market orders: " + limitFills + " limit fills and " + stopFills + " stop fills checked against the step's prices; " + untouched + " left open");
     }

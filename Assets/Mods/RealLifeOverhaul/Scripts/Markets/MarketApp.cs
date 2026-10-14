@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Markets
     ///   Orders      orders open and lately done; pick one to see it or cancel it
     ///   Portfolio   what you hold, what it cost and what it is worth; the box has the account (and a margin account)
     ///   History     the account's history: trades, dividends, payouts, interest and fees
+    ///   Bots        the trading bots for hire and those hired: their record, their settings (MarketApp.Bots.cs)
     ///
     /// Picking a company opens its page in place of the table (MarketApp.Page.cs): its candle chart with the analysis
     /// tools, or its figures and results; the box then has its quote and the order ticket (MarketApp.Box.cs). Nothing
@@ -34,7 +35,8 @@ namespace RealLifeOverhaul.Markets
 
         private static readonly string[] TabKeys =
         {
-            "reallife_mkt_tab_market", "reallife_mkt_tab_companies", "reallife_mkt_tab_watch", "reallife_mkt_tab_orders", "reallife_mkt_tab_portfolio", "reallife_mkt_tab_history"
+            "reallife_mkt_tab_market", "reallife_mkt_tab_companies", "reallife_mkt_tab_watch", "reallife_mkt_tab_orders", "reallife_mkt_tab_portfolio", "reallife_mkt_tab_history",
+            "reallife_mkt_tab_bots"
         };
 
         public static IModLogger Logger;
@@ -229,6 +231,7 @@ namespace RealLifeOverhaul.Markets
                     case TabOrders: table = WriteOrders(box, s); break;
                     case TabPortfolio: table = WritePortfolio(box, s); break;
                     case TabHistory: table = WriteHistory(box, s); break;
+                    case TabBots: table = WriteBots(box, s); break;
                     default: table = WriteMarket(box, s); break;
                 }
             }
@@ -289,6 +292,10 @@ namespace RealLifeOverhaul.Markets
             if (company == int.MinValue)
             {
                 company = Picked(row.Id, HoldingRow);
+            }
+            if (company == int.MinValue)
+            {
+                company = BotHoldingCompany(row.Id);   // a bot's holding (MarketApp.Bots.cs)
             }
             if (company != int.MinValue)
             {
