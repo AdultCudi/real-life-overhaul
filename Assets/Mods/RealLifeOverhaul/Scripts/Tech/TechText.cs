@@ -24,6 +24,30 @@ namespace RealLifeOverhaul.Tech
 
         public static string Pair(string labelKey, string value) => FinanceText.Pair(labelKey, value);
 
+        /// <summary>
+        /// Why nobody at a firm can work (or worked yesterday) and what puts it right, in one line: for the firm's page, a
+        /// contract's page and the notifications (short enough to go inside one).
+        /// </summary>
+        public static string IdleLine(Idle why, in FirmFacts f, bool yesterday)
+        {
+            switch (why)
+            {
+                case Idle.NoStaff: return T("reallife_tech_idle_no_staff");
+                case Idle.NoWorkers: return T("reallife_tech_idle_no_workers");
+                case Idle.NetNone: return T("reallife_tech_idle_net_none", "days", TechBridges.NetDaysNow().ToString(Inv));
+                case Idle.NetInstalling: return T("reallife_tech_idle_net_installing", "day", f.NetWhen.ToString(Inv));
+                case Idle.NetOutage: return T("reallife_tech_idle_net_outage", "time", (f.NetWhen % 24).ToString("00", Inv) + ":00");
+                case Idle.NoPower: return T("reallife_tech_idle_no_power");
+                case Idle.Shut: return T("reallife_tech_idle_shut");
+                case Idle.NoHours: return T("reallife_tech_idle_no_hours");
+                case Idle.NoStations: return T("reallife_tech_idle_no_stations");
+                case Idle.NoShifts: return T("reallife_tech_idle_no_shifts");
+                case Idle.DayOff: return T("reallife_tech_idle_day_off");
+                case Idle.Away: return T("reallife_tech_idle_away");
+                default: return string.Empty;
+            }
+        }
+
         /// <summary>Whole money, as the Finance app writes a day's figure.</summary>
         public static string Money(long whole) => FinanceText.Money(whole);
 

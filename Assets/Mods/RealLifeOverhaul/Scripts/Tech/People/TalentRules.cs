@@ -128,6 +128,45 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- what they get done
 
         /// <summary>
+        /// The count of the hours worked moves on to a new day: the day counted so far becomes the day before. Where the
+        /// count was not running (the first day after loading a save from before it, or a midnight passed while it was
+        /// off), the game's own figures stand in, when there are any (at least 0; -1 for none): the hours the game counted
+        /// yesterday (<paramref name="gameYesterday"/>, known only at midnight) and today so far (<paramref name="gameToday"/>).
+        /// Nothing changes on a day already being counted.
+        /// </summary>
+        public static void RollHours(Profile p, int day, int gameYesterday, int gameToday)
+        {
+            if (p.WorkDay == day)
+            {
+                return;
+            }
+            if (p.WorkDay == day - 1)
+            {
+                p.PrevDay = p.WorkDay;
+                p.PrevHours = Math.Max(0, p.WorkHours);
+            }
+            else if (gameYesterday >= 0)
+            {
+                p.PrevDay = day - 1;
+                p.PrevHours = Math.Min(24, gameYesterday);
+            }
+            else
+            {
+                p.PrevDay = p.WorkDay;
+                p.PrevHours = Math.Max(0, p.WorkHours);
+            }
+            bool running = p.WorkDay == day - 1;
+            p.WorkDay = day;
+            p.WorkHours = !running && gameToday > 0 ? Math.Min(24, gameToday) : 0;
+        }
+
+        /// <summary>The hours counted for a professional on a day: the day being counted, the day before it, or none.</summary>
+        public static int HoursOn(Profile p, int day)
+        {
+            return day == p.WorkDay ? Math.Max(0, p.WorkHours) : day == p.PrevDay ? Math.Max(0, p.PrevHours) : 0;
+        }
+
+        /// <summary>
         /// A professional's output in thousandths of a mid-level's in good heart: the level's, by the average of the main
         /// skill and the two specialisms (at 50 as written, 0.6 at 0, 1.4 at 100), by morale (0.7 at none, 1.1 at full),
         /// less half the burnout. Nothing while they are off sick (a course is taken outside working hours).

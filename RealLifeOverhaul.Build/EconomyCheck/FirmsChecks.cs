@@ -16,6 +16,7 @@ internal static partial class Program
         FirmsTenders();
         FirmsValue();
         FirmsSave();
+        TechWork();
     }
 
     private static Crew Team(int engineering, int seniorShare = 500, int faults = 150)

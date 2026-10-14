@@ -70,7 +70,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The player's professionals. One pass over the save's employees.</summary>
+        /// <summary>
+        /// The player's professionals. One pass over the save's employees. In a Going Public session one assigned to
+        /// another player's business is theirs, and is left out: nothing of the mod's counts, reads or changes them.
+        /// </summary>
         public static void Employees(List<EmployeeInstance> into)
         {
             into.Clear();
@@ -83,10 +86,11 @@ namespace RealLifeOverhaul.Tech
             catch (Exception)
             {
             }
+            bool session = GoingPublic.InSession;
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance e = all[i];
-                if (e != null && e != self && !e.isBeingReplaced && Professional(e))
+                if (e != null && e != self && !e.isBeingReplaced && Professional(e) && !(session && GoingPublic.Foreign(Business(e))))
                 {
                     into.Add(e);
                 }
@@ -125,6 +129,16 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
         }
+
+        /// <summary>
+        /// The hours the game has counted the employee working today (EmployeeInstance.workedHoursToday, added on its hour
+        /// after the mod's own count and emptied at midnight after the mod's first hour of the new day: there it is still
+        /// the whole of the day before).
+        /// </summary>
+        public static int WorkedToday(EmployeeInstance e) => e != null ? Math.Max(0, e.workedHoursToday) : 0;
+
+        /// <summary>True while a business is closed by the game's own switch (temporarily closed): nobody works there then.</summary>
+        public static bool Shut(BuildingRegistration reg) => reg != null && reg.temporarilyClosed;
 
         public static int WeekHours(EmployeeInstance e) => Math.Max(0, e.workedHoursThisWeek);
 

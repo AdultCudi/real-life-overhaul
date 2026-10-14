@@ -33,11 +33,9 @@ namespace RealLifeOverhaul.Tech
 
         private readonly List<Person> _people = new List<Person>(64);
         private readonly List<EmployeeInstance> _employees = new List<EmployeeInstance>(64);
-        private readonly Dictionary<string, int> _hours = new Dictionary<string, int>(64);
-        private readonly Dictionary<string, int> _lastHours = new Dictionary<string, int>(64);
+        private readonly HashSet<string> _ids = new HashSet<string>();   // the game's employees read (into _people, or passed over), by id
         private readonly Dictionary<string, int> _mentorRoom = new Dictionary<string, int>(32);
         private readonly int[] _wanted = new int[8];
-        private int _hoursDay = -1, _lastHoursDay = -1;
         private int _layoffs, _layoffsDay = -1;
         private TalentFile _talent;
         private bool _peopleOn;
@@ -96,8 +94,7 @@ namespace RealLifeOverhaul.Tech
             }
             _peopleOn = false;
             _people.Clear();
-            _hours.Clear();
-            _lastHours.Clear();
+            _ids.Clear();
             if (!unloading && _rolesApp != null)
             {
                 _rolesApp.Remove();
@@ -124,6 +121,7 @@ namespace RealLifeOverhaul.Tech
         private int ReadPeople(int day)
         {
             _people.Clear();
+            _ids.Clear();
             for (int i = 0; i < _talent.People.Count; i++)
             {
                 _talent.People[i].Seen = _talent.People[i].Payroll;
@@ -133,6 +131,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _employees.Count; i++)
             {
                 EmployeeInstance e = _employees[i];
+                _ids.Add(e.id);   // (one passed over is not read again on the hour)
                 Profile p = _talent.Of(e.id);
                 if (p == null)
                 {
@@ -149,7 +148,7 @@ namespace RealLifeOverhaul.Tech
                     made++;
                 }
                 p.Seen = true;
-                _people.Add(Read(p, e));
+                _people.Add(Read(p, e, day));
             }
             for (int i = _talent.People.Count - 1; i >= 0; i--)
             {
@@ -160,13 +159,13 @@ namespace RealLifeOverhaul.Tech
                 }
                 else if (p.Payroll)
                 {
-                    _people.Add(Read(p, null));
+                    _people.Add(Read(p, null, day));
                 }
             }
             return made;
         }
 
-        private Person Read(Profile p, EmployeeInstance e)
+        private Person Read(Profile p, EmployeeInstance e, int day)
         {
             var person = new Person { File = p, Game = e };
             if (e != null)
@@ -189,6 +188,7 @@ namespace RealLifeOverhaul.Tech
             }
             person.Business = person.At != null ? TalentGame.NameOf(person.At) : string.Empty;
             p.Going = TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, person.MainPoints), p.Def, Shortage(p.Def.Family), TalentRules.CertPayBp(p));
+            person.HoursYesterday = HoursOf(person, day);   // (the firms' crews are worked out from it: it must hold whenever the people are read again)
             return person;
         }
 
@@ -267,6 +267,10 @@ namespace RealLifeOverhaul.Tech
                 into[n++] = 27;   // lawyer
                 into[n++] = TalentCatalogue.ItSupport;
             }
+            else
+            {
+                n = FirmsRules.Wanted(TechTypes.KindOf(type), into);
+            }
             return n;
         }
 
@@ -312,46 +316,55 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- the hour
 
-        // Who is working this hour, counted by employee for the day's learning, burnout and mentoring.
+        // Who is working this hour, counted on each professional's file (and so kept in the save) for the day's learning,
+        // burnout and mentoring and for the firms' work: an hour on a shift of the game's (EmployeeInstance.IsWorking) at a
+        // business that is not closed. The game's hour has not been added to its own figure yet when this runs (its
+        // EmployeeHelper.RunHourly comes after GlobalEvents.onNewHour); at midnight that figure still holds the whole day
+        // before (EmployeeHelper.WorkDaily empties it after), which stands in for a day the count missed. A professional
+        // hired since the people were last read is read in first, so that their first shift counts.
         private void PeopleHour()
         {
             int day = Save.Day;
-            if (day != _hoursDay)
+            bool midnight = Save.Hour == 0;
+            TalentGame.Employees(_employees);
+            for (int i = 0; i < _employees.Count; i++)
             {
-                _lastHours.Clear();
-                foreach (KeyValuePair<string, int> pair in _hours)
+                if (!_ids.Contains(_employees[i].id))
                 {
-                    _lastHours[pair.Key] = pair.Value;
+                    ReadPeople(day);
+                    break;
                 }
-                _lastHoursDay = _hoursDay;
-                _hours.Clear();
-                _hoursDay = day;
             }
             for (int i = 0; i < _people.Count; i++)
             {
-                EmployeeInstance e = _people[i].Game;
-                if (e != null && TalentGame.Working(e))
+                Person person = _people[i];
+                EmployeeInstance e = person.Game;
+                if (e == null)
                 {
-                    int h;
-                    _hours.TryGetValue(e.id, out h);
-                    _hours[e.id] = h + 1;
+                    continue;
+                }
+                int game = TalentGame.WorkedToday(e);
+                TalentRules.RollHours(person.File, day, midnight ? game : -1, midnight ? -1 : game);
+                if (TalentGame.Working(e) && !TalentGame.Shut(person.At))
+                {
+                    person.File.WorkHours = Math.Min(24, person.File.WorkHours + 1);
                 }
             }
         }
 
+        // The hours a professional worked the day before a day: as counted on the hour for the game's own employees (none
+        // for a day not counted); a plain working day for the mod's own payroll.
         private int HoursOf(Person person, int day)
         {
             if (person.Game == null)
             {
                 return person.File.Sick || IsWeekend(day - 1) ? 0 : TalentCatalogue.DayHours;   // (the mod's own payroll works a plain week)
             }
-            int h;
-            if (_lastHoursDay == day - 1 && _lastHours.TryGetValue(person.Game.id, out h))
-            {
-                return h;
-            }
-            return _hoursDay == day - 1 && _hours.TryGetValue(person.Game.id, out h) ? h : 0;
+            return TalentRules.HoursOn(person.File, day - 1);
         }
+
+        /// <summary>The hours a professional of the game's has worked so far today (0 for the mod's own payroll, which works a plain day).</summary>
+        internal static int HoursToday(Person person, int day) => person.Game != null ? TalentRules.HoursOn(person.File, day) : 0;
 
         private static bool IsWeekend(int day)
         {

@@ -47,6 +47,74 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The speed of a building's internet connection in Mbps; 0 with none or in an outage. Default: unknown (a data centre is taken to be connected).</summary>
         public static Func<BuildingRegistration, int> Mbps;
 
+        /// <summary>
+        /// The internet of a business that cannot open without it (the utilities): 0 working or not needed, 1 no plan,
+        /// 2 being installed (<paramref name="when"/>: the day it connects), 3 down for a while (when: the hour it is back).
+        /// </summary>
+        public delegate int NetAsk(BuildingRegistration reg, out int when);
+
+        /// <summary>Why a business's internet keeps it closed (<see cref="NetAsk"/>). Default: nothing in the way.</summary>
+        public static NetAsk Net;
+
+        /// <summary>Opens the Utilities app on its internet page; false if it cannot be. Default: none.</summary>
+        public static Func<bool> OpenInternet;
+
+        /// <summary>Opens the Company app's rota with a business picked (its place), to plan its shifts; false if it cannot be. Default: none.</summary>
+        public static Func<string, bool> OpenRota;
+
+        /// <summary>The days a new internet plan takes to be installed (the utilities). Default: 2.</summary>
+        public static Func<int> NetDays;
+
+        public static int NetDaysNow()
+        {
+            try
+            {
+                return NetDays != null ? Math.Max(0, NetDays()) : 2;
+            }
+            catch (Exception)
+            {
+                return 2;
+            }
+        }
+
+        public static int NetOf(BuildingRegistration reg, out int when)
+        {
+            when = 0;
+            try
+            {
+                return Net != null && reg != null ? Math.Max(0, Math.Min(3, Net(reg, out when))) : 0;
+            }
+            catch (Exception)
+            {
+                when = 0;
+                return 0;
+            }
+        }
+
+        public static bool Try(Func<bool> open)
+        {
+            try
+            {
+                return open != null && open();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static bool RotaFor(string place)
+        {
+            try
+            {
+                return OpenRota != null && OpenRota(place);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, thousandths of a cubic metre) at the city's utilities' tariff, cents at today's prices. Default: a plain tariff.</summary>
         public static Func<int, long, long> UtilityCents;
 
@@ -168,6 +236,10 @@ namespace RealLifeOverhaul.Tech
             Ipo = null;
             Supplied = null;
             Mbps = null;
+            Net = null;
+            NetDays = null;
+            OpenInternet = null;
+            OpenRota = null;
             UtilityCents = null;
             Founder = null;
             CourseShareBp = null;
