@@ -181,11 +181,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (!BuildingManager.IsInsideBuilding || manager == null || manager.building == null)
             {
                 _laidInside = null;
+                TellFloor(null);
                 return;
             }
             string place = DealerGame.Place(manager.building.Address);
             if (place == _laidInside)
             {
+                TellFloor(_state.Yard(place));
                 return;
             }
             _laidInside = place;
@@ -199,6 +201,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 SeeTo(y);
             }
+            TellFloor(y);
         }
 
         // ---------------------------------------------------------------- starting and stopping
@@ -218,6 +221,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _beforeTests = save.modData.TryGetValue(DealerStore.TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
             _state = state;
+            ReadBays(save);
+            _heard.Clear();
             _running = true;
             _waiting = -1;
             _laidInside = null;
@@ -255,6 +260,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             _running = false;
             _regs.Clear();
             _laidInside = null;
+            TellFloor(null);
             if (!unloading)
             {
                 RemoveApp();
@@ -468,6 +474,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     _laidInside = place;
                     SeeTo(y);
                 }
+                TellFloor(y);
             }
             catch (Exception e)
             {
@@ -488,7 +495,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     Tell(NotificationType.Info, "reallife_dealer_note_laid", new Dictionary<string, string>(2) { { "name", y.Name }, { "places", y.Spots.Count.ToString() } }, TabLots, LotRow(y));
                 }
             }
-            int placed = DealerGame.Park(y, _lost);
+            int placed = DealerGame.Park(y, _lost, _bays);
             for (int i = 0; i < _lost.Count; i++)
             {
                 RemoveDeals(y, _lost[i].Id);
@@ -573,7 +580,9 @@ namespace RealLifeOverhaul.Economy.Dealership
                 WorkshopHour(y, now);
                 YardHour h = DealerGame.Hour(reg);
                 Worths(y, level);
-                offers += DealerRules.Hour(_state, y, h, now, day, _worths, financeLeast, _models, _colours, level).Offers;
+                DealerHour got = DealerRules.Hour(_state, y, h, now, day, _worths, financeLeast, _models, _colours, level);
+                offers += got.Offers;
+                Heard(y, now, got, h);   // (for the floor the player may be watching: DealerDirector.Floor)
                 if (h.Staff <= 0 || !h.Open)
                 {
                     continue;
@@ -764,6 +773,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[DealerStore.Key] = DealerStore.Write(_state);
+            WriteBays(save);
             if (_beforeTests != null)
             {
                 save.modData[DealerStore.TestKey] = _beforeTests;
@@ -875,6 +885,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             _state = null;
             _beforeTests = null;
             _ids.Clear();
+            _bays.Clear();
+            _heard.Clear();
         }
     }
 }

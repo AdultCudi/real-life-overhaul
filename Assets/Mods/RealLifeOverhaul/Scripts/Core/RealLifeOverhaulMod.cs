@@ -843,6 +843,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
                 .AddToggle(Settings.EconomyDealerId, "reallife_dealer_enabled", Settings.EconomyDealer,
                     v => Settings.EconomyDealer = v)
+                .AddToggle(Settings.EconomyDealerFloorId, "reallife_showroom_floor_enabled", Settings.EconomyDealerFloor,
+                    v => Settings.EconomyDealerFloor = v)
                 .AddButton("reallife_dealer_test_stock", () => Economy.Dealership.DealerDirector.Instance?.TestStock())
                 .AddButton("reallife_dealer_test_customers", () => Economy.Dealership.DealerDirector.Instance?.TestCustomers())
                 .AddButton("reallife_dealer_test_auction", () => Economy.Dealership.DealerDirector.Instance?.TestAuction())
@@ -851,6 +853,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_dealer_test_arrive", () => Economy.Dealership.DealerDirector.Instance?.TestArrive())
                 .AddButton("reallife_dealer_test_mission", () => Economy.Dealership.DealerDirector.Instance?.TestMission())
                 .AddButton("reallife_dealer_test_back", () => Economy.Dealership.DealerDirector.Instance?.TestBack())
+                .AddButton("reallife_showroom_test_floor", () => Economy.Dealership.ShowroomFloor.Instance?.TestFloor())
                 .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
                 .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
@@ -1187,7 +1190,11 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.OnlineApp", () => Economy.OnlineApp.Logger = context.Logger);
             Guard.Step("Economy.Dealership.DealerDirector", () => Economy.Dealership.DealerDirector.Logger = context.Logger);
             Guard.Step("Economy.Dealership.DealerApp", () => Economy.Dealership.DealerApp.Logger = context.Logger);
-            Guard.Step("Economy.Dealership.DealerDirector", () => Guard.Add<Economy.Dealership.DealerDirector>(_root));   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
+            Guard.Step("Economy.Dealership.DealerDirector", () => Guard.Add<Economy.Dealership.DealerDirector>(_root));
+            Guard.Step("Economy.Dealership.ShowroomFloor", () => Economy.Dealership.ShowroomFloor.Logger = context.Logger);
+            Guard.Step("Economy.Dealership.ShowroomView", () => Economy.Dealership.ShowroomView.Logger = context.Logger);
+            Guard.Step("Economy.Dealership.ShowroomFloor", () => Guard.Add<Economy.Dealership.ShowroomFloor>(_root));   // the Car Showroom's floor: its visitors (Scripts/Economy/Dealer/Floor)
+            Guard.Step("Economy.Dealership.ShowroomView", () => Guard.Add<Economy.Dealership.ShowroomView>(_root));   // ...and its camera and bays   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
             Guard.Step("Economy.OnlineDirector", () => Guard.Add<Economy.OnlineDirector>(_root));   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
             Guard.Step("Economy.CompanyDirector", () => Economy.CompanyDirector.Logger = context.Logger);
             Guard.Step("Economy.CompanyApp", () => Economy.CompanyApp.Logger = context.Logger);

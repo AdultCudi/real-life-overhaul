@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(8);
         private static readonly List<int> Offsets = new List<int>(2 * DealerCatalogue.SpotsMost);
+        private static int[] Current = new int[DealerCatalogue.CarsMost], Chosen = new int[DealerCatalogue.CarsMost], Into = new int[DealerCatalogue.CarsMost];   // Park's arrangement, made once
 
         private static GameInstance Save => SaveGameManager.Current;
 
@@ -286,6 +287,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             return Quaternion.Euler(0f, s.Yaw, 0f);
         }
 
+        /// <summary>The way a car faces on its bay: the bay's own, or turned round as the player chose.</summary>
+        public static Quaternion Facing(LotSpot s, bool turned)
+        {
+            return Quaternion.Euler(0f, ShowroomFloorRules.Yaw(s.Yaw, turned), 0f);
+        }
+
         /// <summary>The game's vehicle of a car of the stock; null if the save has it no more.</summary>
         public static VehicleInstance Vehicle(string id)
         {
@@ -315,38 +322,58 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>
-        /// The cars of a lot on their places, as the player sees them inside: each moved to its place, held still, its door
-        /// closed to the player and its map pin hidden. A car of the stock with no game vehicle any more is reported back.
-        /// Returns the cars put in place.
+        /// The cars of a lot on their places, as the player sees them inside: each moved to its bay, held still, its door
+        /// closed to the player and its map pin hidden. A car the player chose a bay for stands there, the way round they
+        /// chose (Floor/ShowroomBays); the others keep theirs while it is free, and one with none takes the first bay free
+        /// (Floor/ShowroomFloorRules.Arrange). A car of the stock with no game vehicle any more is reported back. Returns
+        /// the cars put in place.
         /// </summary>
-        public static int Park(DealerYard y, List<StockCar> lost)
+        public static int Park(DealerYard y, List<StockCar> lost, ShowroomBays bays)
         {
             lost?.Clear();
-            int placed = 0;
-            for (int c = 0; c < y.Cars.Count; c++)
+            int n = y.Cars.Count;
+            if (Current.Length < n)
+            {
+                Current = new int[n];
+                Chosen = new int[n];
+                Into = new int[n];
+            }
+            for (int c = 0; c < n; c++)
             {
                 StockCar car = y.Cars[c];
-                VehicleInstance v = Vehicle(car.VehicleId);
-                if (v == null)
+                if (Vehicle(car.VehicleId) == null)
                 {
                     lost?.Add(car);
+                    Current[c] = ShowroomFloorRules.Absent;
+                    Chosen[c] = -1;
                     continue;
                 }
-                if (car.Spot < 0 || car.Spot >= y.Spots.Count)
+                Current[c] = car.Spot;
+                Chosen[c] = bays != null ? bays.BayOf(y.Place, car.VehicleId) : -1;
+            }
+            ShowroomFloorRules.Arrange(y.Spots.Count, Current, Chosen, n, Into);
+            int placed = 0;
+            for (int c = 0; c < n; c++)
+            {
+                if (Current[c] == ShowroomFloorRules.Absent)
                 {
-                    car.Spot = y.FreeSpot();
+                    continue;
                 }
+                StockCar car = y.Cars[c];
+                car.Spot = Into[c];
                 if (car.Spot < 0)
                 {
                     continue;
                 }
+                VehicleInstance v = Vehicle(car.VehicleId);
                 LotSpot s = y.Spots[car.Spot];
+                Quaternion facing = Facing(s, bays != null && bays.TurnedOf(y.Place, car.VehicleId));
                 v.position = At(s);
-                v.rotation = Facing(s);
+                v.rotation = facing;
                 VehicleController controller = Controller(car.VehicleId);
                 if (controller != null)
                 {
-                    Hold(controller, At(s), Facing(s));
+                    Hold(controller, At(s), facing);
                     placed++;
                 }
             }

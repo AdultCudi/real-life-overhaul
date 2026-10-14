@@ -4,9 +4,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// The Stock tab: every car on the lots, filtered by dealership. A car that is picked shows what it is, what it cost,
-    /// its worth and its asking price with a selector to set it, and two things to do with it: prepare it (a valet, a check
-    /// and the faults known put right, which lifts its condition and so its worth) or sell it to the trade at once.
+    /// The Stock tab: every car on the lots, filtered by dealership. A car that is picked shows a picture of it
+    /// (Floor/ShowroomPhotos), what it is, what it cost, its worth and its asking price with a selector to set it, and two
+    /// things to do with it: prepare it (a valet, a check and the faults known put right, which lifts its condition and so
+    /// its worth) or sell it to the trade at once. While the player stands in its showroom, two more: look round it with
+    /// the showroom's camera, and choose the bay it stands on (Floor/ShowroomView).
     /// </summary>
     public sealed partial class DealerApp
     {
@@ -90,6 +92,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             int worth = DealerDirector.Worth(car, level);
             box.Title(DealerGame.CarName(car.Type) + "  " + DealerGame.ColourName(car.Colour));
+            ShowroomPhotos.Show(box, car);
             box.Line(DealerText.Fill("reallife_dealer_car_money", "cost", DealerText.Money(car.Cost), "worth", DealerText.Money(worth), "trade", DealerText.Money(DealerRules.TradePrice(worth))));
             box.Line(DealerText.Fill("reallife_dealer_car_what", "source", DealerText.Source(car.Source), "name", yard.Name, "days", (day - car.Bought).ToString(),
                 "km", DealerText.Km(car.Km), "condition", DealerText.Condition(car.Condition)));
@@ -101,6 +104,17 @@ namespace RealLifeOverhaul.Economy.Dealership
                 SetChoice(i);
                 _director.Ask(car.Id, DealerRules.AskAt(worth, i));
             });
+            if (yard == _director.YardInside() && car.Spot >= 0 && car.OutUntil <= ShowroomGame.Hour)
+            {
+                int id = car.Id;
+                Transform floor = box.ButtonRow();
+                InfoBox.Button(floor, InfoBox.Positive, "reallife_showroom_button_look", () => ShowroomView.Instance?.Look(id));
+                InfoBox.Button(floor, InfoBox.Additional, "reallife_showroom_button_bay", () => ShowroomView.Instance?.Place(id));
+            }
+            else
+            {
+                box.Line(DealerText.T("reallife_showroom_car_away"));
+            }
             int prepare = _director.PrepareCost(car);
             int trade = DealerRules.TradePrice(worth);
             Transform buttons = box.ButtonRow();

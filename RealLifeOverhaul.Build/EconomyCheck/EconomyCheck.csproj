@@ -30,6 +30,7 @@
        (BusInsideChecks.cs) the bus ride seen: the places the clips want on the bus, every path clear of the seats, the way off, the pull-away and the fare given back, and
        (OwnBankChecks.cs) the player's own bank: the rival banks' rates, the city's savers and borrowers, defaults, arrears, the regulator's ratio, a run, the fund, a sale and the save's line, and (DealerChecks.cs) the car dealership: a car's worth, the lot, the market,
        haggling and the trade auction, customers and their offers, the dealership's finance and warranties, the books and the save's line, and a month of a reference dealership, and
+       (ShowroomFloorChecks.cs) the Car Showroom's floor: the visitors an hour shows, the bays and their save line, the camera's limits and the texts, and
        (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
@@ -250,6 +251,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Credit.cs" Link="Mod\DealerRules.Credit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerLines.cs" Link="Mod\DealerLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerStore.cs" Link="Mod\DealerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Floor\ShowroomFloorRules.cs" Link="Mod\ShowroomFloorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Floor\ShowroomBays.cs" Link="Mod\ShowroomBays.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Business.cs" Link="Mod\DealerRules.Business.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerReport.cs" Link="Mod\DealerReport.cs" />
   </ItemGroup>

@@ -129,6 +129,7 @@ namespace RealLifeOverhaul
         public const string TechSiteCloudId = "tech_site_cloud";
         public const string TechSiteOfficesId = "tech_site_offices";
         public const string EconomyDealerId = "economy_dealer";
+        public const string EconomyDealerFloorId = "economy_dealer_floor";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
         public const string OfficeConversionId = "office_conversion";
@@ -374,6 +375,7 @@ namespace RealLifeOverhaul
         public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
         public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
+        public static bool EconomyDealerFloor = true;    // visitors on the Car Showroom's floor: the hour's customers seen walking round the showroom the player stands in, looking at the cars, a salesperson going to some (off: the floor is empty; the hour is worked as before) (Scripts/Economy/Dealer/Floor)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
         public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs: on the map, in BizMan, at an office's rent, for any office business; never written into the save (Scripts/Offices)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
@@ -660,6 +662,7 @@ namespace RealLifeOverhaul
             TechSiteCloud = Bool(modId, TechSiteCloudId, TechSiteCloud);
             TechSiteOffices = Bool(modId, TechSiteOfficesId, TechSiteOffices);
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
+            EconomyDealerFloor = Bool(modId, EconomyDealerFloorId, EconomyDealerFloor);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);
