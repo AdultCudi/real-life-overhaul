@@ -83,13 +83,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             _picked = null;
             box.Title(FinanceText.T("reallife_ven_tab_property"));
-            box.Line(Pair("reallife_ven_prop_week", Money(week)));
-            box.Line(Pair("reallife_ven_prop_month", Money(month)));
-            box.Line(Pair("reallife_ven_prop_count", buildings.ToString()));
-            box.Line(Pair("reallife_ven_prop_paid", Money((float)paid)));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_ven_prop_week", Money(week));
+            box.Row("reallife_ven_prop_month", Money(month));
+            box.Row("reallife_ven_prop_count", buildings.ToString());
+            box.Row("reallife_ven_prop_paid", Money((float)paid));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ven_prop_bizman", OpenBizMan);
-            box.Line(FinanceText.T("reallife_ven_prop_what"));
-            box.Line(FinanceText.T("reallife_ven_prop_yield_note", "days", year.ToString()));
+            box.Note(FinanceText.T("reallife_ven_prop_what"));
+            box.Note(FinanceText.T("reallife_ven_prop_yield_note", "days", year.ToString()));
             Meta.Guide.Point(box, GuideTitle);
             return VenturesTables.Property;
         }
@@ -132,18 +133,19 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             float rent = DailyRent(e);
             box.Title(e.address.ToFormattedString());
-            box.Line(Pair("reallife_ven_prop_bought", FinanceText.T("reallife_ven_prop_bought_value", "day", e.purchaseDay.ToString(), "price", Money((float)e.purchasePrice))));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_ven_prop_bought", FinanceText.T("reallife_ven_prop_bought_value", "day", e.purchaseDay.ToString(), "price", Money((float)e.purchasePrice)));
             float worth;
             int let;
             Worth(e, out worth, out let);
             if (worth > 0f)
             {
-                box.Line(Pair("reallife_ven_prop_worth", Money(worth)));
+                box.Row("reallife_ven_prop_worth", Money(worth));
             }
-            box.Line(Pair("reallife_ven_prop_let", FinanceText.T("reallife_ven_prop_let_value", "share", let.ToString(), "rent", Money(rent))));
-            box.Line(Pair("reallife_ven_prop_week", Money(VenturesGame.Rent(e.address, Week))));
-            box.Line(Pair("reallife_ven_prop_month", Money(VenturesGame.Rent(e.address, Month))));
-            box.Line(Pair("reallife_ven_prop_yield", Yield(rent, e.purchasePrice, year)));
+            box.Row("reallife_ven_prop_let", FinanceText.T("reallife_ven_prop_let_value", "share", let.ToString(), "rent", Money(rent)));
+            box.Row("reallife_ven_prop_week", Money(VenturesGame.Rent(e.address, Week)));
+            box.Row("reallife_ven_prop_month", Money(VenturesGame.Rent(e.address, Month)));
+            box.Row("reallife_ven_prop_yield", Yield(rent, e.purchasePrice, year));
             CreditFile credit = CreditLedger.Ready ? CreditLedger.File : null;
             string key = Books.Key(e.address);
             for (int i = 0; credit != null && i < credit.Accounts.Count; i++)
@@ -151,7 +153,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 CreditAccount a = credit.Accounts[i];
                 if (!a.Closed && a.Kind == ProductKind.Mortgage && a.Security == key)
                 {
-                    box.Line(Pair("reallife_ven_prop_mortgage", Money(a.Owed)));
+                    box.Row("reallife_ven_prop_mortgage", Money(a.Owed));
                 }
             }
             Transform buttons = box.ButtonRow();

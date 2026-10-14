@@ -476,15 +476,15 @@ namespace RealLifeOverhaul.Meta
             if (_tab == 1 && _topic != null)
             {
                 box.Title(_topic.Title);
-                box.Line("reallife_guide_reading_hint".GetLocalization());
+                box.Note("reallife_guide_reading_hint".GetLocalization());
                 Transform row = box.ButtonRow();
                 InfoBox.Button(row, InfoBox.Positive, "reallife_guide_back", () => ShowTab(0));
             }
             else
             {
                 box.Title("reallife_guide_app_title".GetLocalization());
-                box.Line("reallife_guide_version".GetLocalization().Replace("{version}", Changelog.Version));
-                box.Line("reallife_guide_list_hint".GetLocalization());
+                box.Subtitle("reallife_guide_version".GetLocalization().Replace("{version}", Changelog.Version));
+                box.Note("reallife_guide_list_hint".GetLocalization());
                 Transform row = box.ButtonRow();
                 InfoBox.Button(row, InfoBox.Positive, "reallife_guide_whatsnew_title", () => Want("whatsnew"));
             }

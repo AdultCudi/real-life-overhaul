@@ -46,8 +46,8 @@ namespace RealLifeOverhaul.Economy
             else if (!_director.On(CompanyPart.Tax))
             {
                 box.Title(CompanyText.T("reallife_co_tab_tax"));
-                box.Line(CompanyText.T("reallife_co_lic_intro"));
-                box.Line(CompanyText.T("reallife_co_lic_pick"));
+                box.Note(CompanyText.T("reallife_co_lic_intro"));
+                box.Note(CompanyText.T("reallife_co_lic_pick"));
                 Guide(box);
             }
         }
@@ -57,12 +57,15 @@ namespace RealLifeOverhaul.Economy
             Licence l = shop.File.Permits[kind];
             string place = shop.File.Place;
             bool valid = LicenceRules.Valid(l, day);
-            box.Title(CompanyText.T("reallife_co_lic_title", "licence", CompanyText.Capital(CompanyText.Licence(kind)), "business", shop.Name));
-            box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : CompanyText.T("reallife_co_lic_missing"));
-            box.Line(FinanceText.Pair("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index))));
-            box.Line(FinanceText.Pair("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString())));
+            box.Title(CompanyText.Capital(CompanyText.Licence(kind)));
+            box.Subtitle(shop.Name);
+            box.Chip(CompanyText.T(valid ? "reallife_ibox_chip_valid" : "reallife_ibox_chip_missing"), valid ? CellTone.Green : CellTone.Red);
+            box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : CellTone.Red);
+            box.Section("reallife_ibox_sec_terms");
+            box.Row("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index)));
+            box.Row("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString()));
             box.Line(CompanyText.T(LicenceRules.Shuts(kind) ? "reallife_co_lic_fine_shut" : "reallife_co_lic_fine", "amount", CompanyText.Money(LicenceRules.Fine(kind, _director.Index)),
-                "hours", CompanyCatalogue.LicenceClosedHours.ToString()));
+                "hours", CompanyCatalogue.LicenceClosedHours.ToString()), CellTone.Yellow);
             bool hasSwitch = box.HasSwitch && box.Switch("reallife_co_lic_auto", l.Auto, on => _director.SetAutoRenew(place, kind, on));
             var buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, valid ? "reallife_co_lic_renew" : "reallife_co_lic_buy", () => _director.BuyLicence(place, kind));
@@ -72,7 +75,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Negative, auto ? "reallife_co_lic_auto_off" : "reallife_co_lic_auto_on", () => _director.SetAutoRenew(place, kind, !auto));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
-            box.Line(CompanyText.T(LicenceWhy[kind], "hour", CompanyCatalogue.LateHour.ToString(), "early", CompanyCatalogue.EarlyHour.ToString()));
+            box.Note(CompanyText.T(LicenceWhy[kind], "hour", CompanyCatalogue.LateHour.ToString(), "early", CompanyCatalogue.EarlyHour.ToString()));
             Guide(box);
         }
     }

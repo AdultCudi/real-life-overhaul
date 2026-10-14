@@ -146,7 +146,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     UiClone.Words(_shell.Header, CareersText.T("reallife_campus_app"));
                     box.Title(CareersText.T("reallife_campus_off_title"));
-                    box.Line(CareersText.T("reallife_campus_off_body"));
+                    box.Note(CareersText.T("reallife_campus_off_body"));
                     _picked = null;
                 }
                 else
@@ -278,13 +278,16 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_courses_title"));
+            box.Note(CareersText.T("reallife_campus_courses_about"));
+            box.Section("reallife_ibox_sec_now");
             int council = CareersDirector.Council;
             if (council != 0)
             {
-                box.Line(CareersText.T(council > 0 ? "reallife_campus_council_up" : "reallife_campus_council_down", "share", CareersText.Mille(StudyCatalogue.CouncilShare)));
+                box.Line(CareersText.T(council > 0 ? "reallife_campus_council_up" : "reallife_campus_council_down", "share", CareersText.Mille(StudyCatalogue.CouncilShare)),
+                    council > 0 ? CellTone.Green : CellTone.Yellow);
             }
-            box.Line(CareersText.T(CareersDirector.UniversityOpen ? "reallife_campus_courses_university" : "reallife_campus_courses_school_only"));
-            box.Line(CareersText.T("reallife_campus_courses_about"));
+            box.Line(CareersText.T(CareersDirector.UniversityOpen ? "reallife_campus_courses_university" : "reallife_campus_courses_school_only"),
+                CareersDirector.UniversityOpen ? CellTone.Plain : CellTone.Yellow);
             Meta.Guide.Point(box, StudyGuide);
             return CampusColumns.Courses;
         }
@@ -293,45 +296,57 @@ namespace RealLifeOverhaul.Careers
 
         private void WriteCourse(InfoBox box, StudyFile f, CourseDef c, int day)
         {
-            box.Title(CareersText.Course(c.Id));
             Enrolment live = f.Live(c.Id);
             bool ok = StudyRules.Qualified(f, c) && (!f.Holds(c.Id) || c.Id == StudyCatalogue.DrivingRefresher);
+            box.Title(CareersText.Course(c.Id));
+            box.Subtitle(CareersText.Fill("reallife_ibox_course_sub", "kind", CareersText.Kind(c.Kind), "place", _director.PlaceOf(c, StudyMode.FullTime)));
             if (live != null)
             {
-                box.Line(CareersText.T("reallife_campus_course_on"));
+                box.Chip(CareersText.T("reallife_ibox_chip_enrolled"), CellTone.Green);
             }
             else if (!ok)
             {
-                box.Line(CareersText.T(f.Holds(c.Id) ? "reallife_campus_course_held" : "reallife_campus_course_locked"));
-            }
-            int grant = _director.GrantFor(c);
-            int fee = Prices.At(StudyRules.Fee(c, grant));
-            box.Line(grant != 0
-                ? CareersText.Fill("reallife_campus_course_fee_grant", "fee", CareersText.Money(fee), "full", CareersText.Money(Prices.At(c.Fee)), "share", CareersText.Mille(System.Math.Abs(grant)),
-                    "parts", StudyRules.Instalments(c).ToString())
-                : CareersText.Fill("reallife_campus_course_fee", "fee", CareersText.Money(fee), "parts", StudyRules.Instalments(c).ToString()));
-            box.Line(CareersText.Fill("reallife_campus_course_kind", "kind", CareersText.Kind(c.Kind), "place", _director.PlaceOf(c, StudyMode.FullTime),
-                "school", c.School >= 0 ? TechText.School(c.School) : CareersText.T("reallife_campus_course_no_school")));
-            box.Line(CareersText.Fill("reallife_campus_course_teaches", "a", CareersText.Skill(c.SkillA), "a_gain", c.GainA.ToString(), "a_now", StudyRules.Points(f, c.SkillA).ToString(),
-                "b", CareersText.Skill(c.SkillB), "b_gain", c.GainB.ToString(), "b_now", StudyRules.Points(f, c.SkillB).ToString()));
-            if (c.Needs.Length > 0 || c.NeedsDegree)
-            {
-                box.Line(CareersText.T("reallife_campus_course_needs", "needs", Needs(c)));
-            }
-            if (c.Timetabled)
-            {
-                box.Line(CareersText.Fill("reallife_campus_course_exam", "pass", c.Pass.ToString(), "homework", c.Homework.ToString(), "share", CareersText.Mille(StudyCatalogue.Barred)));
+                bool held = f.Holds(c.Id);
+                box.Chip(CareersText.T(held ? "reallife_campus_sum_passed" : "reallife_career_state_unqualified"), held ? CellTone.Green : CellTone.Red);
+                box.Line(CareersText.T(held ? "reallife_campus_course_held" : "reallife_campus_course_locked"), held ? CellTone.Plain : CellTone.Red);
             }
             else
             {
-                box.Line(CareersText.Fill("reallife_campus_course_home", "homework", c.Homework.ToString(), "hours", StudyCatalogue.HomeworkHours.ToString(), "pass", c.Pass.ToString()));
+                box.Chip(CareersText.T("reallife_career_state_open"));
             }
+            box.Note(CareersText.About(c));
+
+            box.Section("reallife_ibox_sec_course");
+            int grant = _director.GrantFor(c);
+            int fee = Prices.At(StudyRules.Fee(c, grant));
+            box.Row("reallife_campus_col_fee", CareersText.Money(fee), grant > 0 ? CellTone.Green : grant < 0 ? CellTone.Yellow : CellTone.Plain);
+            if (grant != 0)
+            {
+                box.RowPair("reallife_ibox_grants", CareersText.Mille(System.Math.Abs(grant)), "reallife_ibox_full_fee", CareersText.Money(Prices.At(c.Fee)));
+            }
+            box.Row("reallife_ibox_paid_in", CareersText.T("reallife_ibox_parts", "parts", StudyRules.Instalments(c).ToString()));
+            box.Row("reallife_ibox_counts_as", c.School >= 0 ? TechText.School(c.School) : CareersText.T("reallife_campus_course_no_school"));
+            if (c.Needs.Length > 0 || c.NeedsDegree)
+            {
+                box.Check(CareersText.T("reallife_campus_course_needs", "needs", Needs(c)), StudyRules.Qualified(f, c));
+            }
+
+            box.Section("reallife_campus_col_teaches");
+            int aNow = StudyRules.Points(f, c.SkillA), bNow = StudyRules.Points(f, c.SkillB);
+            box.MeterWords(CareersText.Skill(c.SkillA), LookRules.Fill(aNow, c.GainA), CareersText.T("reallife_ibox_upto", "now", aNow.ToString(), "gain", c.GainA.ToString()),
+                aNow >= c.GainA ? CellTone.Green : CellTone.Plain);
+            box.MeterWords(CareersText.Skill(c.SkillB), LookRules.Fill(bNow, c.GainB), CareersText.T("reallife_ibox_upto", "now", bNow.ToString(), "gain", c.GainB.ToString()),
+                bNow >= c.GainB ? CellTone.Green : CellTone.Plain);
+
+            box.Section("reallife_ibox_sec_how");
+            box.Note(c.Timetabled
+                ? CareersText.Fill("reallife_campus_course_exam", "pass", c.Pass.ToString(), "homework", c.Homework.ToString(), "share", CareersText.Mille(StudyCatalogue.Barred))
+                : CareersText.Fill("reallife_campus_course_home", "homework", c.Homework.ToString(), "hours", StudyCatalogue.HomeworkHours.ToString(), "pass", c.Pass.ToString()));
             if (live != null)
             {
                 Transform on = box.ButtonRow();
                 InfoBox.Button(on, InfoBox.Positive, "reallife_campus_button_studying", () => _director.OpenCampus(CareersDirector.TabStudying, CourseRow + c.Id));
                 InfoBox.Button(on, InfoBox.Additional, "common_close", ClosePick);
-                box.Line(CareersText.About(c));
                 Meta.Guide.Point(box, StudyGuide);
                 return;
             }
@@ -353,6 +368,7 @@ namespace RealLifeOverhaul.Careers
             }
             _mode = Mathf.Clamp(_mode, 0, System.Math.Max(0, modes - 1));
             StudyMode mode = offered[_mode];
+            box.Section("reallife_campus_col_timetable");
             if (modes > 1 && box.HasSelector)
             {
                 box.Selector(modes, _mode, i => CareersText.Mode(offered[i]), i =>
@@ -363,8 +379,15 @@ namespace RealLifeOverhaul.Careers
             }
             if (c.Timetabled)
             {
-                box.Line(CareersText.Fill("reallife_campus_course_when", "mode", CareersText.Mode(mode), "timetable", CareersText.Timetable(StudyRules.Days(c, mode), StudyRules.Hour(c, mode)),
-                    "hours", c.Hours.ToString(), "length", CareersText.Weeks(StudyRules.Length(c, mode)), "place", _director.PlaceOf(c, mode)));
+                box.Row("reallife_campus_col_mode", CareersText.Mode(mode));
+                box.Row("reallife_campus_col_timetable", CareersText.Timetable(StudyRules.Days(c, mode), StudyRules.Hour(c, mode)));
+                box.Row("reallife_ibox_class_length", CareersText.T("reallife_ibox_hours", "hours", c.Hours.ToString()));
+                box.Row("reallife_campus_col_length", CareersText.Weeks(StudyRules.Length(c, mode)));
+                box.Row("reallife_campus_col_where", _director.PlaceOf(c, mode));
+            }
+            else
+            {
+                box.Row("reallife_campus_col_mode", CareersText.Mode(mode));
             }
             Transform buttons = box.ButtonRow();
             if (ok)
@@ -377,7 +400,6 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
-            box.Line(CareersText.About(c));
             Meta.Guide.Point(box, StudyGuide);
         }
 
@@ -446,23 +468,25 @@ namespace RealLifeOverhaul.Careers
             if (f.GraduationCourse >= 0 && f.GraduationDay >= day)
             {
                 box.Line(CareersText.Fill("reallife_campus_ceremony", "course", CareersText.Course(f.GraduationCourse), "day", CareersText.Day(f.GraduationDay),
-                    "hour", CareersText.Hour(CareersDirector.CeremonyHour), "place", _director.PlaceOf(StudyCatalogue.Find(f.GraduationCourse), StudyMode.FullTime)));
+                    "hour", CareersText.Hour(CareersDirector.CeremonyHour), "place", _director.PlaceOf(StudyCatalogue.Find(f.GraduationCourse), StudyMode.FullTime)), CellTone.Green);
                 if (f.GraduationDay == day)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_campus_button_graduate", () => Do(_director.Graduate));
                 }
             }
-            box.Line(CareersText.Pair("reallife_campus_sum_week", CareersText.Minutes(f.WeekOf == (day - 1) / 7 ? f.WeekMinutes : 0)));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_campus_sum_week", CareersText.Minutes(f.WeekOf == (day - 1) / 7 ? f.WeekMinutes : 0));
+            if (f.LoanCents > 0)
+            {
+                box.Row("reallife_campus_sum_loan", CareersText.Cents(f.LoanCents), CellTone.Yellow);
+            }
             string university = _director.UniversityLine();
             if (university != null)
             {
                 box.Line(university);
             }
-            if (f.LoanCents > 0)
-            {
-                box.Line(CareersText.Pair("reallife_campus_sum_loan", CareersText.Cents(f.LoanCents)));
-            }
-            box.Line(CareersText.T("reallife_campus_studying_about", "early", StudyCatalogue.ArriveEarlyMinutes.ToString(), "late", StudyCatalogue.LateMinutes.ToString()));
+            box.Section("reallife_ibox_sec_how");
+            box.Note(CareersText.T("reallife_campus_studying_about", "early", StudyCatalogue.ArriveEarlyMinutes.ToString(), "late", StudyCatalogue.LateMinutes.ToString()));
             Meta.Guide.Point(box, StudyGuide);
             return CampusColumns.Studying;
         }
@@ -472,24 +496,26 @@ namespace RealLifeOverhaul.Careers
             CourseDef c = e.Def;
             StudyMode mode = (StudyMode)e.Mode;
             int id = c.Id;
-            box.Title(CareersText.Course(c.Id));
             int minutes;
             string attend = _director.CanAttend(e, out minutes), homework = _director.CanHomework(e), sit = _director.CanSit(e);
             bool canAttend = attend == null || attend != "reallife_study_why_no_class", canHomework = homework == null || homework != "reallife_study_why_no_homework",
                 canSit = sit == null || sit != "reallife_study_why_no_exam";
+            box.Title(CareersText.Course(c.Id));
+            box.Subtitle(CareersText.Fill("reallife_ibox_course_sub", "kind", CareersText.Mode(mode), "place", _director.PlaceOf(c, mode)));
+            box.Chip(e.FeeLate ? CareersText.T("reallife_campus_state_fee") : CareersText.Stage(e.At),
+                e.FeeLate ? CellTone.Red : StudyRules.ExamDay(e, day) ? CellTone.Green : e.Stage == (int)EnrolStage.Retake ? CellTone.Yellow : CellTone.Plain);
             if (e.FeeLate)
             {
-                box.Line(CareersText.T("reallife_campus_on_owed", "amount", CareersText.Money(_director.Owed(e))));
+                box.Line(CareersText.T("reallife_campus_on_owed", "amount", CareersText.Money(_director.Owed(e))), CellTone.Red);
             }
             if (canAttend && attend != null)
             {
-                box.Line(CareersText.T(attend));
+                box.Line(CareersText.T(attend), CellTone.Yellow);
             }
             if (canSit && sit != null)
             {
-                box.Line(CareersText.T(sit));
+                box.Line(CareersText.T(sit), CellTone.Yellow);
             }
-            box.Line(CareersText.Fill("reallife_campus_on_mode", "mode", CareersText.Mode(mode), "place", _director.PlaceOf(c, mode), "start", CareersText.Day(e.Start)));
             string room = _director.RoomLine(e);
             if (room != null)
             {
@@ -497,22 +523,35 @@ namespace RealLifeOverhaul.Careers
             }
             int minute = CareersGame.MinuteOfDay, sitting = _director.SittingClass;
             int next = StudyRules.NextClass(e, day, minute, sitting);
+            box.Section("reallife_campus_col_classes");
+            box.Row("reallife_ibox_since", CareersText.Day(e.Start));
             if (next >= 0 && attend != null)
             {
-                box.Line(CareersText.Fill("reallife_campus_on_next", "day", CareersText.Day(next / (24 * 60)), "hour", CareersText.Hour(next % (24 * 60) / 60)));
+                box.Row("reallife_campus_col_next", CareersText.T("reallife_campus_row_next", "day", CareersText.Day(next / (24 * 60)), "hour", CareersText.Hour(next % (24 * 60) / 60)), CellTone.Green);
             }
             if (c.Timetabled)
             {
-                box.Line(CareersText.Fill("reallife_campus_on_classes", "done", e.Done.ToString(), "seen", StudyRules.Held(e, day, minute, sitting).ToString(), "of", c.Sessions.ToString(), "share", CareersText.Mille(StudyRules.Attendance(e)),
-                    "timetable", CareersText.Timetable(StudyRules.Days(c, mode), StudyRules.Hour(c, mode))));
+                int held = StudyRules.Held(e, day, minute, sitting), share = StudyRules.Attendance(e);
+                box.Meter("reallife_campus_col_attended", LookRules.Fill(e.Done, held),
+                    CareersText.Fill("reallife_ibox_attended", "done", e.Done.ToString(), "seen", held.ToString(), "share", CareersText.Mille(share)),
+                    share < StudyCatalogue.Barred ? CellTone.Red : share < StudyCatalogue.Barred + 150 && e.Seen > 2 ? CellTone.Yellow : CellTone.Green);
+                box.Row("reallife_ibox_in_all", c.Sessions.ToString());
+                box.Row("reallife_campus_col_timetable", CareersText.Timetable(StudyRules.Days(c, mode), StudyRules.Hour(c, mode)));
             }
-            box.Line(CareersText.Fill("reallife_campus_on_homework", "done", e.Homework.ToString(), "set", StudyRules.HomeworkSet(e).ToString(), "of", c.Homework.ToString()));
-            box.Line(CareersText.Fill("reallife_campus_on_paid", "paid", CareersText.Money(e.Fee), "loan", CareersText.Money(e.Loan), "parts", e.Instalments.ToString(), "of", StudyRules.Instalments(c).ToString()));
+            box.Section("reallife_campus_col_homework");
+            int set = StudyRules.HomeworkSet(e);
+            box.Meter("reallife_ibox_done", LookRules.Fill(e.Homework, c.Homework),
+                CareersText.Fill("reallife_ibox_homework", "done", e.Homework.ToString(), "set", set.ToString(), "of", c.Homework.ToString()),
+                e.Homework < set ? CellTone.Yellow : CellTone.Green);
+            box.Section("reallife_ibox_sec_money");
+            box.RowPair("reallife_campus_col_paid", CareersText.Money(e.Fee), "reallife_ibox_student_loan", CareersText.Money(e.Loan));
+            box.Row("reallife_ibox_instalments", CareersText.T("reallife_ibox_of", "value", e.Instalments.ToString(), "most", StudyRules.Instalments(c).ToString()));
             if (e.Stage == (int)EnrolStage.Exam || e.Stage == (int)EnrolStage.Retake)
             {
+                box.Section("reallife_campus_col_exam");
                 box.Line(CareersText.Fill(e.Stage == (int)EnrolStage.Retake ? "reallife_campus_on_retake" : "reallife_campus_on_exam", "from", CareersText.Day(e.ExamFrom), "to", CareersText.Day(e.ExamTo),
                     "opens", CareersText.Hour(StudyCatalogue.ExamOpens), "closes", CareersText.Hour(StudyCatalogue.ExamCloses), "fee", CareersText.Money(Prices.At(StudyRules.RetakeFee(c))),
-                    "score", e.Score.ToString()));
+                    "score", e.Score.ToString()), e.Stage == (int)EnrolStage.Retake ? CellTone.Yellow : CellTone.Plain);
             }
             Transform buttons = box.ButtonRow();
             if (e.FeeLate)
@@ -578,25 +617,33 @@ namespace RealLifeOverhaul.Careers
             if (picked != null)
             {
                 CourseDef c = picked.Def;
+                bool pass = picked.Stage == (int)EnrolStage.Passed;
                 box.Title(CareersText.Course(c.Id));
-                box.Line(picked.Stage == (int)EnrolStage.Passed
-                    ? CareersText.Fill("reallife_campus_result_passed", "grade", CareersText.Grade(c, picked.Grade), "score", picked.Score.ToString(), "day", CareersText.Day(picked.Ended))
-                    : CareersText.Fill("reallife_campus_result_other", "stage", CareersText.Stage(picked.At), "day", CareersText.Day(picked.Ended)));
-                if (picked.Stage == (int)EnrolStage.Passed && c.Cert >= 0)
+                box.Subtitle(CareersText.Kind(c.Kind));
+                box.Chip(CareersText.Stage(picked.At), pass ? CellTone.Green : CellTone.Yellow);
+                box.Note(CareersText.About(c));
+                box.Section("reallife_ibox_sec_result");
+                if (pass)
                 {
-                    box.Line(CareersText.T("reallife_campus_result_cert"));
+                    box.Row("reallife_campus_col_grade", CareersText.Grade(c, picked.Grade), StudyRules.Honours(c, picked.Grade) ? CellTone.Green : CellTone.Plain);
+                    box.Row("reallife_campus_col_mark", CareersText.T("reallife_ibox_of", "value", picked.Score.ToString(), "most", "100"));
+                }
+                box.Row("reallife_campus_col_ended", CareersText.Day(picked.Ended));
+                if (pass && c.Cert >= 0)
+                {
+                    box.Line(CareersText.T("reallife_campus_result_cert"), CellTone.Green);
                 }
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
-                box.Line(CareersText.About(c));
                 Meta.Guide.Point(box, StudyGuide);
                 return CampusColumns.Results;
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_results_title"));
-            box.Line(CareersText.Pair("reallife_campus_sum_passed", passed.ToString()));
-            box.Line(CareersText.Pair("reallife_campus_sum_honours", honours.ToString()));
-            box.Line(CareersText.Pair("reallife_campus_sum_school", TechText.School(StudyRules.School(f))));
-            box.Line(CareersText.T("reallife_campus_results_about"));
+            box.Note(CareersText.T("reallife_campus_results_about"));
+            box.Section("reallife_ibox_sec_record");
+            box.Row("reallife_campus_sum_passed", passed.ToString());
+            box.Row("reallife_campus_sum_honours", honours.ToString(), honours > 0 ? CellTone.Green : CellTone.Plain);
+            box.Row("reallife_campus_sum_school", TechText.School(StudyRules.School(f)));
             Meta.Guide.Point(box, StudyGuide);
             return CampusColumns.Results;
         }
@@ -622,19 +669,26 @@ namespace RealLifeOverhaul.Careers
             }
             if (index >= 0 && index < Skills.Count)
             {
+                bool fading = f.Skill[index] > StudyCatalogue.FadeLeast * 1000 && day - f.Used[index] > StudyCatalogue.FadeAfterDays;
                 box.Title(CareersText.Skill(index));
-                box.Line(CareersText.Fill("reallife_campus_skill_line", "points", CareersText.Points(f.Skill[index]), "best", CareersText.Points(f.Best[index]),
-                    "day", f.Skill[index] > 0 ? CareersText.Day(f.Used[index]) : "-"));
-                box.Line(CareersText.T("reallife_campus_skill_courses", "courses", Teaching(index)));
+                box.Chip(CareersText.T(f.Skill[index] <= 0 ? "reallife_campus_skill_none" : fading ? "reallife_campus_skill_fading" : "reallife_campus_skill_kept"),
+                    fading ? CellTone.Yellow : CellTone.Plain);
+                box.Section("reallife_ibox_sec_now");
+                box.Row("reallife_campus_col_points", CareersText.Points(f.Skill[index]));
+                box.Row("reallife_campus_col_best", CareersText.Points(f.Best[index]));
+                box.Row("reallife_campus_col_used", f.Skill[index] > 0 ? CareersText.Day(f.Used[index]) : "-", fading ? CellTone.Yellow : CellTone.Plain);
+                box.Section("reallife_ibox_sec_where_taught");
+                box.Note(CareersText.T("reallife_campus_skill_courses", "courses", Teaching(index)));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
                 Meta.Guide.Point(box, StudyGuide);
                 return CampusColumns.Skills;
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_skills_title"));
-            box.Line(CareersText.Pair("reallife_campus_sum_skills", any.ToString()));
+            box.Note(CareersText.T("reallife_campus_skills_about", "days", StudyCatalogue.FadeAfterDays.ToString(), "floor", CareersText.Mille(StudyCatalogue.FadeFloor)));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_campus_sum_skills", any.ToString());
             TutorButton(box);
-            box.Line(CareersText.T("reallife_campus_skills_about", "days", StudyCatalogue.FadeAfterDays.ToString(), "floor", CareersText.Mille(StudyCatalogue.FadeFloor)));
             Meta.Guide.Point(box, StudyGuide);
             return CampusColumns.Skills;
         }

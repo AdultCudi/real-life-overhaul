@@ -68,11 +68,12 @@ namespace RealLifeOverhaul.Tech
             }
             _picked = null;
             box.Title(TechText.T("reallife_roles_team_title"));
-            box.Line(TechText.Pair("reallife_roles_sum_waiting", waiting.ToString()));
-            box.Line(TechText.Pair("reallife_roles_sum_people", people.Count.ToString()));
-            box.Line(TechText.Pair("reallife_roles_sum_leaving", leaving.ToString()));
-            box.Line(TechText.Pair("reallife_roles_sum_morale", people.Count > 0 ? TechText.Mille(morale / people.Count) : "-"));
-            box.Line(TechText.T("reallife_roles_team_about"));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_roles_sum_waiting", waiting.ToString());
+            box.Row("reallife_roles_sum_people", people.Count.ToString());
+            box.Row("reallife_roles_sum_leaving", leaving.ToString());
+            box.Row("reallife_roles_sum_morale", people.Count > 0 ? TechText.Mille(morale / people.Count) : "-");
+            box.Note(TechText.T("reallife_roles_team_about"));
             Meta.Guide.Point(box, PeopleGuide);
             return RolesColumns.Team;
         }

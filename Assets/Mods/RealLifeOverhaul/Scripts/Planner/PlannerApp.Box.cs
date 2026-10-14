@@ -11,8 +11,8 @@ namespace RealLifeOverhaul.Planner
 {
     /// <summary>
     /// The Planner's white box (GameUi.InfoBox): a day at a glance, or one entry. Each page is written in sections,
-    /// one method each, that only call the box's own parts (Title, Line, Headline, Selector, ButtonRow, Button), so a
-    /// page can be moved to another design of the box section by section. A page is written when the app opens and
+    /// one method each, in the box's own look: a header (Title, Chip), sections of rows (Section, Row, RowPair), sentences
+    /// in a tone and notes, the reminder's selector and the buttons. A page is written when the app opens and
     /// when the player clicks; nothing here runs per frame.
     /// </summary>
     public sealed partial class PlannerApp
@@ -50,11 +50,6 @@ namespace RealLifeOverhaul.Planner
             box.Done();
         }
 
-        private static string Pair(string labelKey, string value)
-        {
-            return PlannerText.T(labelKey) + " <b>" + value + "</b>";
-        }
-
         // A moment as the box writes it: the hour on the day that is talked about, the day and the hour on another.
         private static string At(int minutes, int day, int today)
         {
@@ -87,18 +82,19 @@ namespace RealLifeOverhaul.Planner
         private void DayFirst(InfoBox box, List<PlannerEntry> items, int day, int today, int now)
         {
             PlannerEntry first = PlannerRules.FirstOf(items, day);
+            box.Section("reallife_ibox_sec_next");
             if (first == null)
             {
-                box.Line(Pair("reallife_planner_glance_first", PlannerText.T("reallife_planner_glance_first_none")));
+                box.Row("reallife_planner_glance_first", PlannerText.T("reallife_planner_glance_first_none"));
                 return;
             }
-            box.Line(Pair("reallife_planner_glance_first", first.Title + ", " + PlannerText.When(first)));
+            box.Row("reallife_planner_glance_first", first.Title + ", " + PlannerText.When(first));
             int travel;
             bool here;
             if (first.State == PlannerState.Upcoming && Way(first, out travel, out here) && !here)
             {
                 int leave = PlannerRules.LeaveBy(first, travel);
-                box.Line(Pair("reallife_planner_way_leave", leave <= now ? PlannerText.T("reallife_planner_way_now") : At(leave, day, today)));
+                box.Row("reallife_planner_way_leave", leave <= now ? PlannerText.T("reallife_planner_way_now") : At(leave, day, today), leave <= now ? CellTone.Red : CellTone.Plain);
             }
         }
 
@@ -121,13 +117,14 @@ namespace RealLifeOverhaul.Planner
                     words += (g > 0 ? ", " : string.Empty) + PlannerText.T("reallife_planner_glance_free_span", "from", PlannerText.Clock(_freeFrom[g]), "to", PlannerText.Clock(_freeTo[g]));
                 }
             }
-            box.Line(Pair("reallife_planner_glance_free", words));
+            box.Row("reallife_planner_glance_free", words, gaps == 0 ? CellTone.Yellow : CellTone.Plain);
         }
 
         // How many pairs of the day's entries cannot both be kept.
         private void DayClashes(InfoBox box, List<PlannerEntry> items, int day)
         {
-            box.Line(Pair("reallife_planner_glance_clashes", PlannerLogic.ClashPairs(items, day, PlannerRules.DrivePerMinute).ToString()));
+            int clashes = PlannerLogic.ClashPairs(items, day, PlannerRules.DrivePerMinute);
+            box.Row("reallife_planner_glance_clashes", clashes.ToString(), clashes > 0 ? CellTone.Red : CellTone.Plain);
         }
 
         // The money the sources say falls due on the day, and in the next seven days.
@@ -135,13 +132,17 @@ namespace RealLifeOverhaul.Planner
         {
             float onDay = PlannerRules.OwedOn(items, day, day);
             float week = PlannerRules.OwedOn(items, today + 1, today + UpcomingDays);
+            if (onDay > 0f || week > 0f)
+            {
+                box.Section("reallife_ibox_sec_money");
+            }
             if (onDay > 0f)
             {
-                box.Line(Pair(day == today ? "reallife_planner_glance_due_today" : "reallife_planner_glance_due_day", PlannerText.Money(onDay)));
+                box.Row(day == today ? "reallife_planner_glance_due_today" : "reallife_planner_glance_due_day", PlannerText.Money(onDay), CellTone.Yellow);
             }
             if (week > 0f)
             {
-                box.Line(Pair("reallife_planner_glance_due_week", PlannerText.Money(week)));
+                box.Row("reallife_planner_glance_due_week", PlannerText.Money(week));
             }
         }
 
@@ -169,42 +170,39 @@ namespace RealLifeOverhaul.Planner
                     toDo++;
                 }
             }
+            box.Section("reallife_ibox_sec_totals");
             if (day != today)
             {
-                box.Line(Pair("reallife_planner_glance_planned", toDo.ToString()));
+                box.Row("reallife_planner_glance_planned", toDo.ToString());
                 return;
             }
-            string line = Pair("reallife_planner_glance_todo", toDo.ToString());
-            if (done > 0)
+            box.Row("reallife_planner_glance_todo", toDo.ToString());
+            if (done > 0 || missed > 0)
             {
-                line += "   " + Pair("reallife_planner_glance_done", done.ToString());
+                box.RowPair("reallife_planner_glance_done", done.ToString(), "reallife_planner_glance_missed", missed.ToString());
             }
-            if (missed > 0)
-            {
-                line += "   " + Pair("reallife_planner_glance_missed", missed.ToString());
-            }
-            box.Line(line);
-            box.Line(Pair("reallife_planner_glance_week", week.ToString()));
+            box.Row("reallife_planner_glance_week", week.ToString());
         }
 
         // The game's calendar: the day of the week, the year and the next one's first day.
         private static void DayCalendar(InfoBox box, int today)
         {
             box.Headline("reallife_planner_calendar");
-            box.Line(Pair("reallife_planner_calendar_week", PlannerText.T("reallife_planner_calendar_week_value", "day", (PlannerTime.Weekday(today) + 1).ToString())));
+            box.Row("reallife_planner_calendar_week", PlannerText.T("reallife_planner_calendar_week_value", "day", (PlannerTime.Weekday(today) + 1).ToString()));
             int perYear = SaveGameManager.Current != null ? GameCalendar.DaysPerYear : 0;
             if (perYear > 0)
             {
                 int year = PlannerTime.Year(today, perYear);
                 int next = PlannerTime.NextYearStart(today, perYear);
-                box.Line(Pair("reallife_planner_calendar_year", PlannerText.T("reallife_planner_calendar_year_value", "year", (year + 1).ToString(), "days", perYear.ToString())));
-                box.Line(Pair("reallife_planner_calendar_new_year", PlannerText.Date(next)));
+                box.Row("reallife_planner_calendar_year", PlannerText.T("reallife_planner_calendar_year_value", "year", (year + 1).ToString(), "days", perYear.ToString()));
+                box.Row("reallife_planner_calendar_new_year", PlannerText.Date(next));
             }
         }
 
         private void DayButtons(InfoBox box, int day)
         {
-            box.Line(PlannerText.T(_tab == WeekTab ? "reallife_planner_glance_hint_week" : "reallife_planner_glance_hint"));
+            box.EndSection();
+            box.Note(PlannerText.T(_tab == WeekTab ? "reallife_planner_glance_hint_week" : "reallife_planner_glance_hint"));
             Transform row = box.ButtonRow();
             InfoBox.Button(row, InfoBox.Positive, "reallife_planner_add_entry", () => EditNote(null, day));
         }
@@ -229,23 +227,29 @@ namespace RealLifeOverhaul.Planner
             string status = PlannerText.StatusKey(e);
             if (status != null)
             {
-                box.Line(Pair("reallife_planner_detail_status", PlannerText.T(status)));
+                box.Chip(PlannerText.T(status), e.State == PlannerState.Missed ? CellTone.Red : e.State == PlannerState.Done || e.State == PlannerState.Now ? CellTone.Green
+                    : e.Clash ? CellTone.Yellow : CellTone.Plain);
             }
             PlannerEntry other = e.Clash && e.State != PlannerState.Done ? e.ClashWith : null;
             if (other != null)
             {
                 string with = other.Title + ", " + (other.Day == e.Day ? PlannerText.When(other) : PlannerText.Day(other.Day, TimeHelper.CurrentDay) + ", " + PlannerText.When(other));
-                box.Line(PlannerText.T(e.ClashReach ? "reallife_planner_detail_clash_reach" : "reallife_planner_detail_clash", "title", with));
+                box.Line(PlannerText.T(e.ClashReach ? "reallife_planner_detail_clash_reach" : "reallife_planner_detail_clash", "title", with), CellTone.Red);
             }
         }
 
         // When and where it is, what it is, what it costs or pays and what follows if it is missed.
         private static void EntryFacts(InfoBox box, PlannerEntry e, int today)
         {
-            box.Line(Pair("reallife_planner_detail_when", PlannerText.WhenLong(e, today)));
+            box.Section("reallife_ibox_sec_when_where");
+            box.Row("reallife_planner_detail_when", PlannerText.WhenLong(e, today));
             if (!string.IsNullOrEmpty(e.Where))
             {
-                box.Line(Pair("reallife_planner_detail_where", e.Where));
+                box.Row("reallife_planner_detail_where", e.Where);
+            }
+            if (!string.IsNullOrEmpty(e.What) || !string.IsNullOrEmpty(e.Money) || !string.IsNullOrEmpty(e.IfMissed))
+            {
+                box.Section("reallife_ibox_sec_what");
             }
             if (!string.IsNullOrEmpty(e.What))
             {
@@ -257,7 +261,7 @@ namespace RealLifeOverhaul.Planner
             }
             if (!string.IsNullOrEmpty(e.IfMissed))
             {
-                box.Line(e.IfMissed);
+                box.Line(e.IfMissed, CellTone.Yellow);
             }
         }
 
@@ -273,21 +277,22 @@ namespace RealLifeOverhaul.Planner
             {
                 return;
             }
+            box.Section("reallife_ibox_sec_getting_there");
             if (!(metres > PlannerRules.HereMetres))
             {
-                box.Line(PlannerText.T("reallife_planner_way_here"));
+                box.Line(PlannerText.T("reallife_planner_way_here"), CellTone.Green);
                 return;
             }
             bool car = PlannerGame.ByCar();
             int drive = PlannerRules.TravelMinutes(metres, PlannerRules.DrivePerMinute), walk = PlannerRules.TravelMinutes(metres, PlannerRules.WalkPerMinute);
             int leave = PlannerRules.LeaveBy(e, car ? drive : walk);
             int now = PlannerDirector.Now();
-            box.Line(Pair("reallife_planner_way_leave", leave <= now ? PlannerText.T("reallife_planner_way_now") : At(leave, e.Day, today)));
+            box.Row("reallife_planner_way_leave", leave <= now ? PlannerText.T("reallife_planner_way_now") : At(leave, e.Day, today), leave <= now ? CellTone.Red : CellTone.Plain);
             if (leave < now)
             {
-                box.Line(PlannerText.T("reallife_planner_way_late", "late", PlannerText.Span(now - leave)));
+                box.Line(PlannerText.T("reallife_planner_way_late", "late", PlannerText.Span(now - leave)), CellTone.Red);
             }
-            box.Line(PlannerText.T(car ? "reallife_planner_way_about_car" : "reallife_planner_way_about_foot", "drive", PlannerText.Span(drive), "walk", PlannerText.Span(walk)));
+            box.Note(PlannerText.T(car ? "reallife_planner_way_about_car" : "reallife_planner_way_about_foot", "drive", PlannerText.Span(drive), "walk", PlannerText.Span(walk)));
         }
 
         // The way to an entry's place by the player's own way (by car if they have one, on foot if not), and whether

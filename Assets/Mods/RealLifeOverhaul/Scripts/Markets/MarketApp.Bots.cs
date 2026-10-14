@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Title(MarketText.T("reallife_mkt_tab_bots"));
                 StatusLine(box);
+                box.Section("reallife_ibox_sec_now");
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_hired", "count", hired.ToString(), "worth", MarketText.Money(worth)));
                 box.Line(MarketText.T(Settings.MarketsBots ? "reallife_mkt_bot_box_help" : "reallife_mkt_bot_box_off"));
                 Meta.Guide.Point(box, BotsGuideTitle);
@@ -110,10 +111,12 @@ namespace RealLifeOverhaul.Markets
                 _botPickAt = 0;
                 _botPicks.Clear();
             }
-            box.Title(f.Name + "  <size=70%>" + MarketText.T(StrategyKeys[(int)f.Strategy]) + "</size>");
+            box.Title(f.Name);
+            box.Subtitle(MarketText.T(StrategyKeys[(int)f.Strategy]));
             if (b == null)
             {
-                box.Line(About(f));
+                box.Note(About(f));
+                box.Section("reallife_ibox_sec_terms");
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_terms", "fee", MarketText.Percent(f.FeeBp), "least", MarketText.Money(Prices.At(MarketBots.FeeLeastAtStart)),
                     "share", MarketText.Percent(f.ShareBp), "capital", MarketText.Money(_director.BotCapitalLeast)));
             }
@@ -121,6 +124,9 @@ namespace RealLifeOverhaul.Markets
             {
                 long now = MarketBots.Worth(s, b, s.Phase);
                 int pct = b.Capital > 0 ? (int)Math.Max(-1000000L, Math.Min(1000000L, (now + b.PaidOut - b.Capital) * 10000L / b.Capital)) : 0;
+                box.Chip(MarketText.T(StatusKeys[(int)b.Status]));
+                box.Chip(MarketText.Change(pct), pct > 0 ? CellTone.Green : pct < 0 ? CellTone.Red : CellTone.Plain);
+                box.Section("reallife_ibox_sec_record");
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_worth", "status", MarketText.T(StatusKeys[(int)b.Status]), "worth", MarketText.Money(now), "capital", MarketText.Money(b.Capital),
                     "change", MarketText.Change(pct)));
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_record", "fall", MarketText.Percent(b.DrawdownBp), "trades", Count(b.Trades), "wins", b.Wins.ToString(), "closed", b.Closed.ToString()));
@@ -136,6 +142,7 @@ namespace RealLifeOverhaul.Markets
             int pay = b != null ? b.PayPct : _botPay;
             BotPayEvery every = b != null ? b.PayEvery : _botEvery;
             List<int> picks = b != null ? b.Picks : _botPicks;
+            box.Section("reallife_ibox_sec_plan");
             box.Line(MarketText.Fill("reallife_mkt_bot_box_plan", "scope", ScopeWords(scope, picks.Count), "pay", PayWords(pay, every)));
             box.Selector(PageKeys.Length, _botPage, i => MarketText.T(PageKeys[i]), i => UiClone.Safe(() =>
             {

@@ -66,7 +66,8 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.RequestTitle(q));
-                box.Line(FameText.Pair("reallife_fame_label_state", FameText.RequestState(q.State)));
+                box.Chip(FameText.RequestState(q.State));
+                box.Section("reallife_ibox_sec_now");
                 if (q.State == FameRequestState.Open)
                 {
                     box.Line(FameText.Fill("reallife_fame_request_answer", "day", FameText.N(q.Until)));
@@ -92,7 +93,8 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.T("reallife_fame_lobby_row"));
-                box.Line(FameText.Pair("reallife_fame_label_state", FameText.LobbyState(l.State)));
+                box.Chip(FameText.LobbyState(l.State));
+                box.Section("reallife_ibox_sec_now");
                 box.Line(FameText.Fill("reallife_fame_lobby_line", "day", FameText.N(l.Day), "chance", FameText.N(l.Chance), "rival", FameText.N(l.Rival)));
                 if (l.State == FameLobbyState.Pending)
                 {
@@ -131,7 +133,7 @@ namespace RealLifeOverhaul.Fame
                 {
                     box.Line(found.Effect);
                 }
-                box.Line(FameText.Fill("reallife_fame_lobby_about", "influence", FameText.N(FameCity.Influence(f)), "chance", FameText.N(chance), "fee", FameText.Money(FameCity.LobbyFee(f.Weekly)),
+                box.Note(FameText.Fill("reallife_fame_lobby_about", "influence", FameText.N(FameCity.Influence(f)), "chance", FameText.N(chance), "fee", FameText.Money(FameCity.LobbyFee(f.Weekly)),
                     "days", FameText.N(FameCity.LobbyDecideDays)));
                 if (FameCity.MayLobby(f, day))
                 {

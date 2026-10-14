@@ -68,6 +68,7 @@ internal static partial class Program
         BuildRules();
         PartNames(Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales\en.json"));
         Markers(scripts);
+        LookChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
 
         if (!Directory.Exists(managed))
         {

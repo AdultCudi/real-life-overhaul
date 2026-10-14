@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Flare
             {
                 box.Title(FlareText.T("reallife_flare_trending"));
                 Trending(box, file, day);
-                box.Line(FlareText.T("reallife_flare_intro_what"));
+                box.Note(FlareText.T("reallife_flare_intro_what"));
                 box.Line(FlareText.T("reallife_flare_intro_post"));
                 Meta.Guide.Point(box, GuideTitle);
             }
@@ -121,20 +121,21 @@ namespace RealLifeOverhaul.Flare
         // A post in the box: its words, how far it went and what the friends said.
         private void WritePost(InfoBox box, FlareFile file, FlarePost p)
         {
-            box.Title(AuthorName(p, file) + ", " + FlareText.When(p.Day, p.Hour));
+            box.Title(AuthorName(p, file));
+            box.Subtitle(FlareText.When(p.Day, p.Hour));
             box.Line(Words(p));
             if (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie)
             {
                 Texture2D picture = p.Author == FlareAuthor.Player ? _pictures.Of(file, p) : null;
                 if (picture == null || box.Picture(picture, FlareRules.ThumbWidth, _pictures.Height) == null)
                 {
-                    box.Line(FlareText.Pair("reallife_flare_picture", p.Name ?? string.Empty));   // not one of the newest five, still being read, or the file is gone
+                    box.Row("reallife_flare_picture", p.Name ?? string.Empty);   // not one of the newest five, still being read, or the file is gone
                 }
             }
             box.Line(FlareText.Fill("reallife_flare_post_figures", "reach", FlareText.N(p.Reach), "likes", FlareText.N(p.Likes), "replies", FlareText.N(p.Replies)));
             if (p.Author == FlareAuthor.Player)
             {
-                box.Line(FlareText.Pair("reallife_flare_post_followers", FlareText.Signed(p.Gained)));
+                box.Row("reallife_flare_post_followers", FlareText.Signed(p.Gained));
                 if (p.Viral || p.Bad)
                 {
                     box.Line(FlareText.T(p.Viral ? "reallife_flare_post_viral" : "reallife_flare_post_bad"));
@@ -188,7 +189,7 @@ namespace RealLifeOverhaul.Flare
             }
             box.Title(FlareText.T("reallife_flare_tab_post"));
             WaitLine(box, file, day);
-            box.Line(FlareText.T("reallife_flare_post_intro"));
+            box.Note(FlareText.T("reallife_flare_post_intro"));
             box.Line(FlareText.Fill("reallife_flare_post_limits", "posts", FlareRules.PostsPerDay.ToString(), "hours", (FlareRules.PostGapMinutes / 60).ToString(), "days", FlareRules.DraftDays.ToString()));
             Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Drafts;
@@ -208,7 +209,7 @@ namespace RealLifeOverhaul.Flare
                 Choose(box, 2, _untag ? 1 : 0, i => FlareText.Fill(i == 0 ? "reallife_flare_tag_yes" : "reallife_flare_tag_no", "friend", friend), i => _untag = i == 1);
             }
             var preview = new FlarePost { Source = d.Source, Tone = (FlareTone)tone, Name = d.Name, Arg = d.Arg, Seed = file.NextId * 7919 };
-            box.Line(FlareText.Pair("reallife_flare_preview", FlareText.Post(preview, tag ? friend : null, null, null)));
+            box.Row("reallife_flare_preview", FlareText.Post(preview, tag ? friend : null, null, null));
             int fit = FlareRules.ToneFit(d.Source, (FlareTone)tone);
             if (fit < FlareRules.BadFit)
             {
@@ -281,11 +282,16 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Mine;
             }
             box.Title(FlareText.T("reallife_flare_tab_me"));
-            box.Line(FlareText.Pair("reallife_flare_me_followers", FlareText.N(file.Followers)));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_flare_me_followers", FlareText.N(file.Followers));
             int next = FlareRules.NextTierAt(file.Followers);
-            box.Line(FlareText.Pair("reallife_flare_me_tier", FlareText.Tier(file.Tier))
-                     + (next > 0 ? " " + FlareText.Fill("reallife_flare_me_next", "tier", FlareText.Tier(FlareRules.TierOf(next)), "followers", FlareText.N(next)) : string.Empty));
-            box.Line(FlareText.Pair("reallife_flare_me_reputation", FlareText.Reputation(file.Reputation) + " (" + file.Reputation + ")"));
+            box.Row("reallife_flare_me_tier", FlareText.Tier(file.Tier));
+            if (next > 0)
+            {
+                box.Meter("reallife_ibox_next_tier", LookRules.Fill(file.Followers, next),
+                    FlareText.Fill("reallife_flare_me_next", "tier", FlareText.Tier(FlareRules.TierOf(next)), "followers", FlareText.N(next)), CellTone.Plain);
+            }
+            box.Row("reallife_flare_me_reputation", FlareText.Reputation(file.Reputation) + " (" + file.Reputation + ")");
             box.Line(FlareText.Fill("reallife_flare_me_week", "list", FlareText.History(file.History)));
             box.Line(FlareText.Fill("reallife_flare_me_totals", "posts", FlareText.N(file.TotalPosts), "likes", FlareText.N(file.TotalLikes),
                 "friends", FlareRules.Count(file.Following).ToString()));
@@ -371,8 +377,8 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Business;
             }
             box.Title(FlareText.T("reallife_flare_tab_business"));
-            box.Line(FlareText.T(shops.Count > 0 ? "reallife_flare_business_intro" : "reallife_flare_business_none"));
-            box.Line(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
+            box.Note(FlareText.T(shops.Count > 0 ? "reallife_flare_business_intro" : "reallife_flare_business_none"));
+            box.Note(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
             Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Business;
         }
@@ -384,7 +390,7 @@ namespace RealLifeOverhaul.Flare
             int overall;
             if (FlareGame.Satisfaction(reg, out overall, _parts))
             {
-                box.Line(FlareText.Pair("reallife_flare_shop_stars", Stars(overall)));
+                box.Row("reallife_flare_shop_stars", Stars(overall));
                 int said = 0;
                 for (int k = 0; k < _parts.Length && said < 2; k++)
                 {
@@ -398,7 +404,7 @@ namespace RealLifeOverhaul.Flare
             }
             int talk = file.BuzzAt(place, day);
             box.Line(talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"));
-            box.Line(FlareText.Pair("reallife_flare_shop_posts", posts.ToString()));
+            box.Row("reallife_flare_shop_posts", posts.ToString());
             FlareCampaign campaign;
             if (_director.CampaignAt(place, out campaign))
             {

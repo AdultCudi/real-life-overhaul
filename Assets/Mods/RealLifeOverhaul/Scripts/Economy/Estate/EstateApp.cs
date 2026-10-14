@@ -191,7 +191,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     UiClone.Words(_shell.Header, EstateText.T("reallife_estate_app"));
                     box.Title(EstateText.T("reallife_estate_off_title"));
-                    box.Line(EstateText.T("reallife_estate_off_body"));
+                    box.Note(EstateText.T("reallife_estate_off_body"));
                 }
                 else
                 {
@@ -259,7 +259,7 @@ namespace RealLifeOverhaul.Economy
                 return true;
             }
             box.Title(EstateText.T(EstateTables.Tabs[_tab]));
-            box.Line(EstateText.T("reallife_estate_part_off"));
+            box.Line(EstateText.T("reallife_estate_part_off"), CellTone.Yellow);
             Meta.Guide.Point(box, GuideTitle);
             Say("off", EstateText.T("reallife_estate_part_off_row"));
             return false;
@@ -415,12 +415,15 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(EstateText.T("reallife_estate_tab_market"));
-                box.Line(EstateText.Pair("reallife_estate_market_level", EstateText.Share(state.Real)));
+                box.Chip(EstateText.Cycle(c.Cycle));
+                box.Section("reallife_ibox_sec_now");
+                box.Row("reallife_estate_market_level", EstateText.Share(state.Real));
                 box.Line(EstateText.T("reallife_estate_market_heading", "cycle", EstateText.Cycle(c.Cycle), "target", EstateText.Share(EstateRules.RealTarget(c.Cycle, c.Quarters))));
-                box.Line(EstateText.Pair("reallife_estate_market_prices", EstateText.Share(c.Index)));
-                box.Line(EstateText.T("reallife_estate_market_what"));
-                box.Line(EstateText.T("reallife_estate_market_rents"));
-                box.Line(EstateText.T("reallife_estate_market_mortgage"));
+                box.Row("reallife_estate_market_prices", EstateText.Share(c.Index));
+                box.Section("reallife_ibox_sec_how");
+                box.Note(EstateText.T("reallife_estate_market_what"));
+                box.Note(EstateText.T("reallife_estate_market_rents"));
+                box.Note(EstateText.T("reallife_estate_market_mortgage"));
                 Meta.Guide.Point(box, GuideTitle);
             }
         }
@@ -433,12 +436,17 @@ namespace RealLifeOverhaul.Economy
             int rent = EstateRules.MarketRent(b.Base, use, income, cond, 0, c);
             string place = b.Place;
             box.Title(EstateGame.NameOf(place));
-            box.Line(EstateText.Pair("reallife_estate_listing_price", EstateText.Money(value)));
+            box.Subtitle(EstateText.T("reallife_ibox_type_in", "type", EstateText.Use(use), "district", EstateText.District(b.District)));
+            box.Chip(EstateText.Level(cond), cond < EstateCatalogue.RunDownMost ? CellTone.Yellow : CellTone.Plain);
+            box.Section("reallife_ibox_sec_money");
+            box.Row("reallife_estate_listing_price", EstateText.Money(value));
+            box.Section("reallife_ibox_sec_price_made");
             box.Line(EstateText.T("reallife_estate_listing_base", "amount", EstateText.Money(b.Base)));
             box.Line(EstateText.T("reallife_estate_listing_market", "market", EstateText.Share(state.Real), "prices", EstateText.Share(c.Index)));
             box.Line(EstateText.T("reallife_estate_listing_district", "district", EstateText.District(b.District), "share", EstateText.Share(EstateRules.DistrictValue(income))));
             box.Line(EstateText.T(cond < EstateCatalogue.RunDownMost ? "reallife_estate_listing_run_down" : "reallife_estate_listing_kept", "condition", EstateText.Level(cond), "share", EstateText.Share(EstateRules.ConditionValue(cond)),
-                "amount", EstateText.Money(EstateRules.RepairCost(b.Base, cond, c.Index))));
+                "amount", EstateText.Money(EstateRules.RepairCost(b.Base, cond, c.Index))), cond < EstateCatalogue.RunDownMost ? CellTone.Yellow : CellTone.Plain);
+            box.Section("reallife_ibox_sec_letting");
             box.Line(rent > 0
                 ? EstateText.T("reallife_estate_listing_rent", "use", EstateText.Use(use), "amount", EstateText.Money(rent), "yield", EstateText.Yield((int)((long)rent * c.DaysPerYear * 10000 / Math.Max(1, value))))
                 : EstateText.T("reallife_estate_listing_unfit"));
@@ -449,7 +457,7 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_offer", () => _director.Buy(place));
             BackButton(buttons);
-            box.Line(EstateText.T("reallife_estate_listing_how"));
+            box.Note(EstateText.T("reallife_estate_listing_how"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -459,16 +467,17 @@ namespace RealLifeOverhaul.Economy
             int price = EstateGame.HotelPrice(slot, state.Real, c.DaysPerYear);
             string id = slot.Id;
             box.Title(EstateGame.HotelName(slot));
-            box.Line(EstateText.Pair("reallife_estate_listing_price", EstateText.Money(price)));
+            box.Section("reallife_ibox_sec_money");
+            box.Row("reallife_estate_listing_price", EstateText.Money(price));
             box.Line(EstateText.Fill("reallife_estate_hotel_rooms", "count0", HotelRules.Rooms(tier, 0).ToString(), "room0", EstateGame.RoomName(tier, 0), "count1", HotelRules.Rooms(tier, 1).ToString(),
                 "room1", EstateGame.RoomName(tier, 1)));
-            box.Line(EstateText.T("reallife_estate_hotel_price_what", "years", (EstateCatalogue.HotelMultiple / 1000f).ToString("0.#"), "share", EstateText.Share(EstateCatalogue.Occupancy), "market", EstateText.Share(state.Real)));
-            box.Line(EstateText.T("reallife_estate_hotel_lease_what", "deposit", EstateText.Money(HotelRules.LeaseDeposit(tier, price, c.DaysPerYear)), "amount", EstateText.Money(HotelRules.LeaseDaily(tier, price, c.DaysPerYear))));
+            box.Note(EstateText.T("reallife_estate_hotel_price_what", "years", (EstateCatalogue.HotelMultiple / 1000f).ToString("0.#"), "share", EstateText.Share(EstateCatalogue.Occupancy), "market", EstateText.Share(state.Real)));
+            box.Note(EstateText.T("reallife_estate_hotel_lease_what", "deposit", EstateText.Money(HotelRules.LeaseDeposit(tier, price, c.DaysPerYear)), "amount", EstateText.Money(HotelRules.LeaseDaily(tier, price, c.DaysPerYear))));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_buy_hotel", () => _director.TakeHotel(id, false));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_estate_btn_lease_hotel", () => _director.TakeHotel(id, true));
             BackButton(box.ButtonRow());
-            box.Line(EstateText.T("reallife_estate_hotel_held_what"));
+            box.Note(EstateText.T("reallife_estate_hotel_held_what"));
             Meta.Guide.Point(box, GuideTitle);
         }
     }

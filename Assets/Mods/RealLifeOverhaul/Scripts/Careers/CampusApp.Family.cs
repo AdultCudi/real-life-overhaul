@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Careers
             {
                 _picked = null;
                 box.Title(CareersText.T("reallife_campus_family_title"));
-                box.Line(CareersText.T("reallife_campus_family_off"));
+                box.Line(CareersText.T("reallife_campus_family_off"), CellTone.Yellow);
                 Meta.Guide.Point(box, FamilyGuide);
                 return CampusColumns.Family;
             }
@@ -51,7 +51,9 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_family_title"));
-            box.Line(CareersText.T("reallife_campus_family_about"));
+            box.Note(CareersText.T("reallife_campus_family_about"));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_ibox_children", kids.Count.ToString());
             Meta.Guide.Point(box, FamilyGuide);
             return CampusColumns.Family;
         }
@@ -70,11 +72,17 @@ namespace RealLifeOverhaul.Careers
         private void WriteChild(InfoBox box, ChildView k, ChildStudy c)
         {
             box.Title(k.Name);
-            box.Line(CareersText.Fill("reallife_campus_child_line", "age", ((int)k.Age).ToString(), "fund", CareersText.Money(k.Fund)));
+            box.Chip(CareersText.T(c == null ? (k.Grown ? "reallife_campus_child_grown" : "reallife_campus_child_home") : ChildStateKey(c)),
+                c != null && c.Stage == (int)ChildStep.Offered ? CellTone.Green : CellTone.Plain);
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_campus_col_age", ((int)k.Age).ToString());
+            box.Row("reallife_campus_col_schooling", CareersText.T(k.School == 2 ? "reallife_campus_school_private" : k.School == 1 ? "reallife_campus_school_state" : "reallife_campus_school_none"));
+            box.Row("reallife_campus_col_fund", CareersText.Money(k.Fund));
             string name = k.Name;
+            box.Section("reallife_ibox_sec_university");
             if (c == null)
             {
-                box.Line(CareersText.T(k.Grown ? "reallife_campus_child_no_place" : "reallife_campus_child_later"));
+                box.Note(CareersText.T(k.Grown ? "reallife_campus_child_no_place" : "reallife_campus_child_later"));
             }
             else
             {
@@ -82,21 +90,23 @@ namespace RealLifeOverhaul.Careers
                 switch (c.At)
                 {
                     case ChildStep.Offered:
-                        box.Line(CareersText.Fill("reallife_campus_child_place", "course", CareersText.Course(c.Course), "fee", CareersText.Money(Prices.At(course.Fee)),
-                            "cost", CareersText.Money(Prices.At(StudyRules.ChildCost(course, k.Fund)))));
+                        box.Row("reallife_campus_col_course", CareersText.Course(c.Course));
+                        box.Row("reallife_campus_col_fee", CareersText.Money(Prices.At(course.Fee)));
+                        box.Row("reallife_ibox_you_pay", CareersText.Money(Prices.At(StudyRules.ChildCost(course, k.Fund))), CellTone.Yellow);
                         Transform buttons = box.ButtonRow();
                         InfoBox.Button(buttons, InfoBox.Positive, "reallife_campus_button_child_pay", () => Do(() => _director.PayChild(name)));
                         InfoBox.Button(buttons, InfoBox.Negative, "reallife_campus_button_child_decline", () => Do(() => _director.DeclineChild(name)));
                         break;
                     case ChildStep.Studying:
-                        box.Line(CareersText.T("reallife_campus_child_reading", "course", CareersText.Course(c.Course), "day", CareersText.Day(c.End)));
+                        box.Row("reallife_campus_col_course", CareersText.Course(c.Course));
+                        box.Row("reallife_ibox_finishes", CareersText.Day(c.End));
                         break;
                     case ChildStep.Graduated:
                         box.Line(CareersText.T("reallife_campus_child_done", "degree", CareersText.T("reallife_study_degree_with", "course", CareersText.Course(c.Course), "grade",
-                            CareersText.Grade(course, c.Grade))));
+                            CareersText.Grade(course, c.Grade))), CellTone.Green);
                         break;
                     default:
-                        box.Line(CareersText.T("reallife_campus_child_no"));
+                        box.Note(CareersText.T("reallife_campus_child_no"));
                         break;
                 }
             }
@@ -114,15 +124,21 @@ namespace RealLifeOverhaul.Careers
             string why = _director.CanTutor(out skill);
             StudyFile f = _director.Study;
             int rate = f != null ? Prices.At(StudyRules.TutorRate(StudyRules.Points(f, skill))) : 0;
-            box.Line(rate > 0
-                ? CareersText.Fill("reallife_campus_tutor_line", "subject", CareersText.Skill(skill), "rate", CareersText.Rate(rate), "from", CareersText.Hour(StudyCatalogue.TutorFrom),
-                    "to", CareersText.Hour(StudyCatalogue.TutorTo), "most", StudyCatalogue.TutorPerDay.ToString())
-                : CareersText.T("reallife_campus_tutor_none", "least", StudyCatalogue.TutorLeast.ToString()));
+            box.Section("reallife_ibox_sec_tutoring");
+            if (rate <= 0)
+            {
+                box.Note(CareersText.T("reallife_campus_tutor_none", "least", StudyCatalogue.TutorLeast.ToString()));
+            }
             if (rate > 0)
             {
+                box.Row("reallife_ibox_subject", CareersText.Skill(skill));
+                box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(rate)));
+                box.Row("reallife_career_col_hours", CareersText.T("reallife_career_row_hours", "from", CareersText.Hour(StudyCatalogue.TutorFrom), "to", CareersText.Hour(StudyCatalogue.TutorTo)));
+                box.Row("reallife_ibox_sessions_day", StudyCatalogue.TutorPerDay.ToString());
+                box.Row("reallife_career_col_where", CareersText.T("reallife_study_mode_distance"));
                 if (why != null)
                 {
-                    box.Line(CareersText.T(why));
+                    box.Line(CareersText.T(why), CellTone.Yellow);
                 }
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_campus_button_tutor", () => Do(_director.Tutor));
             }

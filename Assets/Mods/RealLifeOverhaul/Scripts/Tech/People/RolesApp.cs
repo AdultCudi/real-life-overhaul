@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     UiClone.Words(_shell.Header, TechText.T("reallife_roles_app"));
                     box.Title(TechText.T("reallife_roles_off_title"));
-                    box.Line(TechText.T("reallife_roles_off_body"));
+                    box.Note(TechText.T("reallife_roles_off_body"));
                     _picked = null;
                 }
                 else
@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.Tech
                     if (_tab != TechDirector.TabTeam && _director.Hiring == null)
                     {
                         box.Title(TechText.T("reallife_roles_off_title"));
-                        box.Line(TechText.T("reallife_hire_off_body"));
+                        box.Note(TechText.T("reallife_hire_off_body"));
                         _picked = null;
                     }
                     else

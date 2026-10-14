@@ -93,12 +93,13 @@ namespace RealLifeOverhaul.Economy
             // (nothing is picked, or what was picked is no longer in the list)
             _picked = null;
             box.Title(OnlineText.T("reallife_online_app"));
-            box.Line(OnlineText.Pair("reallife_online_sum_takings", OnlineText.Money(takings)));
-            box.Line(OnlineText.Pair("reallife_online_sum_orders", orders.ToString()));
-            box.Line(OnlineText.Pair("reallife_online_sum_paid", OnlineText.Money(paid)));
-            box.Line(OnlineText.Pair("reallife_online_sum_sites", OnlineText.T("reallife_online_sum_sites_value", "count", state.Shops.Count.ToString(), "most", OnlineCatalogue.ShopsMost.ToString())));
-            box.Line(OnlineText.T("reallife_online_about"));
-            box.Line(OnlineText.T("reallife_online_sum_note"));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_online_sum_takings", OnlineText.Money(takings));
+            box.Row("reallife_online_sum_orders", orders.ToString());
+            box.Row("reallife_online_sum_paid", OnlineText.Money(paid));
+            box.Row("reallife_online_sum_sites", OnlineText.T("reallife_online_sum_sites_value", "count", state.Shops.Count.ToString(), "most", OnlineCatalogue.ShopsMost.ToString()));
+            box.Note(OnlineText.T("reallife_online_about"));
+            box.Note(OnlineText.T("reallife_online_sum_note"));
             Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Shops;
         }
@@ -111,19 +112,23 @@ namespace RealLifeOverhaul.Economy
             DayBook today = shop.Today, week = _week;
             shop.WeekInto(week, day);
             box.Title(shop.Name);
+            box.Subtitle(place.Business);
+            box.Chip(OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars)), shop.Offline ? CellTone.Red : CellTone.Plain);
             if (shop.Offline)
             {
-                box.Line(OnlineText.T("reallife_online_fig_offline"));
+                box.Line(OnlineText.T("reallife_online_fig_offline"), CellTone.Red);
             }
-            box.Line(Both("reallife_online_fig_orders", today.Orders.ToString(), week.Orders.ToString()));
-            box.Line(Both("reallife_online_fig_takings", OnlineText.Money(today.Takings), OnlineText.Money(week.Takings)));
-            box.Line(Both("reallife_online_fig_goods", OnlineText.Money(today.Goods), OnlineText.Money(week.Goods)));
-            box.Line(Both("reallife_online_fig_delivery", OnlineText.Money(today.Delivery), OnlineText.Money(week.Delivery)));
-            box.Line(Both("reallife_online_fig_refunds", OnlineText.Money(today.Refunds), OnlineText.Money(week.Refunds)));
-            box.Line(Both("reallife_online_fig_profit", OnlineText.Money(today.Profit), OnlineText.Money(week.Profit)));
+            box.Section("reallife_ibox_sec_today_week");
+            box.Row("reallife_online_fig_orders", Both(today.Orders.ToString(), week.Orders.ToString()));
+            box.Row("reallife_online_fig_takings", Both(OnlineText.Money(today.Takings), OnlineText.Money(week.Takings)));
+            box.Row("reallife_online_fig_goods", Both(OnlineText.Money(today.Goods), OnlineText.Money(week.Goods)));
+            box.Row("reallife_online_fig_delivery", Both(OnlineText.Money(today.Delivery), OnlineText.Money(week.Delivery)));
+            box.Row("reallife_online_fig_refunds", Both(OnlineText.Money(today.Refunds), OnlineText.Money(week.Refunds)));
+            box.Row("reallife_online_fig_profit", Both(OnlineText.Money(today.Profit), OnlineText.Money(week.Profit)), week.Profit >= 0 ? CellTone.Green : CellTone.Red);
+            box.Section("reallife_ibox_sec_orders");
             box.Line(OnlineText.Fill("reallife_online_fig_queue", "waiting", shop.Count(OrderStage.Waiting).ToString(), "packed", shop.Count(OrderStage.Picked).ToString(), "out", shop.Count(OrderStage.Out).ToString(),
                 "late", shop.Overdue(now).ToString(), "pickers", place.Pickers.ToString()));
-            box.Line(OnlineText.Fill("reallife_online_fig_what", "business", place.Business, "quality", OnlineText.Quality(shop.Quality), "way", OnlineText.Way(shop.Way), "promise", OnlineText.Promise(shop.Promise)));
+            box.Note(OnlineText.Fill("reallife_online_fig_what", "business", place.Business, "quality", OnlineText.Quality(shop.Quality), "way", OnlineText.Way(shop.Way), "promise", OnlineText.Promise(shop.Promise)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_rating", () => Page(PageRating));
             InfoBox.Button(buttons, InfoBox.Additional, "bizman_menu_settings", () => Page(PageSettings));
@@ -161,19 +166,20 @@ namespace RealLifeOverhaul.Economy
             }
             shop.WeekInto(_week, day);
             box.Title(OnlineText.T("reallife_online_days_title", "name", shop.Name));
-            box.Line(OnlineText.Pair("reallife_online_fig_profit", OnlineText.Money(_week.Profit)));
-            box.Line(OnlineText.Pair("reallife_online_fig_takings", OnlineText.Money(_week.Takings)));
-            box.Line(OnlineText.Pair("reallife_online_fig_orders", _week.Orders.ToString()));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_online_fig_profit", OnlineText.Money(_week.Profit));
+            box.Row("reallife_online_fig_takings", OnlineText.Money(_week.Takings));
+            box.Row("reallife_online_fig_orders", _week.Orders.ToString());
             box.Line(OnlineText.Fill("reallife_online_rate_week", "good", _week.OnTime.ToString(), "late", _week.Late.ToString(), "short", _week.Short.ToString(), "lost", (_week.Cancelled + _week.Missing).ToString(),
                 "back", _week.Returned.ToString()));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_online_button_back", () => Page(PageFigures));
-            box.Line(OnlineText.T("reallife_online_days_note"));
+            box.Note(OnlineText.T("reallife_online_days_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        private static string Both(string labelKey, string today, string week)
+        private static string Both(string today, string week)
         {
-            return OnlineText.Pair(labelKey, OnlineText.T("reallife_online_fig_both", "today", today, "week", week));
+            return OnlineText.T("reallife_online_fig_both", "today", today, "week", week);
         }
 
         // ---------------------------------------------------------------- a site: its rating and what moves it
@@ -185,14 +191,16 @@ namespace RealLifeOverhaul.Economy
             shop.WeekInto(week, day);
             int before = shop.StarsBefore(day);
             box.Title(OnlineText.T("reallife_online_rate_title", "name", shop.Name));
-            box.Line(OnlineText.Pair("reallife_online_rate_stars", before > 0
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_online_rate_stars", before > 0
                 ? OnlineText.T("reallife_online_rate_stars_value", "stars", OnlineText.Stars(shop.Stars), "was", OnlineText.Stars(before))
-                : OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars))));
+                : OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars)));
             box.Line(OnlineText.Fill("reallife_online_rate_week", "good", week.OnTime.ToString(), "late", week.Late.ToString(), "short", week.Short.ToString(), "lost", (week.Cancelled + week.Missing).ToString(),
                 "back", week.Returned.ToString()));
             // (the site's price factor: 826 is a tenth over the going price, where an order is marked down; 1108 a twentieth under it, where it is marked up)
-            box.Line(OnlineText.T(place.Site.Price < 830 ? "reallife_online_rate_dear" : place.Site.Price > 1100 ? "reallife_online_rate_cheap" : "reallife_online_rate_fair"));
-            box.Line(OnlineText.Pair("reallife_online_rate_effect", OnlineText.Share(OnlineRules.StarsFactor(shop.Stars))));
+            box.Line(OnlineText.T(place.Site.Price < 830 ? "reallife_online_rate_dear" : place.Site.Price > 1100 ? "reallife_online_rate_cheap" : "reallife_online_rate_fair"),
+                place.Site.Price < 830 ? CellTone.Yellow : place.Site.Price > 1100 ? CellTone.Green : CellTone.Plain);
+            box.Row("reallife_online_rate_effect", OnlineText.Share(OnlineRules.StarsFactor(shop.Stars)));
             WebLine best = null, gone = null;
             for (int l = 0; l < shop.Lines.Count; l++)
             {
@@ -200,10 +208,10 @@ namespace RealLifeOverhaul.Economy
                 best = line.SoldWeek > 0 && (best == null || line.SoldWeek > best.SoldWeek) ? line : best;
                 gone = line.MissedWeek > 0 && (gone == null || line.MissedWeek > gone.MissedWeek) ? line : gone;
             }
-            box.Line(OnlineText.Pair("reallife_online_rate_best", best != null
-                ? OnlineText.T("reallife_online_rate_units", "product", _director.ItemName(best.Item), "units", best.SoldWeek.ToString()) : OnlineText.T("reallife_online_rate_nothing")));
-            box.Line(OnlineText.Pair("reallife_online_rate_out", gone != null
-                ? OnlineText.T("reallife_online_rate_units", "product", _director.ItemName(gone.Item), "units", gone.MissedWeek.ToString()) : OnlineText.T("reallife_online_rate_nothing")));
+            box.Row("reallife_online_rate_best", best != null
+                ? OnlineText.T("reallife_online_rate_units", "product", _director.ItemName(best.Item), "units", best.SoldWeek.ToString()) : OnlineText.T("reallife_online_rate_nothing"));
+            box.Row("reallife_online_rate_out", gone != null
+                ? OnlineText.T("reallife_online_rate_units", "product", _director.ItemName(gone.Item), "units", gone.MissedWeek.ToString()) : OnlineText.T("reallife_online_rate_nothing"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_online_button_back", () => Page(PageFigures));
             Meta.Guide.Point(box, GuideTitle);
         }
@@ -215,6 +223,7 @@ namespace RealLifeOverhaul.Economy
             WebShop shop = place.Shop;
             string key = shop.Place;
             box.Title(OnlineText.T("reallife_online_set_title", "name", shop.Name));
+            box.Section("reallife_ibox_sec_delivery");
             if (!box.HasSelector || !box.Selector(OnlineCatalogue.Ways, shop.Way, OnlineText.Way, i => _director.SetWay(key, i)))
             {
                 box.Line(OnlineText.Way(shop.Way));
@@ -234,14 +243,16 @@ namespace RealLifeOverhaul.Economy
             int setUp, hosting;
             bool inHouse;
             _director.Quote(shop.Quality, out setUp, out hosting, out inHouse);
-            box.Line(OnlineText.Pair("reallife_online_set_hosting", OnlineText.Fill("reallife_online_set_hosting_value", "quality", OnlineText.Quality(shop.Quality), "amount", OnlineText.Money(hosting * 100), "day", shop.HostDue.ToString())));
+            box.Section("reallife_ibox_sec_site");
+            box.Row("reallife_online_set_hosting", OnlineText.Fill("reallife_online_set_hosting_value", "quality", OnlineText.Quality(shop.Quality), "amount", OnlineText.Money(hosting * 100), "day", shop.HostDue.ToString()));
             int next = shop.Quality + 1, nextSetUp = 0, nextHosting = 0;
             bool better = !shop.Offline && shop.Quality < OnlineCatalogue.Qualities - 1;
             if (better)
             {
                 _director.Quote(next, out nextSetUp, out nextHosting, out inHouse);
-                box.Line(OnlineText.Fill("reallife_online_set_better", "quality", OnlineText.Quality(next), "amount", OnlineText.Money(Mathf.Max(0, nextSetUp - setUp) * 100), "hosting", OnlineText.Money(nextHosting * 100)));
+                box.Note(OnlineText.Fill("reallife_online_set_better", "quality", OnlineText.Quality(next), "amount", OnlineText.Money(Mathf.Max(0, nextSetUp - setUp) * 100), "hosting", OnlineText.Money(nextHosting * 100)));
             }
+            box.Section("reallife_ibox_sec_campaign");
             if (shop.AdEnd > 0)
             {
                 box.Line(OnlineText.Fill("reallife_online_set_ads_on", "percent", shop.AdPercent.ToString(), "from", shop.AdFrom.ToString(), "to", (shop.AdEnd - 1).ToString()));
@@ -297,6 +308,7 @@ namespace RealLifeOverhaul.Economy
             bool inHouse;
             _director.Quote(quality, out setUp, out hosting, out inHouse);
             box.Title(OnlineText.T("reallife_online_open_title", "business", name));
+            box.Section("reallife_ibox_sec_site");
             if (!box.HasSelector || !box.Selector(OnlineCatalogue.Qualities, quality, OnlineText.Quality, i =>
                 {
                     _quality = i;
@@ -305,9 +317,14 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(OnlineText.Quality(quality));
             }
-            box.Line(OnlineText.Pair("reallife_online_open_setup", OnlineText.Money(setUp * 100)) + (inHouse ? " " + OnlineText.T("reallife_online_open_agency", "share", OnlineText.Share(OnlineCatalogue.AgencyDiscount)) : string.Empty));
-            box.Line(OnlineText.Pair("reallife_online_open_hosting", OnlineText.T("reallife_online_open_hosting_value", "amount", OnlineText.Money(hosting * 100), "days", _director.MonthDays.ToString())));
-            box.Line(OnlineText.Pair("reallife_online_open_orders", OnlineText.T("reallife_online_open_orders_value", "orders", OnlineCatalogue.OrdersADay[quality].ToString(), "most", OnlineCatalogue.OrdersMost[quality].ToString())));
+            box.Row("reallife_online_open_setup", OnlineText.Money(setUp * 100));
+            if (inHouse)
+            {
+                box.Note(OnlineText.T("reallife_online_open_agency", "share", OnlineText.Share(OnlineCatalogue.AgencyDiscount)));
+            }
+            box.Row("reallife_online_open_hosting", OnlineText.T("reallife_online_open_hosting_value", "amount", OnlineText.Money(hosting * 100), "days", _director.MonthDays.ToString()));
+            box.Row("reallife_online_open_orders", OnlineText.T("reallife_online_open_orders_value", "orders", OnlineCatalogue.OrdersADay[quality].ToString(), "most", OnlineCatalogue.OrdersMost[quality].ToString()));
+            box.Section("reallife_ibox_sec_delivery");
             if (!box.HasSelector || !box.Selector(OnlineCatalogue.Ways, _way, OnlineText.Way, i => _way = i))
             {
                 box.Line(OnlineText.Way(_way));
@@ -316,7 +333,15 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(OnlineText.Promise(_promise));
             }
-            box.Line(OnlineText.T(state.Shops.Count >= OnlineCatalogue.ShopsMost ? "reallife_online_open_full" : "reallife_online_open_note"));
+            box.EndSection();
+            if (state.Shops.Count >= OnlineCatalogue.ShopsMost)
+            {
+                box.Line(OnlineText.T("reallife_online_open_full"), CellTone.Yellow);
+            }
+            else
+            {
+                box.Note(OnlineText.T("reallife_online_open_note"));
+            }
             Transform buttons = box.ButtonRow();
             if (state.Shops.Count < OnlineCatalogue.ShopsMost)
             {
