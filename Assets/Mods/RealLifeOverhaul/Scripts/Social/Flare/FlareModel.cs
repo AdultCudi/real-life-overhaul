@@ -295,17 +295,42 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
+        /// <summary>
+        /// The first shop seen at a place, or null. From an index of the list (it only grows: a shop seen is added at its
+        /// end, by the day's round or the save's reader), brought up to the list's end at each look-up: a dictionary hit
+        /// where the day's round asked a pass of compares of every business (300 businesses: 90,000 compares a day).
+        /// </summary>
         public FlareShopSeen Shop(string place)
         {
-            for (int i = 0; i < Shops.Count; i++)
+            if (place == null)
             {
-                if (Shops[i].Place == place)
+                for (int i = 0; i < Shops.Count; i++)
                 {
-                    return Shops[i];
+                    if (Shops[i].Place == null)
+                    {
+                        return Shops[i];
+                    }
+                }
+                return null;
+            }
+            if (_shopsIndexed > Shops.Count)
+            {
+                _shopOf.Clear();   // (a list made shorter: indexed again from its start)
+                _shopsIndexed = 0;
+            }
+            for (; _shopsIndexed < Shops.Count; _shopsIndexed++)
+            {
+                FlareShopSeen s = Shops[_shopsIndexed];
+                if (s != null && s.Place != null && !_shopOf.ContainsKey(s.Place))
+                {
+                    _shopOf.Add(s.Place, s);   // (the first of a place, as the list's order has it)
                 }
             }
-            return null;
+            return _shopOf.TryGetValue(place, out FlareShopSeen seen) ? seen : null;
         }
+
+        private readonly Dictionary<string, FlareShopSeen> _shopOf = new Dictionary<string, FlareShopSeen>(System.StringComparer.Ordinal);
+        private int _shopsIndexed;   // the shops of the list the index has taken in, from its start
 
         /// <summary>The newest post of the player's from a source, or null.</summary>
         public FlarePost LastOwn(FlareSource source)

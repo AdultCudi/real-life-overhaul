@@ -23,15 +23,18 @@ namespace RealLifeOverhaul.FitOut
     /// has put it together, on the walkable floor (which what they stand is cut out of) and round anything of the
     /// game's, and nothing of this is put where they are.
     ///
-    /// The cost: no Update. A one-second timer on the real clock (which building the player is in; the people of a
-    /// floor that stands), and on going into a building a few frames' look at one flag; the room is measured only behind
-    /// the game's black screen at the door; the building itself is FitView's, a few milliseconds a frame while it goes up.
+    /// The cost: no Update. A one-second timer on the real clock (which building the player is in: a reference compare and
+    /// the building's place key, kept per building by TalentGame.Place; the people of a floor that stands), timed as
+    /// "FitOut: FitOutDirector.Slow", and on going into a building a few frames' look at one flag; the room is measured only
+    /// behind the game's black screen at the door; the building itself is FitView's, a few milliseconds a frame while it
+    /// goes up.
     /// Nothing is saved.
     /// </summary>
     public sealed class FitOutDirector : MonoBehaviour
     {
         private const int TriesMost = 3;
         private static readonly int HotEntered = HotSpots.Slot("FitOut: FitOutDirector.Entered");
+        private static readonly int HotSlow = HotSpots.Slot("FitOut: FitOutDirector.Slow");
 
         public static IModLogger Logger;
 
@@ -132,6 +135,7 @@ namespace RealLifeOverhaul.FitOut
 
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotSlow);   // the second's look, and the one just after a door (Core/HotSpots)
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             bool inside = SaveGameManager.Current != null && !LoadScene.isLoading && ModState.Loaded && !Meta.SaveTools.Dormant

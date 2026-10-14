@@ -129,6 +129,7 @@ internal static partial class Program
         Tech();
         Careers();
         WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
+        LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
         CartQueue();
         Work();
         Desks();
