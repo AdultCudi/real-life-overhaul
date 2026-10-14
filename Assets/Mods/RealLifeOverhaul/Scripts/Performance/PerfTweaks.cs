@@ -90,9 +90,29 @@ namespace RealLifeOverhaul
             return options.AddSplitter();
         }
 
+        /// <summary>Scenes loaded since the mod started: a tweak's look made behind the loading screen is good while this has not moved.</summary>
+        public static int Arrivals { get; private set; }
+
+        /// <summary>
+        /// For ScenePrewarm, once a city behind the loading screen: every tweak that is wanted makes its look at the scene
+        /// now (<see cref="PerfTweak.Prewarm"/>), so that switching it on a few seconds later searches nothing.
+        /// </summary>
+        public static bool Prewarm()
+        {
+            for (int i = 0; i < All.Length; i++)
+            {
+                All[i].RunPrewarm(PerfDirector.Logger);
+            }
+            return true;
+        }
+
         /// <summary>A scene was loaded or unloaded: tweaks that keep lists of scene objects look again on their next tick.</summary>
         public static void WorldChanged(bool loaded)
         {
+            if (loaded)
+            {
+                Arrivals++;
+            }
             for (int i = 0; i < All.Length; i++)
             {
                 if (All[i].Active)

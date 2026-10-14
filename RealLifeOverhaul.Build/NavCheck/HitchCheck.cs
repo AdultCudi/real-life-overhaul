@@ -25,6 +25,7 @@ internal static partial class Program
         Marks();
         Counts();
         HotSpotChecks();
+        Prewarms();
     }
 
     private static Action Handler(int[] calls, int slot)

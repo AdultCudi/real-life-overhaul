@@ -28,7 +28,8 @@ namespace RealLifeOverhaul.Leisure
     /// clothing store's racks), the landmarks of the city, and whether
     /// the player stands at the water's edge. Nothing here runs by itself: the director asks on
     /// its one-second timer, and the costly parts (a pass over the building's items, the scene
-    /// search for landmarks) happen once per building entered and once per city load.
+    /// searches for landmarks) happen once per building entered and once per city load, the
+    /// searches behind the loading screen (LeisureDirector hands them to ScenePrewarm).
     /// </summary>
     public static class LeisureVenues
     {
@@ -45,6 +46,7 @@ namespace RealLifeOverhaul.Leisure
         private static Building _scanned;
         private static int _scannedCount = -1;
         private static bool _landmarksTried;
+        private static bool _scenePartDone;   // the six searches of the scene are made (behind the loading screen, normally)
         private static int _waterMask;
 
         public static void Reset()
@@ -56,6 +58,7 @@ namespace RealLifeOverhaul.Leisure
             _scanned = null;
             _scannedCount = -1;
             _landmarksTried = false;
+            _scenePartDone = false;
         }
 
         // ---------------------------------------------------------------- indoors
@@ -144,19 +147,31 @@ namespace RealLifeOverhaul.Leisure
         // ---------------------------------------------------------------- landmarks
 
         /// <summary>
-        /// Finds the city's landmarks from the scene, once per city load (a second call does nothing). The scene
-        /// searches here are the one-off setup the performance rules allow; whatever the city does not have is
-        /// simply not on the list.
+        /// Finds the city's landmarks, once per city load (a second call does nothing); whatever the city does not have
+        /// is simply not on the list. Six of them are found by searches of the whole scene, which are made behind the
+        /// loading screen (<see cref="PrewarmLandmarks"/>: they were six frames' worth, 480 ms, in the first second on the
+        /// street after a load); the rest come from the game's own lists (its subway stations, the hospital's address).
         /// </summary>
         private const string LandmarkSearch = "leisure: one of the city's landmarks being looked for (a search of the whole scene, six of them once a city)";
 
-        public static void FindLandmarks()
+        /// <summary>For ScenePrewarm, behind the loading screen: the six searches of the scene, their landmarks put on the list.</summary>
+        public static bool PrewarmLandmarks()
         {
-            if (_landmarksTried)
+            if (!_landmarksTried)
+            {
+                SceneLandmarks();
+            }
+            return true;
+        }
+
+        // The landmarks only a search of the scene finds (every one counted, inactive or not, so where the player is does not matter).
+        private static void SceneLandmarks()
+        {
+            if (_scenePartDone)
             {
                 return;
             }
-            _landmarksTried = true;
+            _scenePartDone = true;
             try
             {
                 Scene<FerrisWheel>("ferris_wheel", "reallife_leisure_landmark_ferris_wheel", 55f, true);
@@ -171,7 +186,23 @@ namespace RealLifeOverhaul.Leisure
                     Transform at = casinos[0].ticketHouse != null ? casinos[0].ticketHouse.transform : casinos[0].transform;
                     Add("casino_pier", "reallife_leisure_landmark_casino_pier", at.position, 45f, true);
                 }
+            }
+            catch (Exception e)
+            {
+                LeisureDirector.Logger?.Error(e);
+            }
+        }
 
+        public static void FindLandmarks()
+        {
+            if (_landmarksTried)
+            {
+                return;
+            }
+            _landmarksTried = true;
+            SceneLandmarks();   // done already behind the loading screen, unless that could not be
+            try
+            {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
                 if (city != null && city.subwayStations != null)
                 {

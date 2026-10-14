@@ -57,6 +57,7 @@ namespace RealLifeOverhaul
             GarageState.Reset();
             _shop = new GarageShop(transform);
             _bikes = new TwoWheelers(transform);
+            ScenePrewarm.Add("garage: the city's scooter stands being found for the bike-share docks", _bikes.Places.PrewarmStands);
             GarageBay.Logger = Logger;
             WorldPanel.Logger = Logger;
             TravelList.Logger = Logger;
