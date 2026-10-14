@@ -45,13 +45,19 @@ namespace RealLifeOverhaul
         public static void FailMesh(FeatureGuard guard, Exception e, VertexHelper mesh)
         {
             Fail(guard, e);
+            NoMesh(mesh);
+        }
+
+        /// <summary>A mesh with nothing in it, whose feature is off: the engine's helper it is made in is shared by every graphic, so it is emptied.</summary>
+        public static void NoMesh(VertexHelper mesh)
+        {
             try
             {
                 mesh?.Clear();
             }
             catch (Exception)
             {
-                // (nothing more to be done for the mesh: it is the guard's own catch)
+                // (nothing more to be done for the mesh)
             }
         }
 

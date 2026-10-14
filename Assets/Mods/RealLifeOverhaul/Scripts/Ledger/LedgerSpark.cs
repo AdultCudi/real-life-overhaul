@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ledger
         {
             if (FrameGuard.Off)
             {
+                Guard.NoMesh(vh);   // (its feature is off: nothing drawn)
                 return;
             }
             try
