@@ -1,4 +1,6 @@
-0.17.0
+0.17.1
 
-New
-- The Stocks app's new Bonds tab: Treasury and city bonds and bank deposits that pay interest every month or every quarter, with as much of it put back into the bond as you choose, and sell before their end at a price that moves with rates; and six property trusts that pay a small distribution every week or every third day.
+Fixed
+- After a night's sleep the city map could throw an error every frame, which lowered the frame rate, once the mod's places on the map had changed during the night.
+- The Campus app named a class that could no longer be joined as the next one, and did not count it as held until the next hour; it now names the next class you can still join, and so does every other place that names it.
+- Dates no longer read "since day Day 2" in the Campus, Career and Planner apps and their notices.
