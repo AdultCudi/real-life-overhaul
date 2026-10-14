@@ -188,6 +188,7 @@ namespace RealLifeOverhaul.Markets
             ListingFacts facts = Facts();
             ListingBook.Last(f, day, Year, 4, out long turnover, out long _, out int _);
             long exchange = ListingBook.YearlyFee(own.MarketValue, Level), audit = ListingBook.AuditFee(turnover, Level);
+            _engine.Wallet.Cover(exchange + audit);   // (both fees' give-back from worked orders' money in one, never one for each)
             _engine.Wallet.Force(exchange, ListingMoney.Exchange, own.Name);
             _engine.Wallet.Force(audit, ListingMoney.Audit, own.Name);
             f.Fees += exchange + audit;

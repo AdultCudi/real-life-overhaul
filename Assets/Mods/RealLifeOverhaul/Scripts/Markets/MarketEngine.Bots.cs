@@ -416,6 +416,7 @@ namespace RealLifeOverhaul.Markets
                 share = ((after - b.HighWater) * f.ShareBp + 9999L) / 10000L;
                 b.HighWater = after - share;
             }
+            Wallet.Cover(fee + share);   // (the fee's and the share's give-back from worked orders' money in one, never one for each)
             if (fee > 0)
             {
                 Wallet.Force(fee, MarketMoney.BotFee, f.Name);

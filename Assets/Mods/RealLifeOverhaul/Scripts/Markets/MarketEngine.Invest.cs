@@ -97,8 +97,8 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// Whether a worked order can be placed now (nothing is changed): checked as an order at the market is, but for its
         /// size. A sale is only of shares held and not already being sold, never short; a purchase needs room under the
-        /// holding limit (it stops there) and, from cash, the price of one share at least (it buys what the cash pays for;
-        /// the money worked orders have with the broker counts, as for every purchase in the market).
+        /// holding limit (it stops there) and, from cash, the price of one share at least in what its own day of money is
+        /// parked from (Park): the cash in hand and worked sales' takings due, never another worked purchase's parked money.
         /// </summary>
         public OrderWhy WorkedWhy(Stock s, OrderSide side, long qty, bool held)
         {
@@ -134,9 +134,10 @@ namespace RealLifeOverhaul.Markets
             if (!State.Account.Margin)
             {
                 Quote q = MarketTrading.QuoteOf(State, s, Trading ? State.Phase : MarketCatalogue.PhaseOpen);
-                if (InvestRules.SharesFor(Wallet.Cash, q.Ask, _world.CommissionLeast) <= 0)
+                InvestRules.WithBroker(State, out _, out long due);
+                if (InvestRules.SharesFor(Wallet.Free + due, q.Ask, _world.CommissionLeast) <= 0)
                 {
-                    return OrderWhy.NoMoney;
+                    return OrderWhy.NoMoney;   // (else it would be placed and stop at its first slice: another's parked money is not its own)
                 }
             }
             return OrderWhy.None;
@@ -629,12 +630,13 @@ namespace RealLifeOverhaul.Markets
     /// The player's cash as the market moves and counts it (MarketEngine.Wallet), in front of the game's: the money worked
     /// orders have with the broker (InvestRules.WithBroker: a purchase's parked day of money, a sale's takings due) stays the
     /// player's for every other purchase and charge in the market. What can be afforded counts it (<see cref="Cash"/>); a
-    /// purchase or a charge that needs more than the cash in hand takes back first what it needs and no more (Ready, Take,
-    /// Force): worked sales' takings first, then purchases' parked money, the latest-placed order first, one transaction
-    /// for each order (MarketMoney.WorkedSold, WorkedBack), so never more than one from an order for one purchase. A
-    /// worked order's own day of money parks from the cash in hand alone (<see cref="Free"/>, <see cref="TakeFree"/>), so
-    /// no worked order takes another's and nothing goes round between them. What the app shows as the cash is the cash in
-    /// hand. Game-free; a look at the orders only when the cash in hand is short, or when what can be afforded is asked.
+    /// purchase or a charge that needs more than the cash in hand takes back first what it needs, with a margin for the
+    /// game's rounding (<see cref="Margin"/>), and no more (Ready, Take, Force; <see cref="Cover"/> for charges in a row):
+    /// worked sales' takings first, then purchases' parked money, the latest-placed order first, one transaction for each
+    /// order (MarketMoney.WorkedSold, WorkedBack), so never more than one from an order for one purchase. A worked order's
+    /// own day of money parks from the cash in hand alone (<see cref="Free"/>, <see cref="TakeFree"/>), so no worked order
+    /// takes another's and nothing goes round between them. What the app shows as the cash is the cash in hand.
+    /// Game-free; a look at the orders only when the cash in hand is short, or when what can be afforded is asked.
     /// </summary>
     public sealed class BrokerWallet : IMarketWallet
     {
@@ -653,6 +655,17 @@ namespace RealLifeOverhaul.Markets
         /// <summary>What can be afforded in the market: the cash in hand and the money worked orders have with the broker.</summary>
         public long Cash => _hand.Cash + InvestRules.WithBroker(_state, out _, out _);
 
+        /// <summary>
+        /// What a give-back adds for the game's rounding. Its money is a float, moved in pieces (MarketWallet), so over 2^24
+        /// a sum given back can come in a few units short, and the takes after it round again (a fill's commission after its
+        /// price, a ladder's four pieces, a listing's two fees). About a millionth of the sum, and 4, covers the most these
+        /// can lose (19,077 on 20 billion; a search of the worst cases needs under a quarter of it). It stays in the cash.
+        /// </summary>
+        public static long Margin(long amount)
+        {
+            return amount <= 0 ? 0L : (amount >> 20) + 4L;
+        }
+
         public bool Ready(long amount)
         {
             if (amount <= 0 || _hand.Cash >= amount)
@@ -663,7 +676,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;   // (not even with the money with the broker: none of it is taken back)
             }
-            Release(amount - _hand.Cash);
+            Release(amount - _hand.Cash + Margin(amount));
             return _hand.Cash >= amount;
         }
 
@@ -674,11 +687,22 @@ namespace RealLifeOverhaul.Markets
 
         public void Force(long amount, string why, string name)
         {
+            Cover(amount);   // (what is owed comes from the money with the broker first, as far as it goes)
+            _hand.Force(amount, why, name);
+        }
+
+        /// <summary>
+        /// Charges the market forces, to come (one, or several in a row: a listing's two yearly fees, a bot's fee and its
+        /// share): what they need beyond the cash in hand, with the margin, given back now as far as the money with the
+        /// broker goes, one transaction an order, so none of them takes back again. Unlike Ready, whether or not it covers
+        /// them all: they are taken all the same.
+        /// </summary>
+        public void Cover(long amount)
+        {
             if (amount > _hand.Cash)
             {
-                Release(amount - _hand.Cash);   // (what is owed comes from the money with the broker first, as far as it goes)
+                Release(amount - _hand.Cash + Margin(amount));
             }
-            _hand.Force(amount, why, name);
         }
 
         public void Give(long amount, string why, string name)

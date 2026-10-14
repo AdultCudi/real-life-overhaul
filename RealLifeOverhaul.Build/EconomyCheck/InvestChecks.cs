@@ -1770,8 +1770,9 @@ internal static partial class Program
     }
 
     // A purchase or a charge in the market that needs more than the cash in hand takes back what it needs of the money with
-    // the broker, and no more: a worked sale's takings first, then the parked money of the worked purchase placed last, one
-    // transaction for each order; what it took back the order goes on without, and the money is conserved to the unit.
+    // the broker (with the margin for the game's rounding), and no more: a worked sale's takings first, then the parked
+    // money of the worked purchase placed last, one transaction for each order; what it took back the order goes on
+    // without, and the money is conserved to the unit.
     private static void InvestTakeBack()
     {
         MarketEngine m = LogMarket(662, 0L, out LogWorld w, 3, 5);
@@ -1807,8 +1808,9 @@ internal static partial class Program
     }
 
     // A charge the market forces (a bot's fee, a listing's fee, a margin call's shortfall) takes what it needs of the money
-    // with the broker before it takes the cash in hand under nothing: one transaction back from the order, the cash never
-    // under nothing while money is still with the broker. A ladder's pieces are one purchase: what is short comes back once.
+    // with the broker before it takes the cash in hand under nothing, with the margin for the game's rounding left in the
+    // cash: one transaction back from the order, the cash never under nothing while money is still with the broker. A
+    // ladder's pieces are one purchase: what is short comes back once.
     private static void InvestForceTakesBack()
     {
         MarketEngine m = LogMarket(663, 0L, out LogWorld w, 3, 5);
@@ -1821,8 +1823,9 @@ internal static partial class Program
         int before = w.Purse.Moves.Count;
         m.Wallet.Force(fee, MarketMoney.BotFee, "a bot");
         int backs = w.Purse.Moves.Skip(before).Count(x => x.Why == MarketMoney.WorkedBack);
-        Check(o != null && parked > 0 && w.Purse.Money == 0 && o.Parked == parked - (fee - free) && backs == 1 && w.Purse.ShortWhileBroker == 0,
-            "worked: a charge the market forces takes what it needs of the money with the broker first, in one transaction, and never takes the cash under nothing while any is there");
+        long margin = BrokerWallet.Margin(fee);
+        Check(o != null && parked > 0 && w.Purse.Money == margin && o.Parked == parked - (fee - free) - margin && backs == 1 && w.Purse.ShortWhileBroker == 0,
+            "worked: a charge the market forces takes what it needs of the money with the broker first (the margin for the game's rounding left in the cash), in one transaction, and never takes the cash under nothing while any is there");
         long least = BondRules.Least(m.State.Env.PriceLevel), most = BondRules.Most(m.State.Env.PriceLevel);
         long sum = o != null ? Math.Min(o.Parked / 2, most * 4) / 4 * 4 : 0L;
         before = w.Purse.Moves.Count;
