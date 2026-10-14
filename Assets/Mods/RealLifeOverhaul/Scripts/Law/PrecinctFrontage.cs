@@ -724,7 +724,8 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The building's signs as the game would have them now: its own call decides which are shown and what they say.
+        // The building's signs as the game would have them now: its own call decides which are shown and what they say,
+        // and the mod's front for its buildings (Core/FrontSigns) stands after it.
         private void RestoreSigns()
         {
             if (_signsOff.Count == 0 && _logosOff.Count == 0)
@@ -746,7 +747,7 @@ namespace RealLifeOverhaul.Law
             {
                 if (building != null && building.buildingRegistration != null && !GameManager.isCitySceneBeingUnloaded)
                 {
-                    building.UpdateSign();
+                    FrontSigns.Refresh(building);   // the game's own call, then the station's front as the mod keeps it (Core/FrontSigns: its signs off, never "For rent")
                 }
             }
             catch (Exception e)

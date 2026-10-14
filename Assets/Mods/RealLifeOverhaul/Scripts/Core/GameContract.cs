@@ -89,6 +89,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart AppOpening = ContractBook.Part("app_opening", "phone", "the game's own first steps when an app of the mod's opens");
         public static readonly GamePart ClassroomMarks = ContractBook.Part("classroom_marks", "careers_study", "the marks over the university's classroom doors");
         public static readonly GamePart PersonaCourses = ContractBook.Part("persona_courses", "careers_study", "the mod's courses in the Persona app's education box");
+        public static readonly GamePart FrontSignsPart = ContractBook.Part("front_signs", null, "the signs on the mod's buildings");
+        public static readonly GamePart ClaimedRows = ContractBook.Part("claimed_rows", null, "the mod's buildings left out of the city map's rows of units to let");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -303,6 +305,14 @@ namespace RealLifeOverhaul
         public static readonly GameMember EducationHeader = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "headerLabel", "TextLocalizationComponent");
         public static readonly GameMember EducationStatus = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "statusLabel", "TextLocalizationComponent");
         public static readonly GameMember EducationCheck = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "checkmarkObj", "GameObject");
+
+        // Core/FrontSigns: the game's wide sign types and its logo sign's face, for the signs on the mod's buildings
+        public static readonly GameMember SignTypes = Field(FrontSignsPart, Game, "BuildingSignController", "wideSignTypes", "WideSignTypes");
+        public static readonly GameMember LogoFace = Field(FrontSignsPart, Game, "BuildingLogoSignController", "logoSignRenderer", "Renderer");
+
+        // Core/ClaimedMap: the step of the city map's look at its buildings, wrapped once a session (read on the queue's own
+        // instance, DistributedWork<CityBuildingController>: this is the piece as the game declares it)
+        public static readonly GameMember MapLookStep = Field(ClaimedRows, Game, "Helpers.DistributedWork`1", "_updateAction", "Action<T>");
 
         // Character/HairTests: a lit street lamp's brightness (else the test lamp keeps its own)
         public static readonly GameMember LampMaxValue = Optional(Field(HairLampTest, Game, "StreetLamp", "maxValue", "Single"));

@@ -56,6 +56,7 @@ internal static partial class Program
         Station();
         Tow();
         TechSites();
+        FrontSigns();
         Fits();
         FitPresets();
         Cars();
