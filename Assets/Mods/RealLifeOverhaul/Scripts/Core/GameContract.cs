@@ -91,6 +91,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart PersonaCourses = ContractBook.Part("persona_courses", "careers_study", "the mod's courses in the Persona app's education box");
         public static readonly GamePart FrontSignsPart = ContractBook.Part("front_signs", null, "the signs on the mod's buildings");
         public static readonly GamePart ClaimedRows = ContractBook.Part("claimed_rows", null, "the mod's buildings left out of the city map's rows of units to let");
+        public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -306,6 +307,12 @@ namespace RealLifeOverhaul
         public static readonly GameMember EducationHeader = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "headerLabel", "TextLocalizationComponent");
         public static readonly GameMember EducationStatus = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "statusLabel", "TextLocalizationComponent");
         public static readonly GameMember EducationCheck = Field(PersonaCourses, Game, "UI.Smartphone.Apps.Persona.EducationInfoEntry", "checkmarkObj", "GameObject");
+
+        // Tech/Firms/StartCards: BizMan's start screen, the cards it makes for the kinds of business, and each card's competitors
+        public static readonly GameMember StartCardsHolder = Field(StartCompetitors, Game, "UI.Smartphone.Apps.BizMan.StartBusiness.StartBusinessUI", "businessesContainer", "Transform");
+        public static readonly GameMember StartCardType = Field(StartCompetitors, Game, "UI.Smartphone.Apps.BizMan.StartBusiness.StartBusinessTypeUI", "_businessType", "BusinessType");
+        public static readonly GameMember StartCardLabel = Field(StartCompetitors, Game, "UI.Smartphone.Apps.BizMan.StartBusiness.StartBusinessTypeUI", "competitorsLabel", "TextLocalizationComponent");
+        public static readonly GameMember StartCardAmount = Field(StartCompetitors, Game, "UI.Smartphone.Apps.BizMan.StartBusiness.StartBusinessTypeUI", "competitorsAmountLabel", "TMP_Text");
 
         // Core/FrontSigns: the game's wide sign types and its logo sign's face, for the signs on the mod's buildings
         public static readonly GameMember SignTypes = Field(FrontSignsPart, Game, "BuildingSignController", "wideSignTypes", "WideSignTypes");

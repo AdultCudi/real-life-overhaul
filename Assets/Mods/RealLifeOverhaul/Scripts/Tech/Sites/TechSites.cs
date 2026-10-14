@@ -624,6 +624,17 @@ namespace RealLifeOverhaul.Tech
             return Settings.TechSiteHq && _hq != null && _hq.Of(company, out street, out number);
         }
 
+        /// <summary>A tech company's floor by its name: its tower's name, the floor (from 1) and the tower's address (the Tech app's Competitors page). False while it has none.</summary>
+        public bool FloorOf(string company, out string tower, out int floor, out string street, out int number)
+        {
+            Headquarters.Hq hq = Settings.TechSiteHq && _hq != null ? _hq.Named(company) : null;
+            tower = hq != null && hq.Tower != null ? hq.Tower.Name : null;
+            floor = hq != null ? hq.Floor : 0;
+            street = tower != null ? hq.Street : null;
+            number = tower != null ? hq.Number : 0;
+            return tower != null && !string.IsNullOrEmpty(street);
+        }
+
         /// <summary>Changes whenever the headquarters do.</summary>
         public long HeadquartersStamp => Settings.TechSiteHq && _hq != null && _hq.All.Count > 0 ? 1 + _hq.All.Count + _hq.Stamp * 16L : 0;
 

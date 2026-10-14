@@ -72,6 +72,21 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_vc_all_startups", StartupKinds)
             .Empty("reallife_vc_empty_startups");
 
+        // ---- what a competitor is
+        public const int RivalCompanies = 0, RivalStartups = 1, RivalFirms = 2;
+        private static readonly string[] RivalKinds = { "reallife_tech_kind_companies", "reallife_tech_kind_startups", "reallife_tech_kind_firms" };
+
+        /// <summary>Competitors, a page of the Firms tab for one firm: 0 competitor, 1 what it is, 2 where you meet, 3 your products against it, 4 tenders you both bid for, 5 where it is.</summary>
+        public static readonly TableSpec Rivals = new TableSpec("Tech", "Competitors")
+            .Column("reallife_tech_col_rival", 320f, TableSort.Text, flexible: true)
+            .Column("reallife_tech_col_kind", 260f, TableSort.Text)
+            .Column("reallife_tech_col_meet", 460f, TableSort.Text)
+            .Column("reallife_tech_col_products", 160f, TableSort.Number)
+            .Column("reallife_tech_col_tenders", 160f, TableSort.Number)
+            .Column("reallife_tech_col_where", 380f, TableSort.Text, right: true)
+            .Filter("reallife_tech_rivals_all", RivalKinds)
+            .Empty("reallife_tech_empty_rivals");
+
         /// <summary>Funding: 0 firm, 1 stage, 2 your share, 3 value, 4 raised, 5 board, 6 target, 7 runway, 8 state.</summary>
         public static readonly TableSpec Funding = new TableSpec("Tech", "Funding")
             .Column("reallife_tech_col_firm", 300f, TableSort.Text, flexible: true)
