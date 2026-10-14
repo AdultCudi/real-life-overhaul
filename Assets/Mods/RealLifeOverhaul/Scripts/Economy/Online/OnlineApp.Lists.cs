@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Economy
             }
             _picked = null;
             box.Title(OnlineText.T("reallife_online_tab_orders"));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_online_que_late", late.ToString());
             box.Row("reallife_online_que_waiting", waiting.ToString());
             box.Row("reallife_online_que_packed", packed.ToString());
@@ -222,6 +223,7 @@ namespace RealLifeOverhaul.Economy
             string key = shop.Place, item = line.Item;
             int own = _director.ShopPrice(place, item), going = index < site.Going.Length ? site.Going[index] : 0, ask = line.Price > 0 ? line.Price : own;
             box.Title(_director.ItemName(item));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_online_line_going", OnlineText.Price(going));
             box.Row("reallife_online_line_shop", OnlineText.Price(own));
             int step = ShopPriceStep;
@@ -284,6 +286,7 @@ namespace RealLifeOverhaul.Economy
         {
             string key = place.Shop.Place;
             box.Title(_director.ItemName(item));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_online_line_shop", OnlineText.Price(_director.ShopPrice(place, item)));
             box.Row("reallife_online_line_stock", _director.StockOf(place, item).ToString());
             Transform buttons = box.ButtonRow();

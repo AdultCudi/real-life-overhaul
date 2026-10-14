@@ -174,6 +174,7 @@ namespace RealLifeOverhaul.Fame
             if (picked == "wealth")
             {
                 box.Title(FameText.T("reallife_fame_row_wealth"));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_fame_label_wealth", FameText.N(f.Wealth));
                 box.Line(FameText.Fill("reallife_fame_wealth_parts", "worth", FameText.Money(f.NetWorth), "week", FameText.Money(f.Weekly), "count", FameText.N(f.Businesses),
                     "properties", FameText.N(f.Properties)));
@@ -182,6 +183,7 @@ namespace RealLifeOverhaul.Fame
             else if (picked == "recognition")
             {
                 box.Title(FameText.T("reallife_fame_row_recognition"));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier)));
                 box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", (f.Press / 10f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
                 about = FameText.T("reallife_fame_recognition_about");
@@ -190,6 +192,7 @@ namespace RealLifeOverhaul.Fame
             {
                 int i = FameRules.Clamp(Number(picked, 5), 0, 3);
                 box.Title(FameText.Part((FamePart)i));
+                box.Section("reallife_look_sec_now");
                 box.Row(LabelKeys[i], FameText.Rep(f.Rep[i]));
                 if (i != (int)FamePart.Integrity)
                 {
@@ -206,6 +209,7 @@ namespace RealLifeOverhaul.Fame
                 }
                 FameDistrict d = f.Districts[i];
                 box.Title(FameGame.DistrictName(d.Name));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_fame_label_opinion", FameText.Rep(d.Opinion));
                 box.Row("reallife_fame_label_known", FameText.N(d.Known));
                 box.Line(FameText.Fill("reallife_fame_page_district", "shops", FameText.N(d.Shops), "jobs", FameText.N(d.Jobs), "raised", FameText.N(d.Raised)));

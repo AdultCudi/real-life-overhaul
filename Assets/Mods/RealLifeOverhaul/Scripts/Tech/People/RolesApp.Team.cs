@@ -68,6 +68,7 @@ namespace RealLifeOverhaul.Tech
             }
             _picked = null;
             box.Title(TechText.T("reallife_roles_team_title"));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_roles_sum_waiting", waiting.ToString());
             box.Row("reallife_roles_sum_people", people.Count.ToString());
             box.Row("reallife_roles_sum_leaving", leaving.ToString());

@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Economy
             int step = ServicesCatalogue.Clamp(_step >= 0 ? _step : l != null ? l.Step : ServicesCatalogue.AskingDefault, 0, ServicesCatalogue.AskingPct.Length - 1);
             int value = b.Value;
             box.Title(ServicesGame.Name(reg));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_svc_value_base", ServicesText.T("reallife_svc_value_base_value", "amount", ServicesText.Money(b.Base), "days", VenturesCatalogue.OfferValueDays.ToString()));
             box.Line(ServicesText.Fill("reallife_svc_value_goodwill", "type", ServicesText.Percent(b.TypePct), "district", ServicesText.Percent(b.DistrictPct), "economy", ServicesText.Percent(b.ClimatePct),
                 "books", ServicesText.Percent(b.HistoryPct), "amount", ServicesText.Money(b.Goodwill)));

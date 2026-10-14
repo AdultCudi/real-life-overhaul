@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Economy
             // (nothing is picked, or what was picked is no longer in the list)
             _picked = null;
             box.Title(OnlineText.T("reallife_online_app"));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_online_sum_takings", OnlineText.Money(takings));
             box.Row("reallife_online_sum_orders", orders.ToString());
             box.Row("reallife_online_sum_paid", OnlineText.Money(paid));
@@ -161,6 +162,7 @@ namespace RealLifeOverhaul.Economy
             }
             shop.WeekInto(_week, day);
             box.Title(OnlineText.T("reallife_online_days_title", "name", shop.Name));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_online_fig_profit", OnlineText.Money(_week.Profit));
             box.Row("reallife_online_fig_takings", OnlineText.Money(_week.Takings));
             box.Row("reallife_online_fig_orders", _week.Orders.ToString());
@@ -185,6 +187,7 @@ namespace RealLifeOverhaul.Economy
             shop.WeekInto(week, day);
             int before = shop.StarsBefore(day);
             box.Title(OnlineText.T("reallife_online_rate_title", "name", shop.Name));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_online_rate_stars", before > 0
                 ? OnlineText.T("reallife_online_rate_stars_value", "stars", OnlineText.Stars(shop.Stars), "was", OnlineText.Stars(before))
                 : OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars)));

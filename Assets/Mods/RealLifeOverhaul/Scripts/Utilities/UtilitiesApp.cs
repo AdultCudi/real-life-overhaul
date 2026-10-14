@@ -282,6 +282,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 _pick = null;
                 box.Title(UtilitiesText.T("reallife_util_app"));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_util_box_owed", UtilitiesText.Money(owed));
                 box.Row("reallife_util_box_month", UtilitiesText.Money(month));
                 box.Note(UtilitiesText.T("reallife_util_box_pick"));
@@ -295,6 +296,7 @@ namespace RealLifeOverhaul.Utilities
         private void WriteAccount(InfoBox box, Account a, int today)
         {
             box.Title(_director.NameOf(a));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_util_box_state", UtilitiesText.State(a, today));
             if (a.Service != Service.Internet && (a.State == SupplyState.Temporary || a.State == SupplyState.Cut))
             {

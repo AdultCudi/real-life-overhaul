@@ -428,6 +428,7 @@ namespace RealLifeOverhaul.Tech
             int id = p.Id;
             int rival = FirmsCatalogue.RivalStock(p.K, p.S);
             box.Title(TechText.T("reallife_tech_product_title", "name", p.Name, "kind", TechText.ProductName(p.K)));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_tech_col_stage", State(p));
             if (p.K == ProductKind.Game)
             {

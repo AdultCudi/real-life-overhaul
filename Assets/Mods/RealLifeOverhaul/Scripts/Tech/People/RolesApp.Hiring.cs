@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_jobs_title"));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_hire_sum_ads", TechText.T("reallife_hire_sum_ads_value", "count", open.ToString(), "most", HiringCatalogue.AdsMost.ToString()));
                 box.Line(TechText.Fill("reallife_hire_jobs_office", "week", HiringCatalogue.AdWeekMost.ToString(), "boosted", HiringCatalogue.AdWeekMostBoosted.ToString(),
                     "more", HiringCatalogue.OfficeBonusLeast.ToString()));
@@ -199,6 +200,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_applicants_title"));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_hire_sum_live", live.ToString());
                 box.Note(TechText.T("reallife_hire_applicants_about"));
                 Meta.Guide.Point(box, JobsGuide);

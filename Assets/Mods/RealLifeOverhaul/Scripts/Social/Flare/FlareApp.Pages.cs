@@ -281,6 +281,7 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.Mine;
             }
             box.Title(FlareText.T("reallife_flare_tab_me"));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_flare_me_followers", FlareText.N(file.Followers));
             int next = FlareRules.NextTierAt(file.Followers);
             box.Line(FlareText.Pair("reallife_flare_me_tier", FlareText.Tier(file.Tier))

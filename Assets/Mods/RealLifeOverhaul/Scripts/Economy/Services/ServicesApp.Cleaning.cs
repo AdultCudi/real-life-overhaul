@@ -200,6 +200,7 @@ namespace RealLifeOverhaul.Economy
             string place = ServicesGame.Place(reg);
             int hours = ServicesGame.OwnCleaningHours(reg);
             box.Title(ServicesGame.Name(reg));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_svc_client_clean", ServicesGame.Cleanliness(reg).ToString());
             box.Line(ServicesText.T(hours > 0 ? "reallife_svc_add_own_hours" : "reallife_svc_add_no_hours", "hours", hours.ToString()));
             Transform buttons = box.ButtonRow();
@@ -349,6 +350,7 @@ namespace RealLifeOverhaul.Economy
             {
                 string place = offer.Place;
                 box.Title(offer.Name);
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_svc_contract_district", ServicesText.District(offer.District));
                 box.Row("reallife_svc_contract_fee", ServicesText.T("reallife_svc_row_a_week", "amount", ServicesText.Money(offer.Fee)));
                 box.Line(ServicesText.T("reallife_svc_contract_standard", "standard", offer.Standard.ToString(), "days", ServicesCatalogue.ContractDaysUnderMost.ToString()));
@@ -396,6 +398,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             box.Title(ServicesText.T("reallife_svc_tab_contracts"));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_svc_contracts_running", ContractRules.Running(state).ToString());
             box.Row("reallife_svc_service_fees", ServicesText.T("reallife_svc_service_fees_value", "amount", ServicesText.Money(_director.ContractWeekFees()), "booked", ServicesText.Signed(ServicesState.Week(state.FeeIncome))));
             box.Line(ServicesText.T("reallife_svc_contracts_says", "days", ServicesCatalogue.OfferEveryDays.ToString(), "most", ServicesCatalogue.OffersMost.ToString()));

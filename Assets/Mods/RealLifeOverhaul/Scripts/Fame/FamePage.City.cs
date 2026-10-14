@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.RequestTitle(q));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_fame_label_state", FameText.RequestState(q.State));
                 if (q.State == FameRequestState.Open)
                 {
@@ -92,6 +93,7 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.T("reallife_fame_lobby_row"));
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_fame_label_state", FameText.LobbyState(l.State));
                 box.Line(FameText.Fill("reallife_fame_lobby_line", "day", FameText.N(l.Day), "chance", FameText.N(l.Chance), "rival", FameText.N(l.Rival)));
                 if (l.State == FameLobbyState.Pending)
