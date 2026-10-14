@@ -117,7 +117,7 @@ namespace RealLifeOverhaul
     /// for particular vehicles) is never cut; a zone in the middle of a run is laid out only where no
     /// more than <see cref="LossMost"/> metres of parking beyond it are given up (BusBay.Keep).
     ///
-    /// All of it runs from the director's timer, a few milliseconds at a time: nothing each frame.
+    /// All of it runs from the director's timer, about a millisecond a tick: nothing each frame.
     ///
     /// IN A GOING PUBLIC SESSION (Core/GoingPublic) every machine lays out the same network from the same streets, so every
     /// machine cuts the same parking, switches off the same pieces and puts back the same ones (the mesh is the city's own):
@@ -136,7 +136,7 @@ namespace RealLifeOverhaul
         private const float Margin = BusBay.CarMargin;   // metres of strip kept clear beyond each end of a zone: no bumper over its line
         private const float BoxLeast = 0.02f;     // what is left of a parking box wholly in a zone, at its end
         private const float LaneAngle = 0.995f;   // a parking lane runs along the road to within some 6 degrees, or it is not a run along the kerb
-        private const double Slice = 0.002;       // seconds of zone making in one slice of the director's timer
+        private const double Slice = 0.001;       // seconds of zone making in one slice of the director's timer (about a millisecond; a zone begun is finished)
         private const float LookAgain = 1f;       // seconds before a stop with something in view is looked at again
         private const float WatchEvery = 5f;      // seconds between looks at one made zone after another, for what has come back
         private const float ProbeAfter = 2.5f;    // seconds after a piece is switched off that the mesh is asked about its footprint (the cut closes some half a second after)

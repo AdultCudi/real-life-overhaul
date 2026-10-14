@@ -73,7 +73,11 @@ namespace RealLifeOverhaul
     /// The budget: a 0.25 s timer; per frame only one key test while the player sits (the panel's
     /// keys are the game's, read by the game). Four people at most (two JobCast pairs of its own), made only
     /// when first needed. Texts are built when what they say changes. A fault switches buses
-    /// off for the session, after putting everything away.
+    /// off for the session, after putting everything away. After a load: the routes are laid behind the
+    /// loading screen (TransitMap.Prewarm, a late piece of Core/SceneFinds' ScenePrewarm) and the road paint's
+    /// template found there (RoadPaint.Prewarm); the stops are placed a slice of about a millisecond a frame;
+    /// the stops are put up nearest first, as many a tick as fit in about a millisecond (one at the least),
+    /// where they were put up six at a time (five ticks of 5 to 20 ms after every load and fast travel).
     /// </summary>
     public sealed partial class TransitDirector : MonoBehaviour
     {
@@ -105,7 +109,8 @@ namespace RealLifeOverhaul
         private const float DwellMost = 34f;
         private const float ChooseFor = 30f;         // seconds the bus waits for the player to pick a stop
         private const int Dressings = 48;          // every stop of the city stands for as long as the city is loaded (18 in the city as it is)
-        private const int PutsATick = 6;            // stops put up in one pass, nearest first: all of them within seconds of the network being ready
+        private const int PutsATick = 6;            // stops put up in one pass at the most, nearest first: all of them within seconds of the network being ready
+        private const double PutsSliceMs = 1.0;     // milliseconds of a tick the putting up may take in play (the first stop of a tick always goes up)
         private const int Waiters = 2;
 
         private enum RiderStep { None, Arriving, Waiting, Rising, Boarding, Entering, Exiting, Leaving }
@@ -210,6 +215,7 @@ namespace RealLifeOverhaul
         private bool _saveLoaded;
         private bool _streetClear = true;
         private bool _dressAtOnce = true;           // nothing has been put out for where the player now is: the first pass does not wait for them to look away
+        private bool _dressMore;                    // the last pass stopped at its slice with stops still to put up: the next tick goes on
         private Vector3 _dressedFrom;
         private float _minutesPerSecond = 1f;
         private float _rateFrom;
@@ -224,6 +230,8 @@ namespace RealLifeOverhaul
             RoadPaint.Logger = Logger;
             TransitMap.Reset();
             TransitState.Reset();
+            ScenePrewarm.AddLate("transit: the bus routes laid between the subway stations", TransitMap.Prewarm);
+            ScenePrewarm.Add("transit: the game's road paint found for the bus bays (everything in memory gone through)", RoadPaint.Prewarm);
             _root = new GameObject("RealLifeOverhaul Transit").transform;
             _root.SetParent(transform, false);
             _bus = new TransitBus(_root.gameObject);
@@ -348,7 +356,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                _nextTick = now + (TransitMap.PlacingStops && Settings.Buses && TrafficTools.Ready ? 0f : TickInterval);   // (placing stops: a 3 ms slice a frame until it is done)
+                _nextTick = now + (TransitMap.PlacingStops && Settings.Buses && TrafficTools.Ready ? 0f : TickInterval);   // (placing stops: a slice of about 1 ms a frame until it is done)
                 _tick++;
                 long began = System.Diagnostics.Stopwatch.GetTimestamp();
                 Tick(now);
@@ -447,7 +455,7 @@ namespace RealLifeOverhaul
                 bool atOnce = _dressAtOnce || CitySpots.Flat(at - _dressedFrom) > ArrivedBeyond * ArrivedBeyond;
                 _dressAtOnce = false;
                 _dressedFrom = at;
-                DressNear(at, atOnce, now);
+                _dressMore = DressNear(at, atOnce, now);
                 Serve(at, now);
                 for (int i = 0; i < Dressings; i++)
                 {
@@ -466,6 +474,10 @@ namespace RealLifeOverhaul
                         dressing.Check(Meta.Dev.Verbose ? Logger : null, now, Meta.Dev.Verbose ? StopLabel(dressing.Stop) : null);
                     }
                 }
+            }
+            else if (_dressMore)
+            {
+                _dressMore = DressNear(at, false, now);   // the stops the last pass had no time for, a slice a tick
             }
             if (_waiters != null && _waiters.AnyOut)
             {
@@ -575,13 +587,20 @@ namespace RealLifeOverhaul
             return _walkerRadius;
         }
 
-        private void DressNear(Vector3 at, bool evenInView, float now)
+        // True if the pass stopped at its slice with stops still to put up.
+        private bool DressNear(Vector3 at, bool evenInView, float now)
         {
             // A bus stop is part of the street: every place is put up once, the nearest first, and stays up while the city
             // is loaded. Nothing waits for the player to look away and nothing is taken in behind them.
-            // Put out the nearest that are not out yet: a pass over the places, once a second.
+            // Put out the nearest that are not out yet: a pass over the places, once a second, and on every tick while the
+            // last pass stopped at its slice (about a millisecond in play, the nearest always; all of them behind a black screen).
+            WorkSlice slice = SceneFinds.Hidden ? WorkSlice.Whole : WorkSlice.Of(PutsSliceMs, 1);
             for (int pass = 0; pass < PutsATick; pass++)
             {
+                if (!slice.More())
+                {
+                    return true;
+                }
                 TransitStop nearest = null;
                 float best = float.MaxValue;
                 List<TransitStop> places = TransitMap.Places;
@@ -596,7 +615,7 @@ namespace RealLifeOverhaul
                 }
                 if (nearest == null)
                 {
-                    return;
+                    return false;
                 }
                 int free = -1;
                 for (int i = 0; i < Dressings && free < 0; i++)
@@ -621,12 +640,13 @@ namespace RealLifeOverhaul
                     }
                     if (free < 0)
                     {
-                        return;
+                        return false;
                     }
                 }
                 if (_dressings[free] == null)
                 {
                     _dressings[free] = new BusStopDressing(_root, free + 1);
+                    slice.End();   // a dressing made for the first time (its props, its lettering, its boxes) is a tick's work on its own
                 }
                 else if (_dressings[free].Stop != null)
                 {
@@ -634,6 +654,7 @@ namespace RealLifeOverhaul
                 }
                 PutDressing(_dressings[free], nearest);
             }
+            return true;   // (as many as a pass puts up: the next pass, on the next tick, sees whether any are left)
         }
 
         // A place's pole, with every line that stops there on its flag.
@@ -1924,10 +1945,7 @@ namespace RealLifeOverhaul
                 TestRefusals.Tell(Logger, test, why);
                 return false;
             }
-            for (int i = 0; i < 400 && !TransitMap.Ready; i++)
-            {
-                TransitMap.Step();   // a press before the layout has finished: finished now
-            }
+            TransitMap.Complete();   // a press before the layout has finished: finished now
             if (TransitMap.Stops.Count == 0)
             {
                 TestRefusals.Tell(Logger, test, TestRefusal.NoBusLine);
