@@ -43,6 +43,9 @@ ba:businesstype_truckgarage
 ba:businesstype_warehouse
 ba:businesstype_webdevelopmentagency
 ba:businesstype_wholesalestore
+ba:controls_hint_placement_cancel
+ba:controls_hint_rotate_left
+ba:controls_hint_rotate_right
 ba:itemname_apple
 ba:itemname_bakingmix
 ba:itemname_banana

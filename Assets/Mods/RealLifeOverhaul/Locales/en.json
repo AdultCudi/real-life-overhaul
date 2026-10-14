@@ -17620,5 +17620,6 @@
   "reallife_showroom_note_keys": "Showroom camera: hold the right button and drag, or use the rotate keys, to go round the car. Scroll to come closer. Choosing a bay: click a bay, and press the key that turns an item to turn the car. The cancel key leaves.",
   "reallife_showroom_refuse_away": "That car is not on the floor just now.",
   "reallife_showroom_refuse_camera": "The showroom's camera could not be used just now.",
-  "reallife_showroom_refuse_inside": "Stand in that car's Car Showroom first."
+  "reallife_showroom_refuse_inside": "Stand in that car's Car Showroom first.",
+  "reallife_opt_tip_economy_dealer_floor": "While you stand in one of your Car Showrooms, its customers walk round it looking at the cars. Off, the floor stays empty and the trade is just the same."
 }

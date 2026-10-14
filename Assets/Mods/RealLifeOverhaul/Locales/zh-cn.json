@@ -17620,5 +17620,6 @@
   "reallife_showroom_note_keys": "展厅镜头：按住右键拖动，或使用旋转键，绕着车看。滚动滚轮拉近。选择车位：点击一个车位，按旋转物品的键让车掉头。按取消键退出。",
   "reallife_showroom_refuse_away": "那辆车现在不在展厅里。",
   "reallife_showroom_refuse_camera": "现在无法使用展厅镜头。",
-  "reallife_showroom_refuse_inside": "请先站在那辆车所在的汽车展厅里。"
+  "reallife_showroom_refuse_inside": "请先站在那辆车所在的汽车展厅里。",
+  "reallife_opt_tip_economy_dealer_floor": "当你站在自己的一家汽车展厅里时，顾客会在厅内走动，查看车辆。关闭时，展厅里空无一人，生意照旧。"
 }

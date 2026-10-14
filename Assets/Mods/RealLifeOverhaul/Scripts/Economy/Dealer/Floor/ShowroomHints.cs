@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     {
         public const string LookHeader = "reallife_showroom_hints_look";
         public const string PlaceHeader = "reallife_showroom_hints_place";
+        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomHints", typeof(ShowroomHints));   // the game's calls of it (Core/Guard)
         private const int Rank = 20;   // above the game's own groups: the showroom's keys come first while they apply
 
         private static ControlsHintRegistry _registry;
@@ -29,6 +30,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private readonly List<ControlsHint> _hints;
         private bool _active;
+        private Action _changed;
 
         private ShowroomHints(string header, List<ControlsHint> hints)
         {
@@ -44,7 +46,35 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         public IReadOnlyList<ControlsHint> Hints => _hints;
 
-        public event Action Changed;
+        /// <summary>
+        /// The game's panel listens here for a change of group. Written out so that the game's own add and remove run
+        /// behind the class's guard (Core/GuardCalls), as every call of the game's into the mod does.
+        /// </summary>
+        public event Action Changed
+        {
+            add
+            {
+                try
+                {
+                    _changed += value;
+                }
+                catch (Exception e)
+                {
+                    Guard.Fail(FrameGuard, e);
+                }
+            }
+            remove
+            {
+                try
+                {
+                    _changed -= value;
+                }
+                catch (Exception e)
+                {
+                    Guard.Fail(FrameGuard, e);
+                }
+            }
+        }
 
         /// <summary>True while the game's panel will show the keys: the groups are in its list and the player has its hints on.</summary>
         public static bool Shown => _registry != null && _look != null && PlayerPrefSettings.ControlHints;
@@ -128,7 +158,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return;
             }
             group._active = on;
-            group.Changed?.Invoke();
+            group._changed?.Invoke();
         }
 
         /// <summary>The city is unloading: both groups off and out of the game's list (it is an asset, and outlives the city).</summary>
