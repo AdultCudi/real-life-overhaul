@@ -873,7 +873,7 @@ namespace RealLifeOverhaul.Markets
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 10f, null, OpenApp, true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(OpenApp), true, false);
         }
 
         // ---------------------------------------------------------------- the app (MarketDirector.App.cs)

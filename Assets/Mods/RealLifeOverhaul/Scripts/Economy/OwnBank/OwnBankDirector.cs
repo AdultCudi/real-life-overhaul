@@ -593,7 +593,7 @@ namespace RealLifeOverhaul.Economy
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 11f, null, () => Open(tab), true, false);
+            Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab)), true, false);
         }
 
         // A piece for the City Ledger: tomorrow's paper if this morning's is out (after six), else this morning's.

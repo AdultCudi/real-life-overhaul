@@ -561,7 +561,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     { "amount", FinanceText.Money(missedAmount) }, { "points", Mathf.Abs(missEffect).ToString() },
                     { "score", score.ToString() }, { "grade", FinanceText.Grade(CreditLedger.Grade) }
-                }, 12f, "reallife_econ_note_missed", OpenCredit, true, false);
+                }, 12f, "reallife_econ_note_missed", Guard.Wrap(OpenCredit), true, false);
             }
             Badge();
         }
@@ -616,7 +616,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         { "score", score.ToString() }, { "grade", FinanceText.Grade(now) }, { "was", FinanceText.Grade(was) },
                         { "threshold", CreditCatalogue.LendingThreshold.ToString() }
-                    }, 10f, null, OpenCredit, true, false);
+                    }, 10f, null, Guard.Wrap(OpenCredit), true, false);
                 if (Verbose)
                 {
                     Logger?.Info("Economy: the grade changed from " + was + " to " + now + " at " + score + ".");
@@ -732,7 +732,7 @@ namespace RealLifeOverhaul.Economy
             {
                 { "score", score.Value.ToString() }, { "grade", FinanceText.Grade(score.Grade) },
                 { "threshold", CreditCatalogue.LendingThreshold.ToString() }, { "tips", FinanceText.Tips(score, _tips) }
-            }, 14f, "reallife_econ_note_refused", OpenCredit, true, false);
+            }, 14f, "reallife_econ_note_refused", Guard.Wrap(OpenCredit), true, false);
         }
 
         // ---------------------------------------------------------------- the phone
@@ -939,7 +939,7 @@ namespace RealLifeOverhaul.Economy
             Notifications.Show(NotificationType.Info, "reallife_econ_test_done", new Dictionary<string, string>
             {
                 { "what", FinanceText.T(what) }, { "score", CreditLedger.Score.Value.ToString() }, { "grade", FinanceText.Grade(CreditLedger.Grade) }
-            }, 8f, null, OpenCredit, true, false);
+            }, 8f, null, Guard.Wrap(OpenCredit), true, false);
         }
 
         /// <summary>"Test: show my credit report in the log".</summary>

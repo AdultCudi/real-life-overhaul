@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Economy
             {
                 // the notification below still tells them
             }
-            Notifications.Show(NotificationType.Warning, key, data, 14f, null, click, true, false);
+            Notifications.Show(NotificationType.Warning, key, data, 14f, null, Guard.Wrap(click), true, false);
         }
 
         internal static string Money(float amount)

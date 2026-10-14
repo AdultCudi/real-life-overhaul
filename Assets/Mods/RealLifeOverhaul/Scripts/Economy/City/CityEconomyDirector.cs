@@ -799,7 +799,7 @@ namespace RealLifeOverhaul.Economy
             if (tick.RateMoved != 0 && OwesVariable())
             {
                 Notifications.Show(tick.RateMoved > 0 ? NotificationType.Warning : NotificationType.Info, tick.RateMoved > 0 ? "reallife_macro_note_rate_up" : "reallife_macro_note_rate_down",
-                    new Dictionary<string, string> { { "points", CityText.Points(tick.RateMoved) }, { "rate", CityText.Rate(_state.Base) } }, 10f, null, OpenCity, true, false);
+                    new Dictionary<string, string> { { "points", CityText.Points(tick.RateMoved) }, { "rate", CityText.Rate(_state.Base) } }, 10f, null, Guard.Wrap(OpenCity), true, false);
             }
             int kind = tick.ShockAnnounced;
             if (kind >= 0 && (_state.Buys & (1 << kind)) != 0 && _state.Supply[kind].Announced(_state.Age))
@@ -810,7 +810,7 @@ namespace RealLifeOverhaul.Economy
                     new Dictionary<string, string>
                     {
                         { "kind", CityText.Kind(kind) }, { "percent", Math.Abs(CityModel.ShockPercent(line, _level)).ToString() }, { "days", line.Days.ToString() }
-                    }, 12f, null, OpenCity, true, false);
+                    }, 12f, null, Guard.Wrap(OpenCity), true, false);
             }
         }
 
@@ -937,7 +937,7 @@ namespace RealLifeOverhaul.Economy
             Notifications.Show(NotificationType.Info, "reallife_macro_test_done", new Dictionary<string, string>
             {
                 { "state", CityText.State(_state.Cycle) }, { "rate", CityText.Rate(_state.Base) }, { "index", CityText.Index(_state.Index) }
-            }, 8f, null, OpenCity, true, false);
+            }, 8f, null, Guard.Wrap(OpenCity), true, false);
         }
 
         /// <summary>"Test: show the city's economy in the log".</summary>
@@ -987,7 +987,7 @@ namespace RealLifeOverhaul.Economy
                 Notifications.Show(NotificationType.Info, "reallife_macro_test_done", new Dictionary<string, string>
                 {
                     { "state", CityText.State(_state.Cycle) }, { "rate", CityText.Rate(_state.Base) }, { "index", CityText.Index(_state.Index) }
-                }, 8f, null, OpenCity, true, false);
+                }, 8f, null, Guard.Wrap(OpenCity), true, false);
             }
             catch (Exception e)
             {

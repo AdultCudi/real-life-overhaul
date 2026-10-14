@@ -842,7 +842,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 10f, null, click, true, false);
+            Notifications.Show(type, key, data, 10f, null, Guard.Wrap(click), true, false);
         }
 
         internal void Detail(string what)

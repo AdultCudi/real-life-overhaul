@@ -420,7 +420,7 @@ namespace RealLifeOverhaul.Fame
         /// <summary>A notification of the game's: the key's text with its names filled in (name, value, name, value).</summary>
         internal void Tell(NotificationType type, string key, Action click, params string[] pairs)
         {
-            Notifications.Show(type, key, pairs != null && pairs.Length > 1 ? FameText.Data(pairs) : null, 10f, null, click, true, false);
+            Notifications.Show(type, key, pairs != null && pairs.Length > 1 ? FameText.Data(pairs) : null, 10f, null, Guard.Wrap(click), true, false);
         }
 
         private void OnSave()

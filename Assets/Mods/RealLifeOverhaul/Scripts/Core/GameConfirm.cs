@@ -68,6 +68,8 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool TryShow(LanguageChangeEventDataHolder headerData, LanguageChangeEventDataHolder bodyData, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
+            onConfirmAction = Answer(onConfirmAction);
+            onCancelAction = Answer(onCancelAction);
             if (_direct)
             {
                 try
@@ -87,8 +89,8 @@ namespace RealLifeOverhaul
                 return true;
             }
             // A game whose Show takes keys only: the texts are put together here and shown as they are.
-            return TryShow(headerData.Key != null ? headerData.ToString() : null, bodyData.Key != null ? bodyData.ToString() : null,
-                           onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
+            return ByKey(headerData.Key != null ? headerData.ToString() : null, bodyData.Key != null ? bodyData.ToString() : null,
+                         onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
 
         /// <summary>
@@ -96,6 +98,18 @@ namespace RealLifeOverhaul
         /// has no question box the mod can call, so that nothing was shown.
         /// </summary>
         public static bool TryShow(string headerKey, string bodyKey, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
+        {
+            return ByKey(headerKey, bodyKey, Answer(onConfirmAction), Answer(onCancelAction), confirmKey, cancelKey, allowConfirmationSkip, isNegative);
+        }
+
+        // An answer of the question box runs inside the guard of the class it is written in (Core/Guard): a fault of it
+        // never reaches the game's own box, and counts for that class as its other entry points' do. Once for each question.
+        private static Action Answer(Action answer)
+        {
+            return answer != null ? Guard.Wrap(answer) : null;
+        }
+
+        private static bool ByKey(string headerKey, string bodyKey, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
             if (_direct)
             {

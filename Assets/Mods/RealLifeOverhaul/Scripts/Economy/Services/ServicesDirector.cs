@@ -505,7 +505,7 @@ namespace RealLifeOverhaul.Economy
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 11f, null, () => Open(tab, pick), true, false);
+            Notifications.Show(type, key, data, 11f, null, RealLifeOverhaul.Guard.Wrap(() => Open(tab, pick)), true, false);
         }
 
         /// <summary>Opens the app on a tab, with something picked.</summary>

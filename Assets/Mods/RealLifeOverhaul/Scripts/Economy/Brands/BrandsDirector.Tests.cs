@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             Logger?.Warn("Brands test: " + what + ".");   // asked for by a button: written whether or not diagnostics are on
             Changed();
-            Notifications.Show(NotificationType.Info, "reallife_brand_test_done", null, 7f, null, () => Open(tab, pick), true, false);
+            Notifications.Show(NotificationType.Info, "reallife_brand_test_done", null, 7f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
             Open(tab, pick);
         }
 
