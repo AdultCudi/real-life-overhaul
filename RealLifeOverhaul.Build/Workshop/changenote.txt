@@ -1,4 +1,4 @@
-0.9.10
+0.9.11
 
-New
-- The mod's buildings are fitted out across their whole floor. The tech companies' headquarters have open-plan desks with computers behind their lobbies, meeting rooms, a kitchen, a lounge, printers and a server closet, mostly from the game's own office designs for the building, with staff at the desks and a few walking about. The floor a large police station still left bare gets back offices. Your data centres' floor round the server hall gets stores, deliveries waiting to be racked, a workbench and a staff corner. Every way from the door stays clear, and a building goes up a little at a time as you walk in, so going in causes no stutter.
+Fixed
+- Flare said only that a business had a campaign running or booked when you tried to hire for it. It now says which campaign, how it was booked and until which day, and the Business tab lists the company's campaigns beside the influencer deals. Ending an influencer's deal now ends its campaign too, so the business is free again by the next day.
