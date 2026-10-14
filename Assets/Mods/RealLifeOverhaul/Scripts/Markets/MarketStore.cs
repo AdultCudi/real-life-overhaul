@@ -21,7 +21,9 @@ namespace RealLifeOverhaul.Markets
     ///   l the player's own way to the market and their company's books, u their listed company while it is set aside
     ///      (its founder is a guest in another player's city): Markets/Listing. Never in the city's line.
     ///   b the player's trading bots (MarketBots): each its firm, money, settings, record, holdings and what it waits to
-    ///      trade. Never in the city's line. A bot's shares are written into the player's holding of part p as well
+    ///      trade, then the shares it trades (its scope and picks), its payouts and its trading in the player's own
+    ///      company (a record without them: its whole market, no payout). Never in the city's line, nor is the news of a
+    ///      dividend paid to the player (MarketNewsKind.Paid). A bot's shares are written into the player's holding of part p as well
     ///      (each holding of b says so), and taken out of it again here: a version that does not know bots reads them as
     ///      the player's own shares, bought with the player's money, and nothing is lost.
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
@@ -187,10 +189,15 @@ namespace RealLifeOverhaul.Markets
             L(t, a.CallAmount, a.Commission, a.Interest, a.BorrowFees, a.Dividends, a.DividendsPaid, a.Realised, a.Payouts);
             Join(t, a.OpenedDay);
             t.Append("~n:");
+            int told = 0;
             for (int i = 0; i < s.News.Count; i++)
             {
                 MarketNews n = s.News[i];
-                t.Append(i > 0 ? ";" : string.Empty).Append(n.Day.ToString(Inv));
+                if (city && n.Kind == MarketNewsKind.Paid)
+                {
+                    continue;   // (a dividend paid to the host is theirs alone)
+                }
+                t.Append(told++ > 0 ? ";" : string.Empty).Append(n.Day.ToString(Inv));
                 Join(t, (int)n.Kind, n.Stock, n.A, n.B, n.C);
             }
             t.Append("~d:");
@@ -308,6 +315,18 @@ namespace RealLifeOverhaul.Markets
                     BotOrder o = b.Pending[j];
                     t.Append(j > 0 ? ":" : string.Empty).Append(o.StockId.ToString(Inv)).Append(',').Append(o.Buy ? 1 : 0).Append(',').Append(o.Qty.ToString(Inv));
                 }
+                // (after what a version before them reads: the shares it trades, its payouts, its trading in the player's own company)
+                Join(t, (int)b.Scope);
+                t.Append('|');
+                for (int j = 0; j < b.Picks.Count; j++)
+                {
+                    t.Append(j > 0 ? ":" : string.Empty).Append(b.Picks[j].ToString(Inv));
+                }
+                Join(t, b.PayPct, (int)b.PayEvery);
+                L(t, b.PayMark, b.PayOwed, b.PaidOut, b.MonthPaid);
+                Join(t, b.OwnDay);
+                L(t, b.OwnQty);
+                Join(t, b.OwnYear, b.OwnBoughtBp, b.OwnSoldBp, b.OwnBuyDay, b.OwnSellDay);
             }
         }
 
@@ -351,6 +370,30 @@ namespace RealLifeOverhaul.Markets
                         b.Pending.Add(new BotOrder { StockId = Int(f[0]), Buy = Int(f[1]) != 0, Qty = Long(f[2]) });
                     }
                 }
+                // A record from before the shares it trades and its payouts: its whole market, nothing paid, and what it
+                // made before counted as reckoned already (only profit from now on is paid out).
+                b.Scope = (BotScope)Clamp(I(c, 27), 0, (int)BotScope.Held);
+                foreach (string r in S(c, 28).Length > 0 ? c[28].Split(':') : Array.Empty<string>())
+                {
+                    int id = Int(r);
+                    if (id > 0 && !b.Picks.Contains(id) && b.Picks.Count < MarketBots.PicksMost)
+                    {
+                        b.Picks.Add(id);
+                    }
+                }
+                b.PayPct = MarketBots.Choice(MarketBots.PayPcts, I(c, 29));
+                b.PayEvery = (BotPayEvery)Clamp(I(c, 30, (int)BotPayEvery.Monthly), 0, (int)BotPayEvery.Monthly);
+                b.PayMark = c.Length > 31 ? L(c, 31) : MarketBots.Profit(b);
+                b.PayOwed = Math.Max(0, L(c, 32));
+                b.PaidOut = Math.Max(0, L(c, 33));
+                b.MonthPaid = Math.Max(0, L(c, 34));
+                b.OwnDay = I(c, 35);
+                b.OwnQty = Math.Max(0, L(c, 36));
+                b.OwnYear = I(c, 37);
+                b.OwnBoughtBp = Clamp(I(c, 38), 0, 100000);
+                b.OwnSoldBp = Clamp(I(c, 39), 0, 100000);
+                b.OwnBuyDay = I(c, 40);
+                b.OwnSellDay = I(c, 41);
                 s.Bots.Add(b);
             }
         }
@@ -993,6 +1036,7 @@ namespace RealLifeOverhaul.Markets
             {
                 s.Bots[i].Holdings.RemoveAll(h => s.Stock(h.StockId) == null);
                 s.Bots[i].Pending.RemoveAll(o => s.Stock(o.StockId) == null);
+                s.Bots[i].Picks.RemoveAll(id => s.Stock(id) == null);
             }
             for (int i = 0; i < s.Stocks.Count; i++)
             {

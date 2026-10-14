@@ -7472,6 +7472,46 @@ secret, the same on two machines, moving prices and shared as a player's trade, 
 a jump through it, splits, a company leaving, letting go, the save's line (and read without part `b`), 24 seeds of two
 60-day years for each strategy: losses and gains in every one, none beating holding the market with its dividends.
 
+### The shares a bot trades, payouts and dividend news
+
+The Bots tab's box has three pages of settings, chosen by its first selector: how it trades (the three above), the shares it
+trades, and its payouts. A line over them says both in words.
+
+- **Scope** (`BotScope`, `MarketBots.InScope`, `Allowed`). `Market`: what its firm buys (`Buyable`), as before. `Picked`:
+  only the companies picked for it, at most 12 (`Bot.Picks`; the picker offers the player's own listed company, the picks,
+  what the player and their bots hold and what they watch). `Held`: only what the player holds themselves, their own company
+  too while they are its founder. A company the player chose is bought whatever its size, never one under a bid, a penny
+  share or listed under 20 market days. A holding outside its scope is sold at the next session (`Decide`). Another
+  player's company is never in a scope.
+- **The player's own company** (`MarketBots.OwnRoom`, `OwnCount`, checked in `MarketEngine.BotFillNow` for every fill). By
+  the founder's rules: nothing in the closed time (`ListingRules.Closed`); no sale within the short-swing time of a purchase
+  nor a purchase within it of a sale (`OwnSwingDays`: a year / 4); the founder's own deals and the bots' together within
+  the founder's year's limit (`FounderDealMostBpYear`); the founder's and the bots' shares within `FounderMostBp`; and every
+  bot together at most 10% of its ordinary day's volume (`OwnVolumePct`, `Stock.Adv`) in a day. It reads the company and the
+  player's own bots only, and writes only the bots (their own counts), so every machine of a Going Public session plays
+  the company alike. A bot holding its shares is not let go (`BotWhy.OwnShares`): it sells them up first, and with the
+  option off it is sold up and then let go. A bot under its floor that may not sell them yet keeps selling up.
+- **Payouts** (`MarketBots.Payout`, `PayDue`). A share of new profit (0 to 100% in steps of 10), daily, weekly (a week's
+  last market day) or monthly (with the month's statement, after its fee). Profit is `Realised + Dividends - Fees`; it is
+  new only above the best reached (`PayMark`), so a loss is carried forward. What is owed is paid out of the bot's money not
+  in shares, the rest waits (`PayOwed`). The bot trades the player's own cash, so no money moves: a payout takes the sum off
+  `Bot.Cash`, and `Base`, `Peak`, `HighWater` and `MonthWorth` come down with it, so it is never counted a loss. A weekly
+  payout has a notification (`BotNoteKind.Paid`), a daily one is in the statement, and the statement says what the month
+  paid (`BotNote.D`, `reallife_mkt_bot_note_statement_paid`). The table's profit counts what was paid out.
+- **Dividend news** (`MarketNewsKind.Paid`). Each dividend paid to the player, on their shares or a bot's, is a line of the
+  market news (in the save's line, never in the city's line nor the City Ledger). The director keeps a `DividendTally` and
+  tells it once a frame: one notification with its company (and bot), or one for several with how many and how much
+  (option "A notification when a dividend is paid to you", id `markets_dividend_notes`, on by default).
+- **The save.** Each bot record of part `b` has after what it waits to trade: scope, picks (`id:id`), payout share and
+  time, `PayMark`, `PayOwed`, `PaidOut`, `MonthPaid`, and its trading in the player's company. A record without them reads
+  as its whole market and no payout, with what it made before reckoned already (`PayMark` is its profit then).
+
+EconomyCheck (`MarketChecks7.cs`): the scopes' rules and runs, a holding outside its scope sold, the player's company's
+every limit and a purchase through the market held to the day's share, letting go refused and then done; payouts' times
+and arithmetic, runs over six seeds where no money is made by paying and the statements add up to what was paid; the news
+line for each dividend, kept in the save's line and not in the city's; the line round trip and a line from before; two
+machines alike; the texts in three languages; the cost.
+
 ### Not verified (the game could not be run)
 
 That seven tabs fit the Stocks app's bar, and the Bots tab's box (four lines, three selectors and a row of buttons) the

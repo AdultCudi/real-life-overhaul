@@ -153,9 +153,9 @@ namespace RealLifeOverhaul
                     for (int i = 0; i < s.News.Count; i++)
                     {
                         MarketNews n = s.News[i];
-                        if (n.Day < since || n.Day >= e.Day)
+                        if (n.Day < since || n.Day >= e.Day || n.Kind == MarketNewsKind.Paid)
                         {
-                            continue;
+                            continue;   // (a dividend paid to the player is their own news, not the city's)
                         }
                         string key = MarketText.NewsKey(n, s, out string[] data);
                         if (key.Length == 0)

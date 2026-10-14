@@ -720,6 +720,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsListing = v)
                 .AddToggle(Settings.MarketsBotsId, "reallife_mkt_bot_opt", Settings.MarketsBots,
                     v => Settings.MarketsBots = v)
+                .AddToggle(Settings.MarketsDividendNotesId, "reallife_mkt_opt_dividend_notes", Settings.MarketsDividendNotes,
+                    v => Settings.MarketsDividendNotes = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
