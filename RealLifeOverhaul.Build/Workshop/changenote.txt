@@ -1,4 +1,4 @@
-0.18.0
+0.19.0
 
 New
-- The Planner has a Week tab with a column for each day, a filter over its tabs, clashes when two things overlap or are too far apart to reach in time, a time to leave by for anything at a place with a reminder for it, a day at a glance with its free time and the money due, and your own entries that come back every day or every week.
+- Every app's box on the left has a look of its own: a header with the app's colour, a line of who and where and a chip for how it stands, sections under small headings, figures in rows of a label and a value, short bars for a share or a fit, ticks for what you hold, warnings in orange and red, and notes and the Guide's page at the foot.
