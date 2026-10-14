@@ -199,7 +199,7 @@ below are where the clips' hands are; the model and the clip must agree.
 | `clipboard` | 0.24 x 0.02 x 0.33 | 84 | lit | ground centre, lying flat, clip at +Z | on the left palm under its near left corner (`clipboard_write`) |
 | `leaflet`, `leaflet_stack` | 0.105 x 0.148 | 12 each | lit | centre, lying flat | right hand, by its near edge (`leaflet_offer`); left palm (`leaflet_idle`) |
 | `coffee_cup` | 0.09 x 0.12 x 0.09 | 118 | lit | ground centre | right hand round the sleeve 0.06 m up (`cup_hold`, `sip`, `counter_reach`) |
-| `phone` | 0.07 x 0.01 x 0.15 | 28 | lit | centre, lying flat, screen up | both hands, landscape (`take_photo`) |
+| `phone` | 0.07 x 0.01 x 0.15 | 28 | lit | centre, lying flat, screen up | upright: both hands at its lower corners (`take_photo`), the right hand alone (`selfie`), at the ear (`phone_answer`) |
 | `cigarette` | 0.084 long | 42 | glow | the filter end; lies along +Z | right hand, between the fingers (`smoke`) |
 | `bucket` | 0.31 x 0.28 x 0.31 | 246 | lit | ground centre | stands beside the window cleaner |
 | `toolbox` | 0.47 x 0.24 x 0.23 | 252 | lit | ground centre; lies along X | stands beside a kneeling worker |
