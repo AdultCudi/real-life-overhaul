@@ -1,4 +1,4 @@
-0.11.3
+0.11.4
 
-New
-- Developer diagnostics: a stutter's line in Player.log now says how long the game waited for the graphics card, how long its own thread ran and how busy the processor was, so a pause caused by another program shows as one.
+Fixed
+- The pause the first time you get into a car, and most of the pause just after a save loads, both caused by the mod. The work behind them is now done while the loading screen is still up, or read from lists the game keeps itself, and the logos of the phone's contacts are drawn faster.

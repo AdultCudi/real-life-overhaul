@@ -36,6 +36,16 @@ namespace RealLifeOverhaul
             return found;
         }
 
+        /// <summary>Any one active object of a kind known only at run time (another author's type), or null. <paramref name="what"/> is a constant text.</summary>
+        public static UnityEngine.Object Any(Type type, string what)
+        {
+            int mark = SessionWatch.Mark(what);
+            long began = Stopwatch.GetTimestamp();
+            UnityEngine.Object found = UnityEngine.Object.FindAnyObjectByType(type);
+            Said(what, mark, began, found != null ? 1 : 0);
+            return found;
+        }
+
         /// <summary>Every object of a kind the engine has in memory, in a scene or not (assets too). <paramref name="what"/> is a constant text.</summary>
         public static T[] InMemory<T>(string what) where T : UnityEngine.Object
         {
@@ -121,7 +131,10 @@ namespace RealLifeOverhaul
                 }
                 catch (Exception e)
                 {
-                    SessionWatch.Logger?.Error(e);   // the feature does it on first need instead, as it did before
+                    if (!Guard.DoesWithout(e, "the work behind the loading screen: " + Names[i], "the feature does it when it first needs it"))
+                    {
+                        SessionWatch.Logger?.Error(e);   // the feature does it on first need instead, as it did before
+                    }
                 }
                 SessionWatch.Done(mark);
                 if (done)

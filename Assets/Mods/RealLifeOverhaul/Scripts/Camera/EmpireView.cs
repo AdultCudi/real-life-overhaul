@@ -26,8 +26,11 @@ namespace RealLifeOverhaul
     /// and then V in a car is that view's again, as its author made it.
     ///
     /// When: the first time the chase camera comes on, or the camera key goes down in a car, in a run of the game. The
-    /// cost: nothing per frame. The controller is looked for once (one walk over the loaded assemblies and one search of
-    /// the scene's objects); after that a field read.
+    /// cost: nothing per frame. The controller is looked for once a run and kept: first in the game's own list of who
+    /// listens for the player getting into a vehicle (it joins it when it is switched on), a few entries read; only if
+    /// it is not there, by a search of the scene, which is made behind the loading screen (<see cref="Prewarm"/>). That
+    /// search used to be made the first time the chase camera came on: a frame of some 135 ms on the first drive of a
+    /// session (Player.log, two sessions).
     /// </summary>
     public static class EmpireView
     {
@@ -111,6 +114,29 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// For ScenePrewarm, behind the loading screen: the controller found and kept, so that the first drive searches
+        /// nothing. True once it is found or known not to be there; false while Empire Motors has not made it yet (tried
+        /// again behind the game's black screen at a door; in a car it is then found in the game's list, see Find).
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if (!EmpireMotors.On)
+            {
+                return true;
+            }
+            try
+            {
+                Find();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return true;   // looked for on the first drive instead, as before
+            }
+            return _looked;
+        }
+
         // Its controller: one of its components on its own object, which lasts the whole run (DontDestroyOnLoad).
         private static Behaviour Find()
         {
@@ -118,7 +144,12 @@ namespace RealLifeOverhaul
             {
                 return _controller;
             }
+            _controller = Listening();
             _looked = true;
+            if (_controller != null)
+            {
+                return _controller;
+            }
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (!OtherModName.Is(assembly.GetName().Name, OtherMods.EmpireMotors.AssemblyPrefix))
@@ -128,7 +159,7 @@ namespace RealLifeOverhaul
                 Type type = assembly.GetType(ControllerType, false);
                 if (type != null && typeof(Behaviour).IsAssignableFrom(type))
                 {
-                    _controller = UnityEngine.Object.FindObjectOfType(type) as Behaviour;
+                    _controller = SceneFinds.Any(type, "camera: Empire Motors' view from the driver's seat being looked for (a search of the whole scene, once a run)") as Behaviour;
                     if (_controller == null)
                     {
                         _looked = false;   // not made yet: looked for again next time
@@ -141,6 +172,31 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Camera: Empire Motors is switched on but its view from the driver's seat was not found; V in a car may still reach it.");
             }
             return _controller;
+        }
+
+        // The controller among the game's own listeners for the player getting into a vehicle: it joins them in its OnEnable
+        // (EmpireMotorsInteriorCameraController.OnEnable: GlobalEvents.onEnterVehicle). Not there when it is switched off,
+        // which is when there is nothing to claim either, or after a later load: the game empties the list then
+        // (GlobalEvents.Init) and the controller's object outlives the load. A few entries read; once a run.
+        private static Behaviour Listening()
+        {
+            Action<VehicleController> listeners = GlobalEvents.onEnterVehicle;
+            if (listeners == null)
+            {
+                return null;
+            }
+            foreach (Delegate listener in listeners.GetInvocationList())
+            {
+                if (listener.Target is Behaviour behaviour && behaviour != null)
+                {
+                    Type type = behaviour.GetType();
+                    if (type.FullName == ControllerType && OtherModName.Is(type.Assembly.GetName().Name, OtherMods.EmpireMotors.AssemblyPrefix))
+                    {
+                        return behaviour;
+                    }
+                }
+            }
+            return null;
         }
 
         // The camera the game wants now, asked for again after Empire Motors put its vehicle camera back: for a car, the

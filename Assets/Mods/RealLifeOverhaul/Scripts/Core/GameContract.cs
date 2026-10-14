@@ -189,6 +189,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember LampData = Field(StreetLamps, Game, "StreetLamp", "additionalLightDatas", "HDAdditionalLightData[]");
         public static readonly GameMember LampGlow = Field(StreetLamps, Game, "StreetLamp", "volumetricLightObject", "GameObject");
         public static readonly GameMember LampIsOn = Field(StreetLamps, Game, "StreetLamp", "_isOn", "Boolean");
+        public static readonly GameMember CullList = Field(StreetLamps, Game, "Culling.CullingGroupController", "_cullables", "List<ICullable>");   // (the lamps read from the game's culling list, 0.11.4)
 
         // Performance/PerfProbe (Unity's interface)
         public static readonly GameMember LayoutQueue = Field(UiProbe, UnityUi, "UnityEngine.UI.CanvasUpdateRegistry", "m_LayoutRebuildQueue", null);

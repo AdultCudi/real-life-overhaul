@@ -14,6 +14,11 @@ namespace RealLifeOverhaul
     /// state the game gives a lamp it switches off: light, light data and glow object disabled. Brightness and
     /// the lamp's material are not touched, and the game switches everything on again by itself the moment it
     /// lights the lamp. Only lamps the game holds OFF are touched, so nothing the game means to be lit goes dark.
+    ///
+    /// The lamps are read from the game's own list of what it culls by distance, which every lamp joins in its
+    /// Start, never by a search of the scene (that was a frame of 83 ms the moment the tweak came on after a load).
+    /// Per frame: nothing; on its timer, a slice of 250 lamps while a sweep is under way, otherwise one pass over
+    /// the lamps it holds every five seconds.
     /// </summary>
     public sealed class StaleLampLights : PerfTweak
     {
@@ -29,7 +34,8 @@ namespace RealLifeOverhaul
         private const float SweepAfter = 4f;    // seconds after the last scene arrived before the lamps are looked through again
 
         private readonly List<Entry> _entries = new List<Entry>(256);
-        private StreetLamp[] _sweeping;         // the lamps being gone through; null when no sweep is under way
+        private readonly List<StreetLamp> _lamps = new List<StreetLamp>(4096);   // the lamps of the sweep under way (three thousand in the city)
+        private List<StreetLamp> _sweeping;     // the lamps being gone through; null when no sweep is under way
         private int _cursor;
         private bool _stale;
         private float _staleAt;
@@ -45,7 +51,7 @@ namespace RealLifeOverhaul
         {
             if (!PerfGame.KnowsLamps)
             {
-                throw new InvalidOperationException("this version of the game keeps a street lamp's lights somewhere else");
+                throw new InvalidOperationException("this version of the game keeps a street lamp's lights, or its list of lamps, somewhere else");
             }
             Begin();
         }
@@ -83,18 +89,23 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every lamp in the loaded scenes, when the tweak comes on and after a scene has arrived: the list is one engine
-        // call, the lamps are then gone through a slice per tick (three private fields read of each).
+        // Every lamp in the loaded scenes, when the tweak comes on and after a scene has arrived, read from the game's own
+        // list of the lamps it culls (PerfGame.Lamps: one pass over that list, where a search of the scene was a frame of
+        // 83 ms in play); the lamps are then gone through a slice per tick (three private fields read of each).
         private void Begin()
         {
             _stale = false;
-            _sweeping = SceneFinds.All<StreetLamp>("performance: the street lamps being listed (a search of the whole scene, after scenes arrive)");
+            using (SessionWatch.Piece("performance: the street lamps being listed (from the game's own list of the lamps it culls, after scenes arrive)"))
+            {
+                PerfGame.Lamps(_lamps);
+            }
+            _sweeping = _lamps;
             _cursor = 0;
         }
 
         private void Sweep()
         {
-            int end = Mathf.Min(_cursor + Slice, _sweeping.Length);
+            int end = Mathf.Min(_cursor + Slice, _sweeping.Count);
             for (; _cursor < end; _cursor++)
             {
                 StreetLamp lamp = _sweeping[_cursor];
@@ -118,9 +129,10 @@ namespace RealLifeOverhaul
                 _entries.Add(entry);
                 _parts += entry.Disabled.Count;
             }
-            if (_cursor >= _sweeping.Length)
+            if (_cursor >= _sweeping.Count)
             {
                 _sweeping = null;
+                _lamps.Clear();   // nothing held of a city that may go
             }
         }
 
@@ -167,6 +179,7 @@ namespace RealLifeOverhaul
             _parts = 0;
             _stale = false;
             _sweeping = null;
+            _lamps.Clear();
         }
 
         public override string Describe() => "lamps the game has off whose lights were still enabled: " + _entries.Count + " lamps, " + _parts + " light components disabled";

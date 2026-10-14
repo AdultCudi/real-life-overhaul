@@ -127,6 +127,7 @@ namespace RealLifeOverhaul.Leisure
             _context.Props = _props;
             _context.Logger = Logger;
             LeisureVenues.Reset();
+            ScenePrewarm.Add("leisure: the city's landmarks being found (six searches of the whole scene)", LeisureVenues.PrewarmLandmarks);
         }
 
         private void OnDestroy()

@@ -147,6 +147,22 @@ namespace RealLifeOverhaul
 
         internal override void WorldChanged(bool loaded) => _stale = true;   // (an unloaded scene matters here: its squares are forgotten)
 
+        // The city's scenes gathered behind the loading screen (Refresh: every mesh renderer under every root object, some
+        // 357,000, which was a frame of 127 ms in play on the first tick after the tweak came on). Sorting them into
+        // squares is left to the timer, a slice a tick, as before; its first tick then finds no scene it has not seen.
+        protected override void Prewarm()
+        {
+            if (_byEnabled)
+            {
+                return;   // the benchmark's trial: never wanted at a load
+            }
+            Refresh();
+            if (_stale)
+            {
+                Refresh();   // the scenes of an earlier city were forgotten first: now the ones that are here
+            }
+        }
+
         // The timer only ever takes squares out. Giving them back is done the moment it is needed, in OnCameraRendering.
         protected override void Tick(float now)
         {
@@ -217,6 +233,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 int before = _survey.Count;
+                using var piece = SessionWatch.Piece("performance: the scenery's renderers being gathered for the far districts (every object of a scene not looked through yet)");
                 scene.GetRootGameObjects(_roots);
                 foreach (GameObject root in _roots)
                 {

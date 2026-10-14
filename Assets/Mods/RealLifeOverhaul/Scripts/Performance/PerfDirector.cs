@@ -42,6 +42,8 @@ namespace RealLifeOverhaul
             PerfTweaks.Dirty = true;
             SceneManager.sceneLoaded += SceneLoadedCall;
             SceneManager.sceneUnloaded += SceneUnloadedCall;
+            // The tweaks' looks at the scene (the skies, the scenery) behind the loading screen, not in the frame they come on.
+            ScenePrewarm.Add("performance: the scene looked at for the tweaks that are on (the skies, the scenery)", PerfTweaks.Prewarm);
         }
 
         /// <summary>Starts the ten-second capture, or arms it to start once the menus are closed.</summary>
