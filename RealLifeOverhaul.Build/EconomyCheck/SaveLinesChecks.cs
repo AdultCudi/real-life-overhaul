@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Utilities;
 
 // A store's line it cannot read is kept in the save exactly as it was read (Core/SaveLines), whatever the feature writes
@@ -41,6 +42,21 @@ internal static partial class Program
         SaveLines.Unreadable(next, "reallife:economy_estate", "it could not be read");
         Check(SaveLines.IsKept(next, "reallife:economy_estate") && !SaveLines.IsKept(save, CityStore.Key), "save lines: a save read later has its own kept lines");
         SaveLines.Later = null;
+
+        // Interiors and decor (two lines of their own, main since 0.7.3): a line of a later shape, and rules that cannot be
+        // read, are kept; the lines this version reads, of either version, are the feature's.
+        var rooms = new Dictionary<string, string> { { InteriorStore.Key, "3|shop,1,2,3,4,5,6,7" }, { InteriorStore.RulesKey, "2,40" } };
+        InteriorStore fresh = InteriorStore.Load(rooms);
+        Check(fresh.Files.Count == 0 && fresh.RulesFrom == InteriorFile.Unset && SaveLines.IsKept(rooms, InteriorStore.Key) && SaveLines.IsKept(rooms, InteriorStore.RulesKey),
+            "save lines: interiors' lines of a later shape are kept, and the feature starts afresh");
+        rooms[InteriorStore.Key] = fresh.Write();
+        rooms[InteriorStore.RulesKey] = "1,52";
+        Check(SaveLines.PutBack(rooms) == 2 && rooms[InteriorStore.Key] == "3|shop,1,2,3,4,5,6,7" && rooms[InteriorStore.RulesKey] == "2,40", "save lines: interiors' kept lines go back as they were read");
+        var known = new Dictionary<string, string> { { InteriorStore.Key, "2|shop,1,2,3,4,5,6" }, { InteriorStore.RulesKey, "1,40" } };
+        InteriorStore read2 = InteriorStore.Load(known);
+        Check(read2.Files.Count == 1 && read2.RulesFrom == 40 && !SaveLines.IsKept(known, InteriorStore.Key) && !SaveLines.IsKept(known, InteriorStore.RulesKey)
+              && InteriorStore.Readable("1|shop,1,2,3,4,5") && InteriorStore.Readable(null) && !InteriorStore.Readable("damaged"),
+            "save lines: interiors' lines this version reads are the feature's (either version), a damaged one is not");
 
         // A line this version reads is the feature's.
         var plain = new Dictionary<string, string> { { CityStore.Key, good } };

@@ -74,6 +74,11 @@ namespace RealLifeOverhaul
         public static readonly GamePart SpecialHeadline = ContractBook.Part("special_headline", null, "a special building's own name over the game's building panel");
         public static readonly GamePart SpecialSearch = ContractBook.Part("special_search", null, "the special buildings' own names in the city map's search");
         public static readonly GamePart RideToggle = ContractBook.Part("ride_toggle", "transport", "the fast forward switch of the bus ride");
+        public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
+        public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
+        public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
+        public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
+        public static readonly GamePart HairLampTest = ContractBook.Part("hair_lamp_test", "character", "the hair test's street lamp as bright as the game's");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -263,6 +268,23 @@ namespace RealLifeOverhaul
 
         // Transport/BusRidePanel: the game's fast forward switch on its activity panel
         public static readonly GameMember FastForward = Field(RideToggle, Game, "PlayerActivity.PlayerActivityUI", "fastForwardToggle", "Toggle");
+
+        // Core/CustomerDraw: the game's list of a day's customers at each business (the hour under way kept while Meaningful
+        // Ambience runs; the interiors' basket and the Interior tab's customers)
+        public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");
+
+        // Interiors/InteriorTab: BizMan's business page, its tabs and their containers (the business's details: else no scroll of them)
+        public static readonly GameMember BizManMenu = Field(InteriorTabPart, Game, "BizManBusiness", "menu", "Transform");
+        public static readonly GameMember BizManContainers = Field(InteriorTabPart, Game, "BizManBusiness", "containers", "Transform");
+        public static readonly GameMember BizManTabs = Field(InteriorTabPart, Game, "BizManBusiness", "_tabs", "List<String>");
+        public static readonly GameMember BizManSetTab = Method(InteriorTabPart, Game, "BizManBusiness", "SetTab", "Void", "String");
+        public static readonly GameMember BizManDetails = Optional(Field(InteriorTabPart, Game, "BizManBusiness", "businessInfo", "Transform"));
+
+        // Transport/TransitBus: what a traffic car of the game's stands for (its sensor's list)
+        public static readonly GameMember CarObstacles = Field(BusYield, Plugins, "GleyTrafficSystem.VehicleComponent", "obstacleList", "List<Collider>");
+
+        // Character/HairTests: a lit street lamp's brightness (else the test lamp keeps its own)
+        public static readonly GameMember LampMaxValue = Optional(Field(HairLampTest, Game, "StreetLamp", "maxValue", "Single"));
 
         // ---------------------------------------------------------------- the game's layers, by name
 

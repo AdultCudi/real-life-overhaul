@@ -37,8 +37,7 @@ namespace RealLifeOverhaul
         private const float StreetLampHeight = 5.5f;     // metres above the feet, when no lamp of the game's is near to copy
         private const float StreetLampLumens = 40000f;
         private const float StreetLampOffset = 1f;       // metres beyond the head: the lamp all but over it, as at the stop of the report
-        private static readonly System.Reflection.FieldInfo LampMaxValue =
-            typeof(global::StreetLamp).GetField("maxValue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        private static readonly System.Reflection.FieldInfo LampMaxValue = GameContract.LampMaxValue.Field;   // (the game's private piece, resolved once: Core/GameContract)
 
         private static GameObject _lamp;
 

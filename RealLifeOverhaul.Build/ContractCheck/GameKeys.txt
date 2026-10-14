@@ -83,6 +83,7 @@ ba:itemname_popcorn
 ba:itemname_rawsausage
 ba:itemname_russetpotatoes
 ba:itemname_salad
+ba:itemname_schooldoor
 ba:itemname_screencinema
 ba:itemname_sealedcardboardbox
 ba:itemname_slicedonions
@@ -154,15 +155,20 @@ ba:vehicletype_umcdesert
 ba:vehicletype_umcdesertdeliveryjob
 bizman_menu_settings
 bizman_status
+buildingmanager_notification_business_closed
+buildingmanager_notification_private_property
 change_character_clothes_unsaved_changes_warning
 citymap_category_special_buildings
+common_available_for_rent
 common_cancel
 common_close
+common_closed
 common_confirm
 common_friday
 common_monday
 common_neighborhoods
 common_notification_invalid_amount
+common_open
 common_real_estate
 common_saturday
 common_setdestination
@@ -173,6 +179,7 @@ common_tomorrow
 common_travel
 common_tuesday
 common_wednesday
+educationdoorcontroller_closed
 ferris_wheel
 filebrowser_delete
 government

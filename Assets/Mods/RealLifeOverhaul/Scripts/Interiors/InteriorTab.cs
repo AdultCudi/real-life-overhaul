@@ -95,16 +95,15 @@ namespace RealLifeOverhaul.Interiors
 
         private static void Install(BizManBusiness business, FullMenu menu)
         {
-            const BindingFlags Private = BindingFlags.NonPublic | BindingFlags.Instance;
-            Type type = typeof(BizManBusiness);
-            _menu = type.GetField("menu", Private)?.GetValue(business) as Transform;
-            _containers = type.GetField("containers", Private)?.GetValue(business) as Transform;
-            _tabsField = type.GetField("_tabs", Private);
-            _setTab = type.GetMethod("SetTab", Private, null, new[] { typeof(string) }, null);
+            // BizMan's private pieces, resolved once (Core/GameContract).
+            _menu = GameContract.BizManMenu.Field?.GetValue(business) as Transform;
+            _containers = GameContract.BizManContainers.Field?.GetValue(business) as Transform;
+            _tabsField = GameContract.BizManTabs.Field;
+            _setTab = GameContract.BizManSetTab.Method;
             Transform template = _menu != null ? (_menu.Find("Marketing") ?? _menu.Find("Insight") ?? _menu.Find("Settings")) : null;
             Transform shape = _containers != null ? _containers.Find("Settings") : null;
             Transform source = menu.myEmployees != null ? menu.myEmployees.transform.Find("Layout 30-70/Left/WhiteBox") : null;
-            Transform details = type.GetField("businessInfo", Private)?.GetValue(business) as Transform;
+            Transform details = GameContract.BizManDetails.Field?.GetValue(business) as Transform;
             Transform scroll = details != null ? details.Find("WhiteBox") : null;   // BizMan's own scroll view of a business's details
             if (_menu == null || _containers == null || _tabsField == null || _setTab == null || template == null || shape == null || source == null
                 || template.GetComponent<TextMeshProUGUI>() == null)
@@ -700,6 +699,8 @@ namespace RealLifeOverhaul.Interiors
     /// <summary>On the game's BizManBusiness: after the game has made its list of tabs again, the Interior tab is put back. One flag test a frame while BizMan shows a business.</summary>
     public sealed class InteriorTabKeeper : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("interiors", "InteriorTabKeeper", typeof(InteriorTabKeeper));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private void OnEnable()
         {
             InteriorTab.Dirty = true;
@@ -709,6 +710,23 @@ namespace RealLifeOverhaul.Interiors
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (InteriorTab.Dirty)
             {
                 UiClone.Safe(InteriorTab.Fix);

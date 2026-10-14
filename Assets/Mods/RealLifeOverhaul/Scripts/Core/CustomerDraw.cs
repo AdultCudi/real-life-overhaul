@@ -56,7 +56,7 @@ namespace RealLifeOverhaul
                 _looked = true;
                 try
                 {
-                    _table = typeof(CustomerEntriesHelper).GetField("BusinessCustomerEntries", BindingFlags.NonPublic | BindingFlags.Static);
+                    _table = GameContract.CustomerTable.Field;   // (the game's private piece, resolved once: Core/GameContract)
                     if (_table == null || _table.FieldType != typeof(Dictionary<Address, List<CustomerEntry>>))
                     {
                         _table = null;

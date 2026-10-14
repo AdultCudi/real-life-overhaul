@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Planner;
 
 // Checks for the Planner's game-free parts. A check that fails prints one line; the last line is
@@ -304,6 +305,14 @@ internal static class Program
         var huge = new Dictionary<string, string> { { PlannerStore.NotesKey, new string('|', 20000) + new string(';', 20000) } };
         PlannerStore.Load(huge);
         Check(PlannerStore.Notes.Count == 0, "noise is nothing");
+        Check(SaveLines.IsKept(huge, PlannerStore.NotesKey) && !SaveLines.IsKept(data, PlannerStore.NotesKey), "a line of which nothing can be read is kept as it was read; one partly read is not");
+        var later = new Dictionary<string, string> { { PlannerStore.Key, "v=2;next=4" }, { PlannerStore.RemindersKey, "v2#note#1#0" } };
+        PlannerStore.Load(later);
+        Check(!SaveLines.IsKept(later, PlannerStore.Key) && SaveLines.IsKept(later, PlannerStore.RemindersKey) && PlannerStore.NextNoteId == 4,
+            "settings of a later version are read as far as they can be; reminders of another shape are kept");
+        later[PlannerStore.RemindersKey] = string.Empty;
+        Check(SaveLines.PutBack(later) == 1 && later[PlannerStore.RemindersKey] == "v2#note#1#0", "a kept line goes back as it was read when the Planner writes its own");
+        SaveLines.Forget();
     }
 
     private static void Limits()

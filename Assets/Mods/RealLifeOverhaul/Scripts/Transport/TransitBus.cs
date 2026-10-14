@@ -97,8 +97,6 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        private static FieldInfo _carObstacles;      // VehicleComponent.obstacleList: what is in a traffic car's sensor (read once a hold at most)
-        private static bool _carObstaclesLooked;
         private static int _playerLayer = -2;
         private readonly RideRules.HoldClock _hold = new RideRules.HoldClock();
 
@@ -1161,13 +1159,9 @@ namespace RealLifeOverhaul
         // True when the bus is in the car's sensor (the game's own list of what it stands for).
         private bool WaitsForBus(VehicleComponent car)
         {
-            if (!_carObstaclesLooked)
-            {
-                _carObstaclesLooked = true;
-                _carObstacles = typeof(VehicleComponent).GetField("obstacleList", BindingFlags.Instance | BindingFlags.NonPublic);
-            }
+            FieldInfo sensor = GameContract.CarObstacles.Field;   // VehicleComponent.obstacleList, resolved once (Core/GameContract): read once a hold at most
             Collider solid = Vehicle != null ? Vehicle.Solid : null;
-            return solid != null && _carObstacles != null && _carObstacles.GetValue(car) is List<Collider> seen && seen.Contains(solid);
+            return solid != null && sensor != null && sensor.GetValue(car) is List<Collider> seen && seen.Contains(solid);
         }
 
         // True when the bus is on the car's own way ahead of it: told to go on, it would drive into the bus.

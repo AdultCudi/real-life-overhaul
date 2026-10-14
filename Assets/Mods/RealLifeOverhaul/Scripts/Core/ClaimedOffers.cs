@@ -106,6 +106,8 @@ namespace RealLifeOverhaul
     /// </summary>
     internal sealed class ClaimedPresentation : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ClaimedPresentation", typeof(ClaimedPresentation));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const string LineName = "RealLifeOverhaul TakenBy";
 
         private BizManPresentation _page;
@@ -167,6 +169,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (_failed)
             {
                 return;
@@ -293,6 +312,8 @@ namespace RealLifeOverhaul
     /// </summary>
     internal sealed class ClaimedRealEstate : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ClaimedRealEstate", typeof(ClaimedRealEstate));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         internal RealEstateScrollerController Table;
 
         private List<RealEstateCellView.RealEstateModel> _seen;
@@ -308,6 +329,23 @@ namespace RealLifeOverhaul
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (_failed || Table == null)
             {
                 return;

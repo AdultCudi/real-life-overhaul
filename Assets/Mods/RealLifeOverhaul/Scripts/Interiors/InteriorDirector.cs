@@ -32,6 +32,8 @@ namespace RealLifeOverhaul.Interiors
     /// </summary>
     public sealed class InteriorDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("interiors", "InteriorDirector", typeof(InteriorDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
         public static InteriorDirector Instance { get; private set; }
 
@@ -82,6 +84,23 @@ namespace RealLifeOverhaul.Interiors
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_broken || Time.unscaledTime < _nextSlow)
             {
                 return;
@@ -115,9 +134,7 @@ namespace RealLifeOverhaul.Interiors
                 {
                     save.modData = new Dictionary<string, string>();
                 }
-                string line, rules;
-                _store = InteriorStore.Read(save.modData.TryGetValue(InteriorStore.Key, out line) ? line : null);
-                _store.ReadRules(save.modData.TryGetValue(InteriorStore.RulesKey, out rules) ? rules : null);
+                _store = InteriorStore.Load(save.modData);   // (a line this version cannot read is kept as it was: Core/SaveLines)
                 OtherMods.Look(Logger);
                 Logger?.Info("Interiors: ready. " + _store.Files.Count + " business file(s)" + (OtherMods.MeaningfulInteriors.Loaded ? "; Meaningful Interiors is on, so the district standard's part and the basket stay off" : string.Empty)
                              + (OtherMods.MeaningfulAmbience.Loaded ? "; Meaningful Ambience is on, so the decor's footfall stays off" : string.Empty)
