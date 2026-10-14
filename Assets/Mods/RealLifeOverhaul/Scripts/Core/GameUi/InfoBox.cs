@@ -27,8 +27,16 @@ namespace RealLifeOverhaul.GameUi
     /// header with the app's colour, the title, a line of who and where and status chips; sections under a heading in
     /// small capitals and a hairline, their rows indented; rows of a muted label and a value in the body's colour;
     /// meters, ticks, notes and the Guide's page at the foot. Every part is a copy of a template made once from the
-    /// game's own texts, pictures and colours when the box is taken (From); a page costs one copy per part, and nothing
-    /// of it runs per frame.
+    /// game's own texts, pictures and colours when the box is taken (From), and nothing of it runs per frame.
+    ///
+    /// PARTS ARE KEPT AND USED AGAIN. A page written again (every click in an app) once destroyed every part of the last
+    /// page and copied each template again: some thirty to forty copies of the game's objects a click. Now Clear lays the
+    /// parts of the box's own kinds (rows, lines, notes, headers, sections, meters, ticks, pairs, the foot, switches,
+    /// selectors and rows of buttons) aside, asleep among the templates, and the next page takes them back in the order it
+    /// writes them; only a part of a kind with none laid aside is copied. A part taken back is put as a new copy of its
+    /// template would be (<see cref="Restore"/>: whatever a page may have changed on it is set again from the template, and
+    /// what was added under it is taken away), then written as before, so a page looks exactly as it did. Pictures, chips
+    /// and anything written into another parent than the box are made and destroyed as before.
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -63,6 +71,7 @@ namespace RealLifeOverhaul.GameUi
             box.PrepareSwitch();
             box.MakeLook(templates);
             box.Space(whiteBox);
+            box.Keep(templates);
             return box;
         }
 
@@ -197,10 +206,20 @@ namespace RealLifeOverhaul.GameUi
 
         // ---------------------------------------------------------------- writing a page
 
-        /// <summary>Empties the box for a new page.</summary>
+        /// <summary>Empties the box for a new page: its parts of the box's own kinds are laid aside for the next page (Keep), the rest destroyed.</summary>
         public void Clear()
         {
             Begin();
+            for (int i = 0; i < _live.Count; i++)
+            {
+                GameObject part = _live[i];
+                if (part != null && part.transform.parent == _box)
+                {
+                    Park(part, _liveFrom[i]);
+                }
+            }
+            _live.Clear();
+            _liveFrom.Clear();
             for (int i = _box.childCount - 1; i >= 0; i--)
             {
                 Transform child = _box.GetChild(i);
@@ -212,12 +231,23 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // A copy of a template, in the box unless a parent is given.
+        // A copy of a template, in the box unless a parent is given. In the box, a part of a kind the box keeps is one laid
+        // aside by Clear if there is one (Restore puts it as a new copy would be), else a new copy.
         private GameObject Add(GameObject template, Transform parent = null)
         {
-            GameObject made = UnityEngine.Object.Instantiate(template, parent ?? _box, false);
-            made.name = template.name;
-            made.SetActive(true);
+            bool kept = parent == null && Kept(template);
+            GameObject made = kept ? Reuse(template) : null;
+            if (made == null)
+            {
+                made = UnityEngine.Object.Instantiate(template, parent ?? _box, false);
+                made.name = template.name;
+                made.SetActive(true);
+            }
+            if (kept)
+            {
+                _live.Add(made);
+                _liveFrom.Add(template);
+            }
             _parts++;
             return made;
         }
