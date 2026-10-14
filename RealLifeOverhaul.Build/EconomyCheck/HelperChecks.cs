@@ -19,6 +19,7 @@ internal static partial class Program
         HelperAgency();
         HelperClassStart();
         HelperRejectReason();
+        HelperGoodChance();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -159,6 +160,45 @@ internal static partial class Program
         string example = HelperFill("reallife_work_note_rejected_why", "employer", "BlueStone Imports", "title", "Junior Accountant", "why", HelperFill("reallife_work_why_short", "points", "4"));
         Check(example.StartsWith("BlueStone Imports turned down your application", StringComparison.Ordinal) && example.Contains("about 4 points short of the score they wanted"),
             "helpers, rejection: the example reads as asked (" + example + ")");
+    }
+
+    // ---------------------------------------------------------------- 4. the points for a good chance, in the vacancy box
+
+    private static void HelperGoodChance()
+    {
+        bool exact = true, same = true;
+        int seen = 0;
+        for (int points = 0; points <= 100; points += 5)
+        {
+            for (int need = 10; need <= 70; need += 15)
+            {
+                var c = new Candidate { Qualified = true, Points = points, Need = need, Experience = 40, Cycle = 1, Rank = 1 };
+                int more = ProPath.PointsFor(c, ProPath.GoodChance);
+                same &= ProPath.PointsFor(c, 1) == ProPath.PointsShort(c) && c.Points == points;
+                if (more > 100)
+                {
+                    continue;
+                }
+                seen++;
+                Candidate at = c, before = c;
+                at.Points = points + more;
+                before.Points = points + more - 1;
+                exact &= ProPath.OfferChance(ProRules.HireScore(at)) >= ProPath.GoodChance && (more == 0 || ProPath.OfferChance(ProRules.HireScore(before)) < ProPath.GoodChance);
+            }
+        }
+        Check(seen > 20 && exact, "helpers, good chance: the points named are the fewest that bring a " + ProPath.GoodChance + "% chance or better (" + seen + " cases)");
+        Check(same, "helpers, good chance: with any chance at all it is the points short the box already gave, and the candidate is left as it was");
+        var strong = new Candidate { Qualified = true, Points = 90, Need = 40, Experience = 400, Good = 2, Referral = true, Cycle = 0 };
+        var unqualified = new Candidate { Qualified = false, Points = 90, Need = 10 };
+        var record = new Candidate { Qualified = true, Points = 0, Need = 100, Record = true, Poor = 3, Reputation = -10, Cycle = 3 };
+        Check(ProPath.PointsFor(strong, ProPath.GoodChance) == 0 && ProPath.PointsFor(unqualified, ProPath.GoodChance) > 100 && ProPath.PointsFor(record, ProPath.GoodChance) > 100,
+            "helpers, good chance: 'You have it' for a strong candidate; out of reach by skill for one not qualified or held back by a record");
+        Check(ProPath.GoodChance == 50 && ProPath.PointsFor(strong, 0) == 0, "helpers, good chance: a good chance is an even one or better");
+        HelperText("reallife_career_good_chance", "good chance");
+        HelperText("reallife_career_good_chance_have", "good chance");
+        HelperText("reallife_career_good_chance_points", "good chance", "points");
+        HelperText("reallife_career_good_chance_point", "good chance");
+        HelperText("reallife_career_good_chance_far", "good chance");
     }
 
     // ---------------------------------------------------------------- the texts

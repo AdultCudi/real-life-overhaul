@@ -18243,5 +18243,10 @@
   "reallife_work_note_chosen_why": "{employer} has chosen someone else for {title}. {why}",
   "reallife_work_why_short": "You were about {points} points short of the score they wanted; more skill, a referral or the recruitment office would help.",
   "reallife_work_why_short_one": "You were about a point short of the score they wanted; more skill, a referral or the recruitment office would help.",
-  "reallife_work_why_close": "Your score was enough on average, so it was close: the luck of the day went the other way."
+  "reallife_work_why_close": "Your score was enough on average, so it was close: the luck of the day went the other way.",
+  "reallife_career_good_chance": "For a good chance",
+  "reallife_career_good_chance_have": "You have it",
+  "reallife_career_good_chance_points": "{points} more skill points",
+  "reallife_career_good_chance_point": "1 more skill point",
+  "reallife_career_good_chance_far": "Not by skill alone"
 }

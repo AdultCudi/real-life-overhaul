@@ -18243,5 +18243,10 @@
   "reallife_work_note_chosen_why": "{employer} escolheu outra pessoa para {title}. {why}",
   "reallife_work_why_short": "Faltaram cerca de {points} pontos para a pontuação que eles queriam; mais habilidade, uma indicação ou a agência de recrutamento ajudariam.",
   "reallife_work_why_short_one": "Faltou cerca de um ponto para a pontuação que eles queriam; mais habilidade, uma indicação ou a agência de recrutamento ajudariam.",
-  "reallife_work_why_close": "Sua pontuação bastava na média, então foi por pouco: a sorte do dia foi para o outro lado."
+  "reallife_work_why_close": "Sua pontuação bastava na média, então foi por pouco: a sorte do dia foi para o outro lado.",
+  "reallife_career_good_chance": "Para uma boa chance",
+  "reallife_career_good_chance_have": "Você já tem",
+  "reallife_career_good_chance_points": "Mais {points} pontos de habilidade",
+  "reallife_career_good_chance_point": "Mais 1 ponto de habilidade",
+  "reallife_career_good_chance_far": "Não só com habilidade"
 }

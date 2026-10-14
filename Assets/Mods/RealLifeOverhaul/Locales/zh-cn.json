@@ -18243,5 +18243,10 @@
   "reallife_work_note_chosen_why": "{employer}已为{title}选定了其他人。{why}",
   "reallife_work_why_short": "你离他们要求的分数还差约{points}分；更高的技能、熟人推荐或招聘办公室都会有帮助。",
   "reallife_work_why_short_one": "你离他们要求的分数只差约1分；更高的技能、熟人推荐或招聘办公室都会有帮助。",
-  "reallife_work_why_close": "按平均水平你的分数是够的，所以只是差一点：当天的运气不在你这边。"
+  "reallife_work_why_close": "按平均水平你的分数是够的，所以只是差一点：当天的运气不在你这边。",
+  "reallife_career_good_chance": "要有较大把握",
+  "reallife_career_good_chance_have": "你已经达到",
+  "reallife_career_good_chance_points": "还需{points}个技能点",
+  "reallife_career_good_chance_point": "还需1个技能点",
+  "reallife_career_good_chance_far": "光靠技能不够"
 }
