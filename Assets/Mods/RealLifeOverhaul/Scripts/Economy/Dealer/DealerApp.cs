@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
     /// What the Dealership app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as the mod's other
-    /// apps are: five tabs over the table on the right, and on the left the white box with the one thing picked.
+    /// apps are: seven tabs over the table on the right, and on the left the white box with the one thing picked.
     ///
     ///   Stock          every car on the dealerships' lots: what it cost, what it is asked at and worth, how long it has
     ///                  stood; pick one to set its price, prepare it or sell it to the trade (DealerApp.Stock.cs)
@@ -20,13 +20,22 @@ namespace RealLifeOverhaul.Economy.Dealership
     ///   Offers         customers' offers waiting for an answer, and the cars sold lately (DealerApp.Offers.cs)
     ///   Finance        the cars sold on the dealership's own finance, and the warranties sold (DealerApp.Offers.cs)
     ///   Dealerships    each dealership's lot, staff and figures, and its settings (DealerApp.Lots.cs)
+    ///   Growth         the advertising events to book, the missions, and each showroom's reputation (DealerApp.Growth.cs)
+    ///   Reports        a chart of a figure's days in place of the table, and the sums in the box (DealerApp.Reports.cs)
+    ///
+    /// The Stock tab also lists the cars on their way from the auction, and a picked car's box the workshop
+    /// (DealerApp.Workshop.cs).
     ///
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it opens,
     /// when a tab is picked and when the player or the dealership changes something.
     /// </summary>
     public sealed partial class DealerApp
     {
-        private static readonly string[] TabKeys = { "reallife_dealer_tab_stock", "reallife_dealer_tab_market", "reallife_dealer_tab_offers", "reallife_dealer_tab_finance", "reallife_dealer_tab_lots" };
+        private static readonly string[] TabKeys =
+        {
+            "reallife_dealer_tab_stock", "reallife_dealer_tab_market", "reallife_dealer_tab_offers", "reallife_dealer_tab_finance", "reallife_dealer_tab_lots", "reallife_dealer_tab_growth",
+            "reallife_dealer_tab_reports"
+        };
         private const string GuideTitle = "reallife_meta_title_economy_dealer";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
@@ -68,6 +77,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 UiClone.Key(_shell.TabLabels[i], TabKeys[i]);
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
+            _report = DealerReportPage.Make(_shell, this);   // (null if the game's parts are not as expected: the tab then says so)
             return _shell.Root;
         }
 
@@ -150,6 +160,10 @@ namespace RealLifeOverhaul.Economy.Dealership
                 box.Clear();
                 DealerState state = _ready ? _director.State : null;
                 TableSpec table = DealerColumns.Off;
+                if (state == null || _tab != DealerDirector.TabReports)
+                {
+                    _report?.Hide();
+                }
                 if (state == null || SaveGameManager.Current == null)
                 {
                     UiClone.Words(_shell.Header, DealerText.T("reallife_dealer_app"));
@@ -167,6 +181,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                         case DealerDirector.TabOffers: table = WriteOffers(box, state, now); break;
                         case DealerDirector.TabFinance: table = WriteFinance(box, state); break;
                         case DealerDirector.TabLots: table = WriteLots(box, state); break;
+                        case DealerDirector.TabGrowth: table = WriteGrowth(box, state, now); break;
+                        case DealerDirector.TabReports: table = WriteReports(box, state, now); break;
                         default: table = WriteStock(box, state, now); break;
                     }
                 }
@@ -290,9 +306,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             var room = new List<DealerYard>(state.Yards.Count);
             for (int i = 0; i < state.Yards.Count; i++)
             {
-                if (state.Yards[i].Laid && state.Yards[i].FreeSpot() >= 0)
+                if (state.Room(state.Yards[i]) > 0)
                 {
-                    room.Add(state.Yards[i]);
+                    room.Add(state.Yards[i]);   // (a place held for a car on its way is not free)
                 }
             }
             if (room.Count == 0)
@@ -307,11 +323,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             _yardChoice = room[at].Place;
             if (room.Count > 1)
             {
-                Choose(box, room.Count, at, i => DealerText.T("reallife_dealer_goes_to", "name", room[i].Name, "free", room[i].FreeSpots().ToString()), i => _yardChoice = room[i].Place);
+                Choose(box, room.Count, at, i => DealerText.T("reallife_dealer_goes_to", "name", room[i].Name, "free", state.Room(room[i]).ToString()), i => _yardChoice = room[i].Place);
             }
             else
             {
-                box.Line(DealerText.T("reallife_dealer_goes_to", "name", room[0].Name, "free", room[0].FreeSpots().ToString()));
+                box.Line(DealerText.T("reallife_dealer_goes_to", "name", room[0].Name, "free", state.Room(room[0]).ToString()));
             }
             return _yardChoice;
         }

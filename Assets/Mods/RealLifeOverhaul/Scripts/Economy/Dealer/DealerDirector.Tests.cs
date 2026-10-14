@@ -192,6 +192,111 @@ namespace RealLifeOverhaul.Economy.Dealership
             });
         }
 
+        /// <summary>"An open weekend now": an open weekend booked at the first showroom from today, at no cost (any event running there is ended first).</summary>
+        public void TestEvent()
+        {
+            const string test = "Dealership event";
+            if (!TestReady(test))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                DealerYard y = TestYard(test);
+                if (y == null)
+                {
+                    return;
+                }
+                BeforeTest();
+                DealerRules.EndEvent(y);
+                y.EventLast[DealerCatalogue.OpenWeekend] = -1;
+                DealerRules.Book(y, DealerCatalogue.OpenWeekend, 0, Save.Day);
+                Advance(y);
+                TestDone("an open weekend booked at '" + y.Name + "' at no cost, days " + y.EventFrom + " to " + y.EventUntil, TabGrowth, EventRow(DealerCatalogue.OpenWeekend));
+            });
+        }
+
+        /// <summary>"The workshop and deliveries now": every car in a workshop finished and every car on its way due this hour.</summary>
+        public void TestArrive()
+        {
+            const string test = "Dealership workshop and deliveries";
+            if (!TestReady(test))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                ReadYards();
+                int shop = 0, now = Now;
+                for (int y = 0; y < _state.Yards.Count; y++)
+                {
+                    for (int c = 0; c < _state.Yards[y].Cars.Count; c++)
+                    {
+                        shop += _state.Yards[y].Cars[c].ShopUntil >= 0 ? 1 : 0;
+                    }
+                }
+                int ways = _state.Deliveries.Count;
+                if (shop == 0 && ways == 0)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_dealer_test_nothing_due");
+                    return;
+                }
+                BeforeTest();
+                for (int y = 0; y < _state.Yards.Count; y++)
+                {
+                    for (int c = 0; c < _state.Yards[y].Cars.Count; c++)
+                    {
+                        if (_state.Yards[y].Cars[c].ShopUntil >= 0)
+                        {
+                            _state.Yards[y].Cars[c].ShopUntil = now;
+                        }
+                    }
+                    WorkshopHour(_state.Yards[y], now);
+                }
+                for (int i = 0; i < _state.Deliveries.Count; i++)
+                {
+                    _state.Deliveries[i].Due = Math.Min(_state.Deliveries[i].Due, now);
+                }
+                Arrivals(now);
+                TestDone(shop + " car(s) finished in the workshop; " + (ways - _state.Deliveries.Count) + " of " + ways + " car(s) on their way arrived", TabStock, null);
+            });
+        }
+
+        /// <summary>"The next mission now": the first showroom's first mission not yet done is reached, its reputation given and said.</summary>
+        public void TestMission()
+        {
+            const string test = "Dealership mission";
+            if (!TestReady(test))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                ReadYards();
+                DealerYard y = _state.Yards.Count > 0 ? _state.Yards[0] : null;
+                if (y == null)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_dealer_test_no_dealership");
+                    return;
+                }
+                int m = 0;
+                while (m < DealerCatalogue.Missions && DealerRules.MissionDone(y, m))
+                {
+                    m++;
+                }
+                if (m >= DealerCatalogue.Missions)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_dealer_test_all_done");
+                    return;
+                }
+                BeforeTest();
+                int tally = DealerCatalogue.MissionTally[m];
+                y.Tally[tally] = Math.Max(y.Tally[tally], DealerCatalogue.MissionTarget[m]);
+                Advance(y);
+                TestDone("mission " + m + " reached at '" + y.Name + "'; reputation now " + y.Rep, TabGrowth, MissionRow(y, m));
+            });
+        }
+
         /// <summary>"Put the dealership back": the state as it was before the first test, the cars a test put on a lot taken off.</summary>
         public void TestBack()
         {

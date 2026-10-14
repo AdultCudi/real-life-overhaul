@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     continue;
                 }
-                into.Add(new MarketModel(names[i], t.price));
+                into.Add(new MarketModel(names[i], t.price, (int)spec.Kind));
             }
             GlobalReferences refs = InstanceBehavior<GlobalReferences>.Instance;
             VehicleColor[] all = refs != null ? refs.vehicleColors : null;

@@ -8,22 +8,28 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>
     /// The car dealership in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
     ///
-    ///     v=1^h:...^y:...^p:...^c:...^d:...^b:...^y:...^m:...^f:...^w:...^s:...
+    ///     v=2^h:...^y:...^t:...^p:...^c:...^d:...^b:...^y:...^m:...^f:...^w:...^s:...^q:...
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
     ///   h  the header: seed|first day|last hour worked through|last day closed|next number|market's day|no bids until
-    ///   y  a dealership: place|name|staff's floor|own finance|warranties|visitor carried
+    ///   y  a dealership: place|name|staff's floor|own finance|warranties|visitor carried|extras|reputation|missions done|
+    ///      event|its featured kind|its first day|its last day|the last day of each kind's last event (one field a kind)
+    ///   t  its tallies, for its missions: one field each
     ///   p  its lot's places: x|y|z|facing
-    ///   c  its cars: number|vehicle id|type|colour|km|condition|faults|faults known|cost|asking|day bought|source|place|out until
+    ///   c  its cars: number|vehicle id|type|colour|km|condition|faults|faults known|cost|asking|day bought|source|place|out until|
+    ///      in the workshop until
     ///   d  its customers' offers: number|car|customer|kind|offer|ceiling|counters|made|lapses|stage|drove|wants a drive|
-    ///      wants finance|rating|deposit|term|warranty|part exchange type|its colour|its km|its condition|its allowance
-    ///   b  its books, today's first and then the week's: day|visitors|served|lost|offers|sold|takings|bought|claims|margin
+    ///      wants finance|rating|deposit|term|warranty|part exchange type|its colour|its km|its condition|its allowance|extras|lift
+    ///   b  its books, today's first and then the days kept, the last first: day|visitors|served|lost|offers|sold|takings|
+    ///      bought|claims|margin|revenue|extras|spent|cars|their days|arrears|plans behind|reputation
     ///   m  the market: number|kind|type|colour|km|condition|shown|faults|inspected|asking|least|offers|counter|ends|leader|
     ///      ceiling|bids|gone
     ///   f  the finance plans: number|place|customer|type|worth|owed|weekly|due|missed|paid|rating
     ///   w  the warranties: number|place|customer|type|tier|worth|condition|until|claims|paid|rests until
-    ///   s  recent sales: day|place|customer|type|price|cost|financed|warranty|to the trade
-    /// The p, c, d and b parts after a y part are that dealership's.
+    ///   s  recent sales: day|place|customer|type|price|cost|financed|warranty|to the trade|extras
+    ///   q  cars on their way: number|place|type|colour|km|condition|faults|faults known|cost|due|told
+    /// The t, p, c, d and b parts after a y part are that dealership's. Version 1 had no t and q parts and fewer fields;
+    /// its line reads as a showroom with none of what came later.
     ///
     /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
     /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
@@ -34,7 +40,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     {
         public const string Key = "reallife:economy_dealer";
         public const string TestKey = "reallife:economy_dealer_before_tests";
-        public const int Version = 1;
+        public const int Version = 2;
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -51,14 +57,20 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         public static string Write(DealerState s)
         {
-            var t = new StringBuilder(512 + s.Yards.Count * 2048 + s.Market.Count * 96 + (s.Plans.Count + s.Covers.Count) * 96);
+            var t = new StringBuilder(512 + s.Yards.Count * 6144 + s.Market.Count * 96 + (s.Plans.Count + s.Covers.Count + s.Deliveries.Count) * 96);
             t.Append("v=").Append(Version).Append("^h:");
             Join(t, s.Seed, s.FirstDay, s.LastHour, s.LastDay, s.NextId, s.MarketDay, s.NoBidsUntil);
             for (int i = 0; i < s.Yards.Count && i < DealerCatalogue.YardsMost; i++)
             {
                 DealerYard y = s.Yards[i];
                 t.Append("^y:").Append(Clean(y.Place)).Append('|').Append(Clean(y.Name)).Append('|');
-                Join(t, y.StaffFloor, y.Finance ? 1 : 0, y.Warranty ? 1 : 0, y.VisitorCarry);
+                Join(t, y.StaffFloor, y.Finance ? 1 : 0, y.Warranty ? 1 : 0, y.VisitorCarry, y.Extras ? 1 : 0, y.Rep, y.Done, y.Event, y.Feature, y.EventFrom, y.EventUntil);
+                for (int k = 0; k < y.EventLast.Length; k++)
+                {
+                    t.Append('|').Append(y.EventLast[k].ToString(Inv));
+                }
+                t.Append("^t:");
+                Join(t, y.Tally);
                 t.Append("^p:");
                 for (int p = 0; p < y.Spots.Count && p < DealerCatalogue.SpotsMost; p++)
                 {
@@ -72,7 +84,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     t.Append(c > 0 ? ";" : string.Empty);
                     Join(t, car.Id);
                     t.Append('|').Append(Clean(car.VehicleId)).Append('|').Append(Clean(car.Type)).Append('|').Append(Clean(car.Colour)).Append('|');
-                    Join(t, car.Km, car.Condition, car.Faults, car.Known, car.Cost, car.Asking, car.Bought, (int)car.Source, car.Spot, car.OutUntil);
+                    Join(t, car.Km, car.Condition, car.Faults, car.Known, car.Cost, car.Asking, car.Bought, (int)car.Source, car.Spot, car.OutUntil, car.ShopUntil);
                 }
                 t.Append("^d:");
                 for (int d = 0; d < y.Deals.Count && d < DealerCatalogue.DealsMost; d++)
@@ -84,14 +96,14 @@ namespace RealLifeOverhaul.Economy.Dealership
                     Join(t, x.Profile, x.Offer, x.Ceiling, x.Counters, x.Made, x.Expires, (int)x.Stage, x.Drove ? 1 : 0, x.WantsDrive ? 1 : 0, x.WantsFinance ? 1 : 0,
                         x.Score, x.Deposit, x.Term, x.Tier);
                     t.Append('|').Append(Clean(x.TradeType)).Append('|').Append(Clean(x.TradeColour)).Append('|');
-                    Join(t, x.TradeKm, x.TradeCondition, x.TradeAllowance);
+                    Join(t, x.TradeKm, x.TradeCondition, x.TradeAllowance, x.Extras, x.Lift);
                 }
                 t.Append("^b:");
                 Book(t, y.Today);
-                for (int b = 0; b < y.Week.Length; b++)
+                for (int b = 0; b < y.Past.Length && y.Past[b].Day >= 0; b++)
                 {
-                    t.Append(';');
-                    Book(t, y.Week[b]);
+                    t.Append(';');   // (the days kept are the first ones: a day not kept yet comes only after them)
+                    Book(t, y.Past[b]);
                 }
             }
             t.Append("^m:");
@@ -128,14 +140,23 @@ namespace RealLifeOverhaul.Economy.Dealership
                 t.Append(i > 0 ? ";" : string.Empty);
                 Join(t, r.Day);
                 t.Append('|').Append(Clean(r.Place)).Append('|').Append(Clean(r.Customer)).Append('|').Append(Clean(r.Type)).Append('|');
-                Join(t, r.Price, r.Cost, r.Financed ? 1 : 0, r.Tier, r.Trade ? 1 : 0);
+                Join(t, r.Price, r.Cost, r.Financed ? 1 : 0, r.Tier, r.Trade ? 1 : 0, r.Extras);
+            }
+            t.Append("^q:");
+            for (int i = 0; i < s.Deliveries.Count && i < DealerCatalogue.DeliveriesMost; i++)
+            {
+                DealerDelivery q = s.Deliveries[i];
+                t.Append(i > 0 ? ";" : string.Empty);
+                Join(t, q.Id);
+                t.Append('|').Append(Clean(q.Place)).Append('|').Append(Clean(q.Type)).Append('|').Append(Clean(q.Colour)).Append('|');
+                Join(t, q.Km, q.Condition, q.Faults, q.Known, q.Cost, q.Due, q.Told ? 1 : 0);
             }
             return t.ToString();
         }
 
         private static void Book(StringBuilder t, DealerBook b)
         {
-            Join(t, b.Day, b.Visitors, b.Served, b.Lost, b.Offers, b.Sold, b.Takings, b.Bought, b.Claims, b.Margin);
+            Join(t, b.Day, b.Visitors, b.Served, b.Lost, b.Offers, b.Sold, b.Takings, b.Bought, b.Claims, b.Margin, b.Revenue, b.Extras, b.Spent, b.Cars, b.Age, b.Arrears, b.Late, b.Rep);
         }
 
         /// <summary>Reads a line. Null for one that is not this feature's at all.</summary>
@@ -191,9 +212,24 @@ namespace RealLifeOverhaul.Economy.Dealership
                             yard = new DealerYard
                             {
                                 Place = c[0], Name = c[1], StaffFloor = DealerCatalogue.Clamp(I(c, 2, DealerCatalogue.StaffFloor), DealerCatalogue.StaffFloorLeast, DealerCatalogue.StaffFloorMost),
-                                Finance = I(c, 3, 1) != 0, Warranty = I(c, 4, 1) != 0, VisitorCarry = DealerCatalogue.Clamp(I(c, 5), 0, 999)
+                                Finance = I(c, 3, 1) != 0, Warranty = I(c, 4, 1) != 0, VisitorCarry = DealerCatalogue.Clamp(I(c, 5), 0, 999), Extras = I(c, 6, 1) != 0,
+                                Rep = DealerCatalogue.Clamp(I(c, 7), 0, DealerCatalogue.RepMost), Done = I(c, 8) & ((1 << DealerCatalogue.Missions) - 1),
+                                Event = DealerCatalogue.Clamp(I(c, 9, -1), -1, DealerCatalogue.EventKinds - 1), Feature = Math.Max(0, I(c, 10)), EventFrom = I(c, 11), EventUntil = I(c, 12)
                             };
+                            for (int k = 0; k < yard.EventLast.Length; k++)
+                            {
+                                yard.EventLast[k] = I(c, 13 + k, -1);
+                            }
                             s.Yards.Add(yard);
+                            break;
+                        }
+                        case 't':
+                        {
+                            string[] c = records.Length > 0 ? records[0].Split('|') : new string[0];
+                            for (int k = 0; yard != null && k < yard.Tally.Length; k++)
+                            {
+                                yard.Tally[k] = Math.Max(0, I(c, k));
+                            }
                             break;
                         }
                         case 'p':
@@ -218,7 +254,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                                 {
                                     Id = I(c, 0), VehicleId = c[1], Type = c[2], Colour = NullIfEmpty(c[3]), Km = Math.Max(0, I(c, 4)), Condition = DealerCatalogue.Clamp(I(c, 5, 1000), 0, 1000),
                                     Faults = I(c, 6), Known = I(c, 7), Cost = Math.Max(0, I(c, 8)), Asking = Math.Max(0, I(c, 9)), Bought = I(c, 10),
-                                    Source = (CarSource)DealerCatalogue.Clamp(I(c, 11), 0, 3), Spot = I(c, 12, -1), OutUntil = I(c, 13, -1)
+                                    Source = (CarSource)DealerCatalogue.Clamp(I(c, 11), 0, 3), Spot = I(c, 12, -1), OutUntil = I(c, 13, -1), ShopUntil = I(c, 14, -1)
                                 });
                             }
                             break;
@@ -236,14 +272,15 @@ namespace RealLifeOverhaul.Economy.Dealership
                                     Ceiling = Math.Max(0, I(c, 5)), Counters = I(c, 6), Made = I(c, 7), Expires = I(c, 8), Stage = (OfferStage)DealerCatalogue.Clamp(I(c, 9), 0, 1),
                                     Drove = I(c, 10) != 0, WantsDrive = I(c, 11) != 0, WantsFinance = I(c, 12) != 0, Score = I(c, 13), Deposit = I(c, 14), Term = I(c, 15),
                                     Tier = DealerCatalogue.Clamp(I(c, 16, -1), -1, DealerCatalogue.Tiers - 1), TradeType = NullIfEmpty(c[17]), TradeColour = NullIfEmpty(c[18]),
-                                    TradeKm = I(c, 19), TradeCondition = I(c, 20), TradeAllowance = Math.Max(0, I(c, 21))
+                                    TradeKm = I(c, 19), TradeCondition = I(c, 20), TradeAllowance = Math.Max(0, I(c, 21)),
+                                    Extras = I(c, 22) & ((1 << DealerCatalogue.ExtraKinds) - 1), Lift = DealerCatalogue.Clamp(I(c, 23), 0, 1000)
                                 });
                             }
                             break;
                         case 'b':
-                            for (int r = 0; yard != null && r < records.Length && r <= yard.Week.Length; r++)
+                            for (int r = 0; yard != null && r < records.Length && r <= yard.Past.Length; r++)
                             {
-                                ReadBook(records[r].Split('|'), r == 0 ? yard.Today : yard.Week[r - 1]);
+                                ReadBook(records[r].Split('|'), r == 0 ? yard.Today : yard.Past[r - 1]);
                             }
                             break;
                         case 'm':
@@ -304,7 +341,22 @@ namespace RealLifeOverhaul.Economy.Dealership
                                 s.Sales.Add(new DealerSale
                                 {
                                     Day = I(c, 0), Place = c[1], Customer = c[2], Type = c[3], Price = I(c, 4), Cost = I(c, 5), Financed = I(c, 6) != 0,
-                                    Tier = DealerCatalogue.Clamp(I(c, 7, -1), -1, DealerCatalogue.Tiers - 1), Trade = I(c, 8) != 0
+                                    Tier = DealerCatalogue.Clamp(I(c, 7, -1), -1, DealerCatalogue.Tiers - 1), Trade = I(c, 8) != 0, Extras = I(c, 9) & ((1 << DealerCatalogue.ExtraKinds) - 1)
+                                });
+                            }
+                            break;
+                        case 'q':
+                            for (int r = 0; r < records.Length && s.Deliveries.Count < DealerCatalogue.DeliveriesMost; r++)
+                            {
+                                string[] c = records[r].Split('|');
+                                if (c.Length < 11 || string.IsNullOrEmpty(c[1]) || string.IsNullOrEmpty(c[2]))
+                                {
+                                    continue;
+                                }
+                                s.Deliveries.Add(new DealerDelivery
+                                {
+                                    Id = I(c, 0), Place = c[1], Type = c[2], Colour = NullIfEmpty(c[3]), Km = Math.Max(0, I(c, 4)), Condition = DealerCatalogue.Clamp(I(c, 5, 1000), 0, 1000),
+                                    Faults = I(c, 6), Known = I(c, 7), Cost = Math.Max(0, I(c, 8)), Due = I(c, 9), Told = I(c, 10) != 0
                                 });
                             }
                             break;
@@ -330,6 +382,14 @@ namespace RealLifeOverhaul.Economy.Dealership
             b.Bought = I(c, 7);
             b.Claims = I(c, 8);
             b.Margin = I(c, 9);
+            b.Revenue = I(c, 10);
+            b.Extras = I(c, 11);
+            b.Spent = I(c, 12);
+            b.Cars = Math.Max(0, I(c, 13));
+            b.Age = Math.Max(0, I(c, 14));
+            b.Arrears = Math.Max(0, I(c, 15));
+            b.Late = Math.Max(0, I(c, 16));
+            b.Rep = DealerCatalogue.Clamp(I(c, 17), 0, DealerCatalogue.RepMost);
         }
 
         private static string NullIfEmpty(string s)
