@@ -1,4 +1,4 @@
-0.20.0
+0.21.0
 
 New
-- Ten small helpers: a reminder on the last day of your registration with the recruitment office; a notice when your class starts and you are not inside the place that holds it; the reason an employer turned you down; the skill points for a good chance in the Career app's vacancy box; how many entries each Planner tab lists; a morning line of your day; today's change on the Stocks Portfolio; a bond's interest so far; a notice the evening before a bank rate decision; and the classes held on a course's Campus page. Each notice has its own switch.
+- The Stocks app for large, careful investors: the Portfolio tab shows what each holding is (a stock, a property trust, a Treasury or city bond, a deposit) with the spread across kinds and what it all pays over a year; an order over one order's most is worked a slice at each step; one bond purchase grows with what you are worth; dividends can be put back into the same shares; and bonds can roll over at their end or be bought as a ladder over the Treasury's terms.
