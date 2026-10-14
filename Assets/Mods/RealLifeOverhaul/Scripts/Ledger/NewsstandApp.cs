@@ -680,7 +680,7 @@ namespace RealLifeOverhaul.Ledger
             box.Title(name);
             if (!NewsstandRules.Covered(s, title))
             {
-                box.Line(LedgerText.T("reallife_ledger_online_box_kept"));
+                box.Note(LedgerText.T("reallife_ledger_online_box_kept"));
             }
             box.Row("reallife_ledger_online_box_edition", LedgerPage.Plain(DayWords(_day, today)));
             if (_days.Count > 1)

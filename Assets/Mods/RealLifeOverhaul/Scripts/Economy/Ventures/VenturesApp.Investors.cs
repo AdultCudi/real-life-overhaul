@@ -467,7 +467,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             else
             {
-                box.Line(FinanceText.T("reallife_ven_new_pick"));
+                box.Note(FinanceText.T("reallife_ven_new_pick"));
             }
             box.Headline("reallife_ven_new_budget");
             int[] steps = VenturesCatalogue.BudgetSteps;
