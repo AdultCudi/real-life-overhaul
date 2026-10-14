@@ -18233,5 +18233,8 @@
   "reallife_changes_019_2": "已修复：手机应用中的卡顿。模组的每个应用现在都在你第一次打开时才构建，而不是在载入后的最初几秒；财务应用的现金流标签页和银行对账单无论历史多长都会立即打开；Flare 会立即显示你的照片，使用拍照时生成的小副本；城市纪事报在第一次排版后翻页会立即完成；股票图表也能流畅地跟随指针。",
   "reallife_work_opt_agency_note": "招聘办公室提醒",
   "reallife_opt_tip_careers_agency_note": "在招聘办公室登记的最后一天发出通知。关闭时登记照常到期，不再提醒。",
-  "reallife_work_note_agency_ends": "你在招聘办公室的登记今天到期。请到它的任一办公楼内重新登记，以保留额外的职位空缺。"
+  "reallife_work_note_agency_ends": "你在招聘办公室的登记今天到期。请到它的任一办公楼内重新登记，以保留额外的职位空缺。",
+  "reallife_study_opt_class_start": "课程开始而你不在场时提醒",
+  "reallife_opt_tip_careers_class_start": "你的某节课开始时，如果你不在开课的学校或大学内，就发出通知，每节课一次。关闭时使用原先的“课程已在别处开始”提示。",
+  "reallife_study_note_class_starts": "你的{course}课现在在{place}开始。门还会开{late}，之后就算缺课。"
 }

@@ -436,6 +436,19 @@ namespace RealLifeOverhaul.Careers
         // ---------------------------------------------------------------- the hour a class begins
 
         // Where the player is, in the log; and a notice: how to join it here, or why not and where to go. Once a class.
+        // "Your class starts now": the player is not inside the place that holds it. Once a class (StudyRules.StartsNow), the
+        // class kept in the save, with how long the door stays open (StudyCatalogue.LateMinutes).
+        private void ClassStarts(Enrolment e, CourseDef c, StudyMode mode, int day, int hour)
+        {
+            if (!StudyRules.StartsNow(e, day, hour * 60, SittingClass, e.StartTold))
+            {
+                return;
+            }
+            e.StartTold = day * 24 * 60 + hour * 60;
+            var data = Data("course", CareersText.Course(c.Id), "place", PlaceOf(c, mode), "late", CareersText.Minutes(StudyCatalogue.LateMinutes));
+            Tell(NotificationType.Info, "reallife_study_note_class_starts", data, TabStudying, CampusApp.CourseRow + c.Id);
+        }
+
         private void ClassDue(Enrolment e, int day, int hour)
         {
             CourseDef c = e.Def;
@@ -492,6 +505,11 @@ namespace RealLifeOverhaul.Careers
                 }
                 Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk" : "reallife_study_note_class_here",
                     Data("course", course, "key", Keys.Label(KeyAction.Interact)), TabStudying, CampusApp.CourseRow + c.Id);
+                return;
+            }
+            if (Settings.CareersClassStart && StudyRules.Elsewhere(why))
+            {
+                ClassStarts(e, c, mode, day, hour);
                 return;
             }
             if (minutes <= 0)

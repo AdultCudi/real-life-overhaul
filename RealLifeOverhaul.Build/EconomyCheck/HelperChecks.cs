@@ -17,6 +17,7 @@ internal static partial class Program
             return;
         }
         HelperAgency();
+        HelperClassStart();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -58,6 +59,66 @@ internal static partial class Program
         HelperNote("reallife_work_note_agency_ends", "office");
         HelperText("reallife_work_opt_agency_note", "office");
         HelperText("reallife_opt_tip_careers_agency_note", "office");
+    }
+
+    // ---------------------------------------------------------------- 2. "your class starts now"
+
+    private static void HelperClassStart()
+    {
+        CourseDef fork = StudyCatalogue.Find(StudyCatalogue.Forklift);       // the school, Mon and Wed at 09:00, 2 classes
+        CourseDef cs = StudyCatalogue.Find(StudyCatalogue.ComputerScience);  // the university, Mon Wed Fri at 10:00
+        int start = StudyRules.Hour(fork, StudyMode.FullTime) * 60, at = 8 * 1440 + start;
+        var e = new Enrolment { Course = fork.Id, Mode = (int)StudyMode.FullTime, Start = 2, Seen = 1, Done = 1, SettledDay = 3, Stage = (int)EnrolStage.Studying };
+        Check(StudyRules.StartsNow(e, 8, start, -1, 0), "helpers, class: told at the minute the class starts");
+        Check(!StudyRules.StartsNow(e, 8, start - 60, -1, 0) && !StudyRules.StartsNow(e, 8, start + 60, -1, 0) && !StudyRules.StartsNow(e, 9, start, -1, 0),
+            "helpers, class: not an hour before, not an hour after, not on a day without a class");
+        Check(!StudyRules.StartsNow(e, 8, start, -1, at), "helpers, class: once told for this class, not again");
+        Check(!StudyRules.StartsNow(e, 8, start, fork.Id, 0), "helpers, class: not while that class is being sat");
+        var gone = new Enrolment { Course = fork.Id, Mode = (int)StudyMode.FullTime, Start = 2, Seen = 2, Done = 2, SettledDay = 3, Stage = (int)EnrolStage.Studying };
+        var exam = new Enrolment { Course = fork.Id, Mode = (int)StudyMode.FullTime, Start = 2, Seen = 2, Done = 2, SettledDay = 3, Stage = (int)EnrolStage.Exam };
+        Check(!StudyRules.StartsNow(gone, 8, start, -1, 0) && !StudyRules.StartsNow(exam, 8, start, -1, 0) && !StudyRules.StartsNow(null, 8, start, -1, 0),
+            "helpers, class: none once every class of the course is held (StudyRules.Held), none at the exam, none for no enrolment");
+        var degree = new Enrolment { Course = cs.Id, Mode = (int)StudyMode.FullTime, Start = 1, Seen = 3, Done = 3, SettledDay = 5, Stage = (int)EnrolStage.Studying };
+        int csStart = StudyRules.Hour(cs, StudyMode.FullTime) * 60;
+        Check(StudyRules.StartsNow(degree, 8, csStart, -1, 0) && StudyRules.StartsNow(degree, 10, csStart, -1, 8 * 1440 + csStart),
+            "helpers, class: the next class is told in its turn");
+        Check(StudyRules.Elsewhere("reallife_study_why_not_school") && StudyRules.Elsewhere("reallife_study_why_not_university") && StudyRules.Elsewhere("reallife_study_why_not_hospital"),
+            "helpers, class: told when the player is not inside the school, the university or the ward");
+        Check(!StudyRules.Elsewhere(null) && !StudyRules.Elsewhere("reallife_study_why_no_class") && !StudyRules.Elsewhere("reallife_study_why_fee_owed") && !StudyRules.Elsewhere("reallife_study_why_not_home"),
+            "helpers, class: not when the class can be joined where the player is (inside), when there is none, or for another reason");
+
+        // a day's hours with a reload just after the class's hour, and two courses at once: each told once
+        var f = new StudyFile { Seed = 3 };
+        f.Courses.Add(e);
+        f.Courses.Add(new Enrolment { Course = cs.Id, Mode = (int)StudyMode.FullTime, Start = 1, Seen = 3, Done = 3, SettledDay = 5, Stage = (int)EnrolStage.Studying });
+        int told = 0;
+        for (int hour = 0; hour < 24; hour++)
+        {
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < f.Courses.Count; i++)
+                {
+                    Enrolment x = f.Courses[i];
+                    if (StudyRules.StartsNow(x, 8, hour * 60, -1, x.StartTold))
+                    {
+                        x.StartTold = 8 * 1440 + hour * 60;
+                        told++;
+                    }
+                }
+                f = CareersStore.Read(CareersStore.Write(f), out _);   // the hour seen again after a save and a load
+            }
+        }
+        Check(told == 2 && f.Courses[0].StartTold == at, "helpers, class: on a day with two courses' classes, two notices, a reload after each included (" + told + ")");
+        string line = CareersStore.Write(f);
+        string old = line.Replace("|" + at + ";", ";").Replace("|" + at + "~", "~");
+        StudyFile was = CareersStore.Read(old, out _);
+        Check(old != line && was.Courses.Count == 2 && was.Courses[0].StartTold == 0 && was.Courses[0].Seen == 1, "helpers, class: an old save without the field loads with nothing told");
+
+        HelperNote("reallife_study_note_class_starts", "class", "course", "place", "late");
+        string filled = HelperFill("reallife_study_note_class_starts", "course", new string('c', 48), "place", new string('p', 60), "late", "1h 00m");
+        Check(filled.Length <= 240, "helpers, class: filled with a long course and place, " + filled.Length + " characters, over 240");
+        HelperText("reallife_study_opt_class_start", "class");
+        HelperText("reallife_opt_tip_careers_class_start", "class");
     }
 
     // ---------------------------------------------------------------- the texts

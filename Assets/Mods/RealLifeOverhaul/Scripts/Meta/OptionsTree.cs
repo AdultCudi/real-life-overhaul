@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
-                S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
+                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study").Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
                 S("familystudy").For("careers_family").Opt("careers_family", "careers_study").Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
                 S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),

@@ -659,7 +659,7 @@ namespace RealLifeOverhaul.Meta
             // player's own skills, in the Campus app. They share the jobs header. Off, the game's own courses alone; records are kept.
             Careers.CareersGuide.AddStudyFacts(Features.Add("careers_study", "reallife_meta_title_careers_study")
                 .About("reallife_guide_careers_study_about").Help("reallife_guide_careers_study")
-                .Owns(Settings.CareersStudyId)
+                .Owns(Settings.CareersStudyId, Settings.CareersClassStartId)
                 .Test("reallife_study_test_class", "reallife_study_test_exam", "reallife_study_test_skills")
                 .Data(Careers.CareersStore.Key, Careers.CareersStore.NewsKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)

@@ -18233,5 +18233,8 @@
   "reallife_changes_019_2": "Corrigido: travadinhas nos apps do celular. Cada app do mod agora é montado na primeira vez que você o abre, e não nos primeiros segundos depois de carregar; a aba Fluxo de caixa do app Finanças e os extratos dos bancos abrem na hora, por maior que seja o seu histórico; o Flare mostra suas fotos na hora, a partir de uma cópia pequena feita quando a foto é tirada; o City Ledger vira as páginas na hora depois de montá-las pela primeira vez; e o gráfico do app Ações acompanha o ponteiro suavemente.",
   "reallife_work_opt_agency_note": "Lembrete da agência de recrutamento",
   "reallife_opt_tip_careers_agency_note": "Uma notificação no último dia da sua inscrição na agência de recrutamento. Desligado: a inscrição termina do mesmo jeito, sem aviso.",
-  "reallife_work_note_agency_ends": "Sua inscrição na agência de recrutamento termina hoje. Inscreva-se de novo dentro de um dos prédios dela para manter as vagas a mais."
+  "reallife_work_note_agency_ends": "Sua inscrição na agência de recrutamento termina hoje. Inscreva-se de novo dentro de um dos prédios dela para manter as vagas a mais.",
+  "reallife_study_opt_class_start": "Um aviso quando uma aula começa e você está em outro lugar",
+  "reallife_opt_tip_careers_class_start": "Uma notificação quando uma das suas aulas começa e você não está dentro da escola ou da universidade onde ela acontece, uma vez por aula. Desligado: o aviso antigo de aula começada em outro lugar.",
+  "reallife_study_note_class_starts": "Sua aula de {course} começa agora em {place}. A porta fica aberta por {late}; depois disso, a aula é perdida."
 }
