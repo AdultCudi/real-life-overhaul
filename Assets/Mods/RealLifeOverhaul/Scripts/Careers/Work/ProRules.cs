@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Careers
         public const int OfferPass = 60;          // ...and the interview to bring an offer
         public const int ScreenLuck = 10, InterviewLuck = 15;
         public const int AnswerDaysLeast = 1, AnswerDaysMost = 2;
+        public const int ReapplyDays = 14;        // game days after an employer turns the player down before it takes an application for the same post again, so applying daily cannot beat the odds
         public const int InterviewAfterDays = 2;  // an interview is held this many days after the invitation
         public const int InterviewHourLeast = 10, InterviewHourMost = 15;
         public const int InterviewMinutes = 60;
@@ -195,6 +196,24 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The luck of a step of an application, the same on a reload.</summary>
         public static int Luck(int seed, int id, int step, int most) => TechRandom.Range(seed, 8101, id, step, -most, most);
+
+        /// <summary>The first day the player may apply again for a post an employer turned them down for on <paramref name="refused"/>.</summary>
+        public static int ReapplyFrom(int refused) => refused + ReapplyDays;
+
+        /// <summary>
+        /// The day an application of a save from before the day was kept was turned down, from what the save holds; -1 if it
+        /// cannot be told, and then it bars nothing. Turned down at the first answer: the answer's day (no interview, no offer).
+        /// Turned down after the interview: the interview's day (it is sat on that day). An offer withdrawn after asking for
+        /// more: not kept anywhere, so -1.
+        /// </summary>
+        public static int RefusedDay(Application a)
+        {
+            if (a.Stage != (int)ApplyStep.Rejected || a.Offer > 0)
+            {
+                return -1;
+            }
+            return a.InterviewDay > 0 ? a.InterviewDay : a.Answer > 0 ? a.Answer : -1;
+        }
 
         /// <summary>What an offer pays, cents an hour at the start's prices: the post's rate, a little more the better the candidate.</summary>
         public static int OfferPay(int postPay, int score)

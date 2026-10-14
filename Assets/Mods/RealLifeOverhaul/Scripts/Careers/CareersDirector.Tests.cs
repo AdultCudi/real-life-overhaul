@@ -153,6 +153,40 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>The newest application still waiting for an answer turned down now, as the employer would, so the same post there is barred (ProRules.ReapplyDays).</summary>
+        public void TestReject()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                Application pick = null;
+                for (int i = w.Applications.Count - 1; i >= 0 && pick == null; i--)
+                {
+                    int stage = w.Applications[i].Stage;
+                    pick = stage == (int)ApplyStep.Sent || stage == (int)ApplyStep.Interview ? w.Applications[i] : null;
+                }
+                if (pick == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_no_application", null, 8f);
+                    return;
+                }
+                pick.Reject(Save.Day);
+                Tell2(NotificationType.Info, "reallife_work_note_rejected", Data("employer", CareersText.Employer(pick.Post.Employer), "title", CareersText.Title(pick.Post.Prof, pick.Post.Rank)),
+                    TabApplications, CareerApp.ApplicationRow + pick.Post.Id);
+                Logger?.Info("Careers test: the application to " + pick.Post.Employer + " for " + pick.Post.Def.Key + " rank " + pick.Post.Rank + " turned down on day " + Save.Day
+                             + "; the same post there can be applied for again from day " + ProRules.ReapplyFrom(Save.Day) + ".");
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
         /// <summary>The rest of a working day now, here, whatever the hour and the place (a job is given for it if there is none).</summary>
         public void TestWorkDay()
         {
