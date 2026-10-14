@@ -14,6 +14,53 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public static class MarketHistory
     {
+        /// <summary>
+        /// A move from one price (or level) to another in basis points; 0 if there is none before. Every day's move the
+        /// Stocks app shows is this, of the price now against the close it is measured from (<see cref="DayBase(List{Candle}, bool, int)"/>).
+        /// </summary>
+        public static int MoveBp(long now, long before)
+        {
+            return before > 0 ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (now - before) * 10000L / before)) : 0;
+        }
+
+        /// <summary>A company's move today: its price against the close it is measured from.</summary>
+        public static int DayMoveBp(Stock s)
+        {
+            return MoveBp(s.Last, s.PrevClose);
+        }
+
+        /// <summary>The city index's move today, by the same rule.</summary>
+        public static int IndexDayMoveBp(MarketState state)
+        {
+            return MoveBp(state.IndexLast, state.IndexPrevClose);
+        }
+
+        /// <summary>A sector's move today, by the same rule.</summary>
+        public static int SectorDayMoveBp(MarketState state, int sector)
+        {
+            return MoveBp(state.SectorLast[sector], state.SectorPrevClose[sector]);
+        }
+
+        /// <summary>
+        /// The close a day's move is measured from, out of a history of daily candles: in a session, the last close
+        /// (yesterday's); between sessions (after the close, overnight, over a weekend), the close before it, so the
+        /// session just ended keeps showing what it did until the next one opens, as a market's screens do. With too
+        /// short a history (a company listed at the last session or today) it is <paramref name="was"/>: the price it
+        /// was listed at. No allocation.
+        /// </summary>
+        public static int DayBase(List<Candle> daily, bool session, int was)
+        {
+            int at = daily.Count - (session ? 1 : 2);
+            return at >= 0 && daily[at].C > 0 ? daily[at].C : was;
+        }
+
+        /// <summary>As <see cref="DayBase(List{Candle}, bool, int)"/>, out of a sector's daily closes.</summary>
+        public static int DayBase(List<int> closes, bool session, int was)
+        {
+            int at = closes.Count - (session ? 1 : 2);
+            return at >= 0 && closes[at] > 0 ? closes[at] : was;
+        }
+
         /// <summary>A finished day's candle goes on; the oldest beyond the daily window is folded into its month.</summary>
         public static void AddDay(List<Candle> daily, List<Candle> monthly, in Candle day, int year)
         {

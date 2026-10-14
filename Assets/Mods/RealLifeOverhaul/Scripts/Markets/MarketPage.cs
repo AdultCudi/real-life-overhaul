@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Markets
                 _showing = MarketApp.IndexPage;
                 _viewMode = ViewChart;
             }
-            int today = MarketApp.Bp(s.IndexLast, s.IndexPrevClose);
+            int today = MarketHistory.IndexDayMoveBp(s);
             UiClone.Words(_title, MarketText.T("reallife_mkt_index") + "   " + (s.IndexLast / 100.0).ToString("N2", CultureInfo.CurrentCulture) + "   " + Coloured(today));
             UiClone.Words(_sub, MarketText.Fill("reallife_mkt_page_index_sub", "count", Listed(s).ToString()));
             _viewMode = ViewChart;
@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Markets
             {
                 _showing = k.Id;
             }
-            int today = MarketApp.Bp(k.Last, k.PrevClose);
+            int today = MarketHistory.DayMoveBp(k);
             UiClone.Words(_title, k.Name + "  <size=70%>" + k.Ticker + "</size>   " + MarketText.Price(k.Last) + "   " + Coloured(today));
             UiClone.Words(_sub, MarketText.Sector(k.Sector) + ", " + MarketText.Size(k.Size) + (k.BidCents > 0 ? "   " + MarketText.Fill("reallife_mkt_status_bid", "price", MarketText.Price(k.BidCents), "day", k.BidEndDay.ToString()) : string.Empty)
                                 + (k.SplitDay > 0 ? "   " + MarketText.Fill("reallife_mkt_status_split", "ratio", k.SplitRatio.ToString(), "day", k.SplitDay.ToString()) : string.Empty));

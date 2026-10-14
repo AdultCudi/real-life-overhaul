@@ -817,6 +817,7 @@ namespace RealLifeOverhaul.Markets
                 s.Listing.Suspended = suspended;
             }
             Repair(s);
+            MarketLife.DayBases(s, s.InSession);   // (a save made after a close by 0.15.1 or older has every company's at its close)
             return s;
         }
 

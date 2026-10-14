@@ -342,7 +342,7 @@ namespace RealLifeOverhaul.Markets
         private void WriteListed(InfoBox box, MarketState s, Stock k, ListingFile f)
         {
             OwnListing o = k.Own;
-            int bp = Bp(k.Last, k.PrevClose);
+            int bp = MarketHistory.DayMoveBp(k);
             box.Line(MarketText.Fill("reallife_lst_box_price", "price", MarketText.Price(k.Last), "change", MarketText.Change(bp), "worth", MarketText.Large(k.MarketValue)));
             box.Line(MarketText.Fill("reallife_lst_box_stake", "count", Count(o.Founder), "share", MarketText.Percent(o.StakeBp(k)), "worth", MarketText.Large(o.Founder * (k.Last / 100.0))));
             box.Line(MarketText.Fill("reallife_lst_box_reserve", "each", MarketText.Price((int)Math.Round(o.Rps * 100.0)), "amount", MarketText.Large(Math.Max(0.0, o.Rps) * o.Others(k))));
@@ -506,7 +506,7 @@ namespace RealLifeOverhaul.Markets
             OwnListing o = k.Own;
             box.Title(k.Name + "  <size=70%>" + k.Ticker + "</size>");
             Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
-            box.Line(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(Bp(k.Last, k.PrevClose))));
+            box.Line(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(MarketHistory.DayMoveBp(k))));
             bool closed = ListingRules.Closed(k, s.Day, s.YearDays);
             if (closed || s.Day < o.LockDay)
             {
