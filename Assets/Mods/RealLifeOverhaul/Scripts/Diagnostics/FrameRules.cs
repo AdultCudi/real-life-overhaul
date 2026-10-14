@@ -13,6 +13,14 @@ namespace RealLifeOverhaul
         Outside = 5,       // the time was outside the engine's steps, with the processor free
     }
 
+    /// <summary>What the game showed during a frame, as the session record tells a stutter the player saw from one they did not.</summary>
+    public enum FrameScreen
+    {
+        Clear = 0,     // the game was being played and seen
+        Black = 1,     // the game's own black screen (UI.UiFader) was up, or coming or going: a walk into or out of a building, sleep
+        Loading = 2,   // the game's loading screen (UI.Load.LoadingScreen) was up, or still fading out after the save had loaded
+    }
+
     /// <summary>The figures of one frame, as the session record has them (Diagnostics/FrameSteps, Diagnostics/MachineClock). A figure below zero is not known.</summary>
     public struct FrameFigures
     {
@@ -173,6 +181,30 @@ namespace RealLifeOverhaul
                 default:
                     line.Append("it was spread over the engine's steps above");
                     break;
+            }
+        }
+
+        /// <summary>
+        /// What the screen was during a frame, from what the session record read at its start and at the start of the frame
+        /// after it (either is enough: the screen was up, or coming or going, in that frame). The loading screen is named before
+        /// the black screen: it is the one in front. A frame that was not clear was not seen as a stutter.
+        /// </summary>
+        public static FrameScreen Screen(bool faded, bool fadedBefore, bool loading, bool loadingBefore)
+        {
+            return loading || loadingBefore ? FrameScreen.Loading : faded || fadedBefore ? FrameScreen.Black : FrameScreen.Clear;
+        }
+
+        /// <summary>The words of the long-frame line for the screen (constant texts).</summary>
+        public static string ScreenWords(FrameScreen screen)
+        {
+            switch (screen)
+            {
+                case FrameScreen.Loading:
+                    return "its screen was black or fading (its loading screen, up or fading out after the save had loaded: not seen as a stutter)";
+                case FrameScreen.Black:
+                    return "its screen was black or fading (its own walk into or out of a building: not seen as a stutter)";
+                default:
+                    return "its screen was clear";
             }
         }
 
