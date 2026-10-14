@@ -126,6 +126,7 @@ internal static partial class Program
         Hiring();
         Tech();
         Careers();
+        CartQueue();
         Work();
         Desks();
         Life();

@@ -17869,5 +17869,7 @@
   "reallife_mkt_bot_note_paid_owed": "{firm} 向你支付了 {amount} 的利润，卖出股票后还会再付 {owed}。它不再用这笔钱交易。",
   "reallife_mkt_bot_why_own_shares": "它持有你自己公司的股票：请先全部卖出，再解雇它。",
   "reallife_mkt_bot_why_not_listed": "这家公司不在市场上，或属于其他玩家。",
-  "reallife_mkt_bot_why_picks": "这个机器人挑选的公司已达上限。"
+  "reallife_mkt_bot_why_picks": "这个机器人挑选的公司已达上限。",
+  "reallife_changes_015_3_title": "0.15.3",
+  "reallife_changes_015_3": "已修复：街头小推车摊主可能一直等待一位永远不会来的顾客，例如附近的事故挡住了顾客去推车的路。现在这样的顾客会立即离开队伍，不算作走掉，并由另一位顾客代替。"
 }

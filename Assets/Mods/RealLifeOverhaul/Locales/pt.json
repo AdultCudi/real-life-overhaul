@@ -17869,5 +17869,7 @@
   "reallife_mkt_bot_note_paid_owed": "{firm} pagou a você {amount} do lucro e deve mais {owed} quando vender ações. Ele não opera mais com esse dinheiro.",
   "reallife_mkt_bot_why_own_shares": "Ele tem ações da sua própria empresa: venda tudo primeiro e depois dispense.",
   "reallife_mkt_bot_why_not_listed": "Essa empresa não está no mercado, ou é de outro jogador.",
-  "reallife_mkt_bot_why_picks": "Este robô já tem o máximo de empresas escolhidas."
+  "reallife_mkt_bot_why_picks": "Este robô já tem o máximo de empresas escolhidas.",
+  "reallife_changes_015_3_title": "0.15.3",
+  "reallife_changes_015_3": "Corrigido: o vendedor do carrinho de rua podia ficar esperando um cliente que nunca chegava, por exemplo quando um acidente por perto bloqueava o caminho dele até o carrinho. Agora esse cliente sai da fila na hora, não conta como desistência e outro vem no lugar."
 }

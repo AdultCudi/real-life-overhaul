@@ -17869,5 +17869,7 @@
   "reallife_mkt_bot_note_paid_owed": "{firm} paid you {amount} of its profit, and owes {owed} more once it sells shares. It no longer trades with that money.",
   "reallife_mkt_bot_why_own_shares": "It holds shares of your own company: sell it up first, then let it go.",
   "reallife_mkt_bot_why_not_listed": "That company is not on the market, or is another player's.",
-  "reallife_mkt_bot_why_picks": "This bot has the most companies picked already."
+  "reallife_mkt_bot_why_picks": "This bot has the most companies picked already.",
+  "reallife_changes_015_3_title": "0.15.3",
+  "reallife_changes_015_3": "Fixed: the street cart vendor could be left waiting for a customer who never came, for example when an accident nearby cut off their way to the cart. Such a customer now leaves the queue at once, is not counted as a walk-off, and another comes instead."
 }
