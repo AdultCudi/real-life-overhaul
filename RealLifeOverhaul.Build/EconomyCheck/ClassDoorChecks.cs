@@ -116,6 +116,19 @@ internal static partial class Program
               && EducationRules.GroupKeys.Length == EducationRules.Order.Length,
             "education box: the university's degrees first, the certificates last, each group with its words");
 
+        // ---------------------------------------------------------------- the box's height and a heading's width
+        // The game's box: 690 high, its rows from 163 under its top, its five rows 438 high (80 each, 8 between, 3 above and below).
+        float gameBox = EducationRules.BoxHeight(690f, 163f, 438f, 438f);
+        Check(gameBox == 690f, "education box: with the game's rows alone, the game's own height");
+        float full = EducationRules.BoxHeight(690f, 163f, 438f, 438f + 55 * 88f);
+        Check(full == 163f + 438f + 55 * 88f + (690f - 163f - 438f), "education box: grown to hold every row added, with the game's white under the last");
+        Check(EducationRules.BoxHeight(690f, 163f, 600f, 600f + 88f) == 163f + 600f + 88f + EducationRules.LeastMargin
+              && EducationRules.BoxHeight(690f, 163f, 400f, 300f) == 690f,
+            "education box: a game whose rows already fill its box keeps a little white under the last row; never smaller than the game's");
+        float nameWidth = EducationRules.HeadingNameWidth(1141f, 15f, 26f);
+        Check(nameWidth == 1141f - 15f - 26f - EducationRules.CountRoom && nameWidth > 587f && EducationRules.HeadingNameWidth(100f, 15f, 26f) == 0f,
+            "education box: a heading's name takes the row's width but the count's room, wider than a course's name");
+
         // ---------------------------------------------------------------- rows, nothing begun
         var rows = new List<EducationRow>(64);
         var fresh = new StudyFile();
@@ -282,6 +295,22 @@ internal static partial class Program
         }
         Check(missing.Count == 0, "education box: every heading, standing and course name is in all three locales with the figures it is filled with ("
                                   + need.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
+        bool oneLine = true;
+        string tooLong = string.Empty;
+        float headingWidth = EducationRules.HeadingNameWidth(1141f, 15f, 26f);   // the game's row: 1141 wide, its name 15 in, its mark's edge 26 from the right
+        for (int g = 0; g < EducationRules.Order.Length; g++)
+        {
+            for (int l = 0; l < langs.Length; l++)
+            {
+                if (langs[l].TryGetValue(EducationRules.GroupKey(EducationRules.Order[g]), out string words) && !EducationRules.HeadingFits(words, headingWidth))
+                {
+                    oneLine = false;
+                    tooLong += " " + words;
+                }
+            }
+        }
+        Check(oneLine && !EducationRules.HeadingFits(new string('a', 60), headingWidth),
+            "education box: every group's heading fits its row on one line in all three locales" + (oneLine ? string.Empty : ";" + tooLong));
         bool keyed = true;
         foreach (EducationState state in Enum.GetValues(typeof(EducationState)))
         {
