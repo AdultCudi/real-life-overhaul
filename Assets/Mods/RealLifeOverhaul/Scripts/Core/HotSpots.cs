@@ -15,6 +15,10 @@ namespace RealLifeOverhaul
     ///     {
     ///         using var hotSpot = HotSpots.Time(HotUpdate);
     ///
+    /// The directors' one-second timers open one in the method their tick calls ("Tech: TechDirector.Tick", and each
+    /// follower of the credit side's second, "Economy: EstateDirector.Second"), never round a yield, so that the time
+    /// the engine counts under "coroutines and timers" has the mod's names too.
+    ///
     /// While the session record is off (as the mod ships) a scope is one flag test and nothing else. While it is
     /// on, a scope is two reads of the clock and one of the frame count, and a few additions into fixed arrays:
     /// for the mod's hundred-odd scopes a frame, some five microseconds. One frame in <see cref="SampleEvery"/> is

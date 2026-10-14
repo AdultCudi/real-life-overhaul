@@ -136,6 +136,10 @@ namespace RealLifeOverhaul.Permadeath
                 {
                     continue;
                 }
+                while (StartLine.Holds(StartSeats.Permadeath))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -149,8 +153,10 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Permadeath: PermadeathDirector.Tick");
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
             GameInstance save = PermadeathGame.Save;
             if (save == null || GameManager.isCitySceneBeingUnloaded || LoadScene.isLoading || !ModState.Loaded)
             {

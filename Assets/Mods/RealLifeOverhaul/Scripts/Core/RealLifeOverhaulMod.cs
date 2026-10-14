@@ -1094,6 +1094,8 @@ namespace RealLifeOverhaul
             Guard.Step("Careers.CampusApp", () => Careers.CampusApp.Logger = context.Logger);
 
             _root = new GameObject(RootName);
+            Guard.Step("the start line", () => StartLine.Logger = context.Logger);
+            Guard.Step("the start line", () => StartLine.Begin());   // every director's first load after the save loads waits for a frame of its own again (Core/StartLine), before any director's timer starts
             Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // what Core/Guard has to tell, once the HUD is there
             Guard.Step("SessionWatch", () => SessionWatch.Logger = context.Logger);
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on

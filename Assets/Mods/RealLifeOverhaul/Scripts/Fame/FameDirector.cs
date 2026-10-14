@@ -92,6 +92,10 @@ namespace RealLifeOverhaul.Fame
                 {
                     continue;
                 }
+                while (StartLine.Holds(StartSeats.Fame))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -103,9 +107,11 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Fame: FameDirector.Tick");
         // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers, the street and the shop.
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
             if (Save == null || LoadScene.isLoading || !ModState.Loaded)
             {
                 return;

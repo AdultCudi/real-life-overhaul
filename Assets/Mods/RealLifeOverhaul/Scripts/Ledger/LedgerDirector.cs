@@ -103,6 +103,10 @@ namespace RealLifeOverhaul.Ledger
                 {
                     continue;
                 }
+                while (StartLine.Holds(StartSeats.Ledger))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -149,9 +153,11 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Ledger: LedgerDirector.Tick");
         // Once a second: start when the save is ready, stand down when the option goes off or another save is loaded.
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
             GameInstance save = Save;
             if (save == null || GameManager.isCitySceneBeingUnloaded)
             {

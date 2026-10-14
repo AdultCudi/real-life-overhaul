@@ -39,12 +39,57 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
         public static EconomyDirector Instance { get; private set; }
 
+        // The features that follow this director's second (Follow), in the order of their seats on the start line.
+        private struct Follower
+        {
+            public int Seat;
+            public Action Second;
+            public FeatureGuard Owner;   // the guard of the handler's class: its faults count there, and a feature switched off is skipped
+        }
+
+        private static readonly List<Follower> Followers = new List<Follower>(12);
+
         /// <summary>
-        /// Called once a second on the real clock by this director's own timer, after its own look and whatever state
-        /// the credit side is in (off, running or stopped by a fault): the city's economy (Economy/City) looks at its
-        /// option and its save with it and has no timer of its own. A handler must not throw.
+        /// A feature's second: called once a second on the real clock by this director's own timer, after its own look and
+        /// whatever state the credit side is in (off, running or stopped by a fault), each in a try of its own, in the order
+        /// of the seats (Core/StartRules, StartSeats). The city's economy (Economy/City) and the other economic features look
+        /// at their option and their save with it and have no timer of their own. While the credit side runs, a feature's
+        /// first second after a save loads waits for its seat on the start line (Core/StartLine), so that no two first loads
+        /// share a frame. Called in the feature's Awake with the handler it keeps; a handler must not throw.
         /// </summary>
-        public static Action Second;
+        public static void Follow(int seat, Action second)
+        {
+            if (second == null)
+            {
+                return;
+            }
+            Unfollow(second);
+            int at = Place(seat + 1);
+            Followers.Insert(at, new Follower { Seat = seat, Second = second, Owner = Guard.OfHandler(second) });
+        }
+
+        /// <summary>Takes a feature's second off (its OnDestroy), with the handler it was given with.</summary>
+        public static void Unfollow(Action second)
+        {
+            for (int i = Followers.Count - 1; i >= 0; i--)
+            {
+                if (ReferenceEquals(Followers[i].Second, second))
+                {
+                    Followers.RemoveAt(i);
+                }
+            }
+        }
+
+        // The index of the first follower whose seat is this one or after it.
+        private static int Place(int seat)
+        {
+            int at = 0;
+            while (at < Followers.Count && Followers[at].Seat < seat)
+            {
+                at++;
+            }
+            return at;
+        }
 
         /// <summary>
         /// Called at the end of this director's own work on the game's hour event and on its day event, while the
@@ -137,13 +182,19 @@ namespace RealLifeOverhaul.Economy
             Instance = null;
         }
 
-        // The first look is a second after the city's objects are made, never in the frame they are made in.
+        // The first look is a second after the city's objects are made, never in the frame they are made in. The first one
+        // after a save loads, and each follower's first while the credit side runs, waits for its seat on the start line:
+        // one first load a frame (Core/StartLine).
         private IEnumerator Tick()
         {
             var wait = new WaitForSecondsRealtime(1f);
             while (true)
             {
                 yield return wait;
+                while (StartLine.Holds(StartSeats.Credit))
+                {
+                    yield return null;
+                }
                 if (!_broken)
                 {
                     try
@@ -155,13 +206,52 @@ namespace RealLifeOverhaul.Economy
                         Fault("the timer", e);
                     }
                 }
-                Guard.Each(Second);   // each feature's second in a try of its own (Core/Guard)
+                for (int i = 0; i < Followers.Count; i++)
+                {
+                    int seat = Followers[i].Seat;
+                    if (_running && StartLine.Holds(seat))
+                    {
+                        // (the followers all need the credit side running: with it off or not started yet, none of them starts)
+                        do
+                        {
+                            yield return null;
+                        }
+                        while (StartLine.Holds(seat));
+                        i = Place(seat);   // (the list may have changed while it waited: a feature's component gone)
+                        if (i >= Followers.Count || Followers[i].Seat != seat)
+                        {
+                            i--;
+                            continue;
+                        }
+                    }
+                    Call(Followers[i]);
+                }
             }
         }
 
+        // A follower's second in a try of its own, as Core/Guard's Each: a fault counts for its class, and a feature
+        // switched off after its faults is skipped.
+        private static void Call(Follower f)
+        {
+            if (f.Owner != null && f.Owner.Off)
+            {
+                return;
+            }
+            try
+            {
+                f.Second();
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(f.Owner, e);
+            }
+        }
+
+        private static readonly int HotTick = HotSpots.Slot("Economy: EconomyDirector.Tick");
         // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers, the app on the phone.
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's own look; each follower's second has a scope of its own
             if (Save == null || LoadScene.isLoading || !ModState.Loaded)
             {
                 return;   // LifeEvents makes the save's modData ready first

@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             _onHour = OnHour;
             _onDay = OnDay;
             _onEnter = Guard.Wrap<Address>(OnEnter);
-            EconomyDirector.Second += _second;
+            EconomyDirector.Follow(StartSeats.Dealer, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
             DealerType.Dress();
@@ -104,7 +104,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private void OnDestroy()
         {
-            EconomyDirector.Second -= _second;
+            EconomyDirector.Unfollow(_second);
             EconomyDirector.AfterHour -= _onHour;
             EconomyDirector.AfterDay -= _onDay;
             GlobalEvents.onEnterBuildingDelayed -= _onEnter;
@@ -128,8 +128,10 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         // ---------------------------------------------------------------- once a second (the credit side's timer)
 
+        private static readonly int HotSecond = HotSpots.Slot("Economy: DealerDirector.Second");
         private void EachSecond()
         {
+            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
             if (_broken)
             {
                 return;

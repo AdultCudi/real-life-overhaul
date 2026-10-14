@@ -83,6 +83,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
+                while (StartLine.Holds(StartSeats.Tech))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -94,8 +98,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Tech: TechDirector.Tick");
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;

@@ -82,6 +82,10 @@ namespace RealLifeOverhaul.Careers
                 {
                     continue;
                 }
+                while (StartLine.Holds(StartSeats.Careers))
+                {
+                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                }
                 try
                 {
                     Slow();
@@ -93,8 +97,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Careers: CareersDirector.Tick");
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;
