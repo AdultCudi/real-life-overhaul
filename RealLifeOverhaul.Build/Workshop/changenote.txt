@@ -1,4 +1,4 @@
-0.19.2
+0.20.0
 
-Fixed
-- Hitches in the phone's apps. Each of the mod's apps is now built the first time you open it, not in the first seconds after a load; the Finance app's Cash flow tab and the banks' statements open at once, however long your history; Flare shows your photos at once, from a small copy made when the photo is taken; the City Ledger turns its pages at once after it is first laid out; and the Stocks chart follows the pointer smoothly.
+New
+- Ten small helpers: a reminder on the last day of your registration with the recruitment office; a notice when your class starts and you are not inside the place that holds it; the reason an employer turned you down; the skill points for a good chance in the Career app's vacancy box; how many entries each Planner tab lists; a morning line of your day; today's change on the Stocks Portfolio; a bond's interest so far; a notice the evening before a bank rate decision; and the classes held on a course's Campus page. Each notice has its own switch.
