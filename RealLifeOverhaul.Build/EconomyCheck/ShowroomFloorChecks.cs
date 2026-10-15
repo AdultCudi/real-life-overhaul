@@ -335,11 +335,9 @@ internal static partial class Program
 
     private static void FloorWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        var langs = new[] { LoadWords(System.IO.Path.Combine(folder, "en.json")), LoadWords(System.IO.Path.Combine(folder, "pt.json")), LoadWords(System.IO.Path.Combine(folder, "zh-cn.json")) };
-        if (langs[0] == null || langs[1] == null || langs[2] == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("showroom floor", langs, codes))
         {
-            Check(false, "showroom floor: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
             return;
         }
         var need = new Dictionary<string, string[]>
@@ -364,11 +362,11 @@ internal static partial class Program
                 }
                 if (!ok)
                 {
-                    missing.Add(k.Key + (l == 0 ? " (en)" : l == 1 ? " (pt)" : " (zh-cn)"));
+                    missing.Add(k.Key + " (" + codes[l] + ")");
                 }
             }
         }
-        Check(missing.Count == 0, "showroom floor: every text of the floor, its camera and its bays is in all three locales with the keys it shows (" + need.Count + " keys"
+        Check(missing.Count == 0, "showroom floor: every text of the floor, its camera and its bays is in every language with the keys it shows (" + need.Count + " keys"
                                   + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         Check(langs[0].TryGetValue("reallife_showroom_note_keys", out string note) && note.Length <= 240,
             "showroom floor: the notice of the camera's keys is at most 240 characters in English (" + (note ?? string.Empty).Length + ")");

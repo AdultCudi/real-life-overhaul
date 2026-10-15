@@ -52,7 +52,8 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
        └── Locales
            ├── en.json
            ├── pt.json
-           └── zh-cn.json
+           ├── zh-cn.json
+           └── ...          (one file for each language: de, fr, es and ru as they are translated)
    ```
 
    The game only loads a folder that has the mod's DLL directly inside it. Check that you do not have `RealLifeOverhaul\RealLifeOverhaul\...`, one folder inside another, which some unzip tools make.
@@ -82,7 +83,7 @@ Your saves and the mod's options are not in that folder, so they are kept.
 Each release lists the SHA-256 of its setup and its zip. To check yours, in PowerShell (with the name of the file you downloaded):
 
 ```
-Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.21.0-setup.exe" -Algorithm SHA256
+Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.23.0-setup.exe" -Algorithm SHA256
 ```
 
 The value must match the one on the release page. Only download the mod from the Workshop page or this repository's Releases.

@@ -470,37 +470,28 @@ internal static partial class Program
 
     private static void BotPlusWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "bots plus: the three locales are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("bots plus", langs, codes))
         {
             return;
         }
-        var holes = new Regex(@"\{[a-z_]+\}");
+        Dictionary<string, string> en = langs[0];
         var missing = new List<string>();
         foreach (string key in BotPlusKeys)
         {
-            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || !zh.TryGetValue(key, out string z))
+            string lacking = LanguagesLacking(langs, codes, key);
+            if (lacking.Length > 0)
             {
-                missing.Add(key);
-                continue;
-            }
-            string want = Holes(holes, e);
-            if (Holes(holes, p) != want || Holes(holes, z) != want)
-            {
-                missing.Add(key + " (its {names} differ)");
+                missing.Add(key + " (" + lacking + ")");
             }
         }
-        Check(missing.Count == 0, "bots plus: every text is in en.json, pt.json and zh-cn.json with the same {names} (" + BotPlusKeys.Length + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
+        Check(missing.Count == 0, "bots plus: every text is in every language with the same {names} (" + BotPlusKeys.Length + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
         string[] notes = { "reallife_mkt_note_dividend_bot", "reallife_mkt_note_dividends", "reallife_mkt_bot_note_statement_paid", "reallife_mkt_bot_note_paid", "reallife_mkt_bot_note_paid_owed" };
         Check(notes.All(k => en.ContainsKey(k) && en[k].Length + 40 <= 240), "bots plus: each new notification fits the game's toast with its names filled (240 characters)");
         // Every figure the Guide's bots page gives is filled from the code, in each language.
         string[] facts = { "{bot_picks_most}", "{bot_own_swing}", "{bot_deal_year}", "{bot_founder_most}", "{bot_own_volume}" };
         bool guide = true;
-        foreach (Dictionary<string, string> words in new[] { en, pt, zh })
+        foreach (Dictionary<string, string> words in langs)
         {
             guide &= words.TryGetValue("reallife_guide_markets_bots", out string g) && facts.All(g.Contains);
         }

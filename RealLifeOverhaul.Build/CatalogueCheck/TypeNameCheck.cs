@@ -84,6 +84,14 @@ namespace RealLifeOverhaul
             Check(Text(en, EmpireKey) == "Empire Motors dealership", "en " + EmpireKey + " is '" + Text(en, EmpireKey) + "'");
             Check(Text(pt, EmpireKey).Length > 0 && Text(pt, EmpireKey) != Text(en, EmpireKey), "pt has no text of its own for " + EmpireKey);
             Check(Regex.IsMatch(Text(zh, EmpireKey), @"\p{IsCJKUnifiedIdeographs}"), "zh-cn has no Chinese text for " + EmpireKey);
+            string[] languages = ModLanguages.Present(Path.Combine(src, "Locales"));
+            for (int i = ModLanguages.Required; i < languages.Length; i++)
+            {
+                // A later language may lack a key (it reads in English); a text it has is its own.
+                Dictionary<string, string> other = Read(Path.Combine(src, "Locales", languages[i] + ".json"));
+                foreach (string key in new[] { ShowroomKey, EmpireKey })
+                    Check(!other.ContainsKey(key) || (Text(other, key).Length > 0 && Text(other, key) != Text(en, key)), languages[i] + " has the English for " + key + ", not a text of its own");
+            }
             foreach (string key in en.Keys.Where(k => !k.StartsWith("reallife", StringComparison.Ordinal)))
                 Check(OtherModsKeys.Contains(key), key + " is a key of another mod's that has no reason here");
 

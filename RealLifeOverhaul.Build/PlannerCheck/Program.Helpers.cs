@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Planner;
 
 // The Planner's two small helpers of 14 Oct 2026: each tab's name with how many entries it lists under its filter
@@ -43,12 +44,12 @@ internal static partial class Program
 
         string folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         bool texts = true;
-        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        foreach (string lang in ModLanguages.Present(folder))
         {
             Dictionary<string, string> w = Words(folder, lang);
             texts &= w != null && w.TryGetValue("reallife_planner_tab_count", out string t) && t.Contains("{tab}") && t.Contains("{count}");
         }
-        Check(texts, "tab counts: the tab's name with its count is in the three languages");
+        Check(texts, "tab counts: the tab's name with its count is in every language");
     }
 
     private static void MorningLine()
@@ -105,13 +106,13 @@ internal static partial class Program
               && PlannerRules.MorningKey(2, false, false) == "reallife_planner_morning_all_day" && PlannerRules.MorningKey(1, false, false) == "reallife_planner_morning_all_day_one",
             "morning: a key for many or one, with and without a time to leave, and for a day with no set times");
 
-        // the texts in three languages, at most 240 characters with a long title
+        // the texts in every language, at most 240 characters with a long title
         string folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         string[] keys = { "reallife_planner_morning", "reallife_planner_morning_here", "reallife_planner_morning_one", "reallife_planner_morning_one_here",
             "reallife_planner_morning_all_day", "reallife_planner_morning_all_day_one", "reallife_planner_opt_morning", "reallife_opt_tip_planner_morning" };
         var wrong = new List<string>();
         Dictionary<string, string> en = Words(folder, "en");
-        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        foreach (string lang in ModLanguages.Present(folder))
         {
             Dictionary<string, string> w = Words(folder, lang);
             foreach (string key in keys)
@@ -122,7 +123,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(wrong.Count == 0, "morning: every text is in the three languages with the same slots (" + string.Join(", ", wrong) + ")");
+        Check(wrong.Count == 0, "morning: every text is in every language with the same slots (" + string.Join(", ", wrong) + ")");
         if (en != null && en.TryGetValue("reallife_planner_morning", out string line))
         {
             string filled = line.Replace("{count}", "12").Replace("{time}", "09:00").Replace("{title}", new string('t', PlannerStore.TitleLength)).Replace("{leave}", "08:35");

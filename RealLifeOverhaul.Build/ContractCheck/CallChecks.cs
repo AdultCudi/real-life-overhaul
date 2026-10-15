@@ -89,6 +89,7 @@ internal static partial class Program
         { "RealLifeOverhaul.Meta.OptionsLayout.Organise", "the options page's own answer to the game's reset of every option: one try round all of it, its catch the page's own log" },
         { "RealLifeOverhaul.Meta.OptionsLayout.Dispose", "(the same answer taken off again)" },
         { "RealLifeOverhaul.Meta.OptionsLayout.SearchBox.Build", "the options page's search box: each of its three listeners one try round all of it, its catch the box's own (Meta/OptionsSearch)" },
+        { "RealLifeOverhaul.Meta.BugReportGame.Listen", "the engine's log listener for 'Report a bug': one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Meta/BugReportGame.Heard)" },
     };
 
     // A type of a signature as 'assembly|full name' (the mod's own: '|full name', or '@delegate|full name' for a delegate type of its own).
