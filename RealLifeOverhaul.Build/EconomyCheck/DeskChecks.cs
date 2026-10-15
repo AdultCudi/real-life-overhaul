@@ -207,10 +207,8 @@ internal static partial class Program
 
     private static void DeskWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        var langs = new[] { LoadWords(System.IO.Path.Combine(folder, "en.json")), LoadWords(System.IO.Path.Combine(folder, "pt.json")), LoadWords(System.IO.Path.Combine(folder, "zh-cn.json")) };
-        Check(langs[0] != null && langs[1] != null && langs[2] != null, "desk: en.json, pt.json and zh-cn.json are where the checks look for them");
-        if (langs[0] == null || langs[1] == null || langs[2] == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("desk", langs, codes))
         {
             return;
         }
@@ -249,7 +247,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(missing.Count == 0, "desk: the desk's words are in en.json, pt.json and zh-cn.json (" + keys.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
+        Check(missing.Count == 0, "desk: the desk's words are in every language (" + string.Join(", ", codes) + "; " + keys.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         bool figures = true;
         foreach (Dictionary<string, string> words in langs)
         {
@@ -258,7 +256,7 @@ internal static partial class Program
                        && words["reallife_career_desk_at"].Contains("{address}") && words["reallife_desk_label_first"].Contains("{day}");
         }
         Check(figures, "desk: every language's texts have the figures they are written with");
-        Check(!langs[0].ContainsKey("reallife_career_place_hospitals") && !langs[1].ContainsKey("reallife_career_place_hospitals") && !langs[2].ContainsKey("reallife_career_place_hospitals"),
+        Check(Array.TrueForAll(langs, w => !w.ContainsKey("reallife_career_place_hospitals")),
             "desk: \"any hospital\" is gone: a nurse's desk is at the one hospital of the post");
         Check(langs[0]["reallife_guide_careers_jobs"].Contains("click your desk") && langs[0]["reallife_guide_careers_life"].Contains("Work late"),
             "desk: the Guide says how a working day is worked now, and where overtime is");

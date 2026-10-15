@@ -368,6 +368,9 @@ RealLifeOverhaul.Build/            command-line build and checks (outside Assets
   NavCheck/                        checks the game-free parts of the minimap and the GPS, the shared route search (see "Minimap and GPS") and the bus bays (see "Transport", "Bays")
   EconomyCheck/                    checks the economy's game-free parts: the rating, the terms, the fee, the credit file and its line in the save, the loans (see "Economy")
   ContractCheck/                   checks the mod against a version of the game on disk: the game contract, the compiled references, the game's keys (see "After a game update")
+  Shared/ModLanguages.cs           the mod's seven languages by the game's codes (en, pt, zh-cn, de, fr, es, ru), linked into the checkers;
+                                   de, fr, es and ru may lack keys, which the game reads in English (its fallback language)
+  Workshop/locales.py              the locale check of every language that is there (the gate's "LOCALES OK")
 ```
 
 ## Setup on a new machine
@@ -5832,7 +5835,7 @@ Planner/
 - **Checks.** `RealLifeOverhaul.Build/PlannerCheck` compiles `PlannerModel.cs`, `PlannerStore.cs` and `PlannerRules.cs`
   as they are and checks the calendar, order, clashes by overlap and by the way, states and the missed, the badge,
   reminders across a save and a time skip, when to leave, repeats over the week's end, deleting, the filter's groups,
-  the Week tab's order, free time and money, round trips, old and damaged saves, and the new texts in three languages: `dotnet build RealLifeOverhaul.Build/PlannerCheck -c Release`, then
+  the Week tab's order, free time and money, round trips, old and damaged saves, and the new texts in every language: `dotnet build RealLifeOverhaul.Build/PlannerCheck -c Release`, then
   `dotnet RealLifeOverhaul.Build/PlannerCheck/bin/Release/net10.0/PlannerCheck.dll` ends with `ALL CHECKS PASSED`.
 - **Not run in the game.** The build machine cannot start the game: the first play session should follow the list
   in the pull request, with "Developer diagnostics" on.
@@ -7525,7 +7528,7 @@ EconomyCheck (`MarketChecks7.cs`): the scopes' rules and runs, a holding outside
 every limit and a purchase through the market held to the day's share, letting go refused and then done; payouts' times
 and arithmetic, runs over six seeds where no money is made by paying and the statements add up to what was paid; the news
 line for each dividend, kept in the save's line and not in the city's; the line round trip and a line from before; two
-machines alike; the texts in three languages; the cost.
+machines alike; the texts in every language; the cost.
 
 ### Not verified (the game could not be run)
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Planner;
 
 // The checks of the Planner's day planner: clashes by the way between two places, when to leave, the reminders of
@@ -408,6 +409,7 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- the texts
 
+    // A language's words as the game shows them: a key German, French, Spanish or Russian lacks reads in English (ModLanguages).
     private static Dictionary<string, string> Words(string folder, string lang)
     {
         string path = Path.Combine(folder, lang + ".json");
@@ -415,7 +417,9 @@ internal static partial class Program
         {
             return null;
         }
-        var words = new Dictionary<string, string>();
+        bool later = Array.IndexOf(ModLanguages.All, lang) >= ModLanguages.Required;
+        Dictionary<string, string> english = later ? Words(folder, "en") : null;
+        var words = english != null ? new Dictionary<string, string>(english) : new Dictionary<string, string>();
         using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(path)))
         {
             foreach (JsonProperty p in doc.RootElement.EnumerateObject())
@@ -457,15 +461,20 @@ internal static partial class Program
     private static void Texts()
     {
         string folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        string[] langs = { "en", "pt", "zh-cn" };
+        string[] langs = ModLanguages.Present(folder);
         var words = new Dictionary<string, string>[langs.Length];
+        var lost = new List<string>();
         for (int l = 0; l < langs.Length; l++)
         {
             words[l] = Words(folder, langs[l]);
+            if (words[l] == null)
+            {
+                lost.Add(langs[l] + ".json");
+            }
         }
-        if (words[0] == null || words[1] == null || words[2] == null)
+        if (lost.Count > 0)
         {
-            Check(false, "texts: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
+            Check(false, "texts: every language's file is where the checks look for it (" + folder + "; not read: " + string.Join(", ", lost) + ")");
             return;
         }
         var wrong = new List<string>();
@@ -491,15 +500,16 @@ internal static partial class Program
                 }
             }
         }
-        Check(wrong.Count == 0, "texts: every new text is in the three languages with the same slots (" + string.Join("; ", wrong) + ")");
+        Check(wrong.Count == 0, "texts: every new text is in every language with the same slots (" + string.Join("; ", wrong) + ")");
         Check(words[0]["reallife_planner_reminder_leave_late"].Length + 60 + 40 <= 240 && words[0]["reallife_planner_reminder_leave"].Length + 60 + 40 <= 240,
             "texts: a reminder to leave stays within a notification's 240 characters with a long title and day");
         Check(words[0]["reallife_planner_glance_free_span"].Contains("{from}") && words[0]["reallife_planner_way_about_car"].Contains("{drive}") && words[0]["reallife_planner_way_about_car"].Contains("{walk}"),
             "texts: the free time and the way have their figures");
-        // What's new has the Week tab in some row of every language (the release moves the next row to a numbered one).
+        // What's new has the Week tab in some row of en, pt and zh-cn (the release moves the next row to a numbered one); the
+        // languages after them were translated later, with the rows as they were.
         string[] marks = { "Week tab", "aba Semana", "本周标签页" };
         bool told = true;
-        for (int l = 0; l < langs.Length; l++)
+        for (int l = 0; l < marks.Length; l++)
         {
             bool found = false;
             foreach (KeyValuePair<string, string> pair in words[l])
@@ -508,13 +518,13 @@ internal static partial class Program
             }
             told &= found;
         }
-        Check(told, "texts: What's new tells of the Week tab in all three languages");
+        Check(told, "texts: What's new tells of the Week tab in en, pt and zh-cn");
         bool guide = true;
         for (int l = 0; l < langs.Length; l++)
         {
             string g = words[l]["reallife_guide_planner"];
             guide &= g.Contains("{planner_walk}") && g.Contains("{planner_drive}") && g.Contains("{planner_days}") && g.Contains("{planner_notes}") && g.Contains("{planner_evening}");
         }
-        Check(guide, "texts: the Guide's Planner page fills the paces, the days, the most entries and the evening from the code in all three languages");
+        Check(guide, "texts: the Guide's Planner page fills the paces, the days, the most entries and the evening from the code in every language");
     }
 }

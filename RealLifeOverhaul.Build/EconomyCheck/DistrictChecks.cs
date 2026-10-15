@@ -251,15 +251,12 @@ internal static partial class Program
 
     private static void DistrictWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "districts: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("districts", langs, codes))
         {
             return;
         }
+        Dictionary<string, string> en = langs[0];
         var missing = new List<string>();
         var keys = new List<string> { "reallife_dv_category", "reallife_dv_key", "reallife_dv_districts", "reallife_dv_hint", "reallife_dv_all_alike", "reallife_dv_no_figure",
             "reallife_dv_range_under", "reallife_dv_range_over", "reallife_dv_range_between", "reallife_dv_close" };
@@ -276,13 +273,13 @@ internal static partial class Program
         }
         foreach (string key in keys)
         {
-            string a, b, c;
-            if (!en.TryGetValue(key, out a) || !pt.TryGetValue(key, out b) || !zh.TryGetValue(key, out c) || string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b) || string.IsNullOrWhiteSpace(c))
+            string lacking = LanguagesLacking(langs, codes, key);
+            if (lacking.Length > 0)
             {
-                missing.Add(key);
+                missing.Add(key + " (" + lacking + ")");
             }
         }
-        Check(missing.Count == 0, "districts: every layer's row, words, key bands and grey are in en.json, pt.json and zh-cn.json (" + keys.Count + " keys"
+        Check(missing.Count == 0, "districts: every layer's row, words, key bands and grey are in every language with the same {names} (" + keys.Count + " keys"
             + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         string under, over, between;
         Check(en.TryGetValue("reallife_dv_range_under", out under) && under.Contains("{to}") && en.TryGetValue("reallife_dv_range_over", out over) && over.Contains("{from}")
