@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Meta
             try
             {
                 f.InCity = MetaCity.Root != null && City(f);
+                f.PhoneOpen = f.InCity && PhoneOpen();
             }
             catch (Exception e)
             {
@@ -170,6 +171,13 @@ namespace RealLifeOverhaul.Meta
             f.Minute = Mathf.Clamp((int)TimeHelper.CurrentMinute, 0, 59);
             f.Money = SaveGameManager.Current.Money;
             return true;
+        }
+
+        // The phone's full menu (an app, the Mod settings one too) is open: the screenshot shows it, and report.txt says so. Left open.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool PhoneOpen()
+        {
+            return UI.Smartphone.FullMenu.IsOpen;
         }
 
         /// <summary>True while a city is loaded: then the report has a screenshot and the game's text box is there.</summary>
@@ -356,12 +364,40 @@ namespace RealLifeOverhaul.Meta
 
         // ---------------------------------------------------------------- handing it over
 
-        /// <summary>The summary on the clipboard, the reports' folder in the file explorer, the mod's Discord in the browser.</summary>
-        public static void HandOver(string summary, string folder)
+        /// <summary>
+        /// The summary on the clipboard, the file explorer on the reports' folder with the new zip (or folder) picked, the mod's
+        /// Discord in the browser. On Windows the explorer is started itself: a file address escaped for the browser
+        /// (Uri.AbsoluteUri) is read back in the system's code page, which mangles a user folder with accents or Chinese
+        /// characters. If it cannot be started, and on any other system, the folder's address is opened unescaped.
+        /// </summary>
+        public static void HandOver(string summary, string folder, string zip)
         {
             GUIUtility.systemCopyBuffer = summary;
-            Application.OpenURL(new Uri(folder).AbsoluteUri);
+            if (!Explore(zip ?? folder))
+            {
+                Application.OpenURL(BugReportRules.FileUrl(Path.GetDirectoryName(folder)));
+            }
             Application.OpenURL(DiscordUrl);
+        }
+
+        private static bool Explore(string picked)
+        {
+            if (Application.platform != RuntimePlatform.WindowsPlayer && Application.platform != RuntimePlatform.WindowsEditor)
+            {
+                return false;
+            }
+            try
+            {
+                using (Process.Start("explorer.exe", BugReportRules.ExplorerSelect(picked)))
+                {
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                return false;
+            }
         }
     }
 }

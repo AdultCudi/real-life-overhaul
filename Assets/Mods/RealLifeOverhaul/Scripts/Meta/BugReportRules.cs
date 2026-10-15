@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Meta
 {
@@ -95,6 +96,7 @@ namespace RealLifeOverhaul.Meta
         public string Preset;               // "Standard", or "Custom (nearest Standard)"
         public readonly List<string> Changed = new List<string>();   // "id = value (preset value)", one per option that differs
         public bool InCity;
+        public bool PhoneOpen;              // the phone's full menu was open: the screenshot shows it
         public int Day;
         public int Hour;
         public int Minute;
@@ -119,6 +121,11 @@ namespace RealLifeOverhaul.Meta
         public const string OwnPrefix = "[RealLifeOverhaul]";         // what the mod puts before a line it writes to the engine itself
         public const string Namespace = "RealLifeOverhaul.";          // in the stack of an exception thrown in the mod's code
         public const string Mask = "%USERPROFILE%";
+        public const string OtherUser = "<user>";       // a user folder's name the exact pass did not know (another user, an 8.3 name, Proton's home)
+        public const string SteamIdMask = "<steamid>";  // a 17-digit Steam id, the player's or another's in a Going Public session
+        public const string NameMask = "<name>";        // a Steam name on the lines that are known to carry one
+        public const int ErrorChars = 120;         // of an error's message in the failure notification: the toast takes 240 in all
+        public const int KeepReports = 5;          // reports kept in the folder, the new one with them: older ones are deleted
         public const int MostWords = 500;          // characters the player may type: a few sentences; the rest belongs in the post
         public const int SummaryWords = 900;       // characters of them on the clipboard: Discord takes 2,000 in a message
         public const int LineChars = 400;          // of one log line in report.txt: an exception's message, not a page of it
@@ -208,7 +215,8 @@ namespace RealLifeOverhaul.Meta
             text.Append("Real Life Overhaul bug report, written ").Append(f.Written).Append('\n');
             text.Append("In this report: ").Append(f.Files.Count > 0 ? string.Join(", ", f.Files) : "report.txt").Append(".\n");
             text.Append("Nothing outside the game's own folders was read. Your Windows user folder is written as ").Append(Mask)
-                .Append(" here and in the copied logs. The mod sent nothing: you post this yourself.\n\n");
+                .Append(" here and in the copied logs, Steam ids as ").Append(SteamIdMask).Append(". The mod sent nothing: you post this yourself.\n");
+            text.Append("Names, such as your Steam name, may still be in the logs: look through the zip before you post it where everyone can read it.\n\n");
 
             string words = f.Words != null ? f.Words.Trim() : string.Empty;
             text.Append("What went wrong: ").Append(words.Length > 0 ? words.Replace("\r", string.Empty).Replace("\n", "\n  ") : "(not said)").Append('\n');
@@ -228,6 +236,7 @@ namespace RealLifeOverhaul.Meta
                 text.Append("Day and time: day ").Append(f.Day.ToString(CultureInfo.InvariantCulture)).Append(", ")
                     .Append(f.Hour.ToString("00", CultureInfo.InvariantCulture)).Append(':').Append(f.Minute.ToString("00", CultureInfo.InvariantCulture)).Append('\n');
                 text.Append("Money: about ").Append(RoundMoney(f.Money).ToString("N0", CultureInfo.InvariantCulture)).Append('\n');
+                text.Append("Phone: ").Append(f.PhoneOpen ? "open (the screenshot shows it)" : "closed").Append('\n');
             }
             else
             {
@@ -262,18 +271,72 @@ namespace RealLifeOverhaul.Meta
         /// </summary>
         public static string MaskUser(string text, string profile)
         {
-            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(profile))
+            if (string.IsNullOrEmpty(text))
             {
                 return text;
             }
-            string back = profile.Replace('/', '\\').TrimEnd('\\');
-            if (back.Length < 4)
+            string back = string.IsNullOrEmpty(profile) ? string.Empty : profile.Replace('/', '\\').TrimEnd('\\');
+            if (back.Length >= 4)
+            {
+                text = MaskOne(text, back.Replace("\\", "\\\\"));
+                text = MaskOne(text, back);
+                text = MaskOne(text, back.Replace('\\', '/'));
+                text = MaskOne(text, back.Replace("\\", "\\/"));
+            }
+            return MaskForms(text);
+        }
+
+        // ---------------------------------------------------------------- the forms the exact pass does not know
+
+        private const string Sep = @"(?:\\\\|\\/|\\|/|%5[cC]|%2[fF])";   // a path's separator: a doubled backslash, JSON's backslash and slash, a backslash, a slash, or one of them percent-encoded
+        private const string Name = @"((?:(?!%5[cC]|%2[fF])[^\\/""'\s:*?<>|])(?:(?!%5[cC]|%2[fF])[^\\/""'\s:*?<>|])*?)(?=" + Sep + @"|[""'\s:*?<>|,;)\]}]|\.(?:\s|$)|$)";
+        private static readonly Regex UsersFolder = new Regex(@"((?:[a-zA-Z](?::|%3[aA]))" + Sep + "+(?i:users)" + Sep + "+)" + Name, RegexOptions.CultureInvariant);
+        private static readonly Regex HomeFolder = new Regex(@"((?:/|\\\\|\\|%2[fF]|%5[cC])(?i:home)" + Sep + "+)" + Name, RegexOptions.CultureInvariant);
+        private static readonly Regex SteamId = new Regex(@"(?<!\d)7656119\d{10}(?!\d)", RegexOptions.CultureInvariant);
+        private static readonly Regex SteamQuoted = new Regex(@"(\bname\s*[=:]\s*')([^'\r\n]*)(')", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex PlayerName = new Regex(@"(player name:[ \t]*)([^\r\n]+)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly MatchEvaluator UserFolder = m => Kept(m.Groups[2].Value) ? m.Value : m.Groups[1].Value + OtherUser;
+
+        // The folders under Users that are nobody's.
+        private static bool Kept(string name)
+        {
+            return name == OtherUser || string.Equals(name, "Public", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "Default", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(name, "All Users", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "Default User", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// After the exact pass, by rule: the folder after a drive's Users folder (any case, any separator, JSON's \/ and
+        /// percent-encoded ones: another user, an 8.3 name such as ANNSMI~1), the folder after /home/ (Proton's paths), every
+        /// 17-digit Steam id, and the Steam name on the lines known to carry one (Going Public's "[Steam] ... name='...'" and
+        /// "Using configured player name: ..."). Each is looked for only when a cheap search finds its sign in the text.
+        /// </summary>
+        public static string MaskForms(string text)
+        {
+            if (string.IsNullOrEmpty(text))
             {
                 return text;
             }
-            text = MaskOne(text, back.Replace("\\", "\\\\"));
-            text = MaskOne(text, back);
-            return MaskOne(text, back.Replace('\\', '/'));
+            if (text.IndexOf("users", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                text = UsersFolder.Replace(text, UserFolder);
+            }
+            if (text.IndexOf("home", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                text = HomeFolder.Replace(text, UserFolder);
+            }
+            if (text.IndexOf("7656119", StringComparison.Ordinal) >= 0)
+            {
+                text = SteamId.Replace(text, SteamIdMask);
+            }
+            if (text.IndexOf("[Steam]", StringComparison.Ordinal) >= 0)
+            {
+                text = SteamQuoted.Replace(text, "$1" + NameMask + "$3");
+            }
+            if (text.IndexOf("player name:", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                text = PlayerName.Replace(text, "$1" + NameMask);
+            }
+            return text;
         }
 
         private static string MaskOne(string text, string folder)
@@ -288,7 +351,7 @@ namespace RealLifeOverhaul.Meta
             while (at >= 0)
             {
                 int end = at + folder.Length;
-                if (end < text.Length && NameChar(text[end]))
+                if (end < text.Length && NameChar(text[end]) && !(text[end] == '.' && (end + 1 == text.Length || char.IsWhiteSpace(text[end + 1]))))
                 {
                     at = text.IndexOf(folder, at + 1, StringComparison.OrdinalIgnoreCase);   // another folder that starts the same
                     continue;
@@ -322,16 +385,18 @@ namespace RealLifeOverhaul.Meta
         {
             long length = from.Length;
             long start = TailStart(length, cap);
+            bool partLine = false;
             if (start > 0)
             {
-                from.Seek(start, SeekOrigin.Begin);
+                from.Seek(start - 1, SeekOrigin.Begin);
+                partLine = from.ReadByte() != '\n';   // the cut fell inside a line, not on the start of one
                 to.Write("[Real Life Overhaul: the first " + (start / 1024).ToString("N0", CultureInfo.InvariantCulture) + " KB of this log were left out; its last "
                          + ((length - start) / 1024).ToString("N0", CultureInfo.InvariantCulture) + " KB follow]\n");
             }
             int lines = 0;
             using (var reader = new StreamReader(from, new UTF8Encoding(false), false, 64 * 1024, true))
             {
-                if (start > 0)
+                if (partLine)
                 {
                     reader.ReadLine();   // the line the cut fell in
                 }
@@ -350,6 +415,84 @@ namespace RealLifeOverhaul.Meta
         public static string FolderName(DateTime local)
         {
             return local.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The name for a new report: the one given, or with _2, _3 ... when a report of that name (its folder or its zip) is there.</summary>
+        public static string UniqueName(string name, Func<string, bool> taken)
+        {
+            if (!taken(name))
+            {
+                return name;
+            }
+            for (int n = 2; ; n++)
+            {
+                string next = name + "_" + n.ToString(CultureInfo.InvariantCulture);
+                if (!taken(next))
+                {
+                    return next;
+                }
+            }
+        }
+
+        private static readonly Regex ReportName = new Regex(@"^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})(?:_(\d+))?(?:\.zip)?$", RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// The reports to delete before a new one is written, so that with it there are <paramref name="keep"/>: of the names
+        /// in the reports' folder (folders and zips), the reports' own names only, newest first by date, time and number; the
+        /// rest are given back without ".zip", each once. Nothing else in the folder is ever named.
+        /// </summary>
+        public static List<string> Older(IEnumerable<string> names, int keep)
+        {
+            var stems = new List<KeyValuePair<string, int>>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string name in names)
+            {
+                Match m = ReportName.Match(name ?? string.Empty);
+                if (!m.Success)
+                {
+                    continue;
+                }
+                string stem = name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ? name.Substring(0, name.Length - 4) : name;
+                if (seen.Add(stem))
+                {
+                    stems.Add(new KeyValuePair<string, int>(stem, m.Groups[2].Success ? int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture) : 1));
+                }
+            }
+            stems.Sort((a, b) =>
+            {
+                int by = string.CompareOrdinal(ReportName.Match(b.Key).Groups[1].Value, ReportName.Match(a.Key).Groups[1].Value);
+                return by != 0 ? by : b.Value.CompareTo(a.Value);
+            });
+            var older = new List<string>();
+            for (int i = Math.Max(0, keep - 1); i < stems.Count; i++)
+            {
+                older.Add(stems[i].Key);
+            }
+            return older;
+        }
+
+        /// <summary>A file of the report that failed, as report.txt's list gives it: its name and the reason, the user folder taken out.</summary>
+        public static string NotRead(string name, string reason, string profile)
+        {
+            return name + ": could not be read (" + Cut(FirstLine(MaskUser(reason ?? "unknown", profile)), LineChars) + ")";
+        }
+
+        /// <summary>An error's message as the failure notification shows it: the user folder taken out, cut to <see cref="ErrorChars"/>.</summary>
+        public static string ErrorText(string message, string profile)
+        {
+            return Cut(MaskUser(message ?? string.Empty, profile), ErrorChars);
+        }
+
+        /// <summary>A file address for a folder, not escaped: Windows reads an escaped one in its own code page, which mangles "João" or a Chinese name.</summary>
+        public static string FileUrl(string path)
+        {
+            return "file:///" + path.Replace('\\', '/').TrimStart('/');
+        }
+
+        /// <summary>What the file explorer is given to open a folder with the report picked.</summary>
+        public static string ExplorerSelect(string path)
+        {
+            return "/select,\"" + path + "\"";
         }
 
         /// <summary>

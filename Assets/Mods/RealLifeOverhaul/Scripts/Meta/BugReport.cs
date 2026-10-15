@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Meta
             }
             catch (Exception e)
             {
-                MetaLog.Error(e);
+                Fail(e);   // (said to the player: a press that does nothing would look like no button at all)
             }
         }
 
@@ -94,9 +94,20 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
+        // The game's text box; without one, or when it fails, the report is made without the player's words.
         private static void Ask()
         {
-            if (!BugReportGame.AskWords(Make))
+            bool asked;
+            try
+            {
+                asked = BugReportGame.AskWords(Make);
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                asked = false;
+            }
+            if (!asked)
             {
                 Make(null);
             }
@@ -192,33 +203,34 @@ namespace RealLifeOverhaul.Meta
             _busy = false;
         }
 
-        // On the worker: the folder, its files, report.txt last (it lists what the others came to), and the zip.
+        // On the worker: the older reports cleared, the folder, its files (each on its own: one that fails is said in report.txt
+        // and the rest still come), report.txt last (it lists what the others came to), and the zip.
         private static void Write(Job job)
         {
             try
             {
+                string reports = Path.GetDirectoryName(job.Folder);
+                Directory.CreateDirectory(reports);
+                Clear(reports);
+                job.Folder = Path.Combine(reports, BugReportRules.UniqueName(Path.GetFileName(job.Folder), name => Directory.Exists(Path.Combine(reports, name)) || File.Exists(Path.Combine(reports, name + ".zip"))));
                 Directory.CreateDirectory(job.Folder);
                 BugFacts f = job.Facts;
                 f.Files.Add("report.txt (this file)");
                 string logs = job.GameLog != null ? Path.GetDirectoryName(job.GameLog) : null;
-                if (BugReportGame.CopyLog(job.GameLog, Path.Combine(job.Folder, "Player.log"), BugReportRules.LogCap, f.Profile))
+                Part(f, "Player.log", "the game's log of this session", () => BugReportGame.CopyLog(job.GameLog, Path.Combine(job.Folder, "Player.log"), BugReportRules.LogCap, f.Profile));
+                Part(f, "Player-prev.log", "the game's log of the session before",
+                    () => logs != null && BugReportGame.CopyLog(Path.Combine(logs, "Player-prev.log"), Path.Combine(job.Folder, "Player-prev.log"), BugReportRules.PrevLogCap, f.Profile));
+                Part(f, Presets.SettingsFile, "the mod's options, as Export writes them", () =>
                 {
-                    f.Files.Add("Player.log (the game's log of this session)");
-                }
-                if (logs != null && BugReportGame.CopyLog(Path.Combine(logs, "Player-prev.log"), Path.Combine(job.Folder, "Player-prev.log"), BugReportRules.PrevLogCap, f.Profile))
-                {
-                    f.Files.Add("Player-prev.log (the game's log of the session before)");
-                }
-                File.WriteAllText(Path.Combine(job.Folder, Presets.SettingsFile), job.Settings, new System.Text.UTF8Encoding(false));
-                f.Files.Add(Presets.SettingsFile + " (the mod's options, as Export writes them)");
+                    File.WriteAllText(Path.Combine(job.Folder, Presets.SettingsFile), job.Settings, new System.Text.UTF8Encoding(false));
+                    return true;
+                });
                 if (job.Shot != null)
                 {
                     BugReportGame.Shot shot = job.Shot;
                     job.Shot = null;
-                    if (BugReportGame.WriteShot(shot, Path.Combine(job.Folder, "screenshot.jpg")))
-                    {
-                        f.Files.Add("screenshot.jpg (the screen as the report was made, " + shot.Width + " x " + shot.Height + ", read in " + shot.ReadMs + " ms)");
-                    }
+                    Part(f, "screenshot.jpg", "the screen as the report was made, " + shot.Width + " x " + shot.Height + ", read in " + shot.ReadMs + " ms",
+                        () => BugReportGame.WriteShot(shot, Path.Combine(job.Folder, "screenshot.jpg")));
                 }
                 File.WriteAllText(Path.Combine(job.Folder, "report.txt"), BugReportRules.Text(f), new System.Text.UTF8Encoding(false));
                 job.Zip = BugReportGame.Zip(job.Folder);
@@ -230,6 +242,58 @@ namespace RealLifeOverhaul.Meta
             finally
             {
                 BugReportGame.Drop(job.Shot);
+            }
+        }
+
+        // One file of the report, on its own: written, not there (said nothing of), or failed, which report.txt says with the reason.
+        private static void Part(BugFacts f, string name, string what, Func<bool> write)
+        {
+            try
+            {
+                if (write())
+                {
+                    f.Files.Add(name + " (" + what + ")");
+                }
+            }
+            catch (Exception e)
+            {
+                f.Files.Add(BugReportRules.NotRead(name, e.GetType().Name + ": " + e.Message, f.Profile));
+            }
+        }
+
+        // The older reports, so that with the new one there are BugReportRules.KeepReports; one that cannot be deleted is left.
+        private static void Clear(string reports)
+        {
+            try
+            {
+                var names = new List<string>();
+                foreach (string entry in Directory.GetFileSystemEntries(reports))
+                {
+                    names.Add(Path.GetFileName(entry));
+                }
+                foreach (string stem in BugReportRules.Older(names, BugReportRules.KeepReports))
+                {
+                    try
+                    {
+                        string folder = Path.Combine(reports, stem);
+                        if (Directory.Exists(folder))
+                        {
+                            Directory.Delete(folder, true);
+                        }
+                        if (File.Exists(folder + ".zip"))
+                        {
+                            File.Delete(folder + ".zip");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // (left as it is: it is deleted with the next report, or by the player)
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // (the older reports stay: the new one is written all the same)
             }
         }
 
@@ -250,7 +314,7 @@ namespace RealLifeOverhaul.Meta
             string file = job.Zip ?? job.Folder;
             BugFacts f = job.Facts;
             string summary = BugReportRules.Summary(f.ModVersion, f.GameBuild, f.Words, file, f.Profile);
-            BugReportGame.HandOver(summary, Path.GetDirectoryName(job.Folder));
+            BugReportGame.HandOver(summary, job.Folder, job.Zip);
             MetaLog.Info("bug report written to " + file + " (" + f.Files.Count + " file(s), " + f.LinesTotal + " warning(s) and error(s) of the mod's this session).");
             OptionsNotice.Tell(TitleKey, (job.Zip != null ? "reallife_bug_done" : "reallife_bug_done_folder").GetLocalization() + "\n\n" + file);
         }
@@ -259,7 +323,14 @@ namespace RealLifeOverhaul.Meta
         {
             _busy = false;
             MetaLog.Error(e);
-            OptionsNotice.Tell(TitleKey, "reallife_bug_failed".GetLocalization().Replace("{error}", e.Message));
+            try
+            {
+                OptionsNotice.Tell(TitleKey, "reallife_bug_failed".GetLocalization().Replace("{error}", BugReportRules.ErrorText(e.Message, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))));
+            }
+            catch (Exception inner)
+            {
+                MetaLog.Error(inner);
+            }
         }
     }
 }
