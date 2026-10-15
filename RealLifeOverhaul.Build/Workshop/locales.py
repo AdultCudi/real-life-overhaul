@@ -50,6 +50,7 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    'reallife_study_campus_school', 'reallife_work_employer_school', 'reallife_study_campus_university', 'reallife_study_sign', 'reallife_ledger_masthead', 'reallife_ledger_online_name_ledger', 'reallife_ledger_online_name_exchange', 'reallife_ledger_online_name_street', 'reallife_ledger_online_name_review', 'reallife_flare_ledger_name',
     'reallife_lst_test_name', 'reallife_lst_open_way', 'reallife_study_course_mba',
     'reallife-friend', 'reallife_leisure_drinks_choice', 'reallife_social_people_birthday_in', 'reallife_social_with',
     'reallife_travel_toast', 'reallife_travel_say', 'reallife-travel', 'reallife_travel_hotel_garment_hostel',
