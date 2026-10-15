@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using RealLifeOverhaul;
 using BankCity = RealLifeOverhaul.Economy.BankCity;
@@ -678,8 +678,15 @@ internal static partial class Program
             facts &= page != null && page.Contains(fact);
         }
         Check(facts, "end scale: the Guide's page gives the scale's figures from the code");
-        string next;
-        Check(en.TryGetValue("reallife_changes_next", out next) && next.Contains("scale") && !next.StartsWith("Fixed: ", StringComparison.Ordinal), "end scale: What's new names the end game at scale");
+        bool named = false;   // (in the next row, or its version's row once the version is made)
+        foreach (var row in en)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains("end game at scale") && !row.Value.StartsWith("Fixed: ", StringComparison.Ordinal))
+            {
+                named = true;
+            }
+        }
+        Check(named, "end scale: What's new names the end game at scale (in the next row, or its version's row once it is made)");
     }
 
     private static bool HasHan(string text)
