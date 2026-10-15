@@ -42,6 +42,7 @@ namespace RealLifeOverhaul
 
         private readonly Transform _owner;
         private readonly BikePlaces _places;
+        private readonly BikeNames _names = new BikeNames();
         private readonly List<string> _scratch = new List<string>(8);
 
         private VehicleController _selected;
@@ -127,12 +128,14 @@ namespace RealLifeOverhaul
                     _riding.Effort = 1f;
                     _riding.Mounted(gm.playerController);
                 }
+                _names.Ride(_riding);
                 return;
             }
             if (_riding == null)
             {
                 return;
             }
+            _names.Frame();
             if (_riding.Fell > 0f)
             {
                 Fall(_riding);
@@ -485,6 +488,7 @@ namespace RealLifeOverhaul
             {
                 Point(gm);
             }
+            _names.Quick();
             if (!_places.Found || gm.playerController == null)
             {
                 return;
@@ -1207,6 +1211,7 @@ namespace RealLifeOverhaul
                 _riding.Dismounted();
                 _riding = null;
             }
+            _names.Dispose();
             _places.Dispose();
             BikeBody.Dispose();
         }

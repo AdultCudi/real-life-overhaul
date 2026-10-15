@@ -18,9 +18,10 @@ namespace RealLifeOverhaul
         public int Colour;             // 0xRRGGBB of the frame or tank: the colour the modelled bike is painted in the atlas, and the tint of its paint parts
 
         // a bicycle: human-powered
-        public float CruiseKmh;        // what steady pedalling holds on the flat
-        public float PowerKw;          // the "engine" behind the pedals, sized for the game's 250 kg scooter body
+        public BikeRules.Ride Push;    // the rider's push (BikeRules: checked offline)
         public float EnergyPerSecond;  // of pedalling
+
+        public float CruiseKmh => Push.CruiseKmh;   // what steady pedalling holds on the flat
 
         // a motorbike: targets for the car model
         public float Seconds;          // 0-100 km/h
@@ -60,7 +61,7 @@ namespace RealLifeOverhaul
             {
                 Kind = BikeKind.CityBicycle, Name = "reallife_bike_name_city", Prop = "bicycle_city", Price = 350, Colour = 0x124D70,
                 Ride = "cycle_ride", Coast = "cycle_coast", Stand = "cycle_stand",
-                CruiseKmh = 38f, PowerKw = 1.7f, EnergyPerSecond = 0.06f,
+                Push = BikeRules.City, EnergyPerSecond = 0.06f,
                 RearZ = -0.52f, FrontZ = 0.58f, WheelRadius = 0.34f, Seat = new Vector2(0.93f, -0.30f), Grip = new Vector3(0.26f, 1.14f, 0.16f),
                 Crank = new Vector2(0.29f, -0.08f), HeadTop = new Vector2(1.00f, 0.36f), HeadBottom = new Vector2(0.70f, 0.44f)
             },
@@ -68,7 +69,7 @@ namespace RealLifeOverhaul
             {
                 Kind = BikeKind.RoadBicycle, Name = "reallife_bike_name_road", Prop = "bicycle_road", Price = 900, Colour = 0x9E090A,
                 Ride = "cycle_ride_road", Coast = "cycle_coast_road", Stand = "cycle_stand_road",
-                CruiseKmh = 50f, PowerKw = 2.3f, EnergyPerSecond = 0.08f,
+                Push = BikeRules.Road, EnergyPerSecond = 0.08f,
                 // the grips are the TOPS of its drop bar, either side of the stem: the one part of a drop bar that lies along X
                 RearZ = -0.49f, FrontZ = 0.55f, WheelRadius = 0.34f, Seat = new Vector2(0.95f, -0.29f), Grip = new Vector3(0.13f, 1.00f, 0.42f),
                 Crank = new Vector2(0.28f, -0.07f), HeadTop = new Vector2(0.99f, 0.36f), HeadBottom = new Vector2(0.72f, 0.43f)
