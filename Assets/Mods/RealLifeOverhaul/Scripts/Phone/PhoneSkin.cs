@@ -16,7 +16,9 @@ namespace RealLifeOverhaul
     /// home bar. It plugs into the game's own phone-frame system (the default entry of
     /// SmartPhoneFrame), so phone accessories bought in game keep working.
     /// All artwork is generated once in code; the only recurring work is updating the clock
-    /// text when the in-game minute changes.
+    /// text when the in-game minute changes. A photo of the Gallery's can be the wallpaper
+    /// (<see cref="Wallpaper"/>): it is laid over the drawn one, its middle cut to the screen's
+    /// shape, and taken away again when the look is switched off (and back when it is on).
     /// </summary>
     public class PhoneSkin : MonoBehaviour
     {
@@ -56,6 +58,65 @@ namespace RealLifeOverhaul
         private GameObject _chrome;
         private TextMeshProUGUI _clock;
         private int _clockMinute = -1;
+        private RawImage _photo;            // a photo of the Gallery's as the wallpaper (Photos/GalleryApp), over the drawn one
+        private Texture _photoTexture;      // ...its picture, the Gallery's own: it is never destroyed here
+
+        private const float ScreenShape = 628f / 1230f;   // the HUD phone's width to its height (Smartphone/Container), until its screen is laid out
+
+        /// <summary>The phone's look while it is applied (the option on and the game's phone found).</summary>
+        public static PhoneSkin Instance { get; private set; }
+
+        /// <summary>True while the modern look is on the phone: only then has it a wallpaper a photo can be.</summary>
+        public bool Applied => _applied;
+
+        /// <summary>
+        /// A picture as the phone's wallpaper (null: the drawn one again). False, and nothing taken, while the look is off. A
+        /// picture taken stays the wallpaper when the look is switched off and on again; the caller keeps it alive until it
+        /// puts the drawn one back.
+        /// </summary>
+        public bool Wallpaper(Texture picture)
+        {
+            if (picture != null && !_applied)
+            {
+                return false;
+            }
+            _photoTexture = picture;
+            ShowPhoto();
+            return true;
+        }
+
+        // The photo over the drawn wallpaper, its middle cut to the screen's shape; or taken away.
+        private void ShowPhoto()
+        {
+            if (_photoTexture == null || !_applied || _background == null)
+            {
+                if (_photo != null)
+                {
+                    Destroy(_photo.gameObject);
+                    _photo = null;
+                }
+                return;
+            }
+            if (_photo == null)
+            {
+                var made = new GameObject("RealLifeOverhaul Wallpaper Photo", typeof(RectTransform));
+                made.transform.SetParent(_background.transform.parent, false);
+                made.transform.SetSiblingIndex(_background.transform.GetSiblingIndex() + 1);
+                Stretch((RectTransform)made.transform);
+                _photo = made.AddComponent<RawImage>();
+                _photo.raycastTarget = false;   // never block clicks meant for the phone itself
+            }
+            _photo.texture = _photoTexture;
+            var screen = _background.transform.parent as RectTransform;
+            float shape = screen != null && screen.rect.height > 1f ? screen.rect.width / screen.rect.height : ScreenShape;
+            float picture = (float)_photoTexture.width / Mathf.Max(1, _photoTexture.height);
+            _photo.uvRect = picture > shape ? new Rect((1f - shape / picture) / 2f, 0f, shape / picture, 1f) : new Rect(0f, (1f - picture / shape) / 2f, 1f, picture / shape);
+        }
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private static readonly int HotUpdate = HotSpots.Slot("Phone: PhoneSkin.Update");
         private void Update()
@@ -104,6 +165,10 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             Remove();
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void TryApply()
@@ -177,6 +242,7 @@ namespace RealLifeOverhaul
 
                 CreateChrome(mask);
                 _applied = true;
+                ShowPhoto();
                 Logger?.Info("Phone skin applied.");
             }
             catch (Exception e)
@@ -253,6 +319,11 @@ namespace RealLifeOverhaul
             {
                 _arrow.color = _vanillaArrowColor;
                 _arrow = null;
+            }
+            if (_photo != null)
+            {
+                Destroy(_photo.gameObject);
+                _photo = null;
             }
             if (_background != null)
             {

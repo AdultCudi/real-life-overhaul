@@ -56,6 +56,12 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The phone is put away and photo mode starts as a selfie (Leisure/Photo/PhotoMode): the picture saved comes back as a draft. Default: nothing.</summary>
         public static Action TakeSelfie;
 
+        /// <summary>
+        /// The phone's own camera opens (Photos/CameraMode, the Camera app's): its first photo comes back to the compose sheet
+        /// through SharePhoto. False when the Camera is off: Flare then takes its own shot of the screen. Default: none.
+        /// </summary>
+        public static Func<bool> OpenCamera;
+
         /// <summary>One of the player's businesses is hiring (an announcement this week): somebody may write asking for work. Default: no.</summary>
         public static Func<bool> Hiring;
 
@@ -74,6 +80,7 @@ namespace RealLifeOverhaul.Flare
             Destination = null;
             EventDestination = null;
             TakeSelfie = null;
+            OpenCamera = null;
             Hiring = null;
         }
     }
