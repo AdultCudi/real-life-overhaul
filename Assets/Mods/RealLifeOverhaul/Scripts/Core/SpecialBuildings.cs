@@ -256,6 +256,23 @@ namespace RealLifeOverhaul
             return Book.Holds(street, number);
         }
 
+        /// <summary>
+        /// True if a feature is in the building at an address now (put in the book), leaving reservations aside: for
+        /// a question about what the mod has made of a building (a floor it fits out, a door it uses), never about
+        /// what a feature may choose. A building only reserved (the player's two offices, the university's or City
+        /// Utilities' fixed address before it has moved in) is the game's as it stands, its businesses and jobs included.
+        /// </summary>
+        public static bool Filed(string street, int number)
+        {
+            return Book.FiledId(street, number) != null;
+        }
+
+        /// <summary>The same for a building in the street.</summary>
+        public static bool Filed(CityBuildingController building)
+        {
+            return FiledAt(building) != null;
+        }
+
         /// <summary>True if a feature holds this building.</summary>
         public static bool Holds(CityBuildingController building)
         {

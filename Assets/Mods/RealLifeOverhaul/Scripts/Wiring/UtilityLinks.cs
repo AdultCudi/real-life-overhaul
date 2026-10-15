@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
             {
                 // City Utilities' building, 13 7th Street, held for it from the start while it is on (Core/CityReserves).
                 SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities);
+                TravelBridges.UtilitiesPicked = () => !Settings.Utilities || UtilitiesDirector.Failed
+                    || (UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.Office != null && UtilitiesDirector.Instance.Office.Searched);
                 UtilitiesBridges.Grade = () => (int)Economy.CreditLedger.Grade;
                 UtilitiesBridges.Household = Household;
                 UtilitiesBridges.CloseFor = (reg, hours) => BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours, ClosureSource.Utilities);
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SpecialBuildings.Unreserve(CityReserves.UtilitiesId);
+                TravelBridges.UtilitiesPicked = null;
                 UtilitiesBridges.Reset();
                 BusinessDirector.UtilitiesOn = null;
                 LifeAccounts.Power = null;

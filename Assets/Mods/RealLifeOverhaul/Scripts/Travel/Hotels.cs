@@ -64,6 +64,8 @@ namespace RealLifeOverhaul
         private readonly IModLogger _logger;
         private readonly Transform _root;
         private readonly List<HotelSite> _sites = new List<HotelSite>(8);
+        private const float WaitForUtilities = 90f;   // seconds of the real clock at most
+
         private readonly HashSet<Building> _taken = new HashSet<Building>();
         private CityProps _props;
         private CityPerson _doorman;
@@ -73,6 +75,7 @@ namespace RealLifeOverhaul
         private int _wallMask;
         private int _solidMask;
         private bool _resolved;
+        private float _waitUntil;   // the real clock until which the hotels wait for City Utilities to choose first
         private int _look;
 
         public Hotels(Transform root, IModLogger logger)
@@ -131,6 +134,18 @@ namespace RealLifeOverhaul
             if (city == null || city.cityBuildingControllers == null || BuildingHelper.allBuildings == null || BuildingHelper.allBuildings.Count == 0)
             {
                 return false;
+            }
+            Func<bool> first = TravelBridges.UtilitiesPicked;
+            if (first != null && !first())
+            {
+                if (_waitUntil <= 0f)
+                {
+                    _waitUntil = Time.unscaledTime + WaitForUtilities;
+                }
+                if (Time.unscaledTime < _waitUntil)
+                {
+                    return false;   // (City Utilities chooses its residential building first: a fixed order on every machine)
+                }
             }
             _resolved = true;
             _wallMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls");

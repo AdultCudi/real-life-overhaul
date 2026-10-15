@@ -50,6 +50,8 @@ internal static partial class Program
               && SpecialNameBook.GivesWay(false, book.HolderOf("ba:street_broadwaystreet", 12), "police_")
               && SpecialNameBook.GivesWay(false, book.HolderOf("ba:street_seventhstreet", 17), "techhq_"),
             "kept offices: every picker that asks who holds a building passes them over, and a police station or a tower the save had there gives way");
+        Check(book.Holds("ba:street_seventhstreet", 17) && book.FiledId("ba:street_seventhstreet", 17) == null,
+            "kept offices: reserved is not filed: no feature is in 17 7th Street, so its business (Barbosa Studios in a player's game) and its jobs are the game's");
         Check(!book.Refuses("ba:street_seventhstreet", 17, false, false) && !book.Refuses("ba:street_broadwaystreet", 12, false, false),
             "kept offices: they are not refused to the player: 17 7th Street is a plain office to rent or buy as the game has it");
 
@@ -165,5 +167,13 @@ internal static partial class Program
         Check(fit.Contains("/// Nothing is saved.") && Read(@"Core\FrontSigns.cs").Contains("nothing of it saved"),
             "17 7th Street: what the mod stood or fitted there before (sign, lit name, furnished floor) was never saved, so an older save loads it as the game's own office");
         Check(court.Contains("SpecialBuildings.Players(building)") && host.Contains("SpecialBuildings.Players(b)"), "player's buildings: the courthouse and City Utilities never choose a player's building");
+        // A bare reservation is not the mod being there: a career job at a business in a kept office (Barbosa Studios at
+        // 17 7th Street) has the game's own desk, and only a building a feature is in counts (SpecialBuildings.Filed).
+        string desk = Read(@"Careers\CareersDirector.Desk.cs"), civic = Read(@"Civic\CivicDirector.cs");
+        Check(!desk.Contains("SpecialBuildings.Holds(") && CampusCount(desk, "SpecialBuildings.Filed(j.Post.Street, j.Post.Number)") == 2
+              && !civic.Contains("SpecialBuildings.Holds(") && civic.Contains("SpecialBuildings.Filed(building)"),
+            "kept offices: a career's desk and the canvasser's door knock ask whether a feature is in a building, never whether one is only reserved");
+        Check(Read(@"Travel\Hotels.cs").Contains("Func<bool> first = TravelBridges.UtilitiesPicked;") && utilLinks.Contains("TravelBridges.UtilitiesPicked = () =>"),
+            "utilities: the hotels choose after City Utilities, so the two never race for a residential building on any machine");
     }
 }
