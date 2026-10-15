@@ -38,6 +38,7 @@ namespace RealLifeOverhaul
             _started = context.ModId;
             IModLogger log = context.Logger;
             Guard.Logger = log;   // (every step below that can fail is one of Guard.Step: one that fails costs the mod only itself)
+            Guard.Step("the bug report's record of the mod's warnings", Meta.BugReportGame.Listen);   // kept from the first line on, for "Report a bug" (Meta/BugReport)
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on (read below; OptionsLayout.Organise applies it)
             _context = context;
             Keys.Logger = context.Logger;
