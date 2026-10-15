@@ -1,4 +1,4 @@
-0.27.7
+0.28.0
 
 New
-- Brand recognition now grows across districts: a brand with shops spread over the city rises week by week in each district and city-wide, not only one packed into a district.
+- The city's faults are real: street lights go dark, potholes open, litter piles up and unsafe places appear at random as you play, and Flare reports are checked against them, with crews for real ones and a cost for reports of nothing.
