@@ -333,9 +333,16 @@ internal static partial class Program
         bool line = true;
         for (int l = 0; l < 3 && l < langs.Length; l++)
         {
-            line &= langs[l].TryGetValue("reallife_changes_next", out string next) && next.Length > 20 && (l != 0 || next.Contains("Fixed: a brand with its shops spread over several districts"));
+            // any reallife_changes_ row: the line is in the next row until a release numbers it
+            bool found = false;
+            foreach (var row in langs[l])
+            {
+                found |= row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
+                         && row.Value.Length > 20 && (l != 0 || row.Value.Contains("Fixed: a brand with its shops spread over several districts"));
+            }
+            line &= found;
         }
-        Check(line, "brand offer: What's new has the fix's line in English, Portuguese and Chinese");
+        Check(line, "brand offer: What's new has the fix's line in English, Portuguese and Chinese, in some reallife_changes_ row");
     }
 
     // Three gyms of a brand in one district, each with standards of 85 (the player's store rating over 80).
