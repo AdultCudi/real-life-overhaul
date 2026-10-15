@@ -29,6 +29,10 @@ namespace RealLifeOverhaul.Economy
     /// is taken off the phone, and the bank is kept in the save as it was, to go on when the option is on again (the
     /// days between are not run). A fault switches it off for the session with one line.
     ///
+    /// At the end game's scale (Core/EndScale, its option on: <see cref="ScaleNow"/>) the day reads the city at its real
+    /// size, hires the bank's crews and charges their wages, its systems and the deposit insurance; a bank that ran before
+    /// is brought to it over four game weeks, with a notice on the first day.
+    ///
     /// Cost: nothing per frame. Once a second: a few comparisons. Once a game day: one run of the rules per day ended
     /// (a few dozen sums, the fund's pass over the market's quotes) and a handful of transactions.
     /// </summary>
@@ -66,6 +70,26 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>The bank while the feature runs (it may be none yet: OwnBankState.None); null otherwise.</summary>
         public OwnBank Bank => _running && !_broken ? _bank : null;
+
+        /// <summary>
+        /// The end game's share for the bank today (Core/EndScale): 0 with its option off or no bank file; the day it began
+        /// is kept with the bank, so a bank that ran before comes to it over four game weeks, with a notice on the first day.
+        /// </summary>
+        public int ScaleNow()
+        {
+            if (_bank == null || Save == null)
+            {
+                return 0;
+            }
+            int today = Save.Day, before = _bank.ScaleFrom;
+            _bank.ScaleFrom = EndScaleRules.From(Settings.EndScale, before, today, _bank.Running);
+            if (EndScaleRules.Begins(before, _bank.ScaleFrom, today))
+            {
+                Tell(NotificationType.Info, "reallife_endscale_note_phase", TabBank, "what", OwnBankText.T("reallife_endscale_what_bank"), "days", EndScaleRules.PhaseDays.ToString());
+                Logger?.Info("Own bank: the end game's scale begins to come in for the bank on day " + today + ", over " + EndScaleRules.PhaseDays + " days.");
+            }
+            return EndScaleRules.Share(Settings.EndScale, _bank.ScaleFrom, today);
+        }
 
         public bool Running => _running && !_broken;
 
@@ -428,8 +452,8 @@ namespace RealLifeOverhaul.Economy
             {
                 why = "reallife_ob_why_no_hq";
             }
-            int level = Prices.Level;
-            long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, _bank.Closures);
+            int level = Prices.Level, share = ScaleNow();
+            long licence = OwnBankRules.Licence(level, share), capital = OwnBankRules.CapitalLeast(level, _bank.Closures, share);
             if (why == null && licence + capital > OwnBankGame.Cash)
             {
                 why = "reallife_ob_why_no_cash";
@@ -495,7 +519,7 @@ namespace RealLifeOverhaul.Economy
         {
             why = Ready() ?? (!_bank.Running ? "reallife_ob_why_none" : _bank.Test ? "reallife_ob_why_test" : null);
             cents = OwnBankRules.ToStep(cents);
-            if (why == null && (cents <= 0 || !OwnBankRules.TakeOut(_bank, cents, Prices.Level)))
+            if (why == null && (cents <= 0 || !OwnBankRules.TakeOut(_bank, cents, Prices.Level, ScaleNow())))
             {
                 why = "reallife_ob_why_too_much";
             }

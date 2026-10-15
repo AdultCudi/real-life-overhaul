@@ -92,6 +92,9 @@ namespace RealLifeOverhaul.Economy
         public long MonthLost, LastLost, LostAll, RecoveredAll;   // written off, and come back, in all
         public readonly long[] History = new long[OwnBankCatalogue.HistoryMonths];   // each month's profit, the oldest first
         public int HistoryCount;
+        // ---- the end game's scale (Core/EndScale)
+        public int ScaleFrom = EndScaleRules.Unset;   // the day it began to come in for the bank
+        public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];   // tellers, relationship managers, loan officers, compliance
 
         public bool Running => State == OwnBankState.Running;
         public bool Exists => State != OwnBankState.None;
@@ -194,6 +197,7 @@ namespace RealLifeOverhaul.Economy
         public int Integrity;           // the player's integrity as an owner, 0 to 100 (Standing: 50 while it is off)
         public int Tax, Grants, Wages, Rent;   // the council's levers: -1, 0 or 1
         public bool Courts;             // the justice system takes a lender's claims
+        public int Scale;               // the end game's share for the bank (Core/EndScale): 0 every figure as before, 1000 at scale
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)
@@ -214,6 +218,7 @@ namespace RealLifeOverhaul.Economy
     {
         public long Interest, Reserve, Dividends, Recovered, Gains;    // in: takings
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
+        public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
@@ -221,13 +226,13 @@ namespace RealLifeOverhaul.Economy
         public long WoundUp;                    // what winding it up left for the player, when it was closed
 
         public long Income => Interest + Reserve + Dividends + Recovered + Gains;
-        public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine;
+        public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine + Systems;
         public long Profit => Income - Costs;
 
         public void Clear()
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
-            Savers = Staff = Lost = Court = FundLost = Fees = Fine = 0;
+            Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;

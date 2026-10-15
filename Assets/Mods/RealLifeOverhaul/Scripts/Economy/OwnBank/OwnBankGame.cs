@@ -134,7 +134,8 @@ namespace RealLifeOverhaul.Economy
                 Grants = lever != null ? lever(Lever.Grants) : 0,
                 Wages = lever != null ? lever(Lever.Wages) : 0,
                 Rent = lever != null ? lever(Lever.Rent) : 0,
-                Courts = OwnBankBridges.Courts != null && OwnBankBridges.Courts()
+                Courts = OwnBankBridges.Courts != null && OwnBankBridges.Courts(),
+                Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0
             };
         }
 
@@ -154,6 +155,7 @@ namespace RealLifeOverhaul.Economy
             Book(-d.Savers, OwnBankCatalogue.SaversKey, hq, null, day, true, true);
             Book(-(d.Lost + d.Court + d.FundLost + d.Fees), OwnBankCatalogue.LossesKey, hq, null, day, true, true);
             Book(-d.Staff, OwnBankCatalogue.WagesKey, hq, GameBooks.Salaries, day, true, true);
+            Book(-d.Systems, OwnBankCatalogue.SystemsKey, hq, null, day, true, true);
             Book(-d.Fine, OwnBankCatalogue.FineKey, hq, null, day, false, true);
             if (profit > 0)
             {

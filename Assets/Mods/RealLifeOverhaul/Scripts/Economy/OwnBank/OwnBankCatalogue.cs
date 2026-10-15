@@ -178,6 +178,28 @@ namespace RealLifeOverhaul.Economy
         public const string SaversRow = "reallife_books_ownbank_savers";               // the headquarters' statement: rows among its goods
         public const string LossesRow = "reallife_books_ownbank_losses";
 
+        public const string SystemsKey = "reallife_transaction_ownbank_systems";       // at the end game's scale: its systems, compliance and deposit insurance
+
+        // ---------------------------------------------------------------- at scale (Core/EndScale: the end game's real figures, mixed in by its share)
+        // The city's savings and borrowing at its real size; a licence that comes with the core banking systems and the
+        // branches, and the capital a real regulator wants of a new bank; crews by kind instead of a share of what it holds
+        // (tellers and branch staff for the people's savings, relationship managers for the businesses', loan officers and
+        // underwriters for its loans, compliance and risk officers for all it holds); and its systems and the deposit
+        // insurance every day. Short of a crew, it lends and takes savings more slowly.
+        public const long LicenceCentsScale = 6000000000L;        // $60,000,000
+        public const long CapitalLeastCentsScale = 15000000000L;  // $150,000,000
+        public const int PoolScale = 5000;                        // thousandths of the city's savings and borrowing at its real size
+        public const int Tellers = 0, Managers = 1, Officers = 2, Compliance = 3, CrewKinds = 4;
+        public static readonly int[] CrewWage = { 16000, 42000, 36000, 45000 };   // cents a day each
+        public const long TellerCents = 1200000000L;              // people's savings one teller and branch person looks after ($12,000,000: 2,000 savers)
+        public const long ManagerCents = 720000000L;              // businesses' savings one relationship manager looks after ($7,200,000: 120 businesses)
+        public const long OfficerCents = 800000000L;              // loans one loan officer or underwriter looks after ($8,000,000)
+        public const int ComplianceLeast = 12;                    // compliance and risk officers at the least...
+        public const long ComplianceCents = 15000000000L;         // ...and one more for each $150,000,000 it holds
+        public const long SystemsDayCents = 4000000L;             // core banking, cards, payments and data, a day ($40,000)
+        public const int InsuranceBp = 8;                         // deposit insurance a year, hundredths of a per cent of the deposits
+        public const int CrewPace = 40;                           // thousandths of the need hired a day while short
+
         /// <summary>True for a transaction of the bank's that is takings at its headquarters (the statement counts it so).</summary>
         public static bool IsTakings(string type) => type == TakingsKey;
 

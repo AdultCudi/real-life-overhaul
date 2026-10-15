@@ -58,5 +58,46 @@ namespace RealLifeOverhaul.Tech
         public const int TrainGrowth = 2000;          // thousandths: each generation takes twice the last
         public const int RentedGpuShare = 1300;       // thousandths of the list price the player pays a rival cloud for AI compute
         public const int InferencePerCustomer = 60;   // AI compute unit-thousandths a customer of a model uses a day
+
+        // ---------------------------------------------------------------- at scale (Core/EndScale: the end game's real figures, mixed in by its share)
+        // A data centre at scale is built as the real thing is, about ten million a megawatt; a rack of the new kind is a
+        // rack of dense servers, an AI rack one of current accelerators, each selling far more compute than the old kind
+        // at the same price a unit. Racks bought before the scale stay the old kind until they are replaced.
+        public static readonly int[] FitPerSqmScale = { 700000, 1000000, 1300000, 1800000 };   // cents a square metre, by tier
+        public const int RackCostScale = 30000000;        // a rack of dense servers, cents ($300,000)
+        public const int GpuRackCostScale = 200000000;    // a rack of current AI accelerators ($2,000,000)
+        public const int UnitsPerRackScale = 800;         // compute a rack of the new kind sells as
+        public const int GpuUnitsPerRackScale = 360;      // AI compute a new AI rack sells as
+        public static readonly int[] PueScale = { 1700, 1500, 1350, 1200 };   // thousandths of the racks' own power drawn with the cooling, by tier
+        public const int UpkeepRack = 17000;              // cents a day for a rack of the new kind: support, spares, transit and software licences
+        public const int UpkeepGpu = 120000;              // ...for a new AI rack
+        public const int FacilityYear = 40;               // thousandths of the fit-out's worth a 365-day year: the building's upkeep and insurance
+        public const int ColoDemandScale = 120;           // racks the city's companies rent at scale (the rent stays a real colocation rent)
+        public const int CloudDemandScale = 120000;       // units the city buys at the list price in a steady economy, at scale
+        public const int GpuDemandScale = 4000;
+        public const int HyperDemandScale = 4000;         // thousandths: a hyperscaler at scale sells to the city's large companies and beyond it...
+        public const int HyperRegionScale = 1500;         // ...and each region past the three it needs opens this much more
+        public const long LicenceFeeScale = 50000000;     // the cloud's licences and certifications a game year, cents ($500,000)
+        public const int CloudRacksLeastScale = 40;
+        public const long CloudCashLeastScale = 5000000000;    // $50,000,000
+        public const int HyperRacksScale = 400;
+        public const long HyperCashScale = 100000000000;       // $1,000,000,000
+
+        // The crews a data centre at scale keeps besides its professionals (hired by the data centre itself, a share of the
+        // need a day): operators on shifts for the racks, electrical and cooling engineers for the power drawn, security
+        // for the site; and the cloud's operations people for the compute it sells. Wages a day each, cents.
+        public const int Operators = 0, Engineers = 1, Security = 2, CrewKinds = 3;
+        public static readonly int[] CrewWage = { 26000, 34000, 17000 };
+        public const int OpsWage = 38000;                 // the cloud's operations and support people
+        public const int OperatorRacks = 10;               // racks of either kind an operator looks after
+        public const int OperatorGpu = 2;                 // ...AI racks
+        public const int OperatorsLeast = 4;              // round the clock, at the least
+        public const int EngineerKw = 250;                // kW of draw an electrical and cooling engineer looks after
+        public const int EngineersLeast = 2;
+        public const int GuardsLeast = 4;                 // security on the site round the clock...
+        public const int GuardSqm = 1000;                 // ...and one more for each this many square metres
+        public const int OpsUnits = 1500;                 // units of the cloud's capacity one operations person looks after
+        public const int CrewPace = 40;                   // thousandths of the need hired a day while short
+        public const int RacksStep = 25;                  // racks bought at a time at scale (5 before)
     }
 }

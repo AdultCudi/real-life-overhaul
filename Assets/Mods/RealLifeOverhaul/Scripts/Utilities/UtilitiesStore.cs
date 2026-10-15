@@ -10,7 +10,9 @@ namespace RealLifeOverhaul.Utilities
     /// its place (escaped, so that no divider can break the line) and its figures, "~n:" the player's broadband company
     /// (none in a line of version 1), "~g:" the internet's grace period while it runs (its end, then the places it covers,
     /// escaped; none in a line from before it). A line that cannot be read gives no state (the director starts afresh from the
-    /// player's places); figures out of range are brought within it.
+    /// player's places); figures out of range are brought within it. The company's end game at scale (Core/EndScale) is
+    /// appended after its months: the day it began to come in, each district built at scale, its three crews; a line
+    /// written before them reads with no day (an existing company is phased in), no district at scale and no crews.
     /// </summary>
     public static class UtilitiesStore
     {
@@ -83,6 +85,15 @@ namespace RealLifeOverhaul.Utilities
                 {
                     t.Append('|').Append(n.History[h].ToString(Inv));
                 }
+                t.Append('|').Append(n.ScaleFrom.ToString(Inv));
+                for (int d = 0; d < Network.Districts; d++)
+                {
+                    t.Append('|').Append(n.Scaled[d] ? 1 : 0);
+                }
+                for (int k = 0; k < BroadbandCatalogue.CrewKinds; k++)
+                {
+                    t.Append('|').Append(n.Crew[k].ToString(Inv));
+                }
             }
             if (s.GraceUntil > 0 && s.Grace.Count > 0)
             {
@@ -134,6 +145,16 @@ namespace RealLifeOverhaul.Utilities
             for (int h = 0; h < n.History.Length; h++)
             {
                 n.History[h] = I(c, at++);
+            }
+            n.ScaleFrom = at < c.Length ? I(c, at) : EndScaleRules.Unset;
+            at++;
+            for (int d = 0; d < Network.Districts; d++)
+            {
+                n.Scaled[d] = I(c, at++) != 0;
+            }
+            for (int k = 0; k < BroadbandCatalogue.CrewKinds; k++)
+            {
+                n.Crew[k] = Math.Max(0, I(c, at++));
             }
         }
 

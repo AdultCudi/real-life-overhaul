@@ -19,6 +19,11 @@ namespace RealLifeOverhaul.Economy
     /// rates against the rivals'. Nothing moves by more than a share of a month's way in a day, so savers and borrowers
     /// are won and lost over months, and a run empties a bank over weeks, never in a day.
     ///
+    /// AT THE END GAME'S SCALE (Core/EndScale, the city's Scale) the city's savings and borrowing are at its real size, the
+    /// licence and the least capital are a real bank's, and the bank keeps crews by kind (hired towards what it holds; short
+    /// of them it takes savings and lends more slowly) and pays its systems and deposit insurance. At a share of 0 every
+    /// figure is as before.
+    ///
     /// Cost: a day is a few dozen sums over five segments, two kinds of saver and the fund's dozen holdings; nothing is
     /// allocated but in the fund's weekly rebalance (one small list).
     /// </summary>
@@ -36,15 +41,20 @@ namespace RealLifeOverhaul.Economy
             return (cents * Level(level) + PriceRules.Start / 2) / PriceRules.Start;
         }
 
-        public static long Licence(int level) => At(OwnBankCatalogue.LicenceCents, level);
+        /// <summary>The banking licence at today's prices and the end game's share (Core/EndScale), cents.</summary>
+        public static long Licence(int level, int share = 0) => At(EndScaleRules.Mix(OwnBankCatalogue.LicenceCents, OwnBankCatalogue.LicenceCentsScale, share), level);
 
-        public static long CapitalLeast(int level) => At(OwnBankCatalogue.CapitalLeastCents, level);
+        public static long CapitalLeast(int level) => At(LeastAt(0), level);
+
+        public static long CapitalLeast(int level, int closures) => CapitalLeast(level, closures, 0);
 
         /// <summary>The capital a new bank must pay in when the regulator has closed this many of the player's banks before: the least, and AgainCapital thousandths more for each.</summary>
-        public static long CapitalLeast(int level, int closures)
+        public static long CapitalLeast(int level, int closures, int share)
         {
-            return At(OwnBankCatalogue.CapitalLeastCents * (1000 + Math.Max(0, closures) * OwnBankCatalogue.AgainCapital) / 1000, level);
+            return At(LeastAt(share) * (1000 + Math.Max(0, closures) * OwnBankCatalogue.AgainCapital) / 1000, level);
         }
+
+        private static long LeastAt(int share) => EndScaleRules.Mix(OwnBankCatalogue.CapitalLeastCents, OwnBankCatalogue.CapitalLeastCentsScale, share);
 
         public const string AgainWaitKey = "reallife_ob_why_closed_before", AgainIntegrityKey = "reallife_ob_why_closed_integrity";
 
@@ -137,13 +147,13 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The city's savings of a kind at today's prices, cents.</summary>
         public static long SavingsPool(BankCity c, int kind)
         {
-            return At(OwnBankCatalogue.SavingsCents[kind], c.Level);
+            return At(OwnBankCatalogue.SavingsCents[kind] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level);
         }
 
         /// <summary>What a kind of borrower would owe the city's banks at today's prices in this cycle, cents.</summary>
         public static long DemandPool(BankCity c, int segment)
         {
-            return At(OwnBankCatalogue.DemandCents[segment], c.Level) * OwnBankCatalogue.DemandCycle[Cycle(c)] / 1000;
+            return At(OwnBankCatalogue.DemandCents[segment] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level) * OwnBankCatalogue.DemandCycle[Cycle(c)] / 1000;
         }
 
         /// <summary>The savings of a kind the bank would hold, as the city's savers would share them out now, cents.</summary>
@@ -332,6 +342,7 @@ namespace RealLifeOverhaul.Economy
             b.FundLimit = 0;
             b.Rebalance = false;
             b.Holdings.Clear();
+            Array.Clear(b.Crew, 0, b.Crew.Length);
             b.Scare = 0;
             b.Run = false;
             b.RunFrom = 0;
@@ -361,22 +372,22 @@ namespace RealLifeOverhaul.Economy
         /// deposits need, the capital over the least the regulator wants and over what keeps the ratio at the lending
         /// line. Nothing while the regulator is after the bank or its savers are running.
         /// </summary>
-        public static long MostOut(OwnBank b, int level)
+        public static long MostOut(OwnBank b, int level, int share = 0)
         {
             if (!b.Running || b.Stage == Regulator.Breach || b.Run || b.Test)
             {
                 return 0;
             }
             long cash = b.Reserves - ReserveNeed(b);
-            long keep = Math.Max(CapitalLeast(level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
+            long keep = Math.Max(CapitalLeast(level, 0, share), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
             long capital = CapitalNow(b) - keep;
             return ToStep(Math.Min(cash, capital));
         }
 
         /// <summary>A dividend taken out of the capital. False if it is more than <see cref="MostOut"/>.</summary>
-        public static bool TakeOut(OwnBank b, long cents, int level)
+        public static bool TakeOut(OwnBank b, long cents, int level, int share = 0)
         {
-            if (cents <= 0 || cents > MostOut(b, level))
+            if (cents <= 0 || cents > MostOut(b, level, share))
             {
                 return false;
             }
@@ -489,6 +500,9 @@ namespace RealLifeOverhaul.Economy
             }
             int trust = Trust(c, b, day, confidence);
 
+            // The crews at the end game's scale, hired towards what the bank holds today: short of them it takes savings and lends more slowly.
+            int working = EndScaleRules.Working(Hire(b, c.Scale));
+
             // The savers.
             for (int k = 0; k < OwnBankCatalogue.Savers; k++)
             {
@@ -503,7 +517,7 @@ namespace RealLifeOverhaul.Economy
                 else
                 {
                     long gap = SaversWanted(c, b, k, trust) - b.Deposits[k];
-                    move = gap * OwnBankCatalogue.SaverFollow[k] / (1000L * m);
+                    move = gap * OwnBankCatalogue.SaverFollow[k] / (1000L * m) * working / 1000;
                 }
                 move = Math.Max(-b.Deposits[k], move);
                 b.Deposits[k] += move;
@@ -557,7 +571,7 @@ namespace RealLifeOverhaul.Economy
                 b.Reserves += repaid;
                 into.Repaid += repaid;
             }
-            Lend(b, c, m, into);
+            Lend(b, c, m, into, working);
 
             // The reserves at the central bank.
             if (b.Reserves > 0)
@@ -569,14 +583,22 @@ namespace RealLifeOverhaul.Economy
 
             OwnBankFund.Day(b, c, day, quotes, into);
 
-            // The staff.
-            long staff = OwnBankCatalogue.StaffDayCents * level / PriceRules.Start
-                         + (b.Savings * OwnBankCatalogue.StaffOnSavings + (b.Lent + b.InArrears) * OwnBankCatalogue.StaffOnLoans) / (1000L * y);
-            b.Reserves -= staff;
+            // The staff: before the scale a hall and a share of what it holds; at it, its crews' wages, and its systems and
+            // deposit insurance. What the scale adds never takes the capital below nothing in one day (Core/EndScale).
+            int s = c.Scale;
+            long before = OwnBankCatalogue.StaffDayCents * level / PriceRules.Start
+                          + (b.Savings * OwnBankCatalogue.StaffOnSavings + (b.Lent + b.InArrears) * OwnBankCatalogue.StaffOnLoans) / (1000L * y);
+            long staff = s <= 0 ? before : before * (EndScaleRules.Full - s) / EndScaleRules.Full + Crews(b) * level / PriceRules.Start;
+            long systems = s <= 0 ? 0 : EndScaleRules.Mix(0L, OwnBankCatalogue.SystemsDayCents * level / PriceRules.Start + b.Savings * OwnBankCatalogue.InsuranceBp / (10000L * y), s);
+            long room = b.Capital + into.Interest + into.Reserve + into.Recovered - into.Savers - into.Lost - into.Court - Math.Min(before, staff);
+            staff = Math.Min(before, staff) + EndScaleRules.Take(ref room, Math.Max(0, staff - before));
+            systems = EndScaleRules.Take(ref room, systems);
+            b.Reserves -= staff + systems;
             into.Staff += staff;
+            into.Systems += systems;
 
             // The day's profit is kept in the capital (what the fund made, lost and paid is in it already: OwnBankFund).
-            b.Capital += into.Interest + into.Reserve + into.Recovered - into.Savers - into.Lost - into.Court - into.Staff;
+            b.Capital += into.Interest + into.Reserve + into.Recovered - into.Savers - into.Lost - into.Court - into.Staff - into.Systems;
 
             // Savers who cannot be paid out of the reserves are paid out of the fund; a bank that still cannot pay them fails.
             if (b.Reserves < 0)
@@ -612,7 +634,7 @@ namespace RealLifeOverhaul.Economy
 
         // New loans: each kind a month's LendFollow of the way to what its borrowers would have, as far as the reserves over
         // what the deposits need, and the capital over the lending line, allow; none in a run or a breach.
-        private static void Lend(OwnBank b, BankCity c, int m, BankDay into)
+        private static void Lend(OwnBank b, BankCity c, int m, BankDay into, int working)
         {
             if (b.Run || b.Stage == Regulator.Breach)
             {
@@ -623,7 +645,7 @@ namespace RealLifeOverhaul.Economy
             for (int j = 0; j < OwnBankCatalogue.Segments; j++)
             {
                 long gap = LoansWanted(c, b, j) - b.Loans[j];
-                want[j] = gap > 0 ? gap * OwnBankCatalogue.LendFollow / (1000L * m) : 0;
+                want[j] = gap > 0 ? gap * OwnBankCatalogue.LendFollow / (1000L * m) * working / 1000 : 0;
                 need += want[j];
                 weighted += want[j] * OwnBankCatalogue.LoanWeight[j] / 1000;
             }
@@ -697,6 +719,50 @@ namespace RealLifeOverhaul.Economy
             b.Strikes = 0;
             into.Cured2 = was == Regulator.Breach;
             into.Watched = was == Regulator.Clear && b.Stage == Regulator.Watch;
+        }
+
+        // ---------------------------------------------------------------- the crews at scale
+
+        /// <summary>The people of a crew the bank needs at the full scale, by what it holds today.</summary>
+        public static int CrewAtScale(OwnBank b, int kind)
+        {
+            if (!b.Running)
+            {
+                return 0;
+            }
+            switch (kind)
+            {
+                case OwnBankCatalogue.Tellers: return EndScaleRules.Per(b.Deposits[OwnBankCatalogue.People], OwnBankCatalogue.TellerCents);
+                case OwnBankCatalogue.Managers: return EndScaleRules.Per(b.Deposits[OwnBankCatalogue.Firms], OwnBankCatalogue.ManagerCents);
+                case OwnBankCatalogue.Officers: return EndScaleRules.Per(b.Lent + b.InArrears, OwnBankCatalogue.OfficerCents);
+                default: return OwnBankCatalogue.ComplianceLeast + (int)Math.Min(int.MaxValue / 4, Math.Max(0L, b.Savings + b.Capital) / OwnBankCatalogue.ComplianceCents);
+            }
+        }
+
+        public static int CrewNeed(OwnBank b, int kind, int share) => EndScaleRules.Need(CrewAtScale(b, kind), share);
+
+        /// <summary>A day's hiring: each crew a share of its need nearer it (or down to it). Returns how far they cover it, thousandths: the shortest of them.</summary>
+        public static int Hire(OwnBank b, int share)
+        {
+            int cover = EndScaleRules.Full;
+            for (int k = 0; k < OwnBankCatalogue.CrewKinds; k++)
+            {
+                int need = CrewNeed(b, k, share);
+                b.Crew[k] = EndScaleRules.Hire(b.Crew[k], need, OwnBankCatalogue.CrewPace);
+                cover = Math.Min(cover, EndScaleRules.Cover(b.Crew[k], need));
+            }
+            return cover;
+        }
+
+        /// <summary>The crews' wages a day, cents at the start's prices.</summary>
+        public static long Crews(OwnBank b)
+        {
+            long sum = 0;
+            for (int k = 0; k < OwnBankCatalogue.CrewKinds; k++)
+            {
+                sum += (long)Math.Max(0, b.Crew[k]) * OwnBankCatalogue.CrewWage[k];
+            }
+            return sum;
         }
 
         /// <summary>The regulator's fine for a deadline missed: a share of the capital the bank is short of, never under the least; cents.</summary>

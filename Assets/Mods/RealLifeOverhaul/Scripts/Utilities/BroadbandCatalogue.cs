@@ -70,5 +70,25 @@ namespace RealLifeOverhaul.Utilities
         public const string NetworkRow = "reallife_books_broadband_network";   // the headquarters' statement: the network's cost among its goods
 
         public const string OwnNameKey = "reallife_net_provider_own", SoldNameKey = "reallife_net_provider_sold";
+
+        // ---------------------------------------------------------------- at scale (Core/EndScale: the end game's real figures, mixed in by its share)
+        // The city's homes and businesses at its real size, a network dug to every one of them in a district (a fortune a
+        // district), the operator's licence with its core network, and crews of field engineers, call centre agents and
+        // network operations engineers the company hires itself. A district dug before the scale reaches the old number of
+        // homes until its network is extended to the whole district, for what the scale's network costs less what it cost.
+        public const int MarketScale = 5000;                 // thousandths of a district's connections at the city's real size
+        public const int HomeCentsScale = 35000;             // a home or business passed by the fibre, cents
+        public const int HomeCentsFarScale = 105000;         // ...in the Hamptons, where the houses stand far apart
+        public const int FarDistrict = 6;                    // the Hamptons, in the order of Districts
+        public const int LicenceFeeScale = 40000000;         // the operator's licence and the core network, once, money ($40,000,000)
+        public const int UpkeepPerMilleScale = 3;            // of what a district's network costs at scale, a month, at the usual maintenance
+        public const int InstallCentsScale = 60000;          // an engineer's visit, the box and the drop to the home
+
+        public const int Field = 0, Calls = 1, Operations = 2, CrewKinds = 3;
+        public static readonly int[] CrewWage = { 30000, 18000, 38000 };   // cents a day each: field engineers, call centre agents, network operations engineers
+        public const int FieldConnections = 1500;            // connections a field engineer looks after
+        public const int CallConnections = 800;              // ...a call centre agent
+        public const int OperationsPerDistrict = 6;          // network operations engineers for each district open, round the clock
+        public const int CrewPace = 40;                      // thousandths of the need hired a day while short
     }
 }

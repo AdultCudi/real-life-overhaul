@@ -261,7 +261,7 @@ namespace RealLifeOverhaul.Economy
                 Info("risk", "reallife_ob_row_risk", OwnBankRules.RiskWeighted(b), OwnBankText.T("reallife_ob_note_risk"), TableRow.Plain);
             }
             BuildingRegistration hq = OwnBankGame.Headquarters();
-            int level = Prices.Level;
+            int level = Prices.Level, share = _director.ScaleNow();
             if (!b.Running)
             {
                 box.Title(OwnBankText.T("reallife_ob_box_title"));
@@ -271,7 +271,7 @@ namespace RealLifeOverhaul.Economy
                     box.Line(OwnBankText.Fill("reallife_ob_box_closed", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "why", OwnBankText.T(OwnBankText.WhyKey(b.Why)), "left", OwnBankText.Money(b.EndCents)));
                     int again = OwnBankRules.AgainDay(b, GameCalendar.DaysPerYear);
                     string wait = OwnBankGame.AgainWhy(b);
-                    long next = OwnBankRules.CapitalLeast(level, b.Closures);
+                    long next = OwnBankRules.CapitalLeast(level, b.Closures, share);
                     if (wait != null)
                     {
                         // Not yet: the date a licence may be applied for, and the stricter terms the next bank is held to.
@@ -279,7 +279,7 @@ namespace RealLifeOverhaul.Economy
                             "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture), "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)), CellTone.Yellow);
                         if (b.Closures > 0)   // (a bank a test founded and closed raises nothing)
                         {
-                            box.Note(OwnBankText.Fill("reallife_ob_box_closed_terms", "capital", OwnBankText.Money(next), "first", OwnBankText.Money(OwnBankRules.CapitalLeast(level))));
+                            box.Note(OwnBankText.Fill("reallife_ob_box_closed_terms", "capital", OwnBankText.Money(next), "first", OwnBankText.Money(OwnBankRules.CapitalLeast(level, 0, share))));
                         }
                         if (wait == OwnBankRules.AgainWaitKey && OwnBankGame.StandingOn)
                         {
@@ -296,7 +296,7 @@ namespace RealLifeOverhaul.Economy
                     box.Chip(OwnBankText.T("reallife_ibox_chip_sold"));
                     box.Line(OwnBankText.Fill("reallife_ob_box_sold", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "price", OwnBankText.Money(b.EndCents)));
                 }
-                long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, b.Closures);
+                long licence = OwnBankRules.Licence(level, share), capital = OwnBankRules.CapitalLeast(level, b.Closures, share);
                 box.Note(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
                 box.Section("reallife_ibox_sec_next");
                 box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"), hq != null ? CellTone.Green : CellTone.Yellow);
@@ -335,8 +335,17 @@ namespace RealLifeOverhaul.Economy
             }
             long yearProfit = OwnBankRules.YearProfit(b);
             box.Row("reallife_ob_box_year", OwnBankText.Signed(yearProfit), yearProfit < 0 ? CellTone.Red : yearProfit > 0 ? CellTone.Green : CellTone.Plain);
-            long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level);
+            long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level, share);
             box.Row("reallife_ob_box_value", OwnBankText.Money(value));
+            if (share > 0)
+            {
+                box.Row("reallife_endscale_ob_crews", OwnBankText.Fill("reallife_endscale_ob_crews_value",
+                    "tellers", b.Crew[OwnBankCatalogue.Tellers].ToString(), "tellers_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Tellers, share).ToString(),
+                    "managers", b.Crew[OwnBankCatalogue.Managers].ToString(), "managers_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Managers, share).ToString(),
+                    "officers", b.Crew[OwnBankCatalogue.Officers].ToString(), "officers_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Officers, share).ToString(),
+                    "compliance", b.Crew[OwnBankCatalogue.Compliance].ToString(), "compliance_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Compliance, share).ToString(),
+                    "wages", OwnBankText.Money(OwnBankRules.Crews(b) * level / PriceRules.Start)));
+            }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_ob_box_put_in", () => AskAmount("reallife_ob_ask_put_in", OwnBankCatalogue.CapitalStepCents * 10, cents =>
             {

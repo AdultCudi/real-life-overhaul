@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Economy
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
     ///   m  the months' profit, the oldest first
+    ///   e  the end game's scale (Core/EndScale): the day it began to come in|tellers|relationship managers|loan officers|
+    ///      compliance officers (a line without it: no day, so a bank that runs is phased in, and no crews)
     ///
     /// Every figure is a whole number, so what is read back is exactly what was written; a name is escaped so that no
     /// divider can break the line. A NEWER VERSION adds fields at the end of a record or a part with a new letter; this
@@ -81,6 +83,11 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < b.History.Length; i++)
             {
                 t.Append(i > 0 ? "|" : string.Empty).Append(b.History[i].ToString(Inv));
+            }
+            t.Append("^e:").Append(b.ScaleFrom.ToString(Inv));
+            for (int k = 0; k < OwnBankCatalogue.CrewKinds; k++)
+            {
+                t.Append('|').Append(b.Crew[k].ToString(Inv));
             }
             return t.ToString();
         }
@@ -161,6 +168,14 @@ namespace RealLifeOverhaul.Economy
                             for (int i = 0; i < b.History.Length && i < months.Length; i++)
                             {
                                 b.History[i] = L(months, i);
+                            }
+                            break;
+                        case 'e':
+                            string[] scale = body.Split('|');
+                            b.ScaleFrom = scale.Length > 0 && scale[0].Length > 0 ? I(scale, 0) : EndScaleRules.Unset;
+                            for (int k = 0; k < OwnBankCatalogue.CrewKinds; k++)
+                            {
+                                b.Crew[k] = Math.Max(0, I(scale, k + 1));
                             }
                             break;
                     }
