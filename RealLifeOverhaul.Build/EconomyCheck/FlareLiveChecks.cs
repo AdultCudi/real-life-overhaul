@@ -247,10 +247,10 @@ internal static partial class Program
         FlareLiveRules.Complained(tally, FlareReport.Litter, "d7", 20, false);
         FlareLiveRules.Complained(tally, FlareReport.Litter, "d7", 21, true);
         FlareLiveRules.Complained(tally, FlareReport.Litter, "d7", 21, false);
-        bool early = FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 21);
+        bool early = FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 21, true);
         FlareLiveRules.Complained(tally, FlareReport.Litter, "d7", 22, false);
-        bool third = FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 22);
-        bool again2 = FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 23);
+        bool third = FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 22, true);
+        bool again2 = FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 23, true);
         Check(!early && third && !again2 && FlareLiveRules.Tally(tally, FlareReport.Litter, "d7", 22) == FlareLiveRules.TallyToPaper,
             "Flare live: " + FlareLiveRules.TallyToPaper + " complaints nothing was done about reach the paper, an acted one does not count, and once a week");
         FlareLiveRules.WatchDay(tally, 30);
@@ -416,7 +416,7 @@ internal static partial class Program
         host.Net.Cases.Add(new FlareCase { Id = 7, Kind = FlareReport.Road, District = "d1", State = FlareCaseState.Acting, Order = FlareOrder.Works, Post = 2, Answer = 4, Ref = 33, Filed = 9000, ReplyAt = 9100 });
         host.Net.Watches.Add(new FlareWatch { District = "d2", Kind = FlareOrder.Patrol, Until = 9 });
         var pics = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Host/1", "QUJD") };
-        string whole = FlareNetShare.WriteWhole(host, 4, "Host", "Hana", true, pics);
+        string whole = FlareNetShare.WriteWhole(host, 4, "Host", "Hana", true, pics, 1);
         string[] lines = whole.Split('\n');
         int posts = 0, cases = 0, watches = 0, pictures = 0;
         FlarePost own = null, answer = null;
@@ -447,7 +447,7 @@ internal static partial class Program
             watches += FlareNetShare.ReadWatch(f, out w) && w.District == "d2" ? 1 : 0;
             pictures += line.StartsWith("X|Host/1|QUJD", StringComparison.Ordinal) ? 1 : 0;
         }
-        Check(lines[0] == "FN1|4|" + host.Net.CitySeed && posts == 3 && cases == 1 && watches == 1 && pictures == 1,
+        Check(lines[0] == "FN1|4|" + host.Net.CitySeed + "|Host|1" && posts == 3 && cases == 1 && watches == 1 && pictures == 1,
             "Flare live: the whole part has the city's and the players' posts (not the friends' or the influencers'), the cases, the watches and the pictures (" + posts + " posts)");
         Check(own != null && own.Author == FlareAuthor.Network && own.AuthorId == "Host" && own.AuthorName == "Hana" && own.Text == "Hole | big and deep" && own.Pic == "n:Host/1" && own.District == "d1" && ownReply == -1,
             "Flare live: the host's own post goes under its name, its typed text whole (a line break as a space), its picture by the session's id");
@@ -486,14 +486,14 @@ internal static partial class Program
         box.Add("L|4|1");
         box.Add("X|p/1|2|3|ccc");
         var sent = new List<string>();
-        int first = box.Send(sent.Add, 16);
+        int first = box.Send(l => { sent.Add(l); return true; }, 16);
         int pieces = 0;
         foreach (string l in sent)
         {
             pieces += l[0] == 'X' ? 1 : 0;
         }
         sent.Clear();
-        int second = box.Send(sent.Add, 1);
+        int second = box.Send(l => { sent.Add(l); return true; }, 1);
         Check(first == 3 && pieces == 1 && second == 1 && sent[0] == "X|p/1|1|3|bbb" && box.Count == 1, "Flare live: one piece of a picture a second, the other lines at once, in order; what is left waits");
         for (int i = 0; i < FlareOutbox.Most + 10; i++)
         {
@@ -515,7 +515,7 @@ internal static partial class Program
         {
             picDay += rates.Allow("Gus", 'X', 1000f + i, 5) ? 1 : 0;
         }
-        Check(picDay == FlareRateBook.PicturesDay * FlareSnap.PartsMost, "Flare live: a day's pictures from a player are bounded (" + FlareRateBook.PicturesDay + " pictures)");
+        Check(picDay == FlareRateBook.PicturesDay, "Flare live: a day's pictures from a player are bounded (" + FlareRateBook.PicturesDay + " pictures)");
         // Nothing to an older RLO: another version's message is read but nothing of it applies, and a part letter it does not know is left out.
         var m = new SharedMessage { Kind = SharedKind.Update, Version = "9.9.9", Sequence = 3 };
         m.Parts.Add(new SharedPart('f', "P|1"));
@@ -614,7 +614,7 @@ internal static partial class Program
         float x, z;
         string detail;
         Check(LedgerShare.ReadReport(report.Split('|'), 11, out kind, out x, out z, out detail, out amount) && kind == 3 && x == 12.5f && detail == "mugging"
-              && !LedgerShare.ReadReport(LedgerShare.AskReport(40, 0f, 0f, null, 0).Split('|'), 11, out kind, out x, out z, out detail, out amount),
+              && !LedgerShare.ReadReport("N|40|0|0||0".Split('|'), 11, out kind, out x, out z, out detail, out amount),
             "Flare live: a guest's report reaches the host's paper; a kind it does not know does not");
         var asked = new List<KeyValuePair<string, LedgerPiece>>();
         for (int i = 0; i < 10; i++)
