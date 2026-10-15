@@ -1,0 +1,322 @@
+using System.Collections.Generic;
+using RealLifeOverhaul.Texts;
+
+namespace RealLifeOverhaul.Flare
+{
+    /// <summary>
+    /// Which trained intent each of Flare's worded posts is, for RLO Texts (Scripts/Texts): the game decides the post as
+    /// before (its source, kind, author, reaction and time); this says which card the model is given for its words. A post
+    /// with no intent here keeps its written line. Also the city's people as a card's speaker: their age and way of writing,
+    /// stable for each person from the city's seed and their persona. Game-free (EconomyCheck, TextsChecks.cs).
+    /// COST: a switch and a few strings a post, when it is made.
+    /// </summary>
+    public static class FlareTextsMap
+    {
+        // The reactions the training data has for each kind of the player's post (defs_flare.REACTIONS).
+        private static readonly Dictionary<string, string[]> Reactions = new Dictionary<string, string[]>
+        {
+            { "opened", new[] { "cheer", "proud", "question", "doubt", "funny", "love" } },
+            { "record", new[] { "cheer", "proud", "doubt", "funny", "question" } },
+            { "promotion", new[] { "cheer", "proud", "cool", "funny", "doubt" } },
+            { "selfie", new[] { "love", "cheer", "funny", "cool", "kind" } },
+            { "outing", new[] { "love", "cheer", "funny", "cool", "question" } },
+            { "moved", new[] { "cheer", "kind", "question", "funny", "cool" } },
+            { "voted", new[] { "cheer", "cool", "funny", "question", "doubt" } },
+            { "photo", new[] { "love", "cool", "question", "funny", "cheer" } }
+        };
+
+        /// <summary>The kind of the player's post as the training names it; null for a kind it has no replies for.</summary>
+        public static string PostKind(FlareSource source)
+        {
+            switch (source)
+            {
+                case FlareSource.Opened: return "opened";
+                case FlareSource.RecordDay: return "record";
+                case FlareSource.Promotion: return "promotion";
+                case FlareSource.Selfie: return "selfie";
+                case FlareSource.Outing: return "outing";
+                case FlareSource.Voted: return "voted";
+                case FlareSource.Photo:
+                case FlareSource.Interior: return "photo";
+                default: return null;
+            }
+        }
+
+        /// <summary>A city person's reply's reaction as the training names it, if the training has it for this kind of post; null otherwise.</summary>
+        public static string Reaction(FlareReplyKind kind, string postKind)
+        {
+            string r;
+            switch (kind)
+            {
+                case FlareReplyKind.Agree: r = "cheer"; break;
+                case FlareReplyKind.Kind: r = "kind"; break;
+                case FlareReplyKind.Funny: r = "funny"; break;
+                case FlareReplyKind.Doubt: r = "doubt"; break;
+                case FlareReplyKind.Love: r = "love"; break;
+                case FlareReplyKind.Question: r = "question"; break;
+                default: return null;   // (an angry pile-on: no such reaction in the training; the written line)
+            }
+            return Allowed(r, postKind);
+        }
+
+        /// <summary>A friend's reply's reaction (FlareRules.ReplyOf) as the training names it, where it has it.</summary>
+        public static string Reaction(FlareRules.ReplyKind kind, string postKind)
+        {
+            string r;
+            switch (kind)
+            {
+                case FlareRules.ReplyKind.Cheer:
+                case FlareRules.ReplyKind.Plain: r = "cheer"; break;
+                case FlareRules.ReplyKind.Proud: r = "proud"; break;
+                case FlareRules.ReplyKind.Cool: r = "cool"; break;
+                case FlareRules.ReplyKind.Kind: r = "kind"; break;
+                case FlareRules.ReplyKind.Love: r = "love"; break;
+                case FlareRules.ReplyKind.Funny: r = "funny"; break;
+                default: return null;
+            }
+            return Allowed(r, postKind);
+        }
+
+        private static string Allowed(string reaction, string postKind)
+        {
+            if (postKind == null || !Reactions.TryGetValue(postKind, out string[] list))
+            {
+                return null;
+            }
+            for (int i = 0; i < list.Length; i++)
+            {
+                if (list[i] == reaction)
+                {
+                    return reaction;
+                }
+            }
+            return reaction == "kind" || reaction == "proud" ? Allowed("cheer", postKind) : null;
+        }
+
+        /// <summary>A city person's post about the day, by its topic (FlareTalk); null for a topic the training has no posts on.</summary>
+        public static string Talk(int topic)
+        {
+            switch ((FlareTalk)topic)
+            {
+                case FlareTalk.Weather: return "citizen.post.weather";
+                case FlareTalk.Prices: return "citizen.post.prices";
+                case FlareTalk.Crime: return "citizen.post.crime";
+                case FlareTalk.Event:
+                case FlareTalk.EventTomorrow: return "citizen.post.events";
+                case FlareTalk.Election: return "citizen.post.election";
+                case FlareTalk.Roadworks: return "citizen.post.roadworks";
+                case FlareTalk.Commute: return "citizen.post.commute";
+                case FlareTalk.Everyday: return "citizen.post.everyday";
+                case FlareTalk.Night: return "citizen.post.night_out";
+                case FlareTalk.Food: return "citizen.post.food";
+                case FlareTalk.Sport: return "citizen.post.sport";
+                default: return null;   // an accident, the market, a policy, a fire: the written lines
+            }
+        }
+
+        /// <summary>An official account's own post (FlareOfficialPost, and for the rate its way: 0 down, 1 up); null where the training has none.</summary>
+        public static string Official(int kind, int variant)
+        {
+            switch ((FlareOfficialPost)kind)
+            {
+                case FlareOfficialPost.Patrols: return "official.post.patrols";
+                case FlareOfficialPost.Outage: return "official.post.outage";
+                case FlareOfficialPost.Rate: return variant == 1 ? "official.post.rate_up" : "official.post.rate_down";
+                case FlareOfficialPost.Clean: return "official.post.clean";
+                case FlareOfficialPost.Election: return "official.post.election";
+                default: return null;
+            }
+        }
+
+        /// <summary>An account's answer (FlareAnswer) by who gives it; null where the training has none.</summary>
+        public static string Answer(FlareAnswer answer, FlareAuthor author)
+        {
+            if (author == FlareAuthor.Tycoon)
+            {
+                return answer == FlareAnswer.Tycoon ? "tycoon.answer" : null;
+            }
+            if (author == FlareAuthor.Business)
+            {
+                return answer == FlareAnswer.Thanks ? "business.reply.good" : answer == FlareAnswer.Sorry ? "business.reply.bad" : null;
+            }
+            switch (answer)
+            {
+                case FlareAnswer.Received: return "official.answer.noted";
+                case FlareAnswer.Works: return "official.answer.crew";
+                case FlareAnswer.Patrol: return "official.answer.patrols";
+                case FlareAnswer.Cleanup: return "official.answer.cleaning";
+                case FlareAnswer.Busy: return "official.answer.booked";
+                case FlareAnswer.Already: return "official.answer.already";
+                case FlareAnswer.Inspect: return "official.answer.inspector";
+                case FlareAnswer.Transit: return "official.answer.sorry_wait";
+                default: return null;
+            }
+        }
+
+        /// <summary>A rival tycoon's post: their move (Rivals.RivalMoveKind) or, with none, a boast; null for a move the training has no posts on.</summary>
+        public static string Tycoon(int move)
+        {
+            switch (move)
+            {
+                case -1: return "tycoon.boast";
+                case 0: return "tycoon.property";
+                case 1: return "tycoon.outlet";
+                case 2: return "tycoon.poach";
+                case 5: return "tycoon.lobby";
+                case 7: return "tycoon.press";
+                default: return null;
+            }
+        }
+
+        /// <summary>A business account's own post by its kind (FlareText's business lines); null for the company lines.</summary>
+        public static string Business(int arg)
+        {
+            switch (arg)
+            {
+                case 0: return "business.post.sale";
+                case 1: return "business.post.new";
+                case 2: return "business.post.thanks";
+                case 3: return "business.post.late";
+                case 4: return "business.post.hiring";
+                default: return null;
+            }
+        }
+
+        /// <summary>An answer of the city's to the player's message, by its line's key; null for the City Office's (no such card).</summary>
+        public static string Dm(string key)
+        {
+            switch (key)
+            {
+                case "reallife_flare_dm_answer_chat": return "citizen.dm.chat";
+                case "reallife_flare_dm_answer_collab": return "citizen.dm.collab";
+                default: return null;
+            }
+        }
+
+        // ---------------------------------------------------------------- the city's people as speakers
+
+        /// <summary>A city person's age: stable, in the range of their persona (students young, retirees old).</summary>
+        public static int Age(FlareCitizen c, int citySeed)
+        {
+            int seed = citySeed * 31 + c.Index;
+            switch (c.Persona)
+            {
+                case FlarePersona.Student: return TextWords.Age(seed, 18, 24);
+                case FlarePersona.Retiree: return TextWords.Age(seed, 62, 75);
+                case FlarePersona.Parent: return TextWords.Age(seed, 29, 48);
+                default: return TextWords.Age(seed, 21, 60);
+            }
+        }
+
+        /// <summary>A city person's way of writing: the grumpy write grumpily; the rest by their own seed (world.citizen).</summary>
+        public static string Style(FlareCitizen c, int citySeed)
+        {
+            string style = TextWords.CitizenStyle(citySeed * 31 + c.Index);
+            if (c.Persona != FlarePersona.Grumpy)
+            {
+                return style;
+            }
+            int comma = style.IndexOf(',');
+            return "grumpy" + (comma > 0 ? style.Substring(comma) : string.Empty);
+        }
+
+        /// <summary>The speaker of a city person's card.</summary>
+        public static void Fill(TextWho who, FlareCitizen c, string district, int citySeed, string when)
+        {
+            who.Clear();
+            who.First = c.First;
+            who.Name = c.First + " " + c.Last;
+            who.Handle = c.Handle;
+            who.Age = Age(c, citySeed);
+            who.District = district;
+            who.Style = Style(c, citySeed);
+            who.When = when;
+        }
+
+        /// <summary>The training's companies of the rival tycoons, by their place in the rivals' catalogue.</summary>
+        public static readonly string[] TycoonCompanies = { "Karen Aerospace & Motors", "Luthor Everything Co.", "Zucc Social Holdings" };
+
+        // ---------------------------------------------------------------- for the checks
+
+        /// <summary>Every intent Flare's map can give.</summary>
+        public static List<string> Mapped()
+        {
+            var list = new List<string>(48);
+            foreach (KeyValuePair<string, string[]> pair in Reactions)
+            {
+                list.Add("citizen.reply." + pair.Key);
+            }
+            for (int t = 0; t <= (int)FlareTalk.Sport; t++)
+            {
+                Add(list, Talk(t));
+            }
+            for (int k = 0; k <= (int)FlareOfficialPost.Election; k++)
+            {
+                Add(list, Official(k, 0));
+                Add(list, Official(k, 1));
+            }
+            for (int a = 0; a <= (int)FlareAnswer.Clean; a++)
+            {
+                Add(list, Answer((FlareAnswer)a, FlareAuthor.Official));
+                Add(list, Answer((FlareAnswer)a, FlareAuthor.Business));
+                Add(list, Answer((FlareAnswer)a, FlareAuthor.Tycoon));
+            }
+            for (int m = -1; m < 8; m++)
+            {
+                Add(list, Tycoon(m));
+            }
+            for (int b = 0; b < 7; b++)
+            {
+                Add(list, Business(b));
+            }
+            Add(list, Dm("reallife_flare_dm_answer_chat"));
+            Add(list, Dm("reallife_flare_dm_answer_collab"));
+            list.Add("citizen.review");
+            return list;
+        }
+
+        private static void Add(List<string> list, string intent)
+        {
+            if (intent != null && !list.Contains(intent))
+            {
+                list.Add(intent);
+            }
+        }
+
+        /// <summary>Where the map is wrong; empty when right.</summary>
+        public static List<string> Problems()
+        {
+            var p = new List<string>();
+            void Want(bool ok, string what)
+            {
+                if (!ok)
+                {
+                    p.Add(what);
+                }
+            }
+            Want(PostKind(FlareSource.Opened) == "opened" && PostKind(FlareSource.RecordDay) == "record" && PostKind(FlareSource.Arrested) == null && PostKind(FlareSource.Report) == null,
+                "the player's posts map to the training's kinds; an arrest or a report has no replies of its own");
+            Want(Reaction(FlareReplyKind.Agree, "opened") == "cheer" && Reaction(FlareReplyKind.Angry, "opened") == null && Reaction(FlareReplyKind.Kind, "selfie") == "kind"
+                 && Reaction(FlareReplyKind.Kind, "opened") == "cheer" && Reaction(FlareReplyKind.Doubt, "selfie") == null && Reaction(FlareReplyKind.Love, null) == null,
+                "a reply's reaction is one the training has for that kind of post (an angry pile-on keeps its written lines)");
+            Want(Reaction(FlareRules.ReplyKind.Plain, "photo") == "cheer" && Reaction(FlareRules.ReplyKind.Cool, "selfie") == "cool",
+                "a friend's reply maps to the training's reactions");
+            Want(Talk((int)FlareTalk.Night) == "citizen.post.night_out" && Talk((int)FlareTalk.Accident) == null && Talk((int)FlareTalk.EventTomorrow) == "citizen.post.events",
+                "the city's talk maps by topic; an accident keeps its written lines");
+            Want(Official((int)FlareOfficialPost.Rate, 1) == "official.post.rate_up" && Official((int)FlareOfficialPost.Rate, 0) == "official.post.rate_down"
+                 && Official((int)FlareOfficialPost.Notice, 0) == null, "an official post maps by its kind, the rate by its way");
+            Want(Answer(FlareAnswer.Works, FlareAuthor.Official) == "official.answer.crew" && Answer(FlareAnswer.Transit, FlareAuthor.Official) == "official.answer.sorry_wait"
+                 && Answer(FlareAnswer.Thanks, FlareAuthor.Business) == "business.reply.good" && Answer(FlareAnswer.Tycoon, FlareAuthor.Tycoon) == "tycoon.answer"
+                 && Answer(FlareAnswer.Nothing, FlareAuthor.Official) == null, "an answer maps by what it says and who says it; the faults' verdicts keep their written lines");
+            Want(Tycoon(-1) == "tycoon.boast" && Tycoon(0) == "tycoon.property" && Tycoon(3) == null && Business(0) == "business.post.sale" && Business(5) == null,
+                "a tycoon's and a business's posts map by their kind");
+            Want(Dm("reallife_flare_dm_answer_chat") == "citizen.dm.chat" && Dm("reallife_flare_dm_answer_office") == null, "a message's answer maps by its line");
+            var c = new FlareCitizen { Index = 3, First = "Dana", Last = "Reyes", Handle = "@dana_reyes12", Persona = FlarePersona.Student };
+            int age = Age(c, 77);
+            Want(age >= 18 && age <= 24 && Age(c, 77) == age, "a student's age is young and the same every time");
+            c.Persona = FlarePersona.Grumpy;
+            Want(Style(c, 77).StartsWith("grumpy", System.StringComparison.Ordinal) && Style(c, 77) == Style(c, 77), "the grumpy write grumpily, the same every time");
+            return p;
+        }
+    }
+}

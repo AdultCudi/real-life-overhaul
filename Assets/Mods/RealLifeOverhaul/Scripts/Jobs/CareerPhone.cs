@@ -62,6 +62,13 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>A letter or reminder from work, as a text message of the Work contact. Nothing if there is no contact.</summary>
+        /// <summary>
+        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
+        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
+        /// words, or the written line). Null or false: sent now, as written.
+        /// </summary>
+        public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
+
         public static void Text(string key, Dictionary<string, string> data)
         {
             if (_contact == null)
@@ -71,7 +78,25 @@ namespace RealLifeOverhaul
             try
             {
                 // A copy: the game keeps the message's data for as long as the message is listed.
-                _contact.SendMessage(new TextMessage(key, data != null ? new Dictionary<string, string>(data) : null), notify: true);
+                var copy = data != null ? new Dictionary<string, string>(data) : null;
+                Contact contact = _contact;
+                if (HoldText == null || !HoldText("boss", key, copy, (k, d) => Send(contact, k, d)))
+                {
+                    _contact.SendMessage(new TextMessage(key, copy), notify: true);
+                }
+            }
+            catch (Exception e)
+            {
+                JobDirector.Logger?.Error(e);
+            }
+        }
+
+        // A text held for its words (RLO Texts), sent now.
+        private static void Send(Contact contact, string key, Dictionary<string, string> data)
+        {
+            try
+            {
+                contact.SendMessage(new TextMessage(key, data), notify: true);
             }
             catch (Exception e)
             {

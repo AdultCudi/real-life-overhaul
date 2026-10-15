@@ -595,7 +595,7 @@ namespace RealLifeOverhaul.Flare
                     var reply = new FlarePost
                     {
                         Id = -1000 - p.Id * 32 - i, Author = FlareAuthor.Friend, Who = index, Source = FlareSource.Reply, ReplyTo = p.Id,
-                        Text = FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i
+                        Text = _director.FriendWords(p.Id, index) ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i
                     };
                     FlareLiveRules.SetAt(reply, p.At + r.Delay);
                     _synthetic.Add(reply);
@@ -790,6 +790,11 @@ namespace RealLifeOverhaul.Flare
 
         private string WordsOf(FlarePost p, string author)
         {
+            string model = _director.ModelWords(p);   // (RLO Texts: the model's words, when they were written in time)
+            if (model != null)
+            {
+                return model;
+            }
             string built = FlareText.Built(p, author);
             if (built != null)
             {
@@ -968,7 +973,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     if (file.Net.Dms[i].Id == n.Dm)
                     {
-                        return Cut(FlareText.DmWords(file.Net.Dms[i], file.Net.Dms[i].Name));
+                        return Cut(_director.DmWords(file.Net.Dms[i]) ?? FlareText.DmWords(file.Net.Dms[i], file.Net.Dms[i].Name));
                     }
                 }
             }

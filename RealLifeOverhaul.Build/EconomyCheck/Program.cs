@@ -125,6 +125,7 @@ internal static partial class Program
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         FlareReview();   // the review round of Flare as a living network (FlareReviewChecks.cs)
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
+        Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
         Shared();
         Fame();

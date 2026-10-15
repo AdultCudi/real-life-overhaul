@@ -118,6 +118,13 @@ namespace RealLifeOverhaul.Family
         }
 
         /// <summary>A text message from one of the phone's contacts. Safe with a contact that does not exist.</summary>
+        /// <summary>
+        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
+        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
+        /// words, or the written line). Null or false: sent now, as written.
+        /// </summary>
+        public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
+
         public static void Message(Contact contact, string key, in Args a)
         {
             if (contact == null)
@@ -125,7 +132,25 @@ namespace RealLifeOverhaul.Family
                 Toast(NotificationType.Info, key, a);   // no phone contact: said on screen instead, so nothing is lost
                 return;
             }
-            contact.SendMessage(new TextMessage(key, Data(a)));
+            Dictionary<string, string> data = Data(a);
+            string from = contact == FamilyPhone.PartnerContact ? "partner" : contact == PhoneContacts.Mom ? "mom" : contact == FamilyPhone.InLawContact ? "inlaws" : "family";
+            if (HoldText == null || !HoldText(from, key, data, (k, d) => Send(contact, k, d)))
+            {
+                contact.SendMessage(new TextMessage(key, data));
+            }
+        }
+
+        // A text held for its words (RLO Texts), sent now.
+        private static void Send(Contact contact, string key, Dictionary<string, string> data)
+        {
+            try
+            {
+                contact.SendMessage(new TextMessage(key, data));
+            }
+            catch (System.Exception e)
+            {
+                FamilyDirector.Logger?.Error(e);
+            }
         }
 
         /// <summary>One of several lines for the same moment, never the one said last time.</summary>

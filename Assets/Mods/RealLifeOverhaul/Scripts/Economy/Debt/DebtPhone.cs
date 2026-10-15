@@ -117,13 +117,24 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>A text in a contact's thread. Without the contact it is the game's notification, which opens the conversation when clicked.</summary>
+        /// <summary>
+        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
+        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
+        /// words, or the written line). Null or false: sent now, as written.
+        /// </summary>
+        public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
+
         public static void Text(int which, string key, Dictionary<string, string> data, Action click)
         {
             try
             {
                 if (Contacts[which] != null)
                 {
-                    Contacts[which].SendMessage(new TextMessage(key, data), notify: true);
+                    Contact contact = Contacts[which];
+                    if (HoldText == null || !HoldText(which == Lender ? "lender" : "debt", key, data, (k, d) => Send(contact, k, d)))
+                    {
+                        contact.SendMessage(new TextMessage(key, data), notify: true);
+                    }
                     return;
                 }
             }
@@ -132,6 +143,19 @@ namespace RealLifeOverhaul.Economy
                 // the notification below still tells them
             }
             Notifications.Show(NotificationType.Warning, key, data, 14f, null, Guard.Wrap(click), true, false);
+        }
+
+        // A text held for its words (RLO Texts), sent now.
+        private static void Send(Contact contact, string key, Dictionary<string, string> data)
+        {
+            try
+            {
+                contact.SendMessage(new TextMessage(key, data), notify: true);
+            }
+            catch (Exception)
+            {
+                // (the contact is gone with the scene: nothing more to tell)
+            }
         }
 
         internal static string Money(float amount)

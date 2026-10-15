@@ -73,6 +73,11 @@ namespace RealLifeOverhaul.Ledger
         {
             string text = Fill(p.Key, p.Data);
             LedgerRules.Split(text, out kicker, out headline, out body);
+            string model = LedgerBridges.TextsBody != null ? LedgerBridges.TextsBody(p) : null;   // (RLO Texts: the model's brief for the story, when it was written in time)
+            if (model != null)
+            {
+                body = model;
+            }
             if (headline == null && p.Head != null)
             {
                 string head = Fill(p.Head, p.Data);

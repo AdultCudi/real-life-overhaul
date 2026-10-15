@@ -534,7 +534,7 @@ namespace RealLifeOverhaul.Flare
                 FlareKit.Place(_name.rectTransform, x0, pad - 2f, width - x0 - pad - 170f, 40f);
                 FlareKit.Set(_time, FlareText.Ago(m.At, App._director.Now));
                 FlareKit.Place(_time.rectTransform, width - pad - 160f, pad, 160f, 34f);
-                FlareKit.Set(_snippet, (m.Mine ? FlareText.T("reallife_flare_dm_you") + " " : string.Empty) + FlareText.DmWords(m, name));
+                FlareKit.Set(_snippet, (m.Mine ? FlareText.T("reallife_flare_dm_you") + " " : string.Empty) + (App._director.DmWords(m) ?? FlareText.DmWords(m, name)));
                 FlareKit.Place(_snippet.rectTransform, x0, pad + 44f, width - x0 - pad - 40f, 36f);
                 bool unread = row.Number > 0;
                 FlareKit.Show(_dot, unread);
@@ -572,7 +572,7 @@ namespace RealLifeOverhaul.Flare
             public override float Bind(FlareRow row, float width)
             {
                 FlareDm m = row.Dm;
-                string words = FlareText.DmWords(m, m.Name ?? App._director.AccountName(m.With));
+                string words = App._director.DmWords(m) ?? FlareText.DmWords(m, m.Name ?? App._director.AccountName(m.With));
                 float most = width * 0.7f;
                 float tw = Mathf.Min(most - 56f, _words.GetPreferredValues(words, most - 56f, 0f).x + 4f);
                 float th = FlareKit.Height(_words, words, tw);

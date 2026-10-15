@@ -391,6 +391,7 @@ namespace RealLifeOverhaul.Ledger
             }
             KeepEarlier(_state.Edition, day);   // the edition it replaces, to be read again on the phone
             _state.Edition = e;
+            LedgerBridges.TextsEdition?.Invoke(e);   // (RLO Texts: the briefs' words asked now, ahead of the reading)
             _page?.Changed();
             _stand?.Changed();
             SharedCity.Changed(LedgerShare.Part);   // (to the guests of a session with the next update)

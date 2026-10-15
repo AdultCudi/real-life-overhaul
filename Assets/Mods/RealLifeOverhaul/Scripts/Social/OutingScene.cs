@@ -366,6 +366,10 @@ namespace RealLifeOverhaul
                 if (Prompt == null)
                 {
                     Offer(SocialLife.Say("reallife_social_hello_prompt", SocialLife.Data(_who)), "reallife_social_button_hello", _friend);
+                    if (!_test && !(_early && _arrives - _time > 8f))
+                    {
+                        SocialLinks.GuessGreeting?.Invoke(_who, _kind, _venue.Name, Mathf.RoundToInt(_lateBy));   // (RLO Texts: the greeting written before the click, if it can be)
+                    }
                 }
             }
             else
@@ -970,9 +974,11 @@ namespace RealLifeOverhaul
         private void OpenTalk(float now)
         {
             bool pays = _def.Cost > 0;
+            string guessed = SocialLinks.TakeGreeting != null ? SocialLinks.TakeGreeting(_who) : null;   // (RLO Texts: the greeting written while they walked up; null: the written one)
             var talk = new SceneTalk
             {
-                Person = _who, Mode = SceneTalk.Outing, Opener = GreetingLine(), OpenerData = SocialLife.Data(_who, "place", _venue.Name),
+                Person = _who, Mode = SceneTalk.Outing, Opener = guessed != null ? SocialLinks.WordsKey : GreetingLine(),
+                OpenerData = guessed != null ? new Dictionary<string, string>(1) { { "text", guessed } } : SocialLife.Data(_who, "place", _venue.Name),
                 Cost = pays ? _def.Cost : 0,
                 TheyOffer = pays && (_theirIdea || _who.Has(SocialTrait.Generous)) && !_who.Has(SocialTrait.Careful),
                 GoLabel = _kind == PlanKind.Walk ? "reallife_social_btn_lets_walk" : _kind == PlanKind.Moving ? "reallife_social_btn_lets_start" : "reallife_social_btn_go_in"
@@ -2174,7 +2180,7 @@ namespace RealLifeOverhaul
             Say(_who, after, data, wentWell ? NotificationType.Success : NotificationType.Info);
             if (wentWell && !_test && _kind <= PlanKind.Business)
             {
-                D.ThankLater(_who);
+                D.ThankLater(_who, _venue.Name, _kind);
             }
 
             // The card: built once, here.

@@ -179,6 +179,7 @@ namespace RealLifeOverhaul.Flare
                 Shared_Changed(null);
             }
             Recount();
+            TextsAhead();   // (the day's posts: their words asked now, each by its own minute, RLO Texts)
         }
 
         // What the city is like today, for its posts.
@@ -321,6 +322,7 @@ namespace RealLifeOverhaul.Flare
             Invitations(day, hour);
             Watched(day);
             Recount();
+            TextsAhead();   // (the hour's answers and replies: their words asked now, RLO Texts)
         }
 
         // The police and the cleaners where the player stands, for the hour.
@@ -1042,6 +1044,8 @@ namespace RealLifeOverhaul.Flare
             }
             FlareRules.Prune(_file);
             Shared_Own(p);
+            TextsFriends(p);   // (the friends' replies and the city's: their words asked now, RLO Texts)
+            TextsAhead();
         }
 
         /// <summary>The player likes a post, or takes the like back.</summary>
@@ -1115,7 +1119,8 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 string what = with.StartsWith("i:", StringComparison.Ordinal) ? "collab" : with.StartsWith("o:", StringComparison.Ordinal) ? "office" : "chat";
-                FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
+                FlareDm answer = FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
+                TextsDm(answer, text);   // (its words asked now, RLO Texts)
             }
             Changed();
             return true;

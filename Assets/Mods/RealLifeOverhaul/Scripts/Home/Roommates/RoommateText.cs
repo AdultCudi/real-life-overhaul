@@ -100,6 +100,13 @@ namespace RealLifeOverhaul.Roommates
         }
 
         /// <summary>A text message from the Roommate contact; with no contact (the phone's contacts are off) it is said on screen instead, so nothing is lost.</summary>
+        /// <summary>
+        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
+        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
+        /// words, or the written line). Null or false: sent now, as written.
+        /// </summary>
+        public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
+
         public static void Message(string key, in Fill f)
         {
             Contact contact = RoommatePhone.Contact;
@@ -108,7 +115,24 @@ namespace RealLifeOverhaul.Roommates
                 Toast(NotificationType.Info, key, f);
                 return;
             }
-            contact.SendMessage(new TextMessage(key, Data(f)));
+            Dictionary<string, string> data = Data(f);
+            if (HoldText == null || !HoldText("roommate", key, data, (k, d) => Send(contact, k, d)))
+            {
+                contact.SendMessage(new TextMessage(key, data));
+            }
+        }
+
+        // A text held for its words (RLO Texts), sent now.
+        private static void Send(Contact contact, string key, Dictionary<string, string> data)
+        {
+            try
+            {
+                contact.SendMessage(new TextMessage(key, data));
+            }
+            catch (System.Exception e)
+            {
+                RoommateDirector.Logger?.Error(e);
+            }
         }
 
         /// <summary>"today", "tomorrow", or the weekday as the game names it.</summary>

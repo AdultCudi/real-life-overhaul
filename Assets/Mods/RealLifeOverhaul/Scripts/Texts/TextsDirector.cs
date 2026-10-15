@@ -1,0 +1,566 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using BAModAPI;
+using UI.Load;
+using UnityEngine;
+
+namespace RealLifeOverhaul.Texts
+{
+    /// <summary>
+    /// RLO Texts: a small text model on the player's own PC words the city's messages (the owner's request, 15 Oct 2026:
+    /// "the social media app does not feel real since I get the same generic response for every single inbox"). The game
+    /// decides everything as before (who, when, what happens, every effect); the model is asked only for the words, from a
+    /// card built from the game's real state (TextIntents, byte for byte the cards it was trained on), and every word is
+    /// checked (TextCheck) before it is shown. Whenever the model is not there, off, loading, busy, slow, or its words fail,
+    /// the written lines are shown exactly as before: the player never waits on the model.
+    ///
+    /// THE RUNNER. llama.cpp's own server (llama-server.exe) as a child process of the game on 127.0.0.1 (TextServer), not
+    /// llama.cpp's DLLs loaded into the game by P/Invoke. The reasons: a native crash or a memory fault in llama.cpp would
+    /// take the whole game down in-process, and in a child it ends only the child (the mod sees it and uses the written
+    /// lines); Mono in Unity loads native DLLs by name from its own search path, so a second llama.dll or ggml.dll (another
+    /// mod's, a different build) could clash or be held locked, and the pack could not be switched without restarting the
+    /// game; a GPU back end (Vulkan) inside the game's process would share the game's device and driver state; the model's
+    /// memory (0.4 to 1.3 GB) is outside the game's own address space and its Boehm collector's view. The costs: an exe in a
+    /// Workshop item (Steam allows it; an antivirus may look at it, so it is llama.cpp's own release build, unchanged and
+    /// named as it is, with its licence and a README), a second or two to start (behind the loading screen or the first minutes of
+    /// play, never waited for), and a local socket per request (a few hundred microseconds). The server listens on
+    /// 127.0.0.1 only, on a free port of the moment, with a key of its own, below normal priority, tied to the game's
+    /// process by a job object so it ends with the game even in a crash, and is killed when the game closes, the option is
+    /// switched off or the pack changes.
+    ///
+    /// THE QUEUE (TextQueue, the owner's rules of 16 Oct): one queue, by priority and deadline; what can no longer be
+    /// written in time takes the written line at once; generated ahead for what the game schedules later; a budget a minute
+    /// that adapts to misses (TextBudget); background work only while the game is quiet; a guess before a click face to
+    /// face. SPEED (TextSpeed): a test on first load or a change of pack, device or threads; threads by the machine's cores;
+    /// a notice suggesting the Lite pack when the full one is too slow; a slow machine writes only what is asked ahead.
+    /// GOING PUBLIC (TextsShare): personal text on each player's own machine, shared text written once by the host and sent
+    /// as text in part T; a guest never writes shared text and checks the host's again.
+    ///
+    /// COST: nothing per frame but one time comparison. A look twice a second while idle (a few comparisons), ten times a
+    /// second while requests wait (a pass over a handful); a request is a card of a few hundred characters; the model runs
+    /// in its own process on its own threads, the socket on one background thread of the mod.
+    /// </summary>
+    public sealed partial class TextsDirector : MonoBehaviour
+    {
+        private static readonly FeatureGuard FrameGuard = Guard.For("texts", "TextsDirector", typeof(TextsDirector));   // its Update (Core/Guard)
+        private static readonly int HotUpdate = HotSpots.Slot("Texts: TextsDirector.Update");
+        private static readonly int HotLook = HotSpots.Slot("Texts: TextsDirector.Look");
+
+        private const float IdleEvery = 0.5f;      // real seconds between two looks with nothing waiting
+        private const float BusyEvery = 0.1f;      // ...while requests wait (a reply on the GPU comes back in 0.05 s)
+        private const float HookEvery = 2f;        // ...between two checks that the save hook is attached
+        private const int DevicesWaitMs = 8000;    // the most llama.cpp may take to list its devices
+
+        public static IModLogger Logger;
+        public static TextsDirector Instance { get; private set; }
+
+        // Kept across saves and scenes: the server, its queue and what it has written (one model loaded once a session).
+        private static readonly TextQueue Queue = new TextQueue();
+        private static readonly TextsHub Hub = new TextsHub(Queue);
+        private static TextServer _server;
+        private static TextPack _pack;
+        private static string _device, _deviceLabel, _serverFor;
+        private static int _threads, _cores;
+        private static volatile bool _finding;
+        private static bool _found, _quitHooked, _speedTold;
+        private static Action _onQuit;
+        private static List<TextPack> _packs;
+        private static List<TextDevice> _devices;
+        private static readonly System.Text.StringBuilder Changes = new System.Text.StringBuilder(1024);
+
+        private float _next, _last, _nextHook, _frameTime;
+        private int _frameCount;
+        private GameInstance _save;
+        private bool _loaded;
+        private int _prunedDay = -1;
+        private Action _onSave;
+
+        /// <summary>The hub requests go through (Wiring/TextsLinks hands it to the features' bridges).</summary>
+        public static TextsHub Words => Hub;
+
+        private void Awake()
+        {
+            Instance = this;
+            _onSave = OnSaveGame;
+            Hub.Allowed = Allowed;
+            Hub.SharedKept = SharedKept;
+            if (!_quitHooked)
+            {
+                _quitHooked = true;
+                _onQuit = Guard.Wrap(StopOnQuit);   // (made once, kept: the game's process ends the server with it either way)
+                Application.quitting += _onQuit;
+            }
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = TextsShare.Part, Name = "RLO Texts' shared words",
+                Ready = () => _loaded,
+                Write = () => _loaded ? TextsShare.Whole(Hub.Store) : null,
+                Changes = TakeChanges,
+                Apply = (text, whole) => FromHost(text)
+            });
+        }
+
+        private void OnDestroy()
+        {
+            SaveHook.Drop(_onSave);
+            try
+            {
+                Hub.Clear();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        private static void StopOnQuit()
+        {
+            try
+            {
+                StopServer("the game is closing");
+            }
+            catch (Exception)
+            {
+                // (the job object ends it with the process anyway)
+            }
+        }
+
+        // ---------------------------------------------------------------- running
+
+        private void Update()
+        {
+            using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
+            float now = Time.unscaledTime;
+            if (now < _next)
+            {
+                return;
+            }
+            float since = now - _last;
+            _last = now;
+            _next = now + (Hub.Pending > 0 ? BusyEvery : IdleEvery);
+            Look(now, since);
+        }
+
+        private void Look(float now, float since)
+        {
+            using var hotSpot = HotSpots.Time(HotLook);
+            int frames = Time.frameCount - _frameCount;
+            _frameCount = Time.frameCount;
+            _frameTime = frames > 0 && since > 0f ? since * 1000f / frames : 0f;   // (frames counted between two looks: the mean frame since the last)
+            if (!Settings.Texts)
+            {
+                if (_server != null)
+                {
+                    StopServer("switched off");
+                }
+                Hub.Clear();
+                Keep(now);
+                return;
+            }
+            Keep(now);
+            if (!_found)
+            {
+                Find();
+                return;
+            }
+            if (_pack == null)
+            {
+                Hub.Clear();
+                return;
+            }
+            Run();
+            if (_server != null)
+            {
+                _server.Quiet = TextsGame.Quiet(_frameTime);
+                if (_server.State == TextServerState.Ready && !_speedTold)
+                {
+                    Measured();
+                }
+            }
+            Hub.Look(TextClock.Now);
+        }
+
+        // The save's line of kept words: read on a new save, written at every save; the save hook kept attached.
+        private void Keep(float now)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (_loaded && !ReferenceEquals(save, _save))
+            {
+                Hub.Clear();
+                Hub.Store.Clear();
+                _loaded = false;
+                _save = null;
+            }
+            if (save == null || LoadScene.isLoading || !ModState.Loaded)
+            {
+                return;
+            }
+            if (!_loaded)
+            {
+                Read(save);
+            }
+            if (now >= _nextHook)
+            {
+                _nextHook = now + HookEvery;
+                SaveHook.Keep(_onSave);   // the game clears its event hub on every load: the save hook is kept attached
+            }
+            if (save.Day != _prunedDay)
+            {
+                _prunedDay = save.Day;
+                Hub.Store.Prune(save.Day);
+            }
+        }
+
+        private void Read(GameInstance save)
+        {
+            _save = save;
+            _loaded = true;
+            string line = null;
+            if (save.modData != null && save.modData.TryGetValue(TextsStore.SaveKey, out line) && !Hub.Store.Read(line))
+            {
+                SaveLines.Unreadable(save.modData, TextsStore.SaveKey, "it could not be read");
+                Logger?.Warn("RLO Texts: the save's line of kept words could not be read (" + TextsStore.SaveKey + "); the written lines are shown for what it held, and the line is kept as it is.");
+            }
+            Logger?.Info("RLO Texts: " + Hub.Store.Count + " kept text(s) read from the save.");
+        }
+
+        private void OnSaveGame()
+        {
+            try
+            {
+                int flushed = Hub.FlushForSave();
+                if (flushed > 0)
+                {
+                    Logger?.Info("RLO Texts: the game saves: " + flushed + " message(s) waiting for their words go out with the written line.");
+                }
+                if (_loaded && _save != null && _save.modData != null)
+                {
+                    _save.modData[TextsStore.SaveKey] = Hub.Store.Write();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- the pack and the server
+
+        // Once a session, off the game's thread: the packs on disk, the machine's cores, llama.cpp's devices.
+        private static void Find()
+        {
+            if (_finding)
+            {
+                return;
+            }
+            _finding = true;
+            List<string> places = TextsGame.Places();
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    _packs = TextPacks.Find(places);
+                    _cores = TextCores.Real();
+                    _devices = _packs.Count > 0 ? TextPacks.Devices(TextPacks.ListDevices(_packs[0].Exe, DevicesWaitMs)) : new List<TextDevice>();
+                }
+                catch (Exception)
+                {
+                    _packs = _packs ?? new List<TextPack>();
+                    _devices = new List<TextDevice>();
+                }
+                _found = true;
+                _finding = false;
+            });
+        }
+
+        // The server for the options as they are: started, or started again when the device or threads change.
+        private static void Run()
+        {
+            if (_pack == null && _packs != null && _packs.Count > 0)
+            {
+                _pack = _packs[0];
+                Logger?.Info("RLO Texts: the pack " + _pack.Name + " (version " + _pack.Version + ", " + (_pack.ModelBytes / (1024 * 1024)) + " MB) in " + _pack.Folder
+                             + (_packs.Count > 1 ? "; " + (_packs.Count - 1) + " other pack(s) found and not used" : "") + ".");
+            }
+            if (_pack == null)
+            {
+                return;
+            }
+            string device = TextPacks.Choose(Mathf.Clamp(Settings.TextsDevice, 0, 2), _devices, _pack.ModelBytes);
+            int threads = TextSpeed.Threads(_cores, Settings.TextsThreads <= 0 ? 0 : Settings.TextsThreads + 1);   // (the option: 0 Auto, then 2, 3, 4)
+            string wanted = _pack.Name + " " + _pack.Version + ";" + (device ?? "cpu") + ";" + threads;
+            if (_server != null && _serverFor == wanted)
+            {
+                return;
+            }
+            if (_server != null)
+            {
+                StopServer("the device or threads changed");
+            }
+            _device = device;
+            _threads = threads;
+            _deviceLabel = null;
+            for (int i = 0; _devices != null && i < _devices.Count; i++)
+            {
+                if (_devices[i].Name == device)
+                {
+                    _deviceLabel = _devices[i].Label;
+                }
+            }
+            _serverFor = wanted;
+            _speedTold = false;
+            Directory.CreateDirectory(TextsGame.Home);
+            _server = new TextServer(Queue, new TextServerStart
+            {
+                Exe = _pack.Exe, Model = _pack.Model, Threads = threads, Device = device, Log = Path.Combine(TextsGame.Home, "server.log"),
+                Cache = Path.Combine(TextsGame.Home, "cache"), SpeedFor = wanted, Known = KnownSpeed(wanted)
+            }, Log);
+            Hub.Runner = _server;
+            _server.Start();
+            Logger?.Info("RLO Texts: starting the model on " + (device != null ? "the GPU (" + _deviceLabel + ")" : "the processor") + " with " + threads + " thread(s) of "
+                         + _cores + " core(s); the written lines are used until it is ready.");
+        }
+
+        private static void StopServer(string why)
+        {
+            Hub.Clear();
+            Hub.Runner = null;
+            if (_server != null)
+            {
+                _server.Dispose();
+                _server = null;
+                _serverFor = null;
+                Logger?.Info("RLO Texts: the model stopped (" + why + "); the written lines are used.");
+            }
+        }
+
+        private static void Log(string line)
+        {
+            Logger?.Info(line);   // (the worker's lines: Unity's log takes them from any thread)
+        }
+
+        // The speed is known: kept for next time, what this machine may write decided, and the Lite pack suggested once if the full one is slow.
+        private static void Measured()
+        {
+            _speedTold = true;
+            TextSpeedResult speed = _server.Speed;
+            if (speed == null)
+            {
+                return;
+            }
+            double estimate = speed.Estimate;
+            Hub.AheadOnly = TextSpeed.AheadOnly(estimate);
+            KeepSpeed(speed);
+            if (Hub.AheadOnly)
+            {
+                Logger?.Info("RLO Texts: a reply takes about " + estimate.ToString("0.0") + " s here: only what is asked well ahead is written by the model (posts, replies due later, the paper); spoken lines keep the written ones.");
+            }
+            if (TextSpeed.SuggestLite(_pack.Rank, estimate) && !Told("lite"))
+            {
+                TextsGame.Notice("reallife_texts_note_lite", new Dictionary<string, string>(1) { { "seconds", estimate.ToString("0") } }, 16f);
+                Remember("lite");
+            }
+        }
+
+        // ---------------------------------------------------------------- what may be asked
+
+        private static bool Allowed(TextUse use, bool shared)
+        {
+            if (!Settings.Texts || !TextsGame.English)
+            {
+                return false;
+            }
+            if (shared && GoingPublic.InSession && !GoingPublic.IsHost)
+            {
+                return false;   // a guest never writes shared text: the host's words come in part T
+            }
+            switch (use)
+            {
+                case TextUse.Replies: return Settings.TextsReplies;
+                case TextUse.Posts: return Settings.TextsPosts;
+                case TextUse.People: return Settings.TextsPeople;
+                case TextUse.Official: return Settings.TextsOfficial;
+                case TextUse.Rivals: return Settings.TextsRivals;
+                case TextUse.Ledger: return Settings.TextsLedger;
+                default: return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- Going Public: part T
+
+        // The host: a shared text was kept; it goes with the next update.
+        private static void SharedKept(TextKept k)
+        {
+            if (!GoingPublic.IsHost)
+            {
+                return;
+            }
+            TextsShare.Line(Changes, TextsShare.NetKey(k.Key), k.Intent, k.Words);
+            SharedCity.Changed(TextsShare.Part);
+        }
+
+        private static string TakeChanges()
+        {
+            if (Changes.Length == 0)
+            {
+                return null;
+            }
+            string text = Changes.ToString();
+            Changes.Length = 0;
+            return text;
+        }
+
+        // A guest: the host's words, checked again here; a text that fails keeps the written line.
+        private static bool FromHost(string text)
+        {
+            var refused = new List<string>(2);
+            int kept = TextsShare.Apply(text, Hub.Store, TextsGame.Day, refused);
+            if (kept > 0 || refused.Count > 0)
+            {
+                Logger?.Info("RLO Texts: the host's words for " + kept + " shared item(s)" + (refused.Count > 0 ? "; refused on arrival: " + string.Join(", ", refused) : "") + ".");
+            }
+            return true;
+        }
+
+        // ---------------------------------------------------------------- the speed file and what was told once
+
+        private static string StateFile => Path.Combine(TextsGame.Home, "state.txt");
+
+        private static TextSpeedResult KnownSpeed(string wanted)
+        {
+            try
+            {
+                if (!File.Exists(StateFile))
+                {
+                    return null;
+                }
+                foreach (string line in File.ReadAllLines(StateFile))
+                {
+                    if (line.StartsWith("speed=", StringComparison.Ordinal))
+                    {
+                        TextSpeedResult r = TextSpeedResult.Read(line.Substring(6));
+                        if (r != null && r.For == wanted)
+                        {
+                            return r;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // (no file: a test this time)
+            }
+            return null;
+        }
+
+        private static void KeepSpeed(TextSpeedResult speed)
+        {
+            Rewrite("speed=", "speed=" + speed.Line());
+        }
+
+        private static bool Told(string what)
+        {
+            try
+            {
+                return File.Exists(StateFile) && Array.IndexOf(File.ReadAllLines(StateFile), "told=" + what) >= 0;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static void Remember(string what)
+        {
+            Rewrite("told=" + what, "told=" + what);
+        }
+
+        // The state file with the line starting so replaced (or added).
+        private static void Rewrite(string start, string line)
+        {
+            try
+            {
+                Directory.CreateDirectory(TextsGame.Home);
+                var lines = new List<string>(File.Exists(StateFile) ? File.ReadAllLines(StateFile) : new string[0]);
+                lines.RemoveAll(l => l.StartsWith(start, StringComparison.Ordinal));
+                lines.Add(line);
+                File.WriteAllLines(StateFile, lines.ToArray());
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("RLO Texts: the state file could not be written (" + e.Message + ").");
+            }
+        }
+
+        // ---------------------------------------------------------------- the status row
+
+        /// <summary>The status as the options page's status row shows it: the pack, loaded or not, the speed, threads, the hit rate, model against written lines.</summary>
+        public static Dictionary<string, string> Status(out string key)
+        {
+            var data = new Dictionary<string, string>(10);
+            if (!Settings.Texts)
+            {
+                key = "reallife_texts_status_off";
+                return data;
+            }
+            if (!_found)
+            {
+                key = "reallife_texts_status_looking";
+                return data;
+            }
+            if (_pack == null)
+            {
+                key = "reallife_texts_status_none";
+                data["folder"] = TextsGame.Home;
+                return data;
+            }
+            data["pack"] = _pack.Name;
+            data["device"] = _device != null ? _deviceLabel ?? _device : TextsText.Processor();
+            data["threads"] = _threads.ToString();
+            data["model"] = Hub.Shown.ToString();
+            data["written"] = Hub.Fallbacks.ToString();
+            data["hits"] = Hub.Budget.HitPercent.ToString();
+            TextServerState state = _server != null ? _server.State : TextServerState.Off;
+            TextSpeedResult speed = _server != null ? _server.Speed : null;
+            data["seconds"] = speed != null ? speed.Estimate.ToString("0.0") : "?";
+            data["speed"] = speed != null ? speed.TokensPerSecond.ToString("0") : "?";
+            data["mean"] = _server != null && _server.Written > 0 ? _server.MeanSeconds.ToString("0.0") : "?";
+            key = state == TextServerState.Ready ? "reallife_texts_status_ready" : state == TextServerState.Failed ? "reallife_texts_status_failed" : "reallife_texts_status_loading";
+            if (state == TextServerState.Failed)
+            {
+                data["why"] = _server.Why ?? "?";
+            }
+            return data;
+        }
+
+        /// <summary>The options page's status button: the status as one of the game's notices.</summary>
+        public static void ShowStatus()
+        {
+            Dictionary<string, string> data = Status(out string key);
+            TextsGame.Notice(key, data, 16f);
+        }
+    }
+}

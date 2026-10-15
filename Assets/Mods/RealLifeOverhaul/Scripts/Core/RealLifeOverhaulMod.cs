@@ -8,6 +8,7 @@ using RealLifeOverhaul.Faults;
 using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Permadeath;
 using RealLifeOverhaul.Photos;
+using RealLifeOverhaul.Texts;
 using UnityEngine;
 
 [assembly: RegisterModClass(typeof(RealLifeOverhaulInit))]
@@ -971,6 +972,7 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddDistrictView())   // the district view on the city map (Scripts/Districts)
                 .Guarded(o => o.AddCityFaults())   // real faults in the city, and Flare's reports checked against them (Scripts/Faults)
+                .Guarded(o => o.AddTexts())   // RLO Texts: a small text model on the player's PC words the city's messages (Scripts/Texts)
                 .Guarded(o => o.AddPhotos())   // the Camera and Gallery apps on the phone (Scripts/Photos)
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
@@ -1307,7 +1309,9 @@ namespace RealLifeOverhaul
             Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
             Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             Guard.Step("Faults.FaultDirector", () => Faults.FaultDirector.Logger = context.Logger);
-            Guard.Step("Faults.FaultDirector", () => Guard.Add<Faults.FaultDirector>(_root));   // real faults in the city: dark lamps, potholes, litter, crime hot spots, unsafe places, rolled at random (Scripts/Faults): once a second a look, nothing per frame
+            Guard.Step("Faults.FaultDirector", () => Guard.Add<Faults.FaultDirector>(_root));
+            Guard.Step("Texts.TextsDirector", () => Texts.TextsDirector.Logger = context.Logger);
+            Guard.Step("Texts.TextsDirector", () => Guard.Add<Texts.TextsDirector>(_root));   // RLO Texts: the model's words for the city's messages, when a pack is installed (Scripts/Texts): twice a second a look, nothing per frame   // real faults in the city: dark lamps, potholes, litter, crime hot spots, unsafe places, rolled at random (Scripts/Faults): once a second a look, nothing per frame
             Guard.Step("Utilities.UtilitiesDirector", () => Utilities.UtilitiesDirector.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesApp", () => Utilities.UtilitiesApp.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)

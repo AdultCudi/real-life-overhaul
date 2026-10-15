@@ -235,6 +235,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
                 S("flare").For("flare").Main("social_media").Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme")
                     .Also("social media app followers posts likes selfie influencer"),
+                S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
+                    .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite"),
                 S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption")
                     .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity"),
                 S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online")
