@@ -97,6 +97,9 @@ namespace RealLifeOverhaul.Economy
 
         public CycleState Cycle => _cycle;
 
+        /// <summary>The game's day now (0 with no save): what the pages measure a rest against.</summary>
+        public int Today => Save != null ? Save.Day : 0;
+
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
 

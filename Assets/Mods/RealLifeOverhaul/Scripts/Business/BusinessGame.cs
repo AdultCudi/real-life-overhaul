@@ -609,10 +609,12 @@ namespace RealLifeOverhaul
             return expected > 0.01f ? 1f - e.hourlyWage / expected : 0f;
         }
 
+        /// <summary>A wage brought up to a figure (a strike settled with a raise): never down, never past WageRules' cap of the game's own wage for the skill.</summary>
         public static void SetWage(EmployeeInstance e, float wage)
         {
             float before = e.hourlyWage;
-            e.hourlyWage = Mathf.Max(before, wage);   // a wage only ever goes up here
+            int formula = Mathf.RoundToInt(ExpectedWage(e) * 100f);
+            e.hourlyWage = WageRules.UpTo(Mathf.RoundToInt(before * 100f), Mathf.RoundToInt(wage * 100f), formula) / 100f;   // a wage only ever goes up here, and never past the cap
             Logger?.Info("Business: " + NameOf(e) + "'s wage " + before.ToString("F2") + " -> " + e.hourlyWage.ToString("F2") + ".");
         }
 

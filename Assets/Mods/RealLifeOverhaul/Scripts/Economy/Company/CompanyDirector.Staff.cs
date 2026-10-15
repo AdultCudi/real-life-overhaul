@@ -317,11 +317,15 @@ namespace RealLifeOverhaul.Economy
             return cost;
         }
 
-        /// <summary>A raise to the going rate that nobody asked for: the request the rule would make, agreed at once.</summary>
+        /// <summary>
+        /// A raise to the going rate that nobody asked for: the request the rule would make, agreed at once. Not while the
+        /// last answer's rest runs (<see cref="StaffRules.CanGive"/>): one raise for one employee in that time, as their own
+        /// requests come.
+        /// </summary>
         public void GiveRaise(string id)
         {
             StaffFile f = On(CompanyPart.Staff) ? _state.Employee(id) : null;
-            if (f == null || f.AskDay != 0 || f.PoachDay != 0 || f.LeaveDay != 0 || f.Going <= f.Paid)
+            if (f == null || !StaffRules.CanGive(f, Save.Day))
             {
                 return;
             }

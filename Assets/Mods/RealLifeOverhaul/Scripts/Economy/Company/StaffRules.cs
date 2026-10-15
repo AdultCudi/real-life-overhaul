@@ -127,6 +127,16 @@ namespace RealLifeOverhaul.Economy
             return StaffNote.None;
         }
 
+        /// <summary>
+        /// Whether the player may bring somebody up to the going rate unasked today: underpaid, nothing waiting from them or a
+        /// rival, not leaving, and the rest after the last answer over (one raise in <see cref="CompanyCatalogue.RaiseRestDays"/>
+        /// days, as their own requests come).
+        /// </summary>
+        public static bool CanGive(StaffFile f, int day)
+        {
+            return f.AskDay == 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.Going > f.Paid && day >= f.AskRest;
+        }
+
         /// <summary>The raise an answer gives, hundredths an hour: all of what is asked, part of it, or nothing.</summary>
         public static int RaiseFor(StaffFile f, RaiseAnswer answer)
         {
