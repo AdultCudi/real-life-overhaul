@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Flare
         {
             int day = p.Day;
             int buzz = FlareRules.BuzzOf(p);
-            if (buzz != 0)
+            if (buzz != 0 && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.TalkKey(p.Place)))   // (a business talked about once a day, however many posts)
             {
                 int now = FlareRules.AddBuzz(_file, p.Place, buzz, day, FlareRules.BuzzDays);
                 Logger?.Info("Flare: the post about " + p.Name + " is talked about: " + now + "% more customers there until day " + (day + FlareRules.BuzzDays - 1) + ".");
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Flare
             {
                 Viral(p, day);
             }
-            if (p.Tag >= 0 && FlareBridges.Tagged != null)
+            if (p.Tag >= 0 && FlareBridges.Tagged != null && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.FriendKey('T', p.Tag)))   // (closer once a day)
             {
                 FlareBridges.Tagged(p.Tag, p.Source == FlareSource.Selfie && d.Person == p.Tag, !p.Bad);
             }

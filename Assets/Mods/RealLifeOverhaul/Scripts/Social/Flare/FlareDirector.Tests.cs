@@ -61,8 +61,7 @@ namespace RealLifeOverhaul.Flare
                 FlareRules.Draft(_file, FlareSource.Voted, day, hour, -1, null, FlareText.T("reallife_flare_test_candidate"), 0);
                 FlareRules.Draft(_file, FlareSource.GoodDeed, day, hour, -1, null, null, 0);
                 FlareRules.Draft(_file, FlareSource.Arrested, day, hour, -1, null, null, 0);
-                _file.LastPostMinute = -1;   // the test may post at once
-                _file.PostsToday = 0;
+                _file.PostsToday = 0;   // the test's posts are the day's first: they move the account
                 Logger?.Info("Flare: test drafts made (" + _file.Drafts.Count + ", friend " + (friend >= 0 ? PersonName(friend) : "none") + ", business " + (place ?? "none") + ").");
                 Changed();
                 Open(TabPost);
@@ -110,7 +109,6 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             _testViral = true;
-            _file.LastPostMinute = -1;
             Logger?.Info("Flare: test: the next post goes viral.");
             Tell(NotificationType.Info, "reallife_flare_test_viral_done", null);
         }

@@ -9,14 +9,19 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Notices the player's car running into people. The game fades pedestrians out beside
+    /// Notices the player's car, or their bicycle, motorbike or scooter, running into people. The game fades pedestrians out beside
     /// vehicles and lets cars pass through them, and people standing still have no collider at
     /// all, so this cannot wait for a collision: while the player is driving faster than
     /// walking pace, every other physics step it compares the positions of the pedestrians the
     /// game has out (and the mod's own people) with the box of the car, stretched ahead by the
     /// distance the car covers before the next look. That is a few dozen subtractions, no
     /// physics query and no allocation, and none of it runs while parked or on foot.
-    /// What happens to whoever is hit is PedestrianIncidents' business.
+    /// What happens to whoever is hit is PedestrianIncidents' business. A two-wheeler (the game's scooter, and the
+    /// mod's bicycles and motorbikes on it) is looked at the same way with its own box, measured from the colliders on
+    /// its own body when it is got on and in the four looks after (the mod dresses it within a second, and the rider sits
+    /// among its children): whoever it runs into is knocked off their feet, never more (PedestrianIncidents.KnockedBelow), so that
+    /// nobody is hurt or killed by one and the police have no part in it. It is not the player's car to the traffic
+    /// that asks for that (PlayerCar).
     /// A few traffic cars can be watched in exactly the same way: the one reckless driver of
     /// Traffic/Reckless and the car somebody has stepped out in front of (Watch, until Unwatch),
     /// and the cars Traffic/Solid finds within a second of somebody in their way (Glance, which
@@ -44,7 +49,10 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static CarStrikes Instance { get; private set; }
 
-        private CarController _car;
+        private VehicleController _car;
+        private bool _twoWheeler;       // the player's vehicle is the game's scooter (or a bicycle or motorbike on it)
+        private int _measureAgain;      // looks left in which a two-wheeler's box is measured again
+        private const int MeasureLooks = 4;   // looks (two seconds): the bike is dressed within a second of being spawned, and mounted the frame it is chosen
         private Rigidbody _body;
         private Vector3 _centre;        // of the car's body, in the car's own space
         private Vector3 _half;          // half its width, height and length
@@ -316,13 +324,13 @@ namespace RealLifeOverhaul
             half = _boxHalf[index];
         }
 
-        /// <summary>The car the player is driving and its box in its own space. False on foot or parked up.</summary>
+        /// <summary>The car the player is driving and its box in its own space. False on foot, parked up, or on two wheels.</summary>
         public bool PlayerCar(out Rigidbody body, out Vector3 centre, out Vector3 half)
         {
             body = _body;
             centre = _centre;
             half = _half;
-            return _driving && _body != null;
+            return _driving && _body != null && !_twoWheeler;
         }
 
         // ---------------------------------------------------------------- the look
@@ -348,6 +356,9 @@ namespace RealLifeOverhaul
 
             float speed = Mathf.Sqrt(sqrSpeed);
             bool bump = !player && SolidRules.Touch(speed) == SolidRules.Contact.Bump;
+            // On two wheels whoever is run into is knocked off their feet, never more: the strike is reckoned at no more than that speed.
+            float hit = player && _twoWheeler && speed > PedestrianIncidents.KnockedBelow ? PedestrianIncidents.KnockedBelow : speed;
+            Vector3 thrown = hit < speed ? velocity * (hit / speed) : velocity;
             _struckBefore = _down;
             Vector3 origin = body.position;
             Quaternion toCar = Quaternion.Inverse(body.rotation);
@@ -402,7 +413,7 @@ namespace RealLifeOverhaul
                             Bump(walker, null, traffic, watched, origin, speed, now);
                             continue;
                         }
-                        Count(player ? incidents.StrikePedestrian(walker, velocity, speed, body) : incidents.StruckByTraffic(walker, velocity, speed, traffic), player);
+                        Count(player ? incidents.StrikePedestrian(walker, thrown, hit, body) : incidents.StruckByTraffic(walker, velocity, speed, traffic), player);
                     }
                 }
             }
@@ -425,7 +436,7 @@ namespace RealLifeOverhaul
                         Bump(null, figure, traffic, watched, origin, speed, now);
                         continue;
                     }
-                    Count(player ? incidents.StrikeFigure(figure, velocity, speed, body) : incidents.StruckByTraffic(figure, velocity, speed, traffic), player);
+                    Count(player ? incidents.StrikeFigure(figure, thrown, hit, body) : incidents.StruckByTraffic(figure, velocity, speed, traffic), player);
                 }
             }
 
@@ -441,7 +452,7 @@ namespace RealLifeOverhaul
                 if (local.x > -side && local.x < side && local.z > back && local.z < front && local.y > -1.5f && local.y < 2f
                     && !actor.Limp && !bump)
                 {
-                    Count(player ? incidents.StrikeActor(actor, velocity, speed, body) : incidents.StruckByTraffic(actor, velocity, speed, traffic), player);
+                    Count(player ? incidents.StrikeActor(actor, thrown, hit, body) : incidents.StruckByTraffic(actor, velocity, speed, traffic), player);
                 }
             }
             if (!player && _down > _struckBefore)
@@ -513,21 +524,75 @@ namespace RealLifeOverhaul
         private void Lookup()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
-            CarController car = gm != null ? gm.selectedVehicle as CarController : null;
+            VehicleController selected = gm != null ? gm.selectedVehicle : null;
+            bool twoWheeler = selected is ScooterController;
+            VehicleController car = selected is CarController || twoWheeler ? selected : null;
             _driving = car != null && PlayerHelper.IsUsingVehicle;
             if (car != _car)
             {
                 _car = car;
+                _twoWheeler = twoWheeler;
+                _measureAgain = MeasureLooks;   // now, and after the bike is dressed and its rider seated
                 _body = car != null ? car.GetComponent<Rigidbody>() : null;
-                if (_body != null)
+                if (_body != null && !twoWheeler)
                 {
                     Measure(car, _body, out _centre, out _half, true);
                 }
+            }
+            if (_twoWheeler && _driving && _body != null && _measureAgain > 0)
+            {
+                _measureAgain--;
+                MeasureTwoWheeler(_car, _body, out _centre, out _half);
             }
             if (_spawner == null && _driving)
             {
                 var city = InstanceBehavior<CityManager>.Instance;
                 _spawner = city != null ? city.pedestrianSpawner : null;
+            }
+        }
+
+        // A two-wheeler's size: its own body's colliders that meet the world (not the rider's, who sits among its children,
+        // nor a trigger), with a narrow default if none is found. On getting on and the four looks after: a walk of the bike and its rider.
+        private static void MeasureTwoWheeler(Component vehicle, Rigidbody body, out Vector3 centre, out Vector3 half)
+        {
+            Transform root = body.transform;
+            var bounds = new Bounds();
+            bool any = false;
+            vehicle.GetComponentsInChildren(false, ColliderScratch);
+            for (int i = 0; i < ColliderScratch.Count; i++)
+            {
+                if (!(ColliderScratch[i] is BoxCollider box) || box.isTrigger || !box.enabled || box.attachedRigidbody != body)
+                {
+                    continue;
+                }
+                Transform from = box.transform;
+                Vector3 min = box.center - box.size * 0.5f;
+                Vector3 max = box.center + box.size * 0.5f;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    var point = new Vector3((corner & 1) == 0 ? min.x : max.x, (corner & 2) == 0 ? min.y : max.y, (corner & 4) == 0 ? min.z : max.z);
+                    Vector3 local = root.InverseTransformPoint(from.TransformPoint(point));
+                    if (any)
+                    {
+                        bounds.Encapsulate(local);
+                    }
+                    else
+                    {
+                        bounds = new Bounds(local, Vector3.zero);
+                        any = true;
+                    }
+                }
+            }
+            ColliderScratch.Clear();
+            if (any && bounds.size.z > 0.8f && bounds.size.x > 0.2f)
+            {
+                centre = bounds.center;
+                half = bounds.extents;
+            }
+            else
+            {
+                centre = new Vector3(0f, 0.7f, 0.05f);
+                half = new Vector3(0.3f, 0.7f, 0.95f);
             }
         }
 

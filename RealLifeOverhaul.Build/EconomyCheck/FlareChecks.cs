@@ -114,19 +114,16 @@ internal static partial class Program
     {
         FlareFile f = FlareRules.Open(3, 1, 0, 50);
         var people = new List<FlarePerson>();
-        Check(FlareRules.CanPost(f, 5, 600) == FlareRules.Wait.None && FlareRules.NextPostMinute(f, 5) == 0, "Flare: a new account may post at once");
+        Check(FlareRules.Counts(f, 5) && FlareRules.PostsToday(f, 5) == 0, "Flare: a new account's first post counts");
         FlareRules.Post(f, FlareRules.Draft(f, FlareSource.Photo, 5, 10, -1, null, "a.png", 0), FlareTone.Cheeky, -1, people, 5, 10, 600);
-        Check(FlareRules.CanPost(f, 5, 600 + 119) == FlareRules.Wait.TooSoon && FlareRules.CanPost(f, 5, 720) == FlareRules.Wait.None, "Flare: two game hours between posts");
-        Check(FlareRules.NextPostMinute(f, 5) == 720, "Flare: the next post at 12:00 after one at 10:00");
-        FlareRules.Post(f, FlareRules.Draft(f, FlareSource.Selfie, 5, 12, -1, null, "b.png", 0), FlareTone.Cheerful, -1, people, 5, 12, 720);
+        FlarePost second = FlareRules.Post(f, FlareRules.Draft(f, FlareSource.Selfie, 5, 10, -1, null, "b.png", 0), FlareTone.Cheerful, -1, people, 5, 10, 601);
+        Check(second != null && second.Gained > 0 && FlareRules.PostsToday(f, 5) == 2, "Flare: a second post a minute after the first is made and counts (no gap between posts)");
         FlareRules.Post(f, FlareRules.Draft(f, FlareSource.GoodDeed, 5, 14, -1, null, null, 0), FlareTone.Honest, -1, people, 5, 14, 840);
-        Check(FlareRules.CanPost(f, 5, 1200) == FlareRules.Wait.DayFull && FlareRules.NextPostMinute(f, 5) == -1, "Flare: three posts a day, the fourth waits");
-        Check(FlareRules.CanPost(f, 6, 0) == FlareRules.Wait.TooSoon || FlareRules.CanPost(f, 6, 0) == FlareRules.Wait.None, "Flare: a new day counts afresh");
-        Check(FlareRules.CanPost(f, 6, 300) == FlareRules.Wait.None && f.PostsToday == 3, "Flare: the next morning one may post again");
-        FlareFile late = FlareRules.Open(3, 1, 0, 50);
-        FlareRules.Post(late, FlareRules.Draft(late, FlareSource.Photo, 5, 23, -1, null, "c.png", 0), FlareTone.Cheeky, -1, people, 5, 23, 23 * 60 + 30);
-        Check(FlareRules.CanPost(late, 6, 30) == FlareRules.Wait.TooSoon && FlareRules.CanPost(late, 6, 90) == FlareRules.Wait.None && FlareRules.NextPostMinute(late, 5) == -1,
-            "Flare: the gap runs over midnight");
+        int followers = f.Followers;
+        FlarePost fourth = FlareRules.Post(f, FlareRules.Draft(f, FlareSource.Outing, 5, 15, -1, null, null, 1), FlareTone.Cheerful, -1, people, 5, 15, 900);
+        Check(fourth != null && fourth.Gained == 0 && f.Followers == followers && f.PostsToday == 4 && !FlareRules.Counts(f, 5),
+            "Flare: a fourth post in a day is made and seen, and leaves the account as it is");
+        Check(FlareRules.Counts(f, 6) && FlareRules.PostsToday(f, 6) == 0, "Flare: a new day counts afresh");
     }
 
     private static void FlareRepeats()

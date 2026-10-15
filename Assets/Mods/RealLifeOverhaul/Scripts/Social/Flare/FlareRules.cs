@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// Flare by rule: the account's followers and reputation, what a post reaches and brings, who of the player's
-    /// friends likes and answers it, a viral moment, the limits on posting, and the daily round. Game-free: whoever
+    /// friends likes and answers it, a viral moment, which posts of a day count, and the daily round. Game-free: whoever
     /// calls says what day it is and who the friends are; RealLifeOverhaul.Build/EconomyCheck runs these rules.
     ///
     /// A WORKED EXAMPLE (the followers a post brings, reputation 50, nothing repeated):
@@ -19,7 +19,9 @@ namespace RealLifeOverhaul.Flare
     ///       5,000   a selfie alone, reputation 10             750      1100    126   1,238
     ///
     /// The gain is (35 + 2.2 x the square root of the followers) x quality x tone fit x reputation (750 + 5 a point)
-    /// x repeats, so it grows ever more slowly. Three ordinary posts a day (a selfie, an outing, a picture, each worth
+    /// x repeats, so it grows ever more slowly. The player may post as often as they like; the first three posts of a day
+    /// move the account (followers, reputation, a viral moment) and the rest are seen and liked but move nothing, so many
+    /// posts change the feed, not the account. Three ordinary posts a day (a selfie, an outing, a picture, each worth
     /// a little over half the next day for being the same kind again) take a new account to Known (5,000) in about a
     /// month of game days; Celebrity takes viral moments and businesses. A post in
     /// the wrong tone for what it is about (cheerful about an arrest) goes badly: 2% of the followers and 5 more are
@@ -33,8 +35,7 @@ namespace RealLifeOverhaul.Flare
         public const int FollowFromStage = 1;      // acquaintances and closer follow the player
         public const int ReputationStart = 50;     // 0 to 100
         public const int StartExtra = 36;          // followers a new account has beyond the people the player has met
-        public const int PostGapMinutes = 120;     // game minutes between two posts
-        public const int PostsPerDay = 3;
+        public const int PostsCounted = 3;         // the player's posts a day that move the account; any number may be posted, the rest are seen and liked only
         public const int DraftDays = 2;            // a draft made today can still be posted tomorrow
         public const int DraftsMost = 8;
         public const int PostsMost = 220;          // posts kept, the player's, the friends' and the city's (the city's go first: FlareLiveRules.CityKeepDays)
@@ -201,29 +202,20 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- posting
 
-        /// <summary>Why a post cannot be made now.</summary>
-        public enum Wait { None, TooSoon, DayFull }
-
-        /// <summary>Whether the player may post now: two game hours apart, three a day.</summary>
-        public static Wait CanPost(FlareFile f, int day, int minuteOfDay)
+        /// <summary>The player's posts made today (0 on a new day).</summary>
+        public static int PostsToday(FlareFile f, int day)
         {
-            if (f.PostsDay == day && f.PostsToday >= PostsPerDay)
-            {
-                return Wait.DayFull;
-            }
-            int now = day * 1440 + minuteOfDay;
-            return f.LastPostMinute >= 0 && now - f.LastPostMinute < PostGapMinutes ? Wait.TooSoon : Wait.None;
+            return f.PostsDay == day ? f.PostsToday : 0;
         }
 
-        /// <summary>The minute of today the next post may be made from (0: now or earlier); -1 when it is not today.</summary>
-        public static int NextPostMinute(FlareFile f, int day)
+        /// <summary>
+        /// Whether the player's next post today moves the account: the first three of a day do. There is no limit on
+        /// posting: a post past them is made, seen and liked like any other, and brings no followers, costs none and
+        /// cannot go viral, so posting a great deal changes the feed and not the account.
+        /// </summary>
+        public static bool Counts(FlareFile f, int day)
         {
-            if (f.PostsDay == day && f.PostsToday >= PostsPerDay)
-            {
-                return -1;
-            }
-            int next = f.LastPostMinute < 0 ? 0 : f.LastPostMinute + PostGapMinutes - day * 1440;
-            return next >= 1440 ? -1 : Math.Max(0, next);
+            return PostsToday(f, day) < PostsCounted;
         }
 
         public static int Quality(FlareSource source, bool tagged, bool inShop)
@@ -372,12 +364,15 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// The player posts a draft in a tone, with a friend tagged or not (-1). Every figure of the account follows;
-        /// the draft is spent. The friends are the social life's people, as they stand now. Returns the post. With
-        /// 'viral' (a test) a post that does not go badly goes viral whatever the roll and the gap.
+        /// The player posts a draft in a tone, with a friend tagged or not (-1). It is always made: there is no limit on
+        /// posting. One of the first three of the day moves every figure of the account (<see cref="Counts"/>); one past
+        /// them is seen, liked and answered alike, and moves no follower and no point of reputation, and cannot go viral.
+        /// The draft is spent. The friends are the social life's people, as they stand now. Returns the post. With
+        /// 'viral' (a test) a post that does not go badly goes viral whatever the roll, the gap and the count.
         /// </summary>
         public static FlarePost Post(FlareFile f, FlareDraft d, FlareTone tone, int tag, IReadOnlyList<FlarePerson> people, int day, int hour, int minuteOfDay, bool viral = false)
         {
+            bool counts = viral || Counts(f, day);
             int id = f.NextId++;
             FlarePost last = f.LastOwn(d.Source);
             var p = new FlarePost
@@ -394,7 +389,11 @@ namespace RealLifeOverhaul.Flare
             int reach = Reach(followers, p.Quality, fit);
             int gain = Gain(followers, quality, fit, f.Reputation, repeat);
             int reputation = 0;
-            if (p.Bad)
+            if (!counts)
+            {
+                gain = 0;   // past the day's three: seen and liked, and the account stays as it is
+            }
+            else if (p.Bad)
             {
                 gain = -BadLoss(followers);
                 reputation -= f.Tier >= FlareTier.Known ? BadReputationKnown : BadReputation;
@@ -755,7 +754,8 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// Keeps the posts within their bounds: the city's posts older than a few days go first (and a reply goes with its
-        /// post), then the oldest post that is not the player's, and the player's own beyond forty.
+        /// post), then the oldest post that is not the player's, and the player's own beyond forty. A post of the player's
+        /// still on its way to a session's host is never let go (it would come back as a stranger's); it goes once it is back.
         /// </summary>
         public static void Prune(FlareFile f)
         {
@@ -764,21 +764,42 @@ namespace RealLifeOverhaul.Flare
             while (own > OwnMost)
             {
                 int at = Oldest(f.Posts, true);
+                if (at < 0 || !OwnAfter(f.Posts, at))
+                {
+                    break;   // every one left is on its way, but the newest (just made: it is on its way in a moment)
+                }
                 f.Posts.RemoveAt(at);
                 own--;
             }
             while (f.Posts.Count > PostsMost)
             {
                 int at = Oldest(f.Posts, false);
-                f.Posts.RemoveAt(at < 0 ? 0 : at);
+                at = at >= 0 ? at : Oldest(f.Posts, true);
+                if (at < 0)
+                {
+                    break;   // only posts on their way are left
+                }
+                f.Posts.RemoveAt(at);
             }
+        }
+
+        private static bool OwnAfter(List<FlarePost> posts, int at)
+        {
+            for (int i = at + 1; i < posts.Count; i++)
+            {
+                if (posts[i].Author == FlareAuthor.Player)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static int Oldest(List<FlarePost> posts, bool own)
         {
             for (int i = 0; i < posts.Count; i++)
             {
-                if ((posts[i].Author == FlareAuthor.Player) == own)
+                if ((posts[i].Author == FlareAuthor.Player) == own && !posts[i].Pending)
                 {
                     return i;
                 }
