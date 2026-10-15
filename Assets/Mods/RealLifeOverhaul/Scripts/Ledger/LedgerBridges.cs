@@ -20,6 +20,9 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The city's paper as it stands, as pieces sorted into their sections (the old masthead left out).</summary>
         public static Action<List<LedgerPiece>> Paper;
 
+        /// <summary>The host: what another player's game wrote (a guest's piece's values), as this city's players are shown it, by its author's id (Flare's filter). Null: as it came.</summary>
+        public static Func<string, string, string> Filter;
+
         /// <summary>The market at its last close written into an edition (the index, the sectors, every company), with its news from a day on.</summary>
         public static Action<LedgerEdition, int> Market;
 
@@ -50,10 +53,14 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>Opens the Utilities app on its internet page, where a connection is bought; false if it is not on the phone.</summary>
         public static Func<bool> OpenUtilities;
 
+        /// <summary>The host of a Going Public session: a guest's report for the city's paper (Social/News: its kind, where, its detail, its amount).</summary>
+        public static Action<int, float, float, string, int> Report;
+
         public static void Reset()
         {
             PaperDay = null;
             Paper = null;
+            Filter = null;
             Market = null;
             Economy = null;
             Extra = null;
@@ -62,6 +69,7 @@ namespace RealLifeOverhaul.Ledger
             Say = null;
             Connection = null;
             OpenUtilities = null;
+            Report = null;
         }
     }
 }

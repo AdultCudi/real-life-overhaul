@@ -41,6 +41,9 @@ namespace RealLifeOverhaul
     ///     FlareLinks      the social media app with the social life (friends who follow and are tagged), the law (its
     ///                     reputation, scrutiny), the council (the election), careers, photo mode, business pressure
     ///                     (footfall), the company (a sponsored post), brands (scandals) and the City Ledger
+    ///     FlareLiveLinks  Flare's living network with the council's works (the City Office's crews), the police and the
+    ///                     cleaners (Crime/CityWatch, the clean streets' mood), the weather, the news, the street's calendar,
+    ///                     the staff, photo mode's selfie and the City Ledger (its stories)
     ///     StandingLinks   the player's standing (wealth, recognition, reputation) with Flare, the company, property,
     ///                     brands, business pressure, good deeds and the Finance app's Standing page
     ///     PermadeathLinks an ending the player chooses with the records a life is told from (social life, family
@@ -108,6 +111,7 @@ namespace RealLifeOverhaul
             Step("the roommate", RoommateLinks.Connect);
             Step("power and water", UtilityLinks.Connect);
             Step("the social media app", FlareLinks.Connect);
+            Step("the social media app's living network", FlareLiveLinks.Connect);   // after its own: its part of the paper follows the others'
             Step("interiors and decor", InteriorLinks.Connect);   // after Flare's: its part of footfall goes on top of the others'
             Step("permadeath", PermadeathLinks.Connect);
             Step("the district view", DistrictLinks.Connect);
@@ -134,6 +138,7 @@ namespace RealLifeOverhaul
             Step("empty shops as offices", OfficeLinks.Disconnect);
             Step("permadeath", PermadeathLinks.Disconnect);
             Step("interiors and decor", InteriorLinks.Disconnect);   // before the social media app's: what it wrapped is put back first
+            Step("the social media app's living network", FlareLiveLinks.Disconnect);   // what it wrapped of the paper is put back first
             Step("the social media app", FlareLinks.Disconnect);   // ...and then the social media app's
             Step("the taxi by phone", TaxiLinks.Disconnect);
             Step("property", EstateLinks.Disconnect);

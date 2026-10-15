@@ -62,6 +62,26 @@ namespace RealLifeOverhaul
         /// <summary>Why the link is not in place, for the log and the self-check; null while it is.</summary>
         public static string Why { get; private set; } = "Going Public is not switched on";
 
+        /// <summary>
+        /// This machine's own player in the session: Going Public's player id, the name the others see and the one it
+        /// writes as the owner of a player's business (BuildingRegistration.businessOwnerRivalId). Empty while the link is
+        /// not in place. A reflected property read: asked on a post or a message, never per frame.
+        /// </summary>
+        public static string MyId
+        {
+            get
+            {
+                try
+                {
+                    return Ready && _playerId != null ? _playerId.GetValue(null) as string ?? string.Empty : string.Empty;
+                }
+                catch (Exception)
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
         /// <summary>True on a guest while its connection to the host is up.</summary>
         public static bool Connected
         {

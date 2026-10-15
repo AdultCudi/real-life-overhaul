@@ -52,7 +52,7 @@ internal static partial class Program
         FlareFile f = FlareRules.Open(7, 10, 3, 55);
         Check(f.Followers == 3 + FlareRules.StartExtra && f.Reputation == 55 && f.StartDay == 10 && f.History[0] == f.Followers && f.Tier == FlareTier.Newcomer,
             "Flare: a new account has the people met and a few dozen more (" + f.Followers + ")");
-        Check(FlareRules.SourceQuality.Length == (int)FlareSource.Interior + 1, "Flare: a quality for every source");
+        Check(FlareRules.SourceQuality.Length == (int)FlareSource.Answer + 1, "Flare: a quality for every source");
         Check((int)FlareSource.Arrested == 10 && (int)FlareSource.Life == 11 && (int)FlareTone.Cheeky == 3 && (int)FlareAuthor.Friend == 1, "Flare: the kinds keep their numbers (they are in saves)");
     }
 
@@ -302,7 +302,7 @@ internal static partial class Program
               && b.CivicSeen == 3 && b.CareerKey == 402 && b.NoticeDay == 6 && b.History[6] == f.History[6] && b.Seed == 424242,
             "Flare: every figure survives the save");
         Check(b != null && b.Posts.Count > 0 && b.Posts[0].Name == "Copper / Kettle", "Flare: a name with the separator in it is kept readable");
-        string later = posts + "\nP|900|6|10|0|-1|99|0|-1|||0|1|1|1|1|1|0|0|0|0" + "\nP|901|6|10|7|-1|1|0|-1|||0|1|1|1|1|1|0|0|0|0";
+        string later = posts + "\nP|900|6|10|0|-1|99|0|-1|||0|1|1|1|1|1|0|0|0|0" + "\nP|901|6|10|99|-1|1|0|-1|||0|1|1|1|1|1|0|0|0|0";
         FlareFile c = FlareStore.Read(account + "\nD|950|99|6|10|-1|||0\nX|whatever", later);
         Check(c != null && c.Posts.Count == f.Posts.Count && c.Drafts.Count == 1, "Flare: a post, an author or a draft of a later version is left out, never read as something else");
         Check(FlareStore.Read("FL9|1|2|3", null) == null && FlareStore.Read("rubbish", "rubbish") == null && FlareStore.Read(null, null) == null && FlareStore.Load(new Dictionary<string, string>()) == null,

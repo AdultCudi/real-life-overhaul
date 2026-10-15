@@ -130,6 +130,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.cs" Link="Mod\FlareRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareStore.cs" Link="Mod\FlareStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCast.cs" Link="Mod\FlareCast.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveModel.cs" Link="Mod\FlareLiveModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.cs" Link="Mod\FlareLiveRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveStore.cs" Link="Mod\FlareLiveStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareNetShare.cs" Link="Mod\FlareNetShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareSnap.cs" Link="Mod\FlareSnap.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareFilter.cs" Link="Mod\FlareFilter.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameModel.cs" Link="Mod\FameModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameRules.cs" Link="Mod\FameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameStore.cs" Link="Mod\FameStore.cs" />
@@ -188,6 +194,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerRules.cs" Link="Mod\LedgerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerStore.cs" Link="Mod\LedgerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerShare.cs" Link="Mod\LedgerShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandCatalogue.cs" Link="Mod\NewsstandCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandModel.cs" Link="Mod\NewsstandModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandRules.cs" Link="Mod\NewsstandRules.cs" />

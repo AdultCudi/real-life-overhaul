@@ -550,6 +550,21 @@ namespace RealLifeOverhaul
                     v => Settings.SocialMedia = v)
                 .AddToggle(Settings.SocialMediaNoticesId, "reallife_flare_notices", Settings.SocialMediaNotices,
                     v => Settings.SocialMediaNotices = v)
+                .AddDropdown(Settings.FlareBusyId, "reallife_flare_opt_busy",
+                    new[] { "reallife_flare_busy_0", "reallife_flare_busy_1", "reallife_flare_busy_2" }, Settings.FlareBusy,
+                    v => Settings.FlareBusy = v)
+                .AddToggle(Settings.FlareCityOfficeId, "reallife_flare_opt_city_office", Settings.FlareCityOffice,
+                    v => Settings.FlareCityOffice = v)
+                .AddToggle(Settings.FlareSharePostsId, "reallife_flare_opt_share_posts", Settings.FlareSharePosts,
+                    v => Settings.FlareSharePosts = v)
+                .AddToggle(Settings.FlareSharePicturesId, "reallife_flare_opt_share_pictures", Settings.FlareSharePictures,
+                    v => Settings.FlareSharePictures = v)
+                .AddDropdown(Settings.FlareFilterId, "reallife_flare_opt_filter",
+                    new[] { "reallife_flare_filter_0", "reallife_flare_filter_1" }, Settings.FlareFilter,
+                    v => Settings.FlareFilter = v)
+                .AddDropdown(Settings.FlareThemeId, "reallife_flare_opt_theme",
+                    new[] { "reallife_flare_theme_0", "reallife_flare_theme_1", "reallife_flare_theme_2" }, Settings.FlareTheme,
+                    v => Settings.FlareTheme = v)
                 .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
                 .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
                 .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())
@@ -559,6 +574,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_inf_scandal", () => Flare.FlareDirector.Instance?.TestInfluencerScandal())
                 .AddButton("reallife_flare_test_online", () => Flare.FlareDirector.Instance?.TestOnline())
                 .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
+                .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
+                .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
+                .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
+                .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
+                .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())
+                .AddButton("reallife_flare_test_invite", () => Flare.FlareDirector.Instance?.TestInvite())
+                .AddButton("reallife_flare_test_escalate", () => Flare.FlareDirector.Instance?.TestEscalate())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_fame_header")

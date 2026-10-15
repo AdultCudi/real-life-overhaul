@@ -37,12 +37,12 @@ namespace RealLifeOverhaul.Flare
         public const int PostsPerDay = 3;
         public const int DraftDays = 2;            // a draft made today can still be posted tomorrow
         public const int DraftsMost = 8;
-        public const int PostsMost = 60;           // posts kept, the player's and the friends'
-        public const int OwnMost = 30;             // ...of them the player's: older ones are folded into the totals
-        public const int FeedRows = 20;            // the Feed shows this many
+        public const int PostsMost = 220;          // posts kept, the player's, the friends' and the city's (the city's go first: FlareLiveRules.CityKeepDays)
+        public const int OwnMost = 40;             // ...of them the player's: older ones are folded into the totals
+        public const int FeedRows = 120;           // the Feed shows this many (only the cards in view are built: FlareList)
 
-        // ---- what a post is worth, thousandths, by FlareSource (Life: a friend's own, worth nothing to the player)
-        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800, 950, 850 };
+        // ---- what a post is worth, thousandths, by FlareSource (Life: the player's moment of now, a plain post; a friend's own sets its reach itself)
+        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 400, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800, 950, 850, 650, 600, 700, 0, 0, 0, 0, 0, 0 };
         public const int WithFriend = 250;         // a friend tagged in it
         public const int InsideShop = 100;         // a picture taken in one of the player's businesses
 
@@ -77,7 +77,16 @@ namespace RealLifeOverhaul.Flare
             {  800,  900, 1150,  950 },   // Issue
             { 1050, 1000, 1100,  800 },   // Campaign: proud of one's own run is fine; cheek about it less so
             { 1150, 1150, 1000,  950 },   // Graduated: cheerful and proud both suit it
-            { 1100, 1100,  950, 1000 }    // Interior: a place to be proud of; cheek about it is fine too
+            { 1100, 1100,  950, 1000 },   // Interior: a place to be proud of; cheek about it is fine too
+            {  800,  800, 1150,  850 },   // Report: plainly put is best; cheerful about a pothole reads oddly
+            { 1000,  950, 1100,  900 },   // Review
+            { 1100, 1150,  950,  950 },   // Announce
+            { 1000, 1000, 1000, 1000 },   // Reply ... Answer: the city's own and replies, never a post of the player's that gains
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 }
         };
         public const int BadFit = 650;             // a fit under this goes badly
         public const int GoodFit = 1150;           // ...one at or over this is well liked: a point of reputation
@@ -744,9 +753,13 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>Keeps the posts within their bounds: the oldest friend's post goes first, and the player's own beyond thirty.</summary>
+        /// <summary>
+        /// Keeps the posts within their bounds: the city's posts older than a few days go first (and a reply goes with its
+        /// post), then the oldest post that is not the player's, and the player's own beyond forty.
+        /// </summary>
         public static void Prune(FlareFile f)
         {
+            FlareLiveRules.PruneCity(f);
             int own = f.OwnPosts;
             while (own > OwnMost)
             {

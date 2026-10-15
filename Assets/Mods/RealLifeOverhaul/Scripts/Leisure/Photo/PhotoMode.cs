@@ -105,6 +105,7 @@ namespace RealLifeOverhaul.Leisure
         private int _shotStep;          // 0 none; counts frames through a capture with the interface away
         private string _shotPath;
         private bool _armed;            // asked for from the options page: starts when the menu is closed
+        private bool _armedSelfie;      // ...from Flare's selfie button: and starts as a selfie
         private float _armedUntil;
         private int _enteredFrame;
         private bool _failed;
@@ -150,6 +151,22 @@ namespace RealLifeOverhaul.Leisure
             UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_photo_armed", null, 6f);
         }
 
+        /// <summary>
+        /// Flare's selfie button: the mode starts as a selfie as soon as the phone is put away (within half a minute), and
+        /// the picture saved comes back to Flare as a draft (Saved). Says why not in a notice when it cannot.
+        /// </summary>
+        public void ArmSelfie()
+        {
+            if (!Settings.Leisure || !Settings.PhotoMode || _failed)
+            {
+                TestRefusals.Tell(Logger, "Photo mode", TestRefusal.FeatureOff);
+                return;
+            }
+            _armed = true;
+            _armedSelfie = true;
+            _armedUntil = Time.unscaledTime + 30f;
+        }
+
         private static readonly int HotUpdate = HotSpots.Slot("Leisure: PhotoMode.Update");
         private void Update()
         {
@@ -185,6 +202,7 @@ namespace RealLifeOverhaul.Leisure
                         if (Time.unscaledTime > _armedUntil)
                         {
                             _armed = false;
+                            _armedSelfie = false;
                         }
                         else if (!ThirdPersonCamera.IsUiOpen())
                         {
@@ -195,6 +213,11 @@ namespace RealLifeOverhaul.Leisure
                     if (asked && Settings.Leisure && Settings.PhotoMode)
                     {
                         Enter();
+                        if (_armedSelfie && Active)
+                        {
+                            _armedSelfie = false;
+                            StartSelfie();
+                        }
                     }
                     return;
                 }

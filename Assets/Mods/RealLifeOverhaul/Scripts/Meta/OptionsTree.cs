@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Meta
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
-                S("flare").For("flare").Main("social_media").Opts("social_media_notices")
+                S("flare").For("flare").Main("social_media").Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme")
                     .Also("social media app followers posts likes selfie influencer"),
                 S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption")
                     .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity"),

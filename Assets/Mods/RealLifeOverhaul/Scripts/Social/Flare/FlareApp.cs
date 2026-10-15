@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
@@ -7,44 +6,65 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Flare
 {
+    /// <summary>The screens of the Flare app.</summary>
+    internal enum FlareScreen
+    {
+        Home, Explore, Tag, Notices, Messages, Conversation, Profile, Thread, Business
+    }
+
     /// <summary>
-    /// What the Flare app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Brands, the Company
-    /// app and the Web shop are, with the kit's table (GameUi.DataTable, the game's own BaTable). Five tabs over the
-    /// table on the right, and on the left the white box with the one thing picked:
+    /// The Flare app: a social network's own look inside the game's phone (the owner's one exception to the native rule).
+    /// The frame is the game's (GameUi.AppShell, copied from MyEmployees: the app's panel among the game's, its place and
+    /// size on the full phone); inside it Flare draws its own screens with the game's own font (FlareKit):
     ///
-    ///   Feed       the player's posts and the friends' own, newest first, twenty at most; pick one for its words,
-    ///              who liked it and the replies
-    ///   Post       what the player can post about now (FlareDraft); pick one for its words, the tone, whom to tag,
-    ///              and the Post button
-    ///   Me         the account: followers, tier, reputation, the last seven days; the player's own posts
-    ///   Business   the player's businesses: stars, reviews, the talk, posts, hiring influencers and the deals made
-    ///   City       the city's influencers, brands and candidates, each with a profile and a Follow button (FlareApp.City.cs)
+    ///   the rail     on the left: the wordmark, Home, Explore, Notifications, Messages, Business, Profile (badges for
+    ///                what is new), the Post button, and the player's own account at its foot
+    ///   the column   in the middle: a header (the screen's title, its tabs, a back arrow) over a scrolling list of cards
+    ///                (FlareList: only the cards in view are built, and reused as it scrolls)
+    ///   the side     on the right, where the phone is wide enough: the account (followers, tier, reputation, the week),
+    ///                Trending in the city, Who to follow, and in a Going Public session the players with mute and hide
+    ///   a sheet      over all of it: writing a post (FlareApp.Compose.cs) or hiring influencers (FlareApp.Hire.cs)
     ///
-    /// A list goes in the table, which scrolls; the white box shows only the one thing picked. Everything on it is the
-    /// game's. PER FRAME: NOTHING, open or closed. The rows and the page are made when the app opens, when a tab or a
-    /// row is picked and when the director says something has changed: a few dozen strings, on a click.
+    /// Screens: Home (For you, Following), Explore (Trending, Accounts), a tag's posts, Notifications, Messages and a
+    /// conversation, a profile (the player's or an account's), a post's thread, Business. The look is light or dark, as the
+    /// option says (following the phone: dark from 19:00 to 07:00).
+    ///
+    /// PER FRAME: NOTHING while it stands still, open or closed. A screen's rows are made on a click and when the director
+    /// says something changed; its cards are bound as they scroll into view; the wheel glides the list (FlareGlide, on only
+    /// while it moves).
     /// </summary>
     public sealed partial class FlareApp
     {
         public static IModLogger Logger;
 
         private readonly FlareDirector _director;
-        private readonly List<TableRow> _rows = new List<TableRow>(32);
-        private readonly List<TableRow> _pool = new List<TableRow>(32);
+        private readonly FlarePictures _pictures;
+        private readonly List<FlareRow> _rows = new List<FlareRow>(128);
+        private readonly List<FlareRow> _rowPool = new List<FlareRow>(128);
+        private readonly List<State> _back = new List<State>(8);
 
         private AppShell _shell;
-        private DataTable _table;
-        private int _tab, _wanted = -1;
-        private string _pick, _wantPick;   // what is picked: a row's id ("post:12", "draft:7", "shop:...")
-        private bool _ready;               // the director has read the people for this opening
-        private bool _writing;             // a page is being written: a change it causes does not write it again
+        private RectTransform _root;
+        private FlareLook _look = FlareLook.Light;
+        private bool _built, _writing, _top;
+        private int _composeWanted = -1;
 
-        private readonly FlarePictures _pictures;
+        // Where the app stands: the screen, its tab, and what it is about.
+        private struct State
+        {
+            public FlareScreen Screen;
+            public int Tab;
+            public int Post;
+            public string Key;
+        }
+
+        private State _at = new State { Post = -1 };
+        private State? _wanted;
 
         public FlareApp(FlareDirector director)
         {
             _director = director;
-            _pictures = new FlarePictures(director, Changed);
+            _pictures = new FlarePictures(director, PictureCame);
         }
 
         /// <summary>The city is unloading or Flare stops: every picture's texture goes.</summary>
@@ -53,128 +73,190 @@ namespace RealLifeOverhaul.Flare
             _pictures.Clear();
         }
 
-        // ---------------------------------------------------------------- building it from the game's parts
+        // ---------------------------------------------------------------- building it
 
-        /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
+        /// <summary>The app's panel, asleep: the game's frame with Flare's own screens in it. Null if the game's parts are not as expected.</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            using var piece = SessionWatch.Piece("flare: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("flare: the app being built in the game's frame");   // once per city: the frame copied, Flare's own parts made
             _shell = AppShell.Make(menu, dormant, FlareDirector.AppId);
-            _table = DataTable.On(_shell, "Flare");
-            if (_table == null || !_shell.SetTabCount(FlareText.TabKeys.Length) || !_shell.SetColumns(FlareTables.Off))
+            if (_shell == null)
             {
                 return null;
             }
-            _table.SelectionLost = ClosePick;
-            _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
-            for (int i = 0; i < FlareText.TabKeys.Length; i++)
+            Transform layout = _shell.Root.transform.Find("Layout 30-70");
+            if (layout == null)
             {
-                int tab = i;
-                UiClone.Key(_shell.TabLabels[i], FlareText.TabKeys[i]);
-                UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
+                UiClone.Fallback("Flare: the game's frame is not laid out as expected");
+                return null;
             }
+            for (int i = 0; i < layout.childCount; i++)
+            {
+                layout.GetChild(i).gameObject.SetActive(false);   // the game's box and table: Flare draws its own screens in their place
+            }
+            _root = FlareKit.Rect(layout, "Flare");
+            _root.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().ignoreLayout = true;   // (the frame's own layout, if it has one, leaves Flare's screens alone)
+            FlareKit.Stretch(_root, 0f, 0f, 0f, 0f);
+            BuildFrame();
+            _built = true;
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening and the tabs
-
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>The tab to show the next time the app opens, and what is picked on it.</summary>
-        public void Want(int tab, string pick)
-        {
-            _wanted = Mathf.Clamp(tab, 0, FlareText.TabKeys.Length - 1);
-            _wantPick = pick;
-            if (Showing)
-            {
-                TakeWanted();
-                Refresh();
-            }
-        }
-
-        private void TakeWanted()
-        {
-            if (_wanted >= 0)
-            {
-                _tab = _wanted;
-                _pick = _wantPick;
-                _wanted = -1;
-                _wantPick = null;
-                ResetPages();
-            }
-        }
+        // ---------------------------------------------------------------- opening and closing
 
         public void Opened()
         {
-            if (_shell == null || _table == null)
+            if (!_built)
             {
                 return;
             }
-            TakeWanted();
-            _ready = _director.AppOpened();
-            Refresh();
+            if (_wanted.HasValue)
+            {
+                Go(_wanted.Value, false);
+                _wanted = null;
+            }
+            _director.AppOpened();
+            Refresh(true);
         }
 
         public void Closed()
         {
-            _ready = false;
             _pictures.Closed();   // (the pictures are kept for the next opening: FlarePictures)
+            CloseSheet();
         }
 
-        /// <summary>The director says something has changed: the page is written again if it is showing.</summary>
+        /// <summary>The screen to show (the director's tabs: Feed, Post, Me, Business, City, Notifications, Messages, Explore).</summary>
+        public void Want(int tab, string pick)
+        {
+            var s = new State { Post = -1 };
+            switch (tab)
+            {
+                case FlareDirector.TabPost: _composeWanted = -2; s.Screen = FlareScreen.Home; break;
+                case FlareDirector.TabMe: s.Screen = FlareScreen.Profile; s.Key = "me"; break;
+                case FlareDirector.TabBusiness: s.Screen = FlareScreen.Business; break;
+                case FlareDirector.TabCity: s.Screen = FlareScreen.Explore; s.Tab = 1; break;
+                case FlareDirector.TabNotices: s.Screen = FlareScreen.Notices; break;
+                case FlareDirector.TabMessages: s.Screen = FlareScreen.Messages; break;
+                case FlareDirector.TabExplore: s.Screen = FlareScreen.Explore; break;
+                default: s.Screen = FlareScreen.Home; break;
+            }
+            Wanted(s);
+        }
+
+        /// <summary>The app opens on a post's thread.</summary>
+        public void WantPost(int id)
+        {
+            Wanted(new State { Screen = FlareScreen.Thread, Post = id });
+        }
+
+        /// <summary>The compose sheet with a draft (a moment: a picture) in it, now or when the app opens.</summary>
+        public void WantCompose(int draft)
+        {
+            _composeWanted = draft;
+            if (Showing)
+            {
+                OpenCompose(draft, -1);
+                _composeWanted = -1;
+            }
+        }
+
+        private void Wanted(State s)
+        {
+            if (Showing)
+            {
+                Go(s, true);
+                Refresh(true);
+            }
+            else
+            {
+                _wanted = s;
+            }
+        }
+
+        /// <summary>The director says something has changed: the screen is written again if it is showing.</summary>
         public void Changed()
         {
             if (Showing && !_writing)
             {
-                _ready = _director.Running;
-                TakeWanted();
-                Refresh();
+                Refresh(false);
             }
         }
 
-        private void ShowTab(int tab)
+        // A picture came in: the cards in view are shown again (a card's height may grow with it), and the sheet's.
+        private void PictureCame()
         {
-            if (tab != _tab || _pick != null)
+            if (Showing)
             {
-                _tab = tab;
-                _pick = null;
-                ResetPages();
-                Refresh();
+                _list?.Rebind();
+                SheetPicture();
             }
         }
 
-        private void RowClicked(TableRow row)
+        // ---------------------------------------------------------------- moving between screens
+
+        private void Go(State s, bool remember)
         {
-            if (row == null || !row.Pick)
+            if (remember && (s.Screen != _at.Screen || s.Post != _at.Post || s.Key != _at.Key || s.Tab != _at.Tab))
             {
-                _table.ClearSelection();
-                return;
+                _back.Add(_at);
+                if (_back.Count > 12)
+                {
+                    _back.RemoveAt(0);
+                }
             }
-            if (row.Id != _pick)
+            if (!remember)
             {
-                ResetPages();
+                _back.Clear();
             }
-            _pick = row.Id;
-            Refresh();
+            _at = s;
+            _top = true;
+        }
+
+        private void Open(FlareScreen screen, int tab = 0, int post = -1, string key = null, bool fromRail = false)
+        {
+            var s = new State { Screen = screen, Tab = tab, Post = post, Key = key };
+            if (fromRail)
+            {
+                _back.Clear();
+                _at = s;
+                _top = true;
+            }
+            else
+            {
+                Go(s, true);
+            }
+            Refresh(true);
         }
 
         private void Back()
         {
-            ClosePick();
+            if (_back.Count == 0)
+            {
+                Open(FlareScreen.Home, 0, -1, null, true);
+                return;
+            }
+            _at = _back[_back.Count - 1];
+            _back.RemoveAt(_back.Count - 1);
+            _top = true;
+            Refresh(true);
         }
 
-        private void ClosePick()
+        private void Tab(int tab)
         {
-            _pick = null;
-            ResetPages();
-            _table.ClearSelection();
-            Refresh();
+            if (tab != _at.Tab)
+            {
+                _at.Tab = tab;
+                _top = true;
+                Refresh(true);
+            }
         }
 
-        // Everything the open tab shows, made again: asked for when the app opens, a tab or a row is picked, or something has changed.
-        private void Refresh()
+        // Everything shown written again: the look, the rail's badges, the side, the column's rows.
+        private void Refresh(bool all)
         {
-            if (_shell == null || _table == null || _writing)
+            if (!_built || _writing)
             {
                 return;
             }
@@ -182,52 +264,38 @@ namespace RealLifeOverhaul.Flare
             try
             {
                 float started = Time.realtimeSinceStartup;
-                for (int i = 0; i < _rows.Count; i++)
+                FlareFile file = _director.File;
+                int hour = SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 12;
+                FlareLook look = FlareLook.Now(hour);
+                if (look != _look || all)
                 {
-                    _pool.Add(_rows[i]);
+                    _look = look;
+                    Paint();
                 }
-                _rows.Clear();
-                _shell.ShowTab(_tab);
-                InfoBox box = _shell.Box;
-                box.Clear();
-                string selected = null;
-                TableSpec table = FlareTables.Off;
-                FlareFile file = _ready ? _director.File : null;
-                if (file == null || SaveGameManager.Current == null)
+                Lay();
+                WriteRail(file);
+                WriteSide(file);
+                WriteHeader(file);
+                RecycleRows();
+                if (file != null)
                 {
-                    UiClone.Words(_shell.Header, FlareText.T("reallife_flare_app"));
-                    box.Title(FlareText.T("reallife_flare_off_title"));
-                    box.Note(FlareText.T("reallife_flare_off_body"));
+                    WriteScreen(file);
                 }
                 else
                 {
-                    int day = SaveGameManager.Current.Day;
-                    UiClone.Words(_shell.Header, FlareText.Fill("reallife_flare_headline", "followers", FlareText.N(file.Followers), "tier", FlareText.Tier(file.Tier)));
-                    switch (_tab)
-                    {
-                        case FlareDirector.TabPost:
-                            table = WriteDrafts(box, file, day, ref selected);
-                            break;
-                        case FlareDirector.TabMe:
-                            table = WriteMe(box, file, day, ref selected);
-                            break;
-                        case FlareDirector.TabBusiness:
-                            table = WriteBusiness(box, file, day, ref selected);
-                            break;
-                        case FlareDirector.TabCity:
-                            table = WriteCity(box, file, day, ref selected);
-                            break;
-                        default:
-                            table = WriteFeed(box, file, day, ref selected);
-                            break;
-                    }
+                    Note(FlareText.T("reallife_flare_off_body"));
                 }
-                box.Done();
-                _table.Show(table, _rows, selected);
+                _list.Set(_rows, _top);
+                _top = false;
+                if (_composeWanted != -1 && file != null)
+                {
+                    int draft = _composeWanted;
+                    _composeWanted = -1;
+                    OpenCompose(draft >= 0 ? draft : -1, -1);
+                }
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Flare: tab " + _tab + " written, " + _rows.Count + " row(s)" + (_pick != null ? ", picked " + _pick : string.Empty) + "; "
-                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                    Logger?.Info("Flare: " + _at.Screen + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
                 }
             }
             finally
@@ -238,69 +306,43 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- rows
 
-        private TableRow Row(string id)
+        private void RecycleRows()
         {
-            TableRow row;
-            if (_pool.Count > 0)
+            for (int i = 0; i < _rows.Count; i++)
             {
-                row = _pool[_pool.Count - 1];
-                _pool.RemoveAt(_pool.Count - 1);
+                _rows[i].Reset();
+                _rowPool.Add(_rows[i]);
+            }
+            _rows.Clear();
+        }
+
+        private FlareRow Row(int kind)
+        {
+            FlareRow row;
+            if (_rowPool.Count > 0)
+            {
+                row = _rowPool[_rowPool.Count - 1];
+                _rowPool.RemoveAt(_rowPool.Count - 1);
             }
             else
             {
-                row = new TableRow();
+                row = new FlareRow();
             }
-            row.Reset(id);
-            row.Pick = true;
+            row.Kind = kind;
             _rows.Add(row);
             return row;
         }
 
-        // True if a row is the one picked now; it is then the table's selected row.
-        private bool Is(TableRow row, ref string selected)
+        private void Note(string text)
         {
-            if (row.Id != _pick)
-            {
-                return false;
-            }
-            selected = row.Id;
-            return true;
+            Row(CellNote).Text = text;
         }
 
-        // What follows a prefix in what is picked ("post:" and the post's number); null if something else is picked.
-        private string Picked(string prefix)
+        private void Section(string text)
         {
-            return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
-        }
-
-        private int PickedNumber(string prefix)
-        {
-            int number;
-            string text = Picked(prefix);
-            return text != null && int.TryParse(text, out number) ? number : -1;
-        }
-
-        private void BackButton(InfoBox box)
-        {
-            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_flare_back", Back);
-        }
-
-        // A choice among a few: the game's previous/next selector, or the choice as a line where the game's selector could not be had.
-        private void Choose(InfoBox box, int count, int index, Func<int, string> words, Action<int> changed)
-        {
-            if (count < 1)
-            {
-                return;
-            }
-            int at = FlareRules.Clamp(index, 0, count - 1);
-            if (!box.HasSelector || !box.Selector(count, at, words, i =>
-                {
-                    changed(i);
-                    Refresh();
-                }))
-            {
-                box.Line(words(at));
-            }
+            FlareRow r = Row(CellNote);
+            r.Text = text;
+            r.Number = 1;   // a section's title
         }
     }
 }

@@ -415,7 +415,7 @@ namespace RealLifeOverhaul
             {
                 chance *= Law.Reputation.Scrutiny;   // 1, or up to 1.5 for somebody whose record has grown lately
             }
-            return Random.value < chance * CivicPolicy.EnforcementScale;   // the traffic policy of the city (1 unless a council has changed it)
+            return Random.value < chance * CivicPolicy.EnforcementScale * CityWatch.SeenScale;   // the traffic policy of the city (1 unless a council has changed it), and patrols stepped up after a report on Flare (CityWatch)
         }
 
         /// <summary>

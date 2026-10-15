@@ -36,6 +36,8 @@ namespace RealLifeOverhaul
         ///             its internet page, where one is bought
         ///   the Planner  a source of its own: the morning each online subscription renews, and a cancelled one's last
         ///             edition
+        ///   Report, Forward  in a Going Public session, what would be news on a guest's street goes to the host's paper
+        ///             (Ledger/LedgerDirector.Share.cs: News.Forward on a guest, News.Report on the host)
         /// </summary>
         public static class LedgerLinks
         {
@@ -55,11 +57,15 @@ namespace RealLifeOverhaul
                 LedgerBridges.Connection = Connection;
                 LedgerBridges.OpenUtilities = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
                 Planner.PlannerDirector.Instance?.AddSource(Renewals);
+                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);   // (the city's kinds only: News and LedgerShare.CityKind)
+                LedgerBridges.Filter = Flare.FlareDirector.Filter;
+                LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
             }
 
             internal static void Disconnect()
             {
                 LedgerBridges.Reset();
+                News.Forward = null;
                 SocialPhone.LedgerDesk = null;
                 LedgerCta.Remove();
             }
