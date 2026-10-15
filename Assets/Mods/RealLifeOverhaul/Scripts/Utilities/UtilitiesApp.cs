@@ -661,7 +661,7 @@ namespace RealLifeOverhaul.Utilities
             }
             box.Row("reallife_bb_box_month", UtilitiesText.T("reallife_bb_box_month_value", "takings", UtilitiesText.Money(n.MonthTakings), "costs", UtilitiesText.Money(n.MonthCosts)));
             box.Row("reallife_bb_box_year", UtilitiesText.Money(BroadbandRules.YearProfit(n)));
-            long value = BroadbandRules.SaleValue(n);
+            long value = BroadbandRules.SaleNet(n);   // (what a buyer pays, less what the company owes: what the player gets, as Sell pays it)
             box.Row("reallife_bb_box_value", UtilitiesText.Money(value));
             box.Headline("reallife_bb_box_settings");
             int least = BroadbandCatalogue.PriceLeast, step = BroadbandCatalogue.PriceStep;

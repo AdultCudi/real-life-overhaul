@@ -407,6 +407,48 @@ namespace RealLifeOverhaul.Utilities
             n.Cover = cover;
         }
 
+        /// <summary>What a day's staff and network come to once charged: the base that cannot be refused and what the cash met of the rest, money.</summary>
+        public struct DayCharge
+        {
+            public long Staff, Network;
+            public int Unpaid;          // thousandths of what the scale added (and was owed) that went unpaid
+        }
+
+        /// <summary>
+        /// A day's staff and network charged at the end game's scale, after the day's takings: the lesser of each and its
+        /// figure before the scale is the base that cannot be refused (at scale the crews' wages, not the old cost per
+        /// connection over the larger city); what each is over its figure before, and what was owed from before, is taken
+        /// only as far as the cash goes. What is left is owed to the next day, and the crews leave in the unpaid share.
+        /// cash: the player's money before the day's bookings; staff0, network0: the day's figures at a share of 0.
+        /// </summary>
+        public static DayCharge Charge(Network n, long cash, long takings, long staff, long network, long marketing, long staff0, long network0)
+        {
+            long baseStaff = Math.Min(staff, staff0), baseNetwork = Math.Min(network, network0);
+            long room = cash + takings - baseStaff - baseNetwork - marketing;
+            long staffDue = Math.Max(0, staff - staff0) + Math.Max(0, n.Owed), networkDue = Math.Max(0, network - network0);
+            long staffPaid = EndScaleRules.Take(ref room, staffDue), networkPaid = EndScaleRules.Take(ref room, networkDue);
+            n.Owed = staffDue + networkDue - staffPaid - networkPaid;
+            int unpaid = EndScaleRules.Unpaid(staffDue + networkDue, staffPaid + networkPaid);
+            if (unpaid > 0)
+            {
+                Leave(n, unpaid);
+            }
+            return new DayCharge { Staff = baseStaff + staffPaid, Network = baseNetwork + networkPaid, Unpaid = unpaid };
+        }
+
+        /// <summary>
+        /// A month's installations charged: what they cost before the scale cannot be refused; what the scale adds is taken
+        /// only as far as the cash goes, and the rest is owed to the next day. Money.
+        /// </summary>
+        public static long ChargeInstalls(Network n, long cash, int before, int after, int level, int share)
+        {
+            long base_ = Installs(before, after, level, 0), extra = Math.Max(0, Installs(before, after, level, share) - base_);
+            long room = cash - base_;
+            long paid = EndScaleRules.Take(ref room, extra);
+            n.Owed += extra - paid;
+            return base_ + paid;
+        }
+
         /// <summary>A day whose costs at scale went partly unpaid: each crew loses that share of its people (Core/EndScale).</summary>
         public static void Leave(Network n, int unpaidPerMille)
         {
@@ -473,6 +515,9 @@ namespace RealLifeOverhaul.Utilities
             long earnings = Math.Max(0L, YearProfit(n)) * EndScaleRules.Mix(BroadbandCatalogue.SaleMultiple, BroadbandCatalogue.SaleMultipleScale, n.Scale);
             return Math.Max(earnings, spent * BroadbandCatalogue.SaleFloorShare / 1000);
         }
+
+        /// <summary>What the player gets for the company: what a buyer pays, less what it owes (settled out of the price); money.</summary>
+        public static long SaleNet(Network n) => Math.Max(0L, SaleValue(n) - Math.Max(0L, n.Owed));
 
         /// <summary>
         /// The most a rival may charge this month, thousandths of its list: its highest, less the company's share of the

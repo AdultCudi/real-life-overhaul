@@ -81,10 +81,20 @@ namespace RealLifeOverhaul.Tech
                     box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", f.Cloud.Sold.ToString(), "own", f.Cloud.Own.ToString(), "gpu", f.Cloud.GpuSold.ToString(), "rival", TechText.Mille(f.Cloud.RivalPrice),
                         "regions", InfraRules.Regions(f.Centres).ToString()));
                 }
+                Owed(box, f);
                 box.Note(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
                 Meta.Guide.Point(box, SectorGuide);
             }
             return TechColumns.Infra;
+        }
+
+        // What the data centres owe from costs the cash could not meet, whenever there is any (the option on or off, a cloud or none).
+        private static void Owed(InfoBox box, InfraFile f)
+        {
+            if (f != null && f.Owed > 0)
+            {
+                box.Line(TechText.Fill("reallife_endscale_owed_line", "owed", TechText.Cents(f.Owed)));
+            }
         }
 
         private void WriteFit(InfoBox box, BuildingRegistration reg)
@@ -123,6 +133,7 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_infra_centre_staff", "have", d.Technicians.ToString(), "need", InfraRules.TechniciansNeeded(d).ToString(), "outages", d.Outages.ToString()));
             box.Line(TechText.Fill("reallife_infra_centre_racks", "racks", d.Racks.ToString(), "gpu", d.GpuRacks.ToString(), "room", InfraRules.Room(d).ToString(), "let", d.Colo.ToString(),
                 "book", TechText.Cents(_director.Level(d.Book))));
+            Owed(box, _director.Infra);
             if (share > 0)
             {
                 box.Line(TechText.Fill("reallife_endscale_infra_crews", "operators", d.Crew[InfraCatalogue.Operators].ToString(), "operators_need", InfraRules.CrewNeed(d, InfraCatalogue.Operators, share).ToString(),
@@ -194,10 +205,7 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Fill("reallife_endscale_cloud_ops", "ops", c.Ops.ToString(), "wages", TechText.Cents(_director.Level((long)c.Ops * InfraCatalogue.OpsWage)),
                     "licence", TechText.Cents(_director.Level(InfraRules.Licence(buy)))));
-                if (f.Owed > 0)
-                {
-                    box.Line(TechText.Fill("reallife_endscale_owed_line", "owed", TechText.Cents(f.Owed)));
-                }
+                Owed(box, f);
             }
             int at = 2;
             for (int i = 0; i < CloudPrices.Length; i++)
