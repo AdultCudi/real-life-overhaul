@@ -1,4 +1,4 @@
-0.27.5
+0.27.6
 
 Fixed
-- Bicycles and motorbikes now collide with walls, poles, cars and people, are called by their own name in the game's panels and messages, and pull away quickly and smoothly with a steadier lean.
+- Flare no longer limits your posting. Post as often as you like, one after another, alone or in Going Public; the first three posts of a day grow your account, and the same review, announcement or report moves a business or the City Office once a day.
