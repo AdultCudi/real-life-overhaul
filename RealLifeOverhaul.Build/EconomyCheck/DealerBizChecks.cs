@@ -492,7 +492,7 @@ internal static partial class Program
         Check(again != null && version == 2 && DealerStore.Write(again) == DealerStore.Write(old), "dealer save: a first version's line is written as the second from then on and reads back the same");
     }
 
-    // Every text the business's rules name, by a key built from a number, is in en.json (locales.py holds pt and zh-cn to the same keys).
+    // Every text the business's rules name, by a key built from a number, is in en.json (locales.py holds every other language to the same keys).
     private static void DealerBizTexts()
     {
         string locale = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales\en.json"));

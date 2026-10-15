@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using RealLifeOverhaul;
 using RealLifeOverhaul.GameUi;
 
 // The look of the apps' white box (Core/GameUi/InfoBox.Look.cs, InfoBox.Parts.cs, LookRules.cs). Its rules are checked as
@@ -174,7 +175,8 @@ internal static partial class Program
         Check(plain.Count == 0, "an app's box written without any of the box's own parts (Section, Row, Meter, Check, Note, Chip, Subtitle): " + string.Join(", ", plain));
         Check(LineOfPair.IsMatch("box.Line(FinanceText.Pair(\"k\", v));") && LineByHand.IsMatch("box.Line(T(k) + \": <b>\" + v + \"</b>\");") && !LineOfPair.IsMatch("box.Row(\"k\", v);"),
             "the reading finds a pair written as a line, and not a row");
-        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        // In every language that ships with every key; German, French, Spanish and Russian may lack them, read in English (ModLanguages).
+        foreach (string lang in ModLanguages.All.Take(ModLanguages.Required))
         {
             string path = Path.Combine(locales, lang + ".json");
             var have = new HashSet<string>(StringComparer.Ordinal);
@@ -189,6 +191,6 @@ internal static partial class Program
             Check(missing.Count == 0, "the box's words missing in " + lang + ".json: " + string.Join(", ", missing.Take(12)));
         }
         Check(keys.Count >= 150, "fewer of the box's own words named in the sources than it has (" + keys.Count + ")");
-        Console.WriteLine("   " + files + " sources write " + pages + " pages with a title; " + bare.Count + " bare label and value lines; " + keys.Count + " of the box's own words, in all three languages.");
+        Console.WriteLine("   " + files + " sources write " + pages + " pages with a title; " + bare.Count + " bare label and value lines; " + keys.Count + " of the box's own words, in " + string.Join(", ", ModLanguages.All.Take(ModLanguages.Required)) + ".");
     }
 }

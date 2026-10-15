@@ -6,7 +6,7 @@ using RealLifeOverhaul.Flare;
 // Checks for one campaign at a time at a business (CampaignRules.Busy, HiredOnFlare, EndEarly) and what Flare's
 // Business tab and hiring page make of it (FlareRules.IsDeal, BusyKey, BusyWhenKey): a hire at one shop leaves
 // another free, a campaign booked from the Company app is named with its days, a deal the player ends frees the
-// business, and the words are in all three languages.
+// business, and the words are in every language.
 internal static partial class Program
 {
     private static void FlareBusyChecks()
@@ -119,10 +119,8 @@ internal static partial class Program
 
     private static void FlareBusyWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        var langs = new[] { LoadWords(System.IO.Path.Combine(folder, "en.json")), LoadWords(System.IO.Path.Combine(folder, "pt.json")), LoadWords(System.IO.Path.Combine(folder, "zh-cn.json")) };
-        Check(langs[0] != null && langs[1] != null && langs[2] != null, "Flare busy: the three locales are where the checks look for them (" + folder + ")");
-        if (langs[0] == null || langs[1] == null || langs[2] == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("Flare busy", langs, codes))
         {
             return;
         }
@@ -146,19 +144,19 @@ internal static partial class Program
                 string text;
                 if (!langs[l].TryGetValue(k.Key, out text) || string.IsNullOrEmpty(text))
                 {
-                    missing.Add(k.Key + " (" + l + ")");
+                    missing.Add(k.Key + " (" + codes[l] + ")");
                     continue;
                 }
                 for (int p = 0; p < k.Value.Length; p++)
                 {
                     if (text.IndexOf(k.Value[p], StringComparison.Ordinal) < 0)
                     {
-                        missing.Add(k.Key + " " + k.Value[p] + " (" + l + ")");
+                        missing.Add(k.Key + " " + k.Value[p] + " (" + codes[l] + ")");
                     }
                 }
             }
         }
-        Check(missing.Count == 0, "Flare busy: every key of the busy line and the campaign rows is in en, pt and zh-cn with its names (" + string.Join(", ", missing) + ")");
+        Check(missing.Count == 0, "Flare busy: every key of the busy line and the campaign rows is in every language with its names (" + string.Join(", ", missing) + ")");
         string line = langs[0][FlareRules.BusyKey(false)].Replace("{business}", "Midtown Electronics").Replace("{campaign}", langs[0]["reallife_co_campaign_discount"])
             .Replace("{when}", langs[0][FlareRules.BusyWhenKey(33, 34, 34)].Replace("{day}", "34"));
         Check(line == "Midtown Electronics has a campaign booked for day 34: Discount day, booked from the Company app. You can hire once it ends.",

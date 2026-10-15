@@ -10,7 +10,7 @@ using RealLifeOverhaul.Permadeath;
 // main menu applies to, going without food (three warnings a day apart from a day on an empty stomach, eating ends it,
 // never fatal at a moment the game cannot take it, rare after), a dead save reads as dead and stays dead, the life's
 // story and its line, and the obituary's
-// sentences: each one there only when the record has something for it to say, and every key in both languages.
+// sentences: each one there only when the record has something for it to say, and every key in every language.
 internal static partial class Program
 {
     private static readonly DeathCause[] Dangers = { DeathCause.Crash, DeathCause.Struck, DeathCause.Mugging, DeathCause.Assault };
@@ -543,18 +543,15 @@ internal static partial class Program
         Check(watch.ElapsedMilliseconds < 2000, "permadeath: twenty thousand pages are drafted in under two seconds (" + watch.ElapsedMilliseconds + " ms)");
     }
 
-    // Every key a page can have is in both languages, with no name in it that the text does not fill.
+    // Every key a page can have is in every language, with no name in it that the text does not fill.
     private static void EndingsWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "permadeath: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("permadeath", langs, codes))
         {
             return;
         }
+        Dictionary<string, string> en = langs[0];
         var filled = new HashSet<string>(new[] { "name", "age", "years", "place", "worth", "founded", "owned", "businesses", "employees", "properties", "friends", "close",
             "partner", "children", "count", "family", "arrests", "convictions", "followers", "elections", "mourners" });
         var keys = new HashSet<string>();
@@ -574,44 +571,38 @@ internal static partial class Program
             PermadeathStory.Draft(story, true, DraftScratch);
             foreach (ObitLine line in DraftScratch) keys.Add(line.Key);
         }
-        bool present = true, names = true, same = true, sameZh = true;
+        bool present = true, names = true;
+        var differ = new List<string>();
         var missing = new List<string>();
         foreach (string key in keys)
         {
-            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || !zh.TryGetValue(key, out string z) || e.Trim().Length == 0 || p.Trim().Length == 0 || z.Trim().Length == 0)
+            if (!en.TryGetValue(key, out string e) || e.Trim().Length == 0)
             {
                 present = false;
                 missing.Add(key);
                 continue;
             }
+            string lacking = LanguagesLacking(langs, codes, key);
+            if (lacking.Length > 0)
+            {
+                differ.Add(key + " (" + lacking + ")");
+            }
             foreach (Match m in Regex.Matches(e, @"\{([a-z_]+)\}"))
             {
                 names &= filled.Contains(m.Groups[1].Value);
             }
-            var a = new List<string>();
-            var b = new List<string>();
-            foreach (Match m in Regex.Matches(e, @"\{[a-z_]+\}")) a.Add(m.Value);
-            foreach (Match m in Regex.Matches(p, @"\{[a-z_]+\}")) b.Add(m.Value);
-            var c = new List<string>();
-            foreach (Match m in Regex.Matches(z, @"\{[a-z_]+\}")) c.Add(m.Value);
-            a.Sort();
-            b.Sort();
-            c.Sort();
-            same &= string.Join(",", a) == string.Join(",", b);
-            sameZh &= string.Join(",", a) == string.Join(",", c);
         }
-        Check(keys.Count > 60 && present, "permadeath: every sentence a page can have is in en.json, pt.json and zh-cn.json (" + keys.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
+        Check(keys.Count > 60 && present, "permadeath: every sentence a page can have is in en.json (" + keys.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         Check(names, "permadeath: every name in the obituary's sentences is one the page fills in");
-        Check(same, "permadeath: the Portuguese sentences have the same names as the English");
-        Check(sameZh, "permadeath: the Chinese sentences have the same names as the English");
+        Check(differ.Count == 0, "permadeath: every language has every sentence, with the same names as the English (" + string.Join(", ", differ) + ")");
         foreach (string key in new[] { "reallife_pd_n_year_many", "reallife_pd_n_day_many", "reallife_pd_n_friend_many", "reallife_pd_n_time_many" })
         {
-            Check(en.TryGetValue(key, out string t) && t.Contains("{count}") && pt.ContainsKey(key) && zh.ContainsKey(key), "permadeath: " + key + " says its count");
+            Check(en.TryGetValue(key, out string t) && t.Contains("{count}") && LanguagesLacking(langs, codes, key).Length == 0, "permadeath: " + key + " says its count, in every language");
         }
         foreach (string key in new[] { "reallife_pd_ill_1", "reallife_pd_ill_2", "reallife_pd_ill_3", "reallife_pd_near_crash", "reallife_pd_near_struck", "reallife_pd_near_mugging",
                      "reallife_pd_near_assault", "reallife_pd_mugged_body", "reallife_opt_tip_permadeath" })
         {
-            Check(en.ContainsKey(key) && pt.ContainsKey(key), "permadeath: the warning " + key + " is in both languages");
+            Check(LanguagesLacking(langs, codes, key).Length == 0, "permadeath: the warning " + key + " is in every language");
         }
         Check(en.TryGetValue("reallife_pd_mugged_body", out string body) && en.TryGetValue("reallife_crime_mugged_body", out string plain) && body.StartsWith(plain, StringComparison.Ordinal) && body.Length > plain.Length,
             "permadeath: the mugger's demand with Permadeath on is the usual one and the warning after it");

@@ -73,16 +73,9 @@ internal static partial class Program
         Check(s.NextDay == 8 && s.NextHour == csStart / 60, "next class: Persona's education box names today's class while it can be joined");
 
         // ---------------------------------------------------------------- the texts
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        var langs = new[] { "en", "pt", "zh-cn" };
-        var words = new Dictionary<string, string>[langs.Length];
-        for (int l = 0; l < langs.Length; l++)
+        var words = LanguageWords(out string[] langs);
+        if (!LanguagesRead("next class", words, langs))
         {
-            words[l] = LoadWords(System.IO.Path.Combine(folder, langs[l] + ".json"));
-        }
-        if (words[0] == null || words[1] == null || words[2] == null)
-        {
-            Check(false, "next class: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
             return;
         }
         bool next = true;
@@ -90,8 +83,8 @@ internal static partial class Program
         {
             next &= words[l].TryGetValue("reallife_campus_on_next", out string w) && w.Contains("{day}") && w.Contains("{hour}");
         }
-        Check(next, "next class: the Campus app's line for it is in all three languages, with its day and hour");
-        // Filled with the game's own day ("Day 8", "Dia 8", "第 8 天"): the word for day is not said again before it.
+        Check(next, "next class: the Campus app's line for it is in every language, with its day and hour");
+        // Filled with the game's own day ("Day 8", "Dia 8", "第 8 天", "Tag 8", "Jour 8", "Día 8", "День 8"): the word for day is not said again before it.
         string[,] dated =
         {
             { "reallife_campus_on_mode", "start" }, { "reallife_campus_on_exam", "from" }, { "reallife_campus_on_exam", "to" },
@@ -114,37 +107,48 @@ internal static partial class Program
                     doubled.Add(langs[l] + " " + key + " (missing, or without " + slot + ")");
                     continue;
                 }
-                if (Doubled(w, slot, l))
+                if (Doubled(w, slot, langs[l]))
                 {
                     doubled.Add(langs[l] + " " + key);
                 }
             }
         }
         Check(doubled.Count == 0, "next class: dates filled with the game's own day say no second word for day (" + string.Join(", ", doubled) + ")");
-        Check(Doubled("since day {start}.", "{start}", 0) && Doubled("desde o dia {start}.", "{start}", 1) && Doubled("自第{start}天起。", "{start}", 2)
-              && !Doubled("since {start}.", "{start}", 0) && !Doubled("desde o {start}.", "{start}", 1) && !Doubled("自{start}起。", "{start}", 2),
+        Check(Doubled("since day {start}.", "{start}", "en") && Doubled("desde o dia {start}.", "{start}", "pt") && Doubled("自第{start}天起。", "{start}", "zh-cn")
+              && Doubled("seit Tag {start}.", "{start}", "de") && Doubled("depuis le jour {start}.", "{start}", "fr") && Doubled("desde el día {start}.", "{start}", "es")
+              && Doubled("с дня {start}.", "{start}", "ru")
+              && !Doubled("since {start}.", "{start}", "en") && !Doubled("desde o {start}.", "{start}", "pt") && !Doubled("自{start}起。", "{start}", "zh-cn")
+              && !Doubled("seit {start}.", "{start}", "de") && !Doubled("depuis {start}.", "{start}", "fr") && !Doubled("desde el {start}.", "{start}", "es")
+              && !Doubled("с {start}.", "{start}", "ru"),
             "next class: the doubled day is found in each language, and the fixed wording passes");
     }
 
+    // The word for day in each Latin or Cyrillic language, as it may stand straight before a day (Chinese is "第...天" around it).
+    private static readonly Dictionary<string, string[]> DayWords = new Dictionary<string, string[]>
+    {
+        { "en", new[] { "day", "days" } }, { "pt", new[] { "dia", "dias" } }, { "de", new[] { "tag", "tage", "tages", "tagen" } },
+        { "fr", new[] { "jour", "jours" } }, { "es", new[] { "día", "días", "dia" } }, { "ru", new[] { "день", "дня", "дню", "днём", "дни", "дней" } }
+    };
+
     // True if the word for day stands straight before (or, in Chinese, around) a slot filled with an already written day.
-    private static bool Doubled(string words, string slot, int lang)
+    private static bool Doubled(string words, string slot, string lang)
     {
         int at = words.IndexOf(slot, StringComparison.Ordinal);
         while (at >= 0)
         {
             string before = words.Substring(0, at).TrimEnd();
             string after = words.Substring(at + slot.Length).TrimStart();
-            if (lang == 0 && (before.EndsWith(" day", StringComparison.OrdinalIgnoreCase) || before.EndsWith(" days", StringComparison.OrdinalIgnoreCase)
-                              || before.Equals("day", StringComparison.OrdinalIgnoreCase) || before.Equals("days", StringComparison.OrdinalIgnoreCase)))
+            if (DayWords.TryGetValue(lang, out string[] day))
             {
-                return true;
+                for (int d = 0; d < day.Length; d++)
+                {
+                    if (before.EndsWith(" " + day[d], StringComparison.OrdinalIgnoreCase) || before.Equals(day[d], StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
             }
-            if (lang == 1 && (before.EndsWith(" dia", StringComparison.OrdinalIgnoreCase) || before.EndsWith(" dias", StringComparison.OrdinalIgnoreCase)
-                              || before.Equals("dia", StringComparison.OrdinalIgnoreCase) || before.Equals("dias", StringComparison.OrdinalIgnoreCase)))
-            {
-                return true;
-            }
-            if (lang == 2 && before.EndsWith("第", StringComparison.Ordinal) && after.StartsWith("天", StringComparison.Ordinal))
+            if (lang == "zh-cn" && before.EndsWith("第", StringComparison.Ordinal) && after.StartsWith("天", StringComparison.Ordinal))
             {
                 return true;
             }

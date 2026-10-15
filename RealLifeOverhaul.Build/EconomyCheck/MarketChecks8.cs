@@ -647,17 +647,14 @@ internal static partial class Program
 
     private static void IncomeWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "bonds: the three locales are where the checks look for them");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("bonds", langs, codes))
         {
             return;
         }
-        string missing = string.Join(", ", IncomeKeys.Where(k => !en.ContainsKey(k) || !pt.ContainsKey(k) || !zh.ContainsKey(k)));
-        Check(missing.Length == 0, "bonds: every text of the bonds and the trusts is in the three languages (" + missing + ")");
+        Dictionary<string, string> en = langs[0], pt = langs[1], zh = langs[2];
+        string missing = string.Join(", ", IncomeKeys.Where(k => LanguagesLacking(langs, codes, k).Length > 0).Select(k => k + " (" + LanguagesLacking(langs, codes, k) + ")"));
+        Check(missing.Length == 0, "bonds: every text of the bonds and the trusts is in every language with the same {names} (" + missing + ")");
         Check(new[] { "reallife_mkt_bond_note_paid", "reallife_mkt_bond_note_paid_back", "reallife_mkt_bond_note_repaid", "reallife_mkt_bond_note_bought", "reallife_mkt_bond_note_sold" }
                   .All(k => en.ContainsKey(k) && en[k].Length <= 200), "bonds: every notification is short (240 characters with its names at most)");
         Check(new[] { BondMoney.Bought, BondMoney.Sold, BondMoney.Paid, BondMoney.Repaid }.All(k => k.Contains("shares_") && en.ContainsKey(k) && en.ContainsKey(k + "_label"))

@@ -6,7 +6,7 @@ using RealLifeOverhaul.Markets;
 
 // Ten small helpers of 14 Oct 2026, each built on a rule that was already there: the recruitment office's last day
 // (Careers/Work/ProRules.AgencyEnds), and the others added below as they come. For each: that it comes once, when it
-// may and may not, the save's field and an old save without it, and its texts in the three languages (at most 240
+// may and may not, the save's field and an old save without it, and its texts in every language (at most 240
 // characters in English for a notification, and no dash or exclamation mark).
 internal static partial class Program
 {
@@ -356,19 +356,11 @@ internal static partial class Program
 
     private static bool HelperTexts()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        var langs = new[] { "en", "pt", "zh-cn" };
-        _helperWords = new Dictionary<string, string>[langs.Length];
-        for (int l = 0; l < langs.Length; l++)
-        {
-            _helperWords[l] = LoadWords(System.IO.Path.Combine(folder, langs[l] + ".json"));
-        }
-        bool found = _helperWords[0] != null && _helperWords[1] != null && _helperWords[2] != null;
-        Check(found, "helpers: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
-        return found;
+        _helperWords = LanguageWords(out string[] codes);
+        return LanguagesRead("helpers", _helperWords, codes);
     }
 
-    // A text in all three languages, each with the same names in curly brackets as the English, and plain in English.
+    // A text in every language, each with the same names in curly brackets as the English, and plain in English.
     private static void HelperText(string key, string what, params string[] slots)
     {
         bool all = true;
@@ -376,7 +368,7 @@ internal static partial class Program
         {
             all &= _helperWords[l].TryGetValue(key, out string w) && w.Trim().Length > 0 && SlotsOf(w) == SlotsOf(_helperWords[0].TryGetValue(key, out string e) ? e : string.Empty);
         }
-        Check(all, "helpers, " + what + ": " + key + " is in en, pt and zh-cn with the same names to fill");
+        Check(all, "helpers, " + what + ": " + key + " is in every language with the same names to fill");
         string en = _helperWords[0].TryGetValue(key, out string t) ? t : string.Empty;
         Check(en.IndexOf('!') < 0 && en.IndexOf('—') < 0 && en.IndexOf('–') < 0 && en.IndexOf(" - ", StringComparison.Ordinal) < 0,
             "helpers, " + what + ": " + key + " has no exclamation mark and no dash");

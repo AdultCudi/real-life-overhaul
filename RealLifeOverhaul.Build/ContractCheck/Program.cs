@@ -82,6 +82,7 @@ internal static partial class Program
             References(files, mod);
             ScanChecks(files, mod);
             Keys(locale, scripts);
+            Languages(managed, root);
         }
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
