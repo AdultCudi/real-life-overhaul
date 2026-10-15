@@ -9,19 +9,25 @@ namespace RealLifeOverhaul
     /// THE PLAYER'S OFFICES. The two largest office buildings a player can rent or buy, 17 7th Street (102,502 sqm, Murray
     /// Hill) and 12 Broadway (58,989 sqm, Lower Manhattan), are reserved for the player from the start (Wiring/CoreLinks
     /// reserves them in the book of the mod's buildings, Core/SpecialNameBook): no feature of the mod ever chooses them (the
-    /// police stations, the tech towers, City Utilities, the courthouse, the university, the offices made of shops, the
+    /// police stations, the tech towers, City Utilities, the courthouse's fallback, the university, the offices made of shops, the
     /// brands' franchise sites), and they are not refused to the player. The game's own rivals and city businesses can
     /// still open in them (both are size K version 1, one of the rivals' office sizes, with the game's office layouts):
     /// that is the game's, and the mod does not stop it.
     ///
-    /// THE COURTHOUSE. Only a sign, a door and a name, so it needs no office at all: the game's own moving company, 15 12th
-    /// Street (2,623 sqm, Lower Manhattan, the financial and legal quarter), a building of the game's special services that
-    /// is never to let, never for sale and never a rival's or a city business's, the same in every game. No feature of the
-    /// mod uses that business's building (no career, polling place, licence desk or study is held there; movers are hired
-    /// by phone). Before, it took the game's tax office, 70 5th Avenue, the largest building in the city.
+    /// CITY UTILITIES (the owner, 15 Oct 2026: "Just move the City Utilities"). At 13 7th Street, Midtown, the same in
+    /// every game, its desk at the door. By the game's data it is an ordinary residential building of size F version 1,
+    /// 6,980 sqm, traffic 40, with no special service: none of the game's own buildings (no game business, no game jobs).
+    /// No business of any kind, the city's or a rival's, is ever opened in a residential building: the generator only
+    /// marks homes to let or not, the rivals hold offices, shops, cinemas, theatres and warehouses, and no AI business has
+    /// a residential layout. The game itself may let it as a home or put it up for sale (as it may any residential
+    /// building); the mod reserves it and refuses it to the player with its other buildings, so nobody rents or buys it
+    /// while the mod runs. In an older game where a player already rents or owns it, the office stands meanwhile in the
+    /// smallest other free residential building of Midtown, never the player's, and moves back for good once it is free.
+    /// Before, it took the city's largest office building, 17 7th Street, which is now kept for the player. The courthouse
+    /// stays where it always was, the game's tax office at 70 5th Avenue.
     ///
-    /// MOVES. A place the mod moved since a save was made (the courthouse, City Utilities) is told once: the save keeps
-    /// where it was (<see cref="TellMoved"/>); a save from before it kept one had the old rule's building.
+    /// MOVES. City Utilities moved since a save was made is told once: the save keeps where it was
+    /// (<see cref="TellMoved"/>); a save from before it kept one had the old rule's building, 17 7th Street.
     /// </summary>
     public static class CityReserves
     {
@@ -39,15 +45,16 @@ namespace RealLifeOverhaul
             return PlayerOfficeNumbers[i].ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + (string.IsNullOrEmpty(streetName) ? PlayerOfficeStreetNames[i] : streetName);
         }
 
-        public const string CourtStreet = "ba:street_twelfthstreet";
-        public const int CourtNumber = 15;
-        public const string CourtService = "ba:businesstype_movingservice";   // the game's special service of that building
+        public const string Residential = "ba:buildingtype_residential";
+        public const string UtilitiesDistrict = "ba:neighborhood_midtown";   // where the office stands meanwhile, near 13 7th Street
 
-        public const string OldCourt = "ba:street_fifthavenue|70";        // the tax office: where every save before this had the courthouse
+        public const string UtilitiesId = "utilities_office";       // the book's id of City Utilities' building, and its reservation
+        public const string UtilitiesStreet = "ba:street_seventhstreet";
+        public const int UtilitiesNumber = 13;
+        public const string UtilitiesStreetName = "7th Street";     // the game's own street name, for a page made where the game's streets are not loaded
+
         public const string OldUtilities = "ba:street_seventhstreet|17";  // the largest office: where every save before this had City Utilities
-
-        public const string CourtKey = "reallife:place_courthouse";       // "street|number" of the courthouse, so that a move is told once
-        public const string UtilitiesKey = "reallife:place_utilities";    // ...of City Utilities
+        public const string UtilitiesKey = "reallife:place_utilities";    // "street|number" of City Utilities, so that a move is told once
 
         /// <summary>True for one of the player's two offices.</summary>
         public static bool IsPlayerOffice(string street, int number)
@@ -62,14 +69,53 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>True for the courthouse's building.</summary>
-        public static bool IsCourt(string street, int number) => number == CourtNumber && string.Equals(street, CourtStreet, StringComparison.Ordinal);
+        /// <summary>True for City Utilities' building, 13 7th Street.</summary>
+        public static bool IsUtilities(string street, int number) => number == UtilitiesNumber && string.Equals(street, UtilitiesStreet, StringComparison.Ordinal);
 
         /// <summary>
-        /// The courthouse's building may serve: it is the game's moving company as chosen (its special service), and no
-        /// player rents or owns it (a special service never is; a changed city could make it so).
+        /// A building may hold City Utilities: an ordinary residential building (never one of the game's own special
+        /// services), that no player rents or owns, with nothing of another feature's in it.
         /// </summary>
-        public static bool CourtServes(string serviceType, bool players) => !players && serviceType == CourtService;
+        public static bool HostServes(string buildingType, bool specialService, bool players, bool heldByOther)
+        {
+            return buildingType == Residential && !specialService && !players && !heldByOther;
+        }
+
+        /// <summary>City Utilities' address as the game writes one ("13 7th Street"), from the street's name.</summary>
+        public static string UtilitiesAddress(string streetName) => UtilitiesNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + (string.IsNullOrEmpty(streetName) ? UtilitiesStreetName : streetName);
+
+        /// <summary>
+        /// The smallest of the candidates <paramref name="fits"/> allows, by floor, ties broken by address ("street#number"
+        /// in ordinal order), leaving out what <paramref name="taken"/> holds: the building meanwhile while 13 7th Street is
+        /// a player's. The same city gives the same pick on every machine. -1 for none.
+        /// </summary>
+        public static int PickSmallest(int count, Func<int, bool> fits, Func<int, int> sqm, Func<int, string> street, Func<int, int> number, Func<string, int, bool> taken)
+        {
+            int best = -1, bestSqm = int.MaxValue;
+            string bestName = null;
+            for (int i = 0; i < count; i++)
+            {
+                if (fits != null && !fits(i))
+                {
+                    continue;
+                }
+                string s = street(i);
+                int n = number(i);
+                if (taken != null && taken(s, n))
+                {
+                    continue;
+                }
+                int size = Math.Max(0, Math.Min(999999, sqm(i)));
+                string name = s + "#" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (size < bestSqm || (size == bestSqm && string.CompareOrdinal(name, bestName) < 0))
+                {
+                    best = i;
+                    bestSqm = size;
+                    bestName = name;
+                }
+            }
+            return best;
+        }
 
         /// <summary>
         /// The two largest of the candidates <paramref name="fits"/> says a player could rent or buy (offices of the city's

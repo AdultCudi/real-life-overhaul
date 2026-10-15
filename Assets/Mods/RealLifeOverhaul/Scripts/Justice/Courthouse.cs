@@ -8,15 +8,11 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city's courthouse: one of the game's own buildings, the same one in every game. It is only
-    /// a sign, a door and a name, so it takes no office: the game's own moving company, 15 12th Street
-    /// in Lower Manhattan (Core/CityReserves: a special service, never to let, for sale or anyone's, and
-    /// used by no other feature of the mod). Before, it took the tax office, the largest building in the
-    /// city. Only in a city without that building does it fall back on the old rule: the tax office, then
-    /// a bank, then a school, the largest of its kind, ties broken by address; failing all of those, the
-    /// largest office building that no feature holds or reserves (never the player's two offices). Never
-    /// one the player rents or owns (it moves off one that becomes theirs). A move since the save was made
-    /// is told once (Core/PlaceMoves); hearings, dates and cases are kept by case, not by address.
+    /// The city's courthouse: one of the game's own buildings, the same one in every game on the
+    /// same map. The game has no court, so the most civic building it does have is taken: the tax
+    /// office first (the one government building), then a bank, then a school, the largest of its
+    /// kind, ties broken by address; failing all of those, the largest office building. Never one the player rents or
+    /// owns (it moves off one that becomes theirs).
     ///
     /// Its frontage is dressed with one sign (the modelled <c>courthouse_sign</c> when the prop
     /// bundle has it, otherwise a plain board on two posts lettered with the game's font), stood
@@ -145,8 +141,6 @@ namespace RealLifeOverhaul
                     SpecialBuildings.Set("courthouse", picked, SpecialKind.Court, "reallife_justice_door_courthouse", "reallife_justice_card_type",
                         () => JusticeSettings.Enabled && JusticeSettings.Courthouse);
                     SpecialBuildings.Boarded("courthouse", placed);   // its board is its one sign; without one the game's sign carries the name (Core/FrontSigns)
-                    PlaceMoves.Chosen(CityReserves.CourtKey, JusticeState.Key, CityReserves.OldCourt, Address.streetName, Address.streetNumber, Name,
-                        "reallife_justice_note_court_moved", "Justice: the courthouse", _logger);
                 }
                 _logger?.Info("Justice: the courthouse is " + Name + " (" + Kind(picked) + ", " + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up (" + (PropLibrary.TryGet(SignProp, out _, out _) ? "modelled" : "plain stand-in") + ")."
@@ -180,16 +174,6 @@ namespace RealLifeOverhaul
             CityBuildingController best = null;
             long bestScore = long.MinValue;
             string bestName = null;
-            for (int i = 0; i < buildings.Length; i++)
-            {
-                CityBuildingController building = buildings[i];
-                if (building != null && building.building != null && CityReserves.IsCourt(building.building.StreetName, building.building.StreetNumber)
-                    && building.entranceDoors != null && building.entranceDoors.Length > 0 && !GameMembers.Fenced(building.building)
-                    && CityReserves.CourtServes(building.building.SpecialService != null ? building.building.SpecialService.businessTypeName : null, SpecialBuildings.Players(building)))
-                {
-                    return building;   // (its fixed building: the same in every game)
-                }
-            }
             for (int pass = 0; pass < 2 && best == null; pass++)
             {
                 for (int i = 0; i < buildings.Length; i++)

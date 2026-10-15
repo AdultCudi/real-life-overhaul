@@ -1,33 +1,32 @@
 using System;
 using BAModAPI;
 using Streets;
-using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The city's utilities office (City Light and Power and Riverside Water): one of the game's own buildings, the same
-    /// one in every game on the same map, chosen as the owner asks for a city office, big and majestic: the largest
-    /// office building in the city that no other feature has made its own (the courthouse: UtilitiesBridges.Taken),
-    /// ties broken by address, never one the player rents or owns (it moves off one that becomes theirs), and never one
-    /// of the two largest, which are kept for the player (Core/CityReserves: reserved, so SpecialBuildings.Holds passes
-    /// them over). A move since the save was made is told once (Core/PlaceMoves); accounts are kept by account, not address. Its frontage has one sign, a board on two posts lettered with the game's font, stood
-    /// against the wall a few steps from the door where CitySpots found wall, pavement and room, as the courthouse's is;
-    /// the desk is spoken to standing in front of it, or at the door if no place for the sign was found. It lights up
-    /// on the city map (World/MapLinks). Looked for once per city load; nothing here runs by itself.
+    /// The city's utilities office (City Light and Power and Riverside Water): at 13 7th Street, Midtown, the same in every
+    /// game (Core/CityReserves, Core/CivicHost: an ordinary residential building, none of the game's own, that no business
+    /// of the city's or a rival's can ever use, reserved for it and refused to the player). Its desk is at the door, spoken
+    /// to standing on the pavement in front of it, as the university is at the school's door: the game lets nobody into a
+    /// residential building that is not their home, so it has no floor to furnish. Its name is on the building's card and
+    /// lit on the game's sign holders where the building has any (Core/FrontSigns), and it lights up on the city map in its
+    /// own row (World/MapLinks).
+    ///
+    /// In an older game where a player rents or owns 13 7th Street it stands meanwhile at the smallest other free
+    /// residential building of Midtown, and moves back for good once 13 7th Street is free. Never a
+    /// building of the game's own, never one the player rents or owns (it moves off one that becomes theirs). Before, it
+    /// took the city's largest office building, 17 7th Street: nothing of the mod is left there (the sign, the name and the
+    /// furnished floor were never saved), and it is the player's to rent or buy as the game has it. A move since the save
+    /// was made is told once (Core/PlaceMoves); accounts are kept by account, not address. Looked for once per city load,
+    /// then a few reads every five seconds; nothing here runs by itself.
     /// </summary>
     public sealed class UtilitiesOffice
     {
-        private const float FromWall = 0.30f;       // metres from the wall to the middle of the sign
-        private const float Reach = 1.7f;           // how near the desk spot the player must be
-        private const float ReachAtDoor = 2.4f;     // ...when that spot is the door front
-
-        private static readonly float[] Aside = { 4.6f, -4.6f, 6.2f, -6.2f };   // metres along the wall from the door
+        private const float ReachAtDoor = 2.4f;     // metres: how near the door front the player must be to speak to the desk
 
         private readonly IModLogger _logger;
-        private GameObject _sign;
         private bool _failed;
         private int _look;
 
@@ -42,7 +41,7 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>True if there is a desk to speak to in person.</summary>
         public bool Usable { get; private set; }
 
-        /// <summary>Where the player stands to speak to the desk: in front of the sign, or of the door.</summary>
+        /// <summary>Where the player stands to speak to the desk: in front of the door.</summary>
         public Vector3 Front { get; private set; }
 
         /// <summary>The office's building; null until found (it lights up on the city map: MapPlaces).</summary>
@@ -58,17 +57,16 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             Vector3 offset = Front - player;
-            float reach = _sign != null ? Reach : ReachAtDoor;
-            return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < reach * reach;
+            return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < ReachAtDoor * ReachAtDoor;
         }
 
         /// <summary>Changes each time the office is chosen (for the map).</summary>
         public int Moves { get; private set; }
 
         /// <summary>
-        /// Once a second: until <see cref="Searched"/>, finds the building, then stands the sign; after that, every five
-        /// seconds, an office whose building has become the player's (a save from before the mod's buildings were off the
-        /// market, another player's in a session) moves off it, and the next largest is chosen.
+        /// Once a second: until <see cref="Searched"/>, finds the building; after that, every five seconds, an office whose
+        /// building has become the player's (another player's in a session) moves off it, and one standing meanwhile moves
+        /// back to 13 7th Street once that is free.
         /// </summary>
         public void Tick()
         {
@@ -81,11 +79,12 @@ namespace RealLifeOverhaul.Utilities
                 if (Building != null && ++_look >= 5)
                 {
                     _look = 0;
-                    if (SpecialBuildings.Players(Building))
+                    CityManager now = InstanceBehavior<CityManager>.Instance;
+                    bool back = !CivicHost.IsFixed(Building) && now != null && CivicHost.FixedServes(now.cityBuildingControllers);
+                    if (SpecialBuildings.Players(Building) || back)
                     {
-                        _logger?.Info("Utilities: the office's building, " + Name + ", is the player's; the office moves to another.");
+                        _logger?.Info("Utilities: the office's building, " + Name + (back ? ", was meanwhile: 13 7th Street is free again; the office moves back for good." : ", is the player's; the office moves to another."));
                         Dispose();
-                        SpecialBuildings.Remove("utilities_office");
                         Building = null;
                         Name = string.Empty;
                         Searched = false;
@@ -101,7 +100,7 @@ namespace RealLifeOverhaul.Utilities
                 {
                     return;
                 }
-                CityBuildingController picked = Pick(buildings);
+                CityBuildingController picked = CivicHost.Pick(buildings, out bool fixedOne);
                 Searched = true;
                 if (picked == null)
                 {
@@ -111,22 +110,17 @@ namespace RealLifeOverhaul.Utilities
                 Building = picked;
                 Moves++;
                 Name = picked.building.Address.ToFormattedString();
-                bool placed = Place(picked);
-                if (!placed && JobSpots.Front(picked, out Vector3 door))
+                if (JobSpots.Front(picked, out Vector3 door))
                 {
                     Front = door;
                     Usable = true;
-                }
-                if (Usable)
-                {
-                    // Its own name wherever the game names the building (Core/SpecialBuildings).
-                    SpecialBuildings.Set("utilities_office", picked, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
-                    SpecialBuildings.Boarded("utilities_office", placed);   // its board is its one sign; without one the game's sign carries the name (Core/FrontSigns)
+                    // Its own name wherever the game names the building (Core/SpecialBuildings), lit on the game's sign holders where it has any (Core/FrontSigns).
+                    SpecialBuildings.Set(CityReserves.UtilitiesId, picked, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
                     PlaceMoves.Chosen(CityReserves.UtilitiesKey, UtilitiesStore.Key, CityReserves.OldUtilities, picked.building.Address.streetName, picked.building.Address.streetNumber, Name,
                         "reallife_util_note_moved", "Utilities: the office", _logger);
                 }
-                _logger?.Info("Utilities: the office is " + Name + " (" + picked.building.totalSqm + " sqm); "
-                              + (placed ? "sign up." : Usable ? "no room for the sign: the desk is at the door." : "no pavement at its door: accounts are applied for in the app."));
+                Meta.Dev.Always(_logger, "Utilities: the office is inside " + Name + " (" + (fixedOne ? "its permanent building" : "meanwhile: 13 7th Street is a player's") + "; "
+                                         + picked.building.totalSqm + " sqm); " + (Usable ? "the desk is at the door." : "no pavement at its door: accounts are applied for in the app."));
             }
             catch (Exception e)
             {
@@ -140,132 +134,11 @@ namespace RealLifeOverhaul.Utilities
 
         public void Dispose()
         {
-            if (_sign != null)
+            if (Building != null)
             {
-                UnityEngine.Object.Destroy(_sign);
-                _sign = null;
+                SpecialBuildings.Remove(CityReserves.UtilitiesId);
             }
             Usable = false;
-        }
-
-        // ---------------------------------------------------------------- which building
-
-        private static CityBuildingController Pick(CityBuildingController[] buildings)
-        {
-            CityBuildingController best = null;
-            int bestSize = int.MinValue;
-            string bestName = null;
-            Func<CityBuildingController, bool> taken = UtilitiesBridges.Taken;
-            for (int i = 0; i < buildings.Length; i++)
-            {
-                CityBuildingController building = buildings[i];
-                if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
-                    || GameMembers.Fenced(building.building) || building.building.SpecialService != null
-                    || building.building.BuildingType != "ba:buildingtype_office" || Offices.Conversions.Holds(building.building) || (taken != null && taken(building))
-                    || SpecialBuildings.Holds(building)    // (one another feature has made its own: the university, if it was chosen while the utilities were off)
-                    || SpecialBuildings.Players(building)) // (one the player rents or owns stays theirs)
-                {
-                    continue;
-                }
-                int size = Mathf.Clamp(building.building.totalSqm, 0, 999999);
-                string name = building.building.StreetName + "#" + building.building.StreetNumber;
-                if (size > bestSize || (size == bestSize && string.CompareOrdinal(name, bestName) < 0))
-                {
-                    best = building;
-                    bestSize = size;
-                    bestName = name;
-                }
-            }
-            return best;
-        }
-
-        // ---------------------------------------------------------------- the sign
-
-        // Against the wall some steps to one side of the door, facing the pavement, where nothing else stands.
-        private bool Place(CityBuildingController building)
-        {
-            if (!Shapes.Available || !JobSpots.Front(building, out Vector3 front) || !CitySpots.Along(front, out Vector3 along))
-            {
-                return false;
-            }
-            for (int i = 0; i < Aside.Length; i++)
-            {
-                if (!CitySpots.Shopfront(front + along * Aside[i], FromWall + 0.45f, 0.75f, out Vector3 stand, out Vector3 outward))
-                {
-                    continue;
-                }
-                Vector3 at = stand - outward * 0.45f;
-                Vector3 reader = stand + outward * 0.5f;
-                if (!CitySpots.Ground(at, out float ground) || Mathf.Abs(ground - stand.y) > 0.25f || JobSpots.Flat(at, front) < 3f
-                    || !CitySpots.Stand(reader, 0.4f, out reader))
-                {
-                    continue;
-                }
-                at.y = ground;
-                _sign = Build(at, outward);
-                if (_sign == null)
-                {
-                    return false;
-                }
-                Front = reader;
-                Usable = true;
-                return true;
-            }
-            return false;
-        }
-
-        // One object, shared meshes and materials, no collider, no script. Read from its +Z, like the courthouse's.
-        private static GameObject Build(Vector3 at, Vector3 outward)
-        {
-            var sign = new GameObject("RealLifeOverhaul Utilities Sign");
-            Transform root = sign.transform;
-            root.SetPositionAndRotation(at, Quaternion.LookRotation(outward, Vector3.up));
-            Material post = Shapes.Paint(new Color(0.16f, 0.17f, 0.18f));
-            Material board = Shapes.Paint(new Color(0.06f, 0.24f, 0.22f));
-            Material rule = Shapes.Paint(new Color(0.93f, 0.80f, 0.30f));
-            if (post == null || board == null || rule == null)
-            {
-                UnityEngine.Object.Destroy(sign);
-                return null;
-            }
-            Shapes.Piece("Post", root, Shapes.Post, post, new Vector3(-0.60f, 0f, 0f), new Vector3(0.09f, 1.95f, 0.09f));
-            Shapes.Piece("Post", root, Shapes.Post, post, new Vector3(0.60f, 0f, 0f), new Vector3(0.09f, 1.95f, 0.09f));
-            Shapes.Piece("Foot", root, Shapes.Cube, post, new Vector3(-0.60f, 0.025f, 0f), new Vector3(0.22f, 0.05f, 0.42f));
-            Shapes.Piece("Foot", root, Shapes.Cube, post, new Vector3(0.60f, 0.025f, 0f), new Vector3(0.22f, 0.05f, 0.42f));
-            Shapes.Piece("Board", root, Shapes.Cube, board, new Vector3(0f, 1.52f, 0f), new Vector3(1.30f, 0.62f, 0.05f));
-            Shapes.Piece("Rule", root, Shapes.Cube, rule, new Vector3(0f, 1.27f, 0.004f), new Vector3(1.18f, 0.03f, 0.05f));
-            Shapes.Piece("Cap", root, Shapes.Cube, rule, new Vector3(0f, 1.85f, 0f), new Vector3(1.36f, 0.04f, 0.08f));
-
-            TMP_FontAsset font = GameUi.GameFont.Asset;
-            if (font != null)
-            {
-                var label = new GameObject("Lettering");
-                Transform place = label.transform;
-                place.SetParent(root, false);
-                // Text is read from behind its own forward: turned to face out from the board.
-                place.localPosition = new Vector3(0f, 1.56f, 0.027f);
-                place.localRotation = Quaternion.Euler(0f, 180f, 0f);
-                var text = label.AddComponent<TextMeshPro>();
-                text.font = font;
-                text.text = UtilitiesText.T("reallife_util_sign");
-                text.color = new Color(0.95f, 0.95f, 0.90f);
-                text.fontStyle = FontStyles.Bold;
-                text.alignment = TextAlignmentOptions.Center;
-#pragma warning disable CS0618
-                text.enableWordWrapping = true;
-#pragma warning restore CS0618
-                text.rectTransform.sizeDelta = new Vector2(1.16f, 0.44f);
-                text.enableAutoSizing = true;
-                text.fontSizeMin = 0.05f;
-                text.fontSizeMax = 3f;
-                var renderer = label.GetComponent<MeshRenderer>();
-                if (renderer != null)
-                {
-                    renderer.shadowCastingMode = ShadowCastingMode.Off;
-                    renderer.receiveShadows = false;
-                }
-            }
-            return sign;
         }
     }
 }

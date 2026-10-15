@@ -32,6 +32,7 @@ internal static partial class Program
         { "TowerId", "tech_hq" },
         { "\"hotel_\"", "hotels" },
         { "\"utilities_office\"", "utilities_office" },
+        { "CityReserves.UtilitiesId", "utilities_office" },   // (Core/CityReserves: "utilities_office", also its building's reservation)
     };
 
     private sealed class MapRow

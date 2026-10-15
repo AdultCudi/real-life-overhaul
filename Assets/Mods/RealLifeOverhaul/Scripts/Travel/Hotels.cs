@@ -276,7 +276,8 @@ namespace RealLifeOverhaul
             {
                 Building b = all[i];
                 if (b == null || b.BuildingType != Residential || b.Neighbourhood != slot.Neighbourhood || GameMembers.Fenced(b)
-                    || (int)b.requiredDLC != 0 || b.IsHamptonsHouse() || _taken.Contains(b) || string.IsNullOrEmpty(b.BuildingSize))
+                    || (int)b.requiredDLC != 0 || b.IsHamptonsHouse() || _taken.Contains(b) || string.IsNullOrEmpty(b.BuildingSize)
+                    || SpecialBuildings.Holds(b.StreetName, b.StreetNumber))   // (another feature's building: City Utilities at 13 7th Street)
                 {
                     continue;
                 }

@@ -20,7 +20,6 @@ namespace RealLifeOverhaul
         ///   UtilitiesOn  their off switch, read by the closures' keeper (BusinessDirector): off, or stopped by a fault,
         ///                every business they closed opens again
         ///   Record       why, in the Business desk's messages (BusinessDesk.Text), to read back after the notification
-        ///   Taken        the courthouse's building (Justice), which the office is not to be
         ///   Life         the electricity company's events need a power account of the player's (LifeAccounts.Power)
         ///   Home         a home without water has dry taps, one without power dark screens and no cooker (HomeTidy)
         ///   shares       the partner's share and the roommate's are of the rent and the home's power and water
@@ -32,17 +31,14 @@ namespace RealLifeOverhaul
         {
             internal static void Connect()
             {
+                // City Utilities' building, 13 7th Street, held for it from the start while it is on (Core/CityReserves).
+                SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities);
                 UtilitiesBridges.Grade = () => (int)Economy.CreditLedger.Grade;
                 UtilitiesBridges.Household = Household;
                 UtilitiesBridges.CloseFor = (reg, hours) => BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours, ClosureSource.Utilities);
                 UtilitiesBridges.Release = reg => BusinessDirector.Instance?.Release(reg, ClosureSource.Utilities);
                 BusinessDirector.UtilitiesOn = () => Settings.Utilities && !UtilitiesDirector.Failed;
                 UtilitiesBridges.Record = (key, data) => BusinessDesk.Text(key, data, notify: false);
-                UtilitiesBridges.Taken = building =>
-                {
-                    JusticeDirector justice = JusticeDirector.Instance;
-                    return justice != null && justice.Court != null && ReferenceEquals(justice.Court.Building, building);
-                };
                 LifeAccounts.Power = () => UtilitiesDirector.HasPowerAccount;
                 HomeTidy.HasPower = reg => UtilitiesDirector.Supplied(reg, Service.Power);
                 HomeTidy.HasWater = reg => UtilitiesDirector.Supplied(reg, Service.Water);
@@ -53,6 +49,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                SpecialBuildings.Unreserve(CityReserves.UtilitiesId);
                 UtilitiesBridges.Reset();
                 BusinessDirector.UtilitiesOn = null;
                 LifeAccounts.Power = null;

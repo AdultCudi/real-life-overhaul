@@ -826,7 +826,8 @@ namespace RealLifeOverhaul
             // Somebody's home: a residential building's street door, not the player's own (the key opens every other door as before).
             CityBuildingController building = NearestDoor(player, 3f);
             if (building == null || building.building == null || building.building.BuildingType != "ba:buildingtype_residential"
-                || !Office.MayKnock(day, hour, building.building.Neighbourhood, building.GetInstanceID()) || CivicOffice.IsMine(building))
+                || !Office.MayKnock(day, hour, building.building.Neighbourhood, building.GetInstanceID()) || CivicOffice.IsMine(building)
+                || SpecialBuildings.Holds(building))   // (nobody lives at a building of the mod's: City Utilities at 13 7th Street)
             {
                 return PromptKind.None;
             }
