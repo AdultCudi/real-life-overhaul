@@ -1,6 +1,8 @@
+[h1]☕ [url=https://buymeacoffee.com/adultcudi]Buy me a coffee[/url][/h1]
+[b]Real Life Overhaul is free and always will be. To say thanks, 5 to 10 dollars is plenty, please never more.[/b]
+
 [b]Discord for help, bug reports and ideas: [url=https://discord.gg/tzCh2VXs9E]discord.gg/tzCh2VXs9E[/url][/b]
 [b]Languages: English, Brazilian Portuguese, Simplified Chinese, German, French, Spanish and Russian[/b]
-[b]The mod is free and always will be. To say thanks, you can [url=https://buymeacoffee.com/adultcudi]buy me a coffee[/url]: 5 to 10 dollars at most, never more.[/b]
 
 [h1]Real Life Overhaul[/h1]
 Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to others and to you, and you can join in. Work your way up a career, stand for mayor, list your company, found a bank or a cloud, or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
@@ -55,7 +57,7 @@ Apart from the cameras, buses in view and hair in motion, the mod does its work 
 [/olist]
 
 [h1]Known limits[/h1]
-Parts of the mod, the newest most of all, have had little play.
+The newest parts have had little play.
 [list]
 [*]The subway journey, and a bus journey with two or more changes, pass under a fade.
 [*]A hotel is its door and lists of choices, and most holidays are told as messages.
