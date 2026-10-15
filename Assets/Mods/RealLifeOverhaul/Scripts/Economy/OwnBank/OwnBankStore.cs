@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Economy
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
     ///   m  the months' profit, the oldest first
     ///   e  the end game's scale (Core/EndScale): the day it began to come in|tellers|relationship managers|loan officers|
-    ///      compliance officers (a line without it: no day, so a bank that runs is phased in, and no crews)
+    ///      compliance officers|the least capital it was founded under (a line without it: no day, so a bank that runs is
+    ///      phased in, no crews, and the old least)
     ///
     /// Every figure is a whole number, so what is read back is exactly what was written; a name is escaped so that no
     /// divider can break the line. A NEWER VERSION adds fields at the end of a record or a part with a new letter; this
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul.Economy
             {
                 t.Append('|').Append(b.Crew[k].ToString(Inv));
             }
+            t.Append('|').Append(b.FoundedLeast.ToString(Inv));
             return t.ToString();
         }
 
@@ -177,6 +179,7 @@ namespace RealLifeOverhaul.Economy
                             {
                                 b.Crew[k] = Math.Max(0, I(scale, k + 1));
                             }
+                            b.FoundedLeast = Math.Max(0, L(scale, OwnBankCatalogue.CrewKinds + 1));
                             break;
                     }
                 }

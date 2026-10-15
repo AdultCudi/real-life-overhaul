@@ -54,7 +54,8 @@ namespace RealLifeOverhaul.Economy
             return At(LeastAt(share) * (1000 + Math.Max(0, closures) * OwnBankCatalogue.AgainCapital) / 1000, level);
         }
 
-        private static long LeastAt(int share) => EndScaleRules.Mix(OwnBankCatalogue.CapitalLeastCents, OwnBankCatalogue.CapitalLeastCentsScale, share);
+        /// <summary>The least capital at the start's prices at a share of the scale, cents: what a bank founded now is held to (OwnBank.FoundedLeast).</summary>
+        public static long LeastAt(int share) => EndScaleRules.Mix(OwnBankCatalogue.CapitalLeastCents, OwnBankCatalogue.CapitalLeastCentsScale, share);
 
         public const string AgainWaitKey = "reallife_ob_why_closed_before", AgainIntegrityKey = "reallife_ob_why_closed_integrity";
 
@@ -370,24 +371,25 @@ namespace RealLifeOverhaul.Economy
         /// <summary>
         /// The most capital that can be taken out as a dividend now, to the step: what leaves the reserves over what the
         /// deposits need, the capital over the least the regulator wants and over what keeps the ratio at the lending
-        /// line. Nothing while the regulator is after the bank or its savers are running.
+        /// line. Nothing while the regulator is after the bank or its savers are running. The least is the one that applied
+        /// when the bank was founded: a bank founded before the end game's scale keeps the old least.
         /// </summary>
-        public static long MostOut(OwnBank b, int level, int share = 0)
+        public static long MostOut(OwnBank b, int level)
         {
             if (!b.Running || b.Stage == Regulator.Breach || b.Run || b.Test)
             {
                 return 0;
             }
             long cash = b.Reserves - ReserveNeed(b);
-            long keep = Math.Max(CapitalLeast(level, 0, share), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
+            long keep = Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
             long capital = CapitalNow(b) - keep;
             return ToStep(Math.Min(cash, capital));
         }
 
         /// <summary>A dividend taken out of the capital. False if it is more than <see cref="MostOut"/>.</summary>
-        public static bool TakeOut(OwnBank b, long cents, int level, int share = 0)
+        public static bool TakeOut(OwnBank b, long cents, int level)
         {
-            if (cents <= 0 || cents > MostOut(b, level, share))
+            if (cents <= 0 || cents > MostOut(b, level))
             {
                 return false;
             }
@@ -535,7 +537,7 @@ namespace RealLifeOverhaul.Economy
             // The loans: interest, defaults, the arrears, recoveries, repayments.
             for (int j = 0; j < OwnBankCatalogue.Segments; j++)
             {
-                long interest = b.Loans[j] * LoanBp(c, b, j) / (10000L * y);
+                long interest = b.Loans[j] * LoanBp(c, b, j) / (10000L * y) * EndScaleRules.Mix(1000, OwnBankCatalogue.IncomeAtScale, c.Scale) / 1000;
                 b.Reserves += interest;
                 into.Interest += interest;
                 long defaulted = (long)Math.Round(b.Loans[j] * (double)DefaultPerMille(c, b, j) / (1000.0 * y));
@@ -588,8 +590,8 @@ namespace RealLifeOverhaul.Economy
             int s = c.Scale;
             long before = OwnBankCatalogue.StaffDayCents * level / PriceRules.Start
                           + (b.Savings * OwnBankCatalogue.StaffOnSavings + (b.Lent + b.InArrears) * OwnBankCatalogue.StaffOnLoans) / (1000L * y);
-            long staff = s <= 0 ? before : before * (EndScaleRules.Full - s) / EndScaleRules.Full + Crews(b) * level / PriceRules.Start;
-            long systems = s <= 0 ? 0 : EndScaleRules.Mix(0L, OwnBankCatalogue.SystemsDayCents * level / PriceRules.Start + b.Savings * OwnBankCatalogue.InsuranceBp / (10000L * y), s);
+            long staff = s <= 0 ? before : before * (EndScaleRules.Full - s) / EndScaleRules.Full + Crews(b) * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start;
+            long systems = s <= 0 ? 0 : EndScaleRules.Mix(0L, OwnBankCatalogue.SystemsDayCents * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start + b.Savings * OwnBankCatalogue.InsuranceBp / (10000L * y), s);
             long room = b.Capital + into.Interest + into.Reserve + into.Recovered - into.Savers - into.Lost - into.Court - Math.Min(before, staff);
             staff = Math.Min(before, staff) + EndScaleRules.Take(ref room, Math.Max(0, staff - before));
             systems = EndScaleRules.Take(ref room, systems);

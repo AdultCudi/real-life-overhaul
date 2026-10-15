@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Utilities
 
         public static GameInstance Save => SaveGameManager.Current;
         public static int Today => Save != null ? Save.Day : 0;
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static long Cash => Save != null ? EndScaleRules.Whole(Save.Money) : 0;   // (a long, worked out by hand: a float cast to an int past $2,147,483,647 is int.MinValue on Mono)
 
         /// <summary>A place's address, written as business pressure writes a place (as Company and Brands write it).</summary>
         public static string Place(BuildingRegistration reg)
@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Utilities
         /// network dug) is neither deducted nor taken without the cash, as the sale of the company is not taxed. False if
         /// refused.
         /// </summary>
-        public static bool Book(int amount, string key, BuildingRegistration hq, string category, bool running = true)
+        public static bool Book(long amount, string key, BuildingRegistration hq, string category, bool running = true)
         {
             bool force = running;
             if (amount == 0)

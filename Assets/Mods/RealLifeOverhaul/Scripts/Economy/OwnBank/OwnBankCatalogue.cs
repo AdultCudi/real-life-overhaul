@@ -199,6 +199,8 @@ namespace RealLifeOverhaul.Economy
         public const long SystemsDayCents = 4000000L;             // core banking, cards, payments and data, a day ($40,000)
         public const int InsuranceBp = 8;                         // deposit insurance a year, hundredths of a per cent of the deposits
         public const int CrewPace = 40;                           // thousandths of the need hired a day while short
+        public const int CostYearDays = 60;                       // the crews' wages and the systems are written for a day of the game's own 60-day year: by the year, as the bank's rates are, so a longer year earns and pays alike
+        public const int IncomeAtScale = 1000;                    // thousandths: the one knob for what its loans earn at scale, tuned in one edit
 
         /// <summary>True for a transaction of the bank's that is takings at its headquarters (the statement counts it so).</summary>
         public static bool IsTakings(string type) => type == TakingsKey;

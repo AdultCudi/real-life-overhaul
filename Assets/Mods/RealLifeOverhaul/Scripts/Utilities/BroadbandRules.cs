@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Utilities
         public const int Own = 4;
 
         public CompanyState State;
-        public int FoundedDay, SoldDay, SalePrice;
+        public int FoundedDay, SoldDay;
+        public long SalePrice;
         public readonly int[] Built = new int[Districts];               // the day a district's network opened; minus the day it will, while it is dug; 0 none
         public readonly int[] Spent = new int[Districts];               // what each district's network cost, money
         public readonly int[,] Share = new int[Districts, Providers];   // thousandths of each district's connections, by provider
@@ -31,6 +32,7 @@ namespace RealLifeOverhaul.Utilities
         public int ScaleFrom = EndScaleRules.Unset;                     // the day the end game's scale began to come in for the company (Core/EndScale)
         public readonly bool[] Scaled = new bool[Districts];            // a district's network dug (or extended) at scale: it reaches the whole district
         public readonly int[] Crew = new int[BroadbandCatalogue.CrewKinds];   // its crews at scale: field engineers, call centre agents, network operations
+        public long Owed;                                               // what the scale added to its costs that the cash could not meet, carried to the next day, money
         // ---- read each day, never saved
         public int Scale;                                               // the end game's share today, set by the company before the rules run
         public int Cover = EndScaleRules.Full;                          // how far its crews cover what they need, thousandths
@@ -120,13 +122,13 @@ namespace RealLifeOverhaul.Utilities
         /// What extending a district's network dug before the scale to the whole district costs, money: the scale's network
         /// less what it cost. 0 where there is nothing to extend (not open, already at scale, or no scale).
         /// </summary>
-        public static int ExtendCost(Network n, int district, int level, int day)
+        public static int ExtendCost(Network n, int district, int level, int day, int buy)
         {
-            if (n == null || !n.Running || n.Scale <= 0 || district < 0 || district >= Network.Districts || !n.Open(district, day) || n.Scaled[district])
+            if (n == null || !n.Running || buy <= 0 || district < 0 || district >= Network.Districts || !n.Open(district, day) || n.Scaled[district])
             {
                 return 0;
             }
-            return Math.Max(1, BuildCost(district, level, n.Scale) - n.Spent[district]);
+            return Math.Max(1, BuildCost(district, level, buy) - n.Spent[district]);
         }
 
         /// <summary>A district's network extended to the whole district: it is at scale from now, and what it cost is added to what it had cost.</summary>
@@ -178,7 +180,9 @@ namespace RealLifeOverhaul.Utilities
         {
             n.State = CompanyState.Running;
             n.FoundedDay = day;
-            n.SoldDay = n.SalePrice = 0;
+            n.SoldDay = 0;
+            n.SalePrice = 0;
+            n.Owed = 0;
             for (int d = 0; d < Network.Districts; d++)
             {
                 n.Built[d] = n.Spent[d] = 0;
@@ -205,11 +209,11 @@ namespace RealLifeOverhaul.Utilities
         }
 
         /// <summary>A district's network ordered: dug for BuildMonths of the game's months from a day, at a cost.</summary>
-        public static void StartBuild(Network n, int district, int day, int monthDays, int cost)
+        public static void StartBuild(Network n, int district, int day, int monthDays, int cost, bool scaled = false)
         {
             n.Built[district] = -(day + BroadbandCatalogue.BuildMonths * Math.Max(1, monthDays));
             n.Spent[district] = Math.Max(0, cost);
-            n.Scaled[district] = n.Scale > 0;
+            n.Scaled[district] = scaled;
         }
 
         /// <summary>The networks ready by a day opened on the day they were ready; how many opened.</summary>
@@ -328,7 +332,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return 0;
             }
-            return Money((long)Connections(n) * AverageCents(n, level) / Math.Max(1, monthDays));
+            return Money((long)Connections(n) * AverageCents(n, level) / Math.Max(1, monthDays) * EndScaleRules.Mix(1000, BroadbandCatalogue.IncomeAtScale, n.Scale) / 1000);
         }
 
         /// <summary>
@@ -356,7 +360,7 @@ namespace RealLifeOverhaul.Utilities
             upkeep = upkeep * Clamp(n.Maintenance, BroadbandCatalogue.MaintenanceLeast, BroadbandCatalogue.MaintenanceMost) / 1000;
             // its engineers and call centre: by the connection before the scale, its crews' wages at it
             staff = Money(connections * BroadbandCatalogue.StaffCents * lvl / PriceRules.Start / m * (EndScaleRules.Full - s) / EndScaleRules.Full
-                          + (s > 0 ? CrewCents(n) * lvl / PriceRules.Start : 0));
+                          + (s > 0 ? CrewCents(n) * BroadbandCatalogue.WageMonthDays / m * lvl / PriceRules.Start : 0));
             network = Money(connections * BroadbandCatalogue.NetworkCents * lvl / PriceRules.Start / m + upkeep * 100 / m);
             marketing = Clip(((long)MarketingMoney(n.Marketing, level) + m / 2) / m);
         }
@@ -403,7 +407,16 @@ namespace RealLifeOverhaul.Utilities
             n.Cover = cover;
         }
 
-        /// <summary>The crews' wages a day, cents at the start's prices.</summary>
+        /// <summary>A day whose costs at scale went partly unpaid: each crew loses that share of its people (Core/EndScale).</summary>
+        public static void Leave(Network n, int unpaidPerMille)
+        {
+            for (int k = 0; k < BroadbandCatalogue.CrewKinds; k++)
+            {
+                n.Crew[k] = EndScaleRules.Leave(n.Crew[k], unpaidPerMille);
+            }
+        }
+
+        /// <summary>The crews' wages a day in a month of WageMonthDays, cents at the start's prices (a day of a month of m days: this by WageMonthDays / m).</summary>
         public static long CrewCents(Network n)
         {
             long sum = 0;
@@ -445,16 +458,20 @@ namespace RealLifeOverhaul.Utilities
             return sum;
         }
 
-        /// <summary>What a buyer pays: SaleMultiple years of the last year's profit, or a share of what the network cost if that is more; money.</summary>
-        public static int SaleValue(Network n)
+        /// <summary>
+        /// What a buyer pays: SaleMultiple years of the last year's profit (fewer at the end game's scale, so that digging
+        /// a network to sell never beats running it), or a share of what the network cost if that is more; money, in a
+        /// long (a network at scale is worth hundreds of millions).
+        /// </summary>
+        public static long SaleValue(Network n)
         {
             long spent = 0;
             for (int d = 0; d < Network.Districts; d++)
             {
                 spent += n.Spent[d];
             }
-            long earnings = Math.Max(0L, YearProfit(n)) * BroadbandCatalogue.SaleMultiple;
-            return Clip(Math.Max(earnings, spent * BroadbandCatalogue.SaleFloorShare / 1000));
+            long earnings = Math.Max(0L, YearProfit(n)) * EndScaleRules.Mix(BroadbandCatalogue.SaleMultiple, BroadbandCatalogue.SaleMultipleScale, n.Scale);
+            return Math.Max(earnings, spent * BroadbandCatalogue.SaleFloorShare / 1000);
         }
 
         /// <summary>

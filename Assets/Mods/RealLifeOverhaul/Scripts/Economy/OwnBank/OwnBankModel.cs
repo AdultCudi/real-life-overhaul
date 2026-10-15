@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Economy
         // ---- the end game's scale (Core/EndScale)
         public int ScaleFrom = EndScaleRules.Unset;   // the day it began to come in for the bank
         public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];   // tellers, relationship managers, loan officers, compliance
+        public long FoundedLeast;               // the least capital that applied when it was founded, cents at the start's prices (0: founded before the scale, the old least)
 
         public bool Running => State == OwnBankState.Running;
         public bool Exists => State != OwnBankState.None;

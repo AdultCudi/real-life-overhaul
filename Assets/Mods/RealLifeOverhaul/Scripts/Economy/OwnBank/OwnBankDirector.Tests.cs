@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 Keep();
                 BuildingRegistration hq = OwnBankGame.Headquarters();
-                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level, 0, ScaleNow()), Named(null, hq));
+                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level, 0, EndScaleRules.Buying(Settings.EndScale)), Named(null, hq));
                 _bank.Test = true;
                 TestDone("a bank founded with the least capital, paid by nobody", TabBank);
             });

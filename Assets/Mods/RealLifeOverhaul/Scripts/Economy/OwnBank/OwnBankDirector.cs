@@ -452,7 +452,7 @@ namespace RealLifeOverhaul.Economy
             {
                 why = "reallife_ob_why_no_hq";
             }
-            int level = Prices.Level, share = ScaleNow();
+            int level = Prices.Level, share = EndScaleRules.Buying(Settings.EndScale);   // (what is paid in is at the whole scale while it is on)
             long licence = OwnBankRules.Licence(level, share), capital = OwnBankRules.CapitalLeast(level, _bank.Closures, share);
             if (why == null && licence + capital > OwnBankGame.Cash)
             {
@@ -469,6 +469,7 @@ namespace RealLifeOverhaul.Economy
             }
             int today = Save.Day;
             OwnBankRules.Found(_bank, today, new System.Random().Next(1, int.MaxValue), capital, Named(name, hq));
+            _bank.FoundedLeast = OwnBankRules.LeastAt(share);
             Tell(NotificationType.Success, "reallife_ob_toast_founded", TabBank, "bank", _bank.Name, "capital", OwnBankText.Money(capital));
             Print("reallife_ob_news_founded", "bank", _bank.Name, "place", OwnBankGame.Name(hq));
             Logger?.Info("Own bank: " + _bank.Name + " founded on day " + today + " at " + OwnBankGame.Name(hq) + ", the licence " + licence / 100 + " and the capital " + capital / 100 + " paid.");
@@ -519,7 +520,7 @@ namespace RealLifeOverhaul.Economy
         {
             why = Ready() ?? (!_bank.Running ? "reallife_ob_why_none" : _bank.Test ? "reallife_ob_why_test" : null);
             cents = OwnBankRules.ToStep(cents);
-            if (why == null && (cents <= 0 || !OwnBankRules.TakeOut(_bank, cents, Prices.Level, ScaleNow())))
+            if (why == null && (cents <= 0 || !OwnBankRules.TakeOut(_bank, cents, Prices.Level)))
             {
                 why = "reallife_ob_why_too_much";
             }

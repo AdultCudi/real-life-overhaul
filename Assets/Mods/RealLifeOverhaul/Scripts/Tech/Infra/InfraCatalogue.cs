@@ -66,13 +66,15 @@ namespace RealLifeOverhaul.Tech
         public static readonly int[] FitPerSqmScale = { 700000, 1000000, 1300000, 1800000 };   // cents a square metre, by tier
         public const int RackCostScale = 30000000;        // a rack of dense servers, cents ($300,000)
         public const int GpuRackCostScale = 200000000;    // a rack of current AI accelerators ($2,000,000)
+        public const int IncomeAtScale = 1000;            // thousandths: the one knob for what the new kind earns (its compute and its rent at scale), tuned in one edit
         public const int UnitsPerRackScale = 800;         // compute a rack of the new kind sells as
         public const int GpuUnitsPerRackScale = 360;      // AI compute a new AI rack sells as
         public static readonly int[] PueScale = { 1700, 1500, 1350, 1200 };   // thousandths of the racks' own power drawn with the cooling, by tier
         public const int UpkeepRack = 17000;              // cents a day for a rack of the new kind: support, spares, transit and software licences
         public const int UpkeepGpu = 120000;              // ...for a new AI rack
         public const int FacilityYear = 40;               // thousandths of the fit-out's worth a 365-day year: the building's upkeep and insurance
-        public const int ColoDemandScale = 120;           // racks the city's companies rent at scale (the rent stays a real colocation rent)
+        public const int ColoDemandScale = 120;           // racks the city's companies rent at scale
+        public const int ColoMonthScale = 4800000;        // a rack of the new kind let as managed servers, cents a month ($48,000); the old kind keeps the old rent
         public const int CloudDemandScale = 120000;       // units the city buys at the list price in a steady economy, at scale
         public const int GpuDemandScale = 4000;
         public const int HyperDemandScale = 4000;         // thousandths: a hyperscaler at scale sells to the city's large companies and beyond it...

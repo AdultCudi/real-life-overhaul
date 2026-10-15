@@ -150,6 +150,15 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>A day whose costs at scale went partly unpaid: each crew loses that share of its people (Core/EndScale).</summary>
+        public static void Leave(DataCentre d, int unpaidPerMille)
+        {
+            for (int k = 0; k < InfraCatalogue.CrewKinds; k++)
+            {
+                d.Crew[k] = EndScaleRules.Leave(d.Crew[k], unpaidPerMille);
+            }
+        }
+
         /// <summary>How far a data centre's crews cover what it needs, thousandths: the shortest of them.</summary>
         public static int Cover(DataCentre d, int share)
         {
@@ -220,15 +229,27 @@ namespace RealLifeOverhaul.Tech
         {
             int dense = Math.Min(d.Dense, d.Racks), legacy = d.Racks - dense;
             int letOld = Math.Min(Math.Max(0, d.Colo), legacy), letNew = Math.Min(dense, Math.Max(0, d.Colo - letOld));
-            long units = (long)(legacy - letOld) * InfraCatalogue.UnitsPerRack + (long)(dense - letNew) * EndScaleRules.Mix(InfraCatalogue.UnitsPerRack, InfraCatalogue.UnitsPerRackScale, share);
+            long units = (long)(legacy - letOld) * InfraCatalogue.UnitsPerRack + (long)(dense - letNew) * EndScaleRules.Mix(InfraCatalogue.UnitsPerRack, (long)InfraCatalogue.UnitsPerRackScale * InfraCatalogue.IncomeAtScale / 1000, share);
             return (int)Math.Min(int.MaxValue / 4, units);
         }
 
         public static int GpuUnits(DataCentre d, int share = 0)
         {
             int dense = Math.Min(d.DenseGpu, d.GpuRacks);
-            long units = (long)(d.GpuRacks - dense) * InfraCatalogue.GpuUnitsPerRack + (long)dense * EndScaleRules.Mix(InfraCatalogue.GpuUnitsPerRack, InfraCatalogue.GpuUnitsPerRackScale, share);
+            long units = (long)(d.GpuRacks - dense) * InfraCatalogue.GpuUnitsPerRack + (long)dense * EndScaleRules.Mix(InfraCatalogue.GpuUnitsPerRack, (long)InfraCatalogue.GpuUnitsPerRackScale * InfraCatalogue.IncomeAtScale / 1000, share);
             return (int)Math.Min(int.MaxValue / 4, units);
+        }
+
+        /// <summary>
+        /// A day's rent of the racks let, cents at the start's prices: the old kind (let first) at the old rent; a rack of
+        /// the new kind let as managed servers at the scale's rent, as its share has come in.
+        /// </summary>
+        public static long ColoDay(DataCentre d, int share)
+        {
+            int dense = Math.Min(d.Dense, d.Racks), legacy = d.Racks - dense;
+            int letOld = Math.Min(Math.Max(0, d.Colo), legacy), letNew = Math.Min(dense, Math.Max(0, d.Colo - letOld));
+            long month = (long)letOld * InfraCatalogue.ColoMonth + (long)letNew * EndScaleRules.Mix(InfraCatalogue.ColoMonth, (long)InfraCatalogue.ColoMonthScale * InfraCatalogue.IncomeAtScale / 1000, share);
+            return month / FirmsCatalogue.MonthDays;
         }
 
         // ---------------------------------------------------------------- the cloud

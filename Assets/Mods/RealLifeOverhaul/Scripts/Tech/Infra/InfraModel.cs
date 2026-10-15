@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.Tech
     {
         public int Seed, FirstDay, LastDay = -1;
         public int ScaleFrom = EndScaleRules.Unset;   // the day the end game's scale began to come in for these data centres (Core/EndScale)
+        public long Owed;                              // what the scale's costs came to that the cash could not meet, carried to the next day, cents at the prices of then
         public readonly List<DataCentre> Centres = new List<DataCentre>(4);
         public readonly Cloud Cloud = new Cloud();
 

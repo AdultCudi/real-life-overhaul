@@ -97,13 +97,27 @@ namespace RealLifeOverhaul.Utilities
             bool outage = InternetRules.Outage(State.Seed, day, InternetCatalogue.OwnIndex, false, out _, out _);
             int takings = BroadbandRules.DayTakings(n, level, monthDays, outage, hq != null);
             BroadbandRules.DayCosts(n, level, day, monthDays, out int staff, out int network, out int marketing);
-            if (share > 0)
+            if (share > 0 || n.Owed > 0)
             {
-                // what the scale adds to the day (its crews and upkeep over the figures before it) never takes the cash below nothing
+                // what the scale adds to the day (its crews and upkeep over the figures before it), and what it owed from
+                // before, after the day's takings: never past the cash; what is left is owed, and its crews leave in that share
                 BroadbandRules.DayCosts(n, level, day, monthDays, out int staff0, out int network0, out _, 0);
-                long room = (long)UtilitiesGame.Cash + takings - staff0 - network0 - marketing;
-                staff = staff0 + (int)EndScaleRules.Take(ref room, Math.Max(0, staff - staff0));
-                network = network0 + (int)EndScaleRules.Take(ref room, Math.Max(0, network - network0));
+                long room = UtilitiesGame.Cash + takings - staff0 - network0 - marketing;
+                long staffDue = Math.Max(0, staff - staff0) + n.Owed, networkDue = Math.Max(0, network - network0);
+                long staffPaid = EndScaleRules.Take(ref room, staffDue), networkPaid = EndScaleRules.Take(ref room, networkDue);
+                staff = (int)Math.Min(int.MaxValue / 4, staff0 + staffPaid);
+                network = (int)Math.Min(int.MaxValue / 4, network0 + networkPaid);
+                bool was = n.Owed > 0;
+                n.Owed = staffDue + networkDue - staffPaid - networkPaid;
+                int unpaid = EndScaleRules.Unpaid(staffDue + networkDue, staffPaid + networkPaid);
+                if (unpaid > 0)
+                {
+                    BroadbandRules.Leave(n, unpaid);
+                    if (!was)
+                    {
+                        UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_endscale_note_owed", "what", UtilitiesText.T("reallife_endscale_what_broadband"), "owed", UtilitiesText.Money(n.Owed)), 14f);
+                    }
+                }
             }
             UtilitiesGame.Book(takings, BroadbandCatalogue.TakingsKey, hq, null);
             UtilitiesGame.Book(-staff, BroadbandCatalogue.WagesKey, hq, Salaries);
@@ -164,7 +178,7 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             BuildingRegistration hq = UtilitiesGame.Headquarters();
-            int fee = BroadbandRules.LicenceFee(Prices.Level, ScaleNow());
+            int fee = BroadbandRules.LicenceFee(Prices.Level, EndScaleRules.Buying(Settings.EndScale));
             if (hq == null)
             {
                 why = "reallife_bb_no_hq";
@@ -192,7 +206,8 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             BuildingRegistration hq = UtilitiesGame.Headquarters();
-            int cost = BroadbandRules.BuildCost(district, Prices.Level, ScaleNow());
+            int buy = EndScaleRules.Buying(Settings.EndScale);
+            int cost = BroadbandRules.BuildCost(district, Prices.Level, buy);
             if (hq == null)
             {
                 why = "reallife_bb_no_hq";
@@ -204,7 +219,7 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             int today = UtilitiesGame.Today;
-            BroadbandRules.StartBuild(n, district, today, GameCalendar.MonthDays, cost);
+            BroadbandRules.StartBuild(n, district, today, GameCalendar.MonthDays, cost, buy > 0);
             UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_bb_toast_build", "district", District(district), "day", UtilitiesText.Day(n.ReadyDay(district))), 12f);
             Logger?.Info("Utilities: the broadband network in " + BroadbandCatalogue.Districts[district] + " ordered on day " + today + " for " + cost + ", open on day " + n.ReadyDay(district) + ".");
             return true;
@@ -218,7 +233,7 @@ namespace RealLifeOverhaul.Utilities
         {
             Network n = Network;
             ScaleNow();
-            int cost = BroadbandRules.ExtendCost(n, district, Prices.Level, UtilitiesGame.Today);
+            int cost = BroadbandRules.ExtendCost(n, district, Prices.Level, UtilitiesGame.Today, EndScaleRules.Buying(Settings.EndScale));
             why = n == null || !n.Running ? "reallife_bb_not_running" : cost <= 0 ? "reallife_bb_already" : null;
             if (why != null)
             {
@@ -281,7 +296,9 @@ namespace RealLifeOverhaul.Utilities
             {
                 return false;
             }
-            int price = BroadbandRules.SaleValue(n), today = UtilitiesGame.Today;
+            long price = Math.Max(0L, BroadbandRules.SaleValue(n) - n.Owed);   // (what it owes is settled out of the price)
+            int today = UtilitiesGame.Today;
+            n.Owed = 0;
             UtilitiesGame.Book(price, BroadbandCatalogue.SaleKey, UtilitiesGame.Headquarters(), null);
             n.State = CompanyState.Sold;
             n.SoldDay = today;

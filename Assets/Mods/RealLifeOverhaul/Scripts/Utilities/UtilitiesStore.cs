@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Utilities
             if (n.Exists)
             {
                 t.Append("~n:").Append((int)n.State);
-                int[] head = { n.FoundedDay, n.SoldDay, n.SalePrice, n.PriceShare, n.Maintenance, n.Marketing, n.MonthTakings, n.MonthCosts, n.LastTakings, n.LastCosts, n.LastConnections, n.LastGained, n.HistoryCount };
+                long[] head = { n.FoundedDay, n.SoldDay, n.SalePrice, n.PriceShare, n.Maintenance, n.Marketing, n.MonthTakings, n.MonthCosts, n.LastTakings, n.LastCosts, n.LastConnections, n.LastGained, n.HistoryCount };
                 for (int f = 0; f < head.Length; f++)
                 {
                     t.Append('|').Append(head[f].ToString(Inv));
@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Utilities
                 {
                     t.Append('|').Append(n.Crew[k].ToString(Inv));
                 }
+                t.Append('|').Append(n.Owed.ToString(Inv));
             }
             if (s.GraceUntil > 0 && s.Grace.Count > 0)
             {
@@ -112,7 +113,7 @@ namespace RealLifeOverhaul.Utilities
             n.State = (CompanyState)Clamp(I(c, 0), 0, (int)CompanyState.Sold);
             n.FoundedDay = Math.Max(0, I(c, 1));
             n.SoldDay = Math.Max(0, I(c, 2));
-            n.SalePrice = Math.Max(0, I(c, 3));
+            n.SalePrice = Math.Max(0L, L(c, 3));
             n.PriceShare = Clamp(I(c, 4), BroadbandCatalogue.PriceLeast, BroadbandCatalogue.PriceMost);
             n.Maintenance = Clamp(I(c, 5), BroadbandCatalogue.MaintenanceLeast, BroadbandCatalogue.MaintenanceMost);
             n.Marketing = Clamp(I(c, 6), 0, BroadbandCatalogue.Marketing.Length - 1);
@@ -156,6 +157,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 n.Crew[k] = Math.Max(0, I(c, at++));
             }
+            n.Owed = Math.Max(0L, L(c, at++));
         }
 
         public static UtilitiesState Read(string text, out int version)
@@ -278,6 +280,12 @@ namespace RealLifeOverhaul.Utilities
             {
                 return null;
             }
+        }
+
+        private static long L(string[] c, int at)
+        {
+            long value;
+            return at < c.Length && long.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : 0;
         }
 
         private static int I(string[] c, int at)

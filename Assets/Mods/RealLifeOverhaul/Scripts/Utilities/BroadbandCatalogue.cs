@@ -85,10 +85,13 @@ namespace RealLifeOverhaul.Utilities
         public const int InstallCentsScale = 60000;          // an engineer's visit, the box and the drop to the home
 
         public const int Field = 0, Calls = 1, Operations = 2, CrewKinds = 3;
-        public static readonly int[] CrewWage = { 30000, 18000, 38000 };   // cents a day each: field engineers, call centre agents, network operations engineers
+        public static readonly int[] CrewWage = { 30000, 18000, 38000 };   // cents a day each in a month of WageMonthDays: field engineers, call centre agents, network operations engineers
+        public const int WageMonthDays = 5;                  // the crews are paid by the month, as the old cost per connection was: their wages are written for the game's own 60-day year's month of five days, so a longer year earns and pays alike
         public const int FieldConnections = 1500;            // connections a field engineer looks after
         public const int CallConnections = 800;              // ...a call centre agent
         public const int OperationsPerDistrict = 6;          // network operations engineers for each district open, round the clock
         public const int CrewPace = 40;                      // thousandths of the need hired a day while short
+        public const int IncomeAtScale = 1000;               // thousandths: the one knob for what the company takes at scale, tuned in one edit
+        public const int SaleMultipleScale = 3;              // a buyer at scale pays three years of the last year's profit: less than running on, so digging to sell never beats keeping it
     }
 }

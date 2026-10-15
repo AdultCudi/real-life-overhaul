@@ -25,6 +25,8 @@ namespace RealLifeOverhaul.Tech
         private readonly List<BuildingRegistration> _warehouses = new List<BuildingRegistration>(8);
         private InfraFile _infra;
         private long _ownHosting;      // what the player's own firms paid their own cloud today, cents
+        private readonly long[] _due = new long[InfraCatalogue.CentresMost * 3];   // each data centre's costs at scale today (the cooling's power, the upkeep, the crews), cents at today's prices
+        private long _opsDue;          // ...and the cloud's operations people's
 
         /// <summary>The infrastructure part's file; null while the tech sector is off.</summary>
         public InfraFile Infra => _firmsOn ? _infra : null;
@@ -108,12 +110,63 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        // A cost the scale adds, as far as the player's cash goes: never below nothing in one step (Core/EndScale).
-        private static long Scaled(long cents)
+        /// <summary>
+        /// What the scale adds to the day, charged once the day's takings are in: first what was owed from before, then
+        /// each data centre's cooling, upkeep and crews, then the cloud's operations people, each as far as the cash goes
+        /// (never below nothing in one step, Core/EndScale). What the cash could not meet is owed to the next day, and the
+        /// crews leave in the share that went unpaid, so that the data centres do less until it is paid.
+        /// </summary>
+        private void Settle(int dated)
         {
-            long room = VentureGame.Cash;
-            return EndScaleRules.Take(ref room, cents);
+            long room = VentureGame.Cash, due = _infra.Owed + _opsDue, paid = 0;
+            int count = Math.Min(_infra.Centres.Count, InfraCatalogue.CentresMost);
+            for (int i = 0; i < count * 3; i++)
+            {
+                due += _due[i];
+            }
+            if (due <= 0)
+            {
+                return;
+            }
+            DataCentre home = _infra.Centres.Count > 0 ? _infra.Centres[0] : null;
+            BuildingRegistration at = home != null ? TalentGame.Find(home.Place) : null;
+            long owed = EndScaleRules.Take(ref room, _infra.Owed);
+            FirmsGame.Cost(owed, InfraGame.UpkeepKey, at, home != null ? home.Name : string.Empty, dated);
+            paid += owed;
+            for (int i = 0; i < count; i++)
+            {
+                DataCentre d = _infra.Centres[i];
+                BuildingRegistration reg = TalentGame.Find(d.Place);
+                for (int k = 0; k < 3; k++)
+                {
+                    long part = EndScaleRules.Take(ref room, _due[i * 3 + k]);
+                    FirmsGame.Cost(part, k == 0 ? InfraGame.PowerKey : k == 1 ? InfraGame.UpkeepKey : InfraGame.CrewsKey, reg, d.Name, dated);
+                    paid += part;
+                }
+            }
+            long ops = EndScaleRules.Take(ref room, _opsDue);
+            FirmsGame.Cost(ops, InfraGame.CrewsKey, at, _infra.Cloud.Name, dated);
+            paid += ops;
+            bool was = _infra.Owed > 0;
+            _infra.Owed = due - paid;
+            int unpaid = EndScaleRules.Unpaid(due, paid);
+            if (unpaid > 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    InfraRules.Leave(_infra.Centres[i], unpaid);
+                }
+                _infra.Cloud.Ops = EndScaleRules.Leave(_infra.Cloud.Ops, unpaid);
+                if (!was)
+                {
+                    Tell2(NotificationType.Warning, "reallife_endscale_note_owed", Data("what", TechText.T("reallife_endscale_what_infra"), "owed", TechText.Cents(_infra.Owed)), TabInfra, null);
+                }
+            }
+            Array.Clear(_due, 0, _due.Length);
         }
+
+        /// <summary>The share what is bought is priced at: the whole scale while its option is on (Core/EndScale).</summary>
+        internal static int BuyScale => EndScaleRules.Buying(Settings.EndScale);
 
         /// <summary>The cloud is selling to the player's own firms today: open, licensed and with a data centre up.</summary>
         private bool OwnCloud(int day)
@@ -176,7 +229,7 @@ namespace RealLifeOverhaul.Tech
                     d.Colo--;
                     let--;
                 }
-                r.Takings = r.Outage ? 0 : (long)d.Colo * InfraCatalogue.ColoMonth / FirmsCatalogue.MonthDays * level / 1000;
+                r.Takings = r.Outage ? 0 : InfraRules.ColoDay(d, share) * level / 1000;
                 r.Power = Utility(0, InfraRules.Power(d));
                 r.Water = Utility(1, InfraRules.Water(d));
                 r.WriteDown = InfraRules.WriteDown(d);
@@ -191,14 +244,19 @@ namespace RealLifeOverhaul.Tech
                 FirmsGame.Takings(r.Takings, reg, d.Name, dated);
                 FirmsGame.Cost(r.Power, InfraGame.PowerKey, reg, d.Name, dated);
                 FirmsGame.Cost(r.Water, InfraGame.WaterKey, reg, d.Name, dated);
-                // what the scale adds: the cooling's power, the upkeep and the crews, never past the cash
-                FirmsGame.Cost(Scaled(Math.Max(0, Utility(0, InfraRules.Power(d, share)) - r.Power)), InfraGame.PowerKey, reg, d.Name, dated);
-                FirmsGame.Cost(Scaled(InfraRules.Upkeep(d, share) * level / 1000), InfraGame.UpkeepKey, reg, d.Name, dated);
-                FirmsGame.Cost(Scaled(InfraRules.Crews(d) * level / 1000), InfraGame.CrewsKey, reg, d.Name, dated);
+                // what the scale adds (the cooling's power, the upkeep, the crews): charged once the day's takings are in (Settle)
+                if (i < InfraCatalogue.CentresMost)
+                {
+                    _due[i * 3] = Math.Max(0, Utility(0, InfraRules.Power(d, share)) - r.Power);
+                    _due[i * 3 + 1] = InfraRules.Upkeep(d, share) * level / 1000;
+                    _due[i * 3 + 2] = InfraRules.Crews(d) * level / 1000;
+                }
                 InfraGame.WriteDown(r.WriteDown * level / 1000);
                 InfraRules.Roll(d, day, r.Takings);
             }
+            _opsDue = 0;
             Cloud(day, cycle, capacity, gpu, outages, share);
+            Settle(day - 1);
             TechBridges.Books?.Invoke(day - 1);
             _ownHosting = 0;
         }
@@ -267,7 +325,7 @@ namespace RealLifeOverhaul.Tech
             DataCentre home = _infra.Centres.Count > 0 ? _infra.Centres[0] : null;
             BuildingRegistration at = home != null ? TalentGame.Find(home.Place) : null;
             FirmsGame.Takings(takings, at, c.Name, day - 1);
-            FirmsGame.Cost(Scaled((long)c.Ops * InfraCatalogue.OpsWage * level / 1000), InfraGame.CrewsKey, at, c.Name, day - 1);
+            _opsDue = (long)c.Ops * InfraCatalogue.OpsWage * level / 1000;
             InfraRules.Reputation(c, outages);
             if (outages > 0 && c.Sold > 0)
             {
@@ -317,9 +375,9 @@ namespace RealLifeOverhaul.Tech
             return cto && staff >= 2;
         }
 
-        internal int CloudNeeds() => InfraRules.CloudNeeds(_infra.Centres, Engineers(), VentureGame.Cash * 1000 / Math.Max(1, Prices.Level), NetAll(), ScaleNow());
+        internal int CloudNeeds() => InfraRules.CloudNeeds(_infra.Centres, Engineers(), VentureGame.Cash * 1000 / Math.Max(1, Prices.Level), NetAll(), BuyScale);
 
-        internal int HyperNeeds() => InfraRules.HyperNeeds(_infra.Centres, Chiefs(), VentureGame.Cash * 1000 / Math.Max(1, Prices.Level), ScaleNow());
+        internal int HyperNeeds() => InfraRules.HyperNeeds(_infra.Centres, Chiefs(), VentureGame.Cash * 1000 / Math.Max(1, Prices.Level), BuyScale);
 
         private bool NetAll()
         {
@@ -348,7 +406,7 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             int sqm = InfraGame.Sqm(reg);
-            long cost = InfraRules.FitCost(sqm, tier, ScaleNow()) * Prices.Level / 1000;
+            long cost = InfraRules.FitCost(sqm, tier, BuyScale) * Prices.Level / 1000;
             if (!InfraGame.Pay(cost, InfraGame.FitKey, reg, TalentGame.NameOf(reg), false))
             {
                 Notifications.ShowInsufficientMoney();
@@ -368,7 +426,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            long cost = InfraRules.UpgradeCost(d.Sqm, d.Tier, tier, ScaleNow()) * Prices.Level / 1000;
+            long cost = InfraRules.UpgradeCost(d.Sqm, d.Tier, tier, BuyScale) * Prices.Level / 1000;
             if (!InfraGame.Pay(cost, InfraGame.FitKey, reg, d.Name, false))
             {
                 Notifications.ShowInsufficientMoney();
@@ -388,7 +446,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            int share = ScaleNow();
+            int share = BuyScale;
             long cost = racks * InfraRules.RackPrice(gpu, share) * Prices.Level / 1000;
             if (!InfraGame.Pay(cost, InfraGame.RacksKey, reg, d.Name, false))
             {
@@ -408,7 +466,7 @@ namespace RealLifeOverhaul.Tech
         {
             DataCentre d = CentreOf(place);
             BuildingRegistration reg = TalentGame.Find(place);
-            int share = ScaleNow();
+            int share = BuyScale;
             if (d == null || reg == null || share <= 0 || d.Legacy + d.LegacyGpu == 0)
             {
                 return false;
@@ -434,7 +492,7 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             DataCentre home = _infra.Centres[0];
-            if (!InfraGame.Pay(Level(InfraRules.Licence(ScaleNow())), InfraGame.LicenceKey, TalentGame.Find(home.Place), name, true))
+            if (!InfraGame.Pay(Level(InfraRules.Licence(BuyScale)), InfraGame.LicenceKey, TalentGame.Find(home.Place), name, true))
             {
                 Notifications.ShowInsufficientMoney();
                 return false;
@@ -457,7 +515,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            if (!InfraGame.Pay(Level(InfraRules.Licence(ScaleNow())), InfraGame.LicenceKey, TalentGame.Find(_infra.Centres[0].Place), c.Name, true))
+            if (!InfraGame.Pay(Level(InfraRules.Licence(BuyScale)), InfraGame.LicenceKey, TalentGame.Find(_infra.Centres[0].Place), c.Name, true))
             {
                 Notifications.ShowInsufficientMoney();
                 return false;
@@ -510,7 +568,7 @@ namespace RealLifeOverhaul.Tech
         internal string Needs(int bits, bool cloud)
         {
             var words = new System.Text.StringBuilder(96);
-            int share = ScaleNow();
+            int share = BuyScale;
             string[] keys = cloud
                 ? new[] { "reallife_infra_need_racks", "reallife_infra_need_tier", "reallife_infra_need_engineers", "reallife_infra_need_cash", "reallife_infra_need_net" }
                 : new[] { "reallife_infra_need_regions", "reallife_infra_need_hyper_racks", "reallife_infra_need_chiefs", "reallife_infra_need_hyper_cash" };
