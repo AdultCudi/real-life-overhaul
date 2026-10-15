@@ -11,7 +11,9 @@ namespace RealLifeOverhaul.Utilities
     /// The city's utilities office (City Light and Power and Riverside Water): one of the game's own buildings, the same
     /// one in every game on the same map, chosen as the owner asks for a city office, big and majestic: the largest
     /// office building in the city that no other feature has made its own (the courthouse: UtilitiesBridges.Taken),
-    /// ties broken by address, never one the player rents or owns (it moves off one that becomes theirs). Its frontage has one sign, a board on two posts lettered with the game's font, stood
+    /// ties broken by address, never one the player rents or owns (it moves off one that becomes theirs), and never one
+    /// of the two largest, which are kept for the player (Core/CityReserves: reserved, so SpecialBuildings.Holds passes
+    /// them over). A move since the save was made is told once (Core/PlaceMoves); accounts are kept by account, not address. Its frontage has one sign, a board on two posts lettered with the game's font, stood
     /// against the wall a few steps from the door where CitySpots found wall, pavement and room, as the courthouse's is;
     /// the desk is spoken to standing in front of it, or at the door if no place for the sign was found. It lights up
     /// on the city map (World/MapLinks). Looked for once per city load; nothing here runs by itself.
@@ -120,6 +122,8 @@ namespace RealLifeOverhaul.Utilities
                     // Its own name wherever the game names the building (Core/SpecialBuildings).
                     SpecialBuildings.Set("utilities_office", picked, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
                     SpecialBuildings.Boarded("utilities_office", placed);   // its board is its one sign; without one the game's sign carries the name (Core/FrontSigns)
+                    PlaceMoves.Chosen(CityReserves.UtilitiesKey, UtilitiesStore.Key, CityReserves.OldUtilities, picked.building.Address.streetName, picked.building.Address.streetNumber, Name,
+                        "reallife_util_note_moved", "Utilities: the office", _logger);
                 }
                 _logger?.Info("Utilities: the office is " + Name + " (" + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up." : Usable ? "no room for the sign: the desk is at the door." : "no pavement at its door: accounts are applied for in the app."));
