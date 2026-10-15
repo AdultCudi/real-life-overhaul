@@ -24,14 +24,17 @@ using UtilStore = RealLifeOverhaul.Utilities.UtilitiesStore;
 
 // The end game at scale (Core/EndScale and the late ventures' figures at scale: Tech/Infra, Utilities/Broadband*,
 // Economy/OwnBank): the mixing and the phase-in rules, each venture's costs, upkeep, crews and income at each size, its
-// payback against the aim (EndScaleRules.PaybackYearsLeast to Most game years of 60 days), an old save brought to scale
-// step by step and never below nothing in one step, the option off giving the figures of before exactly, the save
-// lines' new fields, and every new text in the three locales. Run with "endscale" on the command line, it also prints
-// the before and after table the owner's report gives.
+// payback against its aim (data centres, the cloud and the hyperscaler, which earn by the day: EndScaleRules.PaybackDays
+// Least to Most game days, the largest builds at the longer end; the broadband company and the bank, which earn by the
+// save's months and years: PaybackYearsLeast to Most of the save's own years, in a 60-day and a 365-day year), an old
+// save brought to scale step by step and never below nothing in one step, what cannot be paid owed and the crews
+// leaving, the option off giving the figures of before exactly, the save lines' new fields, and every new text in every
+// language the mod has. Run with "endscale" on the command line, it also prints the before and after table.
 internal static partial class Program
 {
     private const int ScaleYear = 60;                       // the game's own year, in days
     private const int Full = EndScaleRules.Full;
+    private const long PlentyCash = 100000000000000L;       // the player's other money in the sims: never short
     private const long ProWageTech = 16000, ProWageEngineer = 40000;   // a professional's day the sims count (cents): a technician, an engineer (the game pays them; the rules do not)
 
     private static void EndScale()
@@ -43,6 +46,7 @@ internal static partial class Program
         ScaleInfraBySize();
         ScaleBroadbandBySize();
         ScaleBankBySize();
+        ScaleBroadbandCharge();
         ScalePayback();
         ScaleOldSaves();
         ScaleSaves();
@@ -460,6 +464,45 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- old saves
 
+    // The broadband company's day as BroadbandCompany.Day charges it (BroadbandRules.Charge): at scale the crews' wages,
+    // not the old cost per connection over the whole city; the scale's part only as far as the cash goes, owed after.
+    private static void ScaleBroadbandCharge()
+    {
+        var n = new Network();
+        BbRules.Found(n, 1);
+        n.Scale = Full;
+        for (int x = 0; x < Network.Districts; x++)
+        {
+            BbRules.StartBuild(n, x, 1, 5, BbRules.BuildCost(x, 1000, Full), true);
+            n.Share[x, Network.Own] = 230;
+        }
+        BbRules.Finish(n, 20);
+        for (int day = 21; day < 120; day++)
+        {
+            BbRules.Hire(n, day);
+        }
+        BbRules.DayCosts(n, 1000, 120, 5, out int staff, out int network, out int marketing);
+        BbRules.DayCosts(n, 1000, 120, 5, out int staff0, out int network0, out _, 0);
+        long crews = (BbRules.CrewCents(n) + 50) / 100;
+        BbRules.DayCharge rich = BbRules.Charge(n, PlentyCash, 0, staff, network, marketing, staff0, network0);
+        Check(staff0 > crews * 3 && rich.Staff == staff && staff == crews && rich.Network == network && n.Owed == 0 && rich.Unpaid == 0,
+            "end scale: at scale the broadband company is charged its crews' wages (" + crews + " a day), not the old cost per connection over the whole city (" + staff0 + ")");
+        int fieldBefore = n.Crew[BbCat.Field];
+        BbRules.DayCharge broke = BbRules.Charge(n, 0, 0, staff, network, marketing, staff0, network0);
+        Check(broke.Staff == Math.Min(staff, staff0) && broke.Network == Math.Min(network, network0) && n.Owed == network - network0 && broke.Unpaid > 0 && n.Crew[BbCat.Field] < fieldBefore,
+            "end scale: with no cash, only the figures of before are charged; the scale's part is owed and crews leave");
+        long owed = n.Owed;
+        BbRules.DayCharge after = BbRules.Charge(n, PlentyCash, 0, staff, network, marketing, staff0, network0);
+        Check(after.Staff == staff + owed && n.Owed == 0, "end scale: what was owed is paid first the next day there is cash");
+        long installs = BbRules.ChargeInstalls(n, 0, 1000, 3000, 1000, Full);
+        Check(installs == BbRules.Installs(1000, 3000, 1000, 0) && n.Owed == BbRules.Installs(1000, 3000, 1000, Full) - installs
+              && BbRules.ChargeInstalls(new Network(), PlentyCash, 1000, 3000, 1000, Full) == BbRules.Installs(1000, 3000, 1000, Full),
+            "end scale: the scale's part of the installations is taken only as far as the cash goes, the rest owed");
+        n.Owed = 5000000000L;
+        Check(BbRules.SaleNet(n) == Math.Max(0L, BbRules.SaleValue(n) - 5000000000L), "end scale: the sale's box, question and price are one figure: what a buyer pays less what the company owes");
+        n.Owed = 0;
+    }
+
     private static void ScaleOldSaves()
     {
         // an old hyperscaler (its racks of the old kind) brought to scale: still more in than out each day
@@ -599,19 +642,28 @@ internal static partial class Program
 
     private static void ScaleTexts()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json")), pt = LoadWords(System.IO.Path.Combine(folder, "pt.json")),
-            zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
+        Dictionary<string, string>[] words = LanguageWords(out string[] codes);
+        if (!LanguagesRead("end scale", words, codes))
+        {
+            return;
+        }
+        Dictionary<string, string> en = words[0], pt = words[1], zh = words[2];
         var missing = new List<string>();
         foreach (string key in ScaleKeys)
         {
-            string e, p, z;
-            if (!en.TryGetValue(key, out e) || !pt.TryGetValue(key, out p) || !zh.TryGetValue(key, out z) || e.Length == 0 || p.Length == 0 || z.Length == 0 || !HasHan(z))
+            string lacking = LanguagesLacking(words, codes, key);
+            if (lacking.Length > 0 || !HasHan(zh[key]))
             {
-                missing.Add(key);
+                missing.Add(key + (lacking.Length > 0 ? " (" + lacking + ")" : " (zh-cn not Chinese)"));
             }
         }
-        Check(missing.Count == 0, "end scale: every new text is in English, Portuguese and Chinese" + (missing.Count > 0 ? " (missing: " + string.Join(", ", missing) + ")" : string.Empty));
+        Check(missing.Count == 0, "end scale: every new text is in every language, with the same names in curly brackets" + (missing.Count > 0 ? " (missing: " + string.Join(", ", missing) + ")" : string.Empty));
+        bool owedFirst = false;
+        for (int l = 0; l < words.Length; l++)
+        {
+            owedFirst |= words[l]["reallife_endscale_note_owed"].StartsWith("{", StringComparison.Ordinal);
+        }
+        Check(!owedFirst, "end scale: the owed notice does not begin with the venture's name, which reads in lower case");
         string note;
         Check(en.TryGetValue("reallife_endscale_note_phase", out note) && note.Length <= 240 && note.Contains("{what}") && note.Contains("{days}") && pt.TryGetValue("reallife_endscale_note_phase", out string pn) && pn.Contains("{what}")
               && zh.TryGetValue("reallife_endscale_note_phase", out string zn) && zn.Contains("{days}"),
@@ -773,12 +825,14 @@ internal static partial class Program
             BbRules.Hire(n, day);
             long takings = BbRules.DayTakings(n, PriceRules.Start, m, false, true);
             BbRules.DayCosts(n, PriceRules.Start, day, m, out int staff, out int network, out int marketing);
-            long costs = staff + network + marketing;
+            BbRules.DayCosts(n, PriceRules.Start, day, m, out int staff0, out int network0, out _, 0);
+            BbRules.DayCharge charged = BbRules.Charge(n, PlentyCash, takings, staff, network, marketing, staff0, network0);   // (as BroadbandCompany.Day charges it)
+            long costs = charged.Staff + charged.Network + marketing;
             if (day % m == 0)
             {
                 int before = BbRules.Connections(n);
                 BbRules.Month(n, calm, day, m);
-                costs += BbRules.Installs(before, BbRules.Connections(n), PriceRules.Start, share);
+                costs += BbRules.ChargeInstalls(n, PlentyCash, before, BbRules.Connections(n), PriceRules.Start, share);
             }
             n.MonthTakings = (int)Math.Min(int.MaxValue / 4, n.MonthTakings + takings);
             n.MonthCosts = (int)Math.Min(int.MaxValue / 4, n.MonthCosts + costs);
