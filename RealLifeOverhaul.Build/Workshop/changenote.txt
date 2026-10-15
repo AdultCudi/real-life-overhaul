@@ -1,4 +1,4 @@
-0.24.0
+0.25.0
 
 New
-- The end game at scale: data centres, the cloud and the hyperscaler, your broadband company and your bank now cost hundreds of millions to build, keep crews of staff and pay upkeep, and earn in proportion. A data centre or cloud pays back in 120 to 360 game days, a broadband network or a bank in two to six game years. What you buy is at the new prices at once; a save that had them comes to the new running costs and income over four weeks. It has its own option.
+- Rival tycoons for the late game: three named fortunes with holdings on the stock market grow with you and, once you are rich, buy up your district, open businesses near yours, poach your staff, take a stake or bid for your company, lobby, sue and go to the paper, each announced first; answer them, take them over, and beat them on the city's rich list.
