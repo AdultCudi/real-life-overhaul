@@ -376,6 +376,18 @@ namespace RealLifeOverhaul
             Check(OptionsWording.FirstBanned("Carpool lanes and tiered seats") == null && OptionsWording.FirstBanned(null) == null && OptionsWording.FirstBanned("Cambridge") == null, "a banned word is seen inside another word");
             Check(OptionsWording.FirstBanned("Far props (visible: they appear at 200 m)") == "(visible", "the '(visible' tail is not seen");
 
+            // ---- every options header a source adds is registered by a feature's Group (else the set-up check calls its group Auto: no guide page, presets or clean-up)
+            var headers = new SortedSet<string>(StringComparer.Ordinal);
+            var groups = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string code in sources.Values)
+            {
+                foreach (Match m in Regex.Matches(code, @"AddHeader\(""([a-z_0-9]+)""\)")) headers.Add(m.Groups[1].Value);
+                foreach (Match m in Regex.Matches(code, @"\.Group\(""([a-z_0-9]+)""\)")) groups.Add(m.Groups[1].Value);
+            }
+            headers.Remove("reallife_meta_header");   // (the mod's own page title, written by OptionsLayout.Emit: not a group of rows)
+            Check(headers.Count >= 40 && groups.Count >= 40, "the options headers could not be read: " + headers.Count + " headers, " + groups.Count + " groups");
+            foreach (string header in headers) Check(groups.Contains(header), "the options header " + header + " is registered by no feature's .Group(...) in Meta/FeatureList.cs");
+
             // ---- how long it takes
             Stopwatch watch = Stopwatch.StartNew();
             for (int i = 0; i < 200; i++) OptionsPlan.Place(built);
