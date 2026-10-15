@@ -179,7 +179,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     Say(NotificationType.Error, "reallife_brand_note_cannot_offer", new Dictionary<string, string>
                     {
                         { "shops", BrandCatalogue.OfferShops.ToString() }, { "standards", BrandCatalogue.OfferStandards.ToString() }, { "city", BrandsText.Points(BrandCatalogue.OfferCityRec) },
-                        { "district", BrandsText.Points(BrandCatalogue.OfferDistrictRec) }
+                        { "district", BrandsText.Points(BrandCatalogue.OfferDistrictRec) }, { "mean", BrandsText.Points(BrandCatalogue.OfferMeanRec) }
                     });
                     return;
                 }

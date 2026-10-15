@@ -60,6 +60,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 .Fact("br_offer_standards", () => Whole(BrandCatalogue.OfferStandards))
                 .Fact("br_offer_city", () => Whole(BrandCatalogue.OfferCityRec / 100))
                 .Fact("br_offer_district", () => Whole(BrandCatalogue.OfferDistrictRec / 100))
+                .Fact("br_offer_mean", () => Whole(BrandCatalogue.OfferMeanRec / 100))
+                .Fact("br_offer_mean_districts", () => Whole(BrandCatalogue.OfferMeanDistricts))
                 .Fact("br_app_days", () => Whole(BrandCatalogue.ApplicantDays))
                 .Fact("br_app_most", () => Whole(BrandCatalogue.ApplicantsMost))
                 .Fact("br_fees", () => Choices(BrandCatalogue.EntryFee, v => Guide.Money(v)))

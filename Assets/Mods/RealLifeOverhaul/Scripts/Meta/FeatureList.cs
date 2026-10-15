@@ -1243,6 +1243,7 @@ namespace RealLifeOverhaul.Meta
             // Professionals: roles, levels and skills of their own for the player's professional staff. Their rows stand under
             // their own header; the Open Roles app is theirs. Off, the game's own staff alone; the files are kept.
             Tech.TechGuide.AddPeopleFacts(Features.Add("tech_people", "reallife_meta_title_tech_people")
+                .Group("reallife_talent_header")   // (the header the tech rows stand under: unregistered, the set-up check called the group Auto)
                 .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
                 .Owns(Settings.TechPeopleId)
                 .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course")
