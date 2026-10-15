@@ -120,6 +120,7 @@ internal static partial class Program
         Ledger();
         Newsstand();
         Flare();
+        FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         Shared();
         Fame();
         Endings();
