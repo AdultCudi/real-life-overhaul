@@ -804,6 +804,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
+                .AddToggle(Settings.EndScaleId, "reallife_endscale_enabled", Settings.EndScale,
+                    v => Settings.EndScale = v)
+                .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
+                .AddButton("reallife_endscale_test_full", () => EndScaleTests.Phase(true))
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
