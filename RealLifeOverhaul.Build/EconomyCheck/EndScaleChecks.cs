@@ -59,9 +59,48 @@ internal static partial class Program
               && EndScaleRules.Mix(100, 300, -5) == 100 && EndScaleRules.Mix(100, 300, 9999) == 300 && EndScaleRules.Mix(5000000000L, 100000000000L, 500) == 52500000000L,
             "end scale: a figure of before and its figure at scale mix by the share, within the whole, in longs too");
         int U = EndScaleRules.Unset;
-        Check(EndScaleRules.From(false, 30, 50, true) == U && EndScaleRules.From(true, U, 50, true) == 50 && EndScaleRules.From(true, U, 50, false) == 50 - EndScaleRules.PhaseDays
-              && EndScaleRules.From(true, 30, 50, true) == 30 && EndScaleRules.From(true, U, 3, false) == 3 - EndScaleRules.PhaseDays,
-            "end scale: off forgets the day; on, a venture held is phased in from today, one not held is at scale at once, a known day is kept");
+        Check(EndScaleRules.From(false, 30, 50, true) == 30 && EndScaleRules.From(false, U, 50, true) == U && EndScaleRules.From(true, U, 50, true) == 50
+              && EndScaleRules.From(true, U, 50, false) == 50 - EndScaleRules.PhaseDays && EndScaleRules.From(true, 30, 50, true) == 30 && EndScaleRules.From(true, U, 3, false) == 3 - EndScaleRules.PhaseDays,
+            "end scale: a known day is kept, on or off; on, a venture held is phased in from today, one not held is at scale at once");
+        // the option switched off on day 60 and on again on day 61: the weeks go on from where they were, and no second notice
+        int from = EndScaleRules.From(true, U, 50, true), off = EndScaleRules.From(false, from, 60, true), again = EndScaleRules.From(true, off, 61, true);
+        Check(again == 50 && EndScaleRules.Share(false, off, 60) == 0 && EndScaleRules.Share(true, again, 61) == EndScaleRules.Share(true, 50, 61) && EndScaleRules.Share(true, again, 61) > 0
+              && !EndScaleRules.Begins(off, again, 61),
+            "end scale: switching the option off and on neither restarts the weeks nor tells the notice again");
+        // what is bought is at the whole scale while the option is on, whatever the weeks have reached
+        int buy = EndScaleRules.Buying(true);
+        Check(buy == Full && EndScaleRules.Buying(false) == 0 && InfraRules.RackPrice(false, buy) == InfraRules.RackPrice(false, Full) && InfraRules.FitCost(900, 2, buy) == InfraRules.FitCost(900, 2, Full)
+              && InfraRules.Licence(buy) == InfraRules.Licence(Full) && BbRules.BuildCost(4, 1000, buy) == BbRules.BuildCost(4, 1000, Full) && BbRules.LicenceFee(1000, buy) == BbRules.LicenceFee(1000, Full)
+              && BankRules.Licence(1000, buy) == BankRules.Licence(1000, Full) && BankRules.CapitalLeast(1000, 0, buy) == BankRules.CapitalLeast(1000, 0, Full),
+            "end scale: racks, a fit-out, a network and the licences cost the whole scale's price while the option is on");
+        ScaleRun early = CloudSim(36, 400, 24, 3, 2, true, 1), whole = CloudSim(Full, 400, 24, 3, 2, true, 1);
+        var probe = new Network();
+        BbRules.Found(probe, 1);
+        BbRules.StartBuild(probe, 3, 1, 5, BbRules.BuildCost(3, 1000));
+        BbRules.Finish(probe, 20);
+        probe.Scale = 36;
+        Check(early.Capex == whole.Capex && BbRules.ExtendCost(probe, 3, 1000, 20, EndScaleRules.Buying(true)) == BbRules.BuildCost(3, 1000, Full) - probe.Spent[3],
+            "end scale: a hyperscaler built, or a district extended, on a day the share is 36 costs what it costs at the whole scale (" + Money(early.Capex) + ")");
+        // the game's float cash past an int, worked out by hand
+        Check(EndScaleRules.Whole(3000000000.0) == 3000000000L && EndScaleRules.Whole(2147483648.0f) == 2147483648L && EndScaleRules.Whole(9.5e12) == 9500000000000L
+              && EndScaleRules.Whole(-5.0) == 0 && EndScaleRules.Whole(double.NaN) == 0 && EndScaleRules.Whole(1e30) == long.MaxValue / 4,
+            "end scale: cash past two billion reads as itself, never as a negative int");
+        // what could not be paid: owed, and the crews leave in that share
+        Check(EndScaleRules.Unpaid(100, 40) == 600 && EndScaleRules.Unpaid(100, 100) == 0 && EndScaleRules.Unpaid(0, 0) == 0 && EndScaleRules.Leave(10, 500) == 5 && EndScaleRules.Leave(10, 0) == 10
+              && EndScaleRules.Leave(3, 1) == 2 && EndScaleRules.Leave(7, Full) == 0,
+            "end scale: the unpaid share of a day's costs, and the crews that leave for it");
+        DataCentre unpaid = CentreAt(Full, 200, 0, 1);
+        for (int day = 0; day < 30; day++)
+        {
+            InfraRules.Hire(unpaid, Full);
+        }
+        int paidCover = InfraRules.Cover(unpaid, Full);
+        for (int day = 0; day < 30; day++)
+        {
+            InfraRules.Hire(unpaid, Full);
+            InfraRules.Leave(unpaid, 600);   // the cash met two fifths of the day each day
+        }
+        Check(paidCover == Full && InfraRules.Cover(unpaid, Full) < 600, "end scale: a data centre whose costs go unpaid loses its crews and works less (" + InfraRules.Cover(unpaid, Full) + ")");
         bool rising = true;
         int last = -1;
         for (int day = 50; day <= 50 + EndScaleRules.PhaseDays + 5; day++)
@@ -153,7 +192,7 @@ internal static partial class Program
             upkeep += (long)BbRules.BuildCost(x, 1000) * BbCat.UpkeepPerMille / 1000;
         }
         Check(same && conns == 25000 && n.Crew[0] + n.Crew[1] + n.Crew[2] == 0 && n.Cover == Full && staff == (int)((conns * BbCat.StaffCents / 5 + 50) / 100)
-              && network == (int)((conns * BbCat.NetworkCents / 5 + upkeep * 100 / 5 + 50) / 100) && BbRules.ExtendCost(n, 2, 1000, 99) == 0,
+              && network == (int)((conns * BbCat.NetworkCents / 5 + upkeep * 100 / 5 + 50) / 100) && BbRules.ExtendCost(n, 2, 1000, 99, 0) == 0,
             "end scale off: the broadband company's licence, networks, market, staff, network costs and installations are as before, with no crews and nothing to extend");
 
         // the bank
@@ -274,8 +313,8 @@ internal static partial class Program
         var n = new Network();
         BbRules.Found(n, 1);
         n.Scale = Full;
-        BbRules.StartBuild(n, 4, 1, 5, BbRules.BuildCost(4, 1000, Full));
-        BbRules.StartBuild(n, 0, 1, 5, BbRules.BuildCost(0, 1000, Full));
+        BbRules.StartBuild(n, 4, 1, 5, BbRules.BuildCost(4, 1000, Full), true);
+        BbRules.StartBuild(n, 0, 1, 5, BbRules.BuildCost(0, 1000, Full), true);
         BbRules.Finish(n, 20);
         n.Share[4, Network.Own] = 200;
         n.Share[0, Network.Own] = 100;
@@ -301,11 +340,11 @@ internal static partial class Program
         BbRules.StartBuild(old, 3, 1, 5, BbRules.BuildCost(3, 1000));
         BbRules.Finish(old, 20);
         old.Scale = Full;
-        int extend = BbRules.ExtendCost(old, 3, 1000, 20);
-        Check(!old.Scaled[3] && BbRules.MarketOf(old, 3) == BbCat.Market[3] && extend == BbRules.BuildCost(3, 1000, Full) - old.Spent[3] && BbRules.ExtendCost(old, 2, 1000, 20) == 0,
+        int extend = BbRules.ExtendCost(old, 3, 1000, 20, Full);
+        Check(!old.Scaled[3] && BbRules.MarketOf(old, 3) == BbCat.Market[3] && extend == BbRules.BuildCost(3, 1000, Full) - old.Spent[3] && BbRules.ExtendCost(old, 2, 1000, 20, Full) == 0,
             "end scale: a district dug before reaches the old number of homes, and can be extended for the difference");
         BbRules.Extend(old, 3, extend);
-        Check(old.Scaled[3] && BbRules.MarketOf(old, 3) == BbRules.MarketAtScale(3) && old.Spent[3] == BbRules.BuildCost(3, 1000, Full) && BbRules.ExtendCost(old, 3, 1000, 20) == 0,
+        Check(old.Scaled[3] && BbRules.MarketOf(old, 3) == BbRules.MarketAtScale(3) && old.Spent[3] == BbRules.BuildCost(3, 1000, Full) && BbRules.ExtendCost(old, 3, 1000, 20, Full) == 0,
             "end scale: extended, it reaches the whole district and has cost what a network at scale does");
         Check(BbRules.BuildCostRange(1000, 0, false) == BbRules.BuildCost(2, 1000) && BbRules.BuildCostRange(1000, 0, true) == BbRules.BuildCost(4, 1000)
               && BbRules.BuildCostRange(1000, Full, true) == BbRules.BuildCost(4, 1000, Full),
@@ -352,32 +391,70 @@ internal static partial class Program
             staff = day.Staff;
         }
         Check(systems >= BankCat.SystemsDayCents && staff == BankRules.Crews(whole) && BankRules.Balanced(whole), "end scale: at scale its staff are its crews' wages, and its systems and deposit insurance are paid; the books balance");
+        BankCity yearLong = BankCity.Quiet(365);
+        yearLong.Scale = Full;
+        var longBank = new OwnBank();
+        BankRules.Found(longBank, 1, 7, BankRules.CapitalLeast(1000, 0, Full), "Long");
+        for (int d = 1; d <= 100; d++)
+        {
+            BankRules.Day(longBank, yearLong, d, null, day);
+        }
+        Check(day.Staff == BankRules.Crews(longBank) * BankCat.CostYearDays / 365 && day.Systems < BankCat.SystemsDayCents,
+            "end scale: in a year of 365 days the bank's crews and systems are paid by the year, as its rates are");
     }
 
     // ---------------------------------------------------------------- the payback against the aim
 
     private static void ScalePayback()
     {
-        int least = EndScaleRules.PaybackYearsLeast * ScaleYear, most = EndScaleRules.PaybackYearsMost * ScaleYear, largest = 3 * ScaleYear;
+        int least = EndScaleRules.PaybackDaysLeast, most = EndScaleRules.PaybackDaysMost, largest = least + (most - least) * 3 / 8;   // (the largest builds take the longer end: 210 days or more)
         ScaleRun cloud = CloudSim(Full, 60, 4, 1, 2, false, 3000), cloud2 = CloudSim(Full, 120, 10, 1, 2, false, 3000);
         Check(cloud.Payback >= least && cloud.Payback <= most && cloud2.Payback >= least && cloud2.Payback <= most,
-            "end scale: a cloud pays back within " + EndScaleRules.PaybackYearsLeast + " to " + EndScaleRules.PaybackYearsMost + " game years (" + cloud.Payback + " and " + cloud2.Payback + " days)");
+            "end scale: a cloud with its racks let as the city wants pays back within " + least + " to " + most + " game days (" + cloud.Payback + " and " + cloud2.Payback + " days)");
         ScaleRun h3 = CloudSim(Full, 400, 24, 3, 2, true, 3000), h5 = CloudSim(Full, 700, 60, 5, 2, true, 3000), h7 = CloudSim(Full, 1100, 100, 7, 2, true, 3000);
         Check(h3.Payback >= largest && h3.Payback <= most && h5.Payback >= largest && h5.Payback <= most && h7.Payback >= largest && h7.Payback <= most,
-            "end scale: a hyperscaler pays back in three to six game years, however large (" + h3.Payback + ", " + h5.Payback + " and " + h7.Payback + " days)");
+            "end scale: a hyperscaler pays back at the longer end of the aim, however large (" + h3.Payback + ", " + h5.Payback + " and " + h7.Payback + " days)");
+        var letNew = new DataCentre { Sqm = 600 };
+        InfraRules.Buy(letNew, 10, false, Full);
+        letNew.Colo = 4;
+        var letOld = new DataCentre { Sqm = 600 };
+        InfraRules.Buy(letOld, 10, false, 0);
+        letOld.Colo = 4;
+        Check(InfraRules.ColoDay(letNew, Full) == 4L * InfraCat.ColoMonthScale / 30 && InfraRules.ColoDay(letOld, Full) == 4L * InfraCat.ColoMonth / 30 && InfraRules.ColoDay(letNew, 0) == 4L * InfraCat.ColoMonth / 30
+              && InfraRules.Units(letNew, Full) == 6 * InfraCat.UnitsPerRackScale,
+            "end scale: a rack of the new kind let to a company rents as managed servers; the old kind, and every rack with the option off, at the old rent");
         Check(h3.Capex > 150000000L * 100 && h7.Capex > 500000000L * 100, "end scale: a hyperscaler costs hundreds of millions to build (" + Money(h3.Capex) + " to " + Money(h7.Capex) + ")");
         Check(h7.Net > h5.Net && h5.Net > h3.Net && h3.Net > cloud2.Net && h7.Net * 400 / 1100 > h3.Net * 7 / 10 && h7.Net * 400 / 1100 < h3.Net * 13 / 10,
             "end scale: a larger hyperscaler earns proportionately more (" + Money(h3.Net) + ", " + Money(h5.Net) + ", " + Money(h7.Net) + " a day)");
         Check(h7.Crew > h3.Crew * 2 && h7.Crew > 500 && h3.Staff > 20, "end scale: a hyperscaler keeps hundreds of people besides its professionals (" + h3.Crew + " to " + h7.Crew + ")");
-        ScaleRun bb = BroadbandSim(Full, ScaleYear, 3000), bbOld = BroadbandSim(0, ScaleYear, 3000), bbLong = BroadbandSim(Full, 365, 6000);
-        Check(bb.Payback >= largest && bb.Payback <= most && bb.Capex > 200000000L * 100 && bb.Crew > 300,
-            "end scale: a broadband network over the whole city costs hundreds of millions, keeps hundreds of people and pays back in three to six game years (" + bb.Payback + " days)");
-        Check(bbLong.Payback >= 2 * 365 && bbLong.Payback <= 8 * 365, "end scale: in a year of 365 days it pays back in two to eight of them (" + bbLong.Payback + " days)");
+        int yLeast = EndScaleRules.PaybackYearsLeast, yMost = EndScaleRules.PaybackYearsMost;
+        long[] cashYears = new long[12], saleYears = new long[12];
+        ScaleRun bb = BroadbandSim(Full, ScaleYear, 720, cashYears, saleYears), bbOld = BroadbandSim(0, ScaleYear, 3000), bbLong = BroadbandSim(Full, 365, 6 * 365 + 10);
+        Check(bb.Payback >= yLeast * ScaleYear && bb.Payback <= yMost * ScaleYear && bb.Capex > 200000000L * 100 && bb.Crew > 300,
+            "end scale: a broadband network over the whole city costs hundreds of millions, keeps hundreds of people and pays back in " + yLeast + " to " + yMost + " game years (" + bb.Payback + " days)");
+        Check(bbLong.Payback >= yLeast * 365 && bbLong.Payback <= yMost * 365, "end scale: in a year of 365 days it pays back in as many of its own years (" + bbLong.Payback + " days)");
         Check(bbOld.Payback > 0 && bbOld.Payback < 2 * ScaleYear && bb.Net > bbOld.Net * 4, "end scale: before, it paid back in under two years (" + bbOld.Payback + " days); at scale it earns far more a day");
+        bool keep = true;
+        for (int t = 1; t + 4 < cashYears.Length; t++)
+        {
+            keep &= cashYears[t] + saleYears[t] <= cashYears[t + 4];
+        }
+        Check(keep && cashYears[1] + saleYears[1] < 0, "end scale: digging a network to sell it never beats running it four more years; sold after a year it loses money (" + Money(cashYears[1] + saleYears[1]) + ")");
         long year, capital;
-        ScaleRun bank = BankSim(Full, 0, 3000, out year, out capital), bankOld = BankSim(0, 0, 3000, out _, out _);
-        Check(bank.Payback >= least && bank.Payback <= most && bankOld.Payback > 0 && bankOld.Payback < 2 * ScaleYear,
-            "end scale: a bank's licence pays back in two to six game years (" + bank.Payback + " days; before, " + bankOld.Payback + ")");
+        ScaleRun bank = BankSim(Full, 0, 3000, out year, out capital), bankOld = BankSim(0, 0, 3000, out _, out _), bankLong = BankSim(Full, 0, 6 * 365 + 10, out _, out _, 365);
+        Check(bank.Payback >= yLeast * ScaleYear && bank.Payback <= yMost * ScaleYear && bankOld.Payback > 0 && bankOld.Payback < 2 * ScaleYear,
+            "end scale: a bank's licence pays back in " + yLeast + " to " + yMost + " game years (" + bank.Payback + " days; before, " + bankOld.Payback + ")");
+        Check(bankLong.Payback >= yLeast * 365 && bankLong.Payback <= yMost * 365, "end scale: in a year of 365 days a bank pays back in as many of its own years (" + bankLong.Payback + " days)");
+        // an old bank keeps the least capital it was founded under; a new one is held to the scale's
+        var oldBank = new OwnBank();
+        BankRules.Found(oldBank, 1, 7, 40000000000L, "Old");
+        var newBank = new OwnBank();
+        BankRules.Found(newBank, 1, 7, 40000000000L, "New");
+        newBank.FoundedLeast = BankRules.LeastAt(Full);
+        Check(BankRules.MostOut(oldBank, 1000) == BankRules.ToStep(40000000000L - BankCat.CapitalLeastCents) && BankRules.MostOut(newBank, 1000) == BankRules.ToStep(40000000000L - BankCat.CapitalLeastCentsScale),
+            "end scale: a bank founded before the scale may take out all but the old least capital; one founded at it, all but the scale's");
+        Check(InfraCat.IncomeAtScale == 1000 && BbCat.IncomeAtScale == 1000 && BankCat.IncomeAtScale == 1000 && InfraRules.Units(CentreAt(Full, 10, 0, 1), Full) == 10 * InfraCat.UnitsPerRackScale,
+            "end scale: each venture's income at scale is set by one figure, at its first value");
         Check(year > 0 && year < BankRules.CapitalLeast(1000, 0, Full) && bank.Crew > 50, "end scale: a bank at scale makes a profit short of its capital a year and keeps dozens of people (" + Money(year) + ", " + bank.Crew + ")");
     }
 
@@ -471,18 +548,21 @@ internal static partial class Program
         DataCentre b = back.Centres[0];
         Check(back.ScaleFrom == 33 && back.Cloud.Ops == 41 && b.Racks == 50 && b.Dense == 40 && b.DenseGpu == 4 && b.Crew[0] == 7 && b.Crew[1] == 3 && b.Crew[2] == 5,
             "end scale save: the data centres' scale day, racks of the new kind, crews and the cloud's operations come back (" + back.ScaleFrom + " " + back.Cloud.Ops + " " + b.Racks + " " + b.Dense + " " + b.DenseGpu + " " + b.Crew[0] + b.Crew[1] + b.Crew[2] + ")");
-        string line = InfraStore.Write(new InfraFile { Seed = 4, ScaleFrom = 9 });
-        string old = line.Replace("|9~", "~");
-        Check(old != line && InfraStore.Read(old, out _).ScaleFrom == EndScaleRules.Unset, "end scale save: an older line has no scale day, so its data centres are phased in");
+        string line = InfraStore.Write(new InfraFile { Seed = 4, ScaleFrom = 9, Owed = 123456789012L });
+        string old = line.Replace("|9|123456789012~", "~");
+        Check(InfraStore.Read(line, out _).Owed == 123456789012L && old != line && InfraStore.Read(old, out _).ScaleFrom == EndScaleRules.Unset && InfraStore.Read(old, out _).Owed == 0,
+            "end scale save: what the data centres owe comes back; an older line has no scale day (so they are phased in) and owes nothing");
         var u = new UtilState();
         BbRules.Found(u.Network, 3);
         u.Network.ScaleFrom = 77;
         u.Network.Scaled[4] = true;
         u.Network.Crew[0] = 12;
         u.Network.Crew[2] = 18;
+        u.Network.Owed = 3000000000L;
+        u.Network.SalePrice = 4000000000L;
         string ul = UtilStore.Write(u);
         UtilState ub = UtilStore.Read(ul, out _);
-        Check(ub.Network.ScaleFrom == 77 && ub.Network.Scaled[4] && !ub.Network.Scaled[3] && ub.Network.Crew[0] == 12 && ub.Network.Crew[2] == 18,
+        Check(ub.Network.ScaleFrom == 77 && ub.Network.Scaled[4] && !ub.Network.Scaled[3] && ub.Network.Crew[0] == 12 && ub.Network.Crew[2] == 18 && ub.Network.Owed == 3000000000L && ub.Network.SalePrice == 4000000000L,
             "end scale save: the broadband company's scale day, its districts at scale and its crews come back");
         int cut = ul.IndexOf("|77|", StringComparison.Ordinal);
         UtilState uo = UtilStore.Read(ul.Substring(0, cut), out _);
@@ -493,10 +573,12 @@ internal static partial class Program
         o.ScaleFrom = 61;
         o.Crew[BankCat.Officers] = 9;
         o.Crew[BankCat.Compliance] = 13;
+        o.FoundedLeast = BankCat.CapitalLeastCentsScale;
         string bl = BankStore.Write(o);
         OwnBank ob = BankStore.Read(bl, out _);
         OwnBank oo = BankStore.Read(bl.Substring(0, bl.IndexOf("^e:", StringComparison.Ordinal)), out _);
-        Check(ob.ScaleFrom == 61 && ob.Crew[BankCat.Officers] == 9 && ob.Crew[BankCat.Compliance] == 13 && oo != null && oo.ScaleFrom == EndScaleRules.Unset && oo.Crew[BankCat.Officers] == 0,
+        Check(ob.ScaleFrom == 61 && ob.Crew[BankCat.Officers] == 9 && ob.Crew[BankCat.Compliance] == 13 && ob.FoundedLeast == BankCat.CapitalLeastCentsScale && oo != null && oo.ScaleFrom == EndScaleRules.Unset
+              && oo.Crew[BankCat.Officers] == 0 && oo.FoundedLeast == 0,
             "end scale save: the bank's scale day and crews come back; an older line has neither");
     }
 
@@ -512,7 +594,7 @@ internal static partial class Program
         "reallife_transaction_tech_upkeep", "reallife_transaction_tech_crew_wages",
         "reallife_endscale_bb_crews", "reallife_endscale_bb_crews_value", "reallife_endscale_bb_district_old", "reallife_endscale_bb_extend",
         "reallife_endscale_bb_confirm_extend_title", "reallife_endscale_bb_confirm_extend_body", "reallife_endscale_bb_extended",
-        "reallife_endscale_ob_crews", "reallife_endscale_ob_crews_value", "reallife_transaction_ownbank_systems"
+        "reallife_endscale_ob_crews", "reallife_endscale_ob_crews_value", "reallife_transaction_ownbank_systems", "reallife_endscale_note_owed", "reallife_endscale_owed_line"
     };
 
     private static void ScaleTexts()
@@ -536,7 +618,10 @@ internal static partial class Program
             "end scale: the phase-in notice is short and names the venture and the days in every language");
         string page;
         bool facts = en.TryGetValue("reallife_guide_endscale", out page);
-        foreach (string fact in new[] { "{es_days}", "{es_years_least}", "{es_years_most}", "{es_rack}", "{es_bb_build}", "{es_ob_licence}" })
+        Check(en.TryGetValue("reallife_endscale_button_racks", out string racks) && racks.Contains("{count}") && pt["reallife_endscale_button_racks"].Contains("{count}") && zh["reallife_endscale_button_racks"].Contains("{count}")
+              && en["reallife_endscale_note_owed"].Length <= 240 && en["reallife_endscale_note_owed"].Contains("{owed}"),
+            "end scale: the racks button counts from the code, and the owed notice is short and names the sum");
+        foreach (string fact in new[] { "{es_days}", "{es_years_least}", "{es_years_most}", "{es_tech_days_least}", "{es_tech_days_most}", "{es_colo}", "{es_rack}", "{es_bb_build}", "{es_ob_licence}" })
         {
             facts &= page != null && page.Contains(fact);
         }
@@ -568,10 +653,13 @@ internal static partial class Program
     }
 
     // Data centres sold through the cloud: so many racks and AI racks over so many districts, fitted at a tier, built on
-    // day 0, the cloud matching the rivals' price, every professional in place (their wages counted), no racks let.
+    // day 0, the cloud matching the rivals' price, every professional in place (their wages counted), racks let to the
+    // city's companies as the director lets them (a rack a day towards what the city wants, the old kind first, some
+    // leaving each month). Bought at the whole scale while the option is on, as the director buys.
     private static ScaleRun CloudSim(int share, int racks, int gpu, int regions, int tier, bool hyper, int days, int bought = -1)
     {
-        int at = bought < 0 ? share : bought;   // the share the data centres were fitted and their racks bought at (0: an old save's)
+        int at = bought < 0 ? EndScaleRules.Buying(share > 0) : bought;   // the share the data centres were fitted and their racks bought at (0: an old save's)
+        int wanted = InfraRules.ColoWanted(1, share);
         var centres = new List<DataCentre>(regions);
         long capex = 0;
         for (int i = 0; i < regions; i++)
@@ -592,20 +680,36 @@ internal static partial class Program
         long cash = -capex;
         for (int day = 1; day <= days; day++)
         {
-            int capacity = 0, gpuUnits = 0, outages = 0, staff = 0, crew = 0;
-            long costs = 0;
+            int capacity = 0, gpuUnits = 0, outages = 0, staff = 0, crew = 0, let = 0;
+            long costs = 0, rent = 0;
+            for (int i = 0; i < centres.Count; i++)
+            {
+                let += centres[i].Colo;
+            }
             for (int i = 0; i < centres.Count; i++)
             {
                 DataCentre d = centres[i];
                 InfraRules.Hire(d, share);
                 int cover = InfraRules.Cover(d, share), working = EndScaleRules.Working(cover);
                 d.Technicians = InfraRules.TechniciansNeeded(d);
-                if (InfraRules.Outage(23, d, day, cover))
+                bool down = InfraRules.Outage(23, d, day, cover);
+                if (!down && let < wanted && d.Racks - d.Colo > d.Racks / 2)
+                {
+                    d.Colo++;
+                    let++;
+                }
+                else if (d.Colo > 0 && (let > wanted || RealLifeOverhaul.Tech.TechRandom.Mille(23, i, day, 9) < InfraCat.ColoChurn / RealLifeOverhaul.Tech.FirmsCatalogue.MonthDays + (down ? 300 : 0)))
+                {
+                    d.Colo--;
+                    let--;
+                }
+                if (down)
                 {
                     outages++;
                 }
                 else
                 {
+                    rent += InfraRules.ColoDay(d, share);
                     capacity += (int)((long)InfraRules.Units(d, share) * working / 1000);
                     gpuUnits += (int)((long)InfraRules.GpuUnits(d, share) * working / 1000);
                 }
@@ -629,7 +733,7 @@ internal static partial class Program
             c.Price = c.RivalPrice;
             int city = InfraRules.CityDemand(c, 1, capacity, false, share, regions);
             int cityGpu = InfraRules.CityDemand(c, 1, gpuUnits, true, share, regions);
-            long takings = InfraRules.Takings(c, city, cityGpu);
+            long takings = InfraRules.Takings(c, city, cityGpu) + rent;
             InfraRules.Reputation(c, outages);
             InfraRules.PriceWar(c, city, day, InfraRules.WarMarket(c, share, regions));
             cash += takings - costs;
@@ -647,18 +751,18 @@ internal static partial class Program
 
     // The broadband company founded on day 0 with every district dug at once, its prices, maintenance and marketing as
     // usual, at the start's prices in a year of so many days (outages left out: a day's bills in a hundred).
-    private static ScaleRun BroadbandSim(int share, int year, int days)
+    private static ScaleRun BroadbandSim(int share, int year, int days, long[] cashYears = null, long[] saleYears = null)
     {
-        int m = MacroCatalogue.MonthDays(year);
+        int m = MacroCatalogue.MonthDays(year), buy = EndScaleRules.Buying(share > 0);
         var calm = new[] { 1000, 1000, 1000, 1000 };
         var n = new Network();
         BbRules.Found(n, 0);
         n.Scale = share;
-        long capex = BbRules.LicenceFee(PriceRules.Start, share);
+        long capex = BbRules.LicenceFee(PriceRules.Start, buy);
         for (int d = 0; d < Network.Districts; d++)
         {
-            int cost = BbRules.BuildCost(d, PriceRules.Start, share);
-            BbRules.StartBuild(n, d, 0, m, cost);
+            int cost = BbRules.BuildCost(d, PriceRules.Start, buy);
+            BbRules.StartBuild(n, d, 0, m, cost, buy > 0);
             capex += cost;
         }
         var run = new ScaleRun { Capex = capex * 100, Payback = -1 };
@@ -676,7 +780,18 @@ internal static partial class Program
                 BbRules.Month(n, calm, day, m);
                 costs += BbRules.Installs(before, BbRules.Connections(n), PriceRules.Start, share);
             }
+            n.MonthTakings = (int)Math.Min(int.MaxValue / 4, n.MonthTakings + takings);
+            n.MonthCosts = (int)Math.Min(int.MaxValue / 4, n.MonthCosts + costs);
+            if (day % m == 0)
+            {
+                BbRules.CloseMonth(n, BbRules.Connections(n), 0);
+            }
             cash += (takings - costs) * 100;
+            if (cashYears != null && day % year == 0 && day / year < cashYears.Length)
+            {
+                cashYears[day / year] = cash;
+                saleYears[day / year] = BbRules.SaleValue(n) * 100;
+            }
             if (run.Payback < 0 && cash >= 0)
             {
                 run.Payback = day;
@@ -691,15 +806,17 @@ internal static partial class Program
 
     // The player's bank founded with the least capital (and more, if asked) in a quiet city of a 60-day year; its payback
     // is the day what it kept in its capital came to its licence (the capital is the bank's and can be taken out again).
-    private static ScaleRun BankSim(int share, long extraCapital, int days, out long yearProfit, out long capital)
+    private static ScaleRun BankSim(int share, long extraCapital, int days, out long yearProfit, out long capital, int year = ScaleYear)
     {
-        BankCity c = BankCity.Quiet(ScaleYear);
+        BankCity c = BankCity.Quiet(year);
         c.Scale = share;
+        int buy = EndScaleRules.Buying(share > 0);
         var b = new OwnBank();
-        long put = BankRules.CapitalLeast(c.Level, 0, share) + extraCapital;
+        long put = BankRules.CapitalLeast(c.Level, 0, buy) + extraCapital;
         BankRules.Found(b, 1, 7, put, "Scale Savings");
+        b.FoundedLeast = BankRules.LeastAt(buy);
         var day = new BankDay();
-        long licence = BankRules.Licence(c.Level, share);
+        long licence = BankRules.Licence(c.Level, buy);
         var run = new ScaleRun { Capex = licence + put, Payback = -1 };
         for (int d = 1; d <= days && b.Running; d++)
         {
@@ -737,6 +854,7 @@ internal static partial class Program
         Row("Hyperscaler, 1100 racks and 100 AI racks, seven regions", CloudSim(0, 1100, 100, 7, 2, true, 4000), CloudSim(Full, 1100, 100, 7, 2, true, 4000));
         Row("Broadband, every district (60-day year)", BroadbandSim(0, 60, 4000), BroadbandSim(Full, 60, 4000));
         Row("Broadband, every district (365-day year)", BroadbandSim(0, 365, 6000), BroadbandSim(Full, 365, 6000));
+        Row("Own bank, the least capital (365-day year)", BankSim(0, 0, 6000, out _, out _, 365), BankSim(Full, 0, 6000, out _, out _, 365));
         Row("Own bank, the least capital", BankSim(0, 0, 3000, out _, out _), BankSim(Full, 0, 3000, out _, out _));
         Row("Own bank, the least capital and $100M more", BankSim(0, 10000000000L, 3000, out _, out _), BankSim(Full, 10000000000L, 3000, out _, out _));
     }
