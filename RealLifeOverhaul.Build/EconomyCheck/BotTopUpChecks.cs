@@ -283,19 +283,22 @@ internal static partial class Program
         var c = new Bot { Loss = 20 };
         Check(MarketBots.Cushion(c, 0) == 0 && MarketBots.Cushion(c, 1000) == 200 && MarketBots.Cushion(c, 1001) == 201, "top-up cushion: its limit's share of what it holds in shares, rounded up, and none for money alone");
         int taken = 0, stoppedTaken = 0, stoppedLeft = 0, underCushion = 0;
-        for (ulong seed = 801; seed <= 816; seed++)
+        // Bots that have lost, their room to the floor three tenths of what they hold (the most comes out) or one tenth
+        // (the review's probe: with no cushion, the most left one unit over the floor and every bot stopped the next morning).
+        for (int run = 0; run < 32; run++)
         {
+            ulong seed = 801 + (ulong)(run % 16);
+            long tenths = run < 16 ? 3 : 1;
             MarketEngine a = BotMarket(seed, 8000000, out _), l = BotMarket(seed, 8000000, out _);
             Bot ba = TopUpBot(a, 1, 1000000, 20, 20), bl = TopUpBot(l, 1, 1000000, 20, 20);
             a.AddCapital(1, 600000, out _);
             l.AddCapital(1, 600000, out _);
-            // A bot that has lost: its room to the floor three tenths of what it holds (both machines alike).
             long wa = MarketBots.Worth(a.State, ba, a.State.Phase);
-            ba.Base = bl.Base = (wa - (wa - ba.Cash) * 3 / 10) * 100 / 80;
+            ba.Base = bl.Base = (wa - (wa - ba.Cash) * tenths / 10) * 100 / 80;   // (both machines alike)
             long most = a.BotMostOut(1);
             if (most >= a.BotChangeLeast && a.TakeCapital(1, most, out _))
             {
-                taken++;
+                taken += tenths == 3 ? 1 : 0;
                 long worth = MarketBots.Worth(a.State, ba, a.State.Phase);
                 underCushion += worth - MarketBots.Floor(ba) < MarketBots.Cushion(ba, worth - ba.Cash) ? 1 : 0;
             }
@@ -305,8 +308,8 @@ internal static partial class Program
             stoppedTaken += ba.Status != BotStatus.Running ? 1 : 0;
             stoppedLeft += bl.Status != BotStatus.Running ? 1 : 0;
         }
-        Check(taken >= 8 && underCushion == 0, "top-up cushion: the most shown is taken out and leaves at least the cushion over the floor (" + taken + " of 16 taken)");
-        Check(stoppedTaken <= stoppedLeft, "top-up cushion: taking out the most shown stops no bot at the next morning's moves (" + stoppedTaken + " stopped against " + stoppedLeft + " left alone)");
+        Check(taken >= 8 && underCushion == 0, "top-up cushion: the most shown is taken out and leaves at least the cushion over the floor (" + taken + " of 16 with room for it)");
+        Check(stoppedTaken <= stoppedLeft, "top-up cushion: taking out the most shown stops no bot at the next morning's moves (" + stoppedTaken + " stopped against " + stoppedLeft + " left alone, of 32)");
         // The review's probe: a bot that has lost, its room to the floor a tenth of what it holds, gives nothing out at a limit of 20%.
         MarketEngine m = BotMarket(801, 8000000, out _);
         Bot b = TopUpBot(m, 1, 1000000, 20, 20);
