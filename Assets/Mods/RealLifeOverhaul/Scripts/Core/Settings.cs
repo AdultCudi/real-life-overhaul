@@ -219,6 +219,8 @@ namespace RealLifeOverhaul
         public const string StandingStreetId = "standing_street";
         public const string StandingPressId = "standing_press";
         public const string StandingCorruptionId = "standing_corruption";
+        public const string RivalsId = "rivals";
+        public const string RivalsStrengthId = "rivals_strength";
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
@@ -492,6 +494,8 @@ namespace RealLifeOverhaul
         public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts (Scripts/Fame)
         public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
+        public static bool Rivals = true;                // rival tycoons: two or three named fortunes with holdings on the stock market who grow with the player and move against them in the late game (off: they stand still and do nothing; the save keeps them) (Scripts/Rivals)
+        public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless (Rivals/RivalCatalogue)
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
@@ -772,6 +776,8 @@ namespace RealLifeOverhaul
             StandingStreet = Bool(modId, StandingStreetId, StandingStreet);
             StandingPress = Bool(modId, StandingPressId, StandingPress);
             StandingCorruption = Bool(modId, StandingCorruptionId, StandingCorruption);
+            Rivals = Bool(modId, RivalsId, Rivals);
+            RivalsStrength = Int(modId, RivalsStrengthId, RivalsStrength);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);

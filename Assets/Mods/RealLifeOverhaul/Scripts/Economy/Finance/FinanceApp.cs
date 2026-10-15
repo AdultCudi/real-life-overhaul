@@ -151,6 +151,7 @@ namespace RealLifeOverhaul.Economy
             _standing = _wantStanding && _tab == Finance.Overview && StandingOn() != null;
             _wantStanding = false;
             _city &= !_standing;
+            OpenedRivals();
             _ready = _director.AppOpened();
             Refresh();
         }
@@ -162,12 +163,14 @@ namespace RealLifeOverhaul.Economy
 
         private void ShowTab(int tab)
         {
-            if (tab != _tab || _city || _standing)
+            if (tab != _tab || _city || _standing || _rivals)
             {
                 _tab = tab;
                 _city = false;
                 _standing = false;
                 _standingPick = null;
+                _rivals = false;
+                _rivalsPick = null;
                 _factor = -1;
                 Refresh();
             }
@@ -199,7 +202,8 @@ namespace RealLifeOverhaul.Economy
             }
             bool city = _city && _tab == Finance.Overview && CityState() != null;
             StandingPage standing = _standing && _tab == Finance.Overview ? StandingOn() : null;
-            _shell.ShowTab(city || standing != null ? -1 : _tab);   // (on the city's page and the Standing page no tab is the one showing: Overview's can be clicked to go back)
+            StandingPage rivals = _rivals && _tab == Finance.Overview ? RivalsOn() : null;
+            _shell.ShowTab(city || standing != null || rivals != null ? -1 : _tab);   // (on the city's page, the Standing page and the rivals' no tab is the one showing: Overview's can be clicked to go back)
             InfoBox box = _shell.Box;
             box.Clear();
             string selected = null;
@@ -221,7 +225,12 @@ namespace RealLifeOverhaul.Economy
                     case Finance.CashFlow: WriteCashFlow(box, table); break;
                     case Finance.Accounts: selected = WriteAccounts(box); break;
                     default:
-                        if (standing != null)
+                        if (rivals != null)
+                        {
+                            WriteRivals(box, rivals);
+                            selected = _rivalsPick;
+                        }
+                        else if (standing != null)
                         {
                             WriteStanding(box, standing);
                             selected = _standingPick;
@@ -362,6 +371,10 @@ namespace RealLifeOverhaul.Economy
             if (StandingOn() != null)
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_fame_open", ShowStanding);   // the player's standing, its own page (Scripts/Fame through EconomyBridges.Standing)
+            }
+            if (RivalsOn() != null)
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_rival_open", ShowRivals);   // the rival tycoons and the rich list, their own page (Scripts/Rivals through EconomyBridges.Rivals)
             }
             Meta.Guide.Point(box, GuideTitle);
         }
@@ -715,6 +728,11 @@ namespace RealLifeOverhaul.Economy
 
         private void RowClicked(TableRow row)
         {
+            if (_rivals && _tab == Finance.Overview)
+            {
+                RivalsClicked(row);
+                return;
+            }
             if (_standing && _tab == Finance.Overview)
             {
                 if (row != null && row.Pick)
@@ -761,6 +779,7 @@ namespace RealLifeOverhaul.Economy
             _picked = null;
             _factor = -1;
             _standingPick = null;
+            _rivalsPick = null;
             _table.ClearSelection();
             Refresh();
         }

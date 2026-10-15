@@ -33,12 +33,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The rows the Planner shows for the property business are handed over by Wiring; this says they changed. Default: nobody listens.</summary>
         public static Action Changed;
 
+        /// <summary>
+        /// What a rival buying up a district adds to the price of the buildings there that are not the player's, per mille, by
+        /// the game's own district key (Scripts/Rivals, through Wiring/RivalLinks). Default: nothing.
+        /// </summary>
+        public static Func<string, int> Premium;
+
         public static void Reset()
         {
             RentLever = null;
             PermitLever = null;
             EventOn = null;
             Changed = null;
+            Premium = null;
         }
     }
 
@@ -261,7 +268,13 @@ namespace RealLifeOverhaul.Economy
             {
                 return 0;
             }
-            return c.Holding != null ? EstateRules.Value(c.Holding, s.Real, index) : EstateRules.Value(c.Base, s.Real, index, Income(c.District), EstateRules.StreetCondition(s.Seed, c.Key), 0);
+            if (c.Holding != null)
+            {
+                return EstateRules.Value(c.Holding, s.Real, index);
+            }
+            int value = EstateRules.Value(c.Base, s.Real, index, Income(c.District), EstateRules.StreetCondition(s.Seed, c.Key), 0);
+            int premium = EstateBridges.Premium != null ? Mathf.Clamp(EstateBridges.Premium(c.District), 0, 1000) : 0;   // (a rival buying up the district: Scripts/Rivals)
+            return premium > 0 ? value + value / 1000 * premium : value;
         }
 
         /// <summary>
