@@ -1,5 +1,4 @@
-0.25.1
+0.25.2
 
 Fixed
-- Driving lessons and tests plan their route round a road an accident has closed, bringing the car to the other side if need be, and when the road outside is shut the desk says so before you pay.
-- People stood inside a cordon's tape, even on top of whoever lay hurt in the road, when passers-by were near as it went up or a crossing ran through the scene. Anyone inside when the tape goes up is now moved to the nearest place outside it, and the tape keeps people on foot out for as long as it stands, crossings included; onlookers watch from the tape.
+- Wages could climb without end when rises were given again and again in Open Roles, until staff such as an academy's earned many times the usual rate. A rise or a promotion now comes at most once in 14 days for each person and never above four times the game's usual pay for their skill, and wages that had run away come back to that limit once, when the save loads.
