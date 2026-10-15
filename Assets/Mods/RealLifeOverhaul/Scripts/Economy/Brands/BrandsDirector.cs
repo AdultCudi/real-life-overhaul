@@ -25,7 +25,10 @@ namespace RealLifeOverhaul.Economy.Brands
     /// This class keeps it going. PER FRAME: NOTHING. It has no Update and no timer of its own. Once a second the
     /// credit side's timer calls <see cref="EachSecond"/>: while nothing has changed that is a dozen comparisons (the
     /// save is there, the options are as they were) and one number worked out from the franchised shops to see that
-    /// the map's markers are up to date (three multiplications for each shop), with no allocation. The credit
+    /// the map's markers are up to date (three multiplications for each shop), with no allocation. The first second after
+    /// a load reads the state and the shops (StartUp) and nothing else; the app is put on the phone (two of the game's
+    /// buttons copied and its icon painted) at the second after, so the two never share a frame: together they made one
+    /// frame of about 36 ms in a player's session, each is timed under a slot of its own. The credit
     /// side's own handlers of the game's hour and day events call <see cref="OnHour"/> and <see cref="OnDay"/> when
     /// their own work is done (EconomyDirector.AfterHour, AfterDay), after the city's economy and the company.
     ///
@@ -185,15 +188,26 @@ namespace RealLifeOverhaul.Economy.Brands
             }
             if (!_running)
             {
-                StartUp();
+                using (HotSpots.Time(HotStart))
+                {
+                    StartUp();
+                }
+                SaveHook.Keep(_onSave);
+                return;   // (the app goes on the phone at the next second, in a frame of its own: see the summary)
             }
             SaveHook.Keep(_onSave);
             if (_app == null && !_gaveUp)
             {
-                Install();
+                using (HotSpots.Time(HotInstall))
+                {
+                    Install();
+                }
             }
             BrandsGame.Marks(_state, true, _markName);
         }
+
+        private static readonly int HotStart = HotSpots.Slot("Economy: BrandsDirector start (the save's brands and the shops read)");
+        private static readonly int HotInstall = HotSpots.Slot("Economy: BrandsDirector app put on the phone");
 
         private string MarkName(Franchise f)
         {
