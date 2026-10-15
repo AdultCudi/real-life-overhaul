@@ -25,6 +25,18 @@ namespace RealLifeOverhaul
     ///
     /// While another author's mod drives the camera (<see cref="CameraYield"/>) none of this is done: the game's
     /// cameras have their own figures back and the pointer is free, until that mod stops.
+    ///
+    /// The game's own camera moments are stood aside for by the one rule (<see cref="CameraYield.Orders"/>): for any camera
+    /// of the game's that is not one of ordinary play (placing an item, the interior designer, a building's preview, the
+    /// subway, a minigame, the game's free camera, a cutscene, a car's preview, and any the game adds), the figures are
+    /// given back exactly as they were taken (<see cref="FigureHandover"/>) once that camera has left the picture, and taken
+    /// again, as the game then has them, when ordinary play is back; the distance the player chose is kept across it.
+    /// Mouse look also stops while the game holds the player in a conversation, whose answers are clicked. The placement camera
+    /// copies the indoor camera's distance as it opens (PlacementHelper.SetPlacementMode, InteriorDesignerUI.ToggleCamera):
+    /// what it copied of this mod's is put back to the game's own.
+    ///
+    /// Per frame: the orders read, the bridges' flag compared, the figures written to the on-foot cameras that carry them,
+    /// and while one of them is looked through out of doors one ray at most for the ground under it (indoors one sphere cast).
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
@@ -94,20 +106,17 @@ namespace RealLifeOverhaul
         {
             public PedestrianCam Cam;
             public CinemachineVirtualCameraBase VCam;
-            public Vector3 Offset;
-            public Vector2 MinMaxDistance;
-            public float Distance;
+            public FigureHandover Handover;         // the game's figures as taken, given back exactly (Camera/CameraYieldRules)
             public bool Applied;
+            public bool Known;                      // a distance has been wanted since the city loaded
             public int AppliedDistance;
             public CinemachineVirtualCamera Lens;   // null if the camera is not a plain virtual camera
-            public Transform Follow;
+            public Transform Follow;                // the game's follow and look-at points, as taken
             public Transform LookAt;
-            public float Fov;
             public Transform Target;                // our own orbit/look-at point at the player's upper body
             public Transform Aim;                   // what the camera looks at: the target, or above it while the view looks up past the camera's lowest swing
             public float Floor;                     // out of doors, the lowest the camera may swing (degrees of tilt, under 0 below the target), eased
             public bool Indoor;
-            public float DistanceSpeed;
             public float Desired;                   // distance the player asked for, before walls pull the camera in
             public float LastWritten;
         }
@@ -133,9 +142,13 @@ namespace RealLifeOverhaul
         private bool _lockedByUs;
         private bool _loggedMouseDelta;
 
+        private PlacementCam _placement;   // the game's camera for placing items and the interior designer, found the first time it takes over
+        private bool _moment;              // the last frame stood aside for a moment of the game's
+
         private void Awake()
         {
             CameraYield.Reset();   // a new city: nothing has been seen of another mod's camera in it yet
+            ScenePrewarm.Add("camera: the city's bridges being found", BridgeHold.Prewarm);   // behind the loading screen (Camera/BridgeHold)
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Camera: ThirdPersonCamera.Update");
@@ -162,6 +175,7 @@ namespace RealLifeOverhaul
                     Apply(_outdoor, false, null);
                     Apply(_indoor, false, null);
                     Steering = false;
+                    BridgeHold.Release();
                 }
                 catch (System.Exception second)
                 {
@@ -180,10 +194,13 @@ namespace RealLifeOverhaul
             if (gm == null || gm.playerController == null)
             {
                 SetLooking(false);
+                BridgeHold.Hold(false);
                 return;
             }
             CameraYield.Observe();
             bool mine = !CameraYield.StoodDown;   // false: another mod has the camera, and nothing below touches it
+            CameraOrders orders = CameraYield.Orders;   // the one rule of when this mod's camera stands aside (Camera/CameraYieldRules)
+            BridgeHold.Hold(orders.HoldBridges);
 
             if (_outdoor == null)
             {
@@ -221,9 +238,16 @@ namespace RealLifeOverhaul
                 _pitch = Settings.CameraPitch;
             }
 
+            // A camera of the game's that is not one of ordinary play gets the game's figures back only once it has left the
+            // picture, so that its blend in starts from where the game's own camera was and nothing jumps.
+            if (orders.Moment && !_moment)
+            {
+                Uncopy(gm);   // the first frame of the moment: before its camera has blended in
+            }
+            _moment = orders.Moment;
             Transform player = gm.playerController.transform;
-            Apply(_outdoor, mine && Settings.CameraEnabled, player);
-            Apply(_indoor, mine && Settings.CameraEnabled && Settings.CameraIndoors, player);
+            Apply(_outdoor, Keep(_outdoor, orders.OutdoorFigures, orders.OutdoorLinger), player);
+            Apply(_indoor, Keep(_indoor, orders.IndoorFigures, orders.IndoorLinger), player);
             Steering = (_outdoor != null && _outdoor.Applied) || (_indoor != null && _indoor.Applied);
 
             if (Keys.Down(KeyAction.FreeCursor))
@@ -233,8 +257,7 @@ namespace RealLifeOverhaul
 
             // The pedestrian cameras are also used on scooters and hand trucks, so those get mouse look too.
             CamState active = ActiveState();
-            bool look = mine && Settings.CameraEnabled && Settings.MouseLook && active != null && !CursorFreed
-                        && Application.isFocused && !IsUiOpen();
+            bool look = orders.Look && active != null;
             SetLooking(look);
             UpdateLookBehind();
 
@@ -244,9 +267,42 @@ namespace RealLifeOverhaul
             }
             else
             {
-                FollowPlayer(gm);
+                FollowPlayer(gm, active);
             }
             TrackPlayer(gm);
+        }
+
+        // Whether a camera keeps this mod's figures: as ordered, or, ordered to give them back for a moment of the game's,
+        // until that camera is no longer in the picture (not live, nor part of a blend).
+        private static bool Keep(CamState state, bool ordered, bool linger)
+        {
+            return ordered || (linger && state != null && state.Applied && CinemachineCore.Instance.IsLive(state.VCam));
+        }
+
+        // The game's placement camera copies the indoor camera's distance as it opens (PlacementHelper.SetPlacementMode,
+        // InteriorDesignerUI.ToggleCamera), and keeps it in the save (PlacementCam.MoveCamera: placementCameraZoom): if what
+        // it copied is this mod's own, it is given the game's own instead, before it has blended in. Once a moment, never a frame.
+        private void Uncopy(GameManager gm)
+        {
+            if (_indoor == null || !_indoor.Applied)
+            {
+                return;   // the indoor camera had the game's own figures: whatever was copied is the game's
+            }
+            if (_placement == null && gm.indoorPlacementCamera != null)
+            {
+                _placement = gm.indoorPlacementCamera.GetComponentInParent<PlacementCam>();
+            }
+            if (_placement == null)
+            {
+                return;
+            }
+            float copied = _placement.distance;
+            float own = CameraYieldRules.Uncopied(copied, _indoor.LastWritten, _indoor.Handover.Game.Distance);
+            if (own != copied)
+            {
+                _placement.distance = own;   // its own frame places its camera at this distance (PlacementCam.MoveCamera)
+                Logger?.Info($"Camera: the placement camera had copied this mod's indoor distance ({copied:F1} m); it has the game's own ({own:F1} m).");
+            }
         }
 
         private void OnDestroy()
@@ -257,7 +313,7 @@ namespace RealLifeOverhaul
             Steering = false;
             DestroyTarget(_outdoor);
             DestroyTarget(_indoor);
-
+            BridgeHold.Release();   // the bridges back to the game's hiding as they were (the city unloading)
         }
 
         /// <summary>Hold the look-behind key (the right mouse button unless rebound) while driving to look behind the car.</summary>
@@ -326,13 +382,15 @@ namespace RealLifeOverhaul
             }
         }
 
+        // The camera carrying this mod's figures that the game is looking through (CameraYield's view of the game's camera).
         private CamState ActiveState()
         {
-            if (_outdoor != null && _outdoor.Applied && _outdoor.VCam.Priority == 1)
+            GameView view = CameraYield.View;
+            if (view == GameView.OnFoot && _outdoor != null && _outdoor.Applied)
             {
                 return _outdoor;
             }
-            if (_indoor != null && _indoor.Applied && _indoor.VCam.Priority == 1)
+            if (view == GameView.Indoor && _indoor != null && _indoor.Applied)
             {
                 return _indoor;
             }
@@ -364,25 +422,34 @@ namespace RealLifeOverhaul
             }
 
             var lens = vcam as CinemachineVirtualCamera;
-            float fov = lens != null ? lens.m_Lens.FieldOfView : 0f;
             Logger?.Info($"Camera: {label} vanilla offset={cam.offset} minMax={cam.minMaxDistance} distance={cam.distance} "
-                         + $"fov={fov} near={(lens != null ? lens.m_Lens.NearClipPlane : 0f)} far={(lens != null ? lens.m_Lens.FarClipPlane : 0f)} "
+                         + $"fov={(lens != null ? lens.m_Lens.FieldOfView : 0f)} near={(lens != null ? lens.m_Lens.NearClipPlane : 0f)} far={(lens != null ? lens.m_Lens.FarClipPlane : 0f)} "
                          + $"follow={(vcam.Follow != null ? vcam.Follow.name : "none")} lookAt={(vcam.LookAt != null ? vcam.LookAt.name : "none")}");
-            return new CamState
+            return new CamState { Cam = cam, VCam = vcam, Lens = lens };
+        }
+
+        // A camera's figures as the game has them now.
+        private static CameraFigures Figures(CamState state)
+        {
+            PedestrianCam cam = state.Cam;
+            return new CameraFigures
             {
-                Cam = cam,
-                VCam = vcam,
-                Lens = lens,
-                Follow = vcam.Follow,
-                LookAt = vcam.LookAt,
-                Fov = fov,
-                DistanceSpeed = cam.distanceSpeed,
-                Offset = cam.offset,
-                MinMaxDistance = cam.minMaxDistance,
-                Distance = cam.distance
+                OffsetX = cam.offset.x,
+                OffsetY = cam.offset.y,
+                OffsetZ = cam.offset.z,
+                Near = cam.minMaxDistance.x,
+                Far = cam.minMaxDistance.y,
+                Distance = cam.distance,
+                Speed = cam.distanceSpeed,
+                Fov = state.Lens != null ? state.Lens.m_Lens.FieldOfView : 0f
             };
         }
 
+        /// <summary>
+        /// This mod's figures on one of the game's on-foot cameras (<paramref name="enabled"/>), or the game's own given back
+        /// exactly as they were taken. Taking writes the game's figures down first (<see cref="FigureHandover"/>), each time
+        /// the camera is taken: what the game changed while it had the camera is what is given back after.
+        /// </summary>
         private void Apply(CamState state, bool enabled, Transform player)
         {
             if (state == null || state.Cam == null)
@@ -392,19 +459,33 @@ namespace RealLifeOverhaul
 
             if (!enabled)
             {
-                if (state.Applied)
+                if (state.Handover.Give(out CameraFigures back))
                 {
-                    state.Cam.offset = state.Offset;
-                    state.Cam.minMaxDistance = state.MinMaxDistance;
-                    state.Cam.distance = state.Distance;
-                    state.Cam.distanceSpeed = state.DistanceSpeed;
+                    state.Cam.offset = new Vector3(back.OffsetX, back.OffsetY, back.OffsetZ);
+                    state.Cam.minMaxDistance = new Vector2(back.Near, back.Far);
+                    state.Cam.distance = back.Distance;
+                    state.Cam.distanceSpeed = back.Speed;
                     state.VCam.Follow = state.Follow;
                     state.VCam.LookAt = state.LookAt;
-                    SetFov(state, state.Fov);
+                    SetFov(state, back.Fov);
                     state.Applied = false;
+                    if (Meta.Dev.Verbose)
+                    {
+                        bool same = Figures(state).Same(back) && state.VCam.Follow == state.Follow && state.VCam.LookAt == state.LookAt;
+                        Logger?.Info($"Camera check (given back, {(state.Indoor ? "indoor" : "on foot")}): the game's figures as taken (distance {back.Distance:F1} m, lens {back.Fov:F0}): "
+                                     + (same ? "PASS" : "FAIL (the camera does not have them)") + ".");
+                    }
                 }
                 return;
             }
+
+            bool fresh = state.Handover.Take(Figures(state));
+            if (fresh)
+            {
+                state.Follow = state.VCam.Follow;   // the game's own points, as it has them now
+                state.LookAt = state.VCam.LookAt;
+            }
+            CameraFigures game = state.Handover.Game;
 
             // The vanilla camera is a long-lens top-down view aimed at the player's feet. Up close that
             // only frames the legs, so orbit and aim at the upper body instead, with a wider lens.
@@ -413,6 +494,9 @@ namespace RealLifeOverhaul
                 if (state.Target == null)
                 {
                     state.Target = new GameObject("RealLifeOverhaul Camera Target").transform;
+                }
+                if (state.Target.parent != state.Follow)
+                {
                     state.Target.SetParent(state.Follow, false);
                 }
                 if (state.Aim == null)
@@ -432,25 +516,21 @@ namespace RealLifeOverhaul
             SetFov(state, Settings.CameraFov);
 
             // Keep the vanilla compass direction of the offset, only change how high the camera swings round.
-            var flat = new Vector3(state.Offset.x, 0f, state.Offset.z);
+            var flat = new Vector3(game.OffsetX, 0f, game.OffsetZ);
             flat = flat.sqrMagnitude > 0.0001f ? flat.normalized : Vector3.back;
             float pitch = Orbit(state, flat) * Mathf.Deg2Rad;
             state.Cam.offset = flat * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
             bool confined = !state.Indoor && Inside != null && state.Target != null;
             float min = state.Indoor || confined ? IndoorMinDistance : MinDistance;
-            float max = Mathf.Max(state.MinMaxDistance.y, min + 1f);
+            float max = Mathf.Max(game.Far, min + 1f);
             state.Cam.minMaxDistance = new Vector2(min, max);
 
-            if (!state.Applied || state.AppliedDistance != Settings.CameraDistance)
-            {
-                state.Desired = Mathf.Clamp(Settings.CameraDistance, min, max);
-                state.AppliedDistance = Settings.CameraDistance;
-            }
-            else
-            {
-                // Whatever the game's scroll-wheel zoom changed since our last write is the player's doing.
-                state.Desired = Mathf.Clamp(state.Desired + (state.Cam.distance - state.LastWritten), min, max);
-            }
+            // Whatever the game's scroll-wheel zoom changed since our last write is the player's doing; what the game wrote
+            // while it had the camera is not (CameraYieldRules.Wanted).
+            state.Desired = CameraYieldRules.Wanted(fresh, state.Known, state.AppliedDistance != Settings.CameraDistance, Settings.CameraDistance,
+                state.Desired, state.Cam.distance, state.LastWritten, min, max);
+            state.Known = true;
+            state.AppliedDistance = Settings.CameraDistance;
 
             // Interiors are built for the top-down view, so indoors the camera must stay in front of walls.
             // (Only while that camera is the one being looked through: out of doors the indoor camera is not live, and a sphere cast a frame for it is wasted.)
@@ -458,7 +538,7 @@ namespace RealLifeOverhaul
                 : confined && CinemachineCore.Instance.IsLive(state.VCam) ? Confined(state, state.Desired) : state.Desired;
             state.Cam.distance = distance;
             state.LastWritten = distance;
-            state.Cam.distanceSpeed = state.Indoor || confined ? 14f : state.DistanceSpeed;
+            state.Cam.distanceSpeed = state.Indoor || confined ? 14f : game.Speed;
             state.Applied = true;
         }
 
@@ -604,11 +684,11 @@ namespace RealLifeOverhaul
             _hasLastPos = true;
         }
 
-        /// <summary>Without mouse look: swing the camera behind the player as they walk.</summary>
-        private void FollowPlayer(GameManager gm)
+        /// <summary>Without mouse look: swing the camera behind the player as they walk (the camera looked through only).</summary>
+        private void FollowPlayer(GameManager gm, CamState active)
         {
             float dt = Time.unscaledDeltaTime;
-            if (!_hasLastPos || dt <= 0f || Settings.CameraFollow <= 0 || Settings.MouseLook)
+            if (active == null || !_hasLastPos || dt <= 0f || Settings.CameraFollow <= 0 || Settings.MouseLook)
             {
                 return;
             }
@@ -628,17 +708,11 @@ namespace RealLifeOverhaul
 
             float heading = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg;
             float blend = 1f - Mathf.Exp(-Settings.CameraFollow * 0.3f * dt);
-            Steer(_outdoor, heading, blend);
-            Steer(_indoor, heading, blend);
+            Steer(active, heading, blend);
         }
 
         private static void Steer(CamState state, float heading, float blend)
         {
-            if (state == null || !state.Applied || state.VCam.Priority != 1)
-            {
-                return;
-            }
-
             // PedestrianCam places the camera at offset rotated by `angle` around the player,
             // so the camera sits behind the player when offsetYaw + angle == heading + 180.
             Vector3 offset = state.Cam.offset;

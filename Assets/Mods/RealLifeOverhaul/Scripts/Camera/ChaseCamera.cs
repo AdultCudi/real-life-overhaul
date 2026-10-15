@@ -9,7 +9,12 @@ namespace RealLifeOverhaul
     /// Cinemachine rigs with no script to steer, so this adds its own virtual camera and
     /// raises its priority above the game's while the normal outdoor driving camera is live.
     /// The look-back camera, garages and parking keep the game's own cameras.
-    /// While another author's mod drives the camera (<see cref="CameraYield"/>) this one is let go.
+    /// It is the one looked through only while <see cref="CameraYield"/> orders it (the game asks for its vehicleCamera, the
+    /// options are on, no other author's mod drives the camera, the player is alive); for every other camera of the game's
+    /// it is let go. While it is looked through, the bridges are kept in sight (<see cref="BridgeHold"/>): the game would
+    /// otherwise hide the highway, and the car on it, from a camera this close to the deck.
+    /// Per frame: the orders read and the bridges' flag compared; while it is the one looked through, one ray at most for the
+    /// road under it and a few vector operations.
     /// </summary>
     public class ChaseCamera : MonoBehaviour
     {
@@ -78,10 +83,9 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
-            bool drive = !CameraYield.StoodDown && Settings.CameraEnabled && Settings.CarCamera && vehicle != null
-                         && !vehicle.vehicleType.spawnInPlayerObject
-                         && gm.vehicleCamera != null && gm.vehicleCamera.Priority == 1;
-            if (!drive)
+            CameraOrders orders = CameraYield.Orders;   // the one rule of when this mod's camera stands aside (Camera/CameraYieldRules)
+            BridgeHold.Hold(orders.HoldBridges);        // (the on-foot camera holds them too: whichever runs first in the frame does it)
+            if (!orders.Chase || vehicle == null)
             {
                 Deactivate();
                 return;
@@ -97,9 +101,8 @@ namespace RealLifeOverhaul
                 _distance = Settings.CarCameraDistance;
             }
 
-            // Mouse steering of the car and mouse look can't share the mouse.
-            bool look = Settings.MouseLook && !PlayerPrefSettings.VehicleMouseInput && !ThirdPersonCamera.CursorFreed
-                        && Application.isFocused && !ThirdPersonCamera.IsUiOpen();
+            // Mouse steering of the car and mouse look can't share the mouse (the rule: CameraYieldRules.Decide).
+            bool look = orders.ChaseLook;
             SetLooking(look);
 
             float dt = Time.unscaledDeltaTime;
@@ -225,6 +228,7 @@ namespace RealLifeOverhaul
         {
             SetLooking(false);
             Live = false;
+            BridgeHold.Release();   // the bridges back to the game's hiding as they were (the city unloading)
         }
     }
 }
