@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using RealLifeOverhaul.Economy.Brands;
 using RealLifeOverhaul.Flare;
 
@@ -13,6 +15,13 @@ using RealLifeOverhaul.Flare;
 //                (FlareCast.Day skipped every inactive one); the Business tab counted only the player's own posts, so a
 //                deal's posts never showed there. Now the paid posts are made to the deal's end and counted on the deal
 //                (FlareHire.Posted, LastPost, saved), and the tab and the deal's page say so (FlareCast.PostsAbout, HireStage)
+// A player, 15 Oct 2026 (a save at day 40): one brand of three shops, one each in Garment District, Midtown and Murray
+// Hill, "recognition still has not gone up". Each district gained from its one shop alone and the city-wide figure headed
+// for the districts' sum divided by eight at 5% a day: under 2 points city-wide by day 40. Now each district also gains
+// from the brand's shops in other districts (BrandRules.Pull, diminishing) and the city-wide figure heads for their mean
+// from three districts on, at 10% a day (BrandRules.CityTarget). A brand in one district grows there as it did.
+// The same log had one frame of 35.8 ms in BrandsDirector's second: its first after the load read the save's brands and
+// the shops and put the app on the phone in one frame; now the app goes on at the second after, each part timed.
 internal static partial class Program
 {
     private const string GymType = "ba:businesstype_gym";
@@ -27,6 +36,166 @@ internal static partial class Program
         FlareHireCounted();
         FlareHireSaved();
         BrandRecWords();
+        BrandPaceSpread();
+        BrandPacePacked();
+        BrandPaceWide();
+        BrandPaceCost();
+    }
+
+    // The player's brand: so many shops in each district, all with the same standards and customers.
+    private static BrandsState Spread(int[] shopsIn, int customers, int standards, out Brand brand)
+    {
+        string[] districts = { "ba:neighborhood_garmentdistrict", "ba:neighborhood_midtown", "ba:neighborhood_murrayhill", "ba:neighborhood_hellskitchen", "ba:neighborhood_eastvillage", "ba:neighborhood_chinatown", "ba:neighborhood_harlem", "ba:neighborhood_bronx" };
+        var s = new BrandsState { Seed = 1015, FirstDay = 1, LastDay = 1 };
+        brand = BrandRules.Create(s, "Loja Boa", GymType, "Shop~0", districts[0], 1);
+        int n = 0;
+        for (int d = 0; d < shopsIn.Length; d++)
+        {
+            for (int k = 0; k < shopsIn[d]; k++)
+            {
+                if (n > 0)
+                {
+                    BrandRules.Join(s, brand, "Shop~" + n, GymType, districts[d], 1);
+                }
+                n++;
+            }
+        }
+        foreach (Member m in s.Members)
+        {
+            m.Standards = standards;
+            m.Customers = customers;
+        }
+        brand.Standards = BrandRules.Standards(s, brand);
+        return s;
+    }
+
+    // What the old rule gave for the same brand: no pull, the city-wide figure at the districts' sum divided by eight, 5% a day.
+    private static int OldRule(int[] shopsIn, int customers, int standards, int days, out int city)
+    {
+        var rec = new int[shopsIn.Length];
+        city = 0;
+        for (int day = 0; day < days; day++)
+        {
+            long sum = 0;
+            for (int d = 0; d < rec.Length; d++)
+            {
+                rec[d] = BrandRules.Step(rec[d], BrandRules.Gain(shopsIn[d], customers * shopsIn[d], standards, 0), shopsIn[d] > 0);
+                sum += rec[d];
+            }
+            int target = (int)Math.Min(BrandCatalogue.RecMost, sum / BrandCatalogue.CityDistricts);
+            city = BrandCatalogue.Clamp(city + BrandCatalogue.Bp(target - city, 500), 0, BrandCatalogue.RecMost);
+        }
+        int best = 0;
+        for (int d = 0; d < rec.Length; d++)
+        {
+            best = Math.Max(best, rec[d]);
+        }
+        return best;
+    }
+
+    private static void BrandPaceSpread()
+    {
+        int[] spread = { 1, 1, 1 };
+        Brand b;
+        BrandsState s = Spread(spread, 100, 75, out b);
+        int weekly = int.MaxValue, cityWeekly = int.MaxValue, lowest = int.MaxValue, highest = 0;
+        var weekStart = new int[b.Districts.Count];
+        int cityStart = 0;
+        for (int day = 1; day <= 40; day++)
+        {
+            BrandRules.Day(s, b);
+            if (day % 7 == 0)
+            {
+                for (int d = 0; d < b.Districts.Count; d++)
+                {
+                    weekly = Math.Min(weekly, b.Districts[d].Rec - weekStart[d]);
+                    weekStart[d] = b.Districts[d].Rec;
+                }
+                if (day > 7)
+                {
+                    cityWeekly = Math.Min(cityWeekly, b.City - cityStart);   // (the city-wide figure follows its districts: from its second week)
+                }
+                cityStart = b.City;
+            }
+        }
+        foreach (DistrictFile d in b.Districts)
+        {
+            lowest = Math.Min(lowest, d.Rec);
+            highest = Math.Max(highest, d.Rec);
+        }
+        int oldCity, oldDistrict = OldRule(spread, 100, 75, 40, out oldCity);
+        Check(b.Districts.Count == 3 && weekly >= 100 && lowest >= 800 && highest <= 1300,
+            "brand pace: three shops in three districts (standards 75, 100 customers) rise at least " + weekly + " hundredths every week in each district, to " + lowest + " by day 40 (8 to 13 points; " + oldDistrict + " by the old rule)");
+        Check(cityWeekly >= 90 && b.City >= 800 && b.City <= 1300,
+            "brand pace: and city-wide by at least " + cityWeekly + " hundredths a week from the second, to " + b.City + " by day 40 (8 to 13 points; " + oldCity + " by the old rule)");
+        int quotedCity, quoted = BrandRules.AfterSpread(3, 100, 75, 40, out quotedCity);
+        Check(quoted == lowest && quotedCity == b.City, "brand pace: the Guide's spread example (" + quoted + ", " + quotedCity + " city-wide) is what the day's steps give");
+        Check(BrandRules.Pull(0) == 0 && BrandRules.Pull(-3) == 0 && BrandRules.Pull(1) == 7 && BrandRules.Pull(2) == 12 && BrandRules.Pull(4) == 16 && BrandRules.Pull(60) == 16,
+            "brand pace: the pull of shops elsewhere is 7 for the first, two less for each after, 16 at most");
+    }
+
+    // Three shops in one district: in the district as it was; city-wide a little quicker (10% a day) and still at most an eighth of it.
+    private static void BrandPacePacked()
+    {
+        int[] packed = { 3 };
+        Brand b;
+        BrandsState s = Spread(packed, 100, 75, out b);
+        for (int day = 1; day <= 40; day++)
+        {
+            BrandRules.Day(s, b);
+        }
+        DistrictFile d = b.Districts[0];
+        int oldCity, oldDistrict = OldRule(packed, 100, 75, 40, out oldCity);
+        Check(d.Rec == oldDistrict && d.Rec == BrandRules.After(3, 300, 75, 40), "brand pace: three shops in one district grow there exactly as before (" + d.Rec + " hundredths by day 40)");
+        Check(b.City * BrandCatalogue.CityDistricts <= d.Rec && b.City <= oldCity * 3 / 2 && b.City >= oldCity,
+            "brand pace: city-wide it stays under an eighth of its district, " + b.City + " by day 40 against " + oldCity + " by the old rule (a little quicker, not much)");
+    }
+
+    // Twenty shops in seven districts with perfect standards and full shops for years: diminishing, no runaway.
+    private static void BrandPaceWide()
+    {
+        int[] wide = { 3, 3, 3, 3, 3, 3, 2 };
+        Brand b;
+        BrandsState s = Spread(wide, 400, 100, out b);
+        for (int day = 1; day <= 2000; day++)
+        {
+            BrandRules.Day(s, b);
+        }
+        int best = BrandRules.Best(b);
+        int oldCity, oldBest = OldRule(wide, 400, 100, 2000, out oldCity);
+        Check(b.Districts.Count == 7 && best <= 7000 && best - oldBest <= 800 && b.City <= best,
+            "brand pace: twenty shops in seven districts, perfect for 2,000 days, settle at " + best + " in a district (" + oldBest + " by the old rule) and " + b.City + " city-wide (" + oldCity + " by the old rule): no runaway");
+        Check(BrandRules.CityTarget(80000, 16, 1) == 10000 && BrandRules.CityTarget(0, 0, 0) == 0 && BrandRules.CityTarget(9000, 10, 9) == 1125 && BrandRules.CityTarget(3000, 3, 3) == 1000
+              && BrandRules.CityTarget(2000, 2, 2) == 500 && BrandRules.CityTarget(800, 1, 1) == 100,
+            "brand pace: the city-wide target never passes 100, is the sum divided by eight in one district or more than eight, a quarter of the sum in two, the mean from three");
+    }
+
+    // The 35.8 ms second: the start and the app's install never in one frame, each timed; the day's rules for the player's brand cost next to nothing.
+    private static void BrandPaceCost()
+    {
+        string director = System.IO.File.ReadAllText(System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Economy\Brands\BrandsDirector.cs"));
+        int slow = director.IndexOf("private void Slow()", StringComparison.Ordinal);
+        int start = slow >= 0 ? director.IndexOf("StartUp();", slow, StringComparison.Ordinal) : -1;
+        int back = start >= 0 ? director.IndexOf("return;", start, StringComparison.Ordinal) : -1;
+        int install = start >= 0 ? director.IndexOf("Install();", start, StringComparison.Ordinal) : -1;
+        Check(start >= 0 && back > start && install > back && director.Contains("HotSpots.Time(HotStart)") && director.Contains("HotSpots.Time(HotInstall)"),
+            "brand pace: the Brands start (the state and the shops) and the app's install are in seconds of their own, each timed");
+        Brand b;
+        BrandsState s = Spread(new[] { 1, 1, 1 }, 100, 75, out b);
+        BrandPaceDays(s, b, 50);   // (warmed)
+        double ms = BrandPaceDays(s, b, 1000);
+        Check(ms / 1000 < 0.05, "brand pace: a day of the player's brand's rules takes " + (ms / 1000 * 1000).ToString("0.0") + " microseconds");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static double BrandPaceDays(BrandsState s, Brand b, int days)
+    {
+        var watch = Stopwatch.StartNew();
+        for (int i = 0; i < days; i++)
+        {
+            BrandRules.Day(s, b);
+        }
+        return watch.Elapsed.TotalMilliseconds;
     }
 
     // Three gyms of a brand in one district, each with standards of 85 (the player's store rating over 80).
