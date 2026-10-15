@@ -34,6 +34,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelPlacement.cs" Link="Mod\PanelPlacement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\BarRule.cs" Link="Mod\BarRule.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Camera\CameraWatch.cs" Link="Mod\CameraWatch.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Camera\CameraYieldRules.cs" Link="Mod\CameraYieldRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OtherModName.cs" Link="Mod\OtherModName.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EventHold.cs" Link="Mod\EventHold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkRings.cs" Link="Mod\WorkRings.cs" />
