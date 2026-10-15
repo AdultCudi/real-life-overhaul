@@ -26,6 +26,9 @@ internal static partial class Program
         TopUpSameEverywhere();
         TopUpStore();
         TopUpWords();
+        TopUpCushion();
+        TopUpCommitted();
+        TopUpRetry();
         Console.WriteLine("  trading bots' capital added and taken out: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -272,6 +275,98 @@ internal static partial class Program
         return end < 0 ? line.Substring(at + 3) : line.Substring(at + 3, end - at - 3);
     }
 
+    // ---------------------------------------------------------------- the review: a cushion over the floor, the cash given once, a top-up tried again
+
+    // Taking out the most shown leaves the bot its limit's share of its shares over its floor: never stopped by the next ordinary move.
+    private static void TopUpCushion()
+    {
+        var c = new Bot { Loss = 20 };
+        Check(MarketBots.Cushion(c, 0) == 0 && MarketBots.Cushion(c, 1000) == 200 && MarketBots.Cushion(c, 1001) == 201, "top-up cushion: its limit's share of what it holds in shares, rounded up, and none for money alone");
+        int taken = 0, stoppedTaken = 0, stoppedLeft = 0, underCushion = 0;
+        for (ulong seed = 801; seed <= 816; seed++)
+        {
+            MarketEngine a = BotMarket(seed, 8000000, out _), l = BotMarket(seed, 8000000, out _);
+            Bot ba = TopUpBot(a, 1, 1000000, 20, 20), bl = TopUpBot(l, 1, 1000000, 20, 20);
+            a.AddCapital(1, 600000, out _);
+            l.AddCapital(1, 600000, out _);
+            // A bot that has lost: its room to the floor three tenths of what it holds (both machines alike).
+            long wa = MarketBots.Worth(a.State, ba, a.State.Phase);
+            ba.Base = bl.Base = (wa - (wa - ba.Cash) * 3 / 10) * 100 / 80;
+            long most = a.BotMostOut(1);
+            if (most >= a.BotChangeLeast && a.TakeCapital(1, most, out _))
+            {
+                taken++;
+                long worth = MarketBots.Worth(a.State, ba, a.State.Phase);
+                underCushion += worth - MarketBots.Floor(ba) < MarketBots.Cushion(ba, worth - ba.Cash) ? 1 : 0;
+            }
+            int next = MarketTrading.NextTradingDay(a.State.Day);
+            RunTo(a, next, MarketCatalogue.PhaseOpen + 3);
+            RunTo(l, next, MarketCatalogue.PhaseOpen + 3);
+            stoppedTaken += ba.Status != BotStatus.Running ? 1 : 0;
+            stoppedLeft += bl.Status != BotStatus.Running ? 1 : 0;
+        }
+        Check(taken >= 8 && underCushion == 0, "top-up cushion: the most shown is taken out and leaves at least the cushion over the floor (" + taken + " of 16 taken)");
+        Check(stoppedTaken <= stoppedLeft, "top-up cushion: taking out the most shown stops no bot at the next morning's moves (" + stoppedTaken + " stopped against " + stoppedLeft + " left alone)");
+        // The review's probe: a bot that has lost, its room to the floor a tenth of what it holds, gives nothing out at a limit of 20%.
+        MarketEngine m = BotMarket(801, 8000000, out _);
+        Bot b = TopUpBot(m, 1, 1000000, 20, 20);
+        m.AddCapital(1, 600000, out _);
+        long w = MarketBots.Worth(m.State, b, m.State.Phase), held = w - b.Cash;
+        b.Base = (w - held / 10) * 100 / 80;
+        Check(held > 0 && m.BotMostOut(1) == 0 && !m.TakeCapital(1, m.BotChangeLeast, out BotWhy why) && why == BotWhy.TooMuchOut,
+            "top-up cushion: with the room to its floor a tenth of what it holds, nothing can be taken out");
+    }
+
+    // A hire and capital added use only the cash not already given to the player's bots.
+    private static void TopUpCommitted()
+    {
+        MarketEngine m = BotMarket(811, 1000000, out BotWorld w);
+        SessionDay(m, 3, 10);
+        Check(m.Hire(1, 900000, 20, 0, 35, out BotWhy why) != null, "top-up cash: a hire within the cash");
+        Check(m.Hire(2, 900000, 20, 0, 35, out why) == null && why == BotWhy.NoCash && m.BotCashFree == 100000, "top-up cash: a second hire beyond the cash not given to a bot is refused (" + why + ")");
+        Check(!m.AddCapital(1, m.BotChangeLeast * 1000, out why) && why == BotWhy.NoCash, "top-up cash: capital added beyond it too");
+        Check(m.Hire(2, 100000, 20, 0, 35, out why) != null && m.BotCashFree == 0 && !m.AddCapital(1, m.BotChangeLeast, out why) && why == BotWhy.NoCash,
+            "top-up cash: up to it exactly, then nothing more");
+        Check(MarketBots.Committed(m.State) == 1000000 && w.Purse.Money == 1000000, "top-up cash: what is given is every bot's money not in shares, and no money moved");
+        // Bots given more than the cash before this rule keep trading.
+        MarketBots.Hired(m.State, 2).Cash = 5000000;
+        RunTo(m, m.State.Day + 5);
+        Check(m.BotCashFree == 0 && m.State.Bots.All(x => x.Status == BotStatus.Running), "top-up cash: a bot given more than the cash in an older save keeps trading");
+    }
+
+    // Capital added that the cash was short of at the first step is tried once more the next market day.
+    private static void TopUpRetry()
+    {
+        var b = new Bot { TopUp = MarketBots.TopUpDecided };
+        MarketBots.TopUpTraded(b, true);
+        bool again = b.TopUp == MarketBots.TopUpAgain;
+        b.TopUp = MarketBots.TopUpDecidedAgain;
+        MarketBots.TopUpTraded(b, true);
+        bool once = b.TopUp == 0;
+        b.TopUp = MarketBots.TopUpDecided;
+        MarketBots.TopUpTraded(b, false);
+        Check(again && once && b.TopUp == 0, "top-up again: short of cash once, it is tried once more; then, or when traded, it is done");
+        MarketEngine m = BotMarket(821, 8000000, out BotWorld w);
+        Bot bot = TopUpBot(m, 3, 600000, 50, 50);
+        var held = bot.Holdings.ToDictionary(h => h.StockId, h => h.Shares);
+        m.AddCapital(3, 900000, out _);
+        int day = m.State.Day;
+        RunTo(m, day);
+        long money = w.Purse.Money;
+        w.Purse.Money = 1000;   // the player spends their cash before the morning
+        int next = MarketTrading.NextTradingDay(day);
+        RunTo(m, next, MarketCatalogue.PhaseOpen + 3);
+        Check(bot.TopUp == MarketBots.TopUpAgain && bot.ShortDay == next, "top-up again: the cash short at the first step, the top-up waits for one more day");
+        w.Purse.Money = money;
+        RunTo(m, next);
+        RunTo(m, MarketTrading.NextTradingDay(next), MarketCatalogue.PhaseOpen + 3);
+        Check(bot.TopUp == 0 && held.Keys.Any(id => bot.Holding(id) != null && bot.Holding(id).Shares > held[id]), "top-up again: the next market day it buys more of what it holds, and is done");
+        // Kept in the save.
+        bot.TopUp = MarketBots.TopUpAgain;
+        MarketState back = MarketStore.Read(MarketStore.Write(m.State), out _);
+        Check(back != null && MarketBots.Hired(back, 3).TopUp == MarketBots.TopUpAgain, "top-up again: the save keeps it");
+    }
+
     // ---------------------------------------------------------------- the texts
 
     private static readonly string[] TopUpKeys =
@@ -333,6 +428,16 @@ internal static partial class Program
             }
         }
         Check(line, "top-up words: What's new has the feature's line, with no prefix");
+        // The texts give the bot's capital, not what it trades (its money moves with profit, payouts and a restart), and the cash refusal counts the bots.
+        bool capital = true;
+        foreach (Dictionary<string, string> words in new[] { en, pt, zh })
+        {
+            capital &= TopUpKeys.Where(k => k.Contains("_body") || k.Contains("_note_")).All(k => words[k].Contains("{capital}"));
+        }
+        Check(capital && TopUpKeys.All(k => !en[k].Contains("trades up to")) && en["reallife_mkt_bot_why_no_cash"].Contains("bots"),
+            "top-up words: they give the bot's capital, never what it trades, and the cash refusal leaves out what the bots have");
+        Check(en["reallife_guide_markets_bots"].Contains("tries once more the next market day") && en["reallife_guide_markets_bots"].Contains("moves the point where it stops further away")
+              && en["reallife_guide_markets_bots"].Contains("by its limit's share of what it holds"), "top-up words: the Guide says the second try, the further stop and the cushion");
     }
 
     private static string Between(string text, string from, string to)
