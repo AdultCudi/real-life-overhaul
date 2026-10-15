@@ -6,6 +6,7 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Districts;
 using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Permadeath;
+using RealLifeOverhaul.Photos;
 using UnityEngine;
 
 [assembly: RegisterModClass(typeof(RealLifeOverhaulInit))]
@@ -967,6 +968,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_nav_test_base_again", () => Nav.NavDirector.Instance?.TestBaseAgain())
                 .AddSplitter()
                 .Guarded(o => o.AddDistrictView())   // the district view on the city map (Scripts/Districts)
+                .Guarded(o => o.AddPhotos())   // the Camera and Gallery apps on the phone (Scripts/Photos)
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
                     v => Settings.Civic = v)
@@ -1330,6 +1332,8 @@ namespace RealLifeOverhaul
             Guard.Step("GarageDirector", () => Guard.Add<GarageDirector>(_root));   // the custom shop, builds on the player's cars, bicycles and motorbikes (Scripts/Garage)
             Guard.Step("PhoneSkin", () => PhoneSkin.Logger = context.Logger);
             Guard.Step("PhoneSkin", () => Guard.Add<PhoneSkin>(_root));
+            Guard.Step("Photos.PhotosDirector", () => Photos.PhotosDirector.Logger = context.Logger);
+            Guard.Step("Photos.PhotosDirector", () => Guard.Add<Photos.PhotosDirector>(_root));   // the Camera and Gallery apps on the phone, and the camera itself (Scripts/Photos): nothing per frame while shut
             Guard.Step("PhoneUiDump", () => PhoneUiDump.Logger = context.Logger);
             Guard.Step("PhoneUiDump", () => Guard.Add<PhoneUiDump>(_root));   // a development aid: its key does nothing unless "Developer diagnostics" is on
             Guard.Step("PerfDirector", () => PerfDirector.Logger = context.Logger);

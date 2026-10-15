@@ -40,7 +40,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Law", "law" }, { "RealLifeOverhaul.Roommates", "home_roommates" }, { "RealLifeOverhaul.Nav", "navigation" },
             { "RealLifeOverhaul.Events", "events" }, { "RealLifeOverhaul.Permadeath", "permadeath" }, { "RealLifeOverhaul.Planner", "planner" },
             { "RealLifeOverhaul.Districts", "districtview" }, { "RealLifeOverhaul.Careers", "careers_study" }, { "RealLifeOverhaul.Interiors", "interiors" },
-            { "RealLifeOverhaul.Rivals", "rivals" },
+            { "RealLifeOverhaul.Rivals", "rivals" }, { "RealLifeOverhaul.Photos", "photos" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.

@@ -284,9 +284,19 @@ namespace RealLifeOverhaul
         /// <summary>Any screen that needs the mouse cursor. Left Alt covers the ones not listed here.</summary>
         public static bool IsUiOpen()
         {
+            // Photo mode and the phone's camera (Photos/CameraMode) are the mod's own screens over the world.
+            return Leisure.PhotoMode.Active || Photos.CameraMode.Active || AnyWindow(true);
+        }
+
+        /// <summary>
+        /// A window of the game's or the mod's that needs the mouse cursor, the mod's own cameras left out (the phone's camera
+        /// asks it while it is up). <paramref name="menuCounts"/>: whether the phone's full menu counts.
+        /// </summary>
+        public static bool AnyWindow(bool menuCounts)
+        {
             // The item/vehicle panel is deliberately not counted: it is on screen the whole time the player
             // drives or carries something, and it works by keys, so it must not switch mouse look or the HUD off.
-            return Leisure.PhotoMode.Active || FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || BuildingPreview.isPreviewing
+            return (menuCounts && FullMenu.IsOpen) || CityMap.IsOpen || MiniMenu.IsOpen || BuildingPreview.isPreviewing
                    || HudConfirm.isOpen || Feedback.IsOpen || PlayerActivityUI.IsPanelOpen
                    || PurchaseUI.IsPanelOpen || PurchaseVehicleUI.IsPanelOpen || InteriorDesignerUI.IsOpen
                    || BlueprintsPanel.IsOpen || AcknowledgeWarning.isOpen
