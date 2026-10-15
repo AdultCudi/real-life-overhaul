@@ -70,6 +70,7 @@ internal static partial class Program
         Markers(scripts);
         LookChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         ButtonChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
+        PagerChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
 
         if (!Directory.Exists(managed))
         {
