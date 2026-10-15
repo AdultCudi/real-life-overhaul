@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Threading;
 
 namespace RealLifeOverhaul.Photos
 {
@@ -62,16 +64,13 @@ namespace RealLifeOverhaul.Photos
 
         /// <summary>
         /// The full path a new photo is written to: its name by the rules, numbered past any of the same second already in the
-        /// folder. The folder is made, and the save's id written beside the photos the first time (for the look over deleted saves).
+        /// folder. The folder is made, and the save's id written beside the photos (for the look over deleted saves): written
+        /// whole, and written again whenever it is not there, is empty or names another id (a write cut short by a full disk).
         /// </summary>
         public static string NewPath(string folder, string saveId, DateTime taken, bool selfie, int day, int hour)
         {
             Directory.CreateDirectory(folder);
-            string mark = Path.Combine(folder, PhotoStoreRules.SaveFile);
-            if (!File.Exists(mark) && !string.IsNullOrEmpty(saveId))
-            {
-                File.WriteAllText(mark, saveId);
-            }
+            MarkSave(folder, saveId);
             for (int number = 1; number < 1000; number++)
             {
                 string path = Path.Combine(folder, PhotoStoreRules.NameFor(taken, selfie, day, hour, number));
@@ -81,6 +80,32 @@ namespace RealLifeOverhaul.Photos
                 }
             }
             return Path.Combine(folder, PhotoStoreRules.NameFor(taken, selfie, day, hour, 1000 + Environment.TickCount % 1000));
+        }
+
+        /// <summary>The save's id beside its photos ("save.txt"), written whole unless it already says exactly that id. False if it could not be.</summary>
+        public static bool MarkSave(string folder, string saveId)
+        {
+            if (string.IsNullOrEmpty(saveId))
+            {
+                return false;
+            }
+            string mark = Path.Combine(folder, PhotoStoreRules.SaveFile);
+            try
+            {
+                if (File.Exists(mark) && string.Equals(File.ReadAllText(mark).Trim(), saveId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            catch (IOException)
+            {
+                // (read as not there: written again below)
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+            byte[] bytes = Encoding.UTF8.GetBytes(saveId);
+            return WriteWhole(mark, bytes, bytes.Length);
         }
 
         /// <summary>A file written whole: under a name of its own first, then moved into place, so that the Gallery never lists half of one.</summary>
@@ -195,8 +220,8 @@ namespace RealLifeOverhaul.Photos
                     return true;
                 }
                 Directory.CreateDirectory(folder);
-                File.WriteAllText(file, name);
-                return true;
+                byte[] bytes = Encoding.UTF8.GetBytes(name);
+                return WriteWhole(file, bytes, bytes.Length);
             }
             catch (IOException)
             {
@@ -218,56 +243,144 @@ namespace RealLifeOverhaul.Photos
         /// </summary>
         public static int Sweep(string root, string playing, Func<string, bool> savePresent, DateTime today, List<string> deleted, List<string> marked)
         {
-            int looked = 0;
+            string[] folders;
             try
             {
                 if (!Directory.Exists(root))
                 {
                     return 0;
                 }
-                string[] folders = Directory.GetDirectories(root);
-                for (int i = 0; i < folders.Length; i++)
-                {
-                    string folder = folders[i];
-                    string name = Path.GetFileName(folder);
-                    if (playing != null && string.Equals(name, PhotoStoreRules.FolderName(playing), StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-                    string idFile = Path.Combine(folder, PhotoStoreRules.SaveFile);
-                    if (!File.Exists(idFile))
-                    {
-                        continue;   // not a save's photos the Camera wrote (or not one it can tell): never touched
-                    }
-                    looked++;
-                    string id = File.ReadAllText(idFile).Trim();
-                    string goneFile = Path.Combine(folder, PhotoStoreRules.GoneFile);
-                    bool isMarked = File.Exists(goneFile);
-                    DateTime? since = isMarked ? PhotoStoreRules.MarkDay(File.ReadAllText(goneFile)) : null;
-                    switch (PhotoStoreRules.SweepOf(id.Length > 0 && savePresent(id), isMarked, since, today))
-                    {
-                        case PhotoStoreRules.Sweep.Mark:
-                            File.WriteAllText(goneFile, PhotoStoreRules.MarkText(today));
-                            marked?.Add(name);
-                            break;
-                        case PhotoStoreRules.Sweep.Unmark:
-                            File.Delete(goneFile);
-                            break;
-                        case PhotoStoreRules.Sweep.Delete:
-                            Directory.Delete(folder, true);
-                            deleted?.Add(name);
-                            break;
-                    }
-                }
+                folders = Directory.GetDirectories(root);
             }
             catch (IOException)
             {
-                // (what could not be read or deleted is looked at again next time)
+                return 0;
             }
             catch (UnauthorizedAccessException)
             {
+                return 0;
+            }
+            int looked = 0;
+            string played = playing != null ? PhotoStoreRules.FolderName(playing) : null;
+            for (int i = 0; i < folders.Length; i++)
+            {
+                try
+                {
+                    looked += SweepOne(folders[i], played, savePresent, today, deleted, marked) ? 1 : 0;
+                }
+                catch (IOException)
+                {
+                    // (a folder that could not be read or deleted is looked at again next time; the others are looked at now)
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
             }
             return looked;
+        }
+
+        // One save's folder looked over; true if it is the Camera's and its save could be told. A folder whose "save.txt" is
+        // empty, or names an id whose folder is not this one, is never touched: its save cannot be told, so it is never judged gone.
+        private static bool SweepOne(string folder, string played, Func<string, bool> savePresent, DateTime today, List<string> deleted, List<string> marked)
+        {
+            string name = Path.GetFileName(folder);
+            if (played != null && string.Equals(name, played, StringComparison.Ordinal))
+            {
+                return false;
+            }
+            string idFile = Path.Combine(folder, PhotoStoreRules.SaveFile);
+            if (!File.Exists(idFile))
+            {
+                return false;   // not a save's photos the Camera wrote (or not one it can tell): never touched
+            }
+            string id = File.ReadAllText(idFile).Trim();
+            if (id.Length == 0 || !string.Equals(PhotoStoreRules.FolderName(id), name, StringComparison.Ordinal))
+            {
+                return false;
+            }
+            string goneFile = Path.Combine(folder, PhotoStoreRules.GoneFile);
+            bool isMarked = File.Exists(goneFile);
+            DateTime? since = isMarked ? PhotoStoreRules.MarkDay(File.ReadAllText(goneFile)) : null;
+            switch (PhotoStoreRules.SweepOf(savePresent(id), isMarked, since, today))
+            {
+                case PhotoStoreRules.Sweep.Mark:
+                    File.WriteAllText(goneFile, PhotoStoreRules.MarkText(today));
+                    marked?.Add(name);
+                    break;
+                case PhotoStoreRules.Sweep.Unmark:
+                    File.Delete(goneFile);
+                    break;
+                case PhotoStoreRules.Sweep.Delete:
+                    Directory.Delete(folder, true);
+                    deleted?.Add(name);
+                    break;
+            }
+            return true;
+        }
+
+        // ---------------------------------------------------------------- an earlier build's folder
+
+        /// <summary>
+        /// The photos an earlier build of the Camera kept under the save's earlier folder name (an id with a character that was
+        /// made '_': PhotoStoreRules.EarlierFolderName) moved to the save's folder now, when that folder is not there yet and the
+        /// earlier one's "save.txt" holds exactly this id (so another save's photos are never taken). True if moved.
+        /// </summary>
+        public static bool Adopt(string root, string saveId)
+        {
+            string earlier = PhotoStoreRules.EarlierFolderName(saveId);
+            if (earlier == null)
+            {
+                return false;
+            }
+            try
+            {
+                string from = Path.Combine(root, earlier), to = Folder(root, saveId);
+                string idFile = Path.Combine(from, PhotoStoreRules.SaveFile);
+                if (Directory.Exists(to) || !Directory.Exists(from) || !File.Exists(idFile) || !string.Equals(File.ReadAllText(idFile).Trim(), saveId, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+                Directory.Move(from, to);
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- a whole photo
+
+        public const int PhotoMost = 32 * 1024 * 1024;   // bytes a photo file is read up to: a 1080-line JPG is some 500 KB; past this it is no photo of the Camera's
+
+        /// <summary>
+        /// A photo's file read whole, for the engine to decode (PhotosGame.Load): the bytes, or null if it is not there, cannot
+        /// be read, or is empty or larger than <see cref="PhotoMost"/>. By its path on disk, never a file URL, so a folder with
+        /// '+', '#', '%', a space, an accent or Chinese in its name reads as any other.
+        /// </summary>
+        public static byte[] ReadPhoto(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                {
+                    return null;
+                }
+                long length = new FileInfo(path).Length;
+                return length <= 0 || length > PhotoMost ? null : File.ReadAllBytes(path);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -295,6 +408,36 @@ namespace RealLifeOverhaul.Photos
                 }
             }
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Writes of one thing (the wallpaper's line) handed to workers in any order, of which the last asked for wins: each is
+    /// given a ticket when it is asked for (on the main thread), and a worker writes only while its ticket is the latest, under
+    /// one lock, so two quick changes never leave the earlier one written. Game-free; one is made for each save followed.
+    /// </summary>
+    public sealed class LastWins
+    {
+        private readonly object _gate = new object();
+        private int _latest;
+
+        /// <summary>A ticket for a write asked for now: later than every one before it.</summary>
+        public int Next()
+        {
+            return Interlocked.Increment(ref _latest);
+        }
+
+        /// <summary>The write done if its ticket is still the latest (true), else nothing (false: a later one was asked for).</summary>
+        public bool Run(int ticket, Func<bool> write)
+        {
+            lock (_gate)
+            {
+                if (ticket != Volatile.Read(ref _latest))
+                {
+                    return false;
+                }
+                return write();
+            }
         }
     }
 }

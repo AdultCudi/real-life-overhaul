@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 using BAModAPI;
 using BigAmbitions.InputSystem;
 using CameraControllers;
@@ -16,7 +18,6 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Experimental.Rendering;
-using UnityEngine.Networking;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 
@@ -26,8 +27,8 @@ namespace RealLifeOverhaul.Photos
     /// The one place the Camera and the Gallery touch the game and the engine: what the moment is (on foot, in a vehicle, a
     /// window open), the phone's menu, the HUD, the player's walk and body, the game's cameras, the pointer, the screen read
     /// at the end of a frame and the photo made from it on a worker thread (the engine's JPG encoder, which may run on any
-    /// thread), a photo loaded for the full screen (the engine's own loader, which decodes on its worker threads), the grade
-    /// of a filter, the save's id and the folders, and the game's notifications.
+    /// thread), a photo loaded for the full screen (its file read on a worker, decoded by the engine on the main thread), the
+    /// grade of a filter, the save's id and the folders, and the game's notifications.
     ///
     /// Per frame: nothing of its own. The camera's frame reads <see cref="Situation"/> (a dozen of the game's flags) and the
     /// two keys; everything else runs on a click, at the camera's opening and closing, or once a second.
@@ -81,9 +82,24 @@ namespace RealLifeOverhaul.Photos
             s.InVehicle = PlayerHelper.IsUsingVehicle;
             s.OnTransit = TransitDirector.Riding;
             s.Skipping = uis.timeMachine != null && uis.timeMachine.isRunning;
-            s.Busy = player.NavigationDisabled || GameManager.IsAnyMiniGameActive() || PoliceAttention.IsBusy;
+            s.Busy = GameManager.IsAnyMiniGameActive() || PoliceAttention.IsBusy;
+            s.WalkHeld = player.NavigationDisabled;
+            s.OwnHold = s.WalkHeld && OwnHoldOnly(player);
             s.Window = (phoneCounts && FullMenu.IsOpen) || ThirdPersonCamera.AnyWindow(false);
             return s;
+        }
+
+        private static readonly FieldInfo BlockersField = GameContract.NavBlockers.Field;   // (resolved once: Core/GameContract)
+
+        // Whether the only thing holding the player's walk is the camera's own blocker. Without the game's list (a game that
+        // changed it), the walk held while the camera holds it is taken for the camera's own, as before the list was read.
+        private static bool OwnHoldOnly(PlayerController player)
+        {
+            if (BlockersField?.GetValue(player) is HashSet<NavigationBlocker> blockers)
+            {
+                return blockers.Count == 1 && blockers.Contains(Blocker);
+            }
+            return CameraMode.Active;
         }
 
         // ---------------------------------------------------------------- the phone
@@ -104,13 +120,25 @@ namespace RealLifeOverhaul.Photos
 
         public static bool HudShown => ScreenshotController.uiIsVisible;
 
-        /// <summary>The game's own "hide the interface" (its canvases go clear), put to the state asked for if it is not there already.</summary>
+        /// <summary>
+        /// The game's own "hide the interface" (its canvases go clear), put to the state asked for if it is not there already.
+        /// With no interface to toggle (the city unloading), the game's flag alone is set: it is static and only the engine's
+        /// start resets it, so the next city's interface would otherwise start hidden.
+        /// </summary>
         public static void Hud(bool shown)
         {
+            if (ScreenshotController.uiIsVisible == shown)
+            {
+                return;
+            }
             UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis != null && uis.screenshot != null && ScreenshotController.uiIsVisible != shown)
+            if (uis != null && uis.screenshot != null)
             {
                 uis.screenshot.ToggleUIVisibility();
+            }
+            else
+            {
+                ScreenshotController.uiIsVisible = shown;
             }
         }
 
@@ -204,16 +232,53 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The world's clicks held (nothing in the world is pointed at or clicked, as in the game's placement), or let go.</summary>
-        public static void HoldWorld(bool hold)
+        private static readonly FieldInfo WorldMaskField = GameContract.WorldMask.Field;   // (resolved once: Core/GameContract)
+
+        /// <summary>
+        /// The world's clicks as they are: the layers the game's mouse points at (false if they cannot be read) and the cursor
+        /// it shows over them (the mop's while cleaning a floor: MopController sets both).
+        /// </summary>
+        public static bool ReadWorld(out int mask, out int cursor)
         {
-            if (hold)
+            cursor = (int)MouseController.cursorOnHover;
+            mask = 0;
+            if (WorldMaskField?.GetValue(null) is LayerMask layers)
             {
-                MouseController.SetRestrictedObjectTypes();
+                mask = layers.value;
+                return true;
             }
-            else
+            return false;
+        }
+
+        /// <summary>The world's clicks held: nothing in the world is pointed at or clicked, as in the game's placement. Returns the mask set.</summary>
+        public static int HoldWorld()
+        {
+            MouseController.SetRestrictedObjectTypes();
+            return 0;   // (no layer named: the empty mask)
+        }
+
+        /// <summary>
+        /// The world's clicks put back as they were held (<paramref name="read"/>: the mask was read), if the mask is still the
+        /// camera's own (<paramref name="cameras"/>); one the game set meanwhile stands. Unread, the game's defaults are put
+        /// back and, while a mop is held, the mop's floor again (as the game's own city map does on closing).
+        /// </summary>
+        public static void GiveWorld(bool read, int mask, int cursor, int cameras)
+        {
+            if (read && WorldMaskField != null)
             {
-                MouseController.Reset();
+                if (ReadWorld(out int now, out _) && CameraHold.WorldBack(now, cameras))
+                {
+                    LayerMask layers = mask;
+                    WorldMaskField.SetValue(null, layers);
+                    MouseController.cursorOnHover = (CursorType)cursor;
+                }
+                return;
+            }
+            MouseController.Reset();
+            if (PlayerHelper.IsHoldingAMop)
+            {
+                MouseController.cursorOnHover = CursorType.Mop;
+                MouseController.SetRestrictedObjectTypes(InteractiveObjectType.Ground);
             }
         }
 
@@ -491,42 +556,62 @@ namespace RealLifeOverhaul.Photos
         private static readonly int HotLoaded = HotSpots.Slot("Photos: PhotosGame.Load");
 
         /// <summary>
-        /// A photo loaded whole for the full screen or the wallpaper: read and decoded by the engine's own loader on its worker
-        /// threads (UnityWebRequestTexture, from the file on this computer: nothing goes over the network), the texture handed
-        /// to <paramref name="done"/> (null if it could not be read). The main thread's share (the texture made from what the
-        /// workers decoded) is timed under its own name (Core/HotSpots) and said with Developer diagnostics on.
+        /// A photo loaded whole for the full screen or the wallpaper: its file read on a worker thread by its path on disk
+        /// (PhotoStore.ReadPhoto; never a file URL, which a folder with '+', '#', '%' or a letter outside English could break),
+        /// then decoded and uploaded by the engine on the main thread (Texture2D.LoadImage, its copy in memory let go at once),
+        /// the texture handed to <paramref name="done"/> (null if it could not be read). The main thread's share, a 1080-line
+        /// JPG of some 500 KB decoded once on a click (about 10 to 20 ms), is timed under its own name (Core/HotSpots) and said
+        /// with Developer diagnostics on.
         /// </summary>
         public static IEnumerator Load(string path, Action<Texture2D> done)
         {
             Texture2D texture = null;
-            if (!string.IsNullOrEmpty(path) && File.Exists(path))
+            Task<byte[]> work = Task.Run(() => PhotoStore.ReadPhoto(path));
+            while (!work.IsCompleted)
             {
-                using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(new Uri(path).AbsoluteUri, true))
+                yield return null;
+            }
+            byte[] bytes = work.Status == TaskStatus.RanToCompletion ? work.Result : null;
+            if (bytes == null)
+            {
+                Logger?.Warn("Gallery: " + Path.GetFileName(path) + " could not be read.");
+            }
+            else
+            {
+                using var hotSpot = HotSpots.Time(HotLoaded);
+                var watch = Stopwatch.StartNew();
+                texture = Decode(bytes);
+                if (texture == null)
                 {
-                    yield return request.SendWebRequest();
-                    using var hotSpot = HotSpots.Time(HotLoaded);
-                    var watch = Stopwatch.StartNew();
-                    if (request.result == UnityWebRequest.Result.Success)
-                    {
-                        texture = DownloadHandlerTexture.GetContent(request);
-                        if (texture != null)
-                        {
-                            texture.name = "RealLifeOverhaul Photo";
-                            texture.wrapMode = TextureWrapMode.Clamp;
-                        }
-                    }
-                    else
-                    {
-                        Logger?.Warn("Gallery: " + Path.GetFileName(path) + " could not be read (" + request.error + ").");
-                    }
-                    if (Meta.Dev.Verbose)
-                    {
-                        Logger?.Info("Gallery check (a photo loaded off the main thread: the main thread's share " + watch.Elapsed.TotalMilliseconds.ToString("0.0")
-                                     + " ms, wanted under " + CameraRules.ReadMost.ToString("0") + "): " + (texture == null ? "no picture" : watch.Elapsed.TotalMilliseconds < CameraRules.ReadMost ? "PASS" : "slow"));
-                    }
+                    Logger?.Warn("Gallery: " + Path.GetFileName(path) + " is no picture the engine can read.");
+                }
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Gallery check (a photo of " + (bytes.Length / 1024) + " KB decoded on the main thread in " + watch.Elapsed.TotalMilliseconds.ToString("0.0")
+                                 + " ms, wanted under " + CameraRules.ReadMost.ToString("0") + "): " + (texture == null ? "no picture" : watch.Elapsed.TotalMilliseconds < CameraRules.ReadMost ? "PASS" : "slow"));
                 }
             }
             done(texture);
+        }
+
+        // THE ONE DECODE OF A WHOLE PHOTO ON THE MAIN THREAD (on a click): the engine's JPG decoder and one upload; the copy
+        // in memory let go (the texture is only drawn).
+        private static Texture2D Decode(byte[] bytes)
+        {
+            var texture = new Texture2D(2, 2, TextureFormat.RGB24, false) { name = "RealLifeOverhaul Photo", wrapMode = TextureWrapMode.Clamp };
+            try
+            {
+                if (texture.LoadImage(bytes, true) && texture.width > 2)
+                {
+                    return texture;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            UnityEngine.Object.Destroy(texture);
+            return null;
         }
 
         // ---------------------------------------------------------------- notifications

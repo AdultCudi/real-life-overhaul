@@ -19,10 +19,15 @@ namespace RealLifeOverhaul.Photos
         Gone          // the player is not there (a scene change, the funeral)
     }
 
-    /// <summary>What the camera knows of the moment, read by the game's side (PhotosGame) and judged here.</summary>
+    /// <summary>
+    /// What the camera knows of the moment, read by the game's side (PhotosGame) and judged here. The game holding the player
+    /// comes in two: <see cref="Busy"/> (a minigame, the police's attention: the game's own scenes) and <see cref="WalkHeld"/>
+    /// (the player's walk held by any of the game's blockers), with <see cref="OwnHold"/> when the only blocker is the camera's
+    /// own (7319), which the camera sets itself while it is open.
+    /// </summary>
     public struct CameraSituation
     {
-        public bool FeatureOn, Loaded, PlayerThere, InVehicle, OnTransit, Busy, Window, Custody, Skipping, PhotoMode;
+        public bool FeatureOn, Loaded, PlayerThere, InVehicle, OnTransit, Busy, WalkHeld, OwnHold, Window, Custody, Skipping, PhotoMode;
     }
 
     /// <summary>A light colour filter of the camera's: a tint and three of the grade's figures (HDRP's colour adjustments).</summary>
@@ -115,7 +120,7 @@ namespace RealLifeOverhaul.Photos
             {
                 return CameraRefusal.Window;
             }
-            if (s.Busy)
+            if (s.Busy || (s.WalkHeld && !s.OwnHold))
             {
                 return CameraRefusal.Busy;
             }
@@ -123,14 +128,35 @@ namespace RealLifeOverhaul.Photos
         }
 
         /// <summary>
-        /// Whether the camera, open, must close now, and why: everything that refuses it, but "busy", which the camera's own
-        /// hold on the player's walk makes true (it is read before the camera holds it, and the game's own reasons for it
-        /// come with a window or a scene, which are read).
+        /// Whether the camera, open, must close now, and why: everything that refuses it. The walk held by the camera's own
+        /// blocker alone is no reason (the camera holds it itself); held by any other of the game's, or a minigame, the police's
+        /// attention or a scene of the game's own coming about, the camera shuts.
         /// </summary>
         public static CameraRefusal MustClose(CameraSituation s)
         {
-            s.Busy = false;
             return Refuse(s);
+        }
+
+        /// <summary>
+        /// Whether Flare's own picture is taken where the Camera refuses, asked for from Flare's camera button (a shot of the
+        /// screen as it is, which works wherever Flare does) or its selfie button (photo mode's selfie, on foot only, which works
+        /// while the game holds the player or the police have them): true where Flare's works and the Camera's does not, so the
+        /// button does what it did before the Camera. False where neither works (the Camera's word is the one said).
+        /// </summary>
+        public static bool FlareTakesOver(CameraRefusal refusal, bool selfie)
+        {
+            switch (refusal)
+            {
+                case CameraRefusal.Busy:
+                case CameraRefusal.Custody:
+                    return true;
+                case CameraRefusal.Vehicle:
+                case CameraRefusal.Transit:
+                case CameraRefusal.Skipping:
+                    return !selfie;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>The key of a refusal's sentence (a notification), or null for none.</summary>

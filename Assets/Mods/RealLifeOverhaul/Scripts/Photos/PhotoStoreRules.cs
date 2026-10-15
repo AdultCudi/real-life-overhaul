@@ -65,9 +65,14 @@ namespace RealLifeOverhaul.Photos
 
         // ---------------------------------------------------------------- the folders
 
+        public const int HashLength = 9;                     // "_" and eight hex digits: the mark of a name that was changed
+
         /// <summary>
-        /// A save's folder's name: its id with every character that is not a letter, a digit, '-', '_', '+' or '=' made '_'
-        /// (the game's ids are Base64, whose '/' a folder's name cannot have), cut to <see cref="NameMost"/>; "unsaved" for none.
+        /// A save's folder's name, one for each id and never one for two: an id of letters, digits, '-', '+' and '=' alone (the
+        /// game's Base64 ids) is its folder's name as it is; any other (a space, a '/', an accent, a '_' of an older save named
+        /// after its character, or one longer than <see cref="NameMost"/>) has those characters made '_', is cut to leave room,
+        /// and ends in '_' and eight hex digits of the whole id (so "A B" and "A_B" are two folders, and no id kept as it is
+        /// can end so, having no '_'). "unsaved" for none, and "unsaved_" and the digits for an id of nothing plain.
         /// </summary>
         public static string FolderName(string saveId)
         {
@@ -75,21 +80,97 @@ namespace RealLifeOverhaul.Photos
             {
                 return Unsaved;
             }
+            bool changed = saveId.Length > NameMost || string.Equals(saveId, Unsaved, StringComparison.OrdinalIgnoreCase);
+            bool any = false;
+            for (int i = 0; i < saveId.Length; i++)
+            {
+                bool plain = Plain(saveId[i]);
+                changed |= !plain;
+                any |= plain;
+            }
+            string hash = "_" + Hash(saveId).ToString("x8", CultureInfo.InvariantCulture);
+            if (!any)
+            {
+                return Unsaved + hash;
+            }
+            if (!changed)
+            {
+                return saveId;
+            }
+            int length = Math.Min(saveId.Length, NameMost - HashLength);
+            var name = new StringBuilder(length + HashLength);
+            for (int i = 0; i < length; i++)
+            {
+                char c = saveId[i];
+                name.Append(Plain(c) ? c : '_');
+            }
+            return name.Append(hash).ToString();
+        }
+
+        /// <summary>
+        /// The name an earlier build of the Camera gave a save's folder (every character not plain made '_', cut to
+        /// <see cref="NameMost"/>), or null where it is the name <see cref="FolderName"/> gives now. A folder of that name whose
+        /// "save.txt" holds the very id is that save's photos, moved to the new name (PhotoStore.Adopt).
+        /// </summary>
+        public static string EarlierFolderName(string saveId)
+        {
+            if (string.IsNullOrEmpty(saveId))
+            {
+                return null;
+            }
             int length = Math.Min(saveId.Length, NameMost);
             var name = new StringBuilder(length);
             bool any = false;
             for (int i = 0; i < length; i++)
             {
-                char c = saveId[i];
-                bool plain = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '=';
-                name.Append(plain ? c : '_');
+                bool plain = Plain(saveId[i]);
+                name.Append(plain ? saveId[i] : '_');
                 any |= plain;
             }
-            if (!any)
+            string earlier = any ? name.ToString() : Unsaved + "_" + Hash(saveId).ToString("x8", CultureInfo.InvariantCulture);
+            return string.Equals(earlier, FolderName(saveId), StringComparison.Ordinal) ? null : earlier;
+        }
+
+        private static bool Plain(char c)
+        {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '=';
+        }
+
+        /// <summary>
+        /// Whether two paths name one folder, whatever their separators: the engine's persistentDataPath has '/', and the
+        /// game's Mono turns every '/' into '\' in what Path gives back (its CleanPath), which .NET on Windows does not. A
+        /// trailing separator and the case of the letters (Windows names files without it) do not count.
+        /// </summary>
+        public static bool SameFolder(string a, string b)
+        {
+            if (a == null || b == null)
             {
-                return Unsaved + "_" + Hash(saveId).ToString("x8", CultureInfo.InvariantCulture);
+                return false;
             }
-            return name.ToString();
+            int la = TrimmedLength(a), lb = TrimmedLength(b);
+            if (la != lb)
+            {
+                return false;
+            }
+            for (int i = 0; i < la; i++)
+            {
+                char x = a[i] == '/' ? '\\' : a[i], y = b[i] == '/' ? '\\' : b[i];
+                if (x != y && char.ToUpperInvariant(x) != char.ToUpperInvariant(y))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static int TrimmedLength(string path)
+        {
+            int length = path.Length;
+            while (length > 1 && (path[length - 1] == '/' || path[length - 1] == '\\'))
+            {
+                length--;
+            }
+            return length;
         }
 
         private static uint Hash(string text)

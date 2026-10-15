@@ -66,6 +66,9 @@ namespace RealLifeOverhaul.Photos
         private CameraFrame _frame;
         private string _toast;
         private float _toastUntil, _flashFrom = -10f;
+        private int _worldMask;                          // the mask the camera set on the world's clicks (PhotosGame.HoldWorld)
+        private PhotosGame.Shot _pendingShot;            // the screen's copy of a shot under way, until its coroutine lets it go
+        private Task _pendingWork;                       // ...and the worker that has it, if one does
 
         private void Awake()
         {
@@ -84,11 +87,53 @@ namespace RealLifeOverhaul.Photos
             {
                 Logger?.Error(e);
             }
+            FreeShot();
             _view = null;
             if (Instance == this)
             {
                 Instance = null;
                 Active = false;
+            }
+        }
+
+        // The object switched off stops its coroutines too (the camera's own Close only turns the component off, which does
+        // not): a shot under way is let go here, as its coroutine's finally would have.
+        private void OnDisable()
+        {
+            try
+            {
+                if (!gameObject.activeInHierarchy)
+                {
+                    FreeShot();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // The screen's copy of a shot whose coroutine the engine stopped (the component destroyed, its object switched off):
+        // the engine runs no finally of a stopped coroutine, and the copy (some 33 MB at 4K) is outside the managed heap. Let go
+        // now, or by its worker's end if a worker has it. A second call does nothing.
+        private void FreeShot()
+        {
+            PhotosGame.Shot left = _pendingShot;
+            Task work = _pendingWork;
+            _pendingShot = null;
+            _pendingWork = null;
+            _shooting = false;
+            if (left == null)
+            {
+                return;
+            }
+            if (work != null && !work.IsCompleted)
+            {
+                work.ContinueWith(_ => PhotosGame.Drop(left));
+            }
+            else
+            {
+                PhotosGame.Drop(left);
             }
         }
 
@@ -142,20 +187,30 @@ namespace RealLifeOverhaul.Photos
             _flashFrom = -10f;
             Active = true;
             enabled = true;
-            if (_view == null)
+            try
             {
-                _view = new CameraView(transform, () => Close("its Close button"), Shoot, Flip, ToggleGrid, NextPose, Gallery, Filter, Frame);
+                if (_view == null)
+                {
+                    _view = new CameraView(transform, () => Close("its Close button"), Shoot, Flip, ToggleGrid, NextPose, Gallery, Filter, Frame);
+                }
+                _view.Show(true);
+                _view.Busy(false);
+                _view.ForShot(false, _grid);   // (the controls back, whatever became of a shot an earlier opening left)
+                _view.Latest(PhotosDirector.Instance != null ? PhotosDirector.Instance.LatestTexture : null);
+                PhotosGame.Grade(_color, _filter);
+                Rear();
+                if (selfie)
+                {
+                    StartSelfie();
+                }
+                Write();
             }
-            _view.Show(true);
-            _view.Busy(false);
-            _view.Latest(PhotosDirector.Instance != null ? PhotosDirector.Instance.LatestTexture : null);
-            PhotosGame.Grade(_color, _filter);
-            Rear();
-            if (selfie)
+            catch (Exception e)
             {
-                StartSelfie();
+                Logger?.Error(e);
+                Close("a fault");   // (everything held given back now, not a frame later)
+                return CameraRefusal.Gone;
             }
-            Write();
             Logger?.Info("Camera: open (" + (_inSelfie ? "selfie" : "rear") + (fromFlare ? ", from Flare" : string.Empty) + (_seated ? ", seated" : string.Empty) + ").");
             if (Meta.Dev.Verbose)
             {
@@ -172,8 +227,10 @@ namespace RealLifeOverhaul.Photos
             PhotosGame.HoldWalk(true);
             _hold.Take(HoldPart.Zoom, PhotosGame.ZoomBlocked ? 1f : 0f);
             PhotosGame.ZoomBlocked = true;
-            _hold.Take(HoldPart.World);
-            PhotosGame.HoldWorld(true);
+            bool read = PhotosGame.ReadWorld(out int mask, out int cursor);
+            CameraHold.Split(mask, out float low, out float high);
+            _hold.Take(HoldPart.World, low, high, cursor, read ? 1f : 0f);
+            _worldMask = PhotosGame.HoldWorld();
             _hold.Take(HoldPart.Pointer, (int)Cursor.lockState, Cursor.visible ? 1f : 0f);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -318,7 +375,7 @@ namespace RealLifeOverhaul.Photos
                     Cursor.visible = v[1] > 0.5f;
                     break;
                 case HoldPart.World:
-                    PhotosGame.HoldWorld(false);
+                    PhotosGame.GiveWorld(v[3] > 0.5f, CameraHold.Join(v[0], v[1]), (int)v[2], _worldMask);
                     break;
                 case HoldPart.Zoom:
                     PhotosGame.ZoomBlocked = v[0] > 0.5f;
@@ -619,6 +676,7 @@ namespace RealLifeOverhaul.Photos
                     yield break;
                 }
                 shot = PhotosGame.Read();
+                _pendingShot = shot;
                 _view.ForShot(false, _grid);
                 if (shot == null)
                 {
@@ -634,6 +692,7 @@ namespace RealLifeOverhaul.Photos
                     path = PhotoStore.NewPath(folder, saveId, taken, selfie, day, hour);
                     return PhotosGame.Develop(given, path);
                 });
+                _pendingWork = work;
                 while (!work.IsCompleted)
                 {
                     yield return null;
@@ -649,7 +708,7 @@ namespace RealLifeOverhaul.Photos
                     yield break;
                 }
                 PhotosDirector director = PhotosDirector.Instance;
-                Texture latest = director != null ? director.Added(path, made) : null;
+                Texture latest = director != null ? director.Added(folder, path, made) : null;
                 Logger?.Info("Camera: a " + (selfie ? "selfie" : "photo") + " saved (" + System.IO.Path.GetFileName(path) + ", " + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB).");
                 if (Meta.Dev.Verbose)
                 {
@@ -674,9 +733,14 @@ namespace RealLifeOverhaul.Photos
             finally
             {
                 _shooting = false;
-                if (_view != null && Active)
+                if (_pendingShot == shot)
                 {
-                    _view.Busy(false);
+                    _pendingShot = null;
+                    _pendingWork = null;
+                }
+                if (_view != null)
+                {
+                    _view.Busy(false);              // (open or shut: a camera shut in the shutter's frame opens next with its controls)
                     _view.ForShot(false, _grid);
                 }
                 PhotosGame.Shot left = shot;

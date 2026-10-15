@@ -94,6 +94,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ClaimedRows = ContractBook.Part("claimed_rows", null, "the mod's buildings left out of the city map's rows of units to let");
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
+        public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -177,9 +178,12 @@ namespace RealLifeOverhaul
         // Jobs/JobMop
         public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // (else the cell under the player)
 
-        // Licences/Driving/TestCar
+        // Licences/Driving/TestCar; Photos/PhotosGame (the camera's own blocker told from the game's: without it, any hold while the camera is open is taken for its own)
         public static readonly GameMember NavTargets = Field(SchoolCar, Game, "EntityController", "navMeshTargets", "Transform[]");
-        public static readonly GameMember NavBlockers = Field(SchoolCar, Game, "PlayerController", "_activeNavigationBlockers", "HashSet<NavigationBlocker>");
+        public static readonly GameMember NavBlockers = Field(On(SchoolCar, PhotoHolds), Game, "PlayerController", "_activeNavigationBlockers", "HashSet<NavigationBlocker>");
+
+        // Photos/PhotosGame: the layers the game's mouse points at, held and put back by the Camera (else the game's defaults put back, and the mop's floor again while a mop is held, as the game's city map does)
+        public static readonly GameMember WorldMask = Optional(StaticField(PhotoHolds, Game, "MouseController", "RaycastLayerMark", "LayerMask"));
 
         // Meta/SaveTools ("yes" when it cannot be read)
         public static readonly GameMember CanSave = Optional(StaticMethod(SaveCheck, Game, "SaveGameManager", "CanSave", "Boolean"));

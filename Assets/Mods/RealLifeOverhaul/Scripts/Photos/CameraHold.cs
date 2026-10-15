@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Photos
         IndoorTurn,   // the game's indoor camera: its angle and distance
         Hud,          // the game's interface shown or hidden (1 or 0)
         Pointer,      // the pointer's lock and whether it showed
-        World,        // the world's clicks held (the game's mouse controller)
+        World,        // the world's clicks held (the game's mouse controller): its mask's low and high 16 bits, the hover cursor, 1 if the mask was read
         Zoom,         // the game's own zoom held (1 or 0, what it was)
         Walk,         // the player's walk held by the camera's own blocker
         Count
@@ -122,6 +122,33 @@ namespace RealLifeOverhaul.Photos
             {
                 _held[(int)part] = false;
             }
+        }
+
+        // ---------------------------------------------------------------- the world's clicks
+
+        /// <summary>
+        /// A whole 32-bit mask (the game's mouse controller's layers) as two values a part can hold exactly: its low and its
+        /// high 16 bits (a float holds every whole number to 2^24, a mask needs 32).
+        /// </summary>
+        public static void Split(int mask, out float low, out float high)
+        {
+            low = mask & 0xFFFF;
+            high = (mask >> 16) & 0xFFFF;
+        }
+
+        /// <summary>The mask back from its two halves (<see cref="Split"/>).</summary>
+        public static int Join(float low, float high)
+        {
+            return unchecked(((int)high << 16) | ((int)low & 0xFFFF));
+        }
+
+        /// <summary>
+        /// Whether the world's clicks are put back as they were held: only while the mask is still the camera's own (nothing
+        /// pointed at). If the game set another meanwhile (it ended the mop's cleaning, began a placement), the game's stands.
+        /// </summary>
+        public static bool WorldBack(int now, int cameras)
+        {
+            return now == cameras;
         }
 
         private static HoldPart[] MakeOrder()

@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Photos
         private int _generation;               // counts the saves followed: a worker's answer for an earlier one is let go
         private Texture2D _latest;
         private string _latestName;
+        private LastWins _wallpaperWrites = new LastWins();   // the wallpaper's line written by workers, the last choice winning (one for each save)
         private string _wallpaper;             // the photo set as the wallpaper, by name, or null
         private Texture _wallpaperTexture;
         private int _armed;                    // a test waiting for the options page to close: 1 the camera, 2 the selfie, 3 the Gallery
@@ -125,7 +126,7 @@ namespace RealLifeOverhaul.Photos
             if (!_running)
             {
                 _running = true;
-                _root = PhotosGame.Root;
+                _root = Path.GetFullPath(PhotosGame.Root);   // one form of the root from here on: the engine's '/' as the game's Mono gives paths back
             }
             string id = PhotosGame.SaveId;
             if (_folder == null || !string.Equals(id, _saveId, StringComparison.Ordinal))
@@ -155,16 +156,19 @@ namespace RealLifeOverhaul.Photos
             _photos.Clear();
             ClearWallpaper();
             DropLatest();
+            _wallpaperWrites = new LastWins();
             _folder = PhotoStore.Folder(_root, id);
-            StartCoroutine(Guard.Routine(List(_folder, _generation)));
+            StartCoroutine(Guard.Routine(List(_root, id, _folder, _generation)));
         }
 
-        private IEnumerator List(string folder, int generation)
+        private IEnumerator List(string root, string id, string folder, int generation)
         {
             var found = new List<PhotoEntry>(PhotoStoreRules.Cap + 16);
             string wallpaper = null;
+            bool adopted = false;
             Task<bool> work = Task.Run(() =>
             {
+                adopted = PhotoStore.Adopt(root, id);   // (an earlier build's folder of this save, moved to its name now)
                 bool read = PhotoStore.List(folder, found);
                 wallpaper = PhotoStore.Wallpaper(folder);
                 return read;
@@ -180,6 +184,10 @@ namespace RealLifeOverhaul.Photos
             if (work.Status != TaskStatus.RanToCompletion || !work.Result)
             {
                 Logger?.Warn("Gallery: the folder of this save's photos could not be read (" + folder + "); the Gallery shows none for now.");
+            }
+            if (adopted)
+            {
+                Logger?.Info("Gallery: this save's photos were moved from the folder an earlier build named to " + Path.GetFileName(folder) + ".");
             }
             _photos.Clear();
             _photos.AddRange(found);
@@ -220,8 +228,10 @@ namespace RealLifeOverhaul.Photos
 
         /// <summary>
         /// The camera asked for (the Camera app, Flare's camera button, a test): the phone put away and the camera opened as the
-        /// rear camera or the selfie. Says why not in the game's notice. False only when the Camera is off (Flare then takes its
-        /// own shot); true when it opened, will open, or was refused with a word.
+        /// rear camera or the selfie. Says why not in the game's notice. False when the Camera is off, or when it is asked for
+        /// from Flare where Flare's own picture still works and the Camera's does not (CameraRules.FlareTakesOver: a vehicle,
+        /// the bus, the game holding the player...): Flare then takes its own, with no word from the Camera. True when it
+        /// opened, will open, or was refused with a word.
         /// </summary>
         public bool OpenCamera(bool selfie, bool fromFlare)
         {
@@ -236,6 +246,11 @@ namespace RealLifeOverhaul.Photos
             CameraRefusal refusal = CameraRules.Refuse(PhotosGame.Situation(false));
             if (refusal != CameraRefusal.None)
             {
+                if (fromFlare && CameraRules.FlareTakesOver(refusal, selfie))
+                {
+                    Logger?.Info("Camera: not now (" + refusal + "); Flare takes its own " + (selfie ? "selfie" : "picture") + ".");
+                    return false;
+                }
                 Refused(refusal);
                 return true;
             }
@@ -331,11 +346,15 @@ namespace RealLifeOverhaul.Photos
 
         // ---------------------------------------------------------------- the photos
 
-        /// <summary>A photo the camera has just written: first in the list, its small copy the latest. Returns that texture.</summary>
-        internal Texture Added(string path, PhotosGame.Developed made)
+        /// <summary>
+        /// A photo the camera has just written into <paramref name="folder"/> (the folder the shot took from <see cref="Folder"/>):
+        /// first in the list, its small copy the latest. Returns that texture. The folder is told by the one the shot took, never
+        /// by taking the photo's path apart (the game's Mono gives '' where the engine's root has '/').
+        /// </summary>
+        internal Texture Added(string folder, string path, PhotosGame.Developed made)
         {
             var entry = new PhotoEntry();
-            if (path == null || !PhotoStoreRules.Parse(Path.GetFileName(path), entry) || !string.Equals(Path.GetDirectoryName(path), _folder, StringComparison.OrdinalIgnoreCase))
+            if (path == null || !PhotoStoreRules.Parse(Path.GetFileName(path), entry) || !PhotoStoreRules.SameFolder(folder, _folder))
             {
                 return _latest;   // (a photo of a save no longer followed)
             }
@@ -445,7 +464,9 @@ namespace RealLifeOverhaul.Photos
             string folder = _folder;
             _wallpaper = name;
             _wallpaperWanted = name != null;
-            Task.Run(() => PhotoStore.SetWallpaper(folder, name));
+            LastWins writes = _wallpaperWrites;
+            int ticket = writes.Next();
+            Task.Run(() => writes.Run(ticket, () => PhotoStore.SetWallpaper(folder, name)));   // (two quick changes: the later is the one written)
             ClearShownWallpaper();
             if (name != null)
             {
