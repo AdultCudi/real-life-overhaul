@@ -42,6 +42,7 @@ namespace RealLifeOverhaul
 
         private readonly Transform _owner;
         private readonly BikePlaces _places;
+        private readonly BikeNames _names = new BikeNames();
         private readonly List<string> _scratch = new List<string>(8);
 
         private VehicleController _selected;
@@ -127,12 +128,14 @@ namespace RealLifeOverhaul
                     _riding.Effort = 1f;
                     _riding.Mounted(gm.playerController);
                 }
+                _names.Ride(_riding);
                 return;
             }
             if (_riding == null)
             {
                 return;
             }
+            _names.Frame();
             if (_riding.Fell > 0f)
             {
                 Fall(_riding);
@@ -146,6 +149,7 @@ namespace RealLifeOverhaul
             mount.Fell = 0f;
             ScooterController scooter = mount.Scooter;
             scooter.Reset();
+            mount.BarsOff();   // before the game hands the rider back to physics
             scooter.ExitVehicle();
             bool played = false;
             try
@@ -485,6 +489,7 @@ namespace RealLifeOverhaul
             {
                 Point(gm);
             }
+            _names.Quick();
             if (!_places.Found || gm.playerController == null)
             {
                 return;
@@ -706,6 +711,9 @@ namespace RealLifeOverhaul
             {
                 _failed = true;
                 Logger?.Warn("Two-wheelers: switched off after something unexpected; bicycles and motorbikes already out stay as they are. " + e);
+                _riding?.Dismounted();   // the bars box and the name's hook let go: nothing of a ride is left switched on
+                _riding = null;
+                _names.Dispose();
             }
         }
 
@@ -1207,6 +1215,7 @@ namespace RealLifeOverhaul
                 _riding.Dismounted();
                 _riding = null;
             }
+            _names.Dispose();
             _places.Dispose();
             BikeBody.Dispose();
         }
