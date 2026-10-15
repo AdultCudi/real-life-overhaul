@@ -87,6 +87,9 @@ namespace RealLifeOverhaul
         /// <summary>How many characters exist, in use or not.</summary>
         public int Count => _people.Count;
 
+        /// <summary>One of the characters that exist (0 to Count - 1), in use or not: for whoever must find this pool's people where they stand (People/CordonClear).</summary>
+        internal CityPerson At(int index) => _people[index];
+
         /// <summary>How many of the characters that exist could be put on the street right now.</summary>
         public int Free
         {

@@ -141,6 +141,12 @@ namespace RealLifeOverhaul
             return OnStreet(near, radius, Pavement, out spot);
         }
 
+        /// <summary>The nearest point of the ground a given navigation agent may walk (its own type of agent and its areas).</summary>
+        public static bool OnWalk(Vector3 near, float radius, NavMeshQueryFilter filter, out Vector3 spot)
+        {
+            return OnStreet(near, radius, filter, out spot);
+        }
+
         /// <summary>
         /// The height of the street surface under a point: road, pavement or open ground, found
         /// with one ray and never the roof of a car. False (and the point's own height) where

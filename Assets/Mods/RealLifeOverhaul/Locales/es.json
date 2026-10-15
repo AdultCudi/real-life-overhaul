@@ -5280,7 +5280,7 @@
   "reallife_lic_no_on_foot": "La autoescuela necesita que estés a pie en el mostrador, al aire libre.",
   "reallife_lic_no_roads": "No hay tráfico en las carreteras ahora mismo: la autoescuela no puede sacarte.",
   "reallife_lic_no_car_spot": "No hay sitio junto a la acera para que la autoescuela traiga su coche. Inténtalo de nuevo en un minuto.",
-  "reallife_lic_no_route": "El examinador no pudo trazar una ruta desde esta calle. Inténtalo desde otro mostrador.",
+  "reallife_lic_no_route": "El examinador no pudo trazar una ruta lo bastante larga desde las calles de aquí.",
   "reallife_school_prompt": "{key}: autoescuela",
   "reallife_school_closed": "La autoescuela está cerrada.",
   "reallife_school_next": "¿Qué más hay?",
@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Comisarías amuebladas",
   "reallife_opt_tip_law_station_furniture": "Mesas, taquillas, una sala de reuniones, una sala de descanso y las paredes y suelos del juego, agentes trabajando, y oficinas traseras en el suelo desnudo de una comisaría grande. Desactivado, queda desnuda como antes.",
   "reallife_changes_next_title": "Próxima versión",
-  "reallife_changes_next": "Nada todavía.",
+  "reallife_changes_next": "Corregido: las clases de conducir y los exámenes trazan su ruta alrededor de una calle cortada por un accidente, llevando el coche al otro lado si hace falta, y cuando la calle de fuera está cortada, el mostrador lo dice antes de que pagues. Corregido: la gente se quedaba dentro de la cinta de un cordón, incluso encima de quien yacía herido en la calzada, cuando había transeúntes cerca al colocarlo o un paso de peatones cruzaba la escena. Quien esté dentro cuando se pone la cinta ahora se traslada al lugar más cercano fuera de ella, y la cinta mantiene alejados a los peatones mientras siga puesta, también en los pasos de peatones; los curiosos miran desde la cinta.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada uno de los bancos de la ciudad tiene su propia app en el teléfono, con el nombre que le da el juego: tu cuenta corriente y su extracto, los préstamos que debes a ese banco con la opción de pagar una parte o todo uno, tu tarjeta, lo que te ofrece hoy y cómo ve tu calificación. Las condiciones de los bancos difieren un poco, así que elegir uno importa, y por debajo de una calificación de 580 ninguno presta. Los contactos del mod tienen imágenes reales del juego: las personas muestran su cara, y los servicios muestran un logotipo. Contactos tiene un cuadro de búsqueda arriba. Las comisarías están amuebladas con el mobiliario propio del juego: escritorios con ordenadores, taquillas, un enfriador de agua, plantas, un reloj, lámparas, y un inodoro en la celda. Corregido: con todas las apps del mod activadas, la fila de apps de arriba del menú a pantalla completa quedaba debajo del dinero y la fecha y fuera de la pantalla; ahora tiene páginas, centrada entre el nombre de la app y el dinero, que se pasan con la rueda o con los puntos. Corregido: en el mapa de la ciudad, una fila de las del mod (Juzgado, Talleres personalizados y las demás) se podía desmarcar mientras sus lugares seguían en el mapa; ahora los lugares siguen la marca que ves.",
   "reallife_rota_box_stock_ok": "Sus productos se mantienen al día con el plan recomendado.",
@@ -18673,5 +18673,8 @@
   "reallife_rival_hello_1": "Bald Luthor llega sonriendo, con la cabeza bien pulida, dispuesto a venderte la ciudad entera.",
   "reallife_rival_hello_2": "«Saludos, humano», dijo The Zucc. «No soy un lagarto. También me gusta el dinero.»",
   "reallife_changes_025_0_title": "0.25.0",
-  "reallife_changes_025_0": "Magnates rivales para la fase final: tres fortunas con nombre, con holdings en bolsa, crecen contigo y, cuando eres rico, acaparan los edificios de tu barrio, abren negocios cerca de los tuyos, fichan a tu personal, toman una participación u ofrecen una oferta por tu empresa, hacen cabildeo, demandan y llegan al periódico, cada movimiento anunciado antes; respóndeles, hazte con sus holdings y gánales en la lista de los más ricos de la ciudad."
+  "reallife_changes_025_0": "Magnates rivales para la fase final: tres fortunas con nombre, con holdings en bolsa, crecen contigo y, cuando eres rico, acaparan los edificios de tu barrio, abren negocios cerca de los tuyos, fichan a tu personal, toman una participación u ofrecen una oferta por tu empresa, hacen cabildeo, demandan y llegan al periódico, cada movimiento anunciado antes; respóndeles, hazte con sus holdings y gánales en la lista de los más ricos de la ciudad.",
+  "reallife_lic_no_route_closed": "La calle de delante está cortada por un accidente, así que el examinador no puede sacarte ahora. Inténtalo de nuevo cuando la hayan despejado.",
+  "reallife_lic_test_closed_skip": "Examinador: la calle de delante acaba de cerrarse por un accidente. Dejaremos ese punto de control fuera: sigue hasta el siguiente.",
+  "reallife_lic_sheet_end_closed": "La calle al final del recorrido se cerró por un accidente durante la conducción, así que el aparcamiento no se marcó."
 }
