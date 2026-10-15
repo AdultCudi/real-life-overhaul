@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.GameUi
     /// A page is a set number of tiles (PagerRules): eight on the HUD phone; on the full menu's row as many as fit from
     /// where the game's own row begins to the left edge of the box the game keeps for the money, the date and the time
     /// (RightData's own box, not its words), between two and the game's own seven, worked out at the first opening and
-    /// again only when the bar's width changes (resolution, screen shape, interface scale). (Before, the room was
+    /// again only when the bar's width changes (resolution, screen shape, interface scale). A full page stands centred in
+    /// that room, as the game centres its own row (0.27.1 put it at the room's left end, off centre). (Before, the room was
     /// measured each time the menu opened, to the left edge of the money's words, so the number of apps on a page, the
     /// number of pages and the row's length changed with the money and the date.) The game's own apps come first, in
     /// the game's order, then the mod's and other mods' in the order they stand; the game's last app may fall on the
@@ -105,7 +106,8 @@ namespace RealLifeOverhaul.GameUi
         private readonly List<Transform> _found = new List<Transform>(24);
         private bool[] _isGame = new bool[32];
         private int[] _order = new int[32];
-        private float _pagesLeft;       // the strip's place for a page, in the row's space: where the game's own row begins
+        private float _pagesLeft;       // the strip's place for a page, in the row's space: a full page centred in the room
+        private float _room = float.NaN;   // the strip's room, from where the game's own row begins to the money's box, for the bar's width measured (NaN: not yet)
         private bool _own;              // the strip holds only the game's own apps: laid out as the game lays it out
         private bool _pending;          // a pass is asked for before the frame is drawn
         private bool _checkDue;         // the menu has opened: one line on where the row ends (Developer diagnostics)
@@ -576,14 +578,16 @@ namespace RealLifeOverhaul.GameUi
             }
             float inner = strip.rect.width - built.Left - layout.padding.right;
             float gameRow = PagerRules.RowWidth(PagerRules.StripTiles(_gameApps), pitch, layout.spacing);
-            _pagesLeft = strip.rect.xMin + built.Left + (inner - gameRow) * ((int)built.Alignment % 3) * 0.5f;   // where the game's own row begins
+            float rowStart = strip.rect.xMin + built.Left + (inner - gameRow) * ((int)built.Alignment % 3) * 0.5f;   // where the game's own row begins
             float barWidth = strip.parent is RectTransform bar ? bar.rect.width : 0f;
             if (PagerRules.Remeasure(barWidth, _measuredFor) && strip.gameObject.activeInHierarchy)
             {
                 // Once for each screen: the room to the money's box, never its words (the money, the date, the language).
-                _tiles = PagerRules.StripTiles(DataLeft(strip) - _pagesLeft, pitch, layout.spacing, _gameApps);
+                _room = DataLeft(strip) - rowStart;
+                _tiles = PagerRules.StripTiles(_room, pitch, layout.spacing, _gameApps);
                 _measuredFor = barWidth;
             }
+            _pagesLeft = PagerRules.PageStart(rowStart, _room, Tiles, pitch, layout.spacing);   // a full page centred in that room: the button stands still
             Pages = PagerRules.Pages(count, Tiles);
         }
 

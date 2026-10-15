@@ -60,7 +60,8 @@ between two and the game's own seven. It is worked out at the first opening and 
 changes (`RowBarWatch` on `Topbar`): 6 tiles on 16:9 at 100%, 5 on 16:10, 2 on 4:3. (Until 0.26.x the room was
 measured to the money's words at every opening, so the count and the row's length changed.) The game's own apps come
 first in the game's order, then the mod's and other mods' in the order they stand (others' buttons standing among the
-game's are moved after them). The pages fill in order, the apps and the More apps button on the last tile, only the
+game's are moved after them). A full page stands centred in that room (`PagerRules.PageStart`, worked out with the
+count): 75 either side at 16:9, 3 at 16:10, 75 at 4:3. The pages fill in order, the apps and the More apps button on the last tile, only the
 last page shorter; every page starts where the game's own row starts (the row's left padding, alignment upper left), so
 the button never moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
 `ButtonEffects` and the badge kept), a light grey tile painted by `AppIconPainter` with the game's `Icon-Arrows` in dark ink
