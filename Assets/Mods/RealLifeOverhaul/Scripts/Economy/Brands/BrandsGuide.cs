@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Economy.Brands
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private const int GuideShops = 3, GuideCustomers = 100, GuideStandards = 75, GuideDays = 20;   // the example the page works through: three busy shops with good standards, a new brand, twenty days
+        private const int SpreadDistricts = 3, SpreadDays = 40;   // the second example: the same three shops, one in each of three districts, forty days
 
         public static void AddFacts(Feature f)
         {
@@ -32,6 +33,16 @@ namespace RealLifeOverhaul.Economy.Brands
                 .Fact("br_three_gain", () => Hundredths(BrandRules.Gain(GuideShops, GuideCustomers, GuideStandards, 0)))
                 .Fact("br_three_days", () => Whole(GuideDays))
                 .Fact("br_three_after", () => Whole(BrandRules.After(GuideShops, GuideCustomers, GuideStandards, GuideDays) / 100))
+                .Fact("br_pull_first", () => Hundredths(BrandCatalogue.PullFirst))
+                .Fact("br_pull_less", () => Hundredths(BrandCatalogue.PullLess))
+                .Fact("br_pull_shops", () => Whole(BrandCatalogue.PullShopsMost))
+                .Fact("br_spread_days", () => Whole(SpreadDays))
+                .Fact("br_spread_after", () => Whole(BrandRules.AfterSpread(SpreadDistricts, GuideCustomers, GuideStandards, SpreadDays, out int _) / 100))
+                .Fact("br_spread_city", () =>
+                {
+                    BrandRules.AfterSpread(SpreadDistricts, GuideCustomers, GuideStandards, SpreadDays, out int city);
+                    return Whole(city / 100);
+                })
                 .Fact("br_city_districts", () => Whole(BrandCatalogue.CityDistricts))
                 .Fact("br_city_step", () => Hundredths(BrandCatalogue.CityStepBp))
                 .Fact("br_city_one", () => Hundredths(BrandCatalogue.RecMost / BrandCatalogue.CityDistricts))

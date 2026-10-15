@@ -97,8 +97,11 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int CampaignCityGain = 60;     // a city-wide one, in every district where the brand trades
         public const int DecayBp = 50;              // ten-thousandths of the figure lost a day where the brand trades (0.5%)
         public const int DecayEmptyBp = 150;        // ...and where it has no shop left (1.5%)
-        public const int CityDistricts = 8;         // the city-wide figure heads for the districts' figures added up and divided by this
-        public const int CityStepBp = 500;          // ten-thousandths of the way there each day (5%)
+        public const int PullFirst = 7;             // a district with a shop of the brand gains this for the brand's first shop in another district...
+        public const int PullLess = 2;              // ...this less for each one after it (diminishing: a wide brand does not run away)...
+        public const int PullShopsMost = 4;         // ...counting this many at most (7 + 5 + 3 + 1 = 16, a third of what four shops of its own give)
+        public const int CityDistricts = 8;         // the city-wide figure heads for the districts' figures added up and divided by this, times the districts with a shop
+        public const int CityStepBp = 1000;         // ten-thousandths of the way there each day (10%: it lagged a month behind its districts at 5%)
         public const int CityFloorShare = 500;      // thousandths of the city-wide figure a district is never counted under
 
         public static readonly int[] ScandalLoss = { 400, 300, 200, 250 };   // a failed inspection, a strike, a fire, a hired influencer's scandal: in the district; a quarter of it city-wide
