@@ -1,8 +1,4 @@
-0.27.4
-
-New
-- Hudson City University has a permanent building of its own at 26 2nd Avenue in Midtown, the same in every game, kept off the market and lit with its name. In an older game it moves there once the building is free; until then it is in a free office building or, with none free, at the door of Manhattan Business School, and it always has its row on the map.
+0.27.5
 
 Fixed
-- An influencer you hired on Flare who stopped posting made none of the posts you had paid for; they now post until the deal ends. The Business tab now counts the paid posts about a business, and a deal says when its posts begin and how many have come. The Brands app shows recognition to a tenth, so a day's gain is seen, and says on how many mornings it has moved and why it stood still. The two largest office buildings, 17 7th Street and 12 Broadway, are kept for the player: no feature of the mod takes them. City Utilities moves from 17 7th Street to 13 7th Street, a residential building kept for it, with its desk at the door; an older game is told once.
-- The row of apps at the top of the full screen menu stands centred again.
+- Bicycles and motorbikes now collide with walls, poles, cars and people, are called by their own name in the game's panels and messages, and pull away quickly and smoothly with a steadier lean.
