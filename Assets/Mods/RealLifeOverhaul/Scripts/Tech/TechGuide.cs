@@ -14,6 +14,9 @@ namespace RealLifeOverhaul.Tech
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+        // The end game's scale the Guide's figures are given at: the whole of it with its option on (Core/EndScale), none off.
+        private static int Scale => Settings.EndScale ? EndScaleRules.Full : 0;
+
         public static void AddPeopleFacts(Feature f)
         {
             f.Fact("talent_roles", Roles)
@@ -81,10 +84,10 @@ namespace RealLifeOverhaul.Tech
                 .Fact("tech_relief", () => Mille(FirmsCatalogue.ReliefShare))
                 .Fact("tech_scale_monthly", () => Guide.Money(Prices.At((int)(TechPath.ScaleUpMonthly / 100))))
                 .Fact("tech_scale_people", () => Whole(TechPath.ScaleUpPeople))
-                .Fact("infra_fit", () => Guide.Money(Prices.At(InfraCatalogue.FitPerSqm[0] / 100)) + " " + TechText.T("reallife_guide_tech_to") + " " + Guide.Money(Prices.At(InfraCatalogue.FitPerSqm[3] / 100)))
+                .Fact("infra_fit", () => Guide.Money(Prices.At((int)(InfraRules.FitCost(1, 0, Scale) / 100))) + " " + TechText.T("reallife_guide_tech_to") + " " + Guide.Money(Prices.At((int)(InfraRules.FitCost(1, 3, Scale) / 100))))
                 .Fact("infra_sqm", () => Whole(InfraCatalogue.SqmPerRack))
-                .Fact("infra_rack", () => Guide.Money(Prices.At(InfraCatalogue.RackCost / 100)))
-                .Fact("infra_gpu", () => Guide.Money(Prices.At(InfraCatalogue.GpuRackCost / 100)))
+                .Fact("infra_rack", () => Guide.Money(Prices.At((int)(InfraRules.RackPrice(false, Scale) / 100))))
+                .Fact("infra_gpu", () => Guide.Money(Prices.At((int)(InfraRules.RackPrice(true, Scale) / 100))))
                 .Fact("infra_kw", () => Whole(InfraCatalogue.RackKw))
                 .Fact("infra_gpu_kw", () => Whole(InfraCatalogue.GpuRackKw))
                 .Fact("infra_water", () => (InfraCatalogue.WaterPerMwh / 1000f).ToString("0.#", Inv))
@@ -95,16 +98,16 @@ namespace RealLifeOverhaul.Tech
                 .Fact("infra_unit", () => Guide.Money(Prices.At(InfraCatalogue.UnitDay) / 100f))
                 .Fact("infra_gpu_unit", () => Guide.Money(Prices.At(InfraCatalogue.GpuUnitDay) / 100f))
                 .Fact("infra_own", () => Mille(InfraCatalogue.OwnHostingShare))
-                .Fact("infra_licence", () => Guide.Money(Prices.At(InfraCatalogue.LicenceFee / 100)))
-                .Fact("infra_cloud_racks", () => Whole(InfraCatalogue.CloudRacksLeast))
+                .Fact("infra_licence", () => Guide.Money(Prices.At((int)(InfraRules.Licence(Scale) / 100))))
+                .Fact("infra_cloud_racks", () => Whole(InfraRules.CloudRacksLeast(Scale)))
                 .Fact("infra_cloud_engineers", () => Whole(InfraCatalogue.CloudEngineersLeast))
-                .Fact("infra_cloud_cash", () => Guide.Money(Prices.At((int)(InfraCatalogue.CloudCashLeast / 100))))
+                .Fact("infra_cloud_cash", () => Guide.Money(Prices.At((int)(InfraRules.CloudCashLeast(Scale) / 100))))
                 .Fact("infra_war", () => Mille(InfraCatalogue.PriceWarShare))
                 .Fact("infra_cut", () => Mille(InfraCatalogue.PriceCut))
                 .Fact("infra_floor", () => Mille(InfraCatalogue.PriceFloor))
                 .Fact("infra_regions", () => Whole(InfraCatalogue.HyperRegions))
-                .Fact("infra_hyper_racks", () => Whole(InfraCatalogue.HyperRacks))
-                .Fact("infra_hyper_cash", () => Guide.Money(Prices.At((int)(InfraCatalogue.HyperCash / 100))))
+                .Fact("infra_hyper_racks", () => Whole(InfraRules.HyperRacks(Scale)))
+                .Fact("infra_hyper_cash", () => Guide.Money(Prices.At(InfraRules.HyperCash(Scale) / 100f)))
                 .Fact("infra_train", () => Whole(InfraCatalogue.TrainBase))
                 .Fact("infra_rented", () => Mille(InfraCatalogue.RentedGpuShare));
         }

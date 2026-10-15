@@ -9,10 +9,14 @@ namespace RealLifeOverhaul.Tech
     /// The player's data centres and cloud in the save: one line of the save's modData under <see cref="Key"/>, written by
     /// <see cref="TechWriter"/>. Game-free.
     ///
-    ///     v=1~h:seed|first day|last day~c:cloud~d:...
+    ///     v=1~h:seed|first day|last day|scale from|owed~c:cloud~d:...
     ///
-    ///   c  the cloud: open|name|launched|price|rivals' price|last cut|reputation|licence until|hyperscaler|sold|AI sold|own
+    ///   c  the cloud: open|name|launched|price|rivals' price|last cut|reputation|licence until|hyperscaler|sold|AI sold|own|operations people
     ///   d  each data centre: place|district|tier|square metres|racks|AI racks|book value|fitted|let|outages|down until|last 30 days|the 30 days' takings by commas
+    ///      |racks of the new kind|AI racks of the new kind|operators|engineers|security
+    ///
+    /// The fields after "own" and after the takings are the end game's scale (Core/EndScale), appended: a line written
+    /// before them reads with no scale day (it is phased in), no racks of the new kind and no crews.
     /// </summary>
     public static class InfraStore
     {
@@ -41,9 +45,10 @@ namespace RealLifeOverhaul.Tech
         public static string Write(InfraFile f)
         {
             var w = new TechWriter(Version);
-            w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay);
+            w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.ScaleFrom).Add(f.Owed);
             Cloud c = f.Cloud;
-            w.Part('c').Record().Add(c.Open).Add(c.Name).Add(c.Launched).Add(c.Price).Add(c.RivalPrice).Add(c.LastCut).Add(c.Reputation).Add(c.LicenceUntil).Add(c.Hyper).Add(c.Sold).Add(c.GpuSold).Add(c.Own);
+            w.Part('c').Record().Add(c.Open).Add(c.Name).Add(c.Launched).Add(c.Price).Add(c.RivalPrice).Add(c.LastCut).Add(c.Reputation).Add(c.LicenceUntil).Add(c.Hyper).Add(c.Sold).Add(c.GpuSold).Add(c.Own)
+                .Add(c.Ops);
             w.Part('d');
             var days = new StringBuilder(256);
             foreach (DataCentre d in f.Centres)
@@ -53,7 +58,8 @@ namespace RealLifeOverhaul.Tech
                 {
                     days.Append(i > 0 ? "," : string.Empty).Append(d.Days[i].ToString(CultureInfo.InvariantCulture));
                 }
-                w.Record().Place(d.Place).Add(d.District).Add(d.Tier).Add(d.Sqm).Add(d.Racks).Add(d.GpuRacks).Add(d.Book).Add(d.Fitted).Add(d.Colo).Add(d.Outages).Add(d.DownUntil).Add(d.Takings30).Add(days.ToString());
+                w.Record().Place(d.Place).Add(d.District).Add(d.Tier).Add(d.Sqm).Add(d.Racks).Add(d.GpuRacks).Add(d.Book).Add(d.Fitted).Add(d.Colo).Add(d.Outages).Add(d.DownUntil).Add(d.Takings30).Add(days.ToString())
+                    .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security]);
             }
             return w.ToString();
         }
@@ -67,6 +73,8 @@ namespace RealLifeOverhaul.Tech
             f.Seed = h.Int(1);
             f.FirstDay = h.Int();
             f.LastDay = h.Int(-1);
+            f.ScaleFrom = h.Int(EndScaleRules.Unset);
+            f.Owed = Math.Max(0, h.Long());
             Fields c = r.One('c');
             Cloud cloud = f.Cloud;
             cloud.Open = c.Bool();
@@ -81,6 +89,7 @@ namespace RealLifeOverhaul.Tech
             cloud.Sold = c.Int();
             cloud.GpuSold = c.Int();
             cloud.Own = c.Int();
+            cloud.Ops = Math.Max(0, c.Int());
             foreach (Fields x in r.Records('d'))
             {
                 var d = new DataCentre
@@ -93,6 +102,12 @@ namespace RealLifeOverhaul.Tech
                 {
                     long v;
                     d.Days[i] = long.TryParse(days[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out v) ? v : 0;
+                }
+                d.Dense = TalentCatalogue.Clamp(x.Int(), 0, d.Racks);
+                d.DenseGpu = TalentCatalogue.Clamp(x.Int(), 0, d.GpuRacks);
+                for (int k = 0; k < InfraCatalogue.CrewKinds; k++)
+                {
+                    d.Crew[k] = Math.Max(0, x.Int());
                 }
                 if (f.Centres.Count < InfraCatalogue.CentresMost)
                 {

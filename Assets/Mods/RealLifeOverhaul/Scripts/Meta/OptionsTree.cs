@@ -319,6 +319,7 @@ namespace RealLifeOverhaul.Meta
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
+                S("endscale").For("economy_endscale").Opts("economy_endscale").Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),

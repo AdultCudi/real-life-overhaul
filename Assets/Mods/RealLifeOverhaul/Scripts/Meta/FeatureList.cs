@@ -866,9 +866,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("net_business", () => ((Utilities.InternetCatalogue.BusinessShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("net_install_fee", () => Guide.Money(Utilities.InternetCatalogue.InstallFee))
                 .Fact("net_grace_days", () => Utilities.InternetCatalogue.GraceDays.ToString(CultureInfo.InvariantCulture))
-                .Fact("bb_licence", () => Guide.Money(Utilities.BroadbandRules.LicenceFee(Prices.Level)))
-                .Fact("bb_build_least", () => Guide.Money(Utilities.BroadbandRules.BuildCost(2, Prices.Level)))
-                .Fact("bb_build_most", () => Guide.Money(Utilities.BroadbandRules.BuildCost(4, Prices.Level)))
+                .Fact("bb_licence", () => Guide.Money(Utilities.BroadbandRules.LicenceFee(Prices.Level, EndScaleGuide.Scale)))
+                .Fact("bb_build_least", () => Guide.Money(Utilities.BroadbandRules.BuildCostRange(Prices.Level, EndScaleGuide.Scale, false)))
+                .Fact("bb_build_most", () => Guide.Money(Utilities.BroadbandRules.BuildCostRange(Prices.Level, EndScaleGuide.Scale, true)))
                 .Fact("bb_build_months", () => Utilities.BroadbandCatalogue.BuildMonths.ToString(CultureInfo.InvariantCulture))
                 .Fact("bb_trust_months", () => Utilities.BroadbandCatalogue.TrustMonths.ToString(CultureInfo.InvariantCulture))
                 .Fact("bb_sale_multiple", () => Utilities.BroadbandCatalogue.SaleMultiple.ToString(CultureInfo.InvariantCulture))
@@ -1323,6 +1323,7 @@ namespace RealLifeOverhaul.Meta
             Permadeath.PermadeathGuide.Register();   // an ending the player chooses: the feature, its switch, its save lines, its tests and its Guide figures (Scripts/Permadeath)
             Districts.DistrictGuide.Register();   // the district view on the city map: the feature, its switch, its save line, its tests and its Guide figures (Scripts/Districts)
             Economy.OwnBankGuide.Register();   // the player's own bank: the feature, its option, its save lines, its tests and its Guide figures (Scripts/Economy/OwnBank)
+            EndScaleGuide.Register();   // the end game at scale: the feature, its option and preset, its tests and its Guide figures (Scripts/EndScale)
         }
 
         // Game hours of street time between two accidents near the player at a setting of the option, at the day's average hour in fair weather.

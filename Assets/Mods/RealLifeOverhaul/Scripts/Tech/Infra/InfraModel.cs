@@ -16,12 +16,16 @@ namespace RealLifeOverhaul.Tech
         public int Outages, DownUntil;
         public long Takings30;       // what it took over the last thirty days, cents (rolled)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];
+        public int Dense, DenseGpu;  // of the racks, those of the new kind (bought at scale, Core/EndScale); the rest are the old kind
+        public readonly int[] Crew = new int[InfraCatalogue.CrewKinds];   // its crews at scale: operators, engineers, security
         // ---- read each day, never saved
         public string Name = string.Empty;
         public int Technicians;
         public bool Power = true, Net = true;
 
         public int RacksRoom => Sqm / InfraCatalogue.SqmPerRack;
+        public int Legacy => System.Math.Max(0, Racks - Dense);         // racks of the old kind
+        public int LegacyGpu => System.Math.Max(0, GpuRacks - DenseGpu);
         public bool Down(int day) => day < DownUntil;
     }
 
@@ -39,6 +43,7 @@ namespace RealLifeOverhaul.Tech
         public bool Hyper;
         public int Sold, GpuSold;        // units sold yesterday
         public int Own;                  // ...of them to the player's own firms
+        public int Ops;                  // its operations people at scale (Core/EndScale)
     }
 
     /// <summary>What a data centre's day came to.</summary>
@@ -52,6 +57,8 @@ namespace RealLifeOverhaul.Tech
     public sealed class InfraFile
     {
         public int Seed, FirstDay, LastDay = -1;
+        public int ScaleFrom = EndScaleRules.Unset;   // the day the end game's scale began to come in for these data centres (Core/EndScale)
+        public long Owed;                              // what the scale's costs came to that the cash could not meet, carried to the next day, cents at the prices of then
         public readonly List<DataCentre> Centres = new List<DataCentre>(4);
         public readonly Cloud Cloud = new Cloud();
 

@@ -24,6 +24,8 @@ namespace RealLifeOverhaul.Tech
         public const string LicenceKey = "reallife_transaction_tech_cloud_licence_fee";
         public const string ComputeKey = "reallife_transaction_tech_compute";
         public const string WriteDownKey = "reallife_transaction_tech_write_down";
+        public const string UpkeepKey = "reallife_transaction_tech_upkeep";          // at the end game's scale: racks' support and the building's upkeep and insurance
+        public const string CrewsKey = "reallife_transaction_tech_crew_wages";       // ...the data centres' crews and the cloud's operations people
         private const string WriteDownDeduct = "reallife_tech_write_down_deduct";
 
         private static GameInstance Save => SaveGameManager.Current;

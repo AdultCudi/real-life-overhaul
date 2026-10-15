@@ -19,6 +19,18 @@ namespace RealLifeOverhaul.Economy
     {
         public const string TestKey = "reallife:economy_ownbank_test";
 
+        /// <summary>Test (Core/EndScale): the bank starts coming to scale today, or is at it at once. False with no bank running.</summary>
+        public bool TestScale(bool full)
+        {
+            if (Save == null || !Running || _bank == null || !_bank.Running)
+            {
+                return false;
+            }
+            _bank.ScaleFrom = full ? Save.Day - EndScaleRules.PhaseDays : EndScaleRules.Unset;
+            ScaleNow();
+            return true;
+        }
+
         private bool TestReady(string test, bool needsBank)
         {
             if (Save == null || !ModState.Loaded)
@@ -89,7 +101,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 Keep();
                 BuildingRegistration hq = OwnBankGame.Headquarters();
-                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level), Named(null, hq));
+                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level, 0, EndScaleRules.Buying(Settings.EndScale)), Named(null, hq));
                 _bank.Test = true;
                 TestDone("a bank founded with the least capital, paid by nobody", TabBank);
             });

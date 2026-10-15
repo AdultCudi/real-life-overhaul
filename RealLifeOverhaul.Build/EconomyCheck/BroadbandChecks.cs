@@ -135,7 +135,7 @@ internal static partial class Program
         Check(n.HistoryCount == 12 && BroadbandRules.YearProfit(n) == year && n.History[11] == 15000 && n.History[0] == 4000 && n.MonthTakings == 0 && n.LastConnections == 1015,
             "broadband: the last twelve months' profit is kept, the oldest dropped");
         Check(BroadbandRules.SaleValue(n) == Math.Max(year * 4, 600000), "broadband: a buyer pays four years of the last year's profit");
-        int honest = BroadbandRules.SaleValue(n);
+        long honest = BroadbandRules.SaleValue(n);
         n.MonthTakings = 100000;
         n.MonthCosts = 100000 - 16000 - 50000;   // a month squeezed: no marketing, no maintenance
         BroadbandRules.CloseMonth(n, 1016, 1);
