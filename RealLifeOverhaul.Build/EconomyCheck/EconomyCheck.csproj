@@ -271,6 +271,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerPageStamp.cs" Link="Mod\LedgerPageStamp.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PhotoThumbs.cs" Link="Mod\PhotoThumbs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
   </ItemGroup>
 
 </Project>
