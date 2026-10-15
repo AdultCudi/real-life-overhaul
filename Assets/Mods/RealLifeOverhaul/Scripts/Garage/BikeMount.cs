@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
+using GleyTrafficSystem;
 using Helpers;
 using NWH.Common.Vehicles;
 using NWH.VehiclePhysics2.Modules.SpeedLimiter;
@@ -88,6 +89,11 @@ namespace RealLifeOverhaul
         private BoxCollider _bars;
         private NavMeshObstacle _obstacle;
         private Vector3 _obstacleCentreWas, _obstacleSizeWas;
+        private bool _massKept;
+        private Vector3 _massCentre, _inertia;          // the body's centre of mass and inertia as the game set them (VariableCenterOfMass)
+        private Quaternion _inertiaTurn;
+        private Action<VehicleController> _onExit;      // the game's own getting off (GlobalEvents.onExitVehicle), made once
+        private bool _exitHooked;
 
         // while ridden
         private bool _ridden;
@@ -149,7 +155,9 @@ namespace RealLifeOverhaul
             {
                 mount.Dress();
                 mount.Tune();
+                mount.KeepMass();
                 mount.Shape();
+                mount.PutMassBack();
                 mount.Name();
             }
             catch (Exception e)
@@ -218,7 +226,7 @@ namespace RealLifeOverhaul
                 _frameCentreWas = _frame.center;
                 _frameSizeWas = _frame.size;
                 _frame.center = space.InverseTransformPoint(transform.TransformPoint(new Vector3(frame.X, frame.Y, frame.Z)));
-                _frame.size = new Vector3(frame.Width, frame.Height, frame.Length);
+                _frame.size = SizeIn(space, new Vector3(frame.Width, frame.Height, frame.Length));
             }
             else
             {
@@ -243,11 +251,121 @@ namespace RealLifeOverhaul
                 _obstacleCentreWas = _obstacle.center;
                 _obstacleSizeWas = _obstacle.size;
                 _obstacle.center = space.InverseTransformPoint(transform.TransformPoint(new Vector3(0f, frame.Y, frame.Z)));
-                _obstacle.size = new Vector3(Mathf.Max(_obstacleSizeWas.x, frame.Width), Mathf.Max(_obstacleSizeWas.y, frame.Height), frame.Length);
+                Vector3 was = SizeIn(space, _obstacleSizeWas, true);   // (the game's, in the bike's axes)
+                _obstacle.size = SizeIn(space, new Vector3(Mathf.Max(was.x, frame.Width), Mathf.Max(was.y, frame.Height), frame.Length));
             }
             else
             {
                 _obstacle = null;
+            }
+        }
+
+        // A box's size given along the bike's own axes, as the size along the axes of the transform it is set on (whatever way
+        // that is turned and scaled): each of its axes takes the parts of the bike's that lie along it. back: the other way.
+        private Vector3 SizeIn(Transform space, Vector3 size, bool back = false)
+        {
+            Quaternion turn = Quaternion.Inverse(space.rotation) * transform.rotation;   // the bike's axes in the space's
+            if (back)
+            {
+                turn = Quaternion.Inverse(turn);
+            }
+            Matrix4x4 m = Matrix4x4.Rotate(turn);
+            BikeRules.SizeAlong(m.m00, m.m01, m.m02, m.m10, m.m11, m.m12, m.m20, m.m21, m.m22, size.x, size.y, size.z, out float x, out float y, out float z);
+            Vector3 scale = space.lossyScale, own = transform.lossyScale;
+            if (back)
+            {
+                return new Vector3(x * Mathf.Abs(scale.x) / Mathf.Max(1e-4f, Mathf.Abs(own.x)), y * Mathf.Abs(scale.y) / Mathf.Max(1e-4f, Mathf.Abs(own.y)), z * Mathf.Abs(scale.z) / Mathf.Max(1e-4f, Mathf.Abs(own.z)));
+            }
+            return new Vector3(x * Mathf.Abs(own.x) / Mathf.Max(1e-4f, Mathf.Abs(scale.x)), y * Mathf.Abs(own.y) / Mathf.Max(1e-4f, Mathf.Abs(scale.y)), z * Mathf.Abs(own.z) / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
+        }
+
+        // The body's centre of mass and inertia are the game's (VariableCenterOfMass sets them); a collider changed on the body
+        // must not move them. Read once before the boxes are touched, written back after each change to the boxes.
+        private void KeepMass()
+        {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+            _massCentre = _rigidbody.centerOfMass;
+            _inertia = _rigidbody.inertiaTensor;
+            _inertiaTurn = _rigidbody.inertiaTensorRotation;
+            _massKept = true;
+        }
+
+        private void PutMassBack()
+        {
+            if (!_massKept || _rigidbody == null)
+            {
+                return;
+            }
+            _rigidbody.centerOfMass = _massCentre;
+            _rigidbody.inertiaTensor = _inertia;
+            _rigidbody.inertiaTensorRotation = _inertiaTurn;
+        }
+
+        // The bars box on: solid on the layer the game gives a ridden scooter's box.
+        private void BarsOn()
+        {
+            if (_bars == null)
+            {
+                return;
+            }
+            _bars.gameObject.layer = LayerHelper.VehiclesLayerIndex;
+            _bars.enabled = true;
+            PutMassBack();
+        }
+
+        /// <summary>
+        /// The bars box off. Traffic is told first, as the game tells it of any collider it takes away
+        /// (Manager.TriggerColliderRemovedEvent): the engine says nothing to the traffic's sensors when a collider is switched
+        /// off or destroyed, and a car that had sensed the box would wait for it for ever. Safe to ask twice.
+        /// </summary>
+        public void BarsOff()
+        {
+            if (_bars == null || !_bars.enabled)
+            {
+                return;
+            }
+            Manager.TriggerColliderRemovedEvent(_bars);
+            _bars.enabled = false;
+            PutMassBack();
+        }
+
+        // The game's own getting off, from inside its ExitVehicle: the box is off before anything else of the exit runs on.
+        private void Exited(VehicleController vehicle)
+        {
+            if (ReferenceEquals(vehicle, _scooter))
+            {
+                BarsOff();
+            }
+        }
+
+        private void HookExit(bool on)
+        {
+            _onExit = _onExit ?? Guard.Wrap<VehicleController>(Exited);   // (made once, through the guard: Core/Guard)
+            GlobalEvents.onExitVehicle = (Action<VehicleController>)Delegate.Remove(GlobalEvents.onExitVehicle, _onExit);
+            if (on)
+            {
+                GlobalEvents.onExitVehicle = (Action<VehicleController>)Delegate.Combine(_onExit, GlobalEvents.onExitVehicle);
+            }
+            _exitHooked = on;
+        }
+
+        // The game destroying the scooter (or the scene going) with the box on: traffic is told it has gone.
+        private void OnDestroy()
+        {
+            try
+            {
+                BarsOff();
+                if (_exitHooked)
+                {
+                    HookExit(false);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: the bars box could not be let go of on the way out. " + e.Message);
             }
         }
 
@@ -358,7 +476,7 @@ namespace RealLifeOverhaul
                    + $"body: {(_body == null ? "none" : _body.Modelled ? "modelled" : "stand-in")}, {drawn} of {total} renderers drawn, {forcedOff} forced off, {noMaterial} without a material, "
                    + (any ? $"bounds centre {bounds.center.ToString("F2")} size {bounds.size.ToString("F2")}; " : "no bounds; ")
                    + $"scooter's own: {_hidden.Count} hidden, {stillDrawn} still drawn; object {(gameObject.activeInHierarchy ? "active" : "INACTIVE")}, layer {LayerMask.LayerToName(gameObject.layer)}, "
-                   + $"scale {scale.ToString("F2")}, collider {(collider != null ? "on " + LayerMask.LayerToName(collider.gameObject.layer) + (_frame != null ? " " + _frame.size.ToString("F2") : " (the scooter's)") : "none")}"
+                   + $"scale {scale.ToString("F2")}, collider {(collider != null ? "on " + LayerMask.LayerToName(collider.gameObject.layer) + (_frame != null ? " " + _frame.size.ToString("F2") + " turned " + _frame.transform.localEulerAngles.ToString("F0") : " (the scooter's)") : "none")}"
                    + $", bars {(_bars != null ? (_bars.enabled ? "on " : "off ") + LayerMask.LayerToName(_bars.gameObject.layer) : "none")}, "
                    + (_rigidbody != null ? $"body {(_rigidbody.isKinematic ? "kinematic" : "dynamic")} {_rigidbody.constraints}, " : "no rigidbody, ")
                    + $"physics {(_nwh != null && _nwh.enabled ? "running" : "at rest")}, map marker {(_poi != null ? "yes" : "no")}.";
@@ -565,6 +683,56 @@ namespace RealLifeOverhaul
             {
                 Dismounted();
             }
+            BarsOff();
+            // First and each on its own, so that nothing further down can leave them changed: the game's box, its obstacle,
+            // its header and the body's mass.
+            try
+            {
+                if (_frame != null)
+                {
+                    _frame.center = _frameCentreWas;
+                    _frame.size = _frameSizeWas;
+                    _frame = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: the scooter's box could not be put back. " + e.Message);
+            }
+            try
+            {
+                if (_obstacle != null)
+                {
+                    _obstacle.center = _obstacleCentreWas;
+                    _obstacle.size = _obstacleSizeWas;
+                    _obstacle = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: the scooter's obstacle could not be put back. " + e.Message);
+            }
+            try
+            {
+                if (_headerSet && _scooter != null)
+                {
+                    _scooter.customOverlayHeaderKey = _headerWas;
+                    _headerSet = false;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: the scooter's name could not be put back. " + e.Message);
+            }
+            try
+            {
+                PutMassBack();
+                _massKept = false;
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: the scooter's mass could not be put back. " + e.Message);
+            }
             try
             {
                 for (int i = 0; i < _hidden.Count; i++)
@@ -583,23 +751,6 @@ namespace RealLifeOverhaul
                     }
                     MapPlaces.Drop(_poi);   // out of the game's list of markers first, then destroyed (Core/MapPlaces)
                     _poi = null;
-                }
-                if (_headerSet && _scooter != null)
-                {
-                    _scooter.customOverlayHeaderKey = _headerWas;
-                    _headerSet = false;
-                }
-                if (_frame != null)
-                {
-                    _frame.center = _frameCentreWas;
-                    _frame.size = _frameSizeWas;
-                    _frame = null;
-                }
-                if (_obstacle != null)
-                {
-                    _obstacle.center = _obstacleCentreWas;
-                    _obstacle.size = _obstacleSizeWas;
-                    _obstacle = null;
                 }
                 _bars = null;   // (on our body, which goes next)
                 if (_body != null && _body.Root != null)
@@ -684,11 +835,8 @@ namespace RealLifeOverhaul
             _lastVelocity = _rigidbody != null ? _rigidbody.velocity : Vector3.zero;
             _lastPosition = transform.position;
             _steerShown = _front != null ? _front.SteerAngle : 0f;
-            if (_bars != null)
-            {
-                _bars.gameObject.layer = LayerHelper.VehiclesLayerIndex;   // as the game puts a ridden scooter's own box
-                _bars.enabled = true;
-            }
+            BarsOn();         // as the game puts a ridden scooter's own box
+            HookExit(true);   // off again inside the game's own getting off
             _animator = PlayerHelper.GetAnimator();
             float hip = 0.95f;
             if (_animator != null && _animator.isHuman)
@@ -844,9 +992,10 @@ namespace RealLifeOverhaul
             }
             _ridden = false;
             enabled = false;
-            if (_bars != null)
+            BarsOff();   // standing, it is the frame the game can be pointed at, as with its own scooter
+            if (_exitHooked)
             {
-                _bars.enabled = false;   // standing, it is the frame the game can be pointed at, as with its own scooter
+                HookExit(false);
             }
             if (_helmet != null)
             {

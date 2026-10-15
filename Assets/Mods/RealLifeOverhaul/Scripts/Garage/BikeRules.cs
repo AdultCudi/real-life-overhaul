@@ -261,6 +261,19 @@ namespace RealLifeOverhaul
             return (float)(box.Bottom * Math.Cos(lean) - box.HalfWidth * Math.Sin(lean));
         }
 
+        /// <summary>
+        /// A box's size along the axes of a space turned by the rotation matrix m (rows: the space's axes in the bike's): each
+        /// of the space's axes takes the absolute parts of the bike's sizes that lie along it, so a box turned a quarter turn
+        /// has its width and length swapped, and no size ever comes out negative.
+        /// </summary>
+        public static void SizeAlong(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22,
+            float x, float y, float z, out float sx, out float sy, out float sz)
+        {
+            sx = Math.Abs(m00) * x + Math.Abs(m01) * y + Math.Abs(m02) * z;
+            sy = Math.Abs(m10) * x + Math.Abs(m11) * y + Math.Abs(m12) * z;
+            sz = Math.Abs(m20) * x + Math.Abs(m21) * y + Math.Abs(m22) * z;
+        }
+
         private static float Clamp01(float value)
         {
             return value < 0f ? 0f : value > 1f ? 1f : value;

@@ -149,6 +149,7 @@ namespace RealLifeOverhaul
             mount.Fell = 0f;
             ScooterController scooter = mount.Scooter;
             scooter.Reset();
+            mount.BarsOff();   // before the game hands the rider back to physics
             scooter.ExitVehicle();
             bool played = false;
             try
@@ -710,6 +711,9 @@ namespace RealLifeOverhaul
             {
                 _failed = true;
                 Logger?.Warn("Two-wheelers: switched off after something unexpected; bicycles and motorbikes already out stay as they are. " + e);
+                _riding?.Dismounted();   // the bars box and the name's hook let go: nothing of a ride is left switched on
+                _riding = null;
+                _names.Dispose();
             }
         }
 

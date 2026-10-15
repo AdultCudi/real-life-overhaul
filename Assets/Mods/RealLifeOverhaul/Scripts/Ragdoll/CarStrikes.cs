@@ -18,8 +18,8 @@ namespace RealLifeOverhaul
     /// physics query and no allocation, and none of it runs while parked or on foot.
     /// What happens to whoever is hit is PedestrianIncidents' business. A two-wheeler (the game's scooter, and the
     /// mod's bicycles and motorbikes on it) is looked at the same way with its own box, measured from the colliders on
-    /// its own body twice a second while ridden (the box changes when the mod dresses it, and the rider sits among its
-    /// children): whoever it runs into is knocked off their feet, never more (PedestrianIncidents.KnockedBelow), so that
+    /// its own body when it is got on and in the four looks after (the mod dresses it within a second, and the rider sits
+    /// among its children): whoever it runs into is knocked off their feet, never more (PedestrianIncidents.KnockedBelow), so that
     /// nobody is hurt or killed by one and the police have no part in it. It is not the player's car to the traffic
     /// that asks for that (PlayerCar).
     /// A few traffic cars can be watched in exactly the same way: the one reckless driver of
@@ -51,6 +51,8 @@ namespace RealLifeOverhaul
 
         private VehicleController _car;
         private bool _twoWheeler;       // the player's vehicle is the game's scooter (or a bicycle or motorbike on it)
+        private int _measureAgain;      // looks left in which a two-wheeler's box is measured again
+        private const int MeasureLooks = 4;   // looks (two seconds): the bike is dressed within a second of being spawned, and mounted the frame it is chosen
         private Rigidbody _body;
         private Vector3 _centre;        // of the car's body, in the car's own space
         private Vector3 _half;          // half its width, height and length
@@ -530,14 +532,16 @@ namespace RealLifeOverhaul
             {
                 _car = car;
                 _twoWheeler = twoWheeler;
+                _measureAgain = MeasureLooks;   // now, and after the bike is dressed and its rider seated
                 _body = car != null ? car.GetComponent<Rigidbody>() : null;
                 if (_body != null && !twoWheeler)
                 {
                     Measure(car, _body, out _centre, out _half, true);
                 }
             }
-            if (_twoWheeler && _driving && _body != null)
+            if (_twoWheeler && _driving && _body != null && _measureAgain > 0)
             {
+                _measureAgain--;
                 MeasureTwoWheeler(_car, _body, out _centre, out _half);
             }
             if (_spawner == null && _driving)
@@ -548,7 +552,7 @@ namespace RealLifeOverhaul
         }
 
         // A two-wheeler's size: its own body's colliders that meet the world (not the rider's, who sits among its children,
-        // nor a trigger), with a narrow default if none is found. Twice a second while ridden: a walk of the bike and its rider.
+        // nor a trigger), with a narrow default if none is found. On getting on and the four looks after: a walk of the bike and its rider.
         private static void MeasureTwoWheeler(Component vehicle, Rigidbody body, out Vector3 centre, out Vector3 half)
         {
             Transform root = body.transform;

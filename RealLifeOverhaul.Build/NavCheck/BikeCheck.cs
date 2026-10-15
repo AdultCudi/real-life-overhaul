@@ -136,7 +136,7 @@ internal static partial class Program
             "bikes source: the game's own box of the scooter is made the frame's (BikeMount.Shape)");
         Check(shape.Contains("BikeRules.Bars(") && shape.Contains("isTrigger = false") && shape.Contains("LayerHelper.VehiclesLayerIndex") && shape.Contains("_bars.enabled = false"),
             "bikes source: the bars box is solid, on the Vehicles layer, and off until ridden");
-        Check(mounted.Contains("_bars.gameObject.layer = LayerHelper.VehiclesLayerIndex") && mounted.Contains("_bars.enabled = true") && dismounted.Contains("_bars.enabled = false"),
+        Check(Body(mount, "private void BarsOn(").Contains("_bars.gameObject.layer = LayerHelper.VehiclesLayerIndex") && Body(mount, "private void BarsOn(").Contains("_bars.enabled = true") && mounted.Contains("BarsOn()") && dismounted.Contains("BarsOff()"),
             "bikes source: the bars box is on while ridden, as the game puts a ridden scooter's own box on Vehicles, and off again after");
         Check(detach.Contains("_frame.center = _frameCentreWas") && detach.Contains("_frame.size = _frameSizeWas") && detach.Contains("_obstacle.size = _obstacleSizeWas")
               && detach.Contains("customOverlayHeaderKey = _headerWas") && detach.Contains("canRun = _canRunWas") && detach.Contains("controlType = _clutchTypeWas")
@@ -157,6 +157,42 @@ internal static partial class Program
         Check(strikes.Contains("selected is ScooterController") && strikes.Contains("!_twoWheeler") && strikes.Contains("StrikePedestrian(walker, thrown, hit, body)")
               && strikes.Contains("PedestrianIncidents.KnockedBelow"),
             "bikes source: people are struck by a two-wheeler too, knocked down and never more, and it is not the player's car to the traffic");
+
+        // ---- the review's points: traffic told when the bars box goes, the box off before the rider is handed back, a fault
+        // letting go of the ride, sizes in the collider's own axes, the mass kept, Detach's order, and the box measured once.
+        string barsOff = Body(mount, "public void BarsOff(");
+        Check(barsOff.Contains("Manager.TriggerColliderRemovedEvent(_bars)") && barsOff.IndexOf("TriggerColliderRemovedEvent", StringComparison.Ordinal) < barsOff.IndexOf("_bars.enabled = false", StringComparison.Ordinal)
+              && Count(mount, "_bars.enabled = false") == 2 && !mount.Contains("Destroy(_bars"),
+            "bikes source: the bars box is only ever switched off through BarsOff, which tells traffic first (else a car waits for it for ever)");
+        string fall = Body(two, "private void Fall(");
+        Check(fall.Contains("mount.BarsOff()") && fall.IndexOf("mount.BarsOff()", StringComparison.Ordinal) < fall.IndexOf("scooter.ExitVehicle()", StringComparison.Ordinal),
+            "bikes source: a fall takes the bars box off before the game hands the rider back to physics");
+        Check(mount.Contains("_onExit = _onExit ?? Guard.Wrap<VehicleController>(Exited)") && Body(mount, "private void Exited(").Contains("BarsOff()") && mounted.Contains("HookExit(true)")
+              && dismounted.Contains("HookExit(false)") && Body(mount, "private void OnDestroy(").Contains("BarsOff()"),
+            "bikes source: the bars box also goes inside the game's own getting off (onExitVehicle, made once through the guard) and when the scooter is destroyed");
+        string slow = Body(two, "public void Slow(");
+        string fault = slow.Substring(Math.Max(0, slow.LastIndexOf("catch (Exception e)", StringComparison.Ordinal)));
+        Check(fault.Contains("_riding?.Dismounted()") && fault.Contains("_riding = null") && fault.Contains("_names.Dispose()"),
+            "bikes source: when the two-wheelers switch off after a fault, the ride's box and the name's hook are let go");
+        BikeRules.SizeAlong(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f, 0.3f, 0.9f, 1.8f, out float ix, out float iy, out float iz);
+        BikeRules.SizeAlong(0f, 0f, -1f, 0f, 1f, 0f, 1f, 0f, 0f, 0.3f, 0.9f, 1.8f, out float qx, out float qy, out float qz);
+        float c45 = (float)Math.Sqrt(0.5);
+        BikeRules.SizeAlong(-1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, -1f, 0.3f, 0.9f, 1.8f, out float tx, out _, out float tz);
+        BikeRules.SizeAlong(c45, 0f, c45, 0f, 1f, 0f, -c45, 0f, c45, 1f, 1f, 1f, out float hx, out _, out float hz);
+        Check(Near(ix, 0.3f) && Near(iy, 0.9f) && Near(iz, 1.8f) && Near(qx, 1.8f) && Near(qz, 0.3f) && Near(qy, 0.9f) && hx > 1.4f && hz > 1.4f && Near(tx, 0.3f) && Near(tz, 1.8f),
+            "bikes: a box's size is given along the collider's own axes (a quarter turn swaps width and length, never a negative size)");
+        Check(shape.Contains("_frame.size = SizeIn(space,") && shape.Contains("_obstacle.size = SizeIn(space,") && mount.Contains("_frame.transform.localEulerAngles"),
+            "bikes source: the frame box and the obstacle are sized in their own axes, and the log line says how the box is turned");
+        Check(Body(mount, "public static BikeMount Attach(").Contains("mount.KeepMass();") && Body(mount, "private void BarsOn(").Contains("PutMassBack()")
+              && barsOff.Contains("PutMassBack()") && detach.Contains("PutMassBack()"),
+            "bikes source: the body's centre of mass and inertia are read before the boxes change and written back after every change");
+        int restoreBox = detach.IndexOf("_frame.size = _frameSizeWas", StringComparison.Ordinal), restoreRest = detach.IndexOf("forceRenderingOff = false", StringComparison.Ordinal);
+        Check(restoreBox > 0 && restoreBox < restoreRest && detach.IndexOf("_obstacle.size = _obstacleSizeWas", StringComparison.Ordinal) < restoreRest
+              && detach.IndexOf("customOverlayHeaderKey = _headerWas", StringComparison.Ordinal) < restoreRest && Count(detach, "catch (Exception e)") >= 5,
+            "bikes source: Detach puts the box, the obstacle, the name and the mass back first, each on its own, before anything that could throw");
+        string lookup = Body(strikes, "private void Lookup(");
+        Check(lookup.Contains("_measureAgain > 0") && lookup.Contains("_measureAgain--") && lookup.Contains("_measureAgain = MeasureLooks"),
+            "bikes source: a two-wheeler's box is measured when it is got on and a few looks after, not twice a second all ride");
 
         // ---- no page of the Guide says the game calls a bicycle or a motorbike an electric scooter, in any language.
         string locales = Path.Combine(scripts, "..", "Locales");
