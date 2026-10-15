@@ -307,7 +307,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 string done = _director.Take(service);
-                bool failed = done == null || done == "reallife_school_no_money";
+                bool failed = LicenceDirector.Refused(done);   // nothing paid: the money, or why the school's car cannot go out now
                 Licences.Toast(failed ? NotificationType.Warning : NotificationType.Success, done ?? "reallife_school_not_now", 9f);
                 Step(service + (failed ? " not taken (" + done + ")" : " taken"));
                 if (!failed && (service == SchoolService.Renew || service == SchoolService.Taxi || service == SchoolService.Motorcycle))
