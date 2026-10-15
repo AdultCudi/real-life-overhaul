@@ -1,4 +1,4 @@
-0.21.0
+0.21.1
 
 New
-- The Stocks app for large, careful investors: the Portfolio tab shows what each holding is (a stock, a property trust, a Treasury or city bond, a deposit) with the spread across kinds and what it all pays over a year; an order over one order's most is worked a slice at each step; one bond purchase grows with what you are worth; dividends can be put back into the same shares; and bonds can roll over at their end or be bought as a ladder over the Treasury's terms.
+- A running trading bot can be given more capital, or have some of its money not in shares taken out, on the Bots tab: nothing is sold, and its fee, profit share, loss limit and payouts count the new capital.

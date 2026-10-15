@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "Mesas, armários, sala de reunião, sala de descanso, paredes e piso do jogo, policiais trabalhando e escritórios no piso vazio de uma delegacia grande. Desligado, fica vazia como antes.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Um robô de investimento em operação pode receber mais capital, ou ter parte do dinheiro fora de ações retirada, na aba Robôs: nada é vendido, e a taxa, a parte do lucro, o limite de perda e os pagamentos dele contam o novo capital.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -18401,5 +18401,7 @@
   "reallife_mkt_bot_why_change_too_little": "Isso é menos do que se pode pôr ou retirar de uma vez.",
   "reallife_mkt_bot_why_too_much_out": "Isso é mais do que se pode retirar sem vender nada. A caixa do robô mostra o máximo.",
   "reallife_mkt_kind_bot_added": "Capital posto",
-  "reallife_mkt_kind_bot_taken": "Capital retirado"
+  "reallife_mkt_kind_bot_taken": "Capital retirado",
+  "reallife_changes_021_1_title": "0.21.1",
+  "reallife_changes_021_1": "Um robô de investimento em operação pode receber mais capital, ou ter parte do dinheiro fora de ações retirada, na aba Robôs: nada é vendido, e a taxa, a parte do lucro, o limite de perda e os pagamentos dele contam o novo capital."
 }
