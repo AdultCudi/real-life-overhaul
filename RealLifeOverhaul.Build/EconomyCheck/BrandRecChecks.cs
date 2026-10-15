@@ -105,6 +105,11 @@ internal static partial class Program
         }
         Check(BrandRules.Missed(b, 15) == 0 && BrandRules.Missed(b, 20) == 5 && BrandRules.Missed(b, 10) == 0 && BrandRules.Missed(b, 3) == 0,
             "brand recognition: mornings missed are those since the brand began with no step (Brands off), never under nothing");
+        Check(BrandRules.StepsKey(0, 0) == "reallife_brand_fig_steps_first" && BrandRules.StepsKey(1, 1) == "reallife_brand_fig_steps_one"
+              && BrandRules.StepsKey(1, 0) == "reallife_brand_fig_steps_one_still" && BrandRules.StepsKey(2, 1) == "reallife_brand_fig_steps",
+            "brand recognition: the page says it starts tomorrow on the founding day, one morning in the singular, and so many of so many after");
+        Check(BrandRules.MissedKey(1) == "reallife_brand_fig_missed_one" && BrandRules.MissedKey(5) == "reallife_brand_fig_missed",
+            "brand recognition: one morning missed in the singular, several in the plural");
         b.Age = 400;   // (a test tool's year)
         Check(BrandRules.Missed(b, 20) == 0, "brand recognition: a brand whose clock ran ahead misses nothing");
     }
@@ -173,7 +178,7 @@ internal static partial class Program
         Check(FlareCast.PostsAbout(f, "Nowhere~0", out own, out last) == 0 && own == 0 && last == -1, "Flare: a business with no post has none, and no last day");
         // The Business tab's card and a deal's card read these, not a count of their own (Social/Flare/FlareApp.Screens.cs).
         string screens = System.IO.File.ReadAllText(System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Social\Flare\FlareApp.Screens.cs"));
-        Check(screens.Contains("FlareCast.PostsAbout(file, row.Key, out own, out last)") && screens.Contains("FlareCast.HireStage(h, day)") && screens.Contains("\"reallife_flare_shop_paid_posts\""),
+        Check(screens.Contains("FlareCast.PostsAbout(file, row.Key, out own, out last)") && screens.Contains("FlareCast.HirePostsKey(h, day)") && screens.Contains("\"reallife_flare_shop_paid_posts\""),
             "Flare: the Business tab's shop card counts with PostsAbout and a deal's card says where its posts stand");
     }
 
@@ -191,11 +196,42 @@ internal static partial class Program
         int at = line.IndexOf("\nH|", StringComparison.Ordinal);
         int end = line.IndexOf('\n', at + 1);
         string hireLine = end < 0 ? line.Substring(at) : line.Substring(at, end - at);
-        string older = line.Replace(hireLine, hireLine.Substring(0, hireLine.LastIndexOf('|', hireLine.LastIndexOf('|') - 1)));
+        string[] fields = hireLine.Split('|');
+        string older = line.Replace(hireLine, string.Join("|", fields, 0, 13));             // (as 0.26.0 and before wrote a deal)
+        string counting = line.Replace(hireLine, string.Join("|", fields, 0, 15));          // (with the posts counted, before the mark was written)
         var old = new FlareFile();
         FlareStore.ReadCast(old, older);
-        Check(old.Hires.Count == 1 && old.Hires[0].Posted == 0 && old.Hires[0].LastPost == -1 && old.Hires[0].To == 11,
-            "Flare: a deal saved before has no posts counted and no last day, and loads as it was");
+        FlareHire o = old.Hires.Count == 1 ? old.Hires[0] : null;
+        Check(o != null && o.Posted == 0 && o.LastPost == -1 && !o.Counted && o.To == 11,
+            "Flare: a deal saved before the posts were counted loads as it was, its count marked as not known");
+        var mid = new FlareFile();
+        FlareStore.ReadCast(mid, counting);
+        Check(mid.Hires.Count == 1 && mid.Hires[0].Counted && mid.Hires[0].Posted == 4, "Flare: a deal saved with its count but no mark is counted whole");
+
+        // What a deal's card says from an older save, half run: not "No post yet", and then only the posts since the update, said as such.
+        Check(o != null && FlareCast.HirePostsKey(o, 8) == null, "Flare: a deal from an older save, half run, says nothing of its posts until one comes (not \"No post yet\")");
+        FlareInfluencer who = old.Influencers.Find(n => n.Id == o.Who[0]);
+        var shops = new List<FlareShop> { new FlareShop { Place = o.Place, Name = o.Name, Niche = who.Niche, District = who.District } };
+        var visits = new List<FlarePost>();
+        FlareCast.Day(old, 8, shops, null, null, null, visits);
+        Check(!o.Counted && o.Posted == 1 && FlareCast.HirePostsKey(o, 8) == "reallife_flare_hire_posts_since_one", "Flare: its first post after the update is said as one since the update");
+        FlareCast.Day(old, 9, shops, null, null, null, visits);
+        Check(!o.Counted && o.Posted == 2 && FlareCast.HirePostsKey(o, 9) == "reallife_flare_hire_posts_since", "Flare: then as so many since the update");
+
+        // A deal from an older save that had not begun is counted whole from its first post.
+        var fresh = new FlareFile();
+        FlareStore.ReadCast(fresh, older);
+        FlareHire n0 = fresh.Hires[0];
+        Check(FlareCast.HirePostsKey(n0, 4) == "reallife_flare_hire_posts_from", "Flare: before its first day the card says when the posts begin");
+        FlareCast.Day(fresh, 5, shops, null, null, null, visits);
+        Check(n0.Counted && n0.Posted == 1 && FlareCast.HirePostsKey(n0, 5) == "reallife_flare_hire_posts_one", "Flare: one that begins after the update is counted whole: one paid post, said in the singular");
+        FlareCast.Day(fresh, 6, shops, null, null, null, visits);
+        Check(FlareCast.HirePostsKey(n0, 6) == "reallife_flare_hire_posts", "Flare: then so many paid posts");
+
+        var counted = new FlareHire { From = 5, To = 11 };
+        var waiting = new FlareHire { From = 5, To = 11, Late = true };
+        Check(FlareCast.HirePostsKey(waiting, 5) == "reallife_flare_hire_posts_none" && FlareCast.HirePostsKey(counted, 12) == "reallife_flare_hire_posts_none_over",
+            "Flare: a counted deal with no post yet says none yet, and one over with none says so");
     }
 
     private static void BrandRecWords()
@@ -208,7 +244,9 @@ internal static partial class Program
         string[] keys =
         {
             "reallife_brand_fig_steps", "reallife_brand_fig_missed", "reallife_brand_fig_city", "reallife_flare_shop_paid_posts", "reallife_flare_hire_posts_from",
-            "reallife_flare_hire_posts", "reallife_flare_hire_posts_none", "reallife_flare_hire_posts_none_over", "reallife_flare_hire_posts_where"
+            "reallife_flare_hire_posts", "reallife_flare_hire_posts_none", "reallife_flare_hire_posts_none_over", "reallife_flare_hire_posts_where",
+            "reallife_brand_fig_steps_first", "reallife_brand_fig_steps_one", "reallife_brand_fig_steps_one_still", "reallife_brand_fig_missed_one",
+            "reallife_flare_hire_posts_one", "reallife_flare_hire_posts_since", "reallife_flare_hire_posts_since_one"
         };
         var missing = new List<string>();
         foreach (string key in keys)

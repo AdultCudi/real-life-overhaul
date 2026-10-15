@@ -143,10 +143,10 @@ namespace RealLifeOverhaul.Economy.Brands
                 "empty", BrandsText.Bp(BrandCatalogue.DecayEmptyBp)));
             // Whether the daily step has run: a figure that stands still because Brands was off says so here.
             int days = Math.Max(0, today - b.Founded), missed = Math.Min(days, BrandRules.Missed(b, today));
-            box.Line(BrandsText.Fill("reallife_brand_fig_steps", "moved", (days - missed).ToString(), "days", days.ToString(), "day", b.Founded.ToString()));
+            box.Line(BrandsText.Fill(BrandRules.StepsKey(days, days - missed), "moved", (days - missed).ToString(), "days", days.ToString(), "day", b.Founded.ToString()));
             if (missed > 0)
             {
-                box.Line(BrandsText.Fill("reallife_brand_fig_missed", "missed", missed.ToString()), CellTone.Yellow);
+                box.Line(BrandsText.Fill(BrandRules.MissedKey(missed), "missed", missed.ToString()), CellTone.Yellow);
             }
             box.Note(BrandsText.Fill("reallife_brand_fig_city", "districts", BrandCatalogue.CityDistricts.ToString(), "step", BrandsText.Bp(BrandCatalogue.CityStepBp)));
             string worst = null;

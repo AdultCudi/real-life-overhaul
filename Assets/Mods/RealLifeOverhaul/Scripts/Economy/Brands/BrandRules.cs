@@ -191,6 +191,18 @@ namespace RealLifeOverhaul.Economy.Brands
             return Math.Max(0, today - b.Founded - b.Age);
         }
 
+        /// <summary>The line the brand's page says about its mornings, as a text key: none yet on its first day, one morning, or several.</summary>
+        public static string StepsKey(int days, int moved)
+        {
+            return days <= 0 ? "reallife_brand_fig_steps_first" : days > 1 ? "reallife_brand_fig_steps" : moved > 0 ? "reallife_brand_fig_steps_one" : "reallife_brand_fig_steps_one_still";
+        }
+
+        /// <summary>The line saying on how many mornings it stood still, as a text key: one, or several.</summary>
+        public static string MissedKey(int missed)
+        {
+            return missed == 1 ? "reallife_brand_fig_missed_one" : "reallife_brand_fig_missed";
+        }
+
         /// <summary>Recognition as the app shows it, tenths of a point (hundredths kept): a day's gain of a few hundredths shows within a day or two, where whole points hid it for days.</summary>
         public static int Shown(int hundredths)
         {

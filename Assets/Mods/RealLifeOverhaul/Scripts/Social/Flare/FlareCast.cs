@@ -383,6 +383,7 @@ namespace RealLifeOverhaul.Flare
                     if (!(hire.Late && day == hire.From))
                     {
                         Add(f, inf, day, FlareSource.Hired, hire.Place, hire.Name, hire.OffMessage ? 1 : 0);
+                        hire.Counted |= hire.Posted == 0 && day == hire.From + (hire.Late ? 1 : 0);   // (a deal from an older save whose first post is this one is counted whole)
                         hire.Posted++;
                         hire.LastPost = day;
                     }
@@ -472,6 +473,26 @@ namespace RealLifeOverhaul.Flare
         public static int HireStage(FlareHire h, int day)
         {
             return h.Ended || day > h.To ? HireOver : day < h.From ? HireBefore : h.Posted > 0 ? HirePosting : HireWaiting;
+        }
+
+        /// <summary>
+        /// The line a deal's card says about its posts, as a text key: when they begin, how many have come (one or more;
+        /// for a deal from an older save only those since the update, said as such), none yet, or none at all. Null for a
+        /// deal from an older save with no post counted yet: its count is not known, so nothing is said of it.
+        /// </summary>
+        public static string HirePostsKey(FlareHire h, int day)
+        {
+            int stage = HireStage(h, day);
+            if (stage == HireBefore)
+            {
+                return "reallife_flare_hire_posts_from";
+            }
+            if (h.Posted > 0)
+            {
+                return h.Counted ? (h.Posted == 1 ? "reallife_flare_hire_posts_one" : "reallife_flare_hire_posts")
+                    : h.Posted == 1 ? "reallife_flare_hire_posts_since_one" : "reallife_flare_hire_posts_since";
+            }
+            return !h.Counted ? null : stage == HireWaiting ? "reallife_flare_hire_posts_none" : "reallife_flare_hire_posts_none_over";
         }
 
         private static FlareHire HireOf(FlareFile f, int id, int day)

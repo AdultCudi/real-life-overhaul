@@ -662,10 +662,11 @@ namespace RealLifeOverhaul.Flare
             b.Append(FlareText.Pair("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind)));
             b.Append('\n').Append(FlareText.Fill("reallife_flare_hire_days", "from", h.From.ToString(), "to", h.To.ToString(), "percent", h.Percent.ToString()));
             // Its posts: when the first comes, how many have come and when the last did, and where they are.
-            int stage = FlareCast.HireStage(h, day);
-            b.Append('\n').Append(stage == FlareCast.HireBefore ? FlareText.Fill("reallife_flare_hire_posts_from", "day", h.From.ToString())
-                : h.Posted > 0 ? FlareText.Fill("reallife_flare_hire_posts", "count", h.Posted.ToString(), "day", h.LastPost.ToString())
-                : FlareText.T(stage == FlareCast.HireWaiting ? "reallife_flare_hire_posts_none" : "reallife_flare_hire_posts_none_over"));
+            string posts = FlareCast.HirePostsKey(h, day);
+            if (posts != null)
+            {
+                b.Append('\n').Append(FlareText.Fill(posts, "day", (h.Posted > 0 ? h.LastPost : h.From).ToString(), "count", h.Posted.ToString()));
+            }
             b.Append('\n').Append(FlareText.T("reallife_flare_hire_posts_where"));
             if (h.Ended)
             {

@@ -461,6 +461,7 @@ namespace RealLifeOverhaul.Flare
         public bool Ended;           // the player ended it (a scandal), or it ran out
         public int Posted;           // the paid posts made for it so far (the Feed keeps only the newest posts, so they are counted here)
         public int LastPost = -1;    // the day of the last of them; -1 before the first
+        public bool Counted = true;  // Posted counts every post since the deal began; false for a deal saved half run before the posts were counted
 
         public bool On(int day) => !Ended && day >= From && day <= To;
     }
