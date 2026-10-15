@@ -188,7 +188,8 @@ namespace RealLifeOverhaul.Economy.Brands
             box.Section("reallife_ibox_sec_franchise");
             box.Line(BrandsText.Fill(b.Offered ? "reallife_brand_set_offered" : can ? "reallife_brand_set_can_offer" : "reallife_brand_set_cannot_offer", "good", good.ToString(), "shops", BrandCatalogue.OfferShops.ToString(),
                 "standards", BrandCatalogue.OfferStandards.ToString(), "city", BrandsText.Points(BrandCatalogue.OfferCityRec), "district", BrandsText.Points(BrandCatalogue.OfferDistrictRec),
-                "has", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b))));
+                "mean", BrandsText.Points(BrandCatalogue.OfferMeanRec), "has", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b)),
+                "average", BrandsText.Rec(BrandRules.SpreadRec(state, b))));
             bool offered = b.Offered;
             if (!box.Switch("reallife_brand_set_offer", offered, on =>
                 {

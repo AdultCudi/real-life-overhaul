@@ -555,7 +555,39 @@ namespace RealLifeOverhaul.Economy.Brands
 
         // ---------------------------------------------------------------- offering it as a franchise
 
-        /// <summary>Whether the brand may be offered: three member shops with standards of 60 or more, and recognition of 25 city-wide or 40 in one district.</summary>
+        /// <summary>
+        /// The mean of the brand's figures over the districts where it has a member shop, hundredths: what a brand spread
+        /// over the city is known by, where no one district may be well known yet. Nothing with no such district;
+        /// <paramref name="districts"/> is how many it averaged.
+        /// </summary>
+        public static int MeanRec(BrandsState s, Brand b, out int districts)
+        {
+            long sum = 0;
+            districts = 0;
+            for (int i = 0; i < b.Districts.Count; i++)
+            {
+                if (Members(s, b, b.Districts[i].Name) > 0)
+                {
+                    sum += b.Districts[i].Rec;
+                    districts++;
+                }
+            }
+            return districts > 0 ? (int)(sum / districts) : 0;
+        }
+
+        /// <summary>That mean for a brand with member shops in two districts or more, else nothing: what the offer's rule and the app's lines read.</summary>
+        public static int SpreadRec(BrandsState s, Brand b)
+        {
+            int districts;
+            int mean = MeanRec(s, b, out districts);
+            return districts >= BrandCatalogue.OfferMeanDistricts ? mean : 0;
+        }
+
+        /// <summary>
+        /// Whether the brand may be offered: three member shops with standards of 60 or more, and recognition of 25
+        /// city-wide, or 40 in one district, or 10 on average over two or more districts with a member shop (a brand
+        /// spread over the city is known as a whole before any one district is).
+        /// </summary>
         public static bool CanOffer(BrandsState s, Brand b, out int good)
         {
             good = 0;
@@ -563,7 +595,8 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 good += s.Members[i].BrandId == b.Id && s.Members[i].Standards >= BrandCatalogue.OfferStandards ? 1 : 0;
             }
-            return good >= BrandCatalogue.OfferShops && (b.City >= BrandCatalogue.OfferCityRec || Best(b) >= BrandCatalogue.OfferDistrictRec);
+            return good >= BrandCatalogue.OfferShops
+                   && (b.City >= BrandCatalogue.OfferCityRec || Best(b) >= BrandCatalogue.OfferDistrictRec || SpreadRec(s, b) >= BrandCatalogue.OfferMeanRec);
         }
 
         // ---------------------------------------------------------------- brand campaigns

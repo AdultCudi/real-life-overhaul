@@ -40,6 +40,10 @@ internal static partial class Program
         BrandPacePacked();
         BrandPaceWide();
         BrandPaceCost();
+        BrandOfferSpread();
+        BrandOfferPacked();
+        BrandOfferNever();
+        BrandOfferWords();
     }
 
     // The player's brand: so many shops in each district, all with the same standards and customers.
@@ -196,6 +200,149 @@ internal static partial class Program
             BrandRules.Day(s, b);
         }
         return watch.Elapsed.TotalMilliseconds;
+    }
+
+    // A player, 16 Oct 2026 (day 60): one brand, three member shops in three districts, standards over 60, and no franchise on offer: the offer wanted
+    // 40 points in one district (or 25 city-wide) and a spread brand's districts and city-wide figure were near 12 by day 40. Now the mean over
+    // the districts where it has a member shop counts too (BrandCatalogue.OfferMeanRec, from two districts).
+    private static int FirstOfferDay(int[] shopsIn, int customers, int standards, int days, out BrandsState state, out Brand brand)
+    {
+        state = Spread(shopsIn, customers, standards, out brand);
+        int good;
+        for (int day = 1; day <= days; day++)
+        {
+            BrandRules.Day(state, brand);
+            if (BrandRules.CanOffer(state, brand, out good))
+            {
+                return day;
+            }
+        }
+        return -1;
+    }
+
+    private static void BrandOfferSpread()
+    {
+        foreach (int standards in new[] { 75, 100 })
+        {
+            Brand b;
+            BrandsState s;
+            int day = FirstOfferDay(new[] { 1, 1, 1 }, 100, standards, 80, out s, out b);
+            Check(day >= 20 && day <= 35, "brand offer: three shops in three districts with standards of " + standards + " and 100 customers a day each can be offered from day " + day + " (not before 20, by 35)");
+            Check(b.City < BrandCatalogue.OfferCityRec && BrandRules.Best(b) < BrandCatalogue.OfferDistrictRec && BrandRules.SpreadRec(s, b) >= BrandCatalogue.OfferMeanRec,
+                "brand offer: and it is the mean over its districts that opens it (" + b.City + " city-wide of " + BrandCatalogue.OfferCityRec + ", best " + BrandRules.Best(b) + " of " + BrandCatalogue.OfferDistrictRec + ")");
+        }
+        Brand old;
+        BrandsState state = Spread(new[] { 1, 1, 1 }, 100, 75, out old);
+        for (int day = 1; day <= 60; day++)
+        {
+            BrandRules.Day(state, old);
+        }
+        Check(old.City < BrandCatalogue.OfferCityRec && BrandRules.Best(old) < BrandCatalogue.OfferDistrictRec,
+            "brand offer: by the old rule (25 city-wide or 40 in a district) the player's brand was still not ready at day 60 (" + old.City + " city-wide, best " + BrandRules.Best(old) + ")");
+        int districts;
+        Check(BrandRules.MeanRec(state, old, out districts) == BrandRules.SpreadRec(state, old) && districts == 3, "brand offer: the mean counts the three districts where it has a member shop");
+        state.Members.RemoveAt(state.Members.Count - 1);
+        BrandRules.MeanRec(state, old, out districts);
+        Check(districts == 2 && BrandRules.SpreadRec(state, old) > 0, "brand offer: a district with no member shop left is not in the mean");
+    }
+
+    // Three shops packed into one district: no mean, the district's own 40 (or 25 city-wide) as before.
+    private static void BrandOfferPacked()
+    {
+        Brand b;
+        BrandsState s;
+        int day = FirstOfferDay(new[] { 3 }, 100, 75, 1000, out s, out b);
+        Check(day > 40 && BrandRules.SpreadRec(s, b) == 0 && (BrandRules.Best(b) >= BrandCatalogue.OfferDistrictRec || b.City >= BrandCatalogue.OfferCityRec),
+            "brand offer: three shops in one district are ready on day " + day + ", when the district reaches " + BrandRules.Best(b) + " of " + BrandCatalogue.OfferDistrictRec + " (no mean for one district)");
+        b.Districts[0].Rec = BrandCatalogue.OfferDistrictRec - 1;
+        b.City = 0;
+        int good;
+        bool below = BrandRules.CanOffer(s, b, out good);
+        b.Districts[0].Rec = BrandCatalogue.OfferDistrictRec;
+        Check(!below && BrandRules.CanOffer(s, b, out good) && good == 3, "brand offer: 40 in one district opens it and 39.99 does not");
+        b.Districts[0].Rec = BrandCatalogue.OfferMeanRec + 500;
+        Check(!BrandRules.CanOffer(s, b, out good), "brand offer: a packed brand at the mean's figure alone is not ready");
+    }
+
+    // Under three member shops, or under standards of 60, never: whatever the recognition.
+    private static void BrandOfferNever()
+    {
+        Brand b;
+        BrandsState s = Spread(new[] { 1, 1 }, 400, 100, out b);
+        foreach (DistrictFile d in b.Districts)
+        {
+            d.Rec = BrandCatalogue.RecMost;
+        }
+        b.City = BrandCatalogue.RecMost;
+        int good;
+        Check(!BrandRules.CanOffer(s, b, out good) && good == 2, "brand offer: two member shops are never enough, at full recognition everywhere");
+        BrandRules.Join(s, b, "Shop~9", GymType, "ba:neighborhood_chinatown", 1);
+        s.Members[s.Members.Count - 1].Standards = 100;
+        Check(BrandRules.CanOffer(s, b, out good) && good == 3, "brand offer: the third shop opens it");
+        s.Members[0].Standards = BrandCatalogue.OfferStandards - 1;
+        Check(!BrandRules.CanOffer(s, b, out good) && good == 2, "brand offer: a shop under standards of 60 does not count");
+        int never = 0;
+        Brand low;
+        BrandsState sl = Spread(new[] { 1, 1, 1 }, 400, 59, out low);
+        for (int day = 1; day <= 400; day++)
+        {
+            BrandRules.Day(sl, low);
+            never += BrandRules.CanOffer(sl, low, out good) ? 1 : 0;
+        }
+        Check(never == 0, "brand offer: three shops with standards of 59 are never ready in 400 days (" + never + ")");
+    }
+
+    private static void BrandOfferWords()
+    {
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("brand offer", langs, codes))
+        {
+            return;
+        }
+        var missing = new List<string>();
+        foreach (string key in new[] { "reallife_brand_set_cannot_offer", "reallife_brand_note_cannot_offer", "reallife_guide_economy_brands" })
+        {
+            string lacking = LanguagesLacking(langs, codes, key);
+            if (lacking.Length > 0)
+            {
+                missing.Add(key + " (" + lacking + ")");
+            }
+        }
+        Check(missing.Count == 0, "brand offer: the three texts that say when a brand can be offered are in every language with the same {names} (" + string.Join(", ", missing) + ")");
+        bool mean = true, plain = true;
+        for (int l = 0; l < langs.Length; l++)
+        {
+            bool set = langs[l].TryGetValue("reallife_brand_set_cannot_offer", out string a) && a.Contains("{mean}") && a.Contains("{average}");
+            bool note = langs[l].TryGetValue("reallife_brand_note_cannot_offer", out string n) && n.Contains("{mean}");
+            bool guide = langs[l].TryGetValue("reallife_guide_economy_brands", out string g) && g.Contains("{br_offer_mean}") && g.Contains("{br_offer_mean_districts}");
+            mean &= set && note && guide;
+            foreach (string key in new[] { "reallife_brand_set_cannot_offer", "reallife_brand_note_cannot_offer" })
+            {
+                plain &= !langs[l][key].Contains("!") && !langs[l][key].Contains("—") && !langs[l][key].Contains("–");
+            }
+        }
+        Check(mean, "brand offer: the page, the notice and the Guide all give the average over districts, in every language");
+        Check(plain && langs[0]["reallife_brand_note_cannot_offer"].Length <= 240, "brand offer: the notice keeps to 240 characters, with no dash and no exclamation mark");
+        string brands = System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Economy\Brands");
+        string guideCode = System.IO.File.ReadAllText(System.IO.Path.Combine(brands, "BrandsGuide.cs"));
+        string appCode = System.IO.File.ReadAllText(System.IO.Path.Combine(brands, "BrandsApp.Brands.cs"));
+        string actions = System.IO.File.ReadAllText(System.IO.Path.Combine(brands, "BrandsDirector.Actions.cs"));
+        Check(guideCode.Contains("\"br_offer_mean\", () => Whole(BrandCatalogue.OfferMeanRec / 100)") && guideCode.Contains("\"br_offer_mean_districts\"")
+              && appCode.Contains("BrandCatalogue.OfferMeanRec") && appCode.Contains("BrandRules.SpreadRec") && actions.Contains("BrandCatalogue.OfferMeanRec"),
+            "brand offer: the Guide's facts, the brand page and the notice are filled from BrandCatalogue.OfferMeanRec, not from a number of their own");
+        bool line = true;
+        for (int l = 0; l < 3 && l < langs.Length; l++)
+        {
+            // any reallife_changes_ row: the line is in the next row until a release numbers it
+            bool found = false;
+            foreach (var row in langs[l])
+            {
+                found |= row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
+                         && row.Value.Length > 20 && (l != 0 || row.Value.Contains("Fixed: a brand with its shops spread over several districts"));
+            }
+            line &= found;
+        }
+        Check(line, "brand offer: What's new has the fix's line in English, Portuguese and Chinese, in some reallife_changes_ row");
     }
 
     // Three gyms of a brand in one district, each with standards of 85 (the player's store rating over 80).
