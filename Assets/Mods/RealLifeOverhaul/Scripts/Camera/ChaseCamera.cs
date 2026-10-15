@@ -9,7 +9,12 @@ namespace RealLifeOverhaul
     /// Cinemachine rigs with no script to steer, so this adds its own virtual camera and
     /// raises its priority above the game's while the normal outdoor driving camera is live.
     /// The look-back camera, garages and parking keep the game's own cameras.
-    /// While another author's mod drives the camera (<see cref="CameraYield"/>) this one is let go.
+    /// It is the one looked through only while <see cref="CameraYield"/> orders it (the game asks for its vehicleCamera, the
+    /// options are on, no other author's mod drives the camera, the player is alive); for every other camera of the game's
+    /// it is let go. While it is looked through, the bridges are kept in sight (<see cref="BridgeHold"/>): the game would
+    /// otherwise hide the highway, and the car on it, from a camera this close to the deck.
+    /// Per frame: the orders read and the bridges' flag compared; while it is the one looked through, one ray at most for the
+    /// road under it and a few vector operations.
     /// </summary>
     public class ChaseCamera : MonoBehaviour
     {
@@ -52,8 +57,17 @@ namespace RealLifeOverhaul
         private float _lastMouseTime;
         private Vector3 _lastPos;
 
+        /// <summary>True while the chase camera is live, in the blend out of it too (for the bridge's hold).</summary>
+        public static bool InPicture { get; private set; }
+
+        private static ChaseCamera _instance;   // the city's one, for the feature's clean-up
+
         // Empire Motors' view on V is looked for behind the loading screen, not the first time this camera comes on (Camera/EmpireView).
-        private void Awake() => ScenePrewarm.Add("camera: Empire Motors' view from the driver's seat being found", EmpireView.Prewarm);
+        private void Awake()
+        {
+            _instance = this;
+            ScenePrewarm.Add("camera: Empire Motors' view from the driver's seat being found", EmpireView.Prewarm);
+        }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Camera: ChaseCamera.LateUpdate");
         private void LateUpdate()
@@ -62,6 +76,7 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                LetGo();
                 return;
             }
             try
@@ -78,10 +93,10 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
-            bool drive = !CameraYield.StoodDown && Settings.CameraEnabled && Settings.CarCamera && vehicle != null
-                         && !vehicle.vehicleType.spawnInPlayerObject
-                         && gm.vehicleCamera != null && gm.vehicleCamera.Priority == 1;
-            if (!drive)
+            InPicture = _vcam != null && (_active || InPicture) && CinemachineCore.Instance.IsLive(_vcam);   // live, in a blend out too (the bridge's hold)
+            CameraOrders orders = CameraYield.Orders;   // the one rule of when this mod's camera stands aside (Camera/CameraYieldRules)
+            BridgeHold.Hold(orders.HoldBridges);        // (the on-foot camera holds them too: whichever runs first in the frame does it)
+            if (!orders.Chase || vehicle == null)
             {
                 Deactivate();
                 return;
@@ -97,9 +112,8 @@ namespace RealLifeOverhaul
                 _distance = Settings.CarCameraDistance;
             }
 
-            // Mouse steering of the car and mouse look can't share the mouse.
-            bool look = Settings.MouseLook && !PlayerPrefSettings.VehicleMouseInput && !ThirdPersonCamera.CursorFreed
-                        && Application.isFocused && !ThirdPersonCamera.IsUiOpen();
+            // Mouse steering of the car and mouse look can't share the mouse (the rule: CameraYieldRules.Decide).
+            bool look = orders.ChaseLook;
             SetLooking(look);
 
             float dt = Time.unscaledDeltaTime;
@@ -225,6 +239,26 @@ namespace RealLifeOverhaul
         {
             SetLooking(false);
             Live = false;
+            InPicture = false;
+            BridgeHold.Release();   // the bridge back to the game's hiding as it was (the city unloading)
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+        }
+
+        /// <summary>
+        /// The chase camera let go at once, the pointer freed and the bridge given back: for the camera feature's clean-up
+        /// (Meta/FeatureList), which the guard runs when it switches the feature off after its faults. Safe at any time.
+        /// </summary>
+        public static void LetGo()
+        {
+            if (_instance != null)
+            {
+                _instance.Deactivate();
+            }
+            InPicture = false;
+            BridgeHold.Release();
         }
     }
 }
