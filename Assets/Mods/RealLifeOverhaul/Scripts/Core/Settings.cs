@@ -16,6 +16,8 @@ namespace RealLifeOverhaul
         public const string MapPlacesShownId = "map_places_shown";
         public const string SpecialNamesId = "special_names";
         public const string DistrictViewId = "district_view";
+        public const string PhoneCameraId = "phone_camera";
+        public const string PhoneCameraGridId = "phone_camera_grid";
         public const string MouseLookId = "camera_mouselook";
         public const string MouseSensitivityId = "camera_sensitivity";
         public const string EnterWithKeyId = "enter_with_key";
@@ -280,6 +282,8 @@ namespace RealLifeOverhaul
         public static int CameraDistance = 6;    // metres behind the player
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
         public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
+        public static bool PhoneCamera = true;      // the Camera and Gallery apps on the phone: rear camera and selfie, photos kept per save (Scripts/Photos)
+        public static bool PhoneCameraGrid = true;  // ...the viewfinder opens with the rule of thirds' grid showing
         public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list (Core/MapPlaces; off hides all of them)
         public static bool SpecialNames = true;     // the mod's special buildings carry their own names wherever the game names a building (Core/SpecialBuildings; off: the game's own names)
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
@@ -580,6 +584,8 @@ namespace RealLifeOverhaul
             MapPlacesShown = Bool(modId, MapPlacesShownId, MapPlacesShown);
             SpecialNames = Bool(modId, SpecialNamesId, SpecialNames);
             DistrictView = Bool(modId, DistrictViewId, DistrictView);
+            PhoneCamera = Bool(modId, PhoneCameraId, PhoneCamera);
+            PhoneCameraGrid = Bool(modId, PhoneCameraGridId, PhoneCameraGrid);
             MouseLook = Bool(modId, MouseLookId, MouseLook);
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
             EnterWithKey = Bool(modId, EnterWithKeyId, EnterWithKey);

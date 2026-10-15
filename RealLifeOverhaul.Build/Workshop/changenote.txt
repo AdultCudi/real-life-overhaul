@@ -1,8 +1,4 @@
-0.26.0
+0.27.0
 
 New
-- Flare is a living social network: a feed of the city's people, official accounts and businesses about what really happens, your own words and pictures with every post, reports the City Office acts on (crews, patrols, cleaning, inspections), reviews that move a business's customers, likes and replies over the hours, messages and Trending, and in Going Public one shared feed and one City Ledger for the city.
-
-Fixed
-- An app could show only some of the buttons a page has, so the Campus offered Enrol and pay but never Enrol on a student loan, and other apps lost a button the same way. Every button now shows, in order, across the whole width of the box, and buttons that do not fit one line go on to the next.
-- Hudson City University had no row of its own in the city map's filters, and did not light up there. It now has its own row with its own icon, and while that row is ticked the university lights up on the map as the game's own buildings do.
+- A Camera and a Gallery on the phone: a rear camera and a selfie with a grid, light filters and frames, the game's HUD out of the way while you shoot, and each save's photos in the Gallery to see whole, share to Flare, set as the phone's wallpaper or delete. Flare's camera and selfie buttons open the same camera.

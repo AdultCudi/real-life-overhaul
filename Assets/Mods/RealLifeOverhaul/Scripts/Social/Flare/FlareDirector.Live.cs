@@ -1170,12 +1170,15 @@ namespace RealLifeOverhaul.Flare
         // ---------------------------------------------------------------- the camera and pictures
 
         /// <summary>
-        /// The camera button: today a shot of the screen as it is, without the phone (FlareDirector.Camera.cs); when the
-        /// Camera app is in the mod this one line opens it instead.
+        /// The camera button: the phone's own camera (the Camera app's, Photos/CameraMode), whose first photo comes back to the
+        /// compose sheet; with the Camera off, a shot of the screen as it is, without the phone (FlareDirector.Camera.cs).
         /// </summary>
         public void CameraPressed()
         {
-            TakeShot();
+            if (FlareBridges.OpenCamera == null || !FlareBridges.OpenCamera())
+            {
+                TakeShot();
+            }
         }
 
         /// <summary>The selfie button: the phone is put away and photo mode starts as a selfie; the picture saved comes back to the compose sheet.</summary>

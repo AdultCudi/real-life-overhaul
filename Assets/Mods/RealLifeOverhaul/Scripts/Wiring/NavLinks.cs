@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
         {
             internal static void Connect()
             {
-                NavBridges.HudHeld = () => Law.Custody.Active || TransitDirector.Riding || Leisure.PhotoMode.Active;
+                NavBridges.HudHeld = () => Law.Custody.Active || TransitDirector.Riding || Leisure.PhotoMode.Active || Photos.CameraMode.Active;
                 NavBridges.GuideToStation = () => Law.LawDirector.Instance != null && Settings.LawPrecincts && Law.LawDirector.Instance.GuideToNearest() != null;
             }
 
