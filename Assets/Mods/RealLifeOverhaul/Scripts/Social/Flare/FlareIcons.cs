@@ -7,7 +7,8 @@ namespace RealLifeOverhaul.Flare
     internal enum FlareGlyph
     {
         Home, Explore, Bell, Mail, Person, Store, Plus, Heart, HeartFull, Reply, Repost, Camera, Picture, At, Back, Close, Flag, Star, StarFull,
-        Pin, Calendar, Check, Selfie, City, Send, Mute, Hide
+        Pin, Calendar, Check, Selfie, City, Send, Mute, Hide,
+        Trash, Prev, Next, Phone, Share   // (the Gallery's: Photos/GalleryApp)
     }
 
     /// <summary>
@@ -182,6 +183,34 @@ namespace RealLifeOverhaul.Flare
                     Line(0.14f, 0.50f, 0.30f, 0.66f);
                     Line(0.86f, 0.50f, 0.70f, 0.66f);
                     Line(0.16f, 0.16f, 0.84f, 0.84f, 0.08f);
+                    break;
+                case FlareGlyph.Trash:
+                    Line(0.16f, 0.76f, 0.84f, 0.76f);
+                    BoxLine(0.40f, 0.76f, 0.60f, 0.88f, 0.03f);
+                    BoxLine(0.24f, 0.12f, 0.76f, 0.70f, 0.06f);
+                    Line(0.41f, 0.24f, 0.41f, 0.58f);
+                    Line(0.59f, 0.24f, 0.59f, 0.58f);
+                    break;
+                case FlareGlyph.Prev:
+                    Line(0.64f, 0.84f, 0.32f, 0.50f, 0.10f);
+                    Line(0.32f, 0.50f, 0.64f, 0.16f, 0.10f);
+                    break;
+                case FlareGlyph.Next:
+                    Line(0.36f, 0.84f, 0.68f, 0.50f, 0.10f);
+                    Line(0.68f, 0.50f, 0.36f, 0.16f, 0.10f);
+                    break;
+                case FlareGlyph.Phone:
+                    BoxLine(0.28f, 0.08f, 0.72f, 0.92f, 0.10f);
+                    Line(0.44f, 0.82f, 0.56f, 0.82f, 0.05f);
+                    Circle(0.50f, 0.17f, 0.04f, true);
+                    break;
+                case FlareGlyph.Share:
+                    Line(0.20f, 0.56f, 0.20f, 0.14f);
+                    Line(0.20f, 0.14f, 0.80f, 0.14f);
+                    Line(0.80f, 0.14f, 0.80f, 0.56f);
+                    Line(0.50f, 0.32f, 0.50f, 0.88f);
+                    Line(0.50f, 0.88f, 0.33f, 0.71f);
+                    Line(0.50f, 0.88f, 0.67f, 0.71f);
                     break;
             }
         }

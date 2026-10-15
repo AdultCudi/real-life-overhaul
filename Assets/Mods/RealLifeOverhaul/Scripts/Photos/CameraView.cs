@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Photos
     ///   the grid         two lines across and two down at the thirds, thin and half clear
     ///   the chips        a row over the bottom bar: the five filters (Natural, Warm, Cool, Black and white, Vivid), a gap,
     ///                    the three frames (No frame, Border, Film); the one chosen of each lit
-    ///   the bottom bar   a dark strip 330 high: the latest photo's small copy on the left (opens the Gallery), the shutter
+    ///   the bottom bar   a dark strip 330 high: the latest photo's small copy on the left (opens it whole in the Gallery), the shutter
     ///                    in the middle (a white ring round a white disc), on the right a dark disc naming the camera it
     ///                    turns to ("Selfie", "Rear")
     ///   a toast          a dark pill in the middle for a moment: "Saved to the Gallery", or why not

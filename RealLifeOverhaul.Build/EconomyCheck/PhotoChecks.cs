@@ -9,7 +9,7 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Photos;
 
 // The Camera and the Gallery (Scripts/Photos): a photo's name and a save's folder, the cap and the oldest offered, the look
-// over deleted saves, the Gallery's order and pages from a folder of made-up photos, the photo and its small copy made from a
+// over deleted saves, the order and the albums from a folder of made-up photos, the photo and its small copy made from a
 // made-up screen and handed to Flare where it reads them, the camera's rules (when it opens and shuts, the zoom, the aim, the
 // filters and frames), the restore of everything the camera borrows as a rule (CameraHold), the sources' guarantees (the
 // files and the encoding on a worker, nothing sent, the HUD and the walk given back on every way out), and every text in the
@@ -182,22 +182,11 @@ internal static partial class Program
         Check(again.Select(x => x.Name).SequenceEqual(listed.Select(x => x.Name)), "photos: the order is the same every time, whatever order the folder gives");
         Check(PhotoStore.List(System.IO.Path.Combine(folder, "none"), again) && again.Count == 0, "photos: a save with no folder yet has no photos, and that is no fault");
 
-        int count = listed.Count;
-        Check(PhotoStoreRules.Pages(0) == 1 && PhotoStoreRules.Pages(1) == 1 && PhotoStoreRules.Pages(20) == 1 && PhotoStoreRules.Pages(21) == 2 && PhotoStoreRules.Pages(300) == 15,
-            "photos: 20 photos to a page, an empty Gallery one page, a full one 15");
-        int first = PhotoStoreRules.PageRange(2, count, out int shown);
-        Check(first == 40 && shown == count - 40 && shown == 9, "photos: the last page shows what is left (" + shown + " from " + first + ")");
-        first = PhotoStoreRules.PageRange(9, count, out shown);
-        Check(first == 40 && PhotoStoreRules.ClampPage(-4, count) == 0 && PhotoStoreRules.ClampPage(9, count) == 2 && PhotoStoreRules.ClampPage(3, 0) == 0,
-            "photos: a page past the last is the last, one before the first is the first");
-        PhotoStoreRules.PageRange(0, 0, out shown);
-        Check(shown == 0 && PhotoStoreRules.PageOf(0) == 0 && PhotoStoreRules.PageOf(19) == 0 && PhotoStoreRules.PageOf(20) == 1 && PhotoStoreRules.PageOf(299) == 14,
-            "photos: an empty page shows nothing, and a photo's page is its place over 20");
         var selfies = new List<PhotoEntry>();
-        PhotoStoreRules.Of(listed, PhotoStoreRules.TabSelfies, selfies);
-        Check(selfies.Count == listed.Count(x => x.Selfie) && selfies.All(x => x.Selfie) && selfies.Count > 0, "photos: the Selfies tab has the selfies alone, in the same order");
-        PhotoStoreRules.Of(listed, PhotoStoreRules.TabAll, selfies);
-        Check(selfies.Count == listed.Count, "photos: the first tab has every photo");
+        GalleryRules.Album(listed, GalleryAlbum.Selfies, null, selfies);
+        Check(selfies.Count == listed.Count(x => x.Selfie) && selfies.All(x => x.Selfie) && selfies.Count > 0, "photos: the Selfies album of a folder has its selfies alone");
+        GalleryRules.Album(listed, GalleryAlbum.All, null, selfies);
+        Check(selfies.Count == listed.Count, "photos: All photos has every photo of a folder");
 
         var at = new DateTime(2026, 10, 15, 9, 0, 0);
         string a = PhotoStore.NewPath(folder, "Psnh0rSw8kyjQbL4AHyJ+Q==", at, false, 5, 9);
@@ -353,13 +342,19 @@ internal static partial class Program
             "photos to Flare: the file starts RLOT, then the width and the height as little-endian 32-bit integers");
 
         string flare = Read(@"Social\Flare\FlareDirector.Camera.cs"), live = Read(@"Social\Flare\FlareDirector.Live.cs"), links = Read(@"Wiring\PhotosLinks.cs");
-        string gallery = Read(@"Photos\GalleryApp.cs"), mode = Read(@"Photos\CameraMode.cs");
+        string gallery = GalleryText(), mode = Read(@"Photos\CameraMode.cs");
         Check(flare.Contains("public bool SharePhoto(string photoPath, string smallCopyPath = null)"), "photos to Flare: Flare's hook is there as the Camera calls it");
         Check(links.Contains("FlareDirector.Instance.SharePhoto(photo, small)") && Regex.IsMatch(gallery, @"ShareToFlare\(path, PhotoThumbs\.FileOf\(path\)\)")
               && Regex.IsMatch(mode, @"ShareToFlare\(path, PhotoThumbs\.FileOf\(path\)\)"), "photos to Flare: the Gallery and the camera hand over the photo's full path and its small copy's");
         Check(Regex.IsMatch(Between(live, "public void CameraPressed()", "public void SelfiePressed()"), @"FlareBridges\.OpenCamera\(\)") && links.Contains("FlareBridges.OpenCamera = () =>"),
             "photos to Flare: Flare's camera button opens the Camera");
         Check(links.Contains("_selfieBefore = FlareBridges.TakeSelfie") && links.Contains("FlareBridges.TakeSelfie = _selfieBefore"), "photos to Flare: Flare's selfie button is wrapped, and given back as it was");
+    }
+
+    // The Gallery app's code, all its files (GalleryApp.cs, .Grid.cs, .Viewer.cs).
+    private static string GalleryText()
+    {
+        return Read(@"Photos\GalleryApp.cs") + "\n" + Read(@"Photos\GalleryApp.Grid.cs") + "\n" + Read(@"Photos\GalleryApp.Viewer.cs");
     }
 
     private static string Read(string relative)
@@ -500,7 +495,7 @@ internal static partial class Program
     {
         string folder = System.IO.Path.Combine(PhotoScripts, "Photos");
         string all = string.Join("\n", Directory.GetFiles(folder, "*.cs").Select(File.ReadAllText));
-        string game = Read(@"Photos\PhotosGame.cs"), director = Read(@"Photos\PhotosDirector.cs"), mode = Read(@"Photos\CameraMode.cs"), gallery = Read(@"Photos\GalleryApp.cs");
+        string game = Read(@"Photos\PhotosGame.cs"), director = Read(@"Photos\PhotosDirector.cs"), mode = Read(@"Photos\CameraMode.cs"), gallery = GalleryText();
         var sends = new Regex(@"\b(WebClient|HttpClient|HttpWebRequest|WWWForm|Socket|TcpClient|UdpClient|SmtpClient|SharedCity|GoingPublicLink)\b|UnityWebRequest\.(Post|Put|Get)\b|https?://", RegexOptions.IgnoreCase);
         Match send = sends.Match(all);
         Check(!send.Success, "photos: nothing in the Camera or the Gallery sends anything over the network" + (send.Success ? " (found '" + send.Value + "')" : string.Empty));
@@ -584,7 +579,7 @@ internal static partial class Program
         string guide = en["reallife_guide_photos"];
         string facts = Read(@"Photos\PhotosGuide.cs");
         var named = Regex.Matches(guide, @"\{(photos_[a-z]+)\}").Cast<Match>().Select(m => m.Groups[1].Value).Distinct().ToList();
-        Check(named.Count >= 7 && named.All(f => facts.Contains(".Fact(\"" + f + "\"")) && Regex.Matches(pt["reallife_guide_photos"] + zh["reallife_guide_photos"], @"\{photos_[a-z]+\}").Count >= named.Count * 2,
+        Check(named.Count >= 6 && named.All(f => facts.Contains(".Fact(\"" + f + "\"")) && Regex.Matches(pt["reallife_guide_photos"] + zh["reallife_guide_photos"], @"\{photos_[a-z]+\}").Count >= named.Count * 2,
             "photos words: every figure the Guide's page prints is filled from the rules, in each language (" + string.Join(", ", named) + ")");
         Check(guide.Contains("# Where it works") && guide.Contains("in a taxi") && guide.Contains("indoors") && guide.Contains("{photos_grace}") && guide.Contains("{photos_cap}") && guide.Contains("# Going Public"),
             "photos words: the Guide says where it works, the cap, the deleted saves' days and what goes to the other players");

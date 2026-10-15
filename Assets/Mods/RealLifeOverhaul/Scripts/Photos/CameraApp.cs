@@ -199,7 +199,12 @@ namespace RealLifeOverhaul.Photos
         }
     }
 
-    /// <summary>The right side of a Camera or Gallery page: the game's own list background over the table, copied and stretched (as Newsstand's page is).</summary>
+    /// <summary>
+    /// The right side of the Camera's page: the game's own list background over the table, copied and stretched (as
+    /// Newsstand's page is), and switched on. The game keeps MyEmployees' ListBackground switched off (its prefab has it so
+    /// and nothing of the game's switches it on), and a copy of an object that is off is off: in 0.27.0 the copy was
+    /// never switched on, so nothing on it was drawn or could be clicked (the Gallery's photos among it).
+    /// </summary>
     internal static class GallerySheet
     {
         public static RectTransform Make(RectTransform list, string name)
@@ -218,6 +223,7 @@ namespace RealLifeOverhaul.Photos
             var rect = (RectTransform)sheet.transform;
             FlareKit.Stretch(rect, 0f, 0f, 0f, 0f);
             rect.SetAsLastSibling();
+            sheet.SetActive(true);   // (a copy of the game's switched-off background is switched off: see above)
             return rect;
         }
     }
