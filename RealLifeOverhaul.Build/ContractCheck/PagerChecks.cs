@@ -12,11 +12,12 @@ using RealLifeOverhaul.GameUi;
 // The pages of the phone's apps (Core/GameUi/PagerRules.cs, PhoneGridPager.cs). The full menu's row of apps measured its
 // room from the left edge of the money each time the menu opened, so the number of apps on a page, the number of pages
 // and the row's length changed with the money and the date, and its pages were turned with small dots. The rules: a
-// page is a set number of tiles, the HUD phone's eight and the full menu's as many as the game's own row (worked out once,
-// the narrowest room the row can ever have); the pages fill in order and only the last is shorter; the last tile of every
-// page is the "More apps" button, which shows the page ("2 / 3"), goes to the next and from the last to the first, and is
-// not there when there is one page. And the sources: the count is never measured from the money, the button stands on
-// the last tile, the dots are gone, the texts are in all three languages, and What's new says so.
+// page is a set number of tiles, the HUD phone's eight and the full menu's as many as fit before the money's fixed box,
+// worked out once for each screen (between two and the game's own seven); the game's own apps come first in their order;
+// the pages fill in order and only the last is shorter; the last tile of every page is the "More apps" button, which
+// shows the page ("2 / 3"), goes to the next and from the last to the first, and is not there when there is one page. And
+// the sources: the count reads only the money's box and only when the bar's width changes, the game's apps are put first,
+// the button stands on the last tile, the dots are gone, the texts are in all three languages, and What's new says so.
 internal static partial class Program
 {
     // The game's full menu row (Topbar/AppButtons, level4): a box 1400 wide centred at 1650 of the canvas of 3840, upper
@@ -27,6 +28,8 @@ internal static partial class Program
     {
         Section("the phone's pages: a set number of apps a page and the More apps button (Core/GameUi/PagerRules)");
         PagerCount();
+        PagerOnce();
+        PagerGameFirst();
         PagerFilling();
         PagerButton();
         PagerEdges();
@@ -43,8 +46,7 @@ internal static partial class Program
     // of that box, whatever the money, the date or the language.
     private static void PagerCount()
     {
-        int tiles = PagerRules.StripTiles(7);
-        Check(tiles >= PagerRules.LeastTiles && PagerRules.StripTiles(0) == PagerRules.StripTiles(1), "a page of the full menu's row has a set number of tiles, counted once (" + tiles + ")");
+        Check(PagerRules.StripTiles(7) == 7 && PagerRules.StripTiles(0) == PagerRules.GameRowApps, "the most a page of the full menu's row has is the game's own row (7)");
         float gameWidth = PagerRules.RowWidth(7, RowPitch, RowSpacing);
         Check(gameWidth == 1660f && PagerRules.Fit(gameWidth, RowPitch, RowSpacing) == 7 && PagerRules.Fit(gameWidth - 0.5f, RowPitch, RowSpacing) == 6,
             "the game's own row is 1660 wide and holds its seven, half a pixel less holds six");
@@ -52,29 +54,114 @@ internal static partial class Program
         float[] aspects = { 4f / 3f, 16f / 10f, 16f / 9f };
         string[] named = { "4:3", "16:10", "16:9" };
         float[] zooms = { 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f };
-        int cases = 0, off = 0, under = 0;
+        int cases = 0, off = 0, under = 0, least = 0;
         string first = null;
+        var atFull = new int[aspects.Length];
         for (int a = 0; a < aspects.Length; a++)
         {
             foreach (float zoom in zooms)
             {
                 cases++;
                 float canvas = 2160f / zoom * aspects[a];
-                float end = begin + PagerRules.RowWidth(PagerRules.PerPage(21, tiles) + 1, RowPitch, RowSpacing);   // a full page and its button
-                float data = canvas - DataRight - DataBox;
-                bool onScreen = end <= canvas, clear = end <= data;
+                float data = canvas - DataRight - DataBox;   // the money's box: as wide as the money, the date and the time can ever be
+                int tiles = PagerRules.StripTiles(data - begin, RowPitch, RowSpacing, 7);
+                if (zoom == 1f)
+                {
+                    atFull[a] = tiles;
+                }
+                float end = begin + PagerRules.RowWidth(tiles, RowPitch, RowSpacing);   // a full page and its button
+                bool fits = PagerRules.Fit(data - begin, RowPitch, RowSpacing) >= PagerRules.LeastTiles;
+                bool onScreen = end <= canvas, clear = end <= data || !fits && tiles == PagerRules.LeastTiles;
                 off += onScreen ? 0 : 1;
                 under += clear ? 0 : 1;
+                least += fits ? 0 : 1;
                 if ((!onScreen || !clear) && first == null)
                 {
-                    first = named[a] + " at " + (zoom * 100f).ToString("0") + "%: the button ends at " + end.ToString("0") + ", the canvas is " + canvas.ToString("0")
+                    first = named[a] + " at " + (zoom * 100f).ToString("0") + "%: " + tiles + " tiles end at " + end.ToString("0") + ", the canvas is " + canvas.ToString("0")
                             + " wide and the money's box begins at " + data.ToString("0");
                 }
             }
         }
-        Check(off == 0 && under == 0, "on every screen the game allows a full page and its button stay on the screen and clear of the money's box: "
+        Check(off == 0 && under == 0, "on every screen the game allows a full page and its button stay on the screen and clear of the money's box (the least page of two where the screen leaves no room for it): "
                                       + off + " off the screen, " + under + " under the box, of " + cases + (first != null ? " (first: " + first + ")" : string.Empty));
-        Console.WriteLine("   " + cases + " screens (4:3, 16:10, 16:9 at 50% to 200%): " + off + " with the button off the screen, " + under + " under the money's box.");
+        Check(atFull[2] == 6 && atFull[1] == 5 && atFull[0] == 2, "at 100% a page is 6 tiles on 16:9 (5 apps and the button), 5 on 16:10, 2 on 4:3 ("
+                                                                   + atFull[2] + ", " + atFull[1] + ", " + atFull[0] + ")");
+        Check(PagerRules.StripTiles(1e9f, RowPitch, RowSpacing, 7) == 7 && PagerRules.StripTiles(-500f, RowPitch, RowSpacing, 7) == 2 && PagerRules.StripTiles(float.NaN, RowPitch, RowSpacing, 7) == 2,
+            "a room with no end is the game's own row, no room the least page of two");
+        Console.WriteLine("   " + cases + " screens (4:3, 16:10, 16:9 at 50% to 200%): " + off + " with the button off the screen, " + under + " under the money's box, "
+                          + least + " with room for less than two (the least page); at 100% 16:9 " + atFull[2] + ", 16:10 " + atFull[1] + ", 4:3 " + atFull[0] + " tiles.");
+    }
+
+    // The count is worked out for a bar's width and kept: every opening on the same screen, with any money, date and
+    // language, keeps it; only another width works it out again. As the pager does: measure when Remeasure says so.
+    private static void PagerOnce()
+    {
+        Check(PagerRules.Remeasure(3840f, float.NaN) && !PagerRules.Remeasure(3840f, 3840f) && !PagerRules.Remeasure(3840.3f, 3840f) && PagerRules.Remeasure(3456f, 3840f),
+            "the row's tiles are worked out at the first opening and again only when the bar's width changes");
+        float begin = RowCentre - PagerRules.RowWidth(7, RowPitch, RowSpacing) * 0.5f;
+        float[] widths = { 3840f, 3840f, 3840f, 3456f, 3456f, 2880f, 3840f };
+        float measuredFor = float.NaN;
+        int tiles = 0, measured = 0, changed = 0, wrong = 0;
+        var random = new Random(20261015);
+        foreach (float width in widths)
+        {
+            for (int opening = 0; opening < 50; opening++)
+            {
+                // The money (0 to 760 wide), the date (any language, 260 to 700) and the time change at every opening; the box does not.
+                float moneyWords = (float)random.NextDouble() * 760f, dateWords = 260f + (float)random.NextDouble() * 440f;
+                float box = width - DataRight - DataBox;
+                int before = tiles;
+                if (PagerRules.Remeasure(width, measuredFor))
+                {
+                    tiles = PagerRules.StripTiles(box - begin, RowPitch, RowSpacing, 7);
+                    measuredFor = width;
+                    measured++;
+                }
+                changed += opening > 0 && tiles != before ? 1 : 0;
+                wrong += moneyWords + dateWords < 0f ? 1 : 0;
+            }
+        }
+        Check(measured == 4 && changed == 0 && wrong == 0, "350 openings on four changes of screen: the count is worked out 4 times, and never changes between openings on one screen (" + measured + " times, " + changed + " changes)");
+    }
+
+    // The game's own apps first, in their order, then the others in theirs; stable.
+    private static void PagerGameFirst()
+    {
+        var order = new int[8];
+        int games = PagerRules.GameFirst(new[] { false, true, true, false, true, false, true, true }, 8, order);
+        Check(games == 5 && order.SequenceEqual(new[] { 1, 2, 4, 6, 7, 0, 3, 5 }), "the game's apps come first in their own order, then the others in theirs (" + string.Join(", ", order) + ")");
+        Check(PagerRules.GameFirst(null, 3, order) == 0 && PagerRules.GameFirst(new bool[2], 0, order) == 0 && PagerRules.GameFirst(new[] { true, true, true }, 5, new int[2]) == 2,
+            "no items, or arrays shorter than the count, order what there is");
+        var random = new Random(15102026);
+        int faults = 0;
+        for (int round = 0; round < 500; round++)
+        {
+            int count = 1 + random.Next(40);
+            var game = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                game[i] = random.Next(3) == 0;
+            }
+            var a = new int[count];
+            var b = new int[count];
+            int g = PagerRules.GameFirst(game, count, a);
+            PagerRules.GameFirst(game, count, b);
+            bool ok = a.SequenceEqual(b) && a.Distinct().Count() == count && g == game.Count(x => x);
+            for (int i = 1; i < count; i++)
+            {
+                ok &= game[a[i - 1]] || !game[a[i]];                                   // never one of the game's after another's
+                ok &= game[a[i - 1]] != game[a[i]] || a[i - 1] < a[i];                 // each kind in the order it stands
+            }
+            faults += ok ? 0 : 1;
+        }
+        Check(faults == 0, "500 mixed rows of up to 40: the game's apps always first and in order, the others after in order, the same every time (" + faults + " wrong)");
+        // The game's seven on pages of 6 tiles (5 and the button), with 14 of the mod's after them: the game's five on the first page, its last two on the second.
+        bool pages = true;
+        for (int i = 0; i < 7; i++)
+        {
+            pages &= PagerRules.PageOf(i, 21, 6) == (i < 5 ? 0 : 1);
+        }
+        Check(pages, "the game's seven on a 16:9 screen: five on the first page and the last two first on the second, before every app of the mod's");
     }
 
     // The pages fill in order, every one but the last full, and the button on the last tile of each.
@@ -258,14 +345,24 @@ internal static partial class Program
             Check(false, "the pager's source is not where it was");
             return;
         }
-        // The count is worked out once from the game's own row, never measured from the money.
+        // The count reads the money's box, never its words, and only when the bar's width has changed.
         string pages = Body(pager, "private void StripPages()");
-        Check(pages != null && pages.Contains("_tiles = PagerRules.StripTiles(counted)") && pages.Contains("if (_gameApps < 0)") && pages.Contains("int own = _gameApps;")
+        Check(pages != null && Regex.IsMatch(pages, @"if \(PagerRules\.Remeasure\(barWidth, _measuredFor\) && strip\.gameObject\.activeInHierarchy\)\s*\{[^}]*_tiles = PagerRules\.StripTiles\(DataLeft\(strip\) - _pagesLeft, pitch, layout\.spacing, _gameApps\);\s*_measuredFor = barWidth;")
+              && pages.Contains("float barWidth = strip.parent is RectTransform bar ? bar.rect.width : 0f;")
               && pages.Contains("Pages = PagerRules.Pages(count, Tiles)") && !pages.Contains("RightLimit(") && !pages.Contains("_rightData"),
-            "the full menu's row counts its tiles once from the game's own row and its pages by the rules, never from the money or the date");
+            "the full menu's row works out its tiles from the money's box only when the bar's width has changed, never from the money or the date");
+        string box = Body(pager, "private float DataLeft(RectTransform strip)");
+        Check(box != null && box.Contains("_rightData.GetWorldCorners(Corners)") && !box.Contains("GetChild") && !box.Contains("InChildren") && !box.Contains("ForceRebuild"),
+            "the money's box is read as the box itself, never the money's or the date's words");
+        Check(pager.Contains("public sealed class RowBarWatch") && Body(pager, "private void OnRectTransformDimensionsChange()") != null && pager.Contains("watch.Pager = pager;"),
+            "a change of the bar's width (resolution, shape, scale) has the row looked at again");
+        string first = Body(pager, "private void GameFirst()");
+        Check(Body(pager, "private void Collect()")?.Contains("GameFirst();") == true && first != null && first.Contains("PagerRules.GameFirst(_isGame, count, _order)")
+              && first.Contains("_apps[i].SetAsLastSibling()") && first.Contains("if (_gameApps < 0)"),
+            "the game's own apps are put first in their order, found once, and others' buttons standing among them are moved after them");
         Check(Regex.Matches(pager, @"RightLimit\(").Count == 2 && Body(pager, "private void StripCheck()")?.Contains("RightLimit(strip)") == true,
             "the money's edge is read only for the line in Player.log (StripCheck), never for the count");
-        Check(Regex.Matches(pager, @"_tiles = ").Count == 1 && Regex.Matches(pager, @"Enum\.TryParse").Count == 1, "the row's count and the game's own apps are counted in one place, once");
+        Check(Regex.Matches(pager, @"_tiles = ").Count == 1 && Regex.Matches(pager, @"Enum\.TryParse").Count == 1, "the row's count is set in one place, and the game's own apps are found in one place");
         string collect = Body(pager, "private void Collect()");
         Check(collect != null && collect.Contains("Ignored(placed)") && collect.Contains("child == _template") && !collect.Contains("AppButton"),
             "every child the layout places is one of the page's items, other mods' buttons too (Going Public's Business, Chat and Hub): none is laid out under the button");

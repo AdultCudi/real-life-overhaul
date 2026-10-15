@@ -54,12 +54,15 @@ The full menu's row of app buttons (`Topbar/AppButtons`, a HorizontalLayoutGroup
 box 1400 wide at x 1650 of the 3840 canvas) is centred for the game's own seven apps, which already run a little past
 both ends of the box. Every further button grew it both ways, under the money, the date and the time
 (`Topbar/RightData`) and off the screen. The same pager pages that row. A page has a set number of tiles
-(`Core/GameUi/PagerRules`): as many as the game's own row (seven), counted once, because the game's own apps stand
-there at every money, date, language, resolution and interface scale, the narrowest room the row can ever have. (Until
-0.26.x the room was measured from the money each time the menu opened, so the count and the row's length changed.)
-The pages fill in order, six apps and the More apps button each, only the last shorter; every page starts where the
-game's own row starts (the row's left padding, alignment upper left), so the button, on the seventh tile, never
-moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
+(`Core/GameUi/PagerRules`): as many as fit from where the game's own row begins (x 820) to the left edge of RightData's
+own box (1350 wide, ending 100 from the bar's right edge: as wide as the money, the date and the time can ever be),
+between two and the game's own seven. It is worked out at the first opening and again only when the bar's width
+changes (`RowBarWatch` on `Topbar`): 6 tiles on 16:9 at 100%, 5 on 16:10, 2 on 4:3. (Until 0.26.x the room was
+measured to the money's words at every opening, so the count and the row's length changed.) The game's own apps come
+first in the game's order, then the mod's and other mods' in the order they stand (others' buttons standing among the
+game's are moved after them). The pages fill in order, the apps and the More apps button on the last tile, only the
+last page shorter; every page starts where the game's own row starts (the row's left padding, alignment upper left), so
+the button never moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
 `ButtonEffects` and the badge kept), a light grey tile painted by `AppIconPainter` with the game's `Icon-Arrows` in dark ink
 (a code-drawn double chevron if that sprite is not in memory), the name "More apps" and the page "2 / 3" under the
 picture; it stands beside the row under `Topbar`, placed on the tile by hand, so neither the layout nor other mods'

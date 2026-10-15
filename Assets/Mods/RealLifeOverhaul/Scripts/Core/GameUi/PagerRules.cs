@@ -2,12 +2,16 @@ namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
     /// Which app stands on which page of the phone's apps (PhoneGridPager), and where the button that turns the pages
-    /// stands. A page is a set number of tiles: the HUD phone's grid has eight (two wide, four rows above the phone's
-    /// lower edge); the full menu's row has as many as the game's own row of apps (seven on Build 3682), because that is
-    /// the narrowest room the row can ever have. The game's own apps stand there at every money, date, language,
-    /// resolution and interface scale, so a page as wide as theirs covers nothing at any of them that the game's own row
-    /// does not; any wider room is measured from the money and the date, which change width with every opening. The
-    /// count is therefore worked out once, from the game's own row, and never measured.
+    /// stands. A page is a set number of tiles. The HUD phone's grid has eight (two wide, four rows above the phone's
+    /// lower edge). The full menu's row has as many as fit, once for each screen, from where the game's own row begins
+    /// to the left edge of the box the game keeps for the money, the date and the time (RightData, 1350 wide, ending 100
+    /// from the bar's right edge: as wide as they can ever be), never fewer than two and never more than the game's own
+    /// row. It is worked out at the first opening and again only when the bar's width changes (the resolution, the
+    /// screen's shape, the interface's scale), so it is the same at every opening on a screen, whatever the money, the
+    /// date or the language (those were measured each opening before, and the row's length changed with them): six tiles
+    /// on a 16:9 screen at 100%, five at 16:10, two at 4:3.
+    ///
+    /// The game's own apps come first, in the game's order, then everyone else's in the order they stand (GameFirst).
     ///
     /// When every app fits on one page there are no pages and no button. Otherwise the last tile of every page is the
     /// button ("More apps"), so a page holds one app fewer than it has tiles; the pages fill in order and only the last
@@ -33,6 +37,60 @@ namespace RealLifeOverhaul.GameUi
             return ownApps >= LeastTiles ? ownApps : GameRowApps;
         }
 
+        public const float WidthTolerance = 0.5f;   // canvas pixels: a change of the bar's width smaller than this is no change of screen
+
+        /// <summary>
+        /// The tiles on a page of the full menu's row for this much room (from where the game's own row begins to the left
+        /// edge of the money's box): as many as fit, never fewer than <see cref="LeastTiles"/>, never more than the game's
+        /// own row (<see cref="StripTiles(int)"/>). The money, the date and the language are no part of it.
+        /// </summary>
+        public static int StripTiles(float room, float pitch, float spacing, int ownApps)
+        {
+            int most = StripTiles(ownApps);
+            int fit = Fit(room, pitch, spacing);
+            return fit < LeastTiles ? LeastTiles : fit > most ? most : fit;
+        }
+
+        /// <summary>Whether the row's tiles are to be worked out again: the first time (nothing measured, NaN), and when the bar's width has changed.</summary>
+        public static bool Remeasure(float barWidth, float measuredFor)
+        {
+            return !(System.Math.Abs(barWidth - measuredFor) <= WidthTolerance);
+        }
+
+        /// <summary>
+        /// The order the items go on the pages: those of the game (<paramref name="game"/> true) first, in the order they
+        /// stand, then the others in the order they stand. Writes the items' places into <paramref name="order"/>; returns
+        /// how many of the game's there are. Stable: the same items always come out in the same order.
+        /// </summary>
+        public static int GameFirst(bool[] game, int count, int[] order)
+        {
+            if (game == null || order == null || count <= 0)
+            {
+                return 0;
+            }
+            if (count > game.Length || count > order.Length)
+            {
+                count = game.Length < order.Length ? game.Length : order.Length;
+            }
+            int at = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (game[i])
+                {
+                    order[at++] = i;
+                }
+            }
+            int games = at;
+            for (int i = 0; i < count; i++)
+            {
+                if (!game[i])
+                {
+                    order[at++] = i;
+                }
+            }
+            return games;
+        }
+
         /// <summary>How wide a row of this many tiles is: each tile's pitch (its width and the gap after it), less the last gap.</summary>
         public static float RowWidth(int tiles, float pitch, float spacing)
         {
@@ -46,7 +104,8 @@ namespace RealLifeOverhaul.GameUi
             {
                 return 0;
             }
-            return (int)System.Math.Floor((room + spacing) / pitch + 1e-4);   // (a hair over, so a row that fills the room exactly fits it)
+            double fit = System.Math.Floor((room + spacing) / pitch + 1e-4);   // (a hair over, so a row that fills the room exactly fits it)
+            return fit > 100000.0 ? 100000 : (int)fit;   // (a room with no end holds a great many, not an overflow)
         }
 
         /// <summary>The number of pages for this many apps on pages of this many tiles: 1 when they all fit on one page.</summary>

@@ -23,11 +23,14 @@ namespace RealLifeOverhaul.GameUi
     /// box. With the mod's apps the centred row grew both ways, under the money, the date and the time ("RightData")
     /// and off the screen.
     ///
-    /// A page is a set number of tiles, the same every time (PagerRules): eight on the HUD phone, and on the full menu's
-    /// row as many as the game's own row has (seven), counted once, because the game's own apps stand there at every
-    /// money, date, language, resolution and interface scale: the narrowest room the row can ever have. (Before, the
-    /// room was measured each time the menu opened, from the game's apps to the left edge of the money, so the number
-    /// of apps on a page, the number of pages and the row's length changed with the money and the date.) When the apps
+    /// A page is a set number of tiles (PagerRules): eight on the HUD phone; on the full menu's row as many as fit from
+    /// where the game's own row begins to the left edge of the box the game keeps for the money, the date and the time
+    /// (RightData's own box, not its words), between two and the game's own seven, worked out at the first opening and
+    /// again only when the bar's width changes (resolution, screen shape, interface scale). (Before, the room was
+    /// measured each time the menu opened, to the left edge of the money's words, so the number of apps on a page, the
+    /// number of pages and the row's length changed with the money and the date.) The game's own apps come first, in
+    /// the game's order, then the mod's and other mods' in the order they stand; the game's last app may fall on the
+    /// second page. When the apps
     /// fit on one page there are no pages. Otherwise the last tile of every page is the "More apps" button: a copy of
     /// the game's app button (its rounded tile, a neutral colour, the game's double chevron in white), its name where the
     /// apps show theirs and the page under it ("2 / 3"); it goes to the next page, and from the last to the first. The
@@ -94,8 +97,14 @@ namespace RealLifeOverhaul.GameUi
         private float _lastTurn;
         private bool _strip;            // the full menu's row of app buttons, not the HUD phone's grid
         private RectTransform _rightData;
-        private int _tiles;             // the strip's tiles on a page: the game's own row, counted once (0: not yet)
-        private int _gameApps = -1;     // the strip's buttons of the game's own apps, counted once (-1: not yet)
+        private int _tiles;             // the strip's tiles on a page, for the bar's width it was worked out for (0: not yet)
+        private int _gameApps = -1;     // the buttons of the game's own apps, found once (-1: not yet)
+        private int _gameShown;         // of those, how many are among the apps now
+        private float _measuredFor = float.NaN;   // the bar's width the strip's tiles were worked out for (NaN: not yet)
+        private readonly HashSet<Transform> _gameButtons = new HashSet<Transform>();
+        private readonly List<Transform> _found = new List<Transform>(24);
+        private bool[] _isGame = new bool[32];
+        private int[] _order = new int[32];
         private float _pagesLeft;       // the strip's place for a page, in the row's space: where the game's own row begins
         private bool _own;              // the strip holds only the game's own apps: laid out as the game lays it out
         private bool _pending;          // a pass is asked for before the frame is drawn
@@ -115,8 +124,8 @@ namespace RealLifeOverhaul.GameUi
         public int Count => _apps.Count;
         public bool SteppedAside => _aside;
 
-        // Tiles on a page: the HUD phone's eight, the full menu's as many as the game's own row.
-        private int Tiles => _strip ? (_tiles > 0 ? _tiles : PagerRules.GameRowApps) : PagerRules.PhoneTiles;
+        // Tiles on a page: the HUD phone's eight, the full menu's as many as fit on this screen (the game's own row until measured).
+        private int Tiles => _strip ? (_tiles > 0 ? _tiles : PagerRules.StripTiles(_gameApps)) : PagerRules.PhoneTiles;
 
         /// <summary>Pages for the HUD phone's grid. (<paramref name="dot"/>: the pages had dots before they had a button; not used.)</summary>
         public static PhoneGridPager On(Transform grid, Transform template, Sprite dot)
@@ -194,6 +203,11 @@ namespace RealLifeOverhaul.GameUi
             }
             pager._strip = true;
             pager._rightData = rightData;
+            if (strip.parent is RectTransform bar)
+            {
+                RowBarWatch watch = bar.GetComponent<RowBarWatch>() ?? bar.gameObject.AddComponent<RowBarWatch>();
+                watch.Pager = pager;   // (the bar's width changes with the screen: the row's tiles are worked out again)
+            }
             pager._template = template;
             pager._ready = true;
             pager.Refresh();
@@ -399,7 +413,7 @@ namespace RealLifeOverhaul.GameUi
         // button's tile, under it.)
         private void Collect()
         {
-            _apps.Clear();
+            _found.Clear();
             for (int i = 0; i < transform.childCount; i++)
             {
                 Transform child = transform.GetChild(i);
@@ -422,7 +436,65 @@ namespace RealLifeOverhaul.GameUi
                 }
                 if (child.gameObject.activeSelf || mark != null && mark.Off)
                 {
-                    _apps.Add(child);
+                    _found.Add(child);
+                }
+            }
+            GameFirst();
+        }
+
+        // The game's own apps first, in the game's order, then the others in the order they stand (PagerRules.GameFirst):
+        // the game's apps never shuffle, whoever adds a button. The game's buttons are found once by their names (the
+        // game names each after its app) and kept. Where another's button stands among the game's, it is moved after
+        // them, keeping its order among the others, so that the layout shows each page in the pages' order.
+        private void GameFirst()
+        {
+            int count = _found.Count;
+            if (_gameApps < 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    if (Enum.TryParse(_found[i].name, out AppName _))
+                    {
+                        _gameButtons.Add(_found[i]);
+                    }
+                }
+                if (_gameButtons.Count >= PagerRules.LeastTiles)
+                {
+                    _gameApps = _gameButtons.Count;   // once: the game's own apps are made with its interface and never come or go
+                }
+                else
+                {
+                    _gameButtons.Clear();
+                }
+            }
+            if (_isGame.Length < count)
+            {
+                _isGame = new bool[count * 2];
+                _order = new int[count * 2];
+            }
+            int lastGame = -1;
+            for (int i = 0; i < count; i++)
+            {
+                _isGame[i] = _gameButtons.Contains(_found[i]);
+                if (_isGame[i])
+                {
+                    lastGame = _found[i].GetSiblingIndex();
+                }
+            }
+            _gameShown = PagerRules.GameFirst(_isGame, count, _order);
+            _apps.Clear();
+            bool among = false;
+            for (int i = 0; i < count; i++)
+            {
+                Transform item = _found[_order[i]];
+                _apps.Add(item);
+                among |= i >= _gameShown && item.GetSiblingIndex() < lastGame;
+            }
+            if (among && !_aside)
+            {
+                for (int i = _gameShown; i < count; i++)
+                {
+                    _apps[i].SetAsLastSibling();   // (in order: the others keep theirs among themselves)
                 }
             }
         }
@@ -497,27 +569,21 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             RowAsBuilt built = AsBuilt(layout);
-            if (_gameApps < 0)
-            {
-                int counted = 0;
-                for (int i = 0; i < count; i++)
-                {
-                    counted += Enum.TryParse(_apps[i].name, out AppName _) ? 1 : 0;   // the game names its buttons after its apps
-                }
-                if (counted >= PagerRules.LeastTiles)
-                {
-                    _gameApps = counted;   // once: the game's own apps are made with the menu and never come or go
-                    _tiles = PagerRules.StripTiles(counted);   // the game's own row is the room a page has, at any money, date or language
-                }
-            }
-            int own = _gameApps;
-            if (own == count)
+            if (_gameApps > 0 && _gameShown == count)
             {
                 _own = true;   // nothing of the mod's (or anyone's) on it: the game's row as the game laid it out
                 return;
             }
             float inner = strip.rect.width - built.Left - layout.padding.right;
-            _pagesLeft = strip.rect.xMin + built.Left + (inner - PagerRules.RowWidth(Tiles, pitch, layout.spacing)) * ((int)built.Alignment % 3) * 0.5f;
+            float gameRow = PagerRules.RowWidth(PagerRules.StripTiles(_gameApps), pitch, layout.spacing);
+            _pagesLeft = strip.rect.xMin + built.Left + (inner - gameRow) * ((int)built.Alignment % 3) * 0.5f;   // where the game's own row begins
+            float barWidth = strip.parent is RectTransform bar ? bar.rect.width : 0f;
+            if (PagerRules.Remeasure(barWidth, _measuredFor) && strip.gameObject.activeInHierarchy)
+            {
+                // Once for each screen: the room to the money's box, never its words (the money, the date, the language).
+                _tiles = PagerRules.StripTiles(DataLeft(strip) - _pagesLeft, pitch, layout.spacing, _gameApps);
+                _measuredFor = barWidth;
+            }
             Pages = PagerRules.Pages(count, Tiles);
         }
 
@@ -674,6 +740,19 @@ namespace RealLifeOverhaul.GameUi
             LayoutRebuilder.MarkLayoutForRebuild((RectTransform)transform);
         }
 
+        // The left edge of the box the game keeps for the money, the date and the time (RightData, a fixed 1350 wide), in
+        // the row's space: the box itself, never the words in it, so the same whatever they say. Failing it, no limit (the
+        // game's own row then).
+        private float DataLeft(RectTransform strip)
+        {
+            if (_rightData == null)
+            {
+                return float.MaxValue;
+            }
+            _rightData.GetWorldCorners(Corners);
+            return strip.InverseTransformPoint(Corners[0]).x;
+        }
+
         // With Developer diagnostics on, once each time the menu opens: where a full page and its button end against
         // where the money, the date and the time begin, in the row's space.
         private void StripCheck()
@@ -687,10 +766,10 @@ namespace RealLifeOverhaul.GameUi
             }
             float end = _pagesLeft + PagerRules.RowWidth(Tiles, Pitch(layout, cell), layout.spacing);
             float money = RightLimit(strip);
-            Logger?.Info("Game UI: full menu row check (" + _apps.Count + " apps, " + Pages + " pages of " + (Tiles - 1) + " and the More apps button, as wide as the game's own "
-                         + Tiles + "): the row runs from " + _pagesLeft.ToString("0") + " to " + end.ToString("0") + ", the money and the date begin at "
+            Logger?.Info("Game UI: full menu row check (" + _apps.Count + " apps, " + Pages + " pages of " + (Tiles - 1) + " and the More apps button, "
+                         + Tiles + " tiles for a bar " + _measuredFor.ToString("0") + " wide, the money's box at " + DataLeft(strip).ToString("0") + "): the row runs from " + _pagesLeft.ToString("0") + " to " + end.ToString("0") + ", the money and the date begin at "
                          + (money == float.MaxValue ? "nothing found" : money.ToString("0")) + ": "
-                         + (end <= money ? "PASS" : "the money begins under the row's end, where the game's own apps end too") + ".");
+                         + (end <= money ? "PASS" : Tiles <= PagerRules.LeastTiles ? "the screen leaves room for no more than the least page" : "the money begins under the row's end") + ".");
         }
 
         // The left edge of what is drawn of the money, the date and the time, in the row's space; failing them, the top
@@ -1263,6 +1342,23 @@ namespace RealLifeOverhaul.GameUi
             catch (Exception fault)
             {
                 Guard.Fail(FrameGuard, fault);
+            }
+        }
+    }
+
+    /// <summary>
+    /// On the full menu's top bar: its width changes only with the screen (resolution, shape, interface scale), and then
+    /// the row's tiles are worked out again. It has no Update.
+    /// </summary>
+    public sealed class RowBarWatch : MonoBehaviour
+    {
+        internal PhoneGridPager Pager;
+
+        private void OnRectTransformDimensionsChange()
+        {
+            if (Pager != null)
+            {
+                Pager.Changed();
             }
         }
     }
