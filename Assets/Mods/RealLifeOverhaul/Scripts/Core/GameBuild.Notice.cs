@@ -110,6 +110,9 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool CityDue => !_cityShown && (Of(Running) == BuildKind.Older || Guard.PartsOff);
 
+        /// <summary>For a bug report (Core/Guard.Report): whether the notice has been shown this session, in the main menu or a city.</summary>
+        public static bool NoticeShown => _menuShown || _cityShown;
+
         /// <summary>From Meta/MetaCity once the city is ready and quiet: the notice, once a session.</summary>
         public static void ShowInCity()
         {

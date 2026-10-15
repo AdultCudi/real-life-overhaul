@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "配有家具的警察局",
   "reallife_opt_tip_law_station_furniture": "办公桌、储物柜、简报室、休息室和游戏自带的墙面地面，警员在工作，大型警察局空着的地面还有办公区。关闭时像以前一样空荡。",
   "reallife_changes_next_title": "下一版本",
-  "reallife_changes_next": "还没有。",
+  "reallife_changes_next": "可在游戏内报告错误：选项页面“从这里开始”中的按钮（“模组设置”应用中也有）会把包含你的设置和游戏日志的报告写到你的电脑上，然后打开其文件夹和模组的 Discord，供你自行发布。模组本身不会发送任何东西。",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "城里的每家银行在手机上都有自己的应用，使用游戏中该银行的名称：你的活期账户和对账单、你欠该银行的贷款（可偿还部分或全部）、你的信用卡、它今天能为你提供的产品，以及它如何看待你的评级。各银行的条款略有不同，因此选哪家很重要，评级低于 580 时没有任何银行会放贷。本模组的联系人有了来自游戏的真实头像：人物显示面孔，服务显示标志。联系人顶部有了搜索框。警察局配上了游戏自带的家具：带电脑的办公桌、储物柜、饮水机、植物、时钟、灯具，拘留室里还有马桶。修复：开启本模组所有应用时，全屏菜单顶部的应用行会延伸到金钱和日期下方并超出屏幕；现在它分页显示，居中于应用名称和金钱之间，可用滚轮或圆点翻页。修复：在城市地图上，本模组的某一行（法院、改装店等）取消勾选后，其地点仍留在地图上；现在地点会跟随你看到的勾选状态。",
   "reallife_rota_box_stock_ok": "它的货品能跟上建议方案。",
@@ -18403,5 +18403,18 @@
   "reallife_mkt_kind_bot_added": "追加资本",
   "reallife_mkt_kind_bot_taken": "取出资本",
   "reallife_changes_021_1_title": "0.21.1",
-  "reallife_changes_021_1": "在交易机器人标签页，运行中的交易机器人可以追加资本，或取出部分不在股票中的资金：不会卖出任何东西，它的费用、利润抽成、亏损上限和利润支付都按新的资本计算。"
+  "reallife_changes_021_1": "在交易机器人标签页，运行中的交易机器人可以追加资本，或取出部分不在股票中的资金：不会卖出任何东西，它的费用、利润抽成、亏损上限和利润支付都按新的资本计算。",
+  "reallife_meta_bug_button": "报告错误",
+  "reallife_opt_caption_report": "报告",
+  "reallife_opt_sec_help": "遇到问题？",
+  "reallife_bug_title": "报告错误",
+  "reallife_bug_placeholder": "出了什么问题？也可以留空。",
+  "reallife_bug_make": "生成报告",
+  "reallife_bug_ask_menu": "模组会把错误报告所需的内容放进你电脑上的一个 zip 文件：游戏日志、你的设置和模组最近的警告。它不会发送任何东西。随后会打开文件夹和模组的 Discord：把文件发到 #bug-reports，并在那里说明出了什么问题。",
+  "reallife_bug_waits": "关闭菜单后会打开错误报告。",
+  "reallife_bug_busy": "正在生成错误报告，需要几秒钟。",
+  "reallife_bug_done": "错误报告已生成，文件夹已打开。请把 zip 文件发到模组 Discord 的 #bug-reports，Discord 会在你的浏览器中打开。摘要已复制：请与文件一起粘贴。",
+  "reallife_bug_done_folder": "错误报告已生成，文件夹已打开。请把其中的文件发到模组 Discord 的 #bug-reports，Discord 会在你的浏览器中打开。摘要已复制：请与这些文件一起粘贴。",
+  "reallife_bug_failed": "无法写入错误报告：{error}。请改为把你的 Player.log 发到模组 Discord 的 #bug-reports。",
+  "reallife_guide_trouble_report": "# 报告错误\n- 在选项页面的“从这里开始”或手机上的“模组设置”应用中按“报告错误”。用一两句话说明出了什么问题，也可以留空。\n- 模组会把报告写到你的电脑上，位于游戏数据文件夹的 RealLifeOverhaul、Reports 下：模组和游戏的版本、你的设置、日期和时间、模组最近的警告、游戏日志和一张屏幕截图。你的 Windows 用户名会被去掉。模组不会发送任何东西。\n- 随后会打开报告所在的文件夹，报告是一个 zip 文件，模组的 Discord 也会在浏览器中打开。把 zip 发到 #bug-reports，并粘贴模组为你复制的摘要。"
 }

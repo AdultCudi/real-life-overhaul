@@ -1,0 +1,265 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using Localizor;
+using UI.Notification;
+using UnityEngine;
+
+namespace RealLifeOverhaul.Meta
+{
+    /// <summary>
+    /// "Report a bug": the button under Start here on the options page, which the Settings app on the phone shows too. The mod
+    /// is public, so it holds no token or webhook and sends nothing itself: it gathers what a report needs into one folder
+    /// on the player's disk, zips it, and hands it to the player to post in the mod's Discord.
+    ///
+    ///   the press      in a city, the game's own text box for what went wrong (it may be left empty); while a menu of the
+    ///                  game's is up (the options) a notification says it opens when the menu is closed, and it does; in
+    ///                  the main menu, where the game has no text box, the game's question box asks first and the words
+    ///                  are said in the post instead
+    ///   the facts      read on the main thread as the player confirms (BugReportGame.Facts): versions, platform, language,
+    ///                  Going Public, the preset and every option changed from it, the day, the money, the mod's last 50
+    ///                  warnings and errors (kept as they were logged, BugReportGame.Listen), the game contract
+    ///   the screen     in a city, a frame after the text box closed, at the end of that frame (BugReportGame.TakeShot)
+    ///   the files      on a worker thread: Application.persistentDataPath/RealLifeOverhaul/Reports/(date time)/ with
+    ///                  report.txt, Player.log and Player-prev.log (read with sharing, their tails when large, the user
+    ///                  folder taken out), settings.txt (the options page's export) and screenshot.jpg; then one zip beside
+    ///                  the folder
+    ///   handing over   a short summary on the clipboard, the reports' folder in the file explorer, the mod's Discord in the
+    ///                  browser, and a notification of what to post where
+    ///
+    /// Per frame: nothing while no report is being made (no component, no timer). While one is made, a coroutine waits a
+    /// frame for the screen and then a tenth of a second at a time for the worker. The main thread's share is the facts
+    /// (one pass over the options per preset), one read of the screen and one copy of its pixels; the encoding, the copies
+    /// of the logs and the zip are the worker's. A fault anywhere is logged and said in a notification; the game goes on.
+    /// </summary>
+    public static class BugReport
+    {
+        public const string ButtonKey = "reallife_meta_bug_button";
+
+        private const string TitleKey = "reallife_bug_title";
+        private const float WaitStep = 0.1f;       // real seconds between looks at the worker
+        private const float MenuStep = 0.25f;      // real seconds between looks at a menu of the game's that is in the way
+        private const float GiveUpAfter = 600f;    // real seconds a report waits for a menu to close before it is forgotten
+
+        private static bool _busy;                 // a report is being made: a second press says so
+        private static bool _waiting;              // the text box waits for a menu of the game's to close
+
+        /// <summary>The button: asks for the words where the game can, or asks first where it cannot.</summary>
+        public static void Press()
+        {
+            try
+            {
+                if (_busy)
+                {
+                    OptionsNotice.Tell(TitleKey, "reallife_bug_busy".GetLocalization());
+                    return;
+                }
+                if (!BugReportGame.CanAsk)
+                {
+                    OptionsNotice.Ask(TitleKey, "reallife_bug_ask_menu".GetLocalization(), "reallife_bug_make", false, () => Make(null));
+                    return;
+                }
+                if (GuideApp.Blocked)
+                {
+                    Notifications.Show(NotificationType.Info, "reallife_bug_waits", null, 6f);
+                    if (!_waiting)
+                    {
+                        _waiting = true;
+                        MetaUi.Instance.Run(WaitForMenus());
+                    }
+                    return;
+                }
+                Ask();
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+            }
+        }
+
+        private static IEnumerator WaitForMenus()
+        {
+            var wait = new WaitForSecondsRealtime(MenuStep);
+            float giveUp = Time.realtimeSinceStartup + GiveUpAfter;
+            while (GuideApp.Blocked && BugReportGame.CanAsk && Time.realtimeSinceStartup < giveUp)
+            {
+                yield return wait;
+            }
+            _waiting = false;
+            if (!GuideApp.Blocked && BugReportGame.CanAsk && !_busy)
+            {
+                Ask();
+            }
+        }
+
+        private static void Ask()
+        {
+            if (!BugReportGame.AskWords(Make))
+            {
+                Make(null);
+            }
+        }
+
+        // ---------------------------------------------------------------- making it
+
+        /// <summary>What the worker is given and gives back.</summary>
+        private sealed class Job
+        {
+            public BugFacts Facts;
+            public string Settings;
+            public string Folder;
+            public string GameLog;
+            public BugReportGame.Shot Shot;
+            public string Zip;            // the zip made, or null
+            public Exception Fault;       // what stopped the worker, or null
+        }
+
+        private static void Make(string words)
+        {
+            if (_busy)
+            {
+                return;
+            }
+            _busy = true;
+            try
+            {
+                MetaUi.Instance.Run(Making(words));
+            }
+            catch (Exception e)
+            {
+                _busy = false;
+                MetaLog.Error(e);
+            }
+        }
+
+        private static IEnumerator Making(string words)
+        {
+            Job job = null;
+            Task work = null;
+            try
+            {
+                string reports = Path.Combine(Presets.Folder, "Reports");
+                job = new Job
+                {
+                    Facts = BugReportGame.Facts(words),
+                    Settings = Presets.ExportText(),
+                    Folder = Path.Combine(reports, BugReportRules.FolderName(DateTime.Now)),
+                    GameLog = BugReportGame.GameLog()
+                };
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+                yield break;
+            }
+
+            // The screen a frame after the text box closed, at the end of that frame: without the box, as the player saw the bug.
+            if (BugReportGame.InCity)
+            {
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                job.Shot = BugReportGame.TakeShot();
+            }
+
+            try
+            {
+                Job given = job;
+                work = Task.Run(() => Write(given));
+            }
+            catch (Exception e)
+            {
+                BugReportGame.Drop(job.Shot);
+                Fail(e);
+                yield break;
+            }
+            var wait = new WaitForSecondsRealtime(WaitStep);
+            while (!work.IsCompleted)
+            {
+                yield return wait;
+            }
+
+            try
+            {
+                Done(job);
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+                yield break;
+            }
+            _busy = false;
+        }
+
+        // On the worker: the folder, its files, report.txt last (it lists what the others came to), and the zip.
+        private static void Write(Job job)
+        {
+            try
+            {
+                Directory.CreateDirectory(job.Folder);
+                BugFacts f = job.Facts;
+                f.Files.Add("report.txt (this file)");
+                string logs = job.GameLog != null ? Path.GetDirectoryName(job.GameLog) : null;
+                if (BugReportGame.CopyLog(job.GameLog, Path.Combine(job.Folder, "Player.log"), BugReportRules.LogCap, f.Profile))
+                {
+                    f.Files.Add("Player.log (the game's log of this session)");
+                }
+                if (logs != null && BugReportGame.CopyLog(Path.Combine(logs, "Player-prev.log"), Path.Combine(job.Folder, "Player-prev.log"), BugReportRules.PrevLogCap, f.Profile))
+                {
+                    f.Files.Add("Player-prev.log (the game's log of the session before)");
+                }
+                File.WriteAllText(Path.Combine(job.Folder, Presets.SettingsFile), job.Settings, new System.Text.UTF8Encoding(false));
+                f.Files.Add(Presets.SettingsFile + " (the mod's options, as Export writes them)");
+                if (job.Shot != null)
+                {
+                    BugReportGame.Shot shot = job.Shot;
+                    job.Shot = null;
+                    if (BugReportGame.WriteShot(shot, Path.Combine(job.Folder, "screenshot.jpg")))
+                    {
+                        f.Files.Add("screenshot.jpg (the screen as the report was made, " + shot.Width + " x " + shot.Height + ", read in " + shot.ReadMs + " ms)");
+                    }
+                }
+                File.WriteAllText(Path.Combine(job.Folder, "report.txt"), BugReportRules.Text(f), new System.Text.UTF8Encoding(false));
+                job.Zip = BugReportGame.Zip(job.Folder);
+            }
+            catch (Exception e)
+            {
+                job.Fault = e;
+            }
+            finally
+            {
+                BugReportGame.Drop(job.Shot);
+            }
+        }
+
+        // Back on the main thread: handed over, and said.
+        private static void Done(Job job)
+        {
+            bool written = File.Exists(Path.Combine(job.Folder, "report.txt"));
+            if (job.Fault != null)
+            {
+                MetaLog.Error(job.Fault);
+                if (!written)
+                {
+                    Fail(job.Fault);
+                    return;
+                }
+                MetaLog.Warn("the bug report's zip could not be made; its folder holds the report: " + job.Folder);
+            }
+            string file = job.Zip ?? job.Folder;
+            BugFacts f = job.Facts;
+            string summary = BugReportRules.Summary(f.ModVersion, f.GameBuild, f.Words, file, f.Profile);
+            BugReportGame.HandOver(summary, Path.GetDirectoryName(job.Folder));
+            MetaLog.Info("bug report written to " + file + " (" + f.Files.Count + " file(s), " + f.LinesTotal + " warning(s) and error(s) of the mod's this session).");
+            OptionsNotice.Tell(TitleKey, (job.Zip != null ? "reallife_bug_done" : "reallife_bug_done_folder").GetLocalization() + "\n\n" + file);
+        }
+
+        private static void Fail(Exception e)
+        {
+            _busy = false;
+            MetaLog.Error(e);
+            OptionsNotice.Tell(TitleKey, "reallife_bug_failed".GetLocalization().Replace("{error}", e.Message));
+        }
+    }
+}

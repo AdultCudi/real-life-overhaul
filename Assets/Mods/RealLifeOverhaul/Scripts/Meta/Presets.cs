@@ -250,6 +250,13 @@ namespace RealLifeOverhaul.Meta
         public static string Export(string fileName)
         {
             string path = Path.Combine(Folder, fileName);
+            File.WriteAllText(path, ExportText(), new UTF8Encoding(false));
+            return path;
+        }
+
+        /// <summary>What <see cref="Export"/> writes, as text: a bug report (BugReport.cs) puts the same file in its folder.</summary>
+        public static string ExportText()
+        {
             var text = new StringBuilder();
             text.Append("# Real Life Overhaul ").Append(Changelog.Version).Append(" settings. One option per line: id=value.\n");
             text.Append("# Toggles are 0 (off) or 1 (on). Lines starting with # are ignored, unknown ids are skipped.\n");
@@ -269,8 +276,7 @@ namespace RealLifeOverhaul.Meta
                     text.Append(id).Append('=').Append(saved.ToString(CultureInfo.InvariantCulture)).Append('\n');   // only keys the player has changed
                 }
             }
-            File.WriteAllText(path, text.ToString(), new UTF8Encoding(false));
-            return path;
+            return text.ToString();
         }
 
         /// <summary>Reads settings.txt from the mod's folder and applies what it knows. Returns the text to show the player.</summary>
