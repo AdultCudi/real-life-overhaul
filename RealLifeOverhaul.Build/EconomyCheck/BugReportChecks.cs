@@ -34,6 +34,7 @@ internal static partial class Program
         BugRing();
         BugSummary();
         BugSources();
+        BugReportFixes();   // the review's fixes (BugReportFixChecks.cs)
         BugWords();
         Console.WriteLine("  report a bug: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
@@ -58,7 +59,8 @@ internal static partial class Program
             Money = 1234567.8,
             LinesTotal = 3,
             Contract = "this game is the build the mod is made for; parts off: none",
-            Profile = BugProfile
+            Profile = BugProfile,
+            PhoneOpen = true
         };
         f.Changed.Add("fuel = 0 (preset 1)");
         f.Changed.Add("bus_fare = 300 (default 250)");
@@ -82,7 +84,7 @@ internal static partial class Program
             "Real Life Overhaul bug report, written 2026-10-15 14:03:22", "In this report: report.txt (this file), Player.log", "Nothing outside the game's own folders was read",
             "What went wrong: The bus left without me.", "Mod version: 0.21.2", "Game build: 3682 (this version of the mod is made for Build 3682)", "Platform: WindowsPlayer",
             "Language: en", "Going Public: switched on, no session", "Preset: Custom, nearest Standard, 2 option(s) changed from it", "  fuel = 0 (preset 1)",
-            "  bus_fare = 300 (default 250)", "Day and time: day 42, 09:05", "Money: about 1,235,000", "The mod's warnings and errors this session: 3:",
+            "  bus_fare = 300 (default 250)", "Day and time: day 42, 09:05", "Money: about 1,235,000", "Phone: open (the screenshot shows it)", "The mod's warnings and errors this session: 3:",
             "  08:30:01 UTC warning: [Mod:Real Life Overhaul] Bus: no stop near %USERPROFILE%/x", "  08:30:02 UTC exception: NullReferenceException",
             "  08:30:03 UTC error: [RealLifeOverhaul] xxx", "Game contract: this game is the build the mod is made for"
         };
@@ -141,8 +143,8 @@ internal static partial class Program
         Check(BugReportRules.MaskUser("at C:/Users/ann/AppData/x", BugProfile) == "at " + m + "/AppData/x", "bug report: the user folder with forward slashes (as the engine writes it) is taken out");
         Check(BugReportRules.MaskUser(@"{""p"":""C:\\Users\\ann\\x""}", BugProfile) == @"{""p"":""" + m + @"\\x""}", "bug report: the user folder with doubled backslashes (as in JSON) is taken out");
         Check(BugReportRules.MaskUser(@"c:\users\ANN\x and C:/USERS/Ann", BugProfile) == m + @"\x and " + m, "bug report: the user folder is taken out in any case, at the end of a text too");
-        Check(BugReportRules.MaskUser(@"C:\Users\anna\x C:\Users\ann.b\y C:\Users\ann", BugProfile) == @"C:\Users\anna\x C:\Users\ann.b\y " + m,
-            "bug report: another folder that starts with the same name is left alone");
+        Check(BugReportRules.MaskUser(@"C:\Users\anna\x C:\Users\ann.b\y C:\Users\ann", BugProfile) == @"C:\Users\<user>\x C:\Users\<user>\y " + m,
+            "bug report: another folder that starts with the same name is not taken for the player's own (the rule's pass takes it out as another user's)");
         Check(BugReportRules.MaskUser(@"C:\Users\ann\", BugProfile + "\\") == m + "\\" && BugReportRules.MaskUser("C:/Users/ann/a", "C:/Users/ann") == m + "/a",
             "bug report: the folder is found however it was given");
         Check(BugReportRules.MaskUser(@"C:\x", @"C:\") == @"C:\x" && BugReportRules.MaskUser("a", null) == "a" && BugReportRules.MaskUser(null, BugProfile) == null && BugReportRules.MaskUser(string.Empty, BugProfile) == string.Empty,
