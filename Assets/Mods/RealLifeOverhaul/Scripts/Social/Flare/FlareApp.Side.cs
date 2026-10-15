@@ -6,8 +6,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The side of Flare's screens: the player's account at a glance (followers, tier, reputation, the week as bars, posts
-    /// today), Trending in the city (the day's tags, a click shows their posts), Who to follow, and in a Going Public session
+    /// The side of Flare's screens: the player's account at a glance (followers, tier, reputation, the week as bars),
+    /// Trending in the city (the day's tags, a click shows their posts), Who to follow, and in a Going Public session
     /// the players of the session, each with mute and hide. Fixed parts made once, written on a refresh.
     /// </summary>
     public sealed partial class FlareApp
@@ -164,14 +164,9 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
-            int day = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
             FlareKit.Set(_accountTitle, FlareText.T("reallife_flare_side_account"));
             FlareKit.Set(_accountBig, FlareText.N(file.Followers));
-            int next = FlareRules.NextPostMinute(file, day);
-            FlareKit.Set(_accountLine, FlareText.Fill("reallife_flare_side_line", "tier", FlareText.Tier(file.Tier), "reputation", FlareText.Reputation(file.Reputation),
-                "count", (file.PostsDay == day ? file.PostsToday : 0).ToString(), "most", FlareRules.PostsPerDay.ToString())
-                + "\n" + (next < 0 ? FlareText.T("reallife_flare_wait_day") : next <= FlareGame.MinuteOfDay ? FlareText.T("reallife_flare_side_can_post")
-                    : FlareText.Fill("reallife_flare_wait_soon", "time", FlareText.Clock(next))));
+            FlareKit.Set(_accountLine, FlareText.Fill("reallife_flare_side_standing", "tier", FlareText.Tier(file.Tier), "reputation", FlareText.Reputation(file.Reputation)));
             int most = 1;
             for (int i = 0; i < file.History.Length; i++)
             {

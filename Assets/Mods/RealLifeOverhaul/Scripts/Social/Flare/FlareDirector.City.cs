@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Flare
                         has = true;
                     }
                 }
-                if (has && Person(p.Tag, out tagged) && tagged.Compatible && !tagged.Partner)
+                if (has && Person(p.Tag, out tagged) && tagged.Compatible && !tagged.Partner && FlareLiveRules.FirstToday(_file.Net, p.Day, FlareLiveRules.FriendKey('P', tagged.Index)))
                 {
                     FlareRules.PartnerView view = FlareRules.ViewOf(partner.Taste);
                     FlareBridges.PartnerSees(partner.Index, (int)view);

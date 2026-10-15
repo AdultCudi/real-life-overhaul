@@ -36,7 +36,8 @@ namespace RealLifeOverhaul.Flare
     ///                    the W lines (all of them, after a "W-" line) when a watch changed, the X lines of new pictures
     ///   to one player    "D|from|name|at|text": a message (Core/SharedCity.ToPlayer, never to anybody else)
     ///   a guest's ask    P (a post), L (a like), S (a share), D (a message), X (a piece of a picture), G (going): at most
-    ///                    <see cref="LinesMost"/> a request; the rest waits for the next second (<see cref="FlareOutbox"/>)
+    ///                    <see cref="LinesMost"/> a request, a post a second; the rest waits for the next second, and a post
+    ///                    is never dropped (<see cref="FlareOutbox"/>)
     ///
     /// P|net|day|hour|minute|author|who|source|tone|arg|place|name|district|topic|text|pic|reply|authorId|authorName|likes|
     ///   replies|reposts|playerLikes|reach|when|mention|flags|token|case
@@ -763,13 +764,19 @@ namespace RealLifeOverhaul.Flare
 
     /// <summary>
     /// A guest's lines for the host, waiting for the next second: each second takes as many as a request may carry (and
-    /// fewer while the shared city still holds some of this part's), a picture's pieces one a second, in the order they
-    /// were asked. Game-free.
+    /// fewer while the shared city still holds some of this part's), a picture's pieces one a second and the player's posts
+    /// one a second (many made at once go a second apart, inside the host's bound, <see cref="FlareRateBook.PostsWindow"/>),
+    /// in the order they were asked. A post is never dropped: past <see cref="Most"/> lines the oldest other ask goes (a
+    /// like, a piece of a picture). Posts are made only by the player pressing Post and leave one a second, so they wait in
+    /// numbers only while the host takes nothing, and the host leaving clears them (the posts stay the player's own:
+    /// FlareNetShare.HostLeft). Game-free.
     /// </summary>
     public sealed class FlareOutbox
     {
-        public const int Most = 400;             // lines kept waiting at most: the oldest asks go first (a guest offline for long)
+        public const int Most = 400;             // other lines kept waiting at most: the oldest go first (a guest offline for long)
+        public const int PostsEach = 1;          // the player's posts sent a second: many at once go a second apart
         private readonly List<string> _lines = new List<string>(16);
+        private int _others;                     // the lines waiting that are not posts
 
         public int Count => _lines.Count;
 
@@ -780,18 +787,33 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             _lines.Add(line);
-            while (_lines.Count > Most)
+            if (IsPost(line))
             {
-                _lines.RemoveAt(0);
+                return;   // a post is never dropped
+            }
+            _others++;
+            for (int i = 0; _others > Most && i < _lines.Count; i++)
+            {
+                if (!IsPost(_lines[i]))
+                {
+                    _lines.RemoveAt(i);   // the oldest other ask
+                    _others--;
+                    break;
+                }
             }
         }
 
-        /// <summary>The lines for this second: at most 'room', and only one piece of a picture. Returns how many went.</summary>
+        private static bool IsPost(string line)
+        {
+            return line.Length > 0 && line[0] == 'P';
+        }
+
+        /// <summary>The lines for this second: at most 'room', only one piece of a picture and one post. Returns how many went.</summary>
         /// <remarks>'ask' says whether the shared city took the line: one it has no room for this second (its request is
         /// full) stays here, with all after it, for the next second. Nothing is ever dropped for want of room.</remarks>
         public int Send(Func<string, bool> ask, int room)
         {
-            int sent = 0;
+            int sent = 0, posts = 0;
             bool piece = false;
             for (int i = 0; i < _lines.Count && sent < room;)
             {
@@ -805,11 +827,21 @@ namespace RealLifeOverhaul.Flare
                     }
                     piece = true;
                 }
+                else if (IsPost(line))
+                {
+                    if (posts >= PostsEach)
+                    {
+                        i++;
+                        continue;   // a post a second: the rest wait, in order
+                    }
+                    posts++;
+                }
                 if (!ask(line))
                 {
                     break;
                 }
                 _lines.RemoveAt(i);
+                _others -= IsPost(line) ? 0 : 1;
                 sent++;
             }
             return sent;
@@ -818,17 +850,50 @@ namespace RealLifeOverhaul.Flare
         public void Clear()
         {
             _lines.Clear();
+            _others = 0;
         }
     }
 
     /// <summary>
     /// The host's bounds on what one player may ask, over the last ten minutes of real time and the game's day: posts,
-    /// messages, likes and pictures. Game-free: the caller gives the time.
+    /// messages, likes and pictures. They guard the host against a flood, never the player's posting: a guest sends its
+    /// posts a second apart (<see cref="FlareOutbox.PostsEach"/>), at most 600 in ten minutes, well inside
+    /// <see cref="PostsWindow"/>, and posts have no bound a day. Pictures keep theirs, four a day: a post past them goes
+    /// without its picture (<see cref="Picture"/>). Game-free: the caller gives the time.
     /// </summary>
     public sealed class FlareRateBook
     {
         public const float Window = 600f;        // real seconds
-        public const int PostsWindow = 6, PostsDay = 40, DmsWindow = 20, LikesWindow = 80, PicturesDay = 4;
+        public const int PostsWindow = 900;      // a player's posts in ten minutes: half as many again as a post a second sends, for seconds that arrive together
+        public const int DmsWindow = 20, LikesWindow = 80;
+        public const int PicturesDay = 4;        // a player's pictures a game day: the network's own bound, kept
+
+        /// <summary>What becomes of the picture of a post of the player's in a session today.</summary>
+        public enum PictureWay { Send, TellWithout, Without }
+
+        /// <summary>
+        /// A picture of the player's for the session: one of the day's four goes (counted); past them the post goes without
+        /// it, and the first time today the player is told (TellWithout), never again that day (Without).
+        /// </summary>
+        public static PictureWay Picture(FlareNet n, int day)
+        {
+            if (n.PicDay != day)
+            {
+                n.PicDay = day;
+                n.PicsToday = 0;
+            }
+            if (n.PicsToday < PicturesDay)
+            {
+                n.PicsToday++;
+                return PictureWay.Send;
+            }
+            if (n.PicsToday == PicturesDay)
+            {
+                n.PicsToday++;   // (one past the four: told)
+                return PictureWay.TellWithout;
+            }
+            return PictureWay.Without;
+        }
 
         private readonly Dictionary<string, List<float>> _times = new Dictionary<string, List<float>>(16);
         private readonly Dictionary<string, int> _day = new Dictionary<string, int>(16);
@@ -879,7 +944,7 @@ namespace RealLifeOverhaul.Flare
             }
             int today;
             _day.TryGetValue(key, out today);
-            int dayMost = kind == 'P' ? PostsDay : kind == 'X' ? PicturesDay * FlareSnap.PartsMost : int.MaxValue;
+            int dayMost = kind == 'X' ? PicturesDay * FlareSnap.PartsMost : int.MaxValue;
             if (times.Count >= most || today >= dayMost)
             {
                 return false;

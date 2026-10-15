@@ -401,7 +401,7 @@ namespace RealLifeOverhaul.Flare
                 y += ph + 16f;
             }
             string why = Why(file, c);
-            FlareKit.Set(_why, why ?? string.Empty);
+            FlareKit.Set(_why, why ?? Note(file, c) ?? string.Empty);
             _why.color = why != null ? _look.Bad : _look.Muted;
             FlareKit.Set(_sendLabel, FlareText.T(reply ? "reallife_flare_reply_button" : "reallife_flare_post_button"));
             _send.color = why == null ? _look.Accent : _look.Chip;
@@ -710,7 +710,6 @@ namespace RealLifeOverhaul.Flare
         // Why it cannot go now; null when it can.
         private string Why(FlareFile file, FlareCompose c)
         {
-            int day = _director.CurrentDay;
             switch (c.Kind)
             {
                 case FlareSource.Reply:
@@ -720,11 +719,7 @@ namespace RealLifeOverhaul.Flare
                     {
                         return FlareText.T("reallife_flare_compose_need_district");
                     }
-                    if (c.Arg == (int)FlareReport.Business && c.Place == null)
-                    {
-                        return FlareText.T("reallife_flare_compose_stand_in");
-                    }
-                    return file.Net.ReportsDay == day && file.Net.ReportsToday >= FlareLiveRules.ReportsPerDay ? FlareText.T("reallife_flare_compose_reported") : null;
+                    return c.Arg == (int)FlareReport.Business && c.Place == null ? FlareText.T("reallife_flare_compose_stand_in") : null;
                 case FlareSource.Review:
                     if (c.Place == null || c.Arg < 1)
                     {
@@ -738,13 +733,29 @@ namespace RealLifeOverhaul.Flare
                     }
                     break;
             }
-            FlareRules.Wait wait = FlareRules.CanPost(file, day, FlareGame.MinuteOfDay);
-            if (wait == FlareRules.Wait.None)
+            return null;
+        }
+
+        // What a post that can go will do less of, said quietly beside the Post button (it never stops the post); null when it does all.
+        private string Note(FlareFile file, FlareCompose c)
+        {
+            int day = _director.CurrentDay;
+            switch (c.Kind)
             {
-                return null;
+                case FlareSource.Reply:
+                    return null;
+                case FlareSource.Report:
+                    string district = c.District ?? FlareBridges.Ask(FlareBridges.PlayerDistrict, null);
+                    return FlareLiveRules.MovedToday(file.Net, day, FlareLiveRules.MoveKey("me", FlareSource.Report, c.Arg, district, c.Place))
+                        ? FlareText.T("reallife_flare_compose_report_again") : null;
+                case FlareSource.Review:
+                    if (FlareLiveRules.MovedToday(file.Net, day, FlareLiveRules.MoveKey("me", FlareSource.Review, c.Arg, null, c.Place)))
+                    {
+                        return FlareText.T("reallife_flare_compose_review_again");
+                    }
+                    break;
             }
-            int next = FlareRules.NextPostMinute(file, day);
-            return wait == FlareRules.Wait.DayFull || next < 0 ? FlareText.T("reallife_flare_wait_day") : FlareText.Fill("reallife_flare_wait_soon", "time", FlareText.Clock(next));
+            return FlareRules.Counts(file, day) ? null : FlareText.Fill("reallife_flare_compose_counted", "count", FlareRules.PostsCounted.ToString());
         }
 
         // ---------------------------------------------------------------- hiring

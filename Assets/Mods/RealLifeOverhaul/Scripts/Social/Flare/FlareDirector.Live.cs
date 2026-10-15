@@ -379,7 +379,9 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- the City Office
 
-        // A report reaches the City Office: a case (or the case there is already), and the tally of the week's complaints.
+        // A report reaches the City Office: a case (or the case there is already), and the tally of the week's complaints. The
+        // same report by the same player again today joins that case and is answered, and moves nothing more (no tally, no
+        // weight, no crew): null.
         private FlareCase FileCase(FlarePost p, string reporter, float x, float z)
         {
             if (Following || p.District == null)
@@ -388,15 +390,47 @@ namespace RealLifeOverhaul.Flare
             }
             bool again;
             var kind = (FlareReport)FlareRules.Clamp(p.Arg, 0, (int)FlareReport.Utilities);
-            FlareCase c = FlareLiveRules.File(_file.Net, kind, p.District, p.Place, p.Name, x, z, Now, reporter, p.Id, FlareLiveRules.CitySeed(_file), out again);
+            string who = reporter == "me" || reporter.StartsWith("p:", StringComparison.Ordinal) ? reporter : null;
+            if (!FlareLiveRules.FirstToday(_file.Net, Save.Day, FlareLiveRules.MoveKey(who, FlareSource.Report, (int)kind, p.District, p.Place)))
+            {
+                FlareCase open = FlareLiveRules.OpenCase(_file.Net, kind, p.District, p.Place);
+                p.Case = open != null ? open.Id : -1;
+                RepeatAnswer(p, kind);
+                Logger?.Info("Flare: " + reporter + " reported " + kind + " in " + FlareGame.DistrictName(p.District) + " again today: in the feed and answered, with the case filed already.");
+                return null;
+            }
+            bool counted = FlareLiveRules.Counted(_file.Net, Save.Day, who);
+            FlareCase c = FlareLiveRules.File(_file.Net, kind, p.District, p.Place, p.Name, x, z, Now, reporter, p.Id, FlareLiveRules.CitySeed(_file), out again, counted);
             p.Case = c.Id;
-            if (again)
+            if (!counted)
+            {
+                Logger?.Info("Flare: " + reporter + " has made three reports today: this one is filed and answered, and moves no mood, tally or paper.");
+            }
+            if (again && counted)
             {
                 FlareLiveRules.Complained(_file.Net, kind, p.District, Save.Day, c.State == FlareCaseState.Acting);
                 Escalation(c, Save.Day);
             }
             Shared_CaseChanged(c);
             return c;
+        }
+
+        // The same report again today: the account that answers it says it is noted, a reply to this post. The case, the tally
+        // and the crews stay as they are.
+        private void RepeatAnswer(FlarePost report, FlareReport kind)
+        {
+            FlareOfficial who = kind == FlareReport.Crime ? FlareOfficial.Police : kind == FlareReport.Transit ? FlareOfficial.Transit
+                : kind == FlareReport.Utilities ? FlareOfficial.Utilities : FlareOfficial.CityOffice;
+            int id = _file.NextId++;
+            var a = new FlarePost
+            {
+                Id = id, Author = FlareAuthor.Official, Who = (int)who, Source = FlareSource.Answer, Arg = (int)FlareAnswer.Received, ReplyTo = report.Id, Case = report.Case,
+                Name = report.Name, District = report.District, Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29),
+                Reach = 400 + FlareRules.Roll(_file.Seed, id, 5), Likes = 3 + FlareRules.Roll(_file.Seed, id, 6) % 40, Topic = FlareLiveRules.ReportTag(kind)
+            };
+            FlareLiveRules.SetAt(a, Math.Max(report.At, Now) + FlareLiveRules.ReplyLeast);
+            _file.Posts.Add(a);
+            Shared_Changed(a);
         }
 
         // A case's answer is due: what the City Office does, its answer in character, the tally, the mood about the city's running.
@@ -425,12 +459,18 @@ namespace RealLifeOverhaul.Flare
                 Inspected(c, day);
             }
             bool acted = order != FlareOrder.Queued && order != FlareOrder.Answered;
-            FlareLiveRules.Complained(_file.Net, c.Kind, c.District, day, acted);
+            if (c.Counted)
+            {
+                FlareLiveRules.Complained(_file.Net, c.Kind, c.District, day, acted);   // (a report past its player's three a day: no tally, no mood)
+            }
             if (acted)
             {
                 FlareLiveRules.Answered(_file.Net, c.Kind, c.District);
             }
-            _file.MayorMood = FlareRules.Clamp(_file.MayorMood + (acted ? FlareLiveRules.MoodActed : order == FlareOrder.Queued ? FlareLiveRules.MoodQueued : 0), -100, 100);
+            if (c.Counted)
+            {
+                _file.MayorMood = FlareRules.Clamp(_file.MayorMood + (acted ? FlareLiveRules.MoodActed : order == FlareOrder.Queued ? FlareLiveRules.MoodQueued : 0), -100, 100);
+            }
             FlarePost reply = AnswerPost(c, answer, address, days);
             Logger?.Info("Flare: the City Office answers case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ", reported by " + c.Reporter + "): " + answer + ", " + order
                          + (order == FlareOrder.Works ? " (site " + site + " at " + address + ", about " + days + " days)" : c.Until >= 0 ? " until day " + c.Until : string.Empty)
@@ -503,7 +543,7 @@ namespace RealLifeOverhaul.Flare
         // The week's ignored complaints of a kind in a district: three, and it is in the paper, the mood falls, and the City Office acts after all.
         private void Escalation(FlareCase c, int day)
         {
-            if (!FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice))
+            if (!c.Counted || !FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice))
             {
                 return;
             }
@@ -553,6 +593,11 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             int day = Save.Day;
+            if (!FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.MoveKey(FlareLiveRules.Mover(p), p.Source, p.Arg, null, p.Place)))
+            {
+                Logger?.Info("Flare: " + FlareLiveRules.KeyOf(p) + " posted about " + p.Name + " again today (" + p.Source + "): in the feed, its customers moved once today already.");
+                return;
+            }
             if (p.Source == FlareSource.Review)
             {
                 int buzz = FlareLiveRules.ReviewBuzz(p.Arg, p.Reach);
@@ -644,9 +689,11 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// The player posts from the compose sheet: the built part (a moment, a report, a review, an announcement or a reply),
-        /// the typed text (it decides nothing: the built part does), the picture, the tags and the account called on. False,
-        /// with the reason's key, when it cannot go now (the limits on posting, a report a day for each thing, a reply's
-        /// words missing).
+        /// the typed text (it decides nothing: the built part does), the picture, the tags and the account called on. There
+        /// is no limit on posting: false, with the reason's key, only for a post that is not whole (a reply's words, a
+        /// review's business, a report's district missing). What many posts could move is bounded where it is moved: the
+        /// account by the day's first three (FlareRules.Counts), a business or the City Office by the first of the same
+        /// thing a day (FlareLiveRules.FirstToday), the council by the day's first three reports (FlareLiveRules.Weighs).
         /// </summary>
         public bool Compose(FlareCompose c, out string why)
         {
@@ -720,11 +767,6 @@ namespace RealLifeOverhaul.Flare
         private FlarePost Built(FlareCompose c, int day, int minute, out string why)
         {
             why = null;
-            if (FlareRules.CanPost(_file, day, minute) != FlareRules.Wait.None)
-            {
-                why = "reallife_flare_wait_soon";
-                return null;
-            }
             FlareDraft d = c.Draft >= 0 ? _file.Draft(c.Draft) : null;
             if (c.Kind == FlareSource.Review && (c.Place == null || c.Arg < 1 || c.Arg > 5))
             {
@@ -748,8 +790,13 @@ namespace RealLifeOverhaul.Flare
             FlareTone tone = c.ToneChosen ? c.Tone : FlareRules.BestTone(d.Source);
             ReadPeople();
             bool tag = c.Tag && d.Person >= 0;
+            bool counts = _testViral || FlareRules.Counts(_file, day);
             FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute, _testViral);
             _testViral = false;
+            if (!counts)
+            {
+                Logger?.Info("Flare: post " + FlareRules.PostsToday(_file, day) + " of the day: past the first " + FlareRules.PostsCounted + ", seen and liked, the account as it was.");
+            }
             if (d.Source == FlareSource.Photo || d.Source == FlareSource.Selfie)
             {
                 p.Pic = !string.IsNullOrEmpty(d.Name) ? "f:" + d.Name : null;
@@ -771,16 +818,11 @@ namespace RealLifeOverhaul.Flare
             return p;
         }
 
-        // A report to the city: a post of its own (it gains nothing), a case of the City Office's.
+        // A report to the city: a post of its own (it gains nothing), a case of the City Office's. Any number may be made: the
+        // same thing again today joins the case already filed (FileCase), and the first three of a day weigh in the council.
         private FlarePost Report(FlareCompose c, string text, int day, out string why)
         {
             why = null;
-            FlareNet net = _file.Net;
-            if (net.ReportsDay != day)
-            {
-                net.ReportsDay = day;
-                net.ReportsToday = 0;
-            }
             string district = c.District ?? FlareBridges.Ask(FlareBridges.PlayerDistrict, null);
             if (district == null)
             {
@@ -792,12 +834,6 @@ namespace RealLifeOverhaul.Flare
                 why = "reallife_flare_compose_need_place";
                 return null;
             }
-            if (net.ReportsToday >= FlareLiveRules.ReportsPerDay || ReportedToday(day, c.Arg, district, c.Place))
-            {
-                why = "reallife_flare_compose_reported";
-                return null;
-            }
-            net.ReportsToday++;
             int id = _file.NextId++;
             int reach = Math.Max(1, FlareRules.Reach(_file.Followers, FlareRules.Quality(FlareSource.Report, false, false), FlareRules.ToneFit(FlareSource.Report, c.ToneChosen ? c.Tone : FlareTone.Honest)));
             var p = new FlarePost
@@ -813,25 +849,12 @@ namespace RealLifeOverhaul.Flare
             if (!Following)
             {
                 FlareCase cs = FileCase(p, "me", c.District == null ? x : 0f, c.District == null ? z : 0f);
-                if (cs != null && (cs.Kind == FlareReport.Road || cs.Kind == FlareReport.Crime) && FlareBridges.Issue != null)
+                if (cs != null && (cs.Kind == FlareReport.Road || cs.Kind == FlareReport.Crime) && FlareBridges.Issue != null && FlareLiveRules.Weighs(_file.Net, day))
                 {
                     FlareBridges.Issue(cs.Kind == FlareReport.Crime ? (int)FlareIssue.Safety : (int)FlareIssue.Roads, FlareLiveRules.ReportsWeigh * FlareRules.IssueWeight(_file.Followers) / 1000);
                 }
             }
             return p;
-        }
-
-        private bool ReportedToday(int day, int kind, string district, string place)
-        {
-            for (int i = 0; i < _file.Posts.Count; i++)
-            {
-                FlarePost p = _file.Posts[i];
-                if (p.Author == FlareAuthor.Player && p.Source == FlareSource.Report && p.Day == day && p.Arg == kind && p.District == district && p.Place == place)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         // A reply: the typed words under a post (they decide nothing); an honest answer to a poor review of the player's business wins a little back.
@@ -849,18 +872,6 @@ namespace RealLifeOverhaul.Flare
                 why = "reallife_flare_compose_need_words";
                 return null;
             }
-            FlareNet net = _file.Net;
-            if (net.RepliesDay != day)
-            {
-                net.RepliesDay = day;
-                net.RepliesToday = 0;
-            }
-            if (net.RepliesToday >= FlareLiveRules.RepliesPerDay)
-            {
-                why = "reallife_flare_compose_replies";
-                return null;
-            }
-            net.RepliesToday++;
             int id = _file.NextId++;
             var p = new FlarePost
             {
@@ -898,8 +909,8 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (FlareLiveRules.PileOn(p))
                 {
-                    FlareLiveRules.Story(_file.Net, p.Day + 1, "reallife_flare_news_pileon", "name", MyName, "handle", MyHandle);
-                    Logger?.Info("Flare: the post went badly and was seen by " + p.Reach + ": a pile-on of angry replies, and tomorrow's City Ledger has it.");
+                    bool paper = FlareLiveRules.StoryOnce(_file.Net, p.Day + 1, "reallife_flare_news_pileon", "name", MyName, "handle", MyHandle);
+                    Logger?.Info("Flare: the post went badly and was seen by " + p.Reach + ": a pile-on of angry replies" + (paper ? ", and tomorrow's City Ledger has it." : " (the City Ledger has today's already)."));
                     if (FlareRules.MayNotify(_file, p.Day, Settings.SocialMediaNotices))
                     {
                         Tell(NotificationType.Warning, "reallife_flare_note_pileon", _openFeed);

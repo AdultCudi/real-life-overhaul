@@ -9,13 +9,14 @@ namespace RealLifeOverhaul.Flare
     ///
     ///   reallife:flare_net
     ///     NT1|next case|next message|notifications read to|city day|picture day|pictures today|next picture|replies day|
-    ///         replies today|reports day|reports today|message day|city seed
-    ///     C|id|kind|district|place|name|x|z|filed|answer due|state|order|ref|until|post|answer|reporter|repeats|acted day   a case
+    ///         replies today|reports day|reports today|message day|city seed|moved day
+    ///     C|id|kind|district|place|name|x|z|filed|answer due|state|order|ref|until|post|answer|reporter|repeats|acted day|counted   a case
     ///     W|district|kind|until                                a watch on a district
     ///     K|kind|district|day|acted                            a complaint of the week
     ///     M|id|with|name|at|mine|text|key|data|read            a message
     ///     T|day|key|name|value|name|value...                   a piece waiting for the paper
     ///     U|player   H|player   G|post   A|net id   E|tally that reached the paper   S|host key (a guest's last host and session)
+    ///     B|key                                                what moved a business or the City Office on the moved day
     ///
     /// Texts are escaped as the shared city's lines are (FlareNetShare.Esc). A line this version does not read is left
     /// out; a head of another version leaves the network empty (the posts and the account are kept: they are FlareStore's).
@@ -33,7 +34,7 @@ namespace RealLifeOverhaul.Flare
             b.Append(Version);
             Ints(b, n.NextCase, n.NextDm);
             b.Append('|').Append(n.NoticeSeen.ToString(Inv));
-            Ints(b, n.CityDay, n.PicDay, n.PicsToday, n.PicNext, n.RepliesDay, n.RepliesToday, n.ReportsDay, n.ReportsToday, n.DmDay, n.CitySeed);
+            Ints(b, n.CityDay, n.PicDay, n.PicsToday, n.PicNext, n.RepliesDay, n.RepliesToday, n.ReportsDay, n.ReportsToday, n.DmDay, n.CitySeed, n.MovedDay);
             for (int i = 0; i < n.Cases.Count; i++)
             {
                 FlareCase c = n.Cases[i];
@@ -43,7 +44,7 @@ namespace RealLifeOverhaul.Flare
                 b.Append('|').Append(c.X.ToString("R", Inv)).Append('|').Append(c.Z.ToString("R", Inv)).Append('|').Append(c.Filed.ToString(Inv)).Append('|').Append(c.ReplyAt.ToString(Inv));
                 Ints(b, (int)c.State, (int)c.Order, c.Ref, c.Until, c.Post, c.Answer);
                 Texts(b, c.Reporter);
-                Ints(b, c.Repeats, c.ActedDay);
+                Ints(b, c.Repeats, c.ActedDay, c.Counted ? 1 : 0);
             }
             for (int i = 0; i < n.Watches.Count; i++)
             {
@@ -81,6 +82,7 @@ namespace RealLifeOverhaul.Flare
             Each(b, "U", n.Muted);
             Each(b, "H", n.Hidden);
             Each(b, "E", n.Escalated);
+            Each(b, "B", n.Moved);
             for (int i = 0; i < n.Going.Count; i++)
             {
                 b.Append("\nG|").Append(n.Going[i].ToString(Inv));
@@ -124,6 +126,7 @@ namespace RealLifeOverhaul.Flare
             n.ReportsToday = Math.Max(0, I(h, 11));
             n.DmDay = I(h, 12, -1);
             n.CitySeed = I(h, 13);
+            n.MovedDay = I(h, 14, -1);   // (a save from before has none)
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] c = lines[i].TrimEnd('\r').Split('|');
@@ -154,7 +157,7 @@ namespace RealLifeOverhaul.Flare
                         {
                             Id = I(c, 1), Kind = (FlareReport)kind, District = U(c, 3), Place = U(c, 4), Name = U(c, 5), X = F(c, 6), Z = F(c, 7), Filed = L(c, 8), ReplyAt = L(c, 9),
                             State = (FlareCaseState)state, Order = (FlareOrder)order, Ref = I(c, 12, -1), Until = I(c, 13, -1), Post = I(c, 14, -1), Answer = I(c, 15, -1),
-                            Reporter = U(c, 16), Repeats = Math.Max(0, I(c, 17)), ActedDay = I(c, 18, -1)
+                            Reporter = U(c, 16), Repeats = Math.Max(0, I(c, 17)), ActedDay = I(c, 18, -1), Counted = I(c, 19, 1) != 0   // (a save from before: counted)
                         });
                     }
                     break;
@@ -208,6 +211,9 @@ namespace RealLifeOverhaul.Flare
                 case "E":
                     Add(n.Escalated, U(c, 1), 32);
                     break;
+                case "B":
+                    Add(n.Moved, U(c, 1), FlareLiveRules.MovedMost);
+                    break;
                 case "G":
                     if (c.Length >= 2 && n.Going.Count < FlareNet.GoingMost)
                     {
@@ -238,9 +244,10 @@ namespace RealLifeOverhaul.Flare
             n.Going.Clear();
             n.Applied.Clear();
             n.Escalated.Clear();
+            n.Moved.Clear();
             n.NextCase = n.NextDm = n.PicNext = 1;
             n.NoticeSeen = 0;
-            n.CityDay = n.PicDay = n.RepliesDay = n.ReportsDay = n.DmDay = -1;
+            n.CityDay = n.PicDay = n.RepliesDay = n.ReportsDay = n.DmDay = n.MovedDay = -1;
             n.PicsToday = n.RepliesToday = n.ReportsToday = 0;
             n.CitySeed = 0;
             n.HostKey = null;
