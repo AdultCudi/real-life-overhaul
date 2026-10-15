@@ -29,6 +29,7 @@ internal static partial class Program
         Section("the phone's pages: a set number of apps a page and the More apps button (Core/GameUi/PagerRules)");
         PagerCount();
         PagerOnce();
+        PagerCentre();
         PagerGameFirst();
         PagerFilling();
         PagerButton();
@@ -122,6 +123,154 @@ internal static partial class Program
             }
         }
         Check(measured == 4 && changed == 0 && wrong == 0, "350 openings on four changes of screen: the count is worked out 4 times, and never changes between openings on one screen (" + measured + " times, " + changed + " changes)");
+    }
+
+    // The money, the date and the time as the game draws them (Topbar/RightData, level4): the money's figure in 36 after
+    // its icon's margin of 45, its change in 30 after a margin of 35, 20 between them; the date and the time each an icon
+    // of 32, 20, then words in 36; 50 between the three; all ending 100 from the bar's right edge.
+    private const float MoneyFixed = 45f + 20f + 35f + 50f + 32f + 20f + 50f + 32f + 20f, BigWords = 36f, SmallWords = 30f;
+
+    // How wide words are drawn, never less: a letter or figure 0.62 of the size (the game's font sets "$1.9B +$16.9K",
+    // "Saturday (Day 6)" and "04:03" in about 900 with its icons; this reckons 974), a space 0.3, a Chinese character the
+    // whole size.
+    private static float Drawn(string words, float size)
+    {
+        float width = 0f;
+        foreach (char c in words)
+        {
+            width += c >= '\u2E80' ? 1f : c == ' ' ? 0.3f : 0.62f;
+        }
+        return width * size;
+    }
+
+    // The widest the money, the date and the time can be drawn in the seven languages the mod speaks: a money of ten
+    // characters and its change, the longest day of the week in the game's own words and day 9999, the time 23:59.
+    private static float WidestData(out string widestDate)
+    {
+        string managed = Environment.GetEnvironmentVariable("BA_MANAGED") ?? DefaultManaged;
+        string locale = Path.GetFullPath(Path.Combine(managed, @"..\StreamingAssets\locale"));
+        string[] days = { "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday" };
+        float date = 0f;
+        widestDate = null;
+        foreach (string lang in ModLanguages.All)
+        {
+            string path = Path.Combine(locale, lang + ".json");
+            if (!File.Exists(path))
+            {
+                widestDate = null;
+                return float.NaN;
+            }
+            using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(path)))
+            {
+                string format = doc.RootElement.TryGetProperty("topbar_date_format", out JsonElement f) ? f.GetString() : null;
+                if (format == null)
+                {
+                    return float.NaN;
+                }
+                foreach (string day in days)
+                {
+                    string name = doc.RootElement.TryGetProperty(day, out JsonElement d) ? d.GetString() : string.Empty;
+                    string shown = format.Replace("{DayOfWeek}", name).Replace("{CurrentNumberDay}", "9999");
+                    if (Drawn(shown, BigWords) > date)
+                    {
+                        date = Drawn(shown, BigWords);
+                        widestDate = shown;
+                    }
+                }
+            }
+        }
+        return MoneyFixed + Drawn("$9,999.99M", BigWords) + Drawn("-$999.99K", SmallWords) + date + Drawn("23:59", BigWords);
+    }
+
+    // A full page and its button stand centred in the room from where the game's own row begins to the money's box, at
+    // 16:9, 16:10 and 4:3; the button in the same place on every page, a short last page from the same left edge; and the
+    // row never reaches the money, the date and the time drawn at their widest, on any screen the game allows.
+    private static void PagerCentre()
+    {
+        float begin = RowCentre - PagerRules.RowWidth(7, RowPitch, RowSpacing) * 0.5f;
+        float[] aspects = { 16f / 9f, 16f / 10f, 4f / 3f };
+        string[] named = { "16:9", "16:10", "4:3" };
+        var said = new List<string>();
+        bool centred = true;
+        for (int a = 0; a < aspects.Length; a++)
+        {
+            float canvas = 2160f * aspects[a];
+            float room = canvas - DataRight - DataBox - begin;
+            int tiles = PagerRules.StripTiles(room, RowPitch, RowSpacing, 7);
+            float start = PagerRules.PageStart(begin, room, tiles, RowPitch, RowSpacing);
+            float left = start - begin, right = begin + room - (start + PagerRules.RowWidth(tiles, RowPitch, RowSpacing));
+            centred &= Math.Abs(left - right) <= 2f && left >= 0f && right >= 0f;
+            said.Add(named[a] + " " + tiles + " tiles, " + left.ToString("0") + " left and " + right.ToString("0") + " right");
+        }
+        Check(centred, "at 100% a full page and its button stand centred in the room between the game's row's start and the money's box (" + string.Join("; ", said) + ")");
+        Console.WriteLine("   centred at 100%: " + string.Join("; ", said) + ".");
+        Check(PagerRules.PageStart(820f, 300f, 2, RowPitch, RowSpacing) == 820f && PagerRules.PageStart(820f, float.NaN, 6, RowPitch, RowSpacing) == 820f
+              && PagerRules.PageStart(820f, 1420f, 6, RowPitch, RowSpacing) == 820f,
+            "a page as wide as its room or wider, or a room not measured yet, starts where the game's own row starts");
+
+        // The button in one place on every page of 21 apps, the apps from the page's left edge, at each screen's count.
+        bool still = true;
+        foreach (float aspect in aspects)
+        {
+            float room = 2160f * aspect - DataRight - DataBox - begin;
+            int tiles = PagerRules.StripTiles(room, RowPitch, RowSpacing, 7);
+            float start = PagerRules.PageStart(begin, room, tiles, RowPitch, RowSpacing);
+            float button = float.NaN;
+            for (int page = 0; page < PagerRules.Pages(21, tiles); page++)
+            {
+                float here = start + PagerRules.ButtonTile(tiles) * RowPitch;   // the button's place: no part of it is the page
+                float firstApp = float.NaN, lastApp = float.NaN;
+                for (int i = 0; i < 21; i++)
+                {
+                    if (PagerRules.PageOf(i, 21, tiles) == page)
+                    {
+                        float x = start + PagerRules.TileOf(i, 21, tiles) * RowPitch;
+                        firstApp = float.IsNaN(firstApp) ? x : firstApp;
+                        lastApp = x;
+                    }
+                }
+                still &= (float.IsNaN(button) || here == button) && firstApp == start && lastApp < here;
+                button = here;
+            }
+        }
+        Check(still, "the More apps button stands in the same place on every page, and every page, the short last one too, begins at the full page's left edge");
+
+        // Never over the money, the date and the time at their widest.
+        float widest = WidestData(out string widestDate);
+        if (float.IsNaN(widest))
+        {
+            Check(false, "the game's own words for the date are not in its StreamingAssets/locale");
+            return;
+        }
+        Check(widest <= DataBox, "the money, the date and the time at their widest (" + widest.ToString("0") + ", the date \"" + widestDate + "\") fit the box the game keeps for them (" + DataBox + ")");
+        int screens = 0, over = 0;
+        string first = null;
+        foreach (float aspect in new[] { 4f / 3f, 16f / 10f, 16f / 9f })
+        {
+            foreach (float zoom in new[] { 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f })
+            {
+                float canvas = 2160f / zoom * aspect;
+                float room = canvas - DataRight - DataBox - begin;
+                if (PagerRules.Fit(room, RowPitch, RowSpacing) < PagerRules.LeastTiles)
+                {
+                    continue;   // (no room for the least page: the game's own row is over the money there too)
+                }
+                screens++;
+                int tiles = PagerRules.StripTiles(room, RowPitch, RowSpacing, 7);
+                float end = PagerRules.PageStart(begin, room, tiles, RowPitch, RowSpacing) + PagerRules.RowWidth(tiles, RowPitch, RowSpacing);
+                float money = canvas - DataRight - widest;
+                if (end > money)
+                {
+                    over++;
+                    first = first ?? aspect.ToString("0.00") + " at " + zoom + "x: the row ends at " + end.ToString("0") + ", the money begins at " + money.ToString("0");
+                }
+            }
+        }
+        Check(over == 0, "on every screen with room for a page the row ends before the money, the date and the time at their widest: " + over + " of " + screens + " over"
+                         + (first != null ? " (first: " + first + ")" : string.Empty));
+        float atFull = 3840f - DataRight - widest - (PagerRules.PageStart(begin, 3840f - DataRight - DataBox - begin, 6, RowPitch, RowSpacing) + PagerRules.RowWidth(6, RowPitch, RowSpacing));
+        Console.WriteLine("   the money, date and time at their widest: " + widest.ToString("0") + " (\"" + widestDate + "\"); at 16:9 100% the row ends " + atFull.ToString("0")
+                          + " before them; a seventh tile would need " + (RowPitch - atFull).ToString("0") + " more.");
     }
 
     // The game's own apps first, in their order, then the others in theirs; stable.
@@ -347,7 +496,8 @@ internal static partial class Program
         }
         // The count reads the money's box, never its words, and only when the bar's width has changed.
         string pages = Body(pager, "private void StripPages()");
-        Check(pages != null && Regex.IsMatch(pages, @"if \(PagerRules\.Remeasure\(barWidth, _measuredFor\) && strip\.gameObject\.activeInHierarchy\)\s*\{[^}]*_tiles = PagerRules\.StripTiles\(DataLeft\(strip\) - _pagesLeft, pitch, layout\.spacing, _gameApps\);\s*_measuredFor = barWidth;")
+        Check(pages != null && Regex.IsMatch(pages, @"if \(PagerRules\.Remeasure\(barWidth, _measuredFor\) && strip\.gameObject\.activeInHierarchy\)\s*\{[^}]*_room = DataLeft\(strip\) - rowStart;\s*_tiles = PagerRules\.StripTiles\(_room, pitch, layout\.spacing, _gameApps\);\s*_measuredFor = barWidth;")
+              && pages.Contains("_pagesLeft = PagerRules.PageStart(rowStart, _room, Tiles, pitch, layout.spacing);")
               && pages.Contains("float barWidth = strip.parent is RectTransform bar ? bar.rect.width : 0f;")
               && pages.Contains("Pages = PagerRules.Pages(count, Tiles)") && !pages.Contains("RightLimit(") && !pages.Contains("_rightData"),
             "the full menu's row works out its tiles from the money's box only when the bar's width has changed, never from the money or the date");
