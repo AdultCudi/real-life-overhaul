@@ -604,6 +604,26 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_fame_test_council", () => Fame.FameDirector.Instance?.TestCouncil())
                 .AddButton("reallife_fame_test_back", () => Fame.FameDirector.Instance?.TestBack())
                 .AddSplitter()
+                .AddHeader("reallife_rival_header")
+                .AddToggle(Settings.RivalsId, "reallife_rival_enabled", Settings.Rivals,
+                    v => Settings.Rivals = v)
+                .AddDropdown(Settings.RivalsStrengthId, "reallife_rival_strength",
+                    new[] { "reallife_rival_strength_gentle", "reallife_rival_strength_normal", "reallife_rival_strength_hard", "reallife_rival_strength_ruthless" }, Settings.RivalsStrength,
+                    v => Settings.RivalsStrength = v)
+                .AddButton("reallife_rival_test_property", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Property))
+                .AddButton("reallife_rival_test_outlet", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Outlet))
+                .AddButton("reallife_rival_test_poach", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Poach))
+                .AddButton("reallife_rival_test_stake", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Stake))
+                .AddButton("reallife_rival_test_bid", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Bid))
+                .AddButton("reallife_rival_test_lobby", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Lobby))
+                .AddButton("reallife_rival_test_suit", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Suit))
+                .AddButton("reallife_rival_test_press", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Press))
+                .AddButton("reallife_rival_test_next", () => Rivals.RivalDirector.Instance?.TestAnnounce())
+                .AddButton("reallife_rival_test_forward", () => Rivals.RivalDirector.Instance?.TestForward())
+                .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
+                .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
+                .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
+                .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
                     v => Settings.Hotels = v)
@@ -1291,6 +1311,8 @@ namespace RealLifeOverhaul
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
             Guard.Step("Fame.FameDirector", () => Fame.FameDirector.Logger = context.Logger);
             Guard.Step("Fame.FameDirector", () => Guard.Add<Fame.FameDirector>(_root));   // Standing, a city that reacts to the player's success (Scripts/Fame): after Flare and the company, so that its day reads theirs
+            Guard.Step("Rivals.RivalDirector", () => Rivals.RivalDirector.Logger = context.Logger);
+            Guard.Step("Rivals.RivalDirector", () => Guard.Add<Rivals.RivalDirector>(_root));   // rival tycoons who grow with the player and move against them in the late game (Scripts/Rivals): after Standing, nothing per frame
             Guard.Step("PermadeathDirector", () => PermadeathDirector.Logger = context.Logger);
             Guard.Step("PermadeathDirector", () => Guard.Add<PermadeathDirector>(_root));   // an ending the player chooses: a death after warnings, the obituary, the save ended (Scripts/Permadeath)
             Guard.Step("CarTuning", () => CarTuning.Logger = context.Logger);

@@ -452,13 +452,20 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock other = State.Stocks[i];
-                if (other.Listed && other != s && other.Own == null && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0)
+                if (other.Listed && other != s && other.Own == null && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0 && (other.Def == null || !other.Def.Holding))
                 {
                     _scratch.Add(other);
                 }
             }
             s.BidderId = 0;
-            if (_scratch.Count > 0 && MarketRandom.Unit(_secret, MarketRandom.OwnBid, s.Id, 4) < 0.7)
+            Stock named = _bidderNext > 0 ? State.Stock(_bidderNext) : null;
+            _bidderNext = 0;
+            if (named != null && named.Listed && named != s)
+            {
+                s.BidderId = named.Id;   // (a rival tycoon's holding bids: MarketEngine.Holdings.cs)
+                named.Outlook -= 0.02;
+            }
+            else if (_scratch.Count > 0 && MarketRandom.Unit(_secret, MarketRandom.OwnBid, s.Id, 4) < 0.7)
             {
                 Stock bidder = _scratch[MarketRandom.Below(_secret, MarketRandom.OwnBid, s.Id, 5, _scratch.Count)];
                 s.BidderId = bidder.Id;

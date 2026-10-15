@@ -1337,6 +1337,7 @@ namespace RealLifeOverhaul.Meta
             Districts.DistrictGuide.Register();   // the district view on the city map: the feature, its switch, its save line, its tests and its Guide figures (Scripts/Districts)
             Economy.OwnBankGuide.Register();   // the player's own bank: the feature, its option, its save lines, its tests and its Guide figures (Scripts/Economy/OwnBank)
             EndScaleGuide.Register();   // the end game at scale: the feature, its option and preset, its tests and its Guide figures (Scripts/EndScale)
+            Rivals.RivalGuide.Register();   // rival tycoons: the feature, its two options and their presets, its save lines, its tests and its Guide figures (Scripts/Rivals)
         }
 
         // Game hours of street time between two accidents near the player at a setting of the option, at the day's average hour in fair weather.

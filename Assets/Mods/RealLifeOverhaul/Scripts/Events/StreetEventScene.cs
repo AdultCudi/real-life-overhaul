@@ -866,7 +866,8 @@ namespace RealLifeOverhaul.Events
         {
             float side = Random.value < 0.5f ? -1f : 1f;
             Vector3 want = Point(Random.Range(-_half + 3f, _half - 3f), side * (_width + 2.4f));
-            if (CitySpots.Pavement(want, 3.5f, out Vector3 kerb) && CitySpots.ClearQuietly(kerb, 0.45f) && CitySpots.Flat(kerb - _centre) > _width * _width)
+            // At the tape at the nearest, facing in: never a place inside it (a crossing inside the tape is pavement too).
+            if (CitySpots.Pavement(want, 3.5f, out Vector3 kerb) && !_director.Cordon.Shuts(kerb) && CitySpots.ClearQuietly(kerb, 0.45f) && CitySpots.Flat(kerb - _centre) > _width * _width)
             {
                 Walk(Job.Onlooker, CityLook.Civilian, kerb, _centre + _along * Vector3.Dot(kerb - _centre, _along), 0, false);
             }

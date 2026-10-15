@@ -23,6 +23,11 @@ namespace RealLifeOverhaul
     /// at the latest), seen out again if they get back in, and it goes twenty seconds after
     /// they left it, sooner when they have walked off or look away.
     ///
+    /// It is set out only where the lesson's route can start (<see cref="Lend"/> asks a planning of each place it
+    /// could stand): along the lane nearest the desk, then the lane running the other way, near the desk first and
+    /// then past a stretch an accident has closed. Where there is no such place it says why: a lane closed for now
+    /// first, then no drive from the street, then no room at the roadside (TestRouteRules.Refusal).
+    ///
     /// It is never in a savegame. The game serialises the save in the same call that raises its
     /// save event, so on that event the school's car is taken off the save's vehicle list and
     /// put back a frame later (<see cref="BeforeSave"/>): a save made in the middle of a test
@@ -57,7 +62,8 @@ namespace RealLifeOverhaul
 
         private readonly IModLogger _logger;
         private readonly MonoBehaviour _host;
-        private readonly List<Waypoint> _route = new List<Waypoint>(24);
+        private readonly List<Waypoint> _route = new List<Waypoint>(64);
+        private readonly List<Waypoint> _routeOther = new List<Waypoint>(64);   // the lane running the other way, for a road closed on one side
         private CarController _car;
         private VehicleInstance _instance;
         private string _leftover;       // an id from modData that should not exist: deleted if it does
@@ -95,15 +101,23 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Puts the school's car (a small hatchback, or a panel van for the commercial class) at
-        /// the roadside near a point. Null, with nothing left behind, if there is no free stretch
-        /// of road near or the game would not make one.
+        /// the roadside near a point, where <paramref name="route"/> plans a drive from. Null, with
+        /// nothing left behind and the reason as a key of the locales (<see cref="TestRouteRules.Refusal"/>),
+        /// if there is no such stretch of road near or the game would not make the car.
         /// </summary>
-        public CarController Lend(Vector3 near, bool van)
+        public CarController Lend(Vector3 near, bool van, Func<Waypoint, bool, RouteOutcome> route, out string refusal)
         {
-            if (_failed || _car != null || !FindSpot(near, out Vector3 spot, out Quaternion heading))
+            refusal = TestRouteRules.NoSpotKey;
+            if (_failed || _car != null)
             {
                 return null;
             }
+            refusal = FindSpot(near, route, out Vector3 spot, out Quaternion heading);
+            if (refusal != null)
+            {
+                return null;
+            }
+            refusal = TestRouteRules.NoSpotKey;   // (until the game has made the car)
             VehicleController made = null;
             VehicleInstance instance = null;
             try
@@ -146,6 +160,7 @@ namespace RealLifeOverhaul
                 SpawnedAt = Time.time;
                 _logger?.Info("Licences: the school's " + (van ? "van" : "car") + " ('" + type + "', id " + instance.id + ") stands "
                               + Vector3.Distance(near, spot).ToString("F0") + " m from the desk.");
+                refusal = null;
                 return car;
             }
             catch (Exception e)
@@ -697,53 +712,145 @@ namespace RealLifeOverhaul
             _wasDriven = false;
         }
 
-        // A stretch of lane near the desk with nothing standing in it: the kerb side first, then the lane itself.
-        private bool FindSpot(Vector3 near, out Vector3 spot, out Quaternion heading)
+        /// <summary>
+        /// Whether the school could set its car out near a point now, without making it: the same look as
+        /// <see cref="Lend"/>, asked before the fee is taken. Null if it could, else the reason as a key of the locales.
+        /// </summary>
+        public string Placeable(Vector3 near, Func<Waypoint, bool, RouteOutcome> route)
+        {
+            return _failed ? TestRouteRules.NoSpotKey : FindSpot(near, route, out _, out _);
+        }
+
+        private const float NearReach = 70f;    // metres of lane from the desk the car is looked for along first...
+        private const float FarReach = 160f;    // ...then this far, past a stretch an accident has closed
+        private const int WalkPoints = 96;      // lane points walked along each lane at most
+        private const int MostPlans = 8;        // routes planned at most in one look (each well under a millisecond)
+        private const int MostRooms = 48;       // places looked at for room at most in one look (a ground ray and an overlap test each)
+
+        // A stretch of lane near the desk with nothing standing in it from which a drive can be planned: the kerb side first,
+        // then the lane itself. Along the lane nearest the desk and then the lane running the other way (a road an accident
+        // has closed on one side may be open on the other), near the desk first and then further on, past a closed stretch.
+        // Null when found, else why not (TestRouteRules.Refusal). A planning for each place with room, eight at most, and
+        // forty-eight places looked at for room at most: a few milliseconds at the very worst, once, when a lesson is booked or starts.
+        private string FindSpot(Vector3 near, Func<Waypoint, bool, RouteOutcome> route, out Vector3 spot, out Quaternion heading)
         {
             spot = default;
             heading = Quaternion.identity;
             if (!TrafficTools.Ready)
             {
-                return false;
+                return TestRouteRules.NoSpotKey;
             }
             Waypoint anchor = TrafficTools.ClosestWaypointAlong(near, Vector3.zero, 45f);
             if (anchor == null)
             {
+                return TestRouteRules.NoSpotKey;
+            }
+            TrafficTools.WalkForward(anchor, FarReach, WalkPoints, _route);
+            _routeOther.Clear();
+            if (_route.Count > 1)
+            {
+                Vector3 runs = _route[1].position - anchor.position;
+                runs.y = 0f;
+                Waypoint other = runs.sqrMagnitude > 0.01f ? TrafficTools.ClosestWaypointAlong(near, -runs.normalized * 10f, 45f) : null;
+                if (other != null && !OnWalk(_route, other))
+                {
+                    TrafficTools.WalkForward(other, FarReach, WalkPoints, _routeOther);
+                }
+            }
+            bool closedSeen = false, roomSeen = false, asked = false;
+            int plans = 0, rooms = 0;
+            for (int pass = 0; pass < 2 && plans < MostPlans && rooms < MostRooms; pass++)
+            {
+                float from = pass == 0 ? 0f : NearReach;
+                float to = pass == 0 ? NearReach : FarReach;
+                for (int lane = 0; lane < 2 && plans < MostPlans && rooms < MostRooms; lane++)
+                {
+                    List<Waypoint> walk = lane == 0 ? _route : _routeOther;
+                    float along = 0f;
+                    for (int i = 0; i + 1 < walk.Count && plans < MostPlans && rooms < MostRooms; i++)
+                    {
+                        if (i > 0)
+                        {
+                            along += Vector3.Distance(walk[i - 1].position, walk[i].position);
+                        }
+                        Waypoint point = walk[i];
+                        if ((pass == 0 ? along > to : along <= from || along > to) || point == null || point.enter || point.exit)
+                        {
+                            continue;
+                        }
+                        if (point.temporaryDisabled)
+                        {
+                            closedSeen = true;   // a lane closed for now: an accident's cordon, a street event
+                            continue;
+                        }
+                        rooms++;
+                        if (!Room(near, point, walk[i + 1], out Vector3 at, out Quaternion facing))
+                        {
+                            continue;
+                        }
+                        roomSeen = true;
+                        plans++;
+                        // Whether a closure is why there is no route is asked once, of the first place with room that has none.
+                        RouteOutcome outcome = route(point, !asked && !closedSeen);
+                        if (outcome == RouteOutcome.Planned)
+                        {
+                            spot = at;
+                            heading = facing;
+                            return null;
+                        }
+                        asked = true;
+                        closedSeen |= outcome == RouteOutcome.Closed;
+                    }
+                }
+            }
+            return TestRouteRules.Refusal(false, closedSeen, roomSeen);
+        }
+
+        // The car's place at one lane point: on the ground, clear of the desk itself, with nothing standing there.
+        private static bool Room(Vector3 near, Waypoint point, Waypoint next, out Vector3 spot, out Quaternion heading)
+        {
+            spot = default;
+            heading = Quaternion.identity;
+            if (next == null)
+            {
                 return false;
             }
-            TrafficTools.WalkForward(anchor, 70f, 20, _route);
-            for (int i = 0; i + 1 < _route.Count; i++)
+            Vector3 runs = next.position - point.position;
+            runs.y = 0f;
+            if (runs.sqrMagnitude < 0.25f)
             {
-                Waypoint point = _route[i];
-                if (point == null || point.enter || point.exit || point.temporaryDisabled)
+                return false;
+            }
+            runs.Normalize();
+            Quaternion along = Quaternion.LookRotation(runs);
+            Vector3 kerb = Vector3.Cross(Vector3.up, runs);
+            for (int side = 0; side < 2; side++)
+            {
+                Vector3 at = point.position + kerb * (side == 0 ? 0.8f : 0f);
+                if (!StreetSpots.Ground(at, out float ground) || Mathf.Abs(ground - point.position.y) > 0.6f)
                 {
                     continue;
                 }
-                Vector3 runs = _route[i + 1].position - point.position;
-                runs.y = 0f;
-                if (runs.sqrMagnitude < 0.25f)
+                at.y = ground + 0.05f;
+                Vector3 flat = at - near;
+                flat.y = 0f;
+                if (flat.sqrMagnitude > 25f && SceneParking.IsFree(at, along, HalfWidth, HalfLength, 0.5f))
                 {
-                    continue;
+                    spot = at;
+                    heading = along;
+                    return true;
                 }
-                runs.Normalize();
-                Quaternion along = Quaternion.LookRotation(runs);
-                Vector3 kerb = Vector3.Cross(Vector3.up, runs);
-                for (int side = 0; side < 2; side++)
+            }
+            return false;
+        }
+
+        private static bool OnWalk(List<Waypoint> walk, Waypoint point)
+        {
+            for (int i = 0; i < walk.Count; i++)
+            {
+                if (ReferenceEquals(walk[i], point))
                 {
-                    Vector3 at = point.position + kerb * (side == 0 ? 0.8f : 0f);
-                    if (!StreetSpots.Ground(at, out float ground) || Mathf.Abs(ground - point.position.y) > 0.6f)
-                    {
-                        continue;
-                    }
-                    at.y = ground + 0.05f;
-                    Vector3 flat = at - near;
-                    flat.y = 0f;
-                    if (flat.sqrMagnitude > 25f && SceneParking.IsFree(at, along, HalfWidth, HalfLength, 0.5f))
-                    {
-                        spot = at;
-                        heading = along;
-                        return true;
-                    }
+                    return true;
                 }
             }
             return false;

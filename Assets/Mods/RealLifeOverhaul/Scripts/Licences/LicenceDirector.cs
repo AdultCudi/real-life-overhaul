@@ -527,12 +527,23 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The player took a service in the conversation. Renewals and the endorsement are done on
         /// the spot; a test or a lesson is paid for now and starts when the conversation is over.
-        /// Returns the line the school closes with.
+        /// Returns the line the school closes with (<see cref="Refused"/> tells a refusal, with nothing paid).
         /// </summary>
         internal string Take(SchoolService service)
         {
             int day = TimeHelper.CurrentDay;
             int fee = DrivingSchool.Fee(service);
+            if (Drives(service))
+            {
+                // Before the fee: a place for the school's car and a route from it, round any lane closed for now. A road shut by
+                // an accident is said here at the desk with nothing paid (it used to be paid, refused when the car came and given back).
+                Vector3 desk = _desks.At >= 0 ? _desks.Front(_desks.At) : _pendingDesk;
+                if (!CanDrive(out string why) || !_practical.CanStage(desk, out why))
+                {
+                    Logger?.Info("Licences: '" + service + "' not booked (" + why + "); nothing was paid.");
+                    return why;
+                }
+            }
             if (!Licences.Pay(fee, FeeTransaction))
             {
                 return "reallife_school_no_money";
@@ -611,6 +622,25 @@ namespace RealLifeOverhaul
                 Licences.Toast(NotificationType.Warning, reason ?? "reallife_lic_no_busy", 9f);
                 Logger?.Info("Licences: '" + _pendingService + "' could not start (" + (reason ?? "busy") + "); the fee was returned.");
             }
+        }
+
+        // The services driven in the school's car: the lessons and tests for a car and for a van.
+        private static bool Drives(SchoolService service)
+        {
+            return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan;
+        }
+
+        // What Take answers when nothing was paid: the money, or why the school's car cannot go out now (CanDrive, PracticalTest.CanStage).
+        private static readonly string[] RefusalKeys =
+        {
+            "reallife_school_no_money", "reallife_lic_no_busy", "reallife_lic_no_on_foot", "reallife_lic_no_roads",
+            TestRouteRules.NoSpotKey, TestRouteRules.NoRouteKey, TestRouteRules.ClosedKey
+        };
+
+        /// <summary>Whether the line <see cref="Take"/> closed with is a refusal (nothing was paid or done): the money, or why the car cannot go out.</summary>
+        internal static bool Refused(string line)
+        {
+            return line == null || Array.IndexOf(RefusalKeys, line) >= 0;
         }
 
         private static bool CanDrive(out string reasonKey)

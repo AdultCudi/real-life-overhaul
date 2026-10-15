@@ -1,4 +1,5 @@
-0.24.0
+0.25.1
 
-New
-- The end game at scale: data centres, the cloud and the hyperscaler, your broadband company and your bank now cost hundreds of millions to build, keep crews of staff and pay upkeep, and earn in proportion. A data centre or cloud pays back in 120 to 360 game days, a broadband network or a bank in two to six game years. What you buy is at the new prices at once; a save that had them comes to the new running costs and income over four weeks. It has its own option.
+Fixed
+- Driving lessons and tests plan their route round a road an accident has closed, bringing the car to the other side if need be, and when the road outside is shut the desk says so before you pay.
+- People stood inside a cordon's tape, even on top of whoever lay hurt in the road, when passers-by were near as it went up or a crossing ran through the scene. Anyone inside when the tape goes up is now moved to the nearest place outside it, and the tape keeps people on foot out for as long as it stands, crossings included; onlookers watch from the tape.

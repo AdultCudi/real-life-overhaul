@@ -91,9 +91,16 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static StandingPage Standing;
 
+        /// <summary>
+        /// The rival tycoons and the city's rich list (Scripts/Rivals) as a page of the Finance app, opened from the Overview
+        /// with a button as the Standing page is. Default: no such page and no button.
+        /// </summary>
+        public static StandingPage Rivals;
+
         public static void Reset()
         {
             Standing = null;
+            Rivals = null;
             Legal = null;
             GivenBack = null;
             Takings = null;
@@ -145,6 +152,16 @@ namespace RealLifeOverhaul.Economy
             if (director != null)
             {
                 director.OpenStanding();
+            }
+        }
+
+        /// <summary>Opens the Finance app on the rivals' page (the Overview while there is none).</summary>
+        public static void OpenRivals()
+        {
+            EconomyDirector director = EconomyDirector.Instance;
+            if (director != null)
+            {
+                director.OpenRivals();
             }
         }
 
