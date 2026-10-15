@@ -37,6 +37,7 @@ internal static partial class Program
             PhotoHold();
             PhotoSources();
             PhotoWords();
+            PhotoFixes(System.IO.Path.Combine(scratch, "fixes"));   // (PhotoFixChecks.cs)
         }
         finally
         {
@@ -60,7 +61,8 @@ internal static partial class Program
     {
         Check(PhotoStoreRules.FolderName(null) == "unsaved" && PhotoStoreRules.FolderName(string.Empty) == "unsaved", "photos: a save with no id has the folder 'unsaved'");
         Check(PhotoStoreRules.FolderName("Psnh0rSw8kyjQbL4AHyJ+Q==") == "Psnh0rSw8kyjQbL4AHyJ+Q==", "photos: a save's id as the game writes it (Base64) is its folder's name as it is");
-        Check(PhotoStoreRules.FolderName("ab/cd\\ef:g") == "ab_cd_ef_g", "photos: a character no folder's name can have is made '_'");
+        Check(PhotoStoreRules.FolderName("ab/cd\\ef:g").StartsWith("ab_cd_ef_g_", StringComparison.Ordinal) && PhotoStoreRules.FolderName("ab/cd\\ef:g").Length == "ab_cd_ef_g".Length + PhotoStoreRules.HashLength,
+            "photos: a character no folder's name can have is made '_', and the name marked as changed");
         string longId = new string('a', 200);
         Check(PhotoStoreRules.FolderName(longId).Length == PhotoStoreRules.NameMost, "photos: a save's folder's name is cut to " + PhotoStoreRules.NameMost + " characters");
         string odd = PhotoStoreRules.FolderName("///");
@@ -248,8 +250,8 @@ internal static partial class Program
         var marked = new List<string>();
         int looked = PhotoStore.Sweep(photos, "playing", id => PhotoStore.SavePresent(saves, id), today, deleted, marked);
         Check(looked == 6, "photos: every save's photos the Camera wrote are looked at, the played save's and others' folders left out (" + looked + ")");
-        Check(deleted.SequenceEqual(new[] { "gone_old" }) && !Directory.Exists(PhotoStore.Folder(photos, "gone_old")), "photos: only a save gone for " + PhotoStoreRules.GraceDays + " days has its photos deleted");
-        Check(marked.OrderBy(x => x).SequenceEqual(new[] { "empty_id", "gone_new" }) && File.Exists(System.IO.Path.Combine(PhotoStore.Folder(photos, "gone_new"), PhotoStoreRules.GoneFile)),
+        Check(deleted.SequenceEqual(new[] { PhotoStoreRules.FolderName("gone_old") }) && !Directory.Exists(PhotoStore.Folder(photos, "gone_old")), "photos: only a save gone for " + PhotoStoreRules.GraceDays + " days has its photos deleted");
+        Check(marked.OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(new[] { PhotoStoreRules.FolderName("empty_id"), PhotoStoreRules.FolderName("gone_new") }.OrderBy(x => x, StringComparer.Ordinal)) && File.Exists(System.IO.Path.Combine(PhotoStore.Folder(photos, "gone_new"), PhotoStoreRules.GoneFile)),
             "photos: a save found gone is marked with today");
         Check(File.Exists(System.IO.Path.Combine(PhotoStore.Folder(photos, "gone_soon"), "Photo_20260101_090000_D1_09.jpg")) && !File.Exists(System.IO.Path.Combine(PhotoStore.Folder(photos, "keep+id=="), PhotoStoreRules.GoneFile)),
             "photos: a save gone 5 days keeps its photos, and a save that came back loses its mark");
@@ -383,8 +385,10 @@ internal static partial class Program
         s.OnTransit = true;
         Check(CameraRules.Refuse(s) == CameraRefusal.Transit, "camera: on the bus, the subway or in a taxi it does not open");
         s = ok;
-        s.Busy = true;
-        Check(CameraRules.Refuse(s) == CameraRefusal.Busy && CameraRules.MustClose(s) == CameraRefusal.None, "camera: busy, it does not open; open, its own hold on the walk does not shut it");
+        s.WalkHeld = true;
+        Check(CameraRules.Refuse(s) == CameraRefusal.Busy, "camera: the player's walk held, it does not open");
+        s.OwnHold = true;
+        Check(CameraRules.MustClose(s) == CameraRefusal.None, "camera: open, its own hold on the walk does not shut it");
         s = ok;
         s.Window = true;
         Check(CameraRules.Refuse(s) == CameraRefusal.Window && CameraRules.MustClose(s) == CameraRefusal.Window, "camera: a window open, it does not open, and one opening shuts it");
@@ -500,13 +504,14 @@ internal static partial class Program
         var sends = new Regex(@"\b(WebClient|HttpClient|HttpWebRequest|WWWForm|Socket|TcpClient|UdpClient|SmtpClient|SharedCity|GoingPublicLink)\b|UnityWebRequest\.(Post|Put|Get)\b|https?://", RegexOptions.IgnoreCase);
         Match send = sends.Match(all);
         Check(!send.Success, "photos: nothing in the Camera or the Gallery sends anything over the network" + (send.Success ? " (found '" + send.Value + "')" : string.Empty));
-        Check(Regex.Matches(game, @"UnityWebRequestTexture\.GetTexture\(new Uri\(path\)\.AbsoluteUri").Count == 1 && Regex.Matches(all, @"UnityWebRequest").Count == Regex.Matches(game, @"UnityWebRequest").Count,
+        Check(Regex.Matches(game, @"PhotoStore\.ReadPhoto\(path\)").Count == 1 && Regex.Matches(all, @"PhotoStore\.ReadPhoto\(").Count == 1,
             "photos: the one loader the Gallery uses reads a file of this computer, in the game file alone");
         Check(Regex.Matches(all, @"ScreenCapture\.CaptureScreenshotAsTexture\(\)").Count == 1 && game.Contains("HotSpots.Time(HotRead)") && game.Contains("watch.Elapsed.TotalMilliseconds"),
             "photos: the screen is read in one place, timed under a name of its own and measured");
         Check(Regex.IsMatch(mode, @"Task\.Run\(\(\) =>\s*\{\s*path = PhotoStore\.NewPath\([^;]*;\s*return PhotosGame\.Develop\(given, path\);") && game.Contains("ImageConversion.EncodeNativeArrayToJPG"),
             "photos: the photo is made, encoded and written on a worker");
-        Check(!Regex.IsMatch(all, @"\.EncodeToJPG\(|\.EncodeToPNG\(|LoadImage\(|File\.ReadAllBytes\(") , "photos: no photo is encoded or decoded on the main thread");
+        Check(!Regex.IsMatch(all, @"\.EncodeToJPG\(|\.EncodeToPNG\(") && Regex.Matches(all, @"File\.ReadAllBytes\(").Count == Regex.Matches(Read(@"Photos\PhotoStore.cs"), @"File\.ReadAllBytes\(").Count
+              && Regex.Matches(all, @"\.LoadImage\(").Count == 1, "photos: no photo is encoded on the main thread; a file is read only by the store (a worker's); one decode, the whole photo's on a click");
         Check(Regex.Matches(director, @"Task\.Run\(").Count >= 5 && Regex.Matches(gallery, @"Task\.Run\(").Count == 1 && !Regex.IsMatch(director + gallery, @"Directory\.GetFiles|File\.Delete|File\.WriteAllText"),
             "photos: listing, deleting, the wallpaper's line and the look over deleted saves are a worker's, never the main thread's");
         Check(!Regex.IsMatch(all, @"modData") && !Regex.IsMatch(all, @"SaveHook"), "photos: nothing is written into the save");
