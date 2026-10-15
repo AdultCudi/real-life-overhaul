@@ -1582,7 +1582,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     CompanyDef d = MarketCatalogue.All[i];
                     Stock s = State.Stock(d.Id);
-                    bool can = d.Pipeline ? s == null : s != null && !s.Listed && day - s.GoneDay > 2 * Year;
+                    bool can = d.Holding ? false : d.Pipeline ? s == null : s != null && !s.Listed && day - s.GoneDay > 2 * Year;   // (a rival's holding comes only with its tycoon: ListHolding)
                     if (!can)
                     {
                         continue;

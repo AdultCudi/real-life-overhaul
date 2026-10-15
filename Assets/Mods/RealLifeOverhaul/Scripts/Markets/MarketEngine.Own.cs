@@ -458,7 +458,14 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             s.BidderId = 0;
-            if (_scratch.Count > 0 && MarketRandom.Unit(_secret, MarketRandom.OwnBid, s.Id, 4) < 0.7)
+            Stock named = _bidderNext > 0 ? State.Stock(_bidderNext) : null;
+            _bidderNext = 0;
+            if (named != null && named.Listed && named != s)
+            {
+                s.BidderId = named.Id;   // (a rival tycoon's holding bids: MarketEngine.Holdings.cs)
+                named.Outlook -= 0.02;
+            }
+            else if (_scratch.Count > 0 && MarketRandom.Unit(_secret, MarketRandom.OwnBid, s.Id, 4) < 0.7)
             {
                 Stock bidder = _scratch[MarketRandom.Below(_secret, MarketRandom.OwnBid, s.Id, 5, _scratch.Count)];
                 s.BidderId = bidder.Id;

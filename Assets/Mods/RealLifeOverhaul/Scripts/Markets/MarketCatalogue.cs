@@ -29,11 +29,12 @@ namespace RealLifeOverhaul.Markets
         public readonly string Trade;           // the game's business type it competes with (a part of the id), or null
         public readonly bool Pipeline;          // not listed at the start: a company that may come to the market later
         public readonly int PayDays;            // a property trust: it pays a distribution every so many days of the calendar (TrustRules); 0 a dividend each quarter
+        public readonly bool Holding;           // a rival tycoon's holding (Scripts/Rivals): not listed at the start nor from the pipeline, only when its tycoon comes forward
 
         // The profile, worked out from the sector and the id (MarketCatalogue.Profile).
         public int MarginBp, GrowthBp, Beta, Cyclical, DebtPct, IdioBp, PassPct, RateBp, TurnoverBp, SpreadBp;
 
-        public CompanyDef(int id, string name, string ticker, MarketSector sector, MarketSize size, int revenueM, int priceCents, string trade, bool pipeline = false, int payDays = 0)
+        public CompanyDef(int id, string name, string ticker, MarketSector sector, MarketSize size, int revenueM, int priceCents, string trade, bool pipeline = false, int payDays = 0, bool holding = false)
         {
             Id = id;
             Name = name;
@@ -45,6 +46,7 @@ namespace RealLifeOverhaul.Markets
             Trade = trade;
             Pipeline = pipeline;
             PayDays = payDays;
+            Holding = holding;
         }
     }
 
@@ -454,6 +456,10 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(140, "Brambleway Retail Trust", "BRT", Pt, M, 600, 1900, null, false, Week),
             new CompanyDef(141, "Mossbank Residential Trust", "MRT", Pt, S, 280, 1500, null, false, Third),
             new CompanyDef(142, "Gullpoint Hotel Trust", "GHT", Pt, S, 320, 1700, null, false, Third),
+            // ---- the rival tycoons' holdings (Scripts/Rivals/RivalCatalogue): on the market only once their tycoon comes forward (MarketEngine.ListHolding)
+            new CompanyDef(143, "Thornfield Holdings", "THF", Pr, M, 1400, 3800, null, true, 0, true),
+            new CompanyDef(144, "Merriweather Group", "MWG", St, M, 1800, 2900, null, true, 0, true),
+            new CompanyDef(145, "Valecrest Capital", "VCC", Fi, M, 1100, 5200, null, true, 0, true),
             // ---- the pipeline: companies that may come to the market later
             new CompanyDef(201, "Seedling Biotech", "SEED", Hc, S, 120, 1800, null, true),
             new CompanyDef(202, "Rooftop Solar Works", "RSW", Pw, S, 200, 1400, null, true),
