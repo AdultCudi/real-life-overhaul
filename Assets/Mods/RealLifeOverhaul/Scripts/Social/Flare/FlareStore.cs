@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     b.Append(k > 0 ? "," : string.Empty).Append(h.Who[k].ToString(Inv));
                 }
-                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0);
+                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0, h.Posted, h.LastPost);   // (the last two appended: a save from before has neither)
             }
             for (int i = 0; i < f.Follows.Count; i++)
             {
@@ -166,7 +166,7 @@ namespace RealLifeOverhaul.Flare
                         var hire = new FlareHire
                         {
                             Id = I(c, 1), Kind = I(c, 2), Place = Text(c[3]), Name = Text(c[4]), From = I(c, 5), To = I(c, 6), Percent = I(c, 7),
-                            Late = I(c, 9) != 0, OffMessage = I(c, 10) != 0, Backfired = I(c, 11) != 0, Ended = I(c, 12) != 0
+                            Late = I(c, 9) != 0, OffMessage = I(c, 10) != 0, Backfired = I(c, 11) != 0, Ended = I(c, 12) != 0, Posted = Math.Max(0, I(c, 13)), LastPost = I(c, 14, -1)
                         };
                         string[] who = c[8].Split(',');
                         for (int k = 0; k < who.Length && hire.Who.Count < 3; k++)

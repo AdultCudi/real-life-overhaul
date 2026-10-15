@@ -452,8 +452,15 @@ namespace RealLifeOverhaul.Flare
         /// <summary>For the company, through Wiring/FlareLinks: a hire has been booked and paid. It is kept, and how it goes is rolled now.</summary>
         public void Hired(string place, int kind, int from, int to, int percent)
         {
-            if (!Running || Save == null || kind != _hireKind || _hireWho.Count == 0)
+            if (!Running || Save == null)
             {
+                return;
+            }
+            if (kind != _hireKind || place != _hirePlace || _hireWho.Count == 0)
+            {
+                // (the company booked a deal Flare was not making: nobody would post for it, so it is said, once, in the log)
+                Logger?.Warn("Flare: the company booked " + kind + " at " + place + " for days " + from + " to " + to + ", but no hire of that kind was being made there on Flare (" + _hireKind + " at " + (_hirePlace ?? "nowhere")
+                             + "); no influencer is set to post for it.");
                 return;
             }
             try

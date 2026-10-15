@@ -318,7 +318,7 @@ namespace RealLifeOverhaul.Flare
         {
             List<BuildingRegistration> shops = FlareGame.Businesses();
             string pickedPlace = null, pickedName = null;
-            int pickedPosts = 0;
+            int pickedPosts = 0, pickedPaid = 0;
             BuildingRegistration pickedReg = null;
             for (int i = 0; i < shops.Count; i++)
             {
@@ -326,16 +326,8 @@ namespace RealLifeOverhaul.Flare
                 int overall;
                 bool rated = FlareGame.Satisfaction(shops[i], out overall, _parts);
                 int talk = file.BuzzAt(place, day);
-                int posts = 0, last = -1;
-                for (int k = 0; k < file.Posts.Count; k++)
-                {
-                    FlarePost p = file.Posts[k];
-                    if (p.Author == FlareAuthor.Player && p.Place == place)
-                    {
-                        posts++;
-                        last = p.Day;
-                    }
-                }
+                int own, last;
+                int posts = FlareCast.PostsAbout(file, place, out own, out last);   // (the player's own and the paid posts of the deals there)
                 TableRow row = Row("shop:" + place);
                 row.Set(0, name);
                 row.Set(1, rated ? Stars(overall) : string.Empty, rated ? overall : double.NaN);
@@ -346,7 +338,8 @@ namespace RealLifeOverhaul.Flare
                 {
                     pickedPlace = place;
                     pickedName = name;
-                    pickedPosts = posts;
+                    pickedPosts = own;
+                    pickedPaid = posts - own;
                     pickedReg = shops[i];
                 }
             }
@@ -362,7 +355,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 else
                 {
-                    WriteShop(box, file, day, pickedReg, pickedPlace, pickedName, pickedPosts);
+                    WriteShop(box, file, day, pickedReg, pickedPlace, pickedName, pickedPosts, pickedPaid);
                 }
                 return FlareTables.Business;
             }
@@ -384,7 +377,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         // A business picked: its stars and what its reviews say (the game's own satisfaction, read only), the talk on Flare, and a sponsored post.
-        private void WriteShop(InfoBox box, FlareFile file, int day, BuildingRegistration reg, string place, string name, int posts)
+        private void WriteShop(InfoBox box, FlareFile file, int day, BuildingRegistration reg, string place, string name, int posts, int paid)
         {
             box.Title(name);
             int overall;
@@ -405,6 +398,7 @@ namespace RealLifeOverhaul.Flare
             int talk = file.BuzzAt(place, day);
             box.Line(talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"));
             box.Row("reallife_flare_shop_posts", posts.ToString());
+            box.Row("reallife_flare_shop_paid_posts", paid.ToString());   // (the posts of the influencers hired for it, which the Feed shows among the newest)
             FlareCampaign campaign;
             if (_director.CampaignAt(place, out campaign))
             {

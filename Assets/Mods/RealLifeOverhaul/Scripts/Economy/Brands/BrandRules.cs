@@ -170,6 +170,33 @@ namespace RealLifeOverhaul.Economy.Brands
             return presence + footfall + good + Math.Max(0, campaign);
         }
 
+        /// <summary>
+        /// What a district's figure gains on the brand's day of the given age (its own clock after that day's tick): the
+        /// shops there, their customers, the brand's standards and a campaign running that day. The day's step and the
+        /// app's "tomorrow" both ask this, so the page can never say other than what the step will do.
+        /// </summary>
+        public static int GainOn(BrandsState s, Brand b, DistrictFile d, int age)
+        {
+            int shops = Shops(s, b, d.Name);
+            bool pushing = b.Push >= 0 && age >= b.PushFrom && age < b.PushEnd;
+            int campaign = !pushing ? 0
+                : b.Push == BrandCatalogue.PushCity ? (shops > 0 ? BrandCatalogue.CampaignCityGain : 0)
+                : string.Equals(d.Name, b.PushDistrict, StringComparison.Ordinal) ? BrandCatalogue.CampaignLocalGain : 0;
+            return Gain(shops, Customers(s, b, d.Name), b.Standards, campaign);
+        }
+
+        /// <summary>Mornings since the brand began on which its recognition did not take its step: Brands was not running (its option or Credit rating and phone loans off), or a jump of several days counted once. Never under nothing.</summary>
+        public static int Missed(Brand b, int today)
+        {
+            return Math.Max(0, today - b.Founded - b.Age);
+        }
+
+        /// <summary>Recognition as the app shows it, tenths of a point (hundredths kept): a day's gain of a few hundredths shows within a day or two, where whole points hid it for days.</summary>
+        public static int Shown(int hundredths)
+        {
+            return BrandCatalogue.Clamp(hundredths, 0, BrandCatalogue.RecMost) / 10;
+        }
+
         /// <summary>A district's figure a day later: a gain counts for less the nearer the figure is to 100, a loss is taken whole, and a little of the figure fades (more where the brand has no shop left).</summary>
         public static int Step(int rec, int gain, bool present)
         {
@@ -177,6 +204,17 @@ namespace RealLifeOverhaul.Economy.Brands
             int grown = gain > 0 ? (int)((long)gain * (BrandCatalogue.RecMost - rec) / BrandCatalogue.RecMost) : gain;
             int faded = BrandCatalogue.Bp(rec, present ? BrandCatalogue.DecayBp : BrandCatalogue.DecayEmptyBp);
             return BrandCatalogue.Clamp(rec + grown - faded, 0, BrandCatalogue.RecMost);
+        }
+
+        /// <summary>A new district's figure after some days of the same shops, customers and standards and no campaign, hundredths: what the Guide quotes for how fast it grows.</summary>
+        public static int After(int shops, int customers, int standards, int days)
+        {
+            int rec = 0, gain = Gain(shops, customers, standards, 0);
+            for (int i = 0; i < days; i++)
+            {
+                rec = Step(rec, gain, shops > 0);
+            }
+            return rec;
         }
 
         /// <summary>A district's file, made if the brand has room for one more.</summary>
@@ -214,16 +252,11 @@ namespace RealLifeOverhaul.Economy.Brands
                     District(b, s.Franchises[i].District, true);
                 }
             }
-            bool pushing = b.Pushing;
             long sum = 0;
             for (int i = 0; i < b.Districts.Count; i++)
             {
                 DistrictFile d = b.Districts[i];
-                int shops = Shops(s, b, d.Name);
-                int campaign = !pushing ? 0
-                    : b.Push == BrandCatalogue.PushCity ? (shops > 0 ? BrandCatalogue.CampaignCityGain : 0)
-                    : string.Equals(d.Name, b.PushDistrict, StringComparison.Ordinal) ? BrandCatalogue.CampaignLocalGain : 0;
-                d.Rec = Step(d.Rec, Gain(shops, Customers(s, b, d.Name), b.Standards, campaign), shops > 0);
+                d.Rec = Step(d.Rec, GainOn(s, b, d, b.Age), Shops(s, b, d.Name) > 0);
                 sum += d.Rec;
             }
             int target = (int)Math.Min(BrandCatalogue.RecMost, sum / BrandCatalogue.CityDistricts);

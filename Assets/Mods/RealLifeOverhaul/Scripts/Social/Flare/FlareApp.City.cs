@@ -213,6 +213,12 @@ namespace RealLifeOverhaul.Flare
             }
             box.Row("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind));
             box.Line(FlareText.Fill("reallife_flare_hire_days", "from", h.From.ToString(), "to", h.To.ToString(), "percent", h.Percent.ToString()));
+            // Its posts: when the first comes, how many have come and when the last did, and where they are.
+            int stage = FlareCast.HireStage(h, day);
+            box.Line(stage == FlareCast.HireBefore ? FlareText.Fill("reallife_flare_hire_posts_from", "day", h.From.ToString())
+                : h.Posted > 0 ? FlareText.Fill("reallife_flare_hire_posts", "count", h.Posted.ToString(), "day", h.LastPost.ToString())
+                : FlareText.T(stage == FlareCast.HireWaiting ? "reallife_flare_hire_posts_none" : "reallife_flare_hire_posts_none_over"));
+            box.Note(FlareText.T("reallife_flare_hire_posts_where"));
             Transform buttons = box.ButtonRow();
             if (!h.Ended)
             {

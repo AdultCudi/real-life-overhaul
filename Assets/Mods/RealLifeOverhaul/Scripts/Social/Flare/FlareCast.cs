@@ -368,21 +368,23 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < f.Influencers.Count; i++)
             {
                 FlareInfluencer inf = f.Influencers[i];
-                if (!inf.Active)
+                FlareHire hire = HireOf(f, inf.Id, day);
+                if (!inf.Active && hire == null)
                 {
-                    continue;
+                    continue;   // (one who has stopped posting still makes the posts of a deal already paid for)
                 }
                 if (inf.ScandalDay == day)
                 {
                     Add(f, inf, day, FlareSource.Apology, null, null, 0);
                     continue;
                 }
-                FlareHire hire = HireOf(f, inf.Id, day);
                 if (hire != null)
                 {
                     if (!(hire.Late && day == hire.From))
                     {
                         Add(f, inf, day, FlareSource.Hired, hire.Place, hire.Name, hire.OffMessage ? 1 : 0);
+                        hire.Posted++;
+                        hire.LastPost = day;
                     }
                     continue;
                 }
@@ -431,6 +433,45 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             FlareRules.Prune(f);
+        }
+
+        /// <summary>
+        /// The posts about a business, for the Business tab: the player's own still on the account (<paramref name="own"/>)
+        /// and the paid posts of every deal there that Flare still has on record. <paramref name="last"/> is the day of the
+        /// newest, -1 with none. One walk over the posts and the deals.
+        /// </summary>
+        public static int PostsAbout(FlareFile f, string place, out int own, out int last)
+        {
+            own = 0;
+            last = -1;
+            int paid = 0;
+            for (int i = 0; i < f.Posts.Count; i++)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Author == FlareAuthor.Player && p.Place == place)
+                {
+                    own++;
+                    last = Math.Max(last, p.Day);
+                }
+            }
+            for (int i = 0; i < f.Hires.Count; i++)
+            {
+                FlareHire h = f.Hires[i];
+                if (h.Place == place && h.Posted > 0)
+                {
+                    paid += h.Posted;
+                    last = Math.Max(last, h.LastPost);
+                }
+            }
+            return own + paid;
+        }
+
+        public const int HireBefore = 0, HireWaiting = 1, HirePosting = 2, HireOver = 3;
+
+        /// <summary>Where a deal stands for its page: before its first day, on but with no post yet (a late first one), posting, or over.</summary>
+        public static int HireStage(FlareHire h, int day)
+        {
+            return h.Ended || day > h.To ? HireOver : day < h.From ? HireBefore : h.Posted > 0 ? HirePosting : HireWaiting;
         }
 
         private static FlareHire HireOf(FlareFile f, int id, int day)
