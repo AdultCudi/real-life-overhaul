@@ -132,6 +132,10 @@ namespace RealLifeOverhaul.Rivals
                 {
                     WriteFootfall(null);   // (the rivals' businesses take nobody while they rest: FootfallOf says nothing)
                 }
+                else
+                {
+                    Resumed(Save.Day);   // (they stood still: the days of the session are not played, and what was dated moves on)
+                }
             }
             int day = Save.Day;
             if (!_resting && day > _file.SettledDay)
@@ -155,7 +159,12 @@ namespace RealLifeOverhaul.Rivals
             }
             _file = file;
             _running = true;
-            _beforeTests = Save.modData != null && Save.modData.TryGetValue(RivalStore.TestKey, out string kept) ? kept : null;
+            _beforeTests = null;
+            Save.modData?.Remove(RivalStore.TestKey);   // (the copy from before the tests is this session's alone: a later load starts without one)
+            if (!fresh)
+            {
+                Resumed(day);   // (switched off, or the save loaded on a later day: the days missed are not played)
+            }
             Logger?.Info("Rivals: " + (fresh ? "a file is opened for this save on day " + day + " (seed " + file.Seed + "); nobody comes forward before the player is worth "
                                                + RivalRules.At(RivalCatalogue.TierFrom[1], Prices.Level) : "the file is read: tier " + file.Tier + ", " + Describe()) + ".");
         }
@@ -164,6 +173,10 @@ namespace RealLifeOverhaul.Rivals
         // 'restore' the customers they took from the player's businesses are written back now.
         private void StandDown(bool keep, bool restore = true)
         {
+            if (_running && Save != null && _file != null)
+            {
+                PayBreakUps(Save.Day);   // (money owed to the player is paid whatever stops the rivals)
+            }
             if (keep && _running && Save != null && _file != null)
             {
                 RivalStore.Save(Save.modData, _file);
@@ -197,6 +210,10 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>For the options page: everything of the rivals' for this save is forgotten, and a new file opens on the next second.</summary>
         public void Forget()
         {
+            if (_running && Save != null && _file != null)
+            {
+                PayBreakUps(int.MaxValue);   // (the save forgets the rivals: what a takeover still owes the player is paid now)
+            }
             StandDown(false);
             _beforeTests = null;
         }
@@ -221,6 +238,7 @@ namespace RealLifeOverhaul.Rivals
         private void PlayDay(int day)
         {
             RivalGame.Read(_world);
+            Holdings();
             RivalDayReport r = RivalRules.Day(_file, _world, day, Strength);
             for (int i = 0; i < _file.Tycoons.Length; i++)
             {
@@ -229,24 +247,9 @@ namespace RealLifeOverhaul.Rivals
                     CameForward(_file.Tycoons[i], day);
                 }
             }
-            for (int i = 0; i < _file.Tycoons.Length; i++)
-            {
-                Tycoon t = _file.Tycoons[i];
-                if (t.Active && !t.Listed && _world.Market)
-                {
-                    t.Listed = List(t);   // (a holding the market could not take when they came forward: asked again each day)
-                }
-            }
             Settle(day);
             Rents(day);
-            long breakUp = RivalRules.BreakUpDue(_file, day);
-            if (breakUp > 0)
-            {
-                TycoonDef d = RivalCatalogue.Tycoons[RivalCatalogue.Clamp(_file.BreakUpTycoon, 0, RivalCatalogue.TycoonCount - 1)];
-                RivalGame.Give(breakUp, RivalGame.BreakUpKey, d.Holding);
-                RivalGame.Tell(NotificationType.Success, "reallife_rival_note_breakup", RivalText.Data("holding", d.Holding, "amount", RivalText.Money(breakUp)), _openPage);
-                Logger?.Info("Rivals: " + d.Holding + "'s parts sold: " + breakUp + " paid to the player.");
-            }
+            PayBreakUps(day);
             RivalMove announced = r.Announced > 0 ? _file.Move(r.Announced) : null;
             if (announced != null)
             {
@@ -268,6 +271,58 @@ namespace RealLifeOverhaul.Rivals
             }
         }
 
+        // The holdings as the market has them now, each day before the rules look at them: a tycoon's flag is the market's
+        // (a market that opened afresh, or one given up to a host, has lost a holding the flag still names); a tycoon in play
+        // whose holding is not listed has it listed again; a holding with no tycoon in play (the data reset, the tests put
+        // back) leaves the market at its price, the player's shares paid out at it.
+        private void Holdings()
+        {
+            for (int i = 0; i < _file.Tycoons.Length; i++)
+            {
+                Tycoon t = _file.Tycoons[i];
+                bool listed = RivalBridges.Holding != null && RivalBridges.Holding(t.Def.StockId, out long _, out long _, out long _, out int _);
+                if (t.Active)
+                {
+                    t.Listed = listed || (_world.Market && List(t));
+                }
+                else
+                {
+                    t.Listed = false;
+                    if (listed && _world.Market && t.DefeatedDay < 0 && RivalBridges.DelistHolding != null && RivalBridges.DelistHolding(t.Def.StockId))
+                    {
+                        Logger?.Info("Rivals: " + t.Def.Holding + " had no tycoon in play and left the stock market at its price.");
+                    }
+                }
+            }
+        }
+
+        // Every takeover's break-up money due by a day, paid with its own notice.
+        private void PayBreakUps(int day)
+        {
+            for (int i = 0; i < _file.Tycoons.Length; i++)
+            {
+                Tycoon t = _file.Tycoons[i];
+                long due = RivalRules.BreakUpDue(t, day);
+                if (due <= 0)
+                {
+                    continue;
+                }
+                RivalGame.Give(due, RivalGame.BreakUpKey, t.Def.Holding);
+                RivalGame.Tell(NotificationType.Success, "reallife_rival_note_breakup", RivalText.Data("holding", t.Def.Holding, "amount", RivalText.Money(due)), _openPage);
+                Logger?.Info("Rivals: " + t.Def.Holding + "'s parts sold: " + due + " paid to the player.");
+            }
+        }
+
+        // Back after standing still: the missed days skipped and the dates moved on (RivalRules.Resume).
+        private void Resumed(int day)
+        {
+            int skipped = RivalRules.Resume(_file, day);
+            if (skipped > 0)
+            {
+                Logger?.Info("Rivals: back after standing still for " + skipped + " day(s): those days are not played, and every move and bar moves on by them.");
+            }
+        }
+
         // The moves that come today are done through their features; those that end are taken off.
         private void Settle(int day)
         {
@@ -281,7 +336,7 @@ namespace RealLifeOverhaul.Rivals
                              + (m.Place.Length > 0 ? " at " + m.Place : string.Empty) + ", size " + m.Amount + (m.State == RivalMoveState.Running ? ", to day " + m.End : string.Empty) + ".");
                 if (done)
                 {
-                    RivalGame.Tell(m.Kind == RivalMoveKind.Bid || m.Kind == RivalMoveKind.Suit ? NotificationType.Error : NotificationType.Warning, RivalText.CameKey(m.Kind), RivalText.MoveData(m), _openPage);
+                    RivalGame.Tell(m.Kind == RivalMoveKind.Bid || m.Kind == RivalMoveKind.Suit ? NotificationType.Error : NotificationType.Warning, RivalText.CameKey(m), RivalText.MoveData(m), _openPage);
                 }
                 else
                 {
@@ -290,6 +345,10 @@ namespace RealLifeOverhaul.Rivals
                 if (m.Kind == RivalMoveKind.Outlet && m.State == RivalMoveState.Running)
                 {
                     WriteFootfall(m);
+                }
+                else if (m.Kind == RivalMoveKind.Property && m.State == RivalMoveState.Running)
+                {
+                    RivalBridges.Revalue?.Invoke();   // (the buildings' prices with the premium from today, not the property business's next day)
                 }
             }
             for (int i = 0; i < _end.Count; i++)
@@ -300,6 +359,10 @@ namespace RealLifeOverhaul.Rivals
                 if (m.Kind == RivalMoveKind.Outlet)
                 {
                     WriteFootfall(m);
+                }
+                else if (m.Kind == RivalMoveKind.Property)
+                {
+                    RivalBridges.Revalue?.Invoke();
                 }
             }
             _land.Clear();
@@ -345,9 +408,10 @@ namespace RealLifeOverhaul.Rivals
                 case RivalMoveKind.Press:
                 {
                     bool smear = RivalBridges.Smear != null && RivalBridges.Smear(m.Place);
+                    bool paper = RivalBridges.Ask(RivalBridges.PaperOn);
                     RivalBridges.Customers?.Invoke((int)m.Amount);
-                    m.Second = smear ? 1 : 0;
-                    return true;   // (the piece is in the paper whatever business pressure could start)
+                    m.Second = (smear ? 1 : 0) | (paper ? 2 : 0);   // (which of its texts is true: a piece in the paper, or word round the city)
+                    return true;
                 }
                 default:
                     return false;
@@ -355,53 +419,49 @@ namespace RealLifeOverhaul.Rivals
         }
 
         // The rent rises of the day: a running buying up at a rented business of the player's, charged at that business.
+        // The rent rises of the day: each of the player's rented businesses once, every running buying up there together and
+        // never more than the most (RivalRules.RentRise), charged at that business from the day after the move comes.
         private void Rents(int day)
         {
-            for (int i = 0; i < _file.Moves.Count; i++)
+            for (int s = 0; s < _world.Shops.Count; s++)
             {
-                RivalMove m = _file.Moves[i];
-                if (m.Kind != RivalMoveKind.Property || m.State != RivalMoveState.Running || !m.Rented || m.Land == day)
+                RivalShop shop = _world.Shops[s];
+                if (!shop.Rented || shop.Rent <= 0)
                 {
                     continue;
                 }
-                int rent = RentAt(m.Place);
-                long rise = RivalRules.RentRise(m, rent);
+                string holding = null;
+                for (int i = 0; i < _file.Moves.Count && holding == null; i++)
+                {
+                    RivalMove m = _file.Moves[i];
+                    holding = m.Kind == RivalMoveKind.Property && m.State == RivalMoveState.Running && m.Rented && m.Place == shop.Place && m.Land < day ? RivalCatalogue.Tycoons[m.Tycoon].Holding : null;
+                }
+                long rise = holding != null ? RivalRules.RentRise(_file, shop.Place, shop.Rent) : 0;
                 if (rise <= 0)
                 {
                     continue;
                 }
-                bool paid = RivalGame.ChargeRent(RivalGame.Business(m.Place), rise, RivalCatalogue.Tycoons[m.Tycoon].Holding);
+                bool paid = RivalGame.ChargeRent(RivalGame.Business(shop.Place), rise, holding);
                 if (Verbose)
                 {
-                    Logger?.Info("Rivals check (rent, " + m.Place + "): the game's rent " + rent + " a day, the rise " + m.Second + " per mille (most " + RivalCatalogue.RentRiseMost + "), charged " + rise + ": "
-                                 + (paid ? "PASS" : "not paid (the cash was not there)"));
+                    Logger?.Info("Rivals check (rent, " + shop.Place + "): the game's rent " + shop.Rent + " a day, all rises together at most " + RivalCatalogue.RentRiseMost + " per mille, charged " + rise + ": "
+                                 + (rise <= (long)shop.Rent * RivalCatalogue.RentRiseMost / 1000L ? (paid ? "PASS" : "not paid (the cash was not there)") : "PAST THE MOST"));
                 }
             }
-        }
-
-        private int RentAt(string place)
-        {
-            for (int i = 0; i < _world.Shops.Count; i++)
-            {
-                if (_world.Shops[i].Place == place)
-                {
-                    return _world.Shops[i].Rented ? _world.Shops[i].Rent : 0;
-                }
-            }
-            return 0;
         }
 
         private void CameForward(Tycoon t, int day)
         {
             t.Listed = _world.Market && List(t);
             TycoonDef d = t.Def;
-            RivalGame.Tell(NotificationType.Warning, "reallife_rival_note_forward", RivalText.Data("rival", d.Name, "holding", d.Holding, "worth", RivalText.Money(t.Worth)), _openPage);
+            RivalGame.Tell(NotificationType.Warning, t.Listed ? "reallife_rival_note_forward" : "reallife_rival_note_forward_unlisted", RivalText.Data("rival", d.Name, "holding", d.Holding, "worth", RivalText.Money(t.Worth)), _openPage);
             Logger?.Info("Rivals: " + d.Name + " comes forward on day " + day + " worth " + t.Worth + "; " + d.Holding + (t.Listed ? " is on the stock market (id " + d.StockId + ")" : " is not on the stock market here yet") + ".");
         }
 
+        // The holding comes to the market sized by the tycoon's fortune: its shares at their price are what they are worth.
         private static bool List(Tycoon t)
         {
-            return RivalBridges.ListHolding != null && RivalBridges.ListHolding(t.Def.StockId);
+            return RivalBridges.ListHolding != null && RivalBridges.ListHolding(t.Def.StockId, t.Worth);
         }
 
         private void Announced(RivalMove m)

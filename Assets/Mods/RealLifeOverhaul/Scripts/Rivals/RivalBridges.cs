@@ -42,8 +42,14 @@ namespace RealLifeOverhaul.Rivals
         public static Func<bool> MarketHere;
         /// <summary>The player's company is listed and trading. Default: no.</summary>
         public static Func<bool> Listed;
-        /// <summary>A holding comes to the market now (its stock id); true if it is listed (or was already).</summary>
-        public static Func<int, bool> ListHolding;
+        /// <summary>Days the player's company has traded on the market (the market's own listing day); -1 while it is not listed.</summary>
+        public static Func<int> CompanyDays;
+        /// <summary>The market's year in days (60 to 365, as the save was started).</summary>
+        public static Func<int> YearDays;
+        /// <summary>A holding comes to the market now (its stock id), sized by its tycoon's fortune (dollars); true if it is listed (or was already).</summary>
+        public static Func<int, long, bool> ListHolding;
+        /// <summary>A holding with no tycoon in play leaves the market at its price, the player's shares paid out at it. True if it did.</summary>
+        public static Func<int, bool> DelistHolding;
         public static HoldingLook Holding;
         /// <summary>A rival's holding (its stock id) buys a block of the player's company and presses its board. True if it did.</summary>
         public static Func<int, bool> Stake;
@@ -71,6 +77,12 @@ namespace RealLifeOverhaul.Rivals
         public static Func<bool> CourtOn;
         /// <summary>A rival's civil claim (the amount, the claimant's name). Its number in the court's books, or 0.</summary>
         public static Func<long, string, int> Sue;
+        /// <summary>A claim not yet judged withdrawn (a test put back). True if there was one.</summary>
+        public static Func<int, bool> Withdraw;
+
+        // ---- property (Economy/Estate)
+        /// <summary>The buildings' values written again now, with a buying up's premium (EstateDirector.Revalue).</summary>
+        public static Action Revalue;
 
         // ---- Standing (Fame)
         /// <summary>Points on the customers' reputation, for a piece in the paper.</summary>
@@ -92,7 +104,12 @@ namespace RealLifeOverhaul.Rivals
             Playthrough = null;
             MarketHere = null;
             Listed = null;
+            CompanyDays = null;
+            YearDays = null;
             ListHolding = null;
+            DelistHolding = null;
+            Withdraw = null;
+            Revalue = null;
             Holding = null;
             Stake = null;
             Bid = null;

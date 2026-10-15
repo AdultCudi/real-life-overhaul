@@ -7,8 +7,10 @@ namespace RealLifeOverhaul.Rivals
     /// The test buttons of the rival tycoons (Options > Tests). Each does at once what otherwise waits for the late game:
     /// one for each kind of move (announced, then come at once, through the very code a day's move goes through), a move
     /// by the rules' own pick, all three tycoons forward, the rich list in the City Ledger, a takeover with nothing paid,
-    /// and "put the rivals back", which undoes every test since the first of the session (the line before it is kept in
-    /// the save under <see cref="RivalStore.TestKey"/>). A button that cannot do its work says why in a notice.
+    /// and "put the rivals back", which puts the rivals' own file back as before the first test of the session and
+    /// withdraws a test's claim. A test's stake, bid, offer, inspection and smear are the market's, the company's and
+    /// business pressure's own and are not undone: their buttons say "real". The copy from before the tests is kept under
+    /// <see cref="RivalStore.TestKey"/> for this session alone. A button that cannot do its work says why in a notice.
     /// </summary>
     public sealed partial class RivalDirector
     {
@@ -277,6 +279,15 @@ namespace RealLifeOverhaul.Rivals
                     TestRefusals.TellKey(Logger, Test, "reallife_rival_test_nothing_back");
                     return;
                 }
+                int withdrawn = 0;
+                for (int i = 0; i < _file.Moves.Count; i++)
+                {
+                    RivalMove m = _file.Moves[i];
+                    if (m.Test && m.Kind == RivalMoveKind.Suit && m.Second > 0 && RivalBridges.Withdraw != null && RivalBridges.Withdraw((int)m.Second))
+                    {
+                        withdrawn++;   // (a test's claim is withdrawn; a stake, a bid, an offer, an inspection and a smear are the market's, the company's and business pressure's own, and stay: their buttons say so)
+                    }
+                }
                 RivalFile back = RivalStore.Read(_beforeTests, out int _);
                 if (back != null)
                 {
@@ -286,7 +297,7 @@ namespace RealLifeOverhaul.Rivals
                 Save.modData?.Remove(RivalStore.TestKey);
                 WriteFootfall(null);
                 RivalGame.Tell(NotificationType.Info, "reallife_rival_test_back_done", null, _openPage);
-                TestDone("put back as before the tests");
+                TestDone("put back as before the tests, " + withdrawn + " test claim(s) withdrawn");
             });
         }
     }

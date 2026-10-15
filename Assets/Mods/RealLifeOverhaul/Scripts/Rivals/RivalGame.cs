@@ -46,6 +46,8 @@ namespace RealLifeOverhaul.Rivals
             into.Cycle = RivalBridges.Cycle != null ? RivalCatalogue.Clamp(RivalBridges.Cycle(), 0, 3) : 1;
             into.Market = RivalBridges.Ask(RivalBridges.MarketHere);
             into.Listed = into.Market && RivalBridges.Ask(RivalBridges.Listed);
+            into.CompanyDays = into.Listed && RivalBridges.CompanyDays != null ? RivalBridges.CompanyDays() : -1;
+            into.YearDays = RivalBridges.YearDays != null ? Math.Max(8, RivalBridges.YearDays()) : 365;
             into.Staff = RivalBridges.Ask(RivalBridges.StaffOn) && RivalBridges.Offer != null;
             into.Issues = RivalBridges.Ask(RivalBridges.IssuesOn);
             into.Court = RivalBridges.Ask(RivalBridges.CourtOn) && RivalBridges.Sue != null;

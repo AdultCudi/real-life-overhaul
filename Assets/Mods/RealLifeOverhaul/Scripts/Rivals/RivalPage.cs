@@ -166,9 +166,10 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Note(RivalText.Fill("reallife_rival_next_note", "day", Math.Max(day + 1, f.NextMoveDay).ToString()));
             }
-            if (f.BreakUp > 0)
+            long breakUp = RivalRules.BreakUpToCome(f, out int breakUpDay);
+            if (breakUp > 0)
             {
-                box.Line(RivalText.Fill("reallife_rival_breakup_line", "amount", RivalText.Money(f.BreakUp), "day", f.BreakUpDay.ToString()), CellTone.Green);
+                box.Line(RivalText.Fill("reallife_rival_breakup_line", "amount", RivalText.Money(breakUp), "day", breakUpDay.ToString()), CellTone.Green);
             }
             box.Note(RivalText.T("reallife_rival_pick_note"));
             UnityEngine.Transform buttons = box.ButtonRow();
@@ -242,7 +243,7 @@ namespace RealLifeOverhaul.Rivals
             box.Chip(RivalText.State(m.State), m.State == RivalMoveState.Running ? CellTone.Red : m.State == RivalMoveState.Announced ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_rival_label_by", d.Name + ", " + d.Holding);
-            box.Line(RivalText.Fill(RivalText.CameKey(m.Kind), RivalText.Pairs(RivalText.MoveData(m))));
+            box.Line(RivalText.Fill(m.State == RivalMoveState.Announced ? RivalText.CameKey(m.Kind) : RivalText.CameKey(m), RivalText.Pairs(RivalText.MoveData(m))));
             box.Row("reallife_rival_label_announced", m.Announced.ToString());
             box.Row(m.State == RivalMoveState.Running ? "reallife_rival_label_ends" : "reallife_rival_label_comes", (m.State == RivalMoveState.Running ? m.End : m.Land).ToString());
             box.Note(RivalText.T(RivalCatalogue.MoveAbout[RivalCatalogue.Clamp((int)m.Kind, 0, RivalCatalogue.MoveAbout.Length - 1)]));

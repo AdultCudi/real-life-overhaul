@@ -9,11 +9,10 @@ namespace RealLifeOverhaul.Rivals
     /// The rival tycoons in a save: one entry of the save's data, short lines. Game-free.
     ///
     ///   reallife:rivals
-    ///     RV|version|seed|start|settled|next move|next id|tier|player worth|player a week ago|week day|top day|
-    ///        break-up money|break-up day|break-up tycoon
+    ///     RV|version|seed|start|settled|next move|next id|tier|player worth|player a week ago|week day|top day
     ///     T|index|worth|a week ago|came forward|taken over|quiet until|slow until|barred until|last move|stake day|bid day|
-    ///        listed|outbid day,poach day,press day,lobby day,takeover day
-    ///     M|id|tycoon|kind|state|announced|comes|ends|amount|second|rented|test|place|name|district|type|who a move
+    ///        listed|outbid day,poach day,press day,lobby day,takeover day|break-up money|break-up day
+    ///     M|id|tycoon|kind|state|announced|comes|ends|amount|second|rented|test|place|name|district|type|who|answered   a move
     ///     C|id|tycoon|kind|day|cost|move                                                                       a counter
     ///
     /// Every number is written in the invariant culture, so what is read back is exactly what was written. A NEWER
@@ -58,8 +57,6 @@ namespace RealLifeOverhaul.Rivals
             Join(b, f.Seed, f.StartDay, f.SettledDay, f.NextMoveDay, f.NextId, f.Tier);
             Join(b, f.PlayerWorth, f.PlayerWeekAgo);
             Join(b, f.WeekDay, f.TopDay);
-            Join(b, f.BreakUp);
-            Join(b, f.BreakUpDay, f.BreakUpTycoon);
             for (int i = 0; i < f.Tycoons.Length; i++)
             {
                 Tycoon t = f.Tycoons[i];
@@ -71,6 +68,8 @@ namespace RealLifeOverhaul.Rivals
                 {
                     b.Append(k > 0 ? "," : string.Empty).Append(t.CounterDay[k].ToString(Inv));
                 }
+                Join(b, t.BreakUp);
+                Join(b, t.BreakUpDay);
             }
             for (int i = 0; i < f.Moves.Count; i++)
             {
@@ -80,6 +79,7 @@ namespace RealLifeOverhaul.Rivals
                 Join(b, m.Amount, m.Second);
                 Join(b, m.Rented ? 1 : 0, m.Test ? 1 : 0);
                 b.Append('|').Append(Clean(m.Place)).Append('|').Append(Clean(m.Name)).Append('|').Append(Clean(m.District)).Append('|').Append(Clean(m.Type)).Append('|').Append(Clean(m.Who));
+                Join(b, m.Answered);
             }
             for (int i = 0; i < f.Counters.Count; i++)
             {
@@ -104,14 +104,14 @@ namespace RealLifeOverhaul.Rivals
             {
                 string[] lines = text.Split('\n');
                 string[] h = lines[0].TrimEnd('\r').Split('|');
-                if (h.Length < 15 || h[0] != Head || !int.TryParse(h[1], NumberStyles.Integer, Inv, out version) || version < 1)
+                if (h.Length < 12 || h[0] != Head || !int.TryParse(h[1], NumberStyles.Integer, Inv, out version) || version < 1)
                 {
                     return null;
                 }
                 var f = new RivalFile
                 {
                     Seed = I(h, 2), StartDay = I(h, 3), SettledDay = I(h, 4), NextMoveDay = I(h, 5), NextId = Math.Max(1, I(h, 6)), Tier = RivalCatalogue.Clamp(I(h, 7), 0, RivalCatalogue.Tiers - 1),
-                    PlayerWorth = L(h, 8), PlayerWeekAgo = L(h, 9), WeekDay = I(h, 10), TopDay = I(h, 11), BreakUp = Math.Max(0L, L(h, 12)), BreakUpDay = I(h, 13), BreakUpTycoon = I(h, 14)
+                    PlayerWorth = L(h, 8), PlayerWeekAgo = L(h, 9), WeekDay = I(h, 10), TopDay = I(h, 11)
                 };
                 for (int i = 1; i < lines.Length; i++)
                 {
@@ -168,6 +168,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 t.CounterDay[k] = int.Parse(days[k], NumberStyles.Integer, Inv);
             }
+            if (c.Length > 15)
+            {
+                t.BreakUp = Math.Max(0L, L(c, 14));
+                t.BreakUpDay = I(c, 15);
+            }
         }
 
         private static void Move(RivalFile f, string[] c)
@@ -188,7 +193,7 @@ namespace RealLifeOverhaul.Rivals
             f.Moves.Add(new RivalMove
             {
                 Id = I(c, 1), Tycoon = tycoon, Kind = (RivalMoveKind)kind, State = (RivalMoveState)state, Announced = I(c, 5), Land = I(c, 6), End = I(c, 7), Amount = L(c, 8), Second = L(c, 9),
-                Rented = I(c, 10) != 0, Test = I(c, 11) != 0, Place = c[12], Name = c[13], District = c[14], Type = c[15], Who = c.Length > 16 ? c[16] : string.Empty
+                Rented = I(c, 10) != 0, Test = I(c, 11) != 0, Place = c[12], Name = c[13], District = c[14], Type = c[15], Who = c.Length > 16 ? c[16] : string.Empty, Answered = c.Length > 17 ? I(c, 17) : 0
             });
         }
 

@@ -16,7 +16,9 @@ namespace RealLifeOverhaul.Rivals
         public int LastMoveDay = -1;
         public int StakeDay = -1;              // the day their stake in the player's company came
         public int BidDay = -1;                // the day their bid for it came
-        public bool Listed;                    // their holding has come to the stock market
+        public bool Listed;                    // their holding is on the stock market here: read again from the market each day
+        public long BreakUp;                   // the break-up money of their holding still to come to the player (taken over)
+        public int BreakUpDay;                 // ...on this day
         public readonly int[] CounterDay = { -1000, -1000, -1000, -1000, -1000 };   // the day each counter was last used against them
 
         public bool Active => ActiveDay >= 0 && DefeatedDay < 0;
@@ -42,6 +44,7 @@ namespace RealLifeOverhaul.Rivals
         public bool Rented;                    // property: the player's business there pays rent
         public bool Test;                      // made by a test button
         public string Who = string.Empty;      // a poaching: the employee approached, as the company named them
+        public int Answered;                   // a bit for each of the player's answers used against this move: each once
 
         public bool Live => State == RivalMoveState.Announced || State == RivalMoveState.Running;
     }
@@ -73,9 +76,6 @@ namespace RealLifeOverhaul.Rivals
         public long PlayerWeekAgo;
         public int WeekDay = -1;               // the day of the last weekly mark
         public int TopDay = -1;                // the first day the player topped the rich list; -1 while they never have
-        public long BreakUp;                   // a takeover's break-up money still to come to the player
-        public int BreakUpDay;                 // ...on this day
-        public int BreakUpTycoon = -1;
         public readonly Tycoon[] Tycoons = new Tycoon[RivalCatalogue.TycoonCount];
         public readonly List<RivalMove> Moves = new List<RivalMove>(RivalCatalogue.MovesKept + 2);
         public readonly List<RivalCounterNote> Counters = new List<RivalCounterNote>(RivalCatalogue.CountersKept + 2);
@@ -131,6 +131,8 @@ namespace RealLifeOverhaul.Rivals
     public sealed class RivalWorld
     {
         public long Worth;                     // the player's net worth, as the Finance app shows it
+        public int CompanyDays = -1;           // days the player's company has traded on the market; -1 while it is not listed
+        public int YearDays = 365;             // the market's year, for a quarter of it
         public int Level = 1000;               // the city's price level, tenths of a point
         public int Cycle = 1;                  // the city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession
         public bool Listed;                    // the player's company is on the stock market, settled
@@ -144,6 +146,8 @@ namespace RealLifeOverhaul.Rivals
         public void Clear()
         {
             Worth = 0;
+            CompanyDays = -1;
+            YearDays = 365;
             Level = 1000;
             Cycle = 1;
             Listed = Market = Staff = Issues = Court = Paper = false;

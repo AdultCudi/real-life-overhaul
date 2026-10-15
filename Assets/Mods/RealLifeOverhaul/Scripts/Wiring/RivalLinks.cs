@@ -53,7 +53,10 @@ namespace RealLifeOverhaul
                 RivalBridges.Playthrough = Playthrough;
                 RivalBridges.MarketHere = () => Settings.Markets && MarketDirector.Instance != null && MarketDirector.Instance.RivalsMayAct;
                 RivalBridges.Listed = () => MarketDirector.Instance != null && MarketDirector.Instance.MyCompany != null;
-                RivalBridges.ListHolding = id => MarketDirector.Instance != null && MarketDirector.Instance.ListHolding(id);
+                RivalBridges.CompanyDays = () => MarketDirector.Instance != null ? MarketDirector.Instance.CompanyDays() : -1;
+                RivalBridges.YearDays = () => MarketDirector.Instance != null ? MarketDirector.Instance.YearDays : 365;
+                RivalBridges.ListHolding = (id, worth) => MarketDirector.Instance != null && MarketDirector.Instance.ListHolding(id, worth);
+                RivalBridges.DelistHolding = id => MarketDirector.Instance != null && MarketDirector.Instance.DelistHolding(id);
                 RivalBridges.Holding = Holding;
                 RivalBridges.Stake = id => MarketDirector.Instance != null && MarketDirector.Instance.RivalStake(id);
                 RivalBridges.Bid = id => MarketDirector.Instance != null && MarketDirector.Instance.RivalBid(id);
@@ -67,6 +70,8 @@ namespace RealLifeOverhaul
                 RivalBridges.Offer = Offer;
                 RivalBridges.CourtOn = () => DebtClaims.Available;
                 RivalBridges.Sue = RivalClaims.File;
+                RivalBridges.Withdraw = Withdraw;
+                RivalBridges.Revalue = () => EstateDirector.Instance?.Revalue();
                 RivalBridges.Customers = delta => FameDirector.Instance?.Moved(FamePart.Customers, FameCause.Press, delta);
                 RivalBridges.PaperOn = () => Settings.SocialNewspaper;
                 RivalBridges.ShowList = ShowList;
@@ -92,6 +97,30 @@ namespace RealLifeOverhaul
                 EstateBridges.Premium = null;
                 News.Extra = _extraBefore;
                 _extraBefore = null;
+            }
+
+            // A test's claim withdrawn: the claimant is the holding that filed it, read from the court's own record of it.
+            private static bool Withdraw(int number)
+            {
+                try
+                {
+                    RivalDirector d = RivalDirector.Instance;
+                    RivalFile f = d != null ? d.File : null;
+                    string claimant = string.Empty;
+                    for (int i = 0; f != null && i < f.Moves.Count; i++)
+                    {
+                        if (f.Moves[i].Kind == RivalMoveKind.Suit && f.Moves[i].Second == number)
+                        {
+                            claimant = RivalCatalogue.Tycoons[f.Moves[i].Tycoon].Holding;
+                        }
+                    }
+                    return RivalClaims.Withdraw(number, claimant);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Withdraw", e);
+                    return false;
+                }
             }
 
             private static ulong Playthrough()

@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Rivals
                 }
                 r.Days++;
             }
-            r.Activated = Activate(f, tier, day, w.Level, w.Worth, strength);
+            r.Activated = Activate(f, tier, day, w.Level, w.Worth, strength, RivalCatalogue.ForwardPerDay);
             f.Tier = tier;
             f.PlayerWorth = w.Worth;
             if (f.WeekDay < 0 || day - f.WeekDay >= 7)
@@ -223,14 +223,14 @@ namespace RealLifeOverhaul.Rivals
         /// Tycoons come forward in their order until as many have as the tier asks, each worth at least their start and
         /// <see cref="RivalCatalogue.ForwardShare"/> of their aim against the player's worth; a bit for each that came today.
         /// </summary>
-        public static int Activate(RivalFile f, int tier, int day, int level, long playerWorth = 0, int strength = RivalCatalogue.Normal)
+        public static int Activate(RivalFile f, int tier, int day, int level, long playerWorth = 0, int strength = RivalCatalogue.Normal, int most = RivalCatalogue.TycoonCount)
         {
-            int want = RivalCatalogue.ActiveAt[RivalCatalogue.Clamp(tier, 0, RivalCatalogue.Tiers - 1)], came = 0, have = 0;
+            int want = RivalCatalogue.ActiveAt[RivalCatalogue.Clamp(tier, 0, RivalCatalogue.Tiers - 1)], came = 0, have = 0, now = 0;
             for (int i = 0; i < f.Tycoons.Length; i++)
             {
                 have += f.Tycoons[i].ActiveDay >= 0 ? 1 : 0;
             }
-            for (int i = 0; i < f.Tycoons.Length && have < want; i++)
+            for (int i = 0; i < f.Tycoons.Length && have < want && now < most; i++)
             {
                 Tycoon t = f.Tycoons[i];
                 if (t.ActiveDay >= 0)
@@ -241,9 +241,53 @@ namespace RealLifeOverhaul.Rivals
                 t.Worth = Math.Max(Math.Max(t.Worth, At(t.Def.StartWorth, level)), Aim(t, playerWorth, tier, strength, level) / 1000L * RivalCatalogue.ForwardShare);
                 t.WeekAgo = t.Worth;
                 have++;
+                now++;
                 came |= 1 << i;
             }
             return came;
+        }
+
+        /// <summary>
+        /// The rivals come back after standing still (switched off, or at rest in a Going Public session): the days they
+        /// missed are not played, and everything dated after the last day played moves on by those days (an announced
+        /// move's day, the next move's, a running move's end, the counters' bars, a break-up's pay day), so nothing comes
+        /// sooner or later than it would have without the pause. Returns the days skipped.
+        /// </summary>
+        public static int Resume(RivalFile f, int day)
+        {
+            if (f == null || f.SettledDay < 0 || day - 1 <= f.SettledDay)
+            {
+                return 0;
+            }
+            int skipped = day - 1 - f.SettledDay;
+            f.SettledDay = day - 1;
+            f.NextMoveDay += skipped;
+            for (int i = 0; i < f.Moves.Count; i++)
+            {
+                RivalMove m = f.Moves[i];
+                if (m.State == RivalMoveState.Announced)
+                {
+                    m.Land += skipped;
+                    m.End += skipped;
+                }
+                else if (m.State == RivalMoveState.Running)
+                {
+                    m.End += skipped;
+                }
+            }
+            for (int i = 0; i < f.Tycoons.Length; i++)
+            {
+                Tycoon t = f.Tycoons[i];
+                t.QuietUntil += t.QuietUntil > f.SettledDay - skipped ? skipped : 0;
+                t.SlowUntil += t.SlowUntil > f.SettledDay - skipped ? skipped : 0;
+                t.BarredUntil += t.BarredUntil > f.SettledDay - skipped ? skipped : 0;
+                t.BreakUpDay += t.BreakUp > 0 ? skipped : 0;
+            }
+            if (f.WeekDay >= 0)
+            {
+                f.WeekDay += skipped;
+            }
+            return skipped;
         }
 
         public static bool AnyActive(RivalFile f)
@@ -364,18 +408,38 @@ namespace RealLifeOverhaul.Rivals
             bool shops = w.Shops.Count > 0;
             switch (kind)
             {
-                case RivalMoveKind.Property: return shops && day >= t.BarredUntil;
+                case RivalMoveKind.Property: return shops && day >= t.BarredUntil && !PropertyAt(f, w.Shops[Best(w)].Place);
                 case RivalMoveKind.Outlet: return shops && LiveCount(f, RivalMoveKind.Outlet) < RivalCatalogue.OutletsMost && OutletShop(f, w) >= 0;
                 case RivalMoveKind.Poach: return shops && w.Staff;
-                case RivalMoveKind.Stake: return tier >= RivalCatalogue.StakeTier && w.Listed && w.Market && (t.StakeDay < 0 || day - t.StakeDay >= RivalCatalogue.BidRestDays);
+                case RivalMoveKind.Stake: return tier >= RivalCatalogue.StakeTier && CompanyOld(w) && t.Listed && (t.StakeDay < 0 || day - t.StakeDay >= RivalCatalogue.BidRestDays);
                 case RivalMoveKind.Bid:
-                    return tier >= RivalCatalogue.BidTier && w.Listed && w.Market && t.Listed && t.StakeDay >= 0 && day - t.StakeDay <= RivalCatalogue.BidAfterStakeDays
+                    return tier >= RivalCatalogue.BidTier && CompanyOld(w) && t.Listed && t.StakeDay >= 0 && day - t.StakeDay <= RivalCatalogue.BidAfterStakeDays
                            && (t.BidDay < 0 || day - t.BidDay >= RivalCatalogue.BidRestDays);
                 case RivalMoveKind.Lobby: return shops && w.Issues && day >= t.BarredUntil && LiveCount(f, RivalMoveKind.Lobby) == 0;
                 case RivalMoveKind.Suit: return w.Court && w.Worth > 0;
                 case RivalMoveKind.Press: return w.Paper || (shops && w.Issues);
                 default: return false;
             }
+        }
+
+        /// <summary>The player's company is listed here and has traded long enough for a stake or a bid (the market's guard for a new listing).</summary>
+        public static bool CompanyOld(RivalWorld w)
+        {
+            return w.Listed && w.Market && w.CompanyDays >= Math.Max(8, w.YearDays) / 4 * RivalCatalogue.CompanyQuarters;
+        }
+
+        /// <summary>True while a buying up is announced or running at a place of the player's: never two at one business.</summary>
+        public static bool PropertyAt(RivalFile f, string place)
+        {
+            for (int i = 0; i < f.Moves.Count; i++)
+            {
+                RivalMove m = f.Moves[i];
+                if (m.Kind == RivalMoveKind.Property && m.Live && m.Place == place)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Moves of a kind announced or running.</summary>
@@ -642,14 +706,26 @@ namespace RealLifeOverhaul.Rivals
             return (int)Math.Min(RivalCatalogue.LobbyWeightMost, most);
         }
 
-        /// <summary>A day's rent rise at a business of the player's, in money: every running buying up there of a rented business, its rise on the rent.</summary>
-        public static long RentRise(RivalMove m, int rent)
+        /// <summary>
+        /// A day's rent rise at a business of the player's, in money: every running buying up of it as a rented business
+        /// together, never more than <see cref="RivalCatalogue.RentRiseMost"/> on its rent.
+        /// </summary>
+        public static long RentRise(RivalFile f, string place, int rent)
         {
-            if (m == null || m.Kind != RivalMoveKind.Property || m.State != RivalMoveState.Running || !m.Rented || rent <= 0)
+            if (f == null || string.IsNullOrEmpty(place) || rent <= 0)
             {
                 return 0;
             }
-            return (long)rent * Math.Min(RivalCatalogue.RentRiseMost, m.Second) / 1000L;
+            long rise = 0;
+            for (int i = 0; i < f.Moves.Count; i++)
+            {
+                RivalMove m = f.Moves[i];
+                if (m.Kind == RivalMoveKind.Property && m.State == RivalMoveState.Running && m.Rented && m.Place == place)
+                {
+                    rise += Math.Max(0L, m.Second);
+                }
+            }
+            return (long)rent * Math.Min(RivalCatalogue.RentRiseMost, rise) / 1000L;
         }
 
         // ---------------------------------------------------------------- the player's counters
@@ -662,7 +738,8 @@ namespace RealLifeOverhaul.Rivals
             {
                 return 0;
             }
-            return RivalCatalogue.Clamp(Math.Max(0L, worth) / 10000L * RivalCatalogue.CounterShare[k], At(RivalCatalogue.CounterLeast[k], level), At(RivalCatalogue.CounterMost[k], level));
+            long most = At(RivalCatalogue.CounterMost[k], level) * RivalCatalogue.CounterTierScale[Tier(worth, level)];
+            return RivalCatalogue.Clamp(Math.Max(0L, worth) / 10000L * RivalCatalogue.CounterShare[k], At(RivalCatalogue.CounterLeast[k], level), most);
         }
 
         /// <summary>Why a counter cannot be used against a tycoon today (None: it can), and the move it would stop (outbid: a live buying up or business; lobby: a running lobbying; press: an announced move), or null.</summary>
@@ -683,20 +760,23 @@ namespace RealLifeOverhaul.Rivals
             {
                 case RivalCounter.Outbid:
                     target = FirstOf(f, tycoon, RivalMoveKind.Property, RivalMoveKind.Outlet, false);
-                    return target != null ? RivalWhy.None : RivalWhy.Nothing;
+                    return target == null ? RivalWhy.Nothing : Used(target, kind) ? RivalWhy.Rest : RivalWhy.None;
                 case RivalCounter.Lobby:
                     target = FirstOf(f, tycoon, RivalMoveKind.Lobby, RivalMoveKind.Lobby, true);
-                    return RivalWhy.None;
+                    return target != null && Used(target, kind) ? RivalWhy.Rest : RivalWhy.None;
                 case RivalCounter.Press:
                 {
                     RivalMove pending = f.Pending();
-                    target = pending != null && pending.Tycoon == tycoon ? pending : null;
-                    return RivalWhy.None;
+                    target = pending != null && pending.Tycoon == tycoon && pending.Kind != RivalMoveKind.Bid ? pending : null;   // (a bid is answered by the founder's own defences, not a piece in the paper)
+                    return target != null && Used(target, kind) ? RivalWhy.Rest : RivalWhy.None;
                 }
                 default:
                     return RivalWhy.None;
             }
         }
+
+        // True when an answer has been used against a move already: each is used once against one move.
+        private static bool Used(RivalMove m, RivalCounter kind) => (m.Answered & (1 << (int)kind)) != 0;
 
         // The first live move of a tycoon of either kind (running only when asked).
         private static RivalMove FirstOf(RivalFile f, int tycoon, RivalMoveKind a, RivalMoveKind b, bool runningOnly)
@@ -753,6 +833,10 @@ namespace RealLifeOverhaul.Rivals
                     break;
             }
             t.CounterDay[(int)kind] = day;
+            if (target != null)
+            {
+                target.Answered |= 1 << (int)kind;
+            }
             return Note(f, tycoon, kind, day, cost, target != null ? target.Id : 0);
         }
 
@@ -774,12 +858,20 @@ namespace RealLifeOverhaul.Rivals
         /// parts bring back after <see cref="RivalCatalogue.BreakUpDays"/>: those shares at its price, per mille. The player's
         /// own shares are paid out at its price by the market as it leaves. Prices in cents, money in dollars.
         /// </summary>
-        public static void TakeoverTerms(long shares, long held, int midCents, out long cost, out long breakUp)
+        public static void TakeoverTerms(long shares, long held, int midCents, long fortune, out long cost, out long breakUp)
         {
+            shares = Math.Max(1L, shares);
             long others = Math.Max(0L, shares - Math.Max(0L, held));
-            long value = others / 100L * Math.Max(0, midCents) + others % 100L * Math.Max(0, midCents) / 100L;   // (cents a share times shares, in dollars, without passing the long's range)
+            long cents = Math.Max(Math.Max(0, midCents), WorthCents(fortune, shares));   // (the holding is the tycoon's fortune: never bought for less than it is worth a share)
+            long value = others / 100L * cents + others % 100L * cents / 100L;   // (cents a share times shares, in dollars, without passing the long's range)
             cost = value + value / 10000L * RivalCatalogue.TakeoverPremiumBp;
             breakUp = value / 1000L * RivalCatalogue.BreakUpPermille;
+        }
+
+        /// <summary>A fortune a share of a holding, in cents.</summary>
+        public static long WorthCents(long fortune, long shares)
+        {
+            return shares > 0 && fortune > 0 ? fortune / shares * 100L + fortune % shares * 100L / shares : 0L;
         }
 
         /// <summary>Why the player cannot take a holding over: it is not listed here, or they hold less than the most one holder may (in shares).</summary>
@@ -809,23 +901,39 @@ namespace RealLifeOverhaul.Rivals
                     f.Moves[i].State = RivalMoveState.Stopped;
                 }
             }
-            f.BreakUp += Math.Max(0L, breakUp);
-            f.BreakUpDay = day + RivalCatalogue.BreakUpDays;
-            f.BreakUpTycoon = tycoon;
+            t.BreakUp = Math.Max(0L, breakUp);
+            t.BreakUpDay = day + RivalCatalogue.BreakUpDays;
             return Note(f, tycoon, RivalCounter.Takeover, day, cost, 0);
         }
 
-        /// <summary>The break-up money due today, taken off the file (0 when none is).</summary>
-        public static long BreakUpDue(RivalFile f, int day)
+        /// <summary>A tycoon's break-up money due by a day, taken off the file (0 when none is): each takeover has its own pay day.</summary>
+        public static long BreakUpDue(Tycoon t, int day)
         {
-            if (f.BreakUp <= 0 || day < f.BreakUpDay)
+            if (t == null || t.BreakUp <= 0 || day < t.BreakUpDay)
             {
                 return 0;
             }
-            long due = f.BreakUp;
-            f.BreakUp = 0;
-            f.BreakUpDay = 0;
+            long due = t.BreakUp;
+            t.BreakUp = 0;
+            t.BreakUpDay = 0;
             return due;
+        }
+
+        /// <summary>The break-up money still to come, all takeovers together, and the soonest pay day (0 for none).</summary>
+        public static long BreakUpToCome(RivalFile f, out int day)
+        {
+            long total = 0;
+            day = 0;
+            for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+            {
+                Tycoon t = f.Tycoons[i];
+                if (t.BreakUp > 0)
+                {
+                    total += t.BreakUp;
+                    day = day == 0 ? t.BreakUpDay : Math.Min(day, t.BreakUpDay);
+                }
+            }
+            return total;
         }
 
         // ---------------------------------------------------------------- the rich list

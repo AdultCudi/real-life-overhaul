@@ -1,3 +1,5 @@
+using System;
+
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>The transaction key of a takeover of a rival's holding. It has a text and a "_label" in en.json; "shares_" puts it under investments in the Finance app.</summary>
@@ -30,19 +32,50 @@ namespace RealLifeOverhaul.Markets
         /// <summary>True while the market runs here on its own: the rivals act on it only then.</summary>
         public bool RivalsMayAct => Running && !_following;
 
-        /// <summary>A rival's holding comes to the market now. True if it is listed (or already was).</summary>
-        public bool ListHolding(int id)
+        /// <summary>A rival's holding comes to the market now, sized by its tycoon's fortune (dollars). True if it is listed (or already was).</summary>
+        public bool ListHolding(int id, long worth)
         {
             if (!OwnMarket())
             {
                 return false;
             }
-            bool listed = _engine.ListHolding(id);
+            bool listed = _engine.ListHolding(id, worth);
             if (listed)
             {
                 Moved();
             }
             return listed;
+        }
+
+        /// <summary>A rival's holding with no tycoon in play leaves the market at its price, the player's shares paid at it. True if it did.</summary>
+        public bool DelistHolding(int id)
+        {
+            if (!OwnMarket())
+            {
+                return false;
+            }
+            bool gone = _engine.DelistHolding(id);
+            if (gone)
+            {
+                Moved();
+            }
+            return gone;
+        }
+
+        /// <summary>Days the player's company has traded on the market; -1 while it is not listed.</summary>
+        public int CompanyDays()
+        {
+            Stock own = MyCompany;
+            return own != null ? Math.Max(0, _engine.State.Day - own.ListedDay) : -1;
+        }
+
+        /// <summary>The market's year in days.</summary>
+        public int YearDays => Year;
+
+        // A company the market's own guard keeps safe: newer than a quarter of a year.
+        private bool Young(Stock own)
+        {
+            return _engine.State.Day - own.ListedDay < Year / 4;
         }
 
         /// <summary>A holding as the market has it: listed, its shares, the player's, the most one holder may have, its price in cents.</summary>
@@ -67,11 +100,11 @@ namespace RealLifeOverhaul.Markets
         {
             Stock own = OwnMarket() ? MyCompany : null;
             Stock holding = own != null ? _engine.State.Stock(holdingId) : null;
-            if (own == null || holding == null || !holding.Listed || own.BidCents > 0 || own.Own.ActBp > 0)
+            if (own == null || holding == null || !holding.Listed || own.BidCents > 0 || own.Own.ActBp > 0 || Young(own))
             {
                 return false;
             }
-            ActivistDemand demand = ListingVotes.Reason(own, _engine.State.IndexLast, _engine.State.Day + 1000, Year, out double _);
+            ActivistDemand demand = ListingVotes.Reason(own, _engine.State.IndexLast, _engine.State.Day, Year, out double _);
             bool pressed = _engine.PressBoard(own.Id, demand == ActivistDemand.None ? ActivistDemand.Payout : demand);
             if (pressed)
             {
@@ -86,7 +119,7 @@ namespace RealLifeOverhaul.Markets
         {
             Stock own = OwnMarket() ? MyCompany : null;
             Stock holding = own != null ? _engine.State.Stock(holdingId) : null;
-            if (own == null || holding == null || !holding.Listed || !_engine.BidBy(own.Id, holdingId))
+            if (own == null || holding == null || !holding.Listed || Young(own) || !_engine.BidBy(own.Id, holdingId))
             {
                 return false;
             }

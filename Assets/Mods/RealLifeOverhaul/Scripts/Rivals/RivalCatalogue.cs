@@ -127,6 +127,7 @@ namespace RealLifeOverhaul.Rivals
 
         public const int StakeTier = 2;            // a stake in the player's listed company from hundreds of millions
         public const int BidTier = 3;              // a bid for it from billions
+        public const int CompanyQuarters = 1;      // no stake or bid before the player's company has traded this many quarters of a year: the market's own guard for a new listing
 
         // ---------------------------------------------------------------- the strength option
 
@@ -159,6 +160,7 @@ namespace RealLifeOverhaul.Rivals
         public const int CatchMostBp = 150;        // ...but never by more than this a day (basis points of their worth): a rival is never made overnight
         public const int SlowShare = 500;          // per mille of their growth while a counter has slowed them
         public const int ForwardShare = 500;       // a tycoon comes forward worth at least this share of their aim, per mille: a rival a player already rich takes notice of
+        public const int ForwardPerDay = 1;        // tycoons who come forward on one day, at most: a player rich on their first day meets them over a few days
 
         // ---------------------------------------------------------------- the moves, at the Normal strength and the tier of hundreds of millions
 
@@ -200,8 +202,11 @@ namespace RealLifeOverhaul.Rivals
         public static readonly long[] CounterLeast = { 50000L, 25000L, 10000L, 25000L, 0L };
         public static readonly long[] CounterMost = { 20000000L, 10000000L, 5000000L, 10000000L, 0L };
 
-        /// <summary>Days before the same counter can be used against the same tycoon again.</summary>
-        public static readonly int[] CounterRestDays = { 0, 30, 14, 30, 0 };
+        /// <summary>What the most above is multiplied by at each tier: an answer costs its share of the worth at the top, not a rounding error of it.</summary>
+        public static readonly int[] CounterTierScale = { 1, 1, 5, 25, 100 };
+
+        /// <summary>Days before the same counter can be used against the same tycoon again (and each is used once against one move at most).</summary>
+        public static readonly int[] CounterRestDays = { 7, 30, 14, 30, 0 };
 
         public const int PoachQuietDays = 10;      // a counter-poach: the rival's next move waits this many days...
         public const int PoachSlowDays = 30;       // ...and their fortune grows at half the pace for this many

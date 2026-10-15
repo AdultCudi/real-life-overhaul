@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Rivals
             RivalWhy why = RivalRules.CanTakeOver(_file, tycoon, listed, held, most);
             if (listed)
             {
-                RivalRules.TakeoverTerms(shares, held, mid, out cost, out breakUp);
+                RivalRules.TakeoverTerms(shares, held, mid, _file.Tycoons[tycoon].Worth, out cost, out breakUp);
             }
             return why == RivalWhy.None && RivalGame.Cash < cost ? RivalWhy.Money : why;
         }
@@ -91,6 +91,10 @@ namespace RealLifeOverhaul.Rivals
                 {
                     WriteFootfall(stopped);
                 }
+                else if (stopped != null && stopped.Kind == RivalMoveKind.Property)
+                {
+                    RivalBridges.Revalue?.Invoke();
+                }
                 RivalGame.Tell(NotificationType.Success, RivalText.CounterDoneKey(kind), RivalText.Data("rival", d.Name, "holding", d.Holding, "amount", RivalText.Money(cost)), _openPage);
                 Logger?.Info("Rivals: the player's " + kind + " against " + d.Name + " for " + cost + (stopped != null ? ", stopping " + stopped.Kind + " (move " + stopped.Id + ")" : string.Empty) + ".");
                 return null;
@@ -119,7 +123,7 @@ namespace RealLifeOverhaul.Rivals
             WriteFootfall(null);
             RivalGame.Tell(NotificationType.Success, RivalText.CounterDoneKey(RivalCounter.Takeover), RivalText.Data("rival", d.Name, "holding", d.Holding, "amount", RivalText.Money(cost),
                 "back", RivalText.Money(breakUp), "days", RivalCatalogue.BreakUpDays.ToString()), _openPage);
-            Logger?.Info("Rivals: the player took " + d.Holding + " over for " + cost + "; " + d.Name + " is out; its parts bring " + breakUp + " on day " + _file.BreakUpDay + ".");
+            Logger?.Info("Rivals: the player took " + d.Holding + " over for " + cost + "; " + d.Name + " is out; its parts bring " + breakUp + " on day " + _file.Tycoons[tycoon].BreakUpDay + ".");
             return null;
         }
 

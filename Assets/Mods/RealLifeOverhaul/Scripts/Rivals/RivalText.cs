@@ -147,6 +147,20 @@ namespace RealLifeOverhaul.Rivals
         public static string CounterAbout(RivalCounter kind) => T(CounterAboutKeys[RivalCatalogue.Clamp((int)kind, 0, CounterAboutKeys.Length - 1)]);
         public static string CounterDoneKey(RivalCounter kind) => CounterDoneKeys[RivalCatalogue.Clamp((int)kind, 0, CounterDoneKeys.Length - 1)];
         public static string CameKey(RivalMoveKind kind) => CameKeys[RivalCatalogue.Clamp((int)kind, 0, CameKeys.Length - 1)];
+
+        /// <summary>A move's notice as it came, the true one of its texts: a lobbying with no inspection called in, a piece with the paper off.</summary>
+        public static string CameKey(RivalMove m)
+        {
+            if (m.Kind == RivalMoveKind.Lobby && m.Second == 0)
+            {
+                return "reallife_rival_came_lobby_quiet";
+            }
+            if (m.Kind == RivalMoveKind.Press && (m.Second & 2) == 0)
+            {
+                return "reallife_rival_came_press_word";
+            }
+            return CameKey(m.Kind);
+        }
         public static string PaperCameKey(RivalMoveKind kind) => PaperCameKeys[RivalCatalogue.Clamp((int)kind, 0, PaperCameKeys.Length - 1)];
         public static string PaperDoneKey(RivalCounter kind) => PaperDoneKeys[RivalCatalogue.Clamp((int)kind, 0, PaperDoneKeys.Length - 1)];
 

@@ -35,5 +35,24 @@ namespace RealLifeOverhaul
             JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for " + claim + " filed by " + claimant + " (a rival tycoon's holding), answer by day " + (today + DebtClaims.AnswerDays) + ".");
             return number;
         }
+
+        /// <summary>A claim of a rival's not yet judged is withdrawn (a test put back). True if there was one.</summary>
+        public static bool Withdraw(int number, string claimant)
+        {
+            List<JusticeSuit> suits = JusticeState.Suits;
+            for (int i = suits.Count - 1; number > 0 && i >= 0; i--)
+            {
+                if (suits[i].Number != number)
+                {
+                    continue;
+                }
+                int amount = suits[i].Claim;
+                suits.RemoveAt(i);
+                LegalPhone.Send("reallife_text_justice_suit_rival_withdrawn", new Dictionary<string, string> { { "rival", claimant ?? string.Empty }, { "amount", JusticeText.Money(amount) } });
+                JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for " + amount + " by " + claimant + " was withdrawn (a test put back).");
+                return true;
+            }
+            return false;
+        }
     }
 }

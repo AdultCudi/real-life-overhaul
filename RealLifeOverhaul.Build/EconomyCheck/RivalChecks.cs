@@ -24,12 +24,13 @@ internal static partial class Program
         RivalSave();
         RivalSpeed();
         RivalWords();
+        RivalReview();   // the review's fixes (RivalReviewChecks.cs)
     }
 
     // A world for the rules: the player's worth, a few businesses of theirs, every feature a move goes through on.
     private static RivalWorld RivalWorldOf(long worth, int shops = 3, bool listed = true)
     {
-        var w = new RivalWorld { Worth = worth, Level = 1000, Cycle = 1, Listed = listed, Market = true, Staff = true, Issues = true, Court = true, Paper = true };
+        var w = new RivalWorld { Worth = worth, Level = 1000, Cycle = 1, Listed = listed, Market = true, Staff = true, Issues = true, Court = true, Paper = true, CompanyDays = listed ? 1000 : -1, YearDays = 120 };
         for (int i = 0; i < shops; i++)
         {
             w.Shops.Add(new RivalShop
@@ -249,13 +250,13 @@ internal static partial class Program
             f.Moves.Add(new RivalMove { Id = i + 1, Kind = RivalMoveKind.Outlet, State = RivalMoveState.Running, District = "d", Type = "t", Amount = RivalCatalogue.OutletDipMost - 1 });
         }
         f.Moves.Add(new RivalMove { Id = 9, Kind = RivalMoveKind.Outlet, State = RivalMoveState.Announced, District = "d2", Type = "t", Amount = 5 });
-        f.Moves.Add(new RivalMove { Id = 10, Kind = RivalMoveKind.Property, State = RivalMoveState.Running, District = "d", Amount = 999, Second = 999, Rented = true });
+        f.Moves.Add(new RivalMove { Id = 10, Kind = RivalMoveKind.Property, State = RivalMoveState.Running, District = "d", Place = "p", Amount = 999, Second = 999, Rented = true });
         f.Moves.Add(new RivalMove { Id = 11, Kind = RivalMoveKind.Lobby, State = RivalMoveState.Running, Amount = 5000 });
         Check(RivalRules.OutletDip(f, "d", "t") == -RivalCatalogue.OutletDipMost && RivalRules.OutletDip(f, "d", "other") == 0 && RivalRules.OutletDip(f, "d2", "t") == 0 && RivalRules.OutletDip(null, "d", "t") == 0,
             "rivals limits: rivals' businesses together never take more than the most from one of the player's, only of its kind in its district, and only once they are open");
         Check(RivalRules.Premium(f, "d") == RivalCatalogue.PropertyPremiumMost && RivalRules.Premium(f, "x") == 0 && RivalRules.InspectionWeight(f) == RivalCatalogue.LobbyWeightMost,
             "rivals limits: the premium on buildings and the inspections' weight never past their most, and nothing elsewhere");
-        Check(RivalRules.RentRise(f.Move(10), 1000) == 1000L * RivalCatalogue.RentRiseMost / 1000 && RivalRules.RentRise(f.Move(10), 0) == 0 && RivalRules.RentRise(f.Move(11), 1000) == 0,
+        Check(RivalRules.RentRise(f, "p", 1000) == 1000L * RivalCatalogue.RentRiseMost / 1000 && RivalRules.RentRise(f, "p", 0) == 0 && RivalRules.RentRise(f, "q", 1000) == 0,
             "rivals limits: a rent rise is never more than the most on the rent, and nothing without a rent");
 
         // Moves are aimed at the player's best business, an outlet only where none of a rival's is, and nothing without a business.
@@ -291,7 +292,7 @@ internal static partial class Program
             for (int k = 0; k < (int)RivalCounter.Takeover; k++)
             {
                 long c = RivalRules.CounterCost((RivalCounter)k, worth, 1000);
-                costs &= c >= RivalCatalogue.CounterLeast[k] && c <= RivalCatalogue.CounterMost[k];
+                costs &= c >= RivalCatalogue.CounterLeast[k] && c <= RivalCatalogue.CounterMost[k] * RivalCatalogue.CounterTierScale[RivalRules.Tier(worth, 1000)];
             }
         }
         Check(costs && RivalRules.CounterCost(RivalCounter.Takeover, 1000000000L, 1000) == 0, "rivals counters: each counter costs a share of the worth between its least and its most (a takeover is priced by the market)");
@@ -343,11 +344,11 @@ internal static partial class Program
 
     private static void RivalTakeover()
     {
-        RivalRules.TakeoverTerms(10000000L, 1000000L, 4000, out long cost, out long breakUp);
+        RivalRules.TakeoverTerms(10000000L, 1000000L, 4000, 0L, out long cost, out long breakUp);
         long others = 9000000L * 40L;
         Check(cost == others + others / 10000L * RivalCatalogue.TakeoverPremiumBp && breakUp == others / 1000L * RivalCatalogue.BreakUpPermille,
             "rivals takeover: the shares not held at the price and the premium; the parts bring back their share of what those shares were worth (" + cost + ", " + breakUp + ")");
-        RivalRules.TakeoverTerms(4000000000000L, 0, 99999999, out long big, out long _);
+        RivalRules.TakeoverTerms(4000000000000L, 0, 99999999, 0L, out long big, out long _);
         Check(big > 0, "rivals takeover: the largest holdings at the largest prices without passing the long's range");
         var f = RivalRules.Open(41, 1, 1000);
         RivalRules.Activate(f, 3, 1, 1000);
@@ -366,9 +367,9 @@ internal static partial class Program
                 n.State = RivalMoveState.Over;
             }
         }
-        long early = RivalRules.BreakUpDue(f, 12 + RivalCatalogue.BreakUpDays - 1);
-        long due = RivalRules.BreakUpDue(f, 12 + RivalCatalogue.BreakUpDays);
-        long again = RivalRules.BreakUpDue(f, 12 + RivalCatalogue.BreakUpDays + 1);
+        long early = RivalRules.BreakUpDue(f.Tycoons[0], 12 + RivalCatalogue.BreakUpDays - 1);
+        long due = RivalRules.BreakUpDue(f.Tycoons[0], 12 + RivalCatalogue.BreakUpDays);
+        long again = RivalRules.BreakUpDue(f.Tycoons[0], 12 + RivalCatalogue.BreakUpDays + 1);
         Check(m.State == RivalMoveState.Stopped && noMore && early == 0 && due == breakUp && again == 0 && RivalRules.CanTakeOver(f, 0, true, 100, 100) == RivalWhy.Out,
             "rivals takeover: a tycoon taken over is out for good, their moves stopped, the parts paid once on their day");
         var rows = new List<RichRow>();
@@ -443,23 +444,28 @@ internal static partial class Program
             RivalRules.Day(f, w, day, RivalCatalogue.Ruthless);
         }
         f.Tycoons[1].CounterDay[2] = 44;
-        f.BreakUp = 123456789012L;
-        f.BreakUpDay = 99;
-        f.BreakUpTycoon = 2;
+        f.Tycoons[2].BreakUp = 123456789012L;
+        f.Tycoons[2].BreakUpDay = 99;
         if (f.Moves.Count > 0)
         {
             f.Moves[0].Name = "A|B\nC";
             f.Moves[0].Who = "Ann Lee";
+            f.Moves[0].Answered = 0;
+        }
+        if (f.Moves.Count > 1)
+        {
+            f.Moves[1].Answered = 5;
         }
         RivalRules.Counter(f, 0, RivalCounter.Poach, 80, 777, 1200);
         string line = RivalStore.Write(f);
         RivalFile back = RivalStore.Read(line, out int version);
         Check(back != null && version == RivalStore.Version && RivalStore.Write(back) == line, "rivals save: the line read back is written again exactly (" + f.Moves.Count + " moves, " + f.Counters.Count + " counters)");
-        Check(back != null && back.Moves.Count > 0 && back.Moves[0].Name == "A/B C" && back.Moves[0].Who == "Ann Lee" && back.BreakUp == 123456789012L && back.Tycoons[1].CounterDay[2] == 44,
+        Check(back != null && back.Moves.Count > 0 && back.Moves[0].Name == "A/B C" && back.Moves[0].Who == "Ann Lee" && back.Tycoons[2].BreakUp == 123456789012L && back.Tycoons[2].BreakUpDay == 99 && back.Tycoons[1].CounterDay[2] == 44
+              && (back.Moves.Count < 2 || back.Moves[1].Answered == 5),
             "rivals save: names cleaned of the dividers, large sums and the counters' days kept");
 
         // An older line (a move without its last field), a later version's (more fields, a line of a new letter, a kind and a state not known), damaged ones.
-        string older = line.Replace("|Ann Lee", string.Empty);
+        string older = line.Replace("|Ann Lee|0", string.Empty);
         RivalFile old = RivalStore.Read(older, out int _);
         Check(old != null && old.Moves.Count == back.Moves.Count && old.Moves[0].Who == string.Empty, "rivals save: a move written without its employee's name reads with none");
         string later = line.Replace("RV|1|", "RV|2|") + "|99" + "\nZ|1|2|3" + "\nM|900|0|42|0|1|3|5|1|0|0|0|p|n|d|t|w" + "\nM|901|0|1|9|1|3|5|1|0|0|0|p|n|d|t|w" + "\nC|902|0|8|1|1|0";
@@ -467,7 +473,7 @@ internal static partial class Program
         Check(newer != null && laterVersion == 2 && newer.Moves.Count == back.Moves.Count && newer.Counters.Count == back.Counters.Count && newer.Move(900) == null && newer.Move(901) == null,
             "rivals save: a later version's line is read as far as it goes; a move or a counter of a kind or a state it does not know is dropped, never read as another");
         Check(RivalStore.Read("RV|1|x", out int _) == null && RivalStore.Read("XX|1|1|1|1|1|1|1|1|1|1|1|1|1|1", out int _) == null && RivalStore.Read(string.Empty, out int _) == null
-              && RivalStore.Read("RV|1|1|1|1|1|1|1|1|1|1|1|1|1|zz", out int _) == null,
+              && RivalStore.Read("RV|1|1|1|1|1|1|1|1|1|1|zz", out int _) == null,
             "rivals save: a damaged line, another feature's and an empty one are not read (the save keeps them as they were)");
         var data = new Dictionary<string, string> { { RivalStore.Key, line } };
         RivalFile loaded = RivalStore.Load(data);
