@@ -8,7 +8,7 @@
     <Nullable>disable</Nullable>
     <DebugType>none</DebugType>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.27.2</Version>
+    <Version>0.27.3</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- Single source of truth: the mod lives in the Unity SDK project; this project only compiles it from the command line. -->
