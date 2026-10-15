@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul;
@@ -75,6 +75,18 @@ internal static partial class Program
     {
         var found = new List<string>();
         foreach (Match m in Names.Matches(text))
+        {
+            found.Add(m.Value);
+        }
+        found.Sort(StringComparer.Ordinal);
+        return string.Join(",", found);
+    }
+
+    // A text's {names}, sorted (the checks of features written before the seven languages compare them by this).
+    private static string Holes(Regex holes, string text)
+    {
+        var found = new List<string>();
+        foreach (Match m in holes.Matches(text))
         {
             found.Add(m.Value);
         }
