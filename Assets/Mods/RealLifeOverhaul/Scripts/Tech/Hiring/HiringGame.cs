@@ -207,13 +207,16 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A candidate the player has agreed terms with, hired the game's own way at the wage agreed (never under the game's own for the skill).</summary>
+        /// <summary>
+        /// A candidate the player has agreed terms with, hired the game's own way at the wage agreed: never under the game's
+        /// own for the skill, never past WageRules' cap of it.
+        /// </summary>
         public static bool Hire(EmployeeInstance candidate, int cents)
         {
             try
             {
                 EmployeeHelper.HireCandidate(candidate);
-                candidate.hourlyWage = Mathf.Max(candidate.hourlyWage, cents / 100f);
+                candidate.hourlyWage = WageRules.UpTo(TalentGame.WageCents(candidate), cents, TalentGame.FormulaCents(candidate)) / 100f;
                 candidate.satisfaction = Mathf.Max(candidate.satisfaction, 70f);
                 return true;
             }

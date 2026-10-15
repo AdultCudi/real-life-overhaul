@@ -324,7 +324,8 @@ namespace RealLifeOverhaul.Tech
             int rating = score < 150 ? 1 : score < 330 ? 2 : score < 560 ? 3 : score < 760 ? 4 : 5;
             p.Rating = rating;
             p.LowRuns = rating == 1 ? p.LowRuns + 1 : 0;
-            p.RaiseAsk = rating == 4 ? TalentCatalogue.ReviewRiseBp : rating == 5 ? TalentCatalogue.ReviewRiseBp * 2 : 0;
+            // (one given within the period settles what this review would ask: a rise comes at most once in it, WageRules)
+            p.RaiseAsk = !CanRise(p, day) ? 0 : rating == 4 ? TalentCatalogue.ReviewRiseBp : rating == 5 ? TalentCatalogue.ReviewRiseBp * 2 : 0;
             p.AskEnd = p.RaiseAsk > 0 ? day + TalentCatalogue.AskDays : 0;
             p.ReviewDay = day + Math.Max(7, year / TalentCatalogue.ReviewsAYear);
             return rating;
@@ -348,15 +349,25 @@ namespace RealLifeOverhaul.Tech
             p.Morale = Math.Min(1000, p.Morale + 120);
         }
 
-        /// <summary>A rise given: recognised, and what the last review asked for is settled.</summary>
+        /// <summary>
+        /// True if a rise of the player's choosing (a rise, a review's request granted, a promotion) may be given today: the
+        /// last rise or promotion is at least <see cref="WageRules.PeriodDays"/> behind (<see cref="Profile.RecognisedDay"/>).
+        /// </summary>
+        public static bool CanRise(Profile p, int day)
+        {
+            return WageRules.Due(p.RecognisedDay, day);
+        }
+
+        /// <summary>
+        /// A rise given: recognised, and what the last review asked for is settled (the next rise waits for WageRules'
+        /// period, so a request left open would only lapse into a refusal).
+        /// </summary>
         public static void Raised(Profile p, int day, int bp)
         {
             p.RecognisedDay = day;
             p.Morale = Math.Min(1000, p.Morale + Math.Min(150, bp / 10));
-            if (bp >= p.RaiseAsk)
-            {
-                p.RaiseAsk = 0;
-            }
+            p.RaiseAsk = 0;
+            p.AskEnd = 0;
         }
 
         /// <summary>A request for a rise refused, or left unanswered until it lapsed: morale falls.</summary>

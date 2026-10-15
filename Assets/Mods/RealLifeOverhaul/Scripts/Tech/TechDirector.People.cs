@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Tech
             _talent = file;
             _peopleOn = true;
             int made = ReadPeople(save.Day);
+            MendWages();
             Logger?.Info("Tech: professionals " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _people.Count + " professional(s)"
                          + (made > 0 ? ", " + made + " seen for the first time" : string.Empty) + ".");
         }
@@ -600,32 +601,96 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
-        /// <summary>A rise of so many basis points: the game's wage (or the mod's) goes up; a request for one is settled.</summary>
+        /// <summary>
+        /// A rise of so many basis points: the game's wage (or the mod's) goes up; a request for one is settled. At most one
+        /// rise of the player's choosing (or promotion) in WageRules' period for one professional, and never past its cap:
+        /// a refused one says when the next can be given.
+        /// </summary>
         internal bool GiveRise(string id, int bp)
         {
             Person person = PersonOf(id);
-            if (person == null || bp <= 0 || Save == null)
+            if (person == null || bp <= 0 || Save == null || Rested(person))
             {
                 return false;
             }
-            Raise(person, bp);
+            Raise(person, bp, Save.Day);
             TalentRules.Raised(person.File, Save.Day, bp);
             Changed();
             return true;
         }
 
-        private static void Raise(Person person, int bp)
+        // A rise on the wage, bounded by WageRules (never past four times the game's own wage for the skill), on the day given:
+        // the day is the last rise's (Profile.RecognisedDay), which the period of the next is counted from.
+        private static void Raise(Person person, int bp, int day)
         {
+            Profile p = person.File;
             if (person.Game != null)
             {
                 TalentGame.Rise(person.Game, bp);
-                person.File.GameWage = TalentGame.WageCents(person.Game);
+                p.GameWage = TalentGame.WageCents(person.Game);
             }
             else
             {
-                person.File.Wage = (int)Math.Min(int.MaxValue, (long)person.File.Wage * (10000 + bp) / 10000);
-                person.File.GameWage = person.File.Wage;
+                p.Wage = WageRules.Rise(p.Wage, bp, TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000));
+                p.GameWage = p.Wage;
             }
+            p.RecognisedDay = Math.Max(p.RecognisedDay, day);
+        }
+
+        // True (and the player told when the next can be given) while a rise or promotion given within WageRules' period stands.
+        private bool Rested(Person person)
+        {
+            if (TalentRules.CanRise(person.File, Save.Day))
+            {
+                return false;
+            }
+            Tell(NotificationType.Info, "reallife_wage_rested", Data("name", person.Name, "day", WageRules.NextDay(person.File.RecognisedDay).ToString()), TabTeam, Row(person.File));
+            return true;
+        }
+
+        /// <summary>
+        /// A save's wages that the mod raised past WageRules' cap before the bound existed are brought back to it, once, as
+        /// the save loads: the game's employees among the professionals (only a professional's wage was ever raised by a
+        /// percentage of an already raised wage: TalentGame.Rise) and the mod's own payroll. The game's satisfaction is not
+        /// touched. One notice if any was mended. Returns how many.
+        /// </summary>
+        private int MendWages()
+        {
+            int mended = 0;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person person = _people[i];
+                Profile p = person.File;
+                if (person.Game != null)
+                {
+                    if (TalentGame.Mend(person.Game))
+                    {
+                        p.GameWage = TalentGame.WageCents(person.Game);
+                        mended++;
+                    }
+                }
+                else
+                {
+                    int wage = WageRules.Mended(p.Wage, TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000));
+                    if (wage < p.Wage)
+                    {
+                        Logger?.Info("Tech: " + p.Name + "'s wage on the mod's payroll brought back from " + (p.Wage / 100f).ToString("F2") + " to " + (wage / 100f).ToString("F2") + ".");
+                        p.Wage = p.GameWage = wage;
+                        mended++;
+                    }
+                }
+            }
+            if (mended > 0)
+            {
+                Tell(NotificationType.Info, "reallife_wage_mended", Data("count", mended.ToString(), "times", (WageRules.CapBp / 10000).ToString()), TabTeam, null);
+                Changed();
+            }
+            if (Verbose || mended > 0)
+            {
+                Logger?.Info("Tech check (wages on load): " + _people.Count + " professional(s), " + mended + " wage(s) over " + (WageRules.CapBp / 10000)
+                             + " times the game's own for the skill brought back to it; satisfaction untouched: PASS");
+            }
+            return mended;
         }
 
         internal void RefuseRise(string id)
@@ -642,12 +707,12 @@ namespace RealLifeOverhaul.Tech
         internal bool Promote(string id)
         {
             Person person = PersonOf(id);
-            if (person == null || Save == null || !TalentRules.CanPromote(person.File, Save.Day, Year, person.MainPoints))
+            if (person == null || Save == null || !TalentRules.CanPromote(person.File, Save.Day, Year, person.MainPoints) || Rested(person))
             {
                 return false;
             }
             TalentRules.Promote(person.File, Save.Day);
-            Raise(person, TalentCatalogue.PromotePayBp);
+            Raise(person, TalentCatalogue.PromotePayBp, Save.Day);
             TechBridges.Standing?.Invoke(1);
             Tell(NotificationType.Success, "reallife_talent_note_promoted", Data("name", person.Name, "level", TechText.Level(person.File.Level)), TabTeam, Row(person.File));
             Changed();
@@ -758,7 +823,7 @@ namespace RealLifeOverhaul.Tech
             if (person != null && !person.File.NonCompete)
             {
                 person.File.NonCompete = true;
-                Raise(person, TalentCatalogue.NonCompeteBp);
+                Raise(person, TalentCatalogue.NonCompeteBp, Save != null ? Save.Day : person.File.RecognisedDay);
                 Changed();
             }
         }
@@ -772,7 +837,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (match)
             {
-                Raise(person, person.File.PoachBp);
+                Raise(person, person.File.PoachBp, Save.Day);   // (a rival's offer comes at most once in TalentCatalogue.PoachRestDays: its own period)
             }
             TalentRules.Answer(person.File, match, Save.Day, Year);
             Changed();
