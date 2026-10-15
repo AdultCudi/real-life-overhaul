@@ -1,4 +1,8 @@
-0.27.2
+0.27.3
+
+New
+- The Gallery has a look of its own, like a phone's photos app: square photos edge to edge under each game day, the albums All photos, Selfies and Favourites, and one click to see a photo whole, with the photos before and after, a strip of its neighbours, and buttons to share it to Flare, make it the wallpaper, keep it as a favourite or delete it. The small photo in the camera's corner opens the newest photo whole.
 
 Fixed
-- With the third-person camera on, the highway to the other city kept vanishing, and your car with it, so the drive could not be made. Bridges now stay in sight under the mod's camera. The camera also steps aside properly for the game's own camera moments: placing furniture and the interior designer open at the game's own zoom, your zoom is kept afterwards, and the mouse pointer is freed for the game's conversations, so their answers can be clicked.
+- The Gallery never showed its photos, so none could be opened; the Camera app's page now shows the latest photo too.
+- The Stocks app's company page and the Car Showroom app's Reports page now stand on a white sheet, as the game's own boxes do, so their words and charts are easier to read.
