@@ -448,7 +448,10 @@ internal static partial class Program
         var source = new CashTable(entries, words);
         var model = new TableModel();
         TableSpec spec = AppsCashSpec();
-        AppsOpenScrolled(model, spec, source, out _, out _);   // (warmed: the model's arrays made once)
+        for (int warm = 0; warm < 40; warm++)
+        {
+            AppsOpenScrolled(model, spec, source, out _, out _);   // (warmed: the model's arrays made once, and its methods past the runtime's tiering, whose own stubs would be counted)
+        }
         AppsOpenScrolled(model, spec, source, out double scrolledMs, out long scrolledBytes);
         AppsOpenWhole(entries, words, out double wholeMs);
         AppsOpenWhole(entries, words, out wholeMs);
