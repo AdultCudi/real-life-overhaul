@@ -68,6 +68,7 @@ internal static partial class Program
         TestRoutes();   // the driving school's route: planned round lanes an accident has closed, and what the player is told (TestRouteCheck.cs)
         LoadPace();
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
+        Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

@@ -1,0 +1,245 @@
+using System.Collections.Generic;
+using BAModAPI;
+using Extensions;
+using Helpers;
+using Streets.Pedestrians;
+using UnityEngine;
+using UnityEngine.AI;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>
+    /// A cordon's tape goes up with nobody inside it but the scene's own people. Called by Traffic/SceneCordon on the one
+    /// frame its tape goes up (or is run again round the ambulance crew's way), for every scene that puts one up: an
+    /// accident, somebody knocked down, a fire, a street event. Whoever is then inside the tape or against it is put at
+    /// the nearest place outside it (Traffic/CordonRules: straight out through the nearest side, clear of the wall cut
+    /// along it, a body's width from anybody else put there), on the ground their own navigation agent walks, and
+    /// carries on: somebody who was walking somewhere walks on to it, by a way worked out again round the tape once its
+    /// walls are cut; somebody who was standing stands where they were put. From then on the walls (and the bars across
+    /// any opening a walkway runs through) keep them out for as long as the tape is up.
+    ///
+    /// Who is looked at: the game's walking pedestrians (its own list), the living city's people (CityLife), and the
+    /// mod's officers who are only there to be seen (ActorPool's Yields: on the beat, at a junction). Who is never
+    /// moved: the scene's own people (the casualty, the crews, the officers and drivers of an accident, a fire's or a
+    /// street event's people, whom their scenes place and send to the kerb themselves); a pedestrian the mod has
+    /// borrowed (a casualty, somebody stepping out: its own scripts are off); anybody lying in the road or sitting;
+    /// the player and the player's own company (family, friends, the roommate), who go where the player goes; and
+    /// the game's standing and sitting figures, whose places are all on pavements, which a cordon never covers.
+    /// Somebody for whom no place outside has walkable ground is left where they are and said in the log; a game
+    /// pedestrian nobody is looking at is then given back to the game's pool instead, as the game does when it
+    /// moves one on. Going Public: every one of these people is this machine's own, and nothing is sent.
+    ///
+    /// COST. Nothing runs by itself and nothing per frame: one pass over some sixty pedestrians and twenty of the
+    /// mod's people (a subtraction and two dot products each) on the frame the tape goes up, and for each who is
+    /// inside a navigation mesh sample or two. Nothing is allocated.
+    /// </summary>
+    internal static class CordonClear
+    {
+        private const float Reach = 1f;    // metres from a place outside the tape to the walkable ground found for it
+        private const int MostPut = 48;    // people put outside at one raising: more than the street holds near one scene
+
+        private static readonly float[] Alongs = new float[CordonRules.Exits];
+        private static readonly float[] Acrosses = new float[CordonRules.Exits];
+        private static readonly bool[] AlongSide = new bool[CordonRules.Exits];
+        private static readonly float[] PutAlong = new float[MostPut];
+        private static readonly float[] PutAcross = new float[MostPut];
+
+        // The cordon being cleared, in its road's frame.
+        private static CordonBox _box;
+        private static Vector3 _scene, _forward, _right;
+
+        // What this raising found.
+        private static int _put, _walkers, _city, _presence, _left, _returned;
+        private static float _furthest;
+
+        /// <summary>Puts everybody but the scene's own people outside a cordon whose tape has just gone up, and says so in the log.</summary>
+        public static void Out(SceneCordon cordon, IModLogger logger)
+        {
+            if (cordon == null || !cordon.Frame(out _scene, out _forward, out _right, out float back, out float front, out float left, out float right))
+            {
+                return;
+            }
+            _box = new CordonBox(back, front, left, right);
+            _put = _walkers = _city = _presence = _left = _returned = 0;
+            _furthest = 0f;
+            try
+            {
+                Walkers();
+                CityLife();
+                Presence();
+            }
+            catch (System.Exception e)
+            {
+                logger?.Error(e);
+            }
+            int inside = _walkers + _city + _presence;
+            if (inside == 0)
+            {
+                logger?.Info("Cordon check (cleared): nobody but the scene's own people stood inside the tape as it went up: PASS.");
+                return;
+            }
+            logger?.Info($"Cordon check (cleared): {inside} people stood inside the tape or against it as it went up ({_walkers} of the game's pedestrians, "
+                         + $"{_city} of the living city's, {_presence} officer(s) only there to be seen); {_put} put at the nearest place outside it "
+                         + $"(the furthest {_furthest:F1} m from where they stood), each at least {CordonRules.Spacing:F2} m from the next"
+                         + (_returned > 0 ? $", {_returned} out of view given back to the game's pool" : "")
+                         + (_left > 0 ? $"; {_left} with no walkable ground outside within reach, left where they stand: FAIL." : ": PASS."));
+        }
+
+        // The game's walking pedestrians: its own list. One the mod has borrowed is switched off (PedestrianTakeover).
+        private static void Walkers()
+        {
+            var city = InstanceBehavior<CityManager>.Instance;
+            List<Pedestrian> walkers = city != null && city.pedestrianSpawner != null ? city.pedestrianSpawner.activePedestrians : null;
+            if (walkers == null)
+            {
+                return;
+            }
+            for (int i = walkers.Count - 1; i >= 0; i--)
+            {
+                Pedestrian walker = walkers[i];
+                if (walker == null || !walker.isActiveAndEnabled || walker.tpc == null || walker.tpc.isSittingOn != null || RagdollSystem.Holds(walker.tpc)
+                    || !Within(walker.tpc))
+                {
+                    continue;
+                }
+                _walkers++;
+                if (Put(walker.tpc))
+                {
+                    continue;
+                }
+                if (!StreetSpots.IsInView(walker.transform.position))
+                {
+                    _returned++;
+                    walker.Release();   // the game's own way of moving one on: it comes out again somewhere else
+                    continue;
+                }
+                _left++;
+            }
+        }
+
+        // The living city's people (joggers, people at its sites). Whoever the casualty system has is not theirs any more.
+        private static void CityLife()
+        {
+            CityLifeDirector director = CityLifeDirector.Instance;
+            CityPeople people = director != null ? director.People : null;
+            if (people == null)
+            {
+                return;
+            }
+            for (int i = 0; i < people.Count; i++)
+            {
+                CityPerson person = people.At(i);
+                if (person == null || !person.Valid || !person.InUse || person.Taken || person.Seated || !Within(person.Character))
+                {
+                    continue;
+                }
+                _city++;
+                if (!Put(person.Character))
+                {
+                    _left++;
+                }
+            }
+        }
+
+        // The mod's officers who are only there to be seen. Everyone else in the pool is a scene's, and the scene's to place.
+        private static void Presence()
+        {
+            ActorPool pool = ActorPool.Instance;
+            if (pool == null)
+            {
+                return;
+            }
+            for (int i = pool.ActorCount - 1; i >= 0; i--)
+            {
+                StreetActor actor = pool.ActorAt(i);
+                if (actor == null || !actor.InUse || !actor.Yields || !actor.IsValid || actor.Limp || !Within(actor.Character))
+                {
+                    continue;
+                }
+                _presence++;
+                if (!Put(actor.Character))
+                {
+                    _left++;
+                }
+            }
+        }
+
+        private static bool Within(ThirdPersonCharacter body)
+        {
+            Vector3 offset = body.transform.position - _scene;
+            return CordonRules.Inside(_box, Vector3.Dot(offset, _forward), Vector3.Dot(offset, _right));
+        }
+
+        // The nearest place outside with ground under it that this person's own agent walks, and the person put there.
+        private static bool Put(ThirdPersonCharacter body)
+        {
+            Vector3 at = body.transform.position;
+            Vector3 offset = at - _scene;
+            NavMeshAgent agent = body.navmeshAgent;
+            var filter = new NavMeshQueryFilter
+            {
+                agentTypeID = agent != null ? agent.agentTypeID : NavMeshHelper.NpcAgentTypeId,
+                areaMask = agent != null ? agent.areaMask : NavMesh.AllAreas
+            };
+            CordonRules.Out(_box, Vector3.Dot(offset, _forward), Vector3.Dot(offset, _right), Alongs, Acrosses, AlongSide);
+            for (int i = 0; i < CordonRules.Exits && _put < MostPut; i++)
+            {
+                float along = Alongs[i];
+                float across = Acrosses[i];
+                if (!CordonRules.Spread(_box, AlongSide[i], ref along, ref across, PutAlong, PutAcross, _put))
+                {
+                    continue;
+                }
+                Vector3 wanted = _scene + _forward * along + _right * across;
+                wanted.y = at.y;
+                if (!StreetSpots.OnWalk(wanted, Reach, filter, out Vector3 spot))
+                {
+                    continue;
+                }
+                // The ground found may lie nearer the tape than asked (or over it), or beside somebody put there already: not then.
+                Vector3 found = spot - _scene;
+                float foundAlong = Vector3.Dot(found, _forward);
+                float foundAcross = Vector3.Dot(found, _right);
+                if (CordonRules.Inside(_box, foundAlong, foundAcross) || !CordonRules.Apart(foundAlong, foundAcross, PutAlong, PutAcross, _put)
+                    || !Shift(body, spot))
+                {
+                    continue;
+                }
+                PutAlong[_put] = foundAlong;
+                PutAcross[_put] = foundAcross;
+                _put++;
+                Vector3 moved = spot - at;
+                moved.y = 0f;
+                _furthest = Mathf.Max(_furthest, moved.magnitude);
+                return true;
+            }
+            return false;
+        }
+
+        // Somebody walking is put there on their agent and sent on to where they were going (the way there worked out again,
+        // round the tape once its walls are cut), held still if they were held (at a crossing's lights, by a horn); somebody
+        // standing with their agent off is put there as they stand.
+        private static bool Shift(ThirdPersonCharacter body, Vector3 spot)
+        {
+            NavMeshAgent agent = body.navmeshAgent;
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                bool going = agent.hasPath || agent.pathPending;
+                Vector3 bound = agent.destination;
+                bool held = agent.isStopped;
+                if (!agent.Warp(spot))
+                {
+                    return false;
+                }
+                if (going)
+                {
+                    agent.SetDestination(bound);
+                }
+                agent.isStopped = held;
+                return true;
+            }
+            body.transform.position = spot;
+            return true;
+        }
+    }
+}

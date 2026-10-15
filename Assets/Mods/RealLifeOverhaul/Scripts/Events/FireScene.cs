@@ -1015,7 +1015,8 @@ namespace RealLifeOverhaul.Events
                     if (now >= _watcherNext[i] && people.Free > 3 && now - _startedAt > 10f + i * 6f)
                     {
                         _watcherNext[i] = now + 12f;
-                        if (CitySpots.PavementRing(_seat, 13f, 19f, false, out Vector3 line) && CitySpots.ClearQuietly(line, 0.45f))
+                        // At the tape at the nearest, facing in: never a place inside it (a crossing inside the tape is pavement to the ring).
+                        if (CitySpots.PavementRing(_seat, 13f, 19f, false, out Vector3 line) && !_director.Cordon.Shuts(line) && CitySpots.ClearQuietly(line, 0.45f))
                         {
                             _watchers[i] = people.WalkIn(CityLook.Civilian, line, false);
                         }
