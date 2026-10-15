@@ -1,4 +1,4 @@
-0.27.0
+0.27.1
 
-New
-- A Camera and a Gallery on the phone: a rear camera and a selfie with a grid, light filters and frames, the game's HUD out of the way while you shoot, and each save's photos in the Gallery to see whole, share to Flare, set as the phone's wallpaper or delete. Flare's camera and selfie buttons open the same camera.
+Fixed
+- The row of apps at the top of the full screen menu was a different length each time it opened, and its pages were turned with small dots. Each page now holds the same number of apps every time on your screen, starts with the game's own apps in their order, and ends before the money and the date. A More apps button at the end of the row, and on the phone's home screen, shows the page and turns to the next one.

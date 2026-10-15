@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.GameUi
         private sealed class Painted
         {
             public Sprite Result, Like, Glyph;
-            public Color32 Top, Bottom;
+            public Color32 Top, Bottom, Ink;
             public float GlyphSize;
         }
 
@@ -36,8 +36,11 @@ namespace RealLifeOverhaul.GameUi
         private static readonly Dictionary<long, Color32[]> Reads = new Dictionary<long, Color32[]>(32);   // a picture read back, by sprite and size
         private static Color32[] _work = new Color32[0];
 
-        /// <summary>The tile and shadow of 'like', coloured from 'top' (upper left) to 'bottom' (lower right), with 'glyph' on it.</summary>
-        public static Sprite Paint(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name)
+        /// <summary>
+        /// The tile and shadow of 'like', coloured from 'top' (upper left) to 'bottom' (lower right), with 'glyph' on it in
+        /// white, or in 'ink' (a dark glyph on a light tile).
+        /// </summary>
+        public static Sprite Paint(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32? ink = null)
         {
             try
             {
@@ -46,15 +49,16 @@ namespace RealLifeOverhaul.GameUi
                     return glyph;
                 }
                 string key = name ?? string.Empty;
+                Color32 colour = ink ?? new Color32(255, 255, 255, 255);
                 if (Made.TryGetValue(key, out Painted kept) && kept.Result != null && kept.Result.texture != null && kept.Like == like && kept.Glyph == glyph
-                    && Same(kept.Top, top) && Same(kept.Bottom, bottom) && kept.GlyphSize == glyphSize)
+                    && Same(kept.Top, top) && Same(kept.Bottom, bottom) && Same(kept.Ink, colour) && kept.GlyphSize == glyphSize)
                 {
                     return kept.Result;
                 }
-                Sprite made = Draw(like, glyph, top, bottom, glyphSize, name);
+                Sprite made = Draw(like, glyph, top, bottom, glyphSize, name, colour);
                 if (made != null && made != glyph)
                 {
-                    Made[key] = new Painted { Result = made, Like = like, Glyph = glyph, Top = top, Bottom = bottom, GlyphSize = glyphSize };
+                    Made[key] = new Painted { Result = made, Like = like, Glyph = glyph, Top = top, Bottom = bottom, Ink = colour, GlyphSize = glyphSize };
                 }
                 return made;
             }
@@ -71,7 +75,7 @@ namespace RealLifeOverhaul.GameUi
             return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
         }
 
-        private static Sprite Draw(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name)
+        private static Sprite Draw(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32 ink)
         {
             int size = Mathf.RoundToInt(like.rect.width);
             Color32[] read = Read(like, size, size);
@@ -130,7 +134,7 @@ namespace RealLifeOverhaul.GameUi
                             int i = (y + at + up) * size + x + at;
                             Color32 under = tile[i];
                             float a = m.a / 255f;
-                            tile[i] = new Color32((byte)Mathf.Lerp(under.r, 255, a), (byte)Mathf.Lerp(under.g, 255, a), (byte)Mathf.Lerp(under.b, 255, a), under.a > m.a ? under.a : m.a);
+                            tile[i] = new Color32((byte)Mathf.Lerp(under.r, ink.r, a), (byte)Mathf.Lerp(under.g, ink.g, a), (byte)Mathf.Lerp(under.b, ink.b, a), under.a > m.a ? under.a : m.a);
                         }
                     }
                 }

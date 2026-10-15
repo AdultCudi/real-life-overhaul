@@ -5768,8 +5768,8 @@ Core/GameUi/
                   scripts taken off, texts written through the game's own component; one log line per fallback
   PhoneApps       PhoneApp.Install: a button on the HUD phone, a button in the full menu's bar and a panel among the
                   game's app panels; opening as the game opens its own; the badge
-  PhoneGridPager  pages of eight on the HUD phone's home screen (the game's eight apps fill it); steps aside for
-                  good when another mod pages the grid
+  PhoneGridPager  pages of a set length on the HUD phone's home screen and the full menu's row of apps, turned by a
+                  More apps button on each page's last tile (PagerRules); steps aside for good when another mod pages them
   AppShell        the frame of an app, copied from the game's MyEmployees: headline, white box, two tabs, table
   InfoBox         the white box as a page: title, lines, headlines, switches, previous/next selectors, buttons
   GameSprites     the game's pictures by name, found in memory
