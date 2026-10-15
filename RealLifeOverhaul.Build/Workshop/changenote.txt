@@ -1,4 +1,4 @@
-0.22.0
+0.23.0
 
 New
-- Report a bug from inside the game: the button under Start here on the options page, also in the Mod settings app, writes a report with your settings and the game's log to your computer, then opens its folder and the mod's Discord for you to post it. The mod sends nothing itself.
+- The mod can now be read in German, French, Spanish and Russian: it follows the language the game is set to, and a text not yet translated is in English.
