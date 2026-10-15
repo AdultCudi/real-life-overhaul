@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -337,7 +337,15 @@ internal static partial class Program
         Check(fits, "lesson words: each is a notification of 240 characters at most");
         Check(plain, "lesson words: no exclamation mark and no dash");
         Check(words["pt"][TestRouteRules.ClosedKey] != closed && words["zh-cn"][TestRouteRules.ClosedKey] != closed, "lesson words: pt and zh-cn are translated, not English");
-        Check(en["reallife_changes_next"].Contains("Fixed: driving lessons and tests plan their route round a road an accident has closed"),
+        bool told = false;   // (in the next row, or its version's row once the version is made)
+        foreach (var row in en)
+        {
+            if (row.Key.StartsWith("reallife_changes_", System.StringComparison.Ordinal) && row.Value.IndexOf("lessons and tests plan their route round a road an accident has closed", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                told = true;
+            }
+        }
+        Check(told,
             "lesson words: What's new says the fix");
     }
 
