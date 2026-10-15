@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Photos
         private string _wallpaper;             // the photo set as the wallpaper, by name, or null
         private readonly HashSet<string> _favourites = new HashSet<string>(StringComparer.Ordinal);   // the photos marked as favourites, by name
         private LastWins _favouriteWrites = new LastWins();   // the favourites' file written by workers, the last change winning (one for each save)
+        private bool _listedWhole;             // the folder was read whole: only then can a favourite's photo be told gone
         private Texture _wallpaperTexture;
         private int _armed;                    // a test waiting for the options page to close: 1 the camera, 2 the selfie, 3 the Gallery
         private float _armedUntil;
@@ -159,7 +160,7 @@ namespace RealLifeOverhaul.Photos
         {
             _saveId = id;
             _generation++;
-            _listed = false;
+            _listed = _listedWhole = false;
             _photos.Clear();
             ClearWallpaper();
             DropLatest();
@@ -203,13 +204,14 @@ namespace RealLifeOverhaul.Photos
             _photos.Clear();
             _photos.AddRange(found);
             _listed = true;
+            _listedWhole = work.Status == TaskStatus.RanToCompletion && work.Result;
             _wallpaper = wallpaper;
             _wallpaperWanted = wallpaper != null;
             _favourites.Clear();
             _favourites.UnionWith(favourites);
-            if (GalleryRules.Prune(_favourites, _photos) > 0)
+            if (GalleryRules.PruneListed(_favourites, _photos, _listedWhole) > 0)
             {
-                WriteFavourites();   // (a photo deleted outside the game: its mark goes too)
+                WriteFavourites();   // (a photo deleted outside the game: its mark goes too; a failed listing keeps every mark)
             }
             Logger?.Info("Gallery: " + _photos.Count + " photo(s) of this save" + (wallpaper != null ? ", one of them the phone's wallpaper" : string.Empty)
                          + (_favourites.Count > 0 ? ", " + _favourites.Count + " of them favourites" : string.Empty) + ".");
@@ -229,7 +231,7 @@ namespace RealLifeOverhaul.Photos
             DropLatest();
             _photos.Clear();
             _favourites.Clear();
-            _listed = false;
+            _listed = _listedWhole = false;
             _folder = null;
             _saveId = null;
             _generation++;
@@ -430,7 +432,7 @@ namespace RealLifeOverhaul.Photos
             {
                 SetWallpaper(null);
             }
-            if (GalleryRules.Prune(_favourites, _photos) > 0)
+            if (GalleryRules.PruneListed(_favourites, _photos, _listedWhole) > 0)
             {
                 WriteFavourites();
             }

@@ -23,6 +23,8 @@ namespace RealLifeOverhaul.Photos
     internal sealed partial class GalleryApp
     {
         private readonly List<GalleryRow> _rows = new List<GalleryRow>(PhotoStoreRules.Cap + 64);
+        private readonly List<string> _headings = new List<string>(PhotoStoreRules.Cap + 64);   // each row's day heading and count, written with the rows (null for a strip)
+        private readonly List<string> _headCounts = new List<string>(PhotoStoreRules.Cap + 64);
         private readonly List<StripCell> _liveStrips = new List<StripCell>(24);
         private readonly Stack<StripCell> _freeStrips = new Stack<StripCell>(24);
         private readonly List<DayCell> _liveDays = new List<DayCell>(8);
@@ -205,6 +207,7 @@ namespace RealLifeOverhaul.Photos
             FreeAll();
             FlareKit.Show(_list, _shown.Count > 0);
             _total = GalleryRules.Layout(_shown, _columns, _cell, _rows);
+            WriteHeadings();
             _content.sizeDelta = new Vector2(0f, Mathf.Max(10f, _total));
             _glide.Stop();
             _scroll.StopMovement();
@@ -258,7 +261,6 @@ namespace RealLifeOverhaul.Photos
                     }
                 }
                 _footLive = false;
-                int today = PhotosGame.Day;
                 for (int r = first; r <= last; r++)
                 {
                     GalleryRow row = _rows[r];
@@ -273,7 +275,7 @@ namespace RealLifeOverhaul.Photos
                         case GalleryRowKind.Day:
                             if (!DayBound(r))
                             {
-                                BindDay(TakeDay(), r, today);
+                                BindDay(TakeDay(), r);
                             }
                             break;
                         default:
@@ -407,7 +409,7 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Show(slot.WallShade, slot.Name != null && slot.Name == _director.WallpaperName);
         }
 
-        private void BindDay(DayCell cell, int r, int today)
+        private void BindDay(DayCell cell, int r)
         {
             GalleryRow row = _rows[r];
             cell.Row = r;
@@ -415,8 +417,22 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Place(cell.Rect, 0f, row.Top, _gridWidth, row.Height);
             FlareKit.Place(cell.Label.rectTransform, 4f, 0f, _gridWidth * 0.6f, row.Height - 22f);
             FlareKit.Place(cell.Count.rectTransform, _gridWidth * 0.6f, 0f, _gridWidth * 0.4f - 4f, row.Height - 24f);
-            FlareKit.Set(cell.Label, PhotosText.Day(row.Day, today));
-            FlareKit.Set(cell.Count, PhotosText.Count(row.Count));
+            FlareKit.Set(cell.Label, _headings[r]);
+            FlareKit.Set(cell.Count, _headCounts[r]);
+        }
+
+        // Each day heading's words, made once when the rows are worked out, so a heading scrolled into view only sets them.
+        private void WriteHeadings()
+        {
+            _headings.Clear();
+            _headCounts.Clear();
+            int today = PhotosGame.Day;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                bool day = _rows[i].Kind == GalleryRowKind.Day;
+                _headings.Add(day ? PhotosText.Day(_rows[i].Day, today) : null);
+                _headCounts.Add(day ? PhotosText.Count(_rows[i].Count) : null);
+            }
         }
 
         // A small copy shown square: its middle, as a phone's grid crops it.

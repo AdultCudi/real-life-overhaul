@@ -53,7 +53,8 @@ namespace RealLifeOverhaul.Photos
         private Image _backdrop;
         private GalleryKeys _keys;
         private GalleryLook _look;
-        private bool _gaveUp, _built, _writing, _wantLatest;
+        private bool _gaveUp, _built, _writing;
+        private float _latestAskedAt = -1f;         // real seconds when the newest photo was asked for (the viewfinder's button), or -1
         private int _opening;                       // counts the openings: a worker's answer for an earlier one is let go
         private float _laidWidth = -1f, _laidHeight = -1f;
 
@@ -126,7 +127,7 @@ namespace RealLifeOverhaul.Photos
             {
                 return;
             }
-            _wantLatest = latest;
+            _latestAskedAt = latest ? Time.unscaledTime : -1f;
             if (Showing)
             {
                 Refresh(false);
@@ -241,6 +242,7 @@ namespace RealLifeOverhaul.Photos
 
         private void Closed()
         {
+            _latestAskedAt = -1f;   // (an opening that never came does not open a later one on the newest photo)
             Forget();
             _nav.Back();
             if (_keys != null)
@@ -271,9 +273,9 @@ namespace RealLifeOverhaul.Photos
                 string viewing = _nav.Viewing && _nav.Index >= 0 && _nav.Index < _shown.Count ? _shown[_nav.Index].Name : null;
                 GalleryRules.Album(_director.Photos, _nav.Album, _director.Favourites, _shown);
                 _nav.Reread(GalleryRules.IndexOf(_shown, viewing), _shown.Count);
-                if (_wantLatest)
+                if (GalleryRules.LatestWanted(_latestAskedAt, Time.unscaledTime))
                 {
-                    _wantLatest = false;
+                    _latestAskedAt = -1f;
                     OpenLatest();
                 }
                 Lay();

@@ -561,9 +561,10 @@ namespace RealLifeOverhaul.Photos
         /// then decoded and uploaded by the engine on the main thread (Texture2D.LoadImage, its copy in memory let go at once),
         /// the texture handed to <paramref name="done"/> (null if it could not be read). The main thread's share, a 1080-line
         /// JPG of some 500 KB decoded once on a click (about 10 to 20 ms), is timed under its own name (Core/HotSpots) and said
-        /// with Developer diagnostics on.
+        /// with Developer diagnostics on. <paramref name="wanted"/>, if given, is asked once the file is read: no longer wanted
+        /// (the player went on to another photo, or closed the app), nothing is decoded and <paramref name="done"/> gets null.
         /// </summary>
-        public static IEnumerator Load(string path, Action<Texture2D> done)
+        public static IEnumerator Load(string path, Action<Texture2D> done, Func<bool> wanted = null)
         {
             Texture2D texture = null;
             Task<byte[]> work = Task.Run(() => PhotoStore.ReadPhoto(path));
@@ -572,6 +573,11 @@ namespace RealLifeOverhaul.Photos
                 yield return null;
             }
             byte[] bytes = work.Status == TaskStatus.RanToCompletion ? work.Result : null;
+            if (wanted != null && !wanted())
+            {
+                done(null);   // (not decoded: a stale load costs the main thread nothing)
+                yield break;
+            }
             if (bytes == null)
             {
                 Logger?.Warn("Gallery: " + Path.GetFileName(path) + " could not be read.");

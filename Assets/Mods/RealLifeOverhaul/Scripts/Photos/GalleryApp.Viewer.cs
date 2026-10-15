@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Photos
                 StandIn(small);
                 string name = photo.Name;
                 int opening = _opening, load = ++_wholeLoad;
-                _director.StartCoroutine(Guard.Routine(PhotosGame.Load(Path.Combine(_director.Folder, name), t => Came(t, name, opening, load))));
+                _director.StartCoroutine(Guard.Routine(PhotosGame.Load(Path.Combine(_director.Folder, name), t => Came(t, name, opening, load), () => load == _wholeLoad && Showing)));
             }
             else
             {

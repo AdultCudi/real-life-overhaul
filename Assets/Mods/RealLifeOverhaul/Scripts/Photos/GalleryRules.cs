@@ -144,6 +144,7 @@ namespace RealLifeOverhaul.Photos
         public const double UploadBudgetMs = 1.0;    // milliseconds of the main thread a frame for making small copies textures
         public const int DarkFrom = 19, DarkUntil = 7;   // the game's hours of the dark look (as the phone's and Flare's)
         public const string FavouritesFile = "favourites.txt";
+        public const float LatestWait = 2f;          // real seconds the viewfinder's ask for the newest photo waits for the app to open
 
         // ---------------------------------------------------------------- the albums and their order
 
@@ -341,6 +342,16 @@ namespace RealLifeOverhaul.Photos
 
         // ---------------------------------------------------------------- the photo shown whole
 
+        /// <summary>
+        /// Whether the newest photo asked for at <paramref name="askedAt"/> (real seconds; -1 none) is still to be shown when the
+        /// app is written now: only within <see cref="LatestWait"/>, so an opening the game refused never makes a later
+        /// opening of the Gallery (from the phone) start on the newest photo.
+        /// </summary>
+        public static bool LatestWanted(float askedAt, float now)
+        {
+            return askedAt >= 0f && now >= askedAt && now - askedAt <= LatestWait;
+        }
+
         /// <summary>The photo before (-1) or after (+1): its place, or the same place at either end; -1 for an empty album.</summary>
         public static int Step(int index, int delta, int count)
         {
@@ -420,6 +431,15 @@ namespace RealLifeOverhaul.Photos
             }
             favourites.Add(name);
             return true;
+        }
+
+        /// <summary>
+        /// The favourites whose photo is no longer there taken out, only when the folder was read whole (<paramref name="listed"/>):
+        /// a listing that failed (the disk, the rights) shows no photo, and every mark would go with it. Returns how many went.
+        /// </summary>
+        public static int PruneListed(HashSet<string> favourites, List<PhotoEntry> photos, bool listed)
+        {
+            return listed ? Prune(favourites, photos) : 0;
         }
 
         /// <summary>The favourites whose photo is no longer there taken out; returns how many.</summary>

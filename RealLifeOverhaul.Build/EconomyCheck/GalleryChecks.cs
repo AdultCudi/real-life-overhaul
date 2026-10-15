@@ -30,6 +30,7 @@ internal static partial class Program
             GalleryStepping();
             GalleryFavourites(System.IO.Path.Combine(scratch, "favourites"));
             GalleryLookAndSources();
+            GalleryReviewFixes();
             GalleryWords();
         }
         finally
@@ -406,12 +407,48 @@ internal static partial class Program
         Check(read.Contains("Task.Run(") && read.Contains("watch.Elapsed.TotalMilliseconds >= GalleryRules.UploadBudgetMs") && read.Contains("yield return null;"),
             "gallery look: small copies are read on a worker and made textures within a budget of a frame");
         Check(Regex.IsMatch(director, @"public bool ToggleFavourite\(string name\)") && Regex.IsMatch(Between(director, "private void WriteFavourites()", "// ----"), @"Task\.Run\(\(\) => writes\.Run\(ticket, \(\) => PhotoStore\.SetFavourites\(folder, copy\)\)\)")
-              && Regex.Matches(director, @"GalleryRules\.Prune\(_favourites, _photos\)").Count == 2,
+              && Regex.Matches(director, @"GalleryRules\.PruneListed\(_favourites, _photos, _listedWhole\)").Count == 2,
             "gallery look: favourites are written on a worker, the last change winning, and a deleted photo's mark goes on deletion and on reading the folder");
         string forget = Between(gallery, "private void ForgetThumbs()", "// The parts made for a panel");
         Check(forget.Contains("PhotosGame.Destroy(kept.Value)") && Between(gallery, "private void Trim()", "// Every small copy let go").Contains("PhotosGame.Destroy(_thumbs[_drop[i]])")
               && Between(gallery, "private void Forget()", "\n        }").Contains("DropWhole()"),
             "gallery look: every small copy and the whole photo are destroyed when let go or when the app closes");
+    }
+
+    // ---------------------------------------------------------------- the review's four
+
+    private static void GalleryReviewFixes()
+    {
+        // 1. A listing that failed (the disk, the rights) shows no photo: every favourite would be taken out and the file
+        // deleted. Marks are taken out only after a whole listing.
+        List<PhotoEntry> photos = GalleryPhotos(new[] { 5 }, 4);
+        var set = new HashSet<string>(StringComparer.Ordinal) { photos[0].Name, photos[2].Name };
+        int kept = GalleryRules.PruneListed(set, new List<PhotoEntry>(), false);
+        Check(kept == 0 && set.Count == 2, "gallery review: a failed list keeps the favourites");
+        set.Add("Photo_20990101_000000_D9_00.jpg");
+        Check(GalleryRules.PruneListed(set, photos, true) == 1 && set.Count == 2, "gallery review: a whole list still takes out the mark of a photo gone");
+        string director = Read(@"Photos\PhotosDirector.cs");
+        Check(director.Contains("_listedWhole = work.Status == TaskStatus.RanToCompletion && work.Result;") && !Regex.IsMatch(director, @"GalleryRules\.Prune\("),
+            "gallery review: the director takes marks out only when the listing ran to completion and read the folder");
+
+        // 2. A whole photo no longer wanted (another photo shown, the app closed) is read but never decoded.
+        string game = Read(@"Photos\PhotosGame.cs"), gallery = GalleryText();
+        string load = Between(game, "public static IEnumerator Load(", "// THE ONE DECODE");
+        int asked = load.IndexOf("if (wanted != null && !wanted())", StringComparison.Ordinal), decoded = load.IndexOf("texture = Decode(bytes);", StringComparison.Ordinal);
+        Check(load.Contains("Func<bool> wanted = null") && asked > 0 && decoded > asked && load.IndexOf("work.IsCompleted", StringComparison.Ordinal) < asked
+              && gallery.Contains("() => load == _wholeLoad && Showing)"),
+            "gallery review: a stale load of a whole photo is let go after its read and before the decode");
+
+        // 3. The viewfinder's ask for the newest photo lasts only while the app opens.
+        Check(GalleryRules.LatestWanted(10f, 10f) && GalleryRules.LatestWanted(10f, 11.9f) && !GalleryRules.LatestWanted(10f, 12.1f) && !GalleryRules.LatestWanted(-1f, 5f)
+              && !GalleryRules.LatestWanted(10f, 9f), "gallery review: the ask for the newest photo is kept two seconds, then forgotten");
+        Check(Between(gallery, "private void Closed()", "// ----").Contains("_latestAskedAt = -1f;") && gallery.Contains("GalleryRules.LatestWanted(_latestAskedAt, Time.unscaledTime)")
+              && !gallery.Contains("_wantLatest"), "gallery review: closing the app forgets the ask, and it is honoured only while fresh");
+
+        // 4. A day heading scrolled into view sets words made with the rows; nothing is made while scrolling.
+        string bind = Between(gallery, "private void BindDay(DayCell cell, int r)", "// Each day heading's words");
+        Check(bind.Contains("_headings[r]") && bind.Contains("_headCounts[r]") && !bind.Contains("PhotosText.") && Between(gallery, "private void WriteGrid(bool top)", "private void Scrolled(").Contains("WriteHeadings();"),
+            "gallery review: a day heading's words are made when the rows are worked out, never while scrolling");
     }
 
     // ---------------------------------------------------------------- the words
