@@ -108,6 +108,7 @@ internal static partial class Program
         Helpers();
         CampusRulesChecks();
         ClassDoors();
+        CampusHome();   // the university's permanent building, its reservation, the older game's rule and the fallback (CampusHomeChecks.cs)
         Internet();
         Broadband();
         Empire();

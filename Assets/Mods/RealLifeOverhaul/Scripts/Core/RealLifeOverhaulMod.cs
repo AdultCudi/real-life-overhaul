@@ -260,6 +260,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
                     v => Settings.CareersDegrees = v)
                 .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
+                .AddButton("reallife_degrees_test_away", () => Careers.CareersDirector.Instance?.TestAway())
                 .AddToggle(Settings.CareersFamilyId, "reallife_family_study_enabled", Settings.CareersFamily,
                     v => Settings.CareersFamily = v)
                 .AddButton("reallife_family_test_tutor", () => Careers.CareersDirector.Instance?.TestTutor())

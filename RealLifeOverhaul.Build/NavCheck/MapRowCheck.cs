@@ -26,6 +26,7 @@ internal static partial class Program
     private static readonly Dictionary<string, string> ClaimRows = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "\"campus\"", "university" },
+        { "CampusRules.BookId", "university" },   // (Careers/Study/CampusRules: "campus", also its permanent building's reservation)
         { "\"courthouse\"", "courthouse" },
         { "\"police_\"", "police" },
         { "TowerId", "tech_hq" },
@@ -196,8 +197,8 @@ internal static partial class Program
         string link = at >= 0 ? declare.Substring(at, (next > at ? next : declare.Length) - at) : string.Empty;
         Check(link.Contains("Enabled = () => Careers.CareersDirector.UniversityOpen,"), "map rows: the university's row is there only while the university is open (CareersDirector.UniversityOpen)");
         string stamp = Body(links, "private static long UniversityStamp()");
-        Check(stamp.Contains("careers.University") && stamp.Contains("!uni.Usable") && stamp.Contains("return 0;"),
-            "map rows: the university's row waits for its building and goes when its part is switched off (University is null then)");
+        Check(stamp.Contains("careers.University") && stamp.Contains("CampusRules.OnMap(uni.Usable") && stamp.Contains("return 0;"),
+            "map rows: the university's row waits for its building (at home or a place meanwhile: CampusRules.OnMap) and goes when its part is switched off (University is null then)");
         string fill = Body(links, "private static void UniversityPlace(");
         Check(fill.Contains("new MapPlace(uni.Front,") && fill.Contains(", uni.Building)"), "map rows: the university's place is its building, which its row lights on the open map");
         Check(!Body(links, "private static void StudyPlaces(").Contains("University") && !Body(links, "private static long StudyStamp()").Contains("University"),

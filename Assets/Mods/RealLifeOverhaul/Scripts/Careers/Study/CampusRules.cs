@@ -16,15 +16,36 @@ namespace RealLifeOverhaul.Careers
         Completed = 3
     }
 
+    /// <summary>Where Hudson City University is (Careers/CampusBuilding).</summary>
+    public enum CampusPlace
+    {
+        None = 0,     // nowhere: its lectures are followed online
+        Home = 1,     // its permanent building, 26 2nd Avenue
+        Office = 2,   // meanwhile, the largest office building with no business in it
+        School = 3    // meanwhile, at the door of the game's own Manhattan Business School (every office building is taken)
+    }
+
+    /// <summary>What keeps the university out of its permanent building.</summary>
+    public enum HomeBlock
+    {
+        None = 0,      // nothing: it is there
+        Missing = 1,   // not in this city as chosen, or no door to the street
+        Players = 2,   // rented or owned by a player (another player's in a Going Public session)
+        Business = 3,  // a business in it: the game's, a rival's, or another mod's
+        Left = 4       // a layout left inside
+    }
+
     /// <summary>
     /// Hudson City University's building as numbers (Careers/CampusBuilding and Careers/CampusInterior hold the game's side),
     /// game-free: EconomyCheck runs every rule.
     ///
-    /// THE BUILDING. One of the city's office buildings that holds no business of the game's and is nobody's: no business
-    /// type in it, not rented or owned by the player (in a Going Public session another player's business is on this
-    /// machine as rented by the player, so it is left too), no rival's business. Of those that may serve, the largest, ties
-    /// broken by address (SpecialNameBook.PickLargest). Every machine of a session sees the same businesses (Going Public
-    /// sends the host's), so every machine picks the same building.
+    /// THE BUILDING. Its permanent building, 26 2nd Avenue (<see cref="HomeStreet"/>), the same in every city, reserved for
+    /// it from the start. It takes it whenever it is free: no business type in it, not rented or owned by the player (in a
+    /// Going Public session another player's business is on this machine as rented by the player, so it is left too), no
+    /// rival's business. In an older game where it is not, it stays in the largest office building that is free in the
+    /// same way, ties broken by address (SpecialNameBook.PickLargest), until the permanent one is free, then moves there
+    /// for good. Every machine of a session sees the same businesses (Going Public sends the host's), so every machine
+    /// picks the same building.
     ///
     /// INSIDE. The game's own Manhattan Business School: its building's interior and its furniture (the game's school is
     /// the one building of size D, version 1; its classrooms are five, each with a classroom door and a desk). The
@@ -159,6 +180,138 @@ namespace RealLifeOverhaul.Careers
         }
 
         // ---------------------------------------------------------------- the building
+
+        /// <summary>The id the university's building has in the book of the mod's buildings (Core/SpecialBuildings), and its reservation.</summary>
+        public const string BookId = "campus";
+
+        // The university's permanent building: 26 2nd Avenue, Midtown, the same in every city. Read from the game's own data
+        // (the Buildings definitions, the rivals' settings and StreamingAssets/BusinessLayouts): it is the city's one office
+        // building of size C version 2, 5,971 sqm on a busy avenue (traffic 36) in the middle of Manhattan, and that size is
+        // in none of the rivals' office sizes (A2, A3, C1, D2, J1, K1), so the game's city generation leaves it empty and to
+        // let in every new game, and no office business of the game's has a layout of that size (law firm, travel, event
+        // planning, web development and graphic design agencies have A3, C1, D2, J1 and K1 only), so neither the city's
+        // competition nor a rival's attack can open a business in it. Only a player could take it: the mod refuses it to
+        // the player (Core/ClaimedOffers), and in an older game where a player has it the university waits for it.
+        public const string HomeStreet = "ba:street_secondavenue";
+        public const int HomeNumber = 26;
+        public const string HomeSize = "ba:buildingsize_c";
+        public const int HomeVersion = 2;
+        public const string HomeType = "ba:buildingtype_office";
+        public const string HomeStreetName = "2nd Avenue";   // the game's own street name (StreetData.streetLocalization), for a page made where the game's streets are not loaded
+
+        /// <summary>True for the university's permanent building.</summary>
+        public static bool IsHome(string street, int number) => number == HomeNumber && string.Equals(street, HomeStreet, StringComparison.Ordinal);
+
+        /// <summary>The permanent building's address as the game writes one ("26 2nd Avenue"), from the street's name.</summary>
+        public static string HomeAddress(string streetName) => HomeNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + (string.IsNullOrEmpty(streetName) ? HomeStreetName : streetName);
+
+        /// <summary>
+        /// The permanent building found in the city is the one chosen from the game's data: an office of the size and
+        /// version that no rival and no business of the game's can take. False after a change of the game's city.
+        /// </summary>
+        public static bool HomeIsAsChosen(string type, string size, int version, bool specialService)
+        {
+            return !specialService && type == HomeType && size == HomeSize && version == HomeVersion;
+        }
+
+        /// <summary>
+        /// What keeps the university out of its permanent building, from what the city shows now; <see cref="HomeBlock.None"/>
+        /// when it is free and the university takes it. A player's comes first (rented or owned: in a Going Public session
+        /// another player's too), then a business (the game's, a rival's, or another mod's: any business type that is not
+        /// the game's empty one), then something left inside (a layout). Missing: not in this city as chosen, or no door.
+        /// </summary>
+        public static HomeBlock HomeBlockOf(bool homeServes, string businessType, bool rentedByPlayer, bool ownedByPlayer, string businessOwner, bool layoutLeft)
+        {
+            if (!homeServes)
+            {
+                return HomeBlock.Missing;
+            }
+            if (rentedByPlayer || ownedByPlayer)
+            {
+                return HomeBlock.Players;
+            }
+            if (!NoBusinessIn(businessType, false, false, businessOwner))
+            {
+                return HomeBlock.Business;
+            }
+            return layoutLeft ? HomeBlock.Left : HomeBlock.None;
+        }
+
+        /// <summary>
+        /// Where the university is: its permanent building when free; otherwise the largest office building with no
+        /// business in it (<paramref name="officeFree"/>); otherwise, when every office building is taken (by players,
+        /// businesses or other mods), at the door of the game's own Manhattan Business School, which always stands, is
+        /// nobody's and is never let, sold or taken over. None only in a city without that school.
+        /// </summary>
+        public static CampusPlace Choose(bool homeFree, bool officeFree, bool schoolThere)
+        {
+            if (homeFree)
+            {
+                return CampusPlace.Home;
+            }
+            if (officeFree)
+            {
+                return CampusPlace.Office;
+            }
+            return schoolThere ? CampusPlace.School : CampusPlace.None;
+        }
+
+        /// <summary>
+        /// True while the university has a row and a marker on the city map (World/MapLinks): whenever it stands somewhere,
+        /// its permanent building or a place meanwhile (an office, the game's school's door); never while it has none.
+        /// </summary>
+        public static bool OnMap(bool usable, bool hasBuilding, CampusPlace place)
+        {
+            return usable && hasBuilding && place != CampusPlace.None;
+        }
+
+        /// <summary>The locale key of the sentence that says why the university is not in its permanent building; null when it is.</summary>
+        public static string AwayKey(HomeBlock block)
+        {
+            switch (block)
+            {
+                case HomeBlock.Players: return "reallife_campus_away_players";
+                case HomeBlock.Business: return "reallife_campus_away_business";
+                case HomeBlock.Left: return "reallife_campus_away_business";
+                case HomeBlock.Missing: return "reallife_campus_away_missing";
+                default: return null;
+            }
+        }
+
+        /// <summary>The locale key of the notice that says where the university is meanwhile; null at its permanent building or nowhere.</summary>
+        public static string AwayNoteKey(CampusPlace place)
+        {
+            return place == CampusPlace.Office ? "reallife_campus_note_away_office" : place == CampusPlace.School ? "reallife_campus_note_away_school" : null;
+        }
+
+        /// <summary>
+        /// What the save keeps of the notice last told about where the university is ("place|street|number|block"), so that
+        /// it is told once and again only when something changes; null at its permanent building (nothing to tell).
+        /// </summary>
+        public static string AwayMark(CampusPlace place, string street, int number, HomeBlock block)
+        {
+            if (place != CampusPlace.Office && place != CampusPlace.School)
+            {
+                return null;
+            }
+            return ((int)place).ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + street + "|" + number.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                   + "|" + ((int)block).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>True if the notice of where the university is is to be told now: it is away from home and the save has not been told this.</summary>
+        public static bool TellAway(string mark, string told)
+        {
+            return mark != null && !string.Equals(mark, told, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// True if the university, standing elsewhere, moves to its permanent building now: it is free, and nothing of the
+        /// player's is under way at the old one (the player inside it, a class or exam being sat). It moves once, for good.
+        /// </summary>
+        public static bool MovesHome(bool atHome, bool homeFree, bool playerInside, bool sitting)
+        {
+            return !atHome && homeFree && !playerInside && !sitting;
+        }
 
         /// <summary>True for a registration that holds no business and is nobody's: the university may take its building.</summary>
         public static bool NoBusinessIn(string businessType, bool rentedByPlayer, bool ownedByPlayer, string businessOwner)

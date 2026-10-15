@@ -398,6 +398,42 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
+        /// <summary>
+        /// The university away from its permanent building, without an older save (CampusBuilding.Pretend): each press goes
+        /// on to the next, its own building and every office taken (the door of Manhattan Business School), its own building
+        /// taken (the largest free office), and the test over (back home). The university chooses again at once, with its
+        /// notice and its map row, as on a load. Nothing of the city is changed; the pretence ends with the city.
+        /// </summary>
+        public void TestAway()
+        {
+            if (!TestReady(out _))
+            {
+                return;
+            }
+            if (!UniversityOpen || _campus == null)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_degrees_test_off", null, 8f);
+                return;
+            }
+            try
+            {
+                if (_campus.Building != null && CareersGame.InsideAt(_campus.Street, _campus.Number))
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_degrees_test_away_inside", null, 8f);
+                    return;
+                }
+                CampusBuilding.Pretend = (CampusBuilding.Pretend + 1) % 3;
+                _campus.Dispose();
+                string key = CampusBuilding.Pretend == 1 ? "reallife_degrees_test_away_school" : CampusBuilding.Pretend == 2 ? "reallife_degrees_test_away_office" : "reallife_degrees_test_away_over";
+                Notifications.Show(NotificationType.Info, key, null, 10f);
+                Logger?.Info("Careers test: the university's places meanwhile, pretence " + CampusBuilding.Pretend + " (1 every office taken, 2 its own building taken, 0 none); it chooses again.");
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
         /// <summary>A degree passed now with a first (the first one under way, else law), and its ceremony set for today.</summary>
         public void TestGraduate()
         {

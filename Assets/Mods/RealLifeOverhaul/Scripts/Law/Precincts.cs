@@ -206,7 +206,9 @@ namespace RealLifeOverhaul.Law
                 foreach (string address in LawState.PrecinctAddresses.Split(';'))
                 {
                     CityBuildingController found = Find(buildings, address);
-                    if (found != null && Usable(found, out _) && !SpecialBuildings.Players(found) && !saved.ContainsKey(found.building.Neighbourhood))   // (one the player has since rented or bought gives way)
+                    string holder = found != null ? SpecialBuildings.HolderOf(found) : null;
+                    if (found != null && Usable(found, out _) && !SpecialBuildings.Players(found) && !saved.ContainsKey(found.building.Neighbourhood)   // (one the player has since rented or bought gives way)
+                        && (holder == null || holder.StartsWith("police_", StringComparison.Ordinal)))   // (and one another feature holds: the university's permanent building)
                     {
                         saved[found.building.Neighbourhood] = found;
                     }

@@ -22,9 +22,10 @@ internal static partial class Program
             "fronts: a building that is not refused (its feature off, a player's) has the game's own signs");
         Check(FrontSignRules.Look(SpecialKind.Other, true, false, false, true) == FrontLook.Game && FrontSignRules.Look(SpecialKind.Court, true, false, true, true) == FrontLook.Game,
             "fronts: a building the game does not hold as to let (a business in it, the tax office) keeps the game's own sign");
-        Check(FrontSignRules.Look(SpecialKind.Civic, true, true, true, true) == FrontLook.Off && FrontSignRules.Look(SpecialKind.Court, true, true, true, true) == FrontLook.Off
-              && FrontSignRules.Look(SpecialKind.Campus, true, true, true, true) == FrontLook.Off,
-            "fronts: City Utilities, the courthouse and the university with their boards up: the game's signs off, the board is the one sign");
+        Check(FrontSignRules.Look(SpecialKind.Civic, true, true, true, true) == FrontLook.Off && FrontSignRules.Look(SpecialKind.Court, true, true, true, true) == FrontLook.Off,
+            "fronts: City Utilities and the courthouse with their boards up: the game's signs off, the board is the one sign");
+        Check(FrontSignRules.Look(SpecialKind.Campus, true, true, true, true) == FrontLook.Named,
+            "fronts: the university's permanent building carries its lit name on the game's signs with its board up at the door too, as the tech towers do");
         Check(FrontSignRules.Look(SpecialKind.Civic, true, true, false, true) == FrontLook.Named && FrontSignRules.Look(SpecialKind.Court, true, true, false, true) == FrontLook.Named
               && FrontSignRules.Look(SpecialKind.Campus, true, true, false, true) == FrontLook.Named,
             "fronts: ...with no room for a board, the game's sign carries the institution's name instead: one sign each, never none");

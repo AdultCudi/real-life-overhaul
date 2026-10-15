@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Careers
             {
                 if (_campus == null)
                 {
-                    _campus = new CampusBuilding(Logger);
+                    _campus = new CampusBuilding(Logger, () => SittingNow);
                 }
                 _campus.Tick();
             }
@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Careers
 
         private void CampusGone()
         {
+            CampusBuilding.Pretend = 0;   // (a test's pretence ends with the city)
             InteriorGone();
             _campus?.Dispose();
             _campus = null;

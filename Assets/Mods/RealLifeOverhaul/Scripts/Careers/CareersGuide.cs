@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Careers
 
         public static void AddDegreeFacts(Feature f)
         {
-            f.Fact("degrees_list", () => Courses(CourseKind.Degree))
+            f.Fact("degrees_address", CareersGame.HomeAddress)
+                .Fact("degrees_list", () => Courses(CourseKind.Degree))
                 .Fact("degrees_after", () => Courses(CourseKind.Postgrad))
                 .Fact("degrees_certs", () => Courses(CourseKind.Certificate))
                 .Fact("degrees_pass", () => Whole(StudyCatalogue.DegreePass))
