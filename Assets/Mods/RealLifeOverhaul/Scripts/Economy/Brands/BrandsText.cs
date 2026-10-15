@@ -68,6 +68,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return (hundredths / 100).ToString(Inv);
         }
 
+        /// <summary>Recognition kept in hundredths, to a tenth, as the Brands table shows it: "8.9", "0.4" (whole points hid a day's gain).</summary>
+        public static string Rec(int hundredths)
+        {
+            return (BrandRules.Shown(hundredths) / 10f).ToString("0.0", Inv);
+        }
+
         /// <summary>Hundredths of a point with one decimal, for what a scandal cost: "4", "1.5".</summary>
         public static string Lost(int hundredths)
         {

@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Economy.Brands
     public static class BrandsGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+        private const int GuideShops = 3, GuideCustomers = 100, GuideStandards = 75, GuideDays = 20;   // the example the page works through: three busy shops with good standards, a new brand, twenty days
 
         public static void AddFacts(Feature f)
         {
@@ -28,6 +29,12 @@ namespace RealLifeOverhaul.Economy.Brands
                 .Fact("br_worst", () => Tenths(BrandCatalogue.BrandWorstShare))
                 .Fact("br_decay", () => Hundredths(BrandCatalogue.DecayBp))
                 .Fact("br_decay_empty", () => Hundredths(BrandCatalogue.DecayEmptyBp))
+                .Fact("br_three_gain", () => Hundredths(BrandRules.Gain(GuideShops, GuideCustomers, GuideStandards, 0)))
+                .Fact("br_three_days", () => Whole(GuideDays))
+                .Fact("br_three_after", () => Whole(BrandRules.After(GuideShops, GuideCustomers, GuideStandards, GuideDays) / 100))
+                .Fact("br_city_districts", () => Whole(BrandCatalogue.CityDistricts))
+                .Fact("br_city_step", () => Hundredths(BrandCatalogue.CityStepBp))
+                .Fact("br_city_one", () => Hundredths(BrandCatalogue.RecMost / BrandCatalogue.CityDistricts))
                 .Fact("br_push_local", () => Hundredths(BrandCatalogue.CampaignLocalGain))
                 .Fact("br_push_city", () => Hundredths(BrandCatalogue.CampaignCityGain))
                 .Fact("br_scandals", Scandals)
