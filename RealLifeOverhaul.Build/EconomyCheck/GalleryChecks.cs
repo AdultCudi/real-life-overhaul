@@ -81,6 +81,7 @@ internal static partial class Program
         string all = string.Join("\n", Directory.GetFiles(System.IO.Path.Combine(PhotoScripts, "Photos"), "*.cs").Select(File.ReadAllText));
         int copies = Regex.Matches(all, @"Find\(""ListBackground""\)").Count;
         Check(copies == 1, "gallery root cause: the Camera's page is the one place of the Camera and the Gallery that copies the game's list background (" + copies + ")");
+        ListBackgroundsOn();
         string gallery = GalleryText();
         string build = Between(gallery, "private GameObject Build(FullMenu menu, Transform dormant)", "private void BuildHeader()");
         Check(Regex.IsMatch(build, @"for \(int i = 0; i < layout\.childCount; i\+\+\)\s*\{\s*layout\.GetChild\(i\)\.gameObject\.SetActive\(false\);")
@@ -94,6 +95,40 @@ internal static partial class Program
             "gallery root cause: the app is opened from one place only (the Camera's buttons and the test), never from a click inside it");
         string mode = Read(@"Photos\CameraMode.cs");
         Check(Between(mode, "private void Gallery()", "// ----").Contains("OpenLatestPhoto()"), "gallery: the viewfinder's small photo opens the newest photo whole, not the grid");
+    }
+
+    // Every copy the mod makes of the game's ListBackground, anywhere in the mod, is switched on: the game keeps it switched
+    // off, so a copy left as it is draws nothing (the Gallery's grid in 0.27.0; the Stocks and Car Showroom pages' sheet).
+    // Switched on where it is made, or kept in a field that is switched on when the page shows (Newsstand).
+    private static void ListBackgroundsOn()
+    {
+        var made = new Regex(@"GameObject (\w+) = [^;]*Instantiate\(background\.gameObject");
+        var off = new List<string>();
+        int copies = 0;
+        foreach (string file in Directory.GetFiles(PhotoScripts, "*.cs", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(file);
+            int at = text.IndexOf("Find(\"ListBackground\")", StringComparison.Ordinal);
+            while (at >= 0)
+            {
+                string window = text.Substring(at, Math.Min(4000, text.Length - at));
+                Match copy = made.Match(window);
+                if (copy.Success)
+                {
+                    copies++;
+                    string name = copy.Groups[1].Value;
+                    Match kept = Regex.Match(window, @"(_\w+) = \(RectTransform\)" + name + @"\.transform;");
+                    bool on = window.Contains(name + ".SetActive(true);") || (kept.Success && text.Contains(kept.Groups[1].Value + ".gameObject.SetActive("));
+                    if (!on)
+                    {
+                        off.Add(System.IO.Path.GetFileName(file));
+                    }
+                }
+                at = text.IndexOf("Find(\"ListBackground\")", at + 1, StringComparison.Ordinal);
+            }
+        }
+        Check(copies >= 5 && off.Count == 0, "gallery root cause, everywhere: every copy of the game's switched-off list background in the mod is switched on (" + copies + " copies"
+                                           + (off.Count > 0 ? "; left off in " + string.Join(", ", off) : string.Empty) + ")");
     }
 
     // ---------------------------------------------------------------- one tap
