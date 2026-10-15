@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Markets
         public int OwnBuyDay, OwnSellDay;
 
         // Capital added or taken out while it runs (MarketBots.Add, MarketBots.TakeOut).
-        public int TopUp;                           // MarketBots.TopUpAdded until its next decision, TopUpDecided until that is traded; 0 none
+        public int TopUp;                           // MarketBots.TopUpAdded until its next decision, TopUpDecided until that is traded (TopUpAgain, TopUpDecidedAgain: once more after a step the cash was short at); 0 none
         public long MonthAdded;                     // money added this month times the market days of it that went before (less for money taken out): its fee is on the money while it was there
 
         public BotFirm Def => MarketBots.Firm(Firm);
@@ -170,6 +170,7 @@ namespace RealLifeOverhaul.Markets
         public const int OwnVolumePct = 10;            // the player's own company: every bot of theirs together trades at most this share of its ordinary day's volume in a day
         public const int ChangeLeastAtStart = 500;     // the least added to a running bot or taken out of it at a time, at the start's prices: five of its least purchases
         public const int TopUpAdded = 1, TopUpDecided = 2;   // Bot.TopUp: capital added, not yet decided on; decided on, not yet traded
+        public const int TopUpAgain = 3, TopUpDecidedAgain = 4;   // the same once more, after a first step at which the player's cash was short of a purchase (one more market day, then no more)
 
         public static readonly int[] PayPcts = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };   // per cent of new profit paid out (0: none)
 
@@ -557,7 +558,8 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// The most that can be taken out of a running bot now without selling anything: its money not in shares, less
         /// what it owes the player in payouts; no more than leaves it the least a bot is given; and no more than keeps its
-        /// worth over its floor reckoned on the smaller capital (so taking money out never stops it). 0: none.
+        /// worth over its floor, reckoned on the smaller capital, by its cushion (<see cref="Cushion"/>), so that taking
+        /// money out never brings it to the point where an ordinary move of its shares stops it. 0: none.
         /// </summary>
         public static long MostOut(MarketState state, Bot b, long least, int phase)
         {
@@ -565,15 +567,75 @@ namespace RealLifeOverhaul.Markets
             {
                 return 0;
             }
-            long most = Math.Min(b.Cash - b.PayOwed, Math.Min(b.Capital - least, b.Base - least));
+            long cap = Math.Min(b.Cash - b.PayOwed, Math.Min(b.Capital - least, b.Base - least));
             long worth = Worth(state, b, phase);
-            long room = worth - Floor(b);
-            most = Math.Min(most, room > 0 ? (room * 100 - 1) / b.Loss : 0);
-            while (most > 0 && worth - most <= (b.Base - most) * (100 - b.Loss) / 100)
+            long need = Math.Max(1L, Cushion(b, worth - b.Cash));
+            long room = worth - Floor(b) - need;
+            long most = Math.Min(cap, room >= 0 ? room * 100 / b.Loss : 0);
+            // (the floor's rounding: a few steps at most, either way)
+            while (most > 0 && !Keeps(b, worth, most, need))
             {
-                most--;   // (the floor's rounding: a step or two at most)
+                most--;
+            }
+            while (most >= 0 && most < cap && Keeps(b, worth, most + 1, need))
+            {
+                most++;
             }
             return Math.Max(0L, most);
+        }
+
+        // True when a bot worth so much keeps its cushion over its floor with so much taken out.
+        private static bool Keeps(Bot b, long worth, long taken, long need)
+        {
+            return worth - taken - (b.Base - taken) * (100 - b.Loss) / 100 >= need;
+        }
+
+        /// <summary>
+        /// What a take-out leaves between a bot's worth and its floor at the least: its limit's share of what it holds in
+        /// shares (rounded up). Its shares may then fall by as much as it may lose in all, a far larger move than a day's,
+        /// before it stops, so taking money out never leaves it to be stopped by the next ordinary move; money not in
+        /// shares does not move, so a bot holding none needs no more than to stay over its floor.
+        /// </summary>
+        public static long Cushion(Bot b, long inShares)
+        {
+            return inShares <= 0 ? 0L : (inShares * b.Loss + 99) / 100;
+        }
+
+        /// <summary>True while capital added has been decided on and waits for the first step to be traded: more of what it holds may be bought.</summary>
+        public static bool TopUpDue(Bot b)
+        {
+            return b.TopUp == TopUpDecided || b.TopUp == TopUpDecidedAgain;
+        }
+
+        /// <summary>
+        /// After the first step at which capital added was traded: done, unless the player's cash was short of a purchase
+        /// that first time, when it is decided on and tried once more the next market day (then done whatever happens).
+        /// </summary>
+        public static void TopUpTraded(Bot b, bool cashShort)
+        {
+            if (b.TopUp == TopUpDecided && cashShort)
+            {
+                b.TopUp = TopUpAgain;
+            }
+            else if (TopUpDue(b))
+            {
+                b.TopUp = 0;
+            }
+        }
+
+        /// <summary>
+        /// The player's cash already given to their bots to trade: every bot's money not in shares. A hire or capital
+        /// added may use only the cash beyond it, so no more is given than the player has (bots given more before this
+        /// rule keep trading as they were).
+        /// </summary>
+        public static long Committed(MarketState state)
+        {
+            long sum = 0;
+            for (int i = 0; i < state.Bots.Count; i++)
+            {
+                sum += Math.Max(0L, state.Bots[i].Cash);
+            }
+            return sum;
         }
 
         /// <summary>
@@ -949,7 +1011,7 @@ namespace RealLifeOverhaul.Markets
             if (topUp)
             {
                 money = TopUpHeld(state, b, day, year, least, target, tradeLeast, money);
-                b.TopUp = TopUpDecided;
+                b.TopUp = b.TopUp >= TopUpAgain ? TopUpDecidedAgain : TopUpDecided;
             }
             if (!rebalance)
             {

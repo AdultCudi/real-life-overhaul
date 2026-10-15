@@ -54,7 +54,10 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- the player's asks
 
-        /// <summary>A firm's bot hired with so much capital and its settings (each held to its choices). Null with the reason when it cannot be.</summary>
+        /// <summary>
+        /// A firm's bot hired with so much capital and its settings (each held to its choices), the capital out of the cash
+        /// not already given to the player's other bots (<see cref="BotCashFree"/>). Null with the reason when it cannot be.
+        /// </summary>
         public Bot Hire(int firm, long capital, int size, int stop, int loss, out BotWhy why)
         {
             Finish();   // (a moment half played is played out first: Midway)
@@ -76,7 +79,7 @@ namespace RealLifeOverhaul.Markets
             {
                 why = BotWhy.TooLittle;
             }
-            else if (capital > Wallet.Cash)
+            else if (capital > BotCashFree)
             {
                 why = BotWhy.NoCash;
             }
@@ -194,14 +197,20 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
+        /// <summary>
+        /// The cash a hire or capital added may use: what can be afforded in the market (with the money worked orders have
+        /// with the broker) less what is already given to the player's bots to trade (MarketBots.Committed). Never below nothing.
+        /// </summary>
+        public long BotCashFree => Math.Max(0L, Wallet.Cash - MarketBots.Committed(State));
+
         /// <summary>The least added to a running bot or taken out of it at a time, at today's prices.</summary>
         public long BotChangeLeast => AtPrices(MarketBots.ChangeLeastAtStart);
 
         /// <summary>
         /// More of the player's cash given to a running bot to trade (MarketBots.Add): nothing sold, nothing moved, a line
         /// of the history. It puts the money to work from its next decision (at once while the market is shut). False
-        /// with the reason: not running, less than <see cref="BotChangeLeast"/>, or more than the player's cash (with the
-        /// money worked orders have with the broker, as at a hire).
+        /// with the reason: not running, less than <see cref="BotChangeLeast"/>, or more than the cash not already given to
+        /// the player's bots (<see cref="BotCashFree"/>, as at a hire).
         /// </summary>
         public bool AddCapital(int firm, long amount, out BotWhy why)
         {
@@ -209,7 +218,7 @@ namespace RealLifeOverhaul.Markets
             Bot b = Asked(firm, out why);
             if (b != null)
             {
-                why = b.Status != BotStatus.Running ? BotWhy.NotRunning : amount < BotChangeLeast ? BotWhy.ChangeTooLittle : amount > Wallet.Cash ? BotWhy.NoCash : BotWhy.None;
+                why = b.Status != BotStatus.Running ? BotWhy.NotRunning : amount < BotChangeLeast ? BotWhy.ChangeTooLittle : amount > BotCashFree ? BotWhy.NoCash : BotWhy.None;
             }
             if (why != BotWhy.None)
             {
@@ -402,9 +411,9 @@ namespace RealLifeOverhaul.Markets
                 {
                     Execute(b, day, phase);
                 }
-                if (k == 1 && b.TopUp == MarketBots.TopUpDecided)
+                if (k == 1 && MarketBots.TopUpDue(b))
                 {
-                    b.TopUp = 0;   // (capital added was decided on and is traded now: from here on it trades by its rules alone)
+                    MarketBots.TopUpTraded(b, b.ShortDay == day);   // (traded now; once more the next market day if the cash was short of it)
                 }
                 for (int j = b.Holdings.Count - 1; j >= 0; j--)
                 {
@@ -531,7 +540,7 @@ namespace RealLifeOverhaul.Markets
             {
                 BotOrder o = b.Pending[i];
                 Stock s = o.Buy ? State.Stock(o.StockId) : null;
-                if (s == null || f == null || !MarketBots.Allowed(State, b, s, day) || (b.Holding(s.Id) != null && b.TopUp != MarketBots.TopUpDecided))
+                if (s == null || f == null || !MarketBots.Allowed(State, b, s, day) || (b.Holding(s.Id) != null && !MarketBots.TopUpDue(b)))
                 {
                     // (more of what it holds only when capital added was decided on: MarketBots.Decide)
                     continue;

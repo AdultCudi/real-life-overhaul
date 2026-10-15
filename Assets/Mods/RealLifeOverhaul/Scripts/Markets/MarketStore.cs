@@ -537,7 +537,7 @@ namespace RealLifeOverhaul.Markets
                 b.OwnSoldBp = Clamp(I(c, 39), 0, 100000);
                 b.OwnBuyDay = I(c, 40);
                 b.OwnSellDay = I(c, 41);
-                b.TopUp = Clamp(I(c, 42), 0, MarketBots.TopUpDecided);
+                b.TopUp = Clamp(I(c, 42), 0, MarketBots.TopUpDecidedAgain);
                 b.MonthAdded = L(c, 43);
                 s.Bots.Add(b);
             }
