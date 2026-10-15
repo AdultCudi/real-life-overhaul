@@ -436,7 +436,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// The posts about a business, for the Business tab: the player's own still on the account (<paramref name="own"/>)
+        /// The posts about a business, for its card on the Business tab: the player's own still on the account, reviews apart (<paramref name="own"/>)
         /// and the paid posts of every deal there that Flare still has on record. <paramref name="last"/> is the day of the
         /// newest, -1 with none. One walk over the posts and the deals.
         /// </summary>
@@ -448,7 +448,7 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < f.Posts.Count; i++)
             {
                 FlarePost p = f.Posts[i];
-                if (p.Author == FlareAuthor.Player && p.Place == place)
+                if (p.Author == FlareAuthor.Player && p.Place == place && p.Source != FlareSource.Review)
                 {
                     own++;
                     last = Math.Max(last, p.Day);

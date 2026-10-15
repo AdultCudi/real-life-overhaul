@@ -71,6 +71,7 @@ namespace RealLifeOverhaul.Ledger
             Instance = this;
             _onSave = OnSave;
             _payWeek = PayWeek;
+            ShareRegister();
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -194,7 +195,16 @@ namespace RealLifeOverhaul.Ledger
             bool skipping = uis != null && uis.timeMachine != null && uis.timeMachine.isRunning;
             if (!skipping)
             {
-                Print(day, hour, false);
+                if (SharedCity.Follows(LedgerShare.Part))
+                {
+                    GuestPieces(day, hour);   // a guest that follows the host's paper prints none of its own: its own stories go to the host
+                }
+                else
+                {
+                    OwnAgain(day);
+                    Print(day, hour, false);
+                    Reprint(day, hour);
+                }
                 Round(day, hour);
             }
             BuildingRegistration home = Home();
@@ -370,6 +380,7 @@ namespace RealLifeOverhaul.Ledger
                 LedgerBridges.Extra(day, _scratch);
                 e.Pieces.AddRange(_scratch);
             }
+            GuestPiecesInto(e, day);
             LedgerBridges.Market?.Invoke(e, since);
             LedgerBridges.Economy?.Invoke(e);
             e.Pieces.RemoveAll(p => p == null);
@@ -382,6 +393,7 @@ namespace RealLifeOverhaul.Ledger
             _state.Edition = e;
             _page?.Changed();
             _stand?.Changed();
+            SharedCity.Changed(LedgerShare.Part);   // (to the guests of a session with the next update)
             Logger?.Info("City Ledger: the edition of day " + day + (again ? " written again" : string.Empty) + " has " + e.Pieces.Count + " pieces"
                          + (e.HasMarket ? ", the market's close of day " + e.MarketDay + " (" + e.Quotes.Count + " companies)" : ", no market report") + ".");
         }

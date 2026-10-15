@@ -24,6 +24,7 @@ namespace RealLifeOverhaul
         private const string Plugins = "ExternalPlugins";
         private const string Sky = "DayNightCycle";
         private const string UnityUi = "UnityEngine.UI";
+        private const string Steam = "Facepunch.Steamworks.Win64";
 
         static GameContract()
         {
@@ -92,6 +93,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart FrontSignsPart = ContractBook.Part("front_signs", null, "the signs on the mod's buildings");
         public static readonly GamePart ClaimedRows = ContractBook.Part("claimed_rows", null, "the mod's buildings left out of the city map's rows of units to let");
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
+        public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -181,6 +183,10 @@ namespace RealLifeOverhaul
 
         // Meta/SaveTools ("yes" when it cannot be read)
         public static readonly GameMember CanSave = Optional(StaticMethod(SaveCheck, Game, "SaveGameManager", "CanSave", "Boolean"));
+
+        // Social/Flare/FlareLiveGame: Steam's own text filter, through the game's Steam library (without it the mod's own word list, FlareFilter)
+        public static readonly GameMember SteamFilterInit = Optional(StaticMethod(ChatFilter, Steam, "Steamworks.SteamUtils", "InitFilterText", "Boolean"));
+        public static readonly GameMember SteamFilterText = Optional(StaticMethod(ChatFilter, Steam, "Steamworks.SteamUtils", "FilterText", "String", "TextFilteringContext", "SteamId", "String"));
 
         // People/Seating
         public static readonly GameMember BenchSitter = Field(BenchSitters, Game, "OutsideBenchController", "_npc", "BaseHuman");

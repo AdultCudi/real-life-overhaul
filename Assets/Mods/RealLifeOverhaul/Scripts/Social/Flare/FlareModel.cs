@@ -33,7 +33,16 @@ namespace RealLifeOverhaul.Flare
         Issue = 25,        // the player about an issue in the city (safety after a crime, the roads after a crash)
         Campaign = 26,     // the player about their own run for office or their office (Civic/CivicOffice, through Wiring/FlareLinks)
         Graduated = 27,    // the player graduated at the university's ceremony (Careers, through Wiring/FlareLinks)
-        Interior = 28      // a business of the player's with a striking interior (Scripts/Interiors, through Wiring/InteriorLinks)
+        Interior = 28,     // a business of the player's with a striking interior (Scripts/Interiors, through Wiring/InteriorLinks)
+        Report = 29,       // a report or a complaint to the city (Arg: FlareReport; District, Place): the City Office answers and acts (FlareLiveRules)
+        Review = 30,       // a review of a business (Arg: the stars, 1 to 5; Place, Name)
+        Announce = 31,     // an announcement for a business of the player's (Arg: FlareAnnounce; Place, Name)
+        Reply = 32,        // a reply to a post (ReplyTo); its words are the typed text, or a line of its kind (Arg: FlareReplyKind)
+        CityTalk = 33,     // one of the city's people about the day (Arg: FlareTalk; Name, District as the topic has them)
+        Official = 34,     // an official account's own post (Who: FlareOfficial; Arg: FlareOfficialPost)
+        BusinessPost = 35, // a business of the city's own post (Place, Name; Arg: its kind of offer)
+        Invite = 36,       // an invitation to a street event or an event at a business (Arg: the event's kind; Name, Place, Topic)
+        Answer = 37        // an account's answer in character to a report, a review or a mention (Arg: FlareAnswer; ReplyTo)
     }
 
     /// <summary>The issues a post can raise, as Flare knows them (Wiring/FlareLinks turns them into the council's own).</summary>
@@ -82,7 +91,12 @@ namespace RealLifeOverhaul.Flare
         Brand = 3,
         Candidate = 4,
         Company = 5,      // a listed company of the stock market
-        Ledger = 6        // the City Ledger's own account
+        Ledger = 6,       // the City Ledger's own account
+        Citizen = 7,      // one of the city's people (Who: their number in the city's cast, FlareLiveRules.Citizens)
+        Official = 8,     // an official account (Who: FlareOfficial)
+        Business = 9,     // a business of the city's (Place, Name)
+        Network = 10,     // another player of a Going Public session (AuthorId, AuthorName)
+        Tycoon = 11       // a rival tycoon of the end game (Name), once that feature is in the mod (FlareBridges.Tycoons)
     }
 
     /// <summary>The account's tier, by followers (FlareRules.TierFrom).</summary>
@@ -169,6 +183,32 @@ namespace RealLifeOverhaul.Flare
         public bool Viral;
         public bool Bad;             // it went badly: the wrong tone for what it was about
         public bool Disclosed;       // a post about a company the player holds, from an account big enough to say so
+
+        // ---- the living network (FlareLiveRules), each appended to the save's post line after the older fields
+        public int Minute;           // the minute of the hour it went up (0 to 59): it shows from then on
+        public int ReplyTo = -1;     // the post it answers (a local post's number); -1 for none
+        public string Text;          // the words the player typed, as typed (never what decides an effect: the built part does)
+        public string Pic;           // its picture: "f:" a photo of the Shots folder, "s:" a shot of the screen, "n:" a picture of the session's (FlareSnap)
+        public int NetId;            // its number in a Going Public session's shared feed (the host's own post number); 0 for none
+        public int Token;            // a guest's own post on its way to the host: the number that finds it again when it comes back
+        public string AuthorId;      // a player of the session (Going Public's player id), for a Network post
+        public string AuthorName;    // ...and their name, as they gave it
+        public string District;      // the district a report or a city post is about (the game's own id)
+        public string Topic;         // its tags, without the #, a space between each: what Trending counts
+        public string Reactors;      // who of the people with names liked, replied or shared it, and when (FlareLiveRules.Reactors)
+        public string Mention;       // an account it calls on, by key ("o:0", "b:name", "p:player"): it answers in character
+        public int Reposts;          // shares, the city's and the players'
+        public int PlayerLikes;      // likes from other players of the session
+        public int Case = -1;        // the City Office's case it opened (FlareCase.Id); -1 for none
+        public bool Liked;           // the player liked it
+        public bool Reposted;        // the player shared it
+        public bool Shared;          // it came from the session's shared feed (a guest's copy of the host's)
+        public int When = -1;        // an invitation's hour: day * 24 + hour; -1 for none
+        public bool Pending;         // a guest's own post the host has not sent back yet
+        public string NetPic;        // the player's own picture as the session has it ("n:" and its id), once its small copy went
+
+        /// <summary>When it went up, in game minutes since day 0: before then it is not shown.</summary>
+        public long At => ((long)Day * 24 + Hour) * 60 + Minute;
     }
 
     /// <summary>A business of the player's as Flare has seen it: since when, and its best day, for the record day draft.</summary>
@@ -232,6 +272,7 @@ namespace RealLifeOverhaul.Flare
         public int MayorMood;            // -100 to 100: how the feed feels about the city's running, which pulls a little on the mayor's approval
         public int IssueDay = -1;        // the last day an issue was drafted
         public readonly List<FlareViralShares> ViralShares = new List<FlareViralShares>(4);   // viral posts about companies the player holds: selling soon after is market abuse
+        public readonly FlareNet Net = new FlareNet();   // the living network: the City Office's cases, the messages, the watches (FlareLiveModel)
 
         public FlareInfluencer Influencer(int id)
         {

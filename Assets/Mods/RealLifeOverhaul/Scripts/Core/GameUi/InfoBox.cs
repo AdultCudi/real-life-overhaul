@@ -9,8 +9,8 @@ namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
     /// The white box the game shows one employee in (MyEmployees, "Left/WhiteBox"), as a page that can be written
-    /// again and again: a title, lines of text, headlines over a grey rule, switches, previous/next selectors and a
-    /// row of up to three buttons. Each of those is one of the box's own parts, kept asleep as a template and copied
+    /// again and again: a title, lines of text, headlines over a grey rule, switches, previous/next selectors and
+    /// rows of buttons. Each of those is one of the box's own parts, kept asleep as a template and copied
     /// when asked for:
     ///
     ///   title      EmployeePersonalData/EmployeeName        the employee's name
@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.GameUi
     ///   headline   CurrentBusinessHeadline                  a word on a grey rule
     ///   switch     Demands/DemandTemplate                   a demand's name and its tick box
     ///   selector   AssignedAddress                          the arrows either side of the business an employee is assigned to
-    ///   buttons    Buttons                                  the positive, negative and additional action buttons
+    ///   buttons    Buttons                                  the positive, negative and additional action buttons, copied for a further one of a kind and laid out by ButtonFlow
     ///
     /// The box lays its children out itself (the game's vertical layout group), so a page is whatever was added, in order.
     /// A page is rebuilt only when the player clicks something.
@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.GameUi
             Wrap(box._line.GetComponent<TMP_Text>());
             box.PrepareSelector();
             box.PrepareSwitch();
+            PrepareButtons(box._buttons);
             box.MakeLook(templates);
             box.Space(whiteBox);
             box.Keep(templates);
@@ -202,6 +203,27 @@ namespace RealLifeOverhaul.GameUi
                 }
             }
             AppShell.Width(main.Find("Name"), 520f, true);
+        }
+
+        // The row of buttons lays its buttons out with the mod's ButtonFlow in place of the game's one-line layout, and
+        // asks for the height its lines take (the game's row keeps 120 whatever it holds). Every row is a copy of this one.
+        private static void PrepareButtons(GameObject buttons)
+        {
+            var line = buttons.GetComponent<HorizontalLayoutGroup>();
+            if (line != null)
+            {
+                UnityEngine.Object.DestroyImmediate(line);
+            }
+            if (buttons.GetComponent<LayoutGroup>() != null || buttons.AddComponent<ButtonFlow>() == null)
+            {
+                UiClone.Fallback("the game's row of buttons kept a layout of its own, so a row shows one button of each kind");
+                return;
+            }
+            var size = buttons.GetComponent<LayoutElement>();
+            if (size != null)
+            {
+                size.minHeight = size.preferredHeight = -1f;   // the row is as tall as its lines (ButtonRules.RowHeight)
+            }
         }
 
         // ---------------------------------------------------------------- writing a page
@@ -450,7 +472,9 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>
         /// The row of action buttons, in the box or (with a parent) anywhere else. The row has the game's three kinds:
-        /// index 0 the positive one, 1 the negative one, 2 the additional one; all three start hidden (Button below).
+        /// index 0 the positive one, 1 the negative one, 2 the additional one; all start hidden, and each button the page
+        /// writes shows (Button below), as many of a kind as it writes. Its layout (ButtonFlow, ButtonRules) puts them in
+        /// the order written, on lines from the box's left edge to its right, on more lines when they do not fit one.
         /// </summary>
         public Transform ButtonRow(Transform parent = null)
         {
@@ -459,12 +483,17 @@ namespace RealLifeOverhaul.GameUi
                 EndSection();   // a row of buttons closes the section it follows: its buttons act on the page, not on its last rows
             }
             GameObject row = Add(_buttons, parent);
+            var flow = row.GetComponent<ButtonFlow>();
+            if (flow != null)
+            {
+                flow.Begin();
+                return row.transform;
+            }
             for (int i = 0; i < row.transform.childCount; i++)
             {
                 row.transform.GetChild(i).gameObject.SetActive(false);
             }
-            // The buttons that show share the row between them, as in the game: a button has no width of its own
-            // (its picture stretches to it), so the row has to hand the width out.
+            // (The game's own layout, if the box's row could not be given its own: one line, a button of each kind.)
             var layout = row.GetComponent<HorizontalLayoutGroup>();
             if (layout != null)
             {
@@ -476,14 +505,23 @@ namespace RealLifeOverhaul.GameUi
 
         public const int Positive = 0, Negative = 1, Additional = 2;
 
-        /// <summary>Shows one of a row's three buttons with its word and its click. A row with fewer kinds uses the last it has.</summary>
+        /// <summary>
+        /// Shows a button of a row with its word and its click: the kind's own button, or for a further button of a kind
+        /// already shown on the page a copy of it beside it, never in its place. Written again with the same kind and
+        /// word, it is the same button. A row with fewer kinds uses the last it has.
+        /// </summary>
         public static Button Button(Transform row, int kind, string key, Action click)
         {
             if (row == null || row.childCount == 0)
             {
                 return null;
             }
-            Transform child = row.GetChild(Mathf.Clamp(kind, 0, row.childCount - 1));
+            var flow = row.GetComponent<ButtonFlow>();
+            Transform child = flow != null ? flow.Take(kind, key) : row.GetChild(Mathf.Clamp(kind, 0, row.childCount - 1));
+            if (child == null)
+            {
+                return null;
+            }
             child.gameObject.SetActive(true);
             var text = child.GetComponentInChildren<TMP_Text>(true);
             if (text != null)

@@ -134,16 +134,19 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// What Flare's talk adds to a business's customers now, per cent (asked each time business pressure writes the
-        /// figure: Wiring/FlareLinks). Nothing while Flare is not running or nobody talks about a business.
+        /// figure: Wiring/FlareLinks), and a point more in a district the City Office's cleaners are going round. Nothing
+        /// while Flare is not running or nobody talks about a business.
         /// </summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             FlareDirector d = Instance;
-            if (d == null || !d.Running || d._file.Buzz.Count == 0 || reg == null || SaveGameManager.Current == null)
+            if (d == null || !d.Running || reg == null || SaveGameManager.Current == null || (d._file.Buzz.Count == 0 && d._file.Net.Watches.Count == 0))
             {
                 return 0;
             }
-            return d._file.BuzzAt(FlareGame.Place(reg), SaveGameManager.Current.Day);
+            int day = SaveGameManager.Current.Day;
+            int clean = d._file.Net.Watches.Count > 0 && d._file.Net.WatchIn(reg.Neighborhood, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
+            return (d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0) + clean;
         }
 
         /// <summary>For brands: how a scandal at a shop spreads, thousandths of its loss, by the account's reputation.</summary>

@@ -1,0 +1,912 @@
+using System;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace RealLifeOverhaul.Flare
+{
+    /// <summary>
+    /// The cards of Flare's lists, each made once and bound to one row after another as the list scrolls (FlareList): a
+    /// post, a notification, an account, a conversation, a message, a profile's head, a note or a section's title, a tag of
+    /// Trending, a business, a deal, the "what's happening" prompt and a button. A card lays itself out when it is bound
+    /// and says how tall it is; what it calls when clicked is the app's, reading the row it shows then.
+    /// </summary>
+    public sealed partial class FlareApp
+    {
+        private const int CellPost = 1, CellNotice = 2, CellAccount = 3, CellThread = 4, CellBubble = 5, CellProfile = 6, CellNote = 7, CellTag = 8,
+            CellShop = 9, CellDeal = 10, CellPrompt = 11, CellButton = 12;
+
+        private FlareCell MakeCell(int kind)
+        {
+            switch (kind)
+            {
+                case CellPost: return new PostCell(this);
+                case CellNotice: return new NoticeCell(this);
+                case CellAccount: return new AccountCell(this);
+                case CellThread: return new ThreadCell(this);
+                case CellBubble: return new BubbleCell(this);
+                case CellProfile: return new ProfileCell(this);
+                case CellTag: return new TagCell(this);
+                case CellShop: return new ShopCell(this);
+                case CellDeal: return new DealCell(this);
+                case CellPrompt: return new PromptCell(this);
+                case CellButton: return new ButtonCell(this);
+                default: return new NoteCell(this);
+            }
+        }
+
+        // A row's height before its card has shown it: the one measured before for what it shows, else a guess by its words.
+        private float Estimate(FlareRow row, float width)
+        {
+            float known;
+            if (_heights.TryGetValue(HeightKey(row), out known))
+            {
+                return known;
+            }
+            switch (row.Kind)
+            {
+                case CellPost:
+                    int chars = (row.Post != null && row.Post.Text != null ? row.Post.Text.Length : 0) + 90;
+                    float lines = Mathf.Ceil(chars * FlareKit.Body * 0.55f / Mathf.Max(200f, width - 200f));
+                    return 210f + lines * 40f + (row.Post != null && FlarePictures.KeyOf(row.Post) != null ? 420f : 0f);
+                case CellNotice: return 150f;
+                case CellAccount: return 150f;
+                case CellThread: return 130f;
+                case CellBubble: return 120f;
+                case CellProfile: return 560f;
+                case CellNote: return row.Number == 1 ? 70f : 110f;
+                case CellTag: return 110f;
+                case CellShop: return 300f;
+                case CellDeal: return 240f;
+                case CellPrompt: return 150f;
+                default: return 100f;
+            }
+        }
+
+        private static long HeightKey(FlareRow row)
+        {
+            long id = row.Post != null ? row.Post.Id : row.Dm != null ? 1000000L + row.Dm.Id : row.Number;
+            return row.Kind * 100000000L + id * 4 + (row.Kind == CellPost && row.Number == 1 ? 1 : 0);
+        }
+
+        private void Measured(FlareRow row, float height)
+        {
+            if (row.Post != null || row.Dm != null)
+            {
+                _heights[HeightKey(row)] = height;
+            }
+        }
+
+        // ---------------------------------------------------------------- the parts a card shares
+
+        private abstract class Card : FlareCell
+        {
+            protected readonly FlareApp App;
+            protected readonly Image Back;
+            protected FlareLook Look = FlareLook.Light;
+
+            protected Card(FlareApp app, string name, bool clickable)
+            {
+                App = app;
+                Rect = FlareKit.Rect(app._root, name);
+                Back = FlareKit.Box(Rect, "Card", Color.white, FlareKit.Radius, false, clickable);
+                FlareKit.Stretch(Back.rectTransform, 0f, 0f, 0f, 0f);
+                if (clickable)
+                {
+                    FlareKit.Click(Back, Clicked);
+                }
+            }
+
+            protected virtual void Clicked()
+            {
+            }
+
+            public override void Paint(FlareLook look)
+            {
+                Look = look;
+                Back.color = look.Card;
+                Colours();
+            }
+
+            protected abstract void Colours();
+        }
+
+        // An avatar: a circle of the account's colour with its initials, or an official account's glyph.
+        private sealed class Avatar
+        {
+            public readonly Image Circle, Glyph;
+            public readonly TextMeshProUGUI Letters;
+
+            public Avatar(Transform parent, float size, Action click)
+            {
+                Circle = FlareKit.Box(parent, "Avatar", Color.white, 0f, true, click != null);
+                if (click != null)
+                {
+                    FlareKit.Click(Circle, click);
+                }
+                Letters = FlareKit.Text(Circle.transform, "Initials", size * 0.38f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                FlareKit.Stretch(Letters.rectTransform, 0f, 0f, 0f, 0f);
+                Glyph = FlareKit.Box(Circle.transform, "Glyph", Color.white);
+                FlareKit.Stretch(Glyph.rectTransform, size * 0.22f, size * 0.22f, size * 0.22f, size * 0.22f);
+            }
+
+            public void Show(string key, string name, float x, float y, float size)
+            {
+                FlareKit.Place(Circle.rectTransform, x, y, size, size);
+                Circle.color = FlareLook.AvatarOf(key);
+                bool official = key != null && key.StartsWith("o:", StringComparison.Ordinal);
+                FlareKit.Show(Glyph, official);
+                FlareKit.Show(Letters, !official);
+                if (official)
+                {
+                    int n;
+                    int.TryParse(key.Substring(2), out n);
+                    Glyph.sprite = FlareIcons.Get(n == (int)FlareOfficial.Police ? FlareGlyph.Flag : n == (int)FlareOfficial.Transit ? FlareGlyph.Pin : n == (int)FlareOfficial.Bank ? FlareGlyph.Store : FlareGlyph.City);
+                }
+                else
+                {
+                    FlareKit.Set(Letters, Initials(name));
+                }
+            }
+        }
+
+        // A pill button: a filled or a quiet one, its words, and a click made once.
+        private sealed class Pill
+        {
+            public readonly Image Back;
+            public readonly TextMeshProUGUI Label;
+
+            public Pill(Transform parent, string name, Action click)
+            {
+                Back = FlareKit.Box(parent, name, Color.white, 0f, true, true);
+                FlareKit.Click(Back, click);
+                Label = FlareKit.Text(Back.transform, "Label", 26f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                FlareKit.Stretch(Label.rectTransform, 12f, 0f, 12f, 0f);
+            }
+
+            public float Show(FlareLook look, string text, bool filled, float x, float y, float height = 58f)
+            {
+                FlareKit.Set(Label, text);
+                float w = Mathf.Max(140f, Label.GetPreferredValues(text, 2000f, 0f).x + 60f);
+                FlareKit.Place(Back.rectTransform, x, y, w, height);
+                Back.color = filled ? look.Text : look.Chip;
+                Label.color = filled ? look.Card : look.ChipText;
+                FlareKit.Show(Back, true);
+                return w;
+            }
+
+            public void Hide()
+            {
+                FlareKit.Show(Back, false);
+            }
+        }
+
+        // ---------------------------------------------------------------- a post
+
+        private sealed class PostCell : Card
+        {
+            private readonly Avatar _avatar;
+            private readonly TextMeshProUGUI _name, _meta, _context, _body, _attach, _going, _case, _replies, _reposts, _likes;
+            private readonly Image _check, _attachBox, _attachIcon, _goingBack, _caseBack, _replyIcon, _repostIcon, _likeIcon, _replyHit, _repostHit, _likeHit;
+            private readonly RawImage _picture;
+
+            public PostCell(FlareApp app) : base(app, "Post", true)
+            {
+                _avatar = new Avatar(Rect, FlareKit.Avatar, Author);
+                _name = FlareKit.Text(Rect, "Name", FlareKit.Name, Color.white, FontStyles.Bold);
+                _name.textWrappingMode = TextWrappingModes.NoWrap;
+                _check = FlareKit.Box(Rect, "Check", Color.white);
+                _check.sprite = FlareIcons.Get(FlareGlyph.Check);
+                _meta = FlareKit.Text(Rect, "Meta", FlareKit.Small, Color.white);
+                _meta.textWrappingMode = TextWrappingModes.NoWrap;
+                _context = FlareKit.Text(Rect, "Context", FlareKit.Small, Color.white);
+                _body = FlareKit.Text(Rect, "Body", FlareKit.Body, Color.white);
+                _body.overflowMode = TextOverflowModes.Overflow;
+                _attachBox = FlareKit.Box(Rect, "Attach", Color.white, 18f);
+                _attachIcon = FlareKit.Box(_attachBox.transform, "Icon", Color.white);
+                _attach = FlareKit.Text(_attachBox.transform, "Words", 28f, Color.white);
+                _attach.overflowMode = TextOverflowModes.Overflow;
+                _picture = FlareKit.Picture(Rect, "Picture");
+                _goingBack = FlareKit.Box(Rect, "Going", Color.white, 0f, true, true);
+                FlareKit.Click(_goingBack, () => App.GoingClicked(Row));
+                _going = FlareKit.Text(_goingBack.transform, "Label", 28f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                FlareKit.Stretch(_going.rectTransform, 0f, 0f, 0f, 0f);
+                _caseBack = FlareKit.Box(Rect, "Case", Color.white, 14f);
+                _case = FlareKit.Text(_caseBack.transform, "Label", 25f, Color.white, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                FlareKit.Stretch(_case.rectTransform, 18f, 0f, 18f, 0f);
+                _replyHit = Action(out _replyIcon, out _replies, FlareGlyph.Reply, () => App.ReplyClicked(Row));
+                _repostHit = Action(out _repostIcon, out _reposts, FlareGlyph.Repost, () => App.RepostClicked(Row));
+                _likeHit = Action(out _likeIcon, out _likes, FlareGlyph.Heart, () => App.LikeClicked(Row));
+            }
+
+            private Image Action(out Image icon, out TextMeshProUGUI count, FlareGlyph glyph, Action click)
+            {
+                Image hit = FlareKit.Box(Rect, "Action", new Color(1f, 1f, 1f, 0f), 20f, false, true);
+                FlareKit.Click(hit, click);
+                icon = FlareKit.Box(hit.transform, "Icon", Color.white);
+                icon.sprite = FlareIcons.Get(glyph);
+                FlareKit.Place(icon.rectTransform, 10f, 9f, 38f, 38f);
+                count = FlareKit.Text(hit.transform, "Count", FlareKit.Small, Color.white, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                FlareKit.Place(count.rectTransform, 58f, 0f, 160f, 56f);
+                return hit;
+            }
+
+            protected override void Clicked()
+            {
+                App.PostClicked(Row);
+            }
+
+            private void Author()
+            {
+                App.AuthorClicked(Row);
+            }
+
+            protected override void Colours()
+            {
+                _name.color = Look.Text;
+                _meta.color = Look.Muted;
+                _context.color = Look.Muted;
+                _body.color = Look.Text;
+                _attachBox.color = Look.Raised;
+                _attachIcon.color = Look.Accent;
+                _attach.color = Look.Text;
+                _check.color = Look.Accent;
+                _caseBack.color = Look.AccentSoft;
+                _case.color = Look.Text;
+                _replies.color = _reposts.color = _likes.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                FlarePost p = row.Post;
+                bool big = row.Number == 1;
+                long now = App._director.Now;
+                string name, handle, key;
+                App.AuthorOf(p, out name, out handle, out key);
+                float pad = FlareKit.Pad, av = big ? 100f : FlareKit.Avatar;
+                float x0 = pad + av + FlareKit.Gap, tw = width - x0 - pad;
+                _avatar.Show(key, name, pad, pad, av);
+                float y = pad - 4f;
+                FlareKit.Set(_name, name);
+                float nameW = Mathf.Min(tw * 0.6f, _name.GetPreferredValues(name, 4000f, 0f).x + 4f);
+                FlareKit.Place(_name.rectTransform, x0, y, nameW, 42f);
+                bool official = p.Author == FlareAuthor.Official || p.Author == FlareAuthor.Ledger;
+                FlareKit.Show(_check, official);
+                float mx = x0 + nameW + 10f;
+                if (official)
+                {
+                    FlareKit.Place(_check.rectTransform, mx, y + 6f, 30f, 30f);
+                    mx += 38f;
+                }
+                FlareKit.Set(_meta, handle + "  ·  " + FlareText.Ago(p.At, now));
+                FlareKit.Place(_meta.rectTransform, mx, y + 6f, Mathf.Max(60f, x0 + tw - mx), 36f);
+                y += 46f;
+                string context = App.ContextOf(p);
+                FlareKit.Show(_context, context != null);
+                if (context != null)
+                {
+                    FlareKit.Set(_context, context);
+                    FlareKit.Place(_context.rectTransform, x0, y, tw, 34f);
+                    y += 36f;
+                }
+                string built = App.WordsOf(p, name);
+                string body = p.Text ?? built;
+                string attach = p.Text != null && p.Source != FlareSource.Reply && p.Source != FlareSource.Life ? built : null;
+                _body.fontSize = big ? FlareKit.Body * 1.18f : FlareKit.Body;
+                float bh = FlareKit.Height(_body, body, tw);
+                FlareKit.Set(_body, body);
+                FlareKit.Place(_body.rectTransform, x0, y, tw, bh + 4f);
+                y += bh + 12f;
+                FlareKit.Show(_attachBox, attach != null);
+                if (attach != null)
+                {
+                    float ah = FlareKit.Height(_attach, attach, tw - 100f);
+                    FlareKit.Place(_attachBox.rectTransform, x0, y, tw, ah + 36f);
+                    _attachIcon.sprite = FlareIcons.Get(FlareApp.GlyphOf(p));
+                    FlareKit.Place(_attachIcon.rectTransform, 22f, 18f, 38f, 38f);
+                    FlareKit.Set(_attach, attach);
+                    FlareKit.Place(_attach.rectTransform, 76f, 18f, tw - 100f, ah + 4f);
+                    y += ah + 36f + 14f;
+                }
+                Texture2D picture = App.PictureOf(p);
+                FlareKit.Show(_picture, picture != null);
+                if (picture != null)
+                {
+                    float pw = Mathf.Min(tw, big ? 1000f : 840f), ph = pw * picture.height / Mathf.Max(1f, picture.width);
+                    _picture.texture = picture;
+                    FlareKit.Place(_picture.rectTransform, x0, y, pw, ph);
+                    y += ph + 14f;
+                }
+                bool invite = p.Source == FlareSource.Invite || (p.Source == FlareSource.Announce && p.Arg == (int)FlareAnnounce.Event);
+                FlareKit.Show(_goingBack, invite);
+                if (invite)
+                {
+                    bool going = App._director.IsGoing(p.Id);
+                    FlareKit.Set(_going, FlareText.T(going ? "reallife_flare_going_yes" : "reallife_flare_going"));
+                    _goingBack.color = going ? Look.Chip : Look.Accent;
+                    _going.color = going ? Look.ChipText : Color.white;
+                    FlareKit.Place(_goingBack.rectTransform, x0, y, 260f, 62f);
+                    y += 76f;
+                }
+                string caseLine = App.CaseLineOf(p);
+                FlareKit.Show(_caseBack, caseLine != null);
+                if (caseLine != null)
+                {
+                    FlareKit.Set(_case, caseLine);
+                    FlareKit.Place(_caseBack.rectTransform, x0, y, tw, 52f);
+                    y += 64f;
+                }
+                int replies = App.RepliesOf(p, now), reposts = FlareLiveRules.Shown(p.Reposts, p, now), likes = FlareLiveRules.Shown(p.Likes, p, now) + p.PlayerLikes + (p.Liked ? 1 : 0);
+                float slot = Mathf.Min(260f, tw / 3f);
+                FlareKit.Place(_replyHit.rectTransform, x0 - 10f, y, slot, 56f);
+                FlareKit.Place(_repostHit.rectTransform, x0 - 10f + slot, y, slot, 56f);
+                FlareKit.Place(_likeHit.rectTransform, x0 - 10f + slot * 2f, y, slot, 56f);
+                FlareKit.Set(_replies, replies > 0 ? FlareText.N(replies) : string.Empty);
+                FlareKit.Set(_reposts, reposts > 0 ? FlareText.N(reposts) : string.Empty);
+                FlareKit.Set(_likes, likes > 0 ? FlareText.N(likes) : string.Empty);
+                _replyIcon.color = Look.Muted;
+                _repostIcon.color = p.Reposted ? Look.Share : Look.Muted;
+                _reposts.color = p.Reposted ? Look.Share : Look.Muted;
+                _likeIcon.sprite = FlareIcons.Get(p.Liked ? FlareGlyph.HeartFull : FlareGlyph.Heart);
+                _likeIcon.color = p.Liked ? Look.Like : Look.Muted;
+                _likes.color = p.Liked ? Look.Like : Look.Muted;
+                y += 56f + pad - 14f;
+                y = Mathf.Max(y, pad * 2f + av);
+                App.Measured(row, y);
+                return y;
+            }
+        }
+
+        // ---------------------------------------------------------------- a notification
+
+        private sealed class NoticeCell : Card
+        {
+            private readonly Image _icon;
+            private readonly Avatar _avatar;
+            private readonly TextMeshProUGUI _line, _snippet, _time;
+
+            public NoticeCell(FlareApp app) : base(app, "Notice", true)
+            {
+                _icon = FlareKit.Box(Rect, "Icon", Color.white);
+                _avatar = new Avatar(Rect, 60f, null);
+                _line = FlareKit.Text(Rect, "Line", FlareKit.Body, Color.white);
+                _snippet = FlareKit.Text(Rect, "Snippet", FlareKit.Small, Color.white);
+                _snippet.maxVisibleLines = 2;
+                _time = FlareKit.Text(Rect, "Time", FlareKit.Small, Color.white, FontStyles.Normal, TextAlignmentOptions.TopRight);
+            }
+
+            protected override void Clicked()
+            {
+                App.NoticeClicked(Row);
+            }
+
+            protected override void Colours()
+            {
+                _line.color = Look.Text;
+                _snippet.color = Look.Muted;
+                _time.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                FlareNotice n = row.Notice;
+                string name = App.ReactorName(n.Who);
+                float pad = FlareKit.Pad;
+                _icon.sprite = FlareIcons.Get(GlyphOf(n.Kind));
+                _icon.color = n.Kind == FlareNoticeKind.Like ? Look.Like : n.Kind == FlareNoticeKind.Repost ? Look.Share : Look.Accent;
+                FlareKit.Place(_icon.rectTransform, pad, pad + 6f, 44f, 44f);
+                _avatar.Show(n.Who, name, pad + 64f, pad, 60f);
+                float x0 = pad + 64f + 60f + FlareKit.Gap, tw = width - x0 - pad - 150f;
+                string line = FlareText.Notice(n.Kind, "<b>" + name + "</b>");
+                float lh = FlareKit.Height(_line, line, tw);
+                FlareKit.Set(_line, line);
+                FlareKit.Place(_line.rectTransform, x0, pad, tw, lh + 2f);
+                FlareKit.Set(_time, FlareText.Ago(n.At, App._director.Now));
+                FlareKit.Place(_time.rectTransform, width - pad - 140f, pad, 140f, 34f);
+                string snippet = App.SnippetOf(n);
+                float y = pad + Mathf.Max(60f, lh) + 6f;
+                FlareKit.Show(_snippet, snippet != null);
+                if (snippet != null)
+                {
+                    float sh = Mathf.Min(FlareKit.Height(_snippet, snippet, width - x0 - pad), 76f);
+                    FlareKit.Set(_snippet, snippet);
+                    FlareKit.Place(_snippet.rectTransform, x0, y, width - x0 - pad, sh + 2f);
+                    y += sh + 6f;
+                }
+                Back.color = n.At > App._seenBefore ? Look.Raised : Look.Card;
+                return y + pad - 6f;
+            }
+
+            private static FlareGlyph GlyphOf(FlareNoticeKind kind)
+            {
+                switch (kind)
+                {
+                    case FlareNoticeKind.Like: return FlareGlyph.HeartFull;
+                    case FlareNoticeKind.Reply: return FlareGlyph.Reply;
+                    case FlareNoticeKind.Repost: return FlareGlyph.Repost;
+                    case FlareNoticeKind.Mention: return FlareGlyph.At;
+                    case FlareNoticeKind.Case: return FlareGlyph.City;
+                    case FlareNoticeKind.Dm: return FlareGlyph.Mail;
+                    case FlareNoticeKind.Going: return FlareGlyph.Calendar;
+                    default: return FlareGlyph.StarFull;
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------- an account
+
+        private sealed class AccountCell : Card
+        {
+            private readonly Avatar _avatar;
+            private readonly TextMeshProUGUI _name, _handle, _about;
+            private readonly Pill _follow;
+
+            public AccountCell(FlareApp app) : base(app, "Account", true)
+            {
+                _avatar = new Avatar(Rect, 76f, null);
+                _name = FlareKit.Text(Rect, "Name", FlareKit.Name, Color.white, FontStyles.Bold);
+                _handle = FlareKit.Text(Rect, "Handle", FlareKit.Small, Color.white);
+                _about = FlareKit.Text(Rect, "About", FlareKit.Small, Color.white);
+                _follow = new Pill(Rect, "Follow", () => App.FollowAccount(Row));
+            }
+
+            protected override void Clicked()
+            {
+                App.AccountClicked(Row);
+            }
+
+            protected override void Colours()
+            {
+                _name.color = Look.Text;
+                _handle.color = Look.Muted;
+                _about.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                string key = row.Key;
+                string name = App._director.AccountName(key);
+                float pad = FlareKit.Pad;
+                _avatar.Show(key, name, pad, pad, 76f);
+                float x0 = pad + 76f + FlareKit.Gap, tw = width - x0 - pad - 230f;
+                FlareKit.Set(_name, name);
+                FlareKit.Place(_name.rectTransform, x0, pad - 2f, tw, 40f);
+                FlareKit.Set(_handle, App.Handle(key, name));
+                FlareKit.Place(_handle.rectTransform, x0, pad + 40f, tw, 34f);
+                string about = row.Text;
+                float ah = about != null ? FlareKit.Height(_about, about, tw) : 0f;
+                FlareKit.Set(_about, about);
+                FlareKit.Place(_about.rectTransform, x0, pad + 78f, tw, ah + 2f);
+                FlareFile file = App._director.File;
+                bool followable = file != null && FlareApp.Followable(key);
+                if (followable)
+                {
+                    bool following = FlareCast.Followed(file, key);
+                    _follow.Show(Look, FlareText.T(following ? "reallife_flare_follow_on" : "reallife_flare_follow"), !following, width - pad - 200f, pad + 8f);
+                }
+                else
+                {
+                    _follow.Hide();
+                }
+                return Mathf.Max(pad * 2f + 76f, pad + 80f + ah + pad);
+            }
+        }
+
+        // ---------------------------------------------------------------- a conversation, a message
+
+        private sealed class ThreadCell : Card
+        {
+            private readonly Avatar _avatar;
+            private readonly TextMeshProUGUI _name, _snippet, _time;
+            private readonly Image _dot;
+
+            public ThreadCell(FlareApp app) : base(app, "Conversation", true)
+            {
+                _avatar = new Avatar(Rect, 76f, null);
+                _name = FlareKit.Text(Rect, "Name", FlareKit.Name, Color.white, FontStyles.Bold);
+                _snippet = FlareKit.Text(Rect, "Snippet", FlareKit.Small, Color.white);
+                _snippet.textWrappingMode = TextWrappingModes.NoWrap;
+                _time = FlareKit.Text(Rect, "Time", FlareKit.Small, Color.white, FontStyles.Normal, TextAlignmentOptions.TopRight);
+                _dot = FlareKit.Box(Rect, "Unread", Color.white, 0f, true);
+            }
+
+            protected override void Clicked()
+            {
+                App.ConversationClicked(Row);
+            }
+
+            protected override void Colours()
+            {
+                _name.color = Look.Text;
+                _snippet.color = Look.Muted;
+                _time.color = Look.Muted;
+                _dot.color = Look.Accent;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                FlareDm m = row.Dm;
+                float pad = FlareKit.Pad;
+                string name = m.Name ?? App._director.AccountName(m.With);
+                _avatar.Show(m.With, name, pad, pad, 76f);
+                float x0 = pad + 76f + FlareKit.Gap;
+                FlareKit.Set(_name, name);
+                FlareKit.Place(_name.rectTransform, x0, pad - 2f, width - x0 - pad - 170f, 40f);
+                FlareKit.Set(_time, FlareText.Ago(m.At, App._director.Now));
+                FlareKit.Place(_time.rectTransform, width - pad - 160f, pad, 160f, 34f);
+                FlareKit.Set(_snippet, (m.Mine ? FlareText.T("reallife_flare_dm_you") + " " : string.Empty) + FlareText.DmWords(m, name));
+                FlareKit.Place(_snippet.rectTransform, x0, pad + 44f, width - x0 - pad - 40f, 36f);
+                bool unread = row.Number > 0;
+                FlareKit.Show(_dot, unread);
+                FlareKit.Place(_dot.rectTransform, width - pad - 22f, pad + 52f, 20f, 20f);
+                _snippet.fontStyle = unread ? FontStyles.Bold : FontStyles.Normal;
+                return pad * 2f + 76f;
+            }
+        }
+
+        private sealed class BubbleCell : Card
+        {
+            private readonly Image _bubble;
+            private readonly TextMeshProUGUI _words, _time;
+
+            public BubbleCell(FlareApp app) : base(app, "Message", false)
+            {
+                _bubble = FlareKit.Box(Rect, "Bubble", Color.white, 30f);
+                _words = FlareKit.Text(_bubble.transform, "Words", FlareKit.Body, Color.white);
+                _words.overflowMode = TextOverflowModes.Overflow;
+                _time = FlareKit.Text(Rect, "Time", 22f, Color.white);
+            }
+
+            public override void Paint(FlareLook look)
+            {
+                Look = look;
+                Back.color = new Color(0f, 0f, 0f, 0f);
+                Colours();
+            }
+
+            protected override void Colours()
+            {
+                _time.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                FlareDm m = row.Dm;
+                string words = FlareText.DmWords(m, m.Name ?? App._director.AccountName(m.With));
+                float most = width * 0.7f;
+                float tw = Mathf.Min(most - 56f, _words.GetPreferredValues(words, most - 56f, 0f).x + 4f);
+                float th = FlareKit.Height(_words, words, tw);
+                float bw = tw + 56f, bh = th + 40f;
+                float x = m.Mine ? width - bw : 0f;
+                FlareKit.Place(_bubble.rectTransform, x, 0f, bw, bh);
+                _bubble.color = m.Mine ? Look.Accent : Look.Raised;
+                _words.color = m.Mine ? Color.white : Look.Text;
+                FlareKit.Set(_words, words);
+                FlareKit.Place(_words.rectTransform, 28f, 20f, tw, th + 2f);
+                FlareKit.Set(_time, FlareText.Ago(m.At, App._director.Now));
+                _time.alignment = m.Mine ? TextAlignmentOptions.TopRight : TextAlignmentOptions.TopLeft;
+                FlareKit.Place(_time.rectTransform, m.Mine ? width - 300f : 10f, bh + 4f, 290f, 30f);
+                float h = bh + 38f;
+                App.Measured(row, h);
+                return h;
+            }
+        }
+
+        // ---------------------------------------------------------------- a profile's head
+
+        private sealed class ProfileCell : Card
+        {
+            private readonly Image _cover;
+            private readonly Avatar _avatar;
+            private readonly TextMeshProUGUI _name, _handle, _about, _stats;
+            private readonly Pill[] _buttons = new Pill[4];
+
+            public ProfileCell(FlareApp app) : base(app, "Profile", false)
+            {
+                _cover = FlareKit.Box(Rect, "Cover", Color.white, FlareKit.Radius);
+                _avatar = new Avatar(Rect, 150f, null);
+                _name = FlareKit.Text(Rect, "Name", 46f, Color.white, FontStyles.Bold);
+                _handle = FlareKit.Text(Rect, "Handle", FlareKit.Small + 2f, Color.white);
+                _about = FlareKit.Text(Rect, "About", FlareKit.Body, Color.white);
+                _about.overflowMode = TextOverflowModes.Overflow;
+                _stats = FlareKit.Text(Rect, "Stats", FlareKit.Small + 2f, Color.white);
+                for (int i = 0; i < _buttons.Length; i++)
+                {
+                    int n = i;
+                    _buttons[i] = new Pill(Rect, "Button" + i, () => App.ProfileButton(Row, n));
+                }
+            }
+
+            protected override void Colours()
+            {
+                _cover.color = Look.AccentSoft;
+                _name.color = Look.Text;
+                _handle.color = Look.Muted;
+                _about.color = Look.Text;
+                _stats.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                string key = row.Key;
+                string name = key == "me" ? App._director.MyName : App._director.AccountName(key);
+                float pad = FlareKit.Pad;
+                FlareKit.Place(_cover.rectTransform, 0f, 0f, width, 170f);
+                _avatar.Show(key == "me" ? "me" : key, name, pad, 95f, 150f);
+                float y = 95f + 150f + 16f;
+                FlareKit.Set(_name, name);
+                FlareKit.Place(_name.rectTransform, pad, y, width - pad * 2f, 58f);
+                y += 58f;
+                FlareKit.Set(_handle, key == "me" ? App._director.MyHandle : App.Handle(key, name));
+                FlareKit.Place(_handle.rectTransform, pad, y, width - pad * 2f, 36f);
+                y += 46f;
+                string about = row.Text;
+                float ah = FlareKit.Height(_about, about, width - pad * 2f);
+                FlareKit.Set(_about, about);
+                FlareKit.Place(_about.rectTransform, pad, y, width - pad * 2f, ah + 4f);
+                y += ah + 14f;
+                string stats = App.StatsOf(key);
+                float sh = FlareKit.Height(_stats, stats, width - pad * 2f);
+                FlareKit.Set(_stats, stats);
+                FlareKit.Place(_stats.rectTransform, pad, y, width - pad * 2f, sh + 4f);
+                y += sh + 20f;
+                float x = pad;
+                int shown = 0;
+                for (int i = 0; i < _buttons.Length; i++)
+                {
+                    string label;
+                    bool filled;
+                    if (App.ProfileButtonOf(key, i, out label, out filled))
+                    {
+                        x += _buttons[i].Show(Look, label, filled, x, y) + 16f;
+                        shown++;
+                    }
+                    else
+                    {
+                        _buttons[i].Hide();
+                    }
+                }
+                y += shown > 0 ? 58f + pad : pad - 10f;
+                return y;
+            }
+        }
+
+        // ---------------------------------------------------------------- a note, a tag, a business, a deal, the prompt, a button
+
+        private sealed class NoteCell : Card
+        {
+            private readonly TextMeshProUGUI _text;
+
+            public NoteCell(FlareApp app) : base(app, "Note", false)
+            {
+                _text = FlareKit.Text(Rect, "Text", FlareKit.Body, Color.white);
+                _text.overflowMode = TextOverflowModes.Overflow;
+            }
+
+            public override void Paint(FlareLook look)
+            {
+                Look = look;
+                Back.color = new Color(0f, 0f, 0f, 0f);
+                Colours();
+            }
+
+            protected override void Colours()
+            {
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                bool title = row.Number == 1;
+                _text.fontSize = title ? 34f : FlareKit.Body - 2f;
+                _text.fontStyle = title ? FontStyles.Bold : FontStyles.Normal;
+                _text.alignment = title ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.Top;
+                _text.color = title ? Look.Text : Look.Muted;
+                float pad = title ? 8f : FlareKit.Pad;
+                float h = FlareKit.Height(_text, row.Text, width - pad * 2f);
+                FlareKit.Set(_text, row.Text);
+                FlareKit.Place(_text.rectTransform, pad, title ? 16f : pad, width - pad * 2f, h + 4f);
+                return h + (title ? 30f : pad * 2f);
+            }
+        }
+
+        private sealed class TagCell : Card
+        {
+            private readonly TextMeshProUGUI _rank, _tag, _count;
+
+            public TagCell(FlareApp app) : base(app, "Tag", true)
+            {
+                _rank = FlareKit.Text(Rect, "Rank", FlareKit.Small, Color.white);
+                _tag = FlareKit.Text(Rect, "Tag", 36f, Color.white, FontStyles.Bold);
+                _count = FlareKit.Text(Rect, "Count", FlareKit.Small, Color.white);
+            }
+
+            protected override void Clicked()
+            {
+                App.Open(FlareScreen.Tag, 0, -1, Row.Key);
+            }
+
+            protected override void Colours()
+            {
+                _rank.color = Look.Muted;
+                _tag.color = Look.Text;
+                _count.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                float pad = FlareKit.Pad;
+                FlareKit.Set(_rank, FlareText.Fill("reallife_flare_trend_rank", "rank", (row.Number / 100000 + 1).ToString()));
+                FlareKit.Place(_rank.rectTransform, pad, pad - 6f, width - pad * 2f, 32f);
+                FlareKit.Set(_tag, FlareText.Tag(row.Key));
+                FlareKit.Place(_tag.rectTransform, pad, pad + 26f, width - pad * 2f, 46f);
+                FlareKit.Set(_count, FlareText.Fill("reallife_flare_trend_count", "count", FlareText.N(row.Number % 100000 * 37)));
+                FlareKit.Place(_count.rectTransform, pad, pad + 74f, width - pad * 2f, 32f);
+                return pad * 2f + 104f;
+            }
+        }
+
+        private sealed class ShopCell : Card
+        {
+            private readonly TextMeshProUGUI _name, _lines, _stars;
+            private readonly Image[] _starIcons = new Image[5];
+            private readonly Pill _announce, _promote;
+
+            public ShopCell(FlareApp app) : base(app, "Business", false)
+            {
+                _name = FlareKit.Text(Rect, "Name", 36f, Color.white, FontStyles.Bold);
+                for (int i = 0; i < _starIcons.Length; i++)
+                {
+                    _starIcons[i] = FlareKit.Box(Rect, "Star" + i, Color.white);
+                }
+                _stars = FlareKit.Text(Rect, "Stars", FlareKit.Small, Color.white, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                _lines = FlareKit.Text(Rect, "Lines", FlareKit.Small + 2f, Color.white);
+                _lines.overflowMode = TextOverflowModes.Overflow;
+                _announce = new Pill(Rect, "Announce", () => App.AnnounceClicked(Row));
+                _promote = new Pill(Rect, "Promote", () => App.PromoteClicked(Row));
+            }
+
+            protected override void Colours()
+            {
+                _name.color = Look.Text;
+                _stars.color = Look.Muted;
+                _lines.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                float pad = FlareKit.Pad;
+                FlareKit.Set(_name, row.Text);
+                FlareKit.Place(_name.rectTransform, pad, pad - 4f, width - pad * 2f, 48f);
+                int overall = row.Number;
+                int halves = overall < 0 ? -1 : FlareRules.Clamp((overall + 5) / 10, 0, 10);
+                for (int i = 0; i < _starIcons.Length; i++)
+                {
+                    FlareKit.Show(_starIcons[i], halves >= 0);
+                    _starIcons[i].sprite = FlareIcons.Get(halves >= (i + 1) * 2 - 1 ? FlareGlyph.StarFull : FlareGlyph.Star);
+                    _starIcons[i].color = new Color(0.98f, 0.75f, 0.15f, 1f);
+                    FlareKit.Place(_starIcons[i].rectTransform, pad + i * 40f, pad + 52f, 36f, 36f);
+                }
+                FlareKit.Set(_stars, halves >= 0 ? (halves / 2).ToString() + (halves % 2 == 1 ? ".5" : string.Empty) : string.Empty);
+                FlareKit.Place(_stars.rectTransform, pad + 210f, pad + 50f, 200f, 40f);
+                string lines = App.ShopLines(row);
+                float lh = FlareKit.Height(_lines, lines, width - pad * 2f);
+                FlareKit.Set(_lines, lines);
+                FlareKit.Place(_lines.rectTransform, pad, pad + 100f, width - pad * 2f, lh + 4f);
+                float y = pad + 100f + lh + 16f;
+                float x = pad + _announce.Show(Look, FlareText.T("reallife_flare_shop_announce"), true, pad, y) + 16f;
+                _promote.Show(Look, FlareText.T("reallife_flare_shop_hire"), false, x, y);
+                return y + 58f + pad;
+            }
+        }
+
+        private sealed class DealCell : Card
+        {
+            private readonly TextMeshProUGUI _title, _lines;
+            private readonly Pill _end;
+
+            public DealCell(FlareApp app) : base(app, "Deal", false)
+            {
+                _title = FlareKit.Text(Rect, "Title", 32f, Color.white, FontStyles.Bold);
+                _lines = FlareKit.Text(Rect, "Lines", FlareKit.Small + 2f, Color.white);
+                _lines.overflowMode = TextOverflowModes.Overflow;
+                _end = new Pill(Rect, "End", () => App.EndDealClicked(Row));
+            }
+
+            protected override void Colours()
+            {
+                _title.color = Look.Text;
+                _lines.color = Look.Muted;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                float pad = FlareKit.Pad;
+                float th = FlareKit.Height(_title, row.Key, width - pad * 2f);
+                FlareKit.Set(_title, row.Key);
+                FlareKit.Place(_title.rectTransform, pad, pad - 4f, width - pad * 2f, th + 4f);
+                float lh = FlareKit.Height(_lines, row.Text, width - pad * 2f);
+                FlareKit.Set(_lines, row.Text);
+                FlareKit.Place(_lines.rectTransform, pad, pad + th + 6f, width - pad * 2f, lh + 4f);
+                float y = pad + th + lh + 20f;
+                if (row.Number > 0)
+                {
+                    _end.Show(Look, FlareText.T("reallife_flare_hire_end"), false, pad, y);
+                    y += 58f + 10f;
+                }
+                else
+                {
+                    _end.Hide();
+                }
+                return y + pad - 10f;
+            }
+        }
+
+        private sealed class PromptCell : Card
+        {
+            private readonly Avatar _avatar;
+            private readonly Image _field, _camera;
+            private readonly TextMeshProUGUI _placeholder;
+
+            public PromptCell(FlareApp app) : base(app, "Prompt", true)
+            {
+                _avatar = new Avatar(Rect, FlareKit.Avatar, null);
+                _field = FlareKit.Box(Rect, "Field", Color.white, 0f, true);
+                _placeholder = FlareKit.Text(_field.transform, "Placeholder", FlareKit.Body + 2f, Color.white, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                FlareKit.Stretch(_placeholder.rectTransform, 36f, 0f, 36f, 0f);
+                _camera = FlareKit.Box(Rect, "Camera", Color.white, 0f, false, true);
+                _camera.sprite = FlareIcons.Get(FlareGlyph.Camera);
+                FlareKit.Click(_camera, () => App._director.CameraPressed());
+            }
+
+            protected override void Clicked()
+            {
+                App.OpenCompose(-1, -1);
+            }
+
+            protected override void Colours()
+            {
+                _field.color = Look.Chip;
+                _placeholder.color = Look.Muted;
+                _camera.color = Look.Accent;
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                float pad = FlareKit.Pad;
+                _avatar.Show("me", App._director.MyName, pad, pad, FlareKit.Avatar);
+                float x0 = pad + FlareKit.Avatar + FlareKit.Gap;
+                FlareKit.Place(_field.rectTransform, x0, pad + 4f, width - x0 - pad - 90f, 76f);
+                FlareKit.Set(_placeholder, FlareText.T("reallife_flare_whats_happening"));
+                FlareKit.Place(_camera.rectTransform, width - pad - 66f, pad + 14f, 56f, 56f);
+                return pad * 2f + FlareKit.Avatar;
+            }
+        }
+
+        private sealed class ButtonCell : Card
+        {
+            private readonly Pill _pill;
+
+            public ButtonCell(FlareApp app) : base(app, "Button", false)
+            {
+                _pill = new Pill(Rect, "Pill", () => App.RowButton(Row));
+            }
+
+            public override void Paint(FlareLook look)
+            {
+                Look = look;
+                Back.color = new Color(0f, 0f, 0f, 0f);
+            }
+
+            protected override void Colours()
+            {
+            }
+
+            public override float Bind(FlareRow row, float width)
+            {
+                float w = _pill.Show(Look, row.Text, true, 0f, 6f, 72f);
+                FlareKit.Place(_pill.Back.rectTransform, (width - w) / 2f, 6f, w, 72f);
+                return 84f;
+            }
+        }
+    }
+}

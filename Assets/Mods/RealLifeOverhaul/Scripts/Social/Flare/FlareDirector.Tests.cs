@@ -217,6 +217,187 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
+        /// <summary>
+        /// Test: a report of a broken road where the player stands, and the City Office's answer at once: a crew is sent (a
+        /// site of the council's works near the player, with its days), or why not.
+        /// </summary>
+        public void TestReport()
+        {
+            if (!TestReady("Flare report"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                if (Following)
+                {
+                    TestRefusals.Tell(Logger, "Flare report", TestRefusal.NothingFits, 0, "this machine follows a host's feed: the host's City Office answers");
+                    return;
+                }
+                _file.Net.ReportsToday = 0;
+                var c = new FlareCompose { Kind = FlareSource.Report, Arg = (int)FlareReport.Road, Text = FlareText.T("reallife_flare_test_report_words") };
+                string why;
+                if (!Compose(c, out why))
+                {
+                    Tell(NotificationType.Warning, why ?? "reallife_flare_compose_need_district", null);
+                    return;
+                }
+                FlarePost report = null;
+                for (int i = _file.Posts.Count - 1; i >= 0 && report == null; i--)
+                {
+                    report = _file.Posts[i].Author == FlareAuthor.Player && _file.Posts[i].Source == FlareSource.Report ? _file.Posts[i] : null;
+                }
+                FlareCase cs = report != null && report.Case >= 0 ? _file.Net.Case(report.Case) : null;
+                if (cs != null && cs.State == FlareCaseState.Open)
+                {
+                    cs.ReplyAt = Now;
+                    Answer(cs, Save.Day);
+                }
+                Logger?.Info("Flare: test report: case " + (cs != null ? cs.Id + " " + cs.State + " " + cs.Order : "none") + ".");
+                if (report != null)
+                {
+                    OpenPost(report.Id);
+                }
+            });
+        }
+
+        /// <summary>Test: the city's posts of today made again now (its people, the official accounts, the businesses, the invitations).</summary>
+        public void TestCityDay()
+        {
+            if (!TestReady("Flare city posts"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                _file.Net.CityDay = -1;
+                LiveDay(Save.Day);
+                Tell(NotificationType.Info, "reallife_flare_test_cityday_done", _openFeedTab, "count", _made.Count.ToString());
+                Changed();
+            });
+        }
+
+        /// <summary>Test: the reactions to the player's posts of today come in now, as if eight hours had passed.</summary>
+        public void TestReactions()
+        {
+            if (!TestReady("Flare reactions"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                long back = 8 * 60;
+                int moved = 0;
+                for (int i = 0; i < _file.Posts.Count; i++)
+                {
+                    FlarePost p = _file.Posts[i];
+                    FlarePost parent = p.ReplyTo >= 0 ? _file.Post(p.ReplyTo) : null;
+                    bool mine = p.Author == FlareAuthor.Player || (parent != null && parent.Author == FlareAuthor.Player);
+                    if (mine && p.Day == Save.Day)
+                    {
+                        FlareLiveRules.SetAt(p, Math.Max(0, p.At - back));
+                        moved++;
+                    }
+                }
+                Logger?.Info("Flare: test reactions: " + moved + " post(s) of today and their replies moved eight hours back.");
+                Tell(NotificationType.Info, "reallife_flare_test_reactions_done", _openFeed, "count", moved.ToString());
+                Changed();
+            });
+        }
+
+        /// <summary>Test: a post that goes badly (cheerful about an arrest) and is seen widely: a pile-on, and tomorrow's paper.</summary>
+        public void TestPileOn()
+        {
+            if (!TestReady("Flare pile-on"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                ReadPeople();
+                FlareDraft d = FlareRules.Draft(_file, FlareSource.Arrested, Save.Day, Save.Hour, -1, null, null, 0) ?? new FlareDraft { Id = -1, Source = FlareSource.Arrested, Day = Save.Day };
+                FlarePost p = FlareRules.Post(_file, d, FlareTone.Cheerful, -1, _people, Save.Day, Save.Hour, FlareGame.MinuteOfDay);
+                p.Reach = Math.Max(p.Reach, FlareLiveRules.PileOnFrom * 4);
+                p.Minute = FlareGame.MinuteOfDay % 60;
+                PostLive(p);
+                Logger?.Info("Flare: test pile-on: post " + p.Id + " went badly, seen by " + p.Reach + ".");
+                Changed();
+                OpenPost(p.Id);
+            });
+        }
+
+        /// <summary>Test: one of the city's people writes to the player now.</summary>
+        public void TestDm()
+        {
+            if (!TestReady("Flare message"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                string with = "c" + (Save.Day % FlareLiveRules.Citizens);
+                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, "reallife_flare_dm_chat", null);
+                Recount();
+                Tell(NotificationType.Info, "reallife_flare_note_dm", _openMessages, "name", AccountName(with));
+                Changed();
+            });
+        }
+
+        /// <summary>Test: the City Office invites the city to an event in an hour; going to it brings a notification as it starts.</summary>
+        public void TestInvite()
+        {
+            if (!TestReady("Flare invitation"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                int id = _file.NextId++;
+                var p = new FlarePost
+                {
+                    Id = id, Author = FlareAuthor.Official, Who = (int)FlareOfficial.CityOffice, Source = FlareSource.Invite, When = Save.Day * 24 + Save.Hour + 1, Topic = "events",
+                    Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 4000, Likes = 120
+                };
+                FlareLiveRules.SetAt(p, Now);
+                _file.Posts.Add(p);
+                Shared_Changed(p);
+                Changed();
+                OpenPost(id);
+            });
+        }
+
+        /// <summary>Test: three complaints about litter in the player's district this week that nothing was done about: in tomorrow's paper, and the mood falls.</summary>
+        public void TestEscalate()
+        {
+            if (!TestReady("Flare ignored complaints"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                string district = FlareBridges.Ask(FlareBridges.PlayerDistrict, null);
+                if (district == null)
+                {
+                    FlareGame.Districts(_districts);
+                    district = _districts.Count > 0 ? _districts[0] : null;
+                }
+                if (district == null)
+                {
+                    TestRefusals.Tell(Logger, "Flare ignored complaints", TestRefusal.NothingFits, 0, "no district is known");
+                    return;
+                }
+                for (int i = 0; i < FlareLiveRules.TallyToPaper; i++)
+                {
+                    FlareLiveRules.Complained(_file.Net, FlareReport.Litter, district, Save.Day, false);
+                }
+                bool again;
+                FlareCase c = FlareLiveRules.File(_file.Net, FlareReport.Litter, district, null, null, 0f, 0f, Now, "c1", -1, _file.Seed, out again);
+                Escalation(c, Save.Day);
+                Tell(NotificationType.Info, "reallife_flare_test_escalate_done", null, "district", FlareGame.DistrictName(district));
+                Changed();
+            });
+        }
+
         /// <summary>Test: the account starts again, as for a save that has never had Flare.</summary>
         public void TestBack()
         {
@@ -229,6 +410,7 @@ namespace RealLifeOverhaul.Flare
                 Save.modData.Remove(FlareStore.AccountKey);
                 Save.modData.Remove(FlareStore.PostsKey);
                 Save.modData.Remove(FlareStore.CastKey);
+                Save.modData.Remove(FlareLiveStore.Key);
                 Forget();
                 Tell(NotificationType.Info, "reallife_flare_test_back_done", null);
             });

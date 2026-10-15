@@ -1,4 +1,8 @@
-0.25.2
+0.26.0
+
+New
+- Flare is a living social network: a feed of the city's people, official accounts and businesses about what really happens, your own words and pictures with every post, reports the City Office acts on (crews, patrols, cleaning, inspections), reviews that move a business's customers, likes and replies over the hours, messages and Trending, and in Going Public one shared feed and one City Ledger for the city.
 
 Fixed
-- Wages could climb without end when rises were given again and again in Open Roles, until staff such as an academy's earned many times the usual rate. A rise or a promotion now comes at most once in 14 days for each person and never above four times the game's usual pay for their skill, and wages that had run away come back to that limit once, when the save loads.
+- An app could show only some of the buttons a page has, so the Campus offered Enrol and pay but never Enrol on a student loan, and other apps lost a button the same way. Every button now shows, in order, across the whole width of the box, and buttons that do not fit one line go on to the next.
+- Hudson City University had no row of its own in the city map's filters, and did not light up there. It now has its own row with its own icon, and while that row is ticked the university lights up on the map as the game's own buildings do.
