@@ -148,6 +148,29 @@ namespace RealLifeOverhaul.Careers
         private static string _schoolStreet;
         private static int _schoolNumber;
 
+        /// <summary>
+        /// The university's permanent building's address as the game writes one ("26 2nd Avenue": the game's own street
+        /// name), for the Guide's degrees page; the street's name as the mod has it where the game's streets are not loaded.
+        /// </summary>
+        public static string HomeAddress()
+        {
+            try
+            {
+                return CampusRules.HomeAddress(StreetName(CampusRules.HomeStreet));
+            }
+            catch (Exception)
+            {
+                return CampusRules.HomeAddress(null);   // (outside the game: the Guide's page made offline)
+            }
+        }
+
+        // The game's name for a street, or null where it does not know the street (its streets not loaded).
+        private static string StreetName(string street)
+        {
+            string name = Streets.AddressHelper.GetStreetNameLocalized(street);
+            return string.IsNullOrEmpty(name) || name == street ? null : name;
+        }
+
         /// <summary>The address of the game's school, for the Planner and the map; looked up once a city (one walk over its building list).</summary>
         public static bool SchoolAddress(out string street, out int number)
         {

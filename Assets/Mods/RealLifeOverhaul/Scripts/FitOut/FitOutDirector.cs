@@ -13,8 +13,9 @@ namespace RealLifeOverhaul.FitOut
     /// frame (<see cref="FitView"/>: the tech companies' headquarters behind their lobbies, Tech/Sites/TechSites; the bare
     /// back of a police station, Law/StationInterior.Fill.cs; a data centre's floor round its server hall,
     /// Tech/Sites/ServerRoomView), and the fit-out of the mod's other named buildings when the player is inside one that
-    /// stands empty: should one be walked into, the City Utilities office and the courthouse (a city office's desks,
-    /// filing, waiting seats). The university is not among them: inside it is the game's own furnished school
+    /// stands empty: should one be walked into, the courthouse (a city office's desks, filing, waiting seats). City
+    /// Utilities is not among them: it is at the door of a residential building (Utilities/UtilitiesOffice), which the game
+    /// lets nobody into. The university is not among them: inside it is the game's own furnished school
     /// (Careers/CampusInterior), and its registration while the player is there holds the school's business.
     ///
     /// Only a building the mod names as its own (Core/SpecialBuildings), with its feature on, and standing empty: nobody
@@ -186,9 +187,6 @@ namespace RealLifeOverhaul.FitOut
             }
             switch (holder)
             {
-                case "utilities_office":
-                    name = "the City Utilities office";
-                    return Settings.Utilities;
                 case "courthouse":
                     name = "the courthouse";
                     return JusticeSettings.Enabled && JusticeSettings.Courthouse;

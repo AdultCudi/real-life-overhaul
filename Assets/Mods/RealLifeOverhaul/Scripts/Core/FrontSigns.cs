@@ -392,7 +392,7 @@ namespace RealLifeOverhaul
             {
                 return "its own dressing is its sign";
             }
-            if (front.Entry.Board)
+            if (front.Entry.Board && front.Entry.Kind != SpecialKind.Campus)
             {
                 return "its board is its sign";
             }

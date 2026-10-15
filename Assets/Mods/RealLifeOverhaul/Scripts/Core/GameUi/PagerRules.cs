@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.GameUi
     /// row. It is worked out at the first opening and again only when the bar's width changes (the resolution, the
     /// screen's shape, the interface's scale), so it is the same at every opening on a screen, whatever the money, the
     /// date or the language (those were measured each opening before, and the row's length changed with them): six tiles
-    /// on a 16:9 screen at 100%, five at 16:10, two at 4:3.
+    /// on a 16:9 screen at 100%, five at 16:10, two at 4:3. A full page stands centred in that room (PageStart).
     ///
     /// The game's own apps come first, in the game's order, then everyone else's in the order they stand (GameFirst).
     ///
@@ -49,6 +49,18 @@ namespace RealLifeOverhaul.GameUi
             int most = StripTiles(ownApps);
             int fit = Fit(room, pitch, spacing);
             return fit < LeastTiles ? LeastTiles : fit > most ? most : fit;
+        }
+
+        /// <summary>
+        /// Where a full page of this many tiles begins: centred in the room that begins at <paramref name="rowStart"/> (where
+        /// the game's own row begins) and runs to the money's box, as the game centres its own row; at the room's start
+        /// when the page is as wide as the room or wider (the least page on a screen with no room for it), or the room is
+        /// not known yet. Every page starts there, a short last one too, so the button never moves.
+        /// </summary>
+        public static float PageStart(float rowStart, float room, int tiles, float pitch, float spacing)
+        {
+            float spare = room - RowWidth(tiles, pitch, spacing);
+            return spare > 0f ? rowStart + spare * 0.5f : rowStart;   // (NaN is no spare)
         }
 
         /// <summary>Whether the row's tiles are to be worked out again: the first time (nothing measured, NaN), and when the bar's width has changed.</summary>

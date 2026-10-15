@@ -247,7 +247,7 @@ namespace RealLifeOverhaul.Careers
                 DeskMade(FitDesks.Current);
                 return;
             }
-            if (SpecialBuildings.Holds(j.Post.Street, j.Post.Number) || FitDesks.Building == place)
+            if (SpecialBuildings.Filed(j.Post.Street, j.Post.Number) || FitDesks.Building == place)   // (a building a feature is in: a reservation alone leaves the game's business and its desk as they are)
             {
                 // A floor the mod fits out itself (a headquarters): its desk comes when it stands (DeskMade).
                 if (_deskWaitUntil <= 0f)
@@ -699,7 +699,7 @@ namespace RealLifeOverhaul.Careers
             }
             // (a building the mod holds, a headquarters, is walked into as it stands empty: its desk is inside)
             bool inside = CareersGame.InsideAt(j.Post.Street, j.Post.Number);
-            return !inside && WorkGame.AtWork(j.Def, j.Post) && !SpecialBuildings.Holds(j.Post.Street, j.Post.Number) && !DeskGame.CanEnter(j.Post.Street, j.Post.Number)
+            return !inside && WorkGame.AtWork(j.Def, j.Post) && !SpecialBuildings.Filed(j.Post.Street, j.Post.Number) && !DeskGame.CanEnter(j.Post.Street, j.Post.Number)
                 ? "reallife_career_desk_closed" : null;
         }
 

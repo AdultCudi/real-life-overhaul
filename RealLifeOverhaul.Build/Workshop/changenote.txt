@@ -1,8 +1,8 @@
-0.27.3
+0.27.4
 
 New
-- The Gallery has a look of its own, like a phone's photos app: square photos edge to edge under each game day, the albums All photos, Selfies and Favourites, and one click to see a photo whole, with the photos before and after, a strip of its neighbours, and buttons to share it to Flare, make it the wallpaper, keep it as a favourite or delete it. The small photo in the camera's corner opens the newest photo whole.
+- Hudson City University has a permanent building of its own at 26 2nd Avenue in Midtown, the same in every game, kept off the market and lit with its name. In an older game it moves there once the building is free; until then it is in a free office building or, with none free, at the door of Manhattan Business School, and it always has its row on the map.
 
 Fixed
-- The Gallery never showed its photos, so none could be opened; the Camera app's page now shows the latest photo too.
-- The Stocks app's company page and the Car Showroom app's Reports page now stand on a white sheet, as the game's own boxes do, so their words and charts are easier to read.
+- An influencer you hired on Flare who stopped posting made none of the posts you had paid for; they now post until the deal ends. The Business tab now counts the paid posts about a business, and a deal says when its posts begin and how many have come. The Brands app shows recognition to a tenth, so a day's gain is seen, and says on how many mornings it has moved and why it stood still. The two largest office buildings, 17 7th Street and 12 Broadway, are kept for the player: no feature of the mod takes them. City Utilities moves from 17 7th Street to 13 7th Street, a residential building kept for it, with its desk at the door; an older game is told once.
+- The row of apps at the top of the full screen menu stands centred again.

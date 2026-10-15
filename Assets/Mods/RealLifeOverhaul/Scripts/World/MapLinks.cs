@@ -530,13 +530,13 @@ namespace RealLifeOverhaul
         {
             Careers.CareersDirector careers = Careers.CareersDirector.Instance;
             Careers.CampusBuilding uni = careers != null ? careers.University : null;
-            if (uni == null || !uni.Usable || uni.Building == null)
+            if (uni == null || !Careers.CampusRules.OnMap(uni.Usable, uni.Building != null, uni.Place))
             {
-                return 0;   // (still being chosen, none to be had, or its part is off: no row)
+                return 0;   // (still being chosen, none to be had, or its part is off: no row; at its permanent building or a place meanwhile it has one)
             }
             unchecked
             {
-                long stamp = ((uni.Street ?? string.Empty).GetHashCode() * 1000003L + uni.Number) * 4 + (SpecialBuildings.Active ? 2 : 1);
+                long stamp = (((uni.Street ?? string.Empty).GetHashCode() * 1000003L + uni.Number) * 4 + (int)uni.Place) * 4 + (SpecialBuildings.Active ? 2 : 1);
                 return stamp != 0L ? stamp : 1L;
             }
         }
@@ -546,7 +546,7 @@ namespace RealLifeOverhaul
         private static void UniversityPlace(List<MapPlace> places)
         {
             Careers.CampusBuilding uni = Careers.CareersDirector.Instance.University;
-            if (uni == null || !uni.Usable || uni.Building == null)
+            if (uni == null || !Careers.CampusRules.OnMap(uni.Usable, uni.Building != null, uni.Place))
             {
                 return;
             }

@@ -46,6 +46,8 @@ namespace RealLifeOverhaul
         /// would say "For rent"), <paramref name="board"/> (its feature stood a board of its own at its door), and
         /// <paramref name="named"/> (the option for the special buildings' names is on). A police station and a hotel are
         /// dressed by their own features (the station's fascia, the hotel's board): the game's signs are only switched off.
+        /// The university's building carries its lit name on the game's signs as the tech towers do, its board at the door
+        /// or not: it is a permanent building to be seen from the street, and the board is only where to attend.
         /// </summary>
         public static FrontLook Look(SpecialKind kind, bool refused, bool toLet, bool board, bool named)
         {
@@ -53,7 +55,7 @@ namespace RealLifeOverhaul
             {
                 return FrontLook.Game;
             }
-            if (kind == SpecialKind.Police || kind == SpecialKind.Hotel || board || !named)
+            if (kind == SpecialKind.Police || kind == SpecialKind.Hotel || (board && kind != SpecialKind.Campus) || !named)
             {
                 return FrontLook.Off;
             }
