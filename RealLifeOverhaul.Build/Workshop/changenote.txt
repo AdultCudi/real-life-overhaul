@@ -1,4 +1,4 @@
-0.27.6
+0.27.7
 
-Fixed
-- Flare no longer limits your posting. Post as often as you like, one after another, alone or in Going Public; the first three posts of a day grow your account, and the same review, announcement or report moves a business or the City Office once a day.
+New
+- Brand recognition now grows across districts: a brand with shops spread over the city rises week by week in each district and city-wide, not only one packed into a district.
