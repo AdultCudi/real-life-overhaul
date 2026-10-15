@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 box.Line(BrandsText.Fill(BrandRules.MissedKey(missed), "missed", missed.ToString()), CellTone.Yellow);
             }
-            box.Note(BrandsText.Fill("reallife_brand_fig_city", "districts", BrandCatalogue.CityDistricts.ToString(), "step", BrandsText.Bp(BrandCatalogue.CityStepBp)));
+            box.Note(BrandsText.Fill("reallife_brand_fig_city", "districts", BrandCatalogue.CityDistricts.ToString(), "step", BrandsText.Bp(BrandCatalogue.CityStepBp)));   // (BrandRules.CityTarget)
             string worst = null;
             int low = 101;
             for (int i = 0; i < state.Members.Count; i++)
@@ -288,7 +288,8 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteDistrict(InfoBox box, BrandsState state, Brand b, DistrictFile d)
         {
             int shops = BrandRules.Shops(state, b, d.Name), customers = BrandRules.Customers(state, b, d.Name);
-            int campaign = BrandRules.GainOn(state, b, d, b.Age + 1) - BrandRules.Gain(shops, customers, b.Standards, 0);   // (what tomorrow's campaign adds, as the step will count it)
+            int pull = BrandRules.PullIn(state, b, shops);   // (what the brand's shops in other districts add)
+            int campaign = BrandRules.GainOn(state, b, d, b.Age + 1) - BrandRules.Gain(shops, customers, b.Standards, 0) - pull;   // (what tomorrow's campaign adds, as the step will count it)
             int gain = BrandRules.GainOn(state, b, d, b.Age + 1);
             int next = BrandRules.Step(d.Rec, gain, shops > 0);
             int effective = BrandRules.Effective(b, d.Name);
@@ -299,7 +300,8 @@ namespace RealLifeOverhaul.Economy.Brands
             box.Note(shops > 0
                 ? BrandsText.Fill("reallife_brand_dist_parts", "shops", shops.ToString(), "presence", BrandsText.Lost(Math.Min(shops, BrandCatalogue.PresenceShopsMost) * BrandCatalogue.PresencePerShop),
                     "customers", customers.ToString(), "footfall", BrandsText.Lost(BrandCatalogue.Clamp(customers, 0, BrandCatalogue.FootfallFull) * BrandCatalogue.FootfallGainMost / BrandCatalogue.FootfallFull),
-                    "standards", Standards(b.Standards), "good", BrandsText.Lost((BrandCatalogue.Clamp(b.Standards, 0, 100) - 50) * BrandCatalogue.StandardsGainMost / 50), "campaign", BrandsText.Lost(campaign))
+                    "standards", Standards(b.Standards), "good", BrandsText.Lost((BrandCatalogue.Clamp(b.Standards, 0, 100) - 50) * BrandCatalogue.StandardsGainMost / 50), "campaign", BrandsText.Lost(campaign),
+                    "others", (BrandRules.Shops(state, b, null) - shops).ToString(), "pull", BrandsText.Lost(pull))
                 : BrandsText.T("reallife_brand_dist_no_shop", "fade", BrandsText.Bp(BrandCatalogue.DecayEmptyBp)));
             box.Note(BrandsText.Fill("reallife_brand_dist_slow", "gain", BrandsText.Lost(gain), "fade", BrandsText.Bp(shops > 0 ? BrandCatalogue.DecayBp : BrandCatalogue.DecayEmptyBp)));
             if (effective > d.Rec)

@@ -241,6 +241,7 @@ namespace RealLifeOverhaul.Flare
         public string Reporter;          // whose report: "me", "c:12" (one of the city's people), "p:id" (a player of the session)
         public int Repeats;              // others who said the same since
         public int ActedDay = -1;        // the day a crew was sent (the week's crews are counted by it); -1 for none
+        public bool Counted = true;      // filed by one of its player's first three reports of the day: moves the mood, the tally and the paper (FlareLiveRules.Counted)
     }
 
     /// <summary>
@@ -321,10 +322,12 @@ namespace RealLifeOverhaul.Flare
         public int PicDay = -1;          // the day PicsToday counts for
         public int PicsToday;            // pictures sent to the session today
         public int PicNext = 1;          // the number of the next picture of the player's sent to the session
-        public int RepliesDay = -1;      // the day RepliesToday counts for
+        public int RepliesDay = -1;      // the day RepliesToday counts for (replies have no limit: kept as the save has them)
         public int RepliesToday;
-        public int ReportsDay = -1;      // ...and the reports
-        public int ReportsToday;
+        public int ReportsDay = -1;      // the day ReportsToday counts for
+        public int ReportsToday;         // the player's reports today that weighed in the council (FlareLiveRules.Weighs)
+        public int MovedDay = -1;        // the day Moved is for
+        public readonly List<string> Moved = new List<string>(8);      // what moved a business or the City Office today (FlareLiveRules.FirstToday)
         public int DmDay = -1;           // the last day one of the city's people wrote
         public string HostKey;           // a guest: the host and session whose session numbers (NetId) this save's posts carry (FlareNetShare.NewHost)
         public int CitySeed;             // the seed of the city's people on Flare: this save's, or the host's of the session it followed (their names stay theirs)

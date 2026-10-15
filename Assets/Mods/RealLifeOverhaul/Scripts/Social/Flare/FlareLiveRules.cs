@@ -45,8 +45,8 @@ namespace RealLifeOverhaul.Flare
         public const int DmTextMost = 300;             // ...in a message
         public const int TagsMost = 5;                 // tags kept of one post
         public const int TagLength = 24;
-        public const int RepliesPerDay = 12;           // the player's replies a day
-        public const int ReportsPerDay = 3;            // the player's reports a day
+        public const int ReportsWeighed = 3;           // the player's reports a day that add to an issue's weight in the council (any number may be made)
+        public const int MovedMost = 200;              // what moved a business or the City Office today, kept (FlareNet.Moved): a day's worth
         public const int Citizens = 40;                // the city's people on Flare
         public const int CityKeepDays = 3;             // the city's posts are kept this many days (the player's, the friends' longer)
         public const int NetworkKeepDays = 4;          // ...the players' of a session
@@ -661,19 +661,17 @@ namespace RealLifeOverhaul.Flare
         /// and it is returned with <paramref name="again"/>. Otherwise a new case, its answer due within hours: the more
         /// cases open, the longer.
         /// </summary>
-        public static FlareCase File(FlareNet net, FlareReport kind, string district, string place, string name, float x, float z, long now, string reporter, int post, int seed, out bool again)
+        public static FlareCase File(FlareNet net, FlareReport kind, string district, string place, string name, float x, float z, long now, string reporter, int post, int seed, out bool again,
+            bool counted = true)
         {
             again = false;
-            for (int i = 0; i < net.Cases.Count; i++)
+            FlareCase same = OpenCase(net, kind, district, place);
+            if (same != null)
             {
-                FlareCase c = net.Cases[i];
-                if (c.Kind == kind && (c.State == FlareCaseState.Open || c.State == FlareCaseState.Acting) && string.Equals(c.District, district, StringComparison.Ordinal)
-                    && (kind != FlareReport.Business || string.Equals(c.Place, place, StringComparison.Ordinal)))
-                {
-                    c.Repeats++;
-                    again = true;
-                    return c;
-                }
+                same.Repeats++;
+                same.Counted |= counted;
+                again = true;
+                return same;
             }
             int open = 0;
             for (int i = 0; i < net.Cases.Count; i++)
@@ -682,16 +680,87 @@ namespace RealLifeOverhaul.Flare
             }
             var made = new FlareCase
             {
-                Id = net.NextCase++, Kind = kind, District = district, Place = place, Name = name, X = x, Z = z, Filed = now, Reporter = reporter, Post = post,
+                Id = net.NextCase++, Kind = kind, District = district, Place = place, Name = name, X = x, Z = z, Filed = now, Reporter = reporter, Post = post, Counted = counted,
                 ReplyAt = now + Math.Min(ReplyMost, ReplyLeast + ReplyPerOpen * open + FlareRules.Roll(seed, net.NextCase, 830) % 60)
             };
             net.Cases.Add(made);
             while (net.Cases.Count > FlareNet.CasesMost)
             {
-                int oldest = OldestClosed(net);
-                net.Cases.RemoveAt(oldest >= 0 ? oldest : 0);
+                net.Cases.RemoveAt(Evicted(net, reporter));
             }
             return made;
+        }
+
+        /// <summary>
+        /// The case that gives way when there are too many: the oldest closed one, else the oldest open one that is not
+        /// another player's (the city's people's, this machine's player's, or the new report's own reporter's). Another
+        /// player's open case is never let go for somebody else's; the newest (the one just filed) always qualifies.
+        /// </summary>
+        public static int Evicted(FlareNet net, string reporter)
+        {
+            int closed = OldestClosed(net);
+            if (closed >= 0)
+            {
+                return closed;
+            }
+            for (int i = 0; i < net.Cases.Count; i++)
+            {
+                string r = net.Cases[i].Reporter;
+                if (r == null || !r.StartsWith("p:", StringComparison.Ordinal) || string.Equals(r, reporter, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            return net.Cases.Count - 1;
+        }
+
+        /// <summary>
+        /// Whether a player's report today is one of their first three of the day (counted when it is): those move the feed's
+        /// mood, the week's tally and the paper; more are filed and answered and move none of them. 'who' as MoveKey has it;
+        /// null (the city's people) is always counted.
+        /// </summary>
+        public static bool Counted(FlareNet net, int day, string who)
+        {
+            if (who == null)
+            {
+                return true;
+            }
+            for (int n = 0; n < ReportsWeighed; n++)
+            {
+                string key = who + "|W|" + n;
+                if (!MovedToday(net, day, key))
+                {
+                    return FirstToday(net, day, key);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>A key for what a post does to a friend (tagged) or to the partner (seeing one tagged): once a day each (FirstToday).</summary>
+        public static string FriendKey(char what, int person)
+        {
+            return "me|" + what + "|" + person;
+        }
+
+        /// <summary>A key for the talk a post of the player's brings a business: once a day (FirstToday).</summary>
+        public static string TalkKey(string place)
+        {
+            return place != null ? "me|B|" + place : null;
+        }
+
+        /// <summary>The case still open or being acted on for a thing (a kind in a district; a business by its place), or null.</summary>
+        public static FlareCase OpenCase(FlareNet net, FlareReport kind, string district, string place)
+        {
+            for (int i = 0; i < net.Cases.Count; i++)
+            {
+                FlareCase c = net.Cases[i];
+                if (c.Kind == kind && (c.State == FlareCaseState.Open || c.State == FlareCaseState.Acting) && string.Equals(c.District, district, StringComparison.Ordinal)
+                    && (kind != FlareReport.Business || string.Equals(c.Place, place, StringComparison.Ordinal)))
+                {
+                    return c;
+                }
+            }
+            return null;
         }
 
         private static int OldestClosed(FlareNet net)
@@ -1044,6 +1113,106 @@ namespace RealLifeOverhaul.Flare
             {
                 net.Stories.RemoveAt(0);
             }
+        }
+
+        /// <summary>
+        /// A story for a morning's paper, once for its day and key: false (nothing kept) when that morning has it already.
+        /// A pile-on is in the paper once, however many posts went badly the day before.
+        /// </summary>
+        public static bool StoryOnce(FlareNet net, int day, string key, params string[] data)
+        {
+            for (int i = 0; i < net.Stories.Count; i++)
+            {
+                if (net.Stories[i].Day == day && string.Equals(net.Stories[i].Key, key, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+            Story(net, day, key, data);
+            return true;
+        }
+
+        // ---------------------------------------------------------------- once a day
+
+        /// <summary>
+        /// The key of what a post moves, for <see cref="FirstToday"/>: who posted it ("me", or "p:" and a player of the
+        /// session), what it is (a review, an announcement of a kind, a report of a kind in a district) and the business.
+        /// Null for anything else, and for nobody (the city's own accounts, whose number a day the city's day sets).
+        /// </summary>
+        public static string MoveKey(string who, FlareSource source, int arg, string district, string place)
+        {
+            if (string.IsNullOrEmpty(who))
+            {
+                return null;
+            }
+            switch (source)
+            {
+                case FlareSource.Review: return who + "|R|" + place;
+                case FlareSource.Announce: return who + "|A|" + arg + "|" + place;
+                case FlareSource.Report: return who + "|K|" + arg + "|" + district + "|" + place;
+                default: return null;
+            }
+        }
+
+        /// <summary>Who posted, as <see cref="MoveKey"/> names them: "me" for the player's own, "p:" and the player for a session's player's, null for the city's.</summary>
+        public static string Mover(FlarePost p)
+        {
+            if (p == null)
+            {
+                return null;
+            }
+            return p.Author == FlareAuthor.Player ? "me" : p.Author == FlareAuthor.Network && !string.IsNullOrEmpty(p.AuthorId) ? "p:" + p.AuthorId : null;
+        }
+
+        /// <summary>Whether a key has moved something today; read only (the compose sheet's note).</summary>
+        public static bool MovedToday(FlareNet net, int day, string key)
+        {
+            return key != null && net.MovedDay == day && net.Moved.Contains(key);
+        }
+
+        /// <summary>
+        /// The first time today a player's review of a business, announcement for it or report of a thing moves it: true,
+        /// and noted. False for the same again the same day: that post is made, seen and answered, and moves the business's
+        /// customers, the City Office and the council no more. A null key (the city's own) is always first. A new day starts
+        /// afresh; at most <see cref="MovedMost"/> are kept (the oldest go), so the save stays small.
+        /// </summary>
+        public static bool FirstToday(FlareNet net, int day, string key)
+        {
+            if (key == null)
+            {
+                return true;
+            }
+            if (net.MovedDay != day)
+            {
+                net.MovedDay = day;
+                net.Moved.Clear();
+            }
+            if (net.Moved.Contains(key))
+            {
+                return false;
+            }
+            net.Moved.Add(key);
+            while (net.Moved.Count > MovedMost)
+            {
+                net.Moved.RemoveAt(0);
+            }
+            return true;
+        }
+
+        /// <summary>Whether a report of the player's adds to an issue's weight in the council: the first three of a day do. Counted when it does.</summary>
+        public static bool Weighs(FlareNet net, int day)
+        {
+            if (net.ReportsDay != day)
+            {
+                net.ReportsDay = day;
+                net.ReportsToday = 0;
+            }
+            if (net.ReportsToday >= ReportsWeighed)
+            {
+                return false;
+            }
+            net.ReportsToday++;
+            return true;
         }
 
         // ---------------------------------------------------------------- what a post does to a business

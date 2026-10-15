@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return;   // (a report goes always: it is the City Office's, which on a guest is the host's)
             }
-            bool picture = p.Pic != null && Settings.FlareSharePosts && Settings.FlareSharePictures && PictureAllowed();
+            bool picture = p.Pic != null && Settings.FlareSharePosts && Settings.FlareSharePictures && PictureAllowed(p);
             if (picture)
             {
                 p.NetPic = "n:" + MyId + "/" + _file.Net.PicNext++;
@@ -380,19 +380,20 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private bool PictureAllowed()
+        // One of the day's four pictures for the session; past them the post goes without its picture, and the player is told once that day.
+        private bool PictureAllowed(FlarePost p)
         {
-            if (_file.Net.PicDay != Save.Day)
+            FlareRateBook.PictureWay way = FlareRateBook.Picture(_file.Net, Save.Day);
+            if (way == FlareRateBook.PictureWay.Send)
             {
-                _file.Net.PicDay = Save.Day;
-                _file.Net.PicsToday = 0;
+                return true;
             }
-            if (_file.Net.PicsToday >= FlareRateBook.PicturesDay)
+            Logger?.Info("Flare: post " + p.Id + " goes to the session without its picture: " + FlareRateBook.PicturesDay + " pictures today already.");
+            if (way == FlareRateBook.PictureWay.TellWithout && Settings.SocialMediaNotices)
             {
-                return false;
+                Tell(NotificationType.Info, "reallife_flare_note_pictures_day", _openFeed, "count", FlareRateBook.PicturesDay.ToString());
             }
-            _file.Net.PicsToday++;
-            return true;
+            return false;
         }
 
         // The small copy of a picture of the player's, made on a worker thread; then kept (the host) or sent in pieces (a guest).

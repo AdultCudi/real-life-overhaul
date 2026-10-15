@@ -503,11 +503,11 @@ internal static partial class Program
         // The host's bounds on one player.
         var rates = new FlareRateBook();
         int allowed = 0;
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < FlareRateBook.PostsWindow + 20; i++)
         {
-            allowed += rates.Allow("Gus", 'P', 100f + i, 4) ? 1 : 0;
+            allowed += rates.Allow("Gus", 'P', 100f + i * 0.5f, 4) ? 1 : 0;
         }
-        bool later = rates.Allow("Gus", 'P', 100f + FlareRateBook.Window + 30f, 4);
+        bool later = rates.Allow("Gus", 'P', 100f + (FlareRateBook.PostsWindow + 20) * 0.5f + FlareRateBook.Window, 4);
         bool otherPlayer = rates.Allow("Ada", 'P', 101f, 4);
         Check(allowed == FlareRateBook.PostsWindow && later && otherPlayer, "Flare live: " + FlareRateBook.PostsWindow + " posts a player in ten minutes at most, then again; each player counted alone");
         int picDay = 0;
@@ -689,7 +689,7 @@ internal static partial class Program
         string page;
         bool facts = en.TryGetValue("reallife_guide_flare", out page);
         foreach (string fact in new[] { "{flare_text_most}", "{flare_reports_day}", "{flare_reply_most_hours}", "{flare_crews_works}", "{flare_patrol_days}", "{flare_cleanup_days}",
-                     "{flare_inspection_days}", "{flare_tally}", "{flare_replies_day}", "{flare_picture_kb}", "{flare_pictures_day}" })
+                     "{flare_inspection_days}", "{flare_tally}", "{flare_posts_counted}", "{flare_picture_kb}", "{flare_pictures_day}" })
         {
             facts &= page != null && page.Contains(fact) && words[1]["reallife_guide_flare"].Contains(fact) && words[2]["reallife_guide_flare"].Contains(fact);
         }

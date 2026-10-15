@@ -462,8 +462,8 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// The player posts a draft. False, with the reason said, if it cannot be posted now (two hours apart, three a
-        /// day). What it brought is said by a notification and a line.
+        /// The player posts a draft, at any time and as often as they like (the day's first three move the account:
+        /// FlareRules.Counts). False only if the draft is gone. What it brought is said by a notification and a line.
         /// </summary>
         public bool PostDraft(int draftId, FlareTone tone, bool tag)
         {
@@ -475,11 +475,6 @@ namespace RealLifeOverhaul.Flare
             try
             {
                 int day = Save.Day, minute = FlareGame.MinuteOfDay;
-                if (FlareRules.CanPost(_file, day, minute) != FlareRules.Wait.None)
-                {
-                    Changed();   // the page says when (its Post button is grey until then)
-                    return false;
-                }
                 int before = _file.Followers, reputation = _file.Reputation;
                 ReadPeople();
                 FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute, _testViral);
