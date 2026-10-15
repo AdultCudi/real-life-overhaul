@@ -351,6 +351,7 @@ namespace RealLifeOverhaul.Meta
             built.Add(new ButtonOption("reallife_meta_reset_button", AskReset));
             built.Add(new ButtonOption("reallife_meta_export_button", ExportNow));
             built.Add(new ButtonOption("reallife_meta_import_button", AskImport));
+            built.Add(new ButtonOption("reallife_meta_bug_button", BugReport.Press));   // a report on the player's disk to post in the mod's Discord (Meta/BugReport)
             built.Add(new ButtonOption("reallife_meta_welcome_button", () => Welcome.Open(true)));
             built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off (Core/Guard)
             Features.Find("diagnostics")?.AddTest(LayoutTestKey, TestLayout);

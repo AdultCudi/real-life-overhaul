@@ -95,6 +95,60 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
+        /// <summary>More of the player's cash given to a running bot to trade (MarketEngine.AddCapital). False with the reason.</summary>
+        public bool AddBotCapital(int firm, long amount, out BotWhy why)
+        {
+            FinishMoment();
+            why = !Settings.MarketsBots ? BotWhy.Off : BotReady();
+            Bot b = why == BotWhy.None ? MarketBots.Hired(_engine.State, firm) : null;
+            long worth = b != null ? MarketBots.Worth(_engine.State, b, _engine.State.Phase) : 0, cash = _engine.Wallet.Cash, mark = b != null ? b.HighWater : 0;
+            bool done = why == BotWhy.None && _engine.AddCapital(firm, amount, out why);
+            if (done)
+            {
+                Logger?.Info("Stock market: " + amount + " added to " + b.Def.Name + "'s capital, now " + b.Capital + " (nothing sold; it stops under " + MarketBots.Floor(b) + ").");
+                CapitalCheck(b, amount, worth, cash, mark);
+            }
+            Moved();
+            return done;
+        }
+
+        // Developer diagnostics: capital added or taken out (less than nothing) moved the bot's worth and its high-water
+        // mark by the sum and the player's cash not at all.
+        private void CapitalCheck(Bot b, long amount, long worth, long cash, long mark)
+        {
+            if (!Verbose)
+            {
+                return;
+            }
+            long now = MarketBots.Worth(_engine.State, b, _engine.State.Phase), cashNow = _engine.Wallet.Cash;
+            bool pass = now == worth + amount && cashNow == cash && b.HighWater == mark + amount;
+            Logger?.Info("Stock market check (bot " + b.Def.Name + " capital " + (amount > 0 ? "added" : "taken out") + "): worth " + worth + " to " + now + " (wanted " + (worth + amount)
+                         + "), the player's cash " + cash + " to " + cashNow + " (wanted the same), high-water mark " + mark + " to " + b.HighWater + ": "
+                         + (pass ? "PASS" : "the bot's figures and the player's books do not agree"));
+        }
+
+        /// <summary>Capital taken out of a running bot's money not in shares (MarketEngine.TakeCapital). False with the reason.</summary>
+        public bool TakeBotCapital(int firm, long amount, out BotWhy why)
+        {
+            FinishMoment();
+            why = !Settings.MarketsBots ? BotWhy.Off : BotReady();
+            Bot b = why == BotWhy.None ? MarketBots.Hired(_engine.State, firm) : null;
+            long worth = b != null ? MarketBots.Worth(_engine.State, b, _engine.State.Phase) : 0, cash = _engine.Wallet.Cash, mark = b != null ? b.HighWater : 0;
+            bool done = why == BotWhy.None && _engine.TakeCapital(firm, amount, out why);
+            if (done)
+            {
+                Logger?.Info("Stock market: " + amount + " taken out of " + b.Def.Name + "'s capital, now " + b.Capital + " (nothing sold; it stops under " + MarketBots.Floor(b) + ").");
+                CapitalCheck(b, -amount, worth, cash, mark);
+            }
+            Moved();
+            return done;
+        }
+
+        /// <summary>The least added to a running bot or taken out at a time, and the most that can be taken out of one now; 0 while the market is not running.</summary>
+        public long BotChangeLeast => Running ? _engine.BotChangeLeast : 0;
+
+        public long BotMostOut(int firm) => Running ? _engine.BotMostOut(firm) : 0;
+
         public bool SellUpBot(int firm, out BotWhy why)
         {
             FinishMoment();

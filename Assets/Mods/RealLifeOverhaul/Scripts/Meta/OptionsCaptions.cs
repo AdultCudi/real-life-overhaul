@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Meta
             { "reallife_keys_reset", "reallife_opt_caption_reset" },
             { "reallife_meta_export_button", "reallife_opt_caption_export" },
             { "reallife_meta_import_button", "reallife_opt_caption_import" },
+            { "reallife_meta_bug_button", "reallife_opt_caption_report" },
             { "reallife_meta_remove_button", "reallife_opt_caption_prepare" },
             { "reallife_meta_repair_button", "reallife_opt_caption_repair" },
             { "reallife_meta_check_button", "reallife_opt_caption_check" },

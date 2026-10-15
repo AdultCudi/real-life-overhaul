@@ -288,35 +288,25 @@ internal static partial class Program
 
     private static void CompetitorWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "competitors: the three locales are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("competitors", langs, codes))
         {
             return;
         }
+        Dictionary<string, string> en = langs[0], pt = langs[1], zh = langs[2];
         var missing = new List<string>();
-        var holes = new Regex(@"\{[a-z_]+\}");
         foreach (string key in CompetitorKeys)
         {
-            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || !zh.TryGetValue(key, out string z))
+            string lacking = LanguagesLacking(langs, codes, key);
+            if (lacking.Length > 0)
             {
-                missing.Add(key);
-                continue;
-            }
-            string want = Holes(holes, e);
-            if (Holes(holes, p) != want || Holes(holes, z) != want)
-            {
-                missing.Add(key + " (its {names} differ)");
+                missing.Add(key + " (" + lacking + ")");
             }
         }
-        Check(missing.Count == 0, "competitors: every text is in en.json, pt.json and zh-cn.json with the same {names} (" + CompetitorKeys.Length + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
+        Check(missing.Count == 0, "competitors: every text is in every language with the same {names} (" + CompetitorKeys.Length + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
         string button = en.TryGetValue("reallife_tech_button_rivals", out string b) ? b : "?";
-        bool guide = en.TryGetValue("reallife_guide_tech_sector", out string g) && g.Contains("<b>" + button + "</b>")
-                     && pt.TryGetValue("reallife_guide_tech_sector", out string gp) && gp.Contains("<b>" + pt["reallife_tech_button_rivals"] + "</b>")
-                     && zh.TryGetValue("reallife_guide_tech_sector", out string gz) && gz.Contains("<b>" + zh["reallife_tech_button_rivals"] + "</b>");
+        bool guide = Array.TrueForAll(langs, w => w.TryGetValue("reallife_guide_tech_sector", out string g) && w.TryGetValue("reallife_tech_button_rivals", out string named)
+                                                  && g.Contains("<b>" + named + "</b>"));
         Check(guide, "competitors: the Guide's tech sector page names the Competitors button as the app does, in each language");
         // In the next row until its version is made, and in that version's own row after (the release empties the next row).
         bool line = false;
@@ -329,16 +319,5 @@ internal static partial class Program
             }
         }
         Check(line, "competitors: What's new has the feature's line, with no prefix (in the next row, or its version's row once it is made)");
-    }
-
-    private static string Holes(Regex holes, string text)
-    {
-        var found = new List<string>();
-        foreach (Match m in holes.Matches(text))
-        {
-            found.Add(m.Value);
-        }
-        found.Sort(StringComparer.Ordinal);
-        return string.Join(",", found);
     }
 }

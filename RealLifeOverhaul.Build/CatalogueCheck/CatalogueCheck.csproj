@@ -27,6 +27,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\SettingsRules.cs" Link="Mod\SettingsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeKinds.cs" Link="Mod\NoticeKinds.cs" />
+    <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
   </ItemGroup>
 
 </Project>

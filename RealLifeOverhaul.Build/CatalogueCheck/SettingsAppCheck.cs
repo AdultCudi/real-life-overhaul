@@ -229,6 +229,11 @@ namespace RealLifeOverhaul
             // Chinese has no spaces between words: a word typed is found inside a phrase.
             Check(OptionsFind.Has("你的角色与住所", "角色") && OptionsFind.Has("写实预设", "预设"), "a Chinese word inside a phrase is not found");
             Check(!OptionsFind.Has("你的角色与住所", "城市") && !OptionsFind.Has("the current rate", "rent"), "the Chinese rule finds what is not there, or 'rent' inside another word");
+            // Cyrillic and accented Latin words begin where a word does, as English ones (the texts and what is typed are lowered alike).
+            Check(OptionsFind.Has("ваш персонаж и жильё", OptionsFind.Split("Персо", words)) && OptionsFind.Has("mieteinnahmen und ärger", OptionsFind.Split("Ärger", words))
+                  && OptionsFind.Has("réglages de l'économie", OptionsFind.Split("Écon", words)), "a Russian, German or French word typed is not found at the start of a word");
+            Check(!OptionsFind.Has("городской транспорт", OptionsFind.Split("род", words)) && !OptionsFind.Has("verkehrsunfall", OptionsFind.Split("unfall", words)),
+                "a Russian or German word typed is found inside another word");
             var zh = new Dictionary<string, string>(StringComparer.Ordinal);
             using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(src, "Locales", "zh-cn.json"))))
             {

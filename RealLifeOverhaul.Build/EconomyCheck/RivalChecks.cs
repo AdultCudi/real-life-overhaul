@@ -520,15 +520,12 @@ internal static partial class Program
     private static void RivalWords()
     {
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul"));
-        string folder = System.IO.Path.Combine(root, "Locales");
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "rivals words: the three locales are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null || zh == null)
+        Dictionary<string, string>[] words = LanguageWords(out string[] codes);
+        if (!LanguagesRead("rivals words", words, codes))
         {
             return;
         }
+        Dictionary<string, string> en = words[0];
         // Every key the rivals' sources name, and those the catalogue builds.
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         var literal = new Regex("\"(reallife_[a-z0-9_]+)\"");
@@ -571,18 +568,14 @@ internal static partial class Program
         var holes = new Regex(@"\{[a-z_]+\}");
         foreach (string key in keys)
         {
-            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || !zh.TryGetValue(key, out string z))
+            string lacking = LanguagesLacking(words, codes, key);
+            if (lacking.Length > 0)
             {
-                missing.Add(key);
-                continue;
-            }
-            string want = Holes(holes, e);
-            if (Holes(holes, p) != want || Holes(holes, z) != want)
-            {
-                missing.Add(key + " (its {names} differ)");
+                missing.Add(key + " (" + lacking + ")");
             }
         }
-        Check(missing.Count == 0 && keys.Count > 150, "rivals words: every text is in en.json, pt.json and zh-cn.json with the same {names} (" + keys.Count + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
+        Check(missing.Count == 0 && keys.Count > 150, "rivals words: every text is in every language (" + string.Join(", ", codes) + ") with the same {names}, a later language reading the English where it has none yet ("
+                                                       + keys.Count + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
         // The notices fit the game's toast.
         var longNotes = new List<string>();
         foreach (string key in keys)

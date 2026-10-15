@@ -378,6 +378,46 @@ namespace RealLifeOverhaul
             return text;
         }
 
+        /// <summary>
+        /// For a bug report (Meta/BugReport): the state of the game contract in English, for the developer whatever the
+        /// player's language: the game's build against the one the mod is made for, the parts off because this game lacks
+        /// what they stand on, the features switched off after their faults, the parts stood down when first used, and
+        /// whether the notice of it all was due and shown. On a button press only.
+        /// </summary>
+        public static string Report()
+        {
+            BuildKind kind = GameBuild.Of(GameBuild.Running);
+            var text = new StringBuilder(256);
+            text.Append("this game is ").Append(kind == BuildKind.Same ? "the build the mod is made for" : kind == BuildKind.Older ? "older than the build the mod is made for"
+                : kind == BuildKind.Newer ? "newer than the build the mod is made for" : "of a build that could not be read");
+            var parts = new List<string>(8);
+            foreach (GamePart part in ContractBook.OffParts())
+            {
+                if (!parts.Contains(part.English))
+                {
+                    parts.Add(part.English);
+                }
+            }
+            foreach (string feature in Lacking)
+            {
+                parts.Add(feature);
+            }
+            text.Append("; parts off: ").Append(parts.Count > 0 ? string.Join(", ", parts) : "none");
+            var faults = new List<string>(4);
+            foreach (string feature in FeatureGuards.OffList)
+            {
+                if (!Lacking.Contains(feature))
+                {
+                    faults.Add(feature);
+                }
+            }
+            text.Append("; features off after faults: ").Append(faults.Count > 0 ? string.Join(", ", faults) : "none");
+            text.Append("; parts stood down when first used: ").Append(StoodDown.Count > 0 ? string.Join("; ", StoodDown) : "none");
+            bool due = kind == BuildKind.Older || PartsOff;
+            text.Append("; the notice of it: ").Append(!due ? "not needed" : GameBuild.NoticeShown ? "shown" : "due, not shown yet");
+            return text.ToString();
+        }
+
         // ---------------------------------------------------------------- what the running game lacks, found as it is used
 
         /// <summary>True when the exception says the running game lacks a type, field or method the mod was compiled against (or has made it inaccessible).</summary>

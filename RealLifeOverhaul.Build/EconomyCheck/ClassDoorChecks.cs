@@ -245,10 +245,8 @@ internal static partial class Program
         Check(begunOnly, "education box: begun courses are listed even when no longer offered; a box that cannot scroll lists only those");
 
         // ---------------------------------------------------------------- words
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        var langs = new[] { LoadWords(System.IO.Path.Combine(folder, "en.json")), LoadWords(System.IO.Path.Combine(folder, "pt.json")), LoadWords(System.IO.Path.Combine(folder, "zh-cn.json")) };
-        Check(langs[0] != null && langs[1] != null && langs[2] != null, "education box: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
-        if (langs[0] == null || langs[1] == null || langs[2] == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("education box", langs, codes))
         {
             return;
         }
@@ -289,11 +287,11 @@ internal static partial class Program
                 }
                 if (!ok)
                 {
-                    missing.Add(k.Key + (l == 0 ? " (en)" : l == 1 ? " (pt)" : " (zh-cn)"));
+                    missing.Add(k.Key + " (" + codes[l] + ")");
                 }
             }
         }
-        Check(missing.Count == 0, "education box: every heading, standing and course name is in all three locales with the figures it is filled with ("
+        Check(missing.Count == 0, "education box: every heading, standing and course name is in every language with the figures it is filled with ("
                                   + need.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         bool oneLine = true;
         string tooLong = string.Empty;
@@ -310,7 +308,7 @@ internal static partial class Program
             }
         }
         Check(oneLine && !EducationRules.HeadingFits(new string('a', 60), headingWidth),
-            "education box: every group's heading fits its row on one line in all three locales" + (oneLine ? string.Empty : ";" + tooLong));
+            "education box: every group's heading fits its row on one line in every language" + (oneLine ? string.Empty : ";" + tooLong));
         bool keyed = true;
         foreach (EducationState state in Enum.GetValues(typeof(EducationState)))
         {

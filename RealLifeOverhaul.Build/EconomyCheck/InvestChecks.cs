@@ -12,7 +12,7 @@ using RealLifeOverhaul.Markets;
 // limit, the shares held or the margin, cancelled cleanly, one history line a day, their moves sent as a guest's trades
 // are, the same on a seed and whether the market is played in one go or in pieces); a dividend put back (the shares and
 // the cash of a payout and a market order of that size); a rollover at maturity and a ladder's pieces; the save's round
-// trip with and without the new fields; their cost; and every new text in the three languages. Every expected figure is
+// trip with and without the new fields; their cost; and every new text in every language. Every expected figure is
 // worked out from the rules or by hand.
 internal static partial class Program
 {
@@ -1051,17 +1051,14 @@ internal static partial class Program
 
     private static void InvestWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "invest: the three locales are where the checks look for them");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("invest", langs, codes))
         {
             return;
         }
-        string missing = string.Join(", ", InvestKeys.Where(k => !en.ContainsKey(k) || !pt.ContainsKey(k) || !zh.ContainsKey(k)));
-        Check(missing.Length == 0, "invest: every new text is in the three languages (" + missing + ")");
+        Dictionary<string, string> en = langs[0], pt = langs[1], zh = langs[2];
+        string missing = string.Join(", ", InvestKeys.Where(k => LanguagesLacking(langs, codes, k).Length > 0).Select(k => k + " (" + LanguagesLacking(langs, codes, k) + ")"));
+        Check(missing.Length == 0, "invest: every new text is in every language with the same {names} (" + missing + ")");
         string[] kinds = { "reallife_mkt_inv_kind_stock", "reallife_mkt_inv_kind_trust", "reallife_mkt_inv_kind_treasury", "reallife_mkt_inv_kind_city", "reallife_mkt_inv_kind_deposit" };
         string textFile = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\InvestText.cs"));
         string code = System.IO.File.Exists(textFile) ? System.IO.File.ReadAllText(textFile) : string.Empty;
@@ -1071,7 +1068,7 @@ internal static partial class Program
         Check(InvestNotes.All(k => en.ContainsKey(k) && en[k].Length <= 200), "invest: every notification is short (240 characters with its names at most)");
         // A part put back says so with its reason: with realistic names and its longest reason, 240 characters at most in each language.
         string[] whys = { "reallife_mkt_why_too_large", "reallife_mkt_why_holding_limit", "reallife_mkt_why_no_money" };
-        bool fits = new[] { en, pt, zh }.All(w => whys.All(y => w["reallife_mkt_inv_note_back_part"].Replace("{count}", "1,234,567").Replace("{name}", "Harbourview Property Trust")
+        bool fits = langs.All(w => whys.All(y => w["reallife_mkt_inv_note_back_part"].Replace("{count}", "1,234,567").Replace("{name}", "Harbourview Property Trust")
             .Replace("{price}", "$1,234.56").Replace("{why}", w[y]).Length <= 240));
         Check(fits, "invest: a dividend put back in part says so, with its reason and realistic names, in 240 characters at most in each language");
         string guide = en.TryGetValue("reallife_guide_markets", out string g) ? g : string.Empty, bots = en.TryGetValue("reallife_guide_markets_bots", out string b) ? b : string.Empty;
@@ -1903,10 +1900,9 @@ internal static partial class Program
         Order o = m.PlaceWorked(s.Id, OrderSide.Buy, most * 2, m.Held, false, out _);
         Order back = WaitingBack(m, s, 5000000L);
         RunTo(m, MarketTrading.NextTradingDay(m.State.Day), MarketCatalogue.PhaseOpen + 1);
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json")), pt = LoadWords(System.IO.Path.Combine(folder, "pt.json")),
-            zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        bool words = en != null && pt != null && zh != null && en["reallife_mkt_why_holding_limit"].Contains("with your open orders for it")
+        var langs = LanguageWords(out string[] codes);
+        Dictionary<string, string> en = langs[0], pt = langs[1], zh = langs[2];
+        bool words = LanguagesRead("put back", langs, codes) && LanguagesLacking(langs, codes, "reallife_mkt_why_holding_limit").Length == 0 && en["reallife_mkt_why_holding_limit"].Contains("with your open orders for it")
                      && pt["reallife_mkt_why_holding_limit"].Contains("com suas ordens abertas") && zh["reallife_mkt_why_holding_limit"].Contains("未成交订单");
         Check(o != null && back.State == OrderState.Refused && back.Why == OrderWhy.HoldingLimit && m.State.Held(s.Id) * 100 < most && words && (int)OrderWhy.HoldingLimit == 7,
             "put back: refused for the room the open orders hold, its reason says it is the holding with the open orders for it, in each language (seed 671)");

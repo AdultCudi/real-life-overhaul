@@ -1,4 +1,4 @@
-0.21.0
+0.23.0
 
 New
-- The Stocks app for large, careful investors: the Portfolio tab shows what each holding is (a stock, a property trust, a Treasury or city bond, a deposit) with the spread across kinds and what it all pays over a year; an order over one order's most is worked a slice at each step; one bond purchase grows with what you are worth; dividends can be put back into the same shares; and bonds can roll over at their end or be bought as a ladder over the Treasury's terms.
+- The mod can now be read in German, French, Spanish and Russian: it follows the language the game is set to, and a text not yet translated is in English.

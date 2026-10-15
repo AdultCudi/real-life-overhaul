@@ -154,15 +154,12 @@ internal static partial class Program
 
     private static void TechWorkWords()
     {
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
-        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "tech work: the three locales are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null || zh == null)
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("tech work", langs, codes))
         {
             return;
         }
+        Dictionary<string, string> en = langs[0];
         Check(IdleKeys.Length == (int)Idle.Count - 1, "tech work: a text for every reason");
         string client = new string('W', 40);
         foreach (string note in new[] { "reallife_tech_note_nobody", "reallife_tech_note_behind" })
@@ -176,7 +173,7 @@ internal static partial class Program
             foreach (string key in IdleKeys)
             {
                 string why;
-                if (!en.TryGetValue(key, out why) || !pt.ContainsKey(key) || !zh.ContainsKey(key))
+                if (!en.TryGetValue(key, out why) || LanguagesLacking(langs, codes, key).Length > 0)
                 {
                     Check(false, "tech work: " + key + " has a text in each language");
                     continue;

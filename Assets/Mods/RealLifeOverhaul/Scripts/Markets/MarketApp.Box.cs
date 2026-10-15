@@ -28,7 +28,8 @@ namespace RealLifeOverhaul.Markets
         private static readonly string[] KindKeys =
         {
             "reallife_mkt_kind_bought", "reallife_mkt_kind_sold", "reallife_mkt_kind_dividend", "reallife_mkt_kind_dividend_paid", "reallife_mkt_kind_payout", "reallife_mkt_kind_interest",
-            "reallife_mkt_kind_borrow_fee", "reallife_mkt_kind_deposit", "reallife_mkt_kind_withdrawal", "reallife_mkt_kind_shortfall"
+            "reallife_mkt_kind_borrow_fee", "reallife_mkt_kind_deposit", "reallife_mkt_kind_withdrawal", "reallife_mkt_kind_shortfall", "reallife_mkt_kind_bot_added",
+            "reallife_mkt_kind_bot_taken"
         };
 
         // The order being written on a company's page.

@@ -1,0 +1,403 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
+using System.Runtime.CompilerServices;
+using Localizor;
+using RealLifeOverhaul.GameUi;
+using Unity.Collections;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+
+namespace RealLifeOverhaul.Meta
+{
+    /// <summary>
+    /// The one place "Report a bug" (BugReport.cs) touches the game and the engine: the listener that keeps the mod's
+    /// warnings and errors (<see cref="Listen"/>), the facts read when the button is pressed, the game's text box, the
+    /// screenshot, the log files read with sharing, the zip, the clipboard and the two links opened.
+    ///
+    /// Per frame: nothing. The listener runs once per line the engine logs, on whichever thread wrote it: a type comparison
+    /// for a plain line; for a warning or an error a prefix comparison, and for an error a search of its stack for the mod's
+    /// namespace; a line of the mod's is a few field writes under a lock (BugLog). No allocation. Everything else runs on the
+    /// press: the facts and the screen on the main thread, the files on a worker thread.
+    /// </summary>
+    internal static class BugReportGame
+    {
+        /// <summary>
+        /// The mod's Discord server, by its lasting invite. A link to the #bug-reports channel itself
+        /// (discord.com/channels/...) shows a player who has not joined yet only "no access"; the invite works for everyone,
+        /// lands a member in the server as it is and asks a newcomer to join first. The notice names the channel.
+        /// </summary>
+        public const string DiscordUrl = "https://discord.gg/tzCh2VXs9E";
+
+        private const int JpgQuality = 85;   // a 1440p screen in some 400 KB: Discord takes 10 MB in a post, the logs need the room
+
+        /// <summary>The mod's warnings and errors this session, the last <see cref="BugLog.Most"/>.</summary>
+        public static readonly BugLog Log = new BugLog();
+
+        private static bool _listening;
+
+        /// <summary>Once, at game start (Core/RealLifeOverhaulMod): the mod's warnings and errors are kept from then on.</summary>
+        public static void Listen()
+        {
+            if (_listening)
+            {
+                return;
+            }
+            _listening = true;
+            Application.logMessageReceivedThreaded += Heard;
+        }
+
+        // Called by the engine for every line of its log, from any thread. Nothing here may log (it would come back here),
+        // and nothing can throw but the lock; a fault is dropped rather than written, for the same reason.
+        private static void Heard(string text, string stack, LogType type)
+        {
+            try
+            {
+                if (BugReportRules.Keep((int)type, text, stack, out BugLineKind kind))
+                {
+                    Log.Add(kind, DateTime.UtcNow.Ticks, text, stack);
+                }
+            }
+            catch (Exception)
+            {
+                // (see above: a line is lost, the game's log is not touched)
+            }
+        }
+
+        // ---------------------------------------------------------------- the facts
+
+        /// <summary>What report.txt says, read on the main thread as the player confirms. A part that cannot be read says so.</summary>
+        public static BugFacts Facts(string words)
+        {
+            var f = new BugFacts
+            {
+                Words = words,
+                Written = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                ModVersion = Changelog.Version,
+                GameBuild = GameBuild.Running,
+                MadeFor = GameBuild.MadeFor,
+                Profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            };
+            f.Platform = Read(Platform);
+            f.Language = Read(() => LocalizorManager.LoadedLocale);
+            f.GoingPublic = Read(() => GoingPublic.Describe().Replace("Going Public: ", string.Empty).TrimEnd('.'));
+            f.Preset = Read(() => Preset(f.Changed));
+            try
+            {
+                f.InCity = MetaCity.Root != null && City(f);
+                f.PhoneOpen = f.InCity && PhoneOpen();
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                f.InCity = false;
+            }
+            f.LinesTotal = Log.Copy(f.Lines);
+            f.Contract = Read(Guard.Report);
+            return f;
+        }
+
+        private static string Read(Func<string> read)
+        {
+            try
+            {
+                return read() ?? "unknown";
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                return "could not be read (" + e.GetType().Name + ")";
+            }
+        }
+
+        private static string Platform()
+        {
+            return Application.platform + ", " + SystemInfo.operatingSystem + ", " + SystemInfo.processorType + ", "
+                   + SystemInfo.systemMemorySize.ToString(CultureInfo.InvariantCulture) + " MB memory, " + SystemInfo.graphicsDeviceName + " ("
+                   + SystemInfo.graphicsMemorySize.ToString(CultureInfo.InvariantCulture) + " MB, " + SystemInfo.graphicsDeviceType + "), screen "
+                   + Screen.width.ToString(CultureInfo.InvariantCulture) + " x " + Screen.height.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // The preset the options match, or the one they are nearest; and every option that differs from it (an option no
+        // preset covers, from its default). One pass over the options per preset, on the press.
+        private static string Preset(List<string> changed)
+        {
+            Intensity? exact = Presets.Detect();
+            Intensity near = exact ?? Intensity.Standard;
+            if (!exact.HasValue)
+            {
+                int fewest = int.MaxValue;
+                for (int i = 0; i <= (int)Intensity.Hardcore; i++)
+                {
+                    int count = Presets.CountChanges((Intensity)i, out _);
+                    if (count < fewest)
+                    {
+                        fewest = count;
+                        near = (Intensity)i;
+                    }
+                }
+            }
+            foreach (OptionInfo info in SettingsTable.All)
+            {
+                int now = SettingsTable.Current(info);
+                if (Presets.TryValue(info, near, out int value))
+                {
+                    if (now != value)
+                    {
+                        changed.Add(info.Id + " = " + now.ToString(CultureInfo.InvariantCulture) + " (preset " + value.ToString(CultureInfo.InvariantCulture) + ")");
+                    }
+                }
+                else if (info.HasDefault && now != info.Default)
+                {
+                    changed.Add(info.Id + " = " + now.ToString(CultureInfo.InvariantCulture) + " (default " + info.Default.ToString(CultureInfo.InvariantCulture) + ")");
+                }
+            }
+            return exact.HasValue ? exact.Value.ToString() : "Custom, nearest " + near;
+        }
+
+        // The save's day, time and money: named only here, so that a game without them leaves only these lines out.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool City(BugFacts f)
+        {
+            if (SaveGameManager.Current == null)
+            {
+                return false;
+            }
+            f.Day = TimeHelper.CurrentDay;
+            f.Hour = TimeHelper.CurrentHour;
+            f.Minute = Mathf.Clamp((int)TimeHelper.CurrentMinute, 0, 59);
+            f.Money = SaveGameManager.Current.Money;
+            return true;
+        }
+
+        // The phone's full menu (an app, the Mod settings one too) is open: the screenshot shows it, and report.txt says so. Left open.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool PhoneOpen()
+        {
+            return UI.Smartphone.FullMenu.IsOpen;
+        }
+
+        /// <summary>True while a city is loaded: then the report has a screenshot and the game's text box is there.</summary>
+        public static bool InCity => MetaCity.Root != null;
+
+        // ---------------------------------------------------------------- the game's text box
+
+        /// <summary>
+        /// The game's own text box (UIs.textInputUi, as the mod's apps ask for a name) for what went wrong, which may be left
+        /// empty. False when the game has none to show (the main menu).
+        /// </summary>
+        public static bool AskWords(Action<string> done)
+        {
+            UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+            if (uis == null || uis.textInputUi == null)
+            {
+                return false;
+            }
+            uis.textInputUi.Show("reallife_bug_placeholder", "reallife_bug_make", text => UiClone.Safe(() => done(text)), null, string.Empty, true, BugReportRules.MostWords);
+            return true;
+        }
+
+        /// <summary>True while the game's text box can be shown: a city is loaded and its interface is there.</summary>
+        public static bool CanAsk
+        {
+            get
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+                return uis != null && uis.textInputUi != null;
+            }
+        }
+
+        // ---------------------------------------------------------------- the screen
+
+        /// <summary>The screen as it is drawn, read at the end of a frame.</summary>
+        public sealed class Shot
+        {
+            public NativeArray<byte> Pixels;   // a copy of the texture's pixels, the encoder's alone
+            public GraphicsFormat Format;
+            public int Width;
+            public int Height;
+            public long ReadMs;                // the main thread's share: the engine's read of the screen and one copy
+        }
+
+        /// <summary>
+        /// The screen, as the game's own feedback form takes it (ScreenCapture.CaptureScreenshotAsTexture): called after
+        /// WaitForEndOfFrame. Its pixels are copied out and the texture let go at once; the encoding, the slow part, is the
+        /// worker's (<see cref="WriteShot"/>). Null when it cannot be taken.
+        /// </summary>
+        public static Shot TakeShot()
+        {
+            var watch = Stopwatch.StartNew();
+            Texture2D texture = null;
+            try
+            {
+                texture = ScreenCapture.CaptureScreenshotAsTexture();
+                if (texture == null)
+                {
+                    return null;
+                }
+                var shot = new Shot
+                {
+                    Pixels = new NativeArray<byte>(texture.GetRawTextureData<byte>(), Allocator.Persistent),
+                    Format = texture.graphicsFormat,
+                    Width = texture.width,
+                    Height = texture.height
+                };
+                shot.ReadMs = watch.ElapsedMilliseconds;
+                return shot;
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                return null;
+            }
+            finally
+            {
+                if (texture != null)
+                {
+                    UnityEngine.Object.Destroy(texture);
+                }
+            }
+        }
+
+        /// <summary>On the worker: the screen as a JPG (the engine's encoder, which may run on any thread), and its pixels let go. False if it could not be written.</summary>
+        public static bool WriteShot(Shot shot, string path)
+        {
+            NativeArray<byte> jpg = default;
+            try
+            {
+                jpg = ImageConversion.EncodeNativeArrayToJPG(shot.Pixels, shot.Format, (uint)shot.Width, (uint)shot.Height, 0u, JpgQuality);
+                File.WriteAllBytes(path, jpg.ToArray());
+                return true;
+            }
+            finally
+            {
+                if (jpg.IsCreated)
+                {
+                    jpg.Dispose();
+                }
+                Drop(shot);
+            }
+        }
+
+        /// <summary>The screen's pixels let go, whatever became of them.</summary>
+        public static void Drop(Shot shot)
+        {
+            if (shot != null && shot.Pixels.IsCreated)
+            {
+                shot.Pixels.Dispose();
+            }
+        }
+
+        // ---------------------------------------------------------------- the files
+
+        /// <summary>The game's log of this session, when it is in the game's own data folder (a log written elsewhere is not read).</summary>
+        public static string GameLog()
+        {
+            string log = Application.consoleLogPath;
+            if (string.IsNullOrEmpty(log))
+            {
+                return null;
+            }
+            string folder = Path.GetDirectoryName(Path.GetFullPath(log));
+            return string.Equals(folder, Path.GetFullPath(Application.persistentDataPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) ? log : null;
+        }
+
+        /// <summary>
+        /// On the worker: a copy of one of the game's logs, its tail when large, the user folder taken out (BugReportRules.CopyTail).
+        /// Opened with sharing, so the game goes on writing it, and never locked. False when there is no such file.
+        /// </summary>
+        public static bool CopyLog(string from, string to, long cap, string profile)
+        {
+            if (from == null || !File.Exists(from))
+            {
+                return false;
+            }
+            using (var read = new FileStream(from, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 64 * 1024))
+            using (var write = new StreamWriter(to, false, new System.Text.UTF8Encoding(false), 64 * 1024))
+            {
+                BugReportRules.CopyTail(read, write, cap, profile);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// On the worker: every file of the folder in one zip beside it. Its own method, so that a game whose runtime lacks the
+        /// zip classes leaves only the folder. A half-written zip is removed. Null when it could not be made.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string Zip(string folder)
+        {
+            string zip = folder + ".zip";
+            try
+            {
+                using (var stream = new FileStream(zip, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
+                {
+                    foreach (string file in Directory.GetFiles(folder))
+                    {
+                        ZipArchiveEntry entry = archive.CreateEntry(Path.GetFileName(file), System.IO.Compression.CompressionLevel.Optimal);
+                        using (Stream into = entry.Open())
+                        using (var from = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                            from.CopyTo(into);
+                        }
+                    }
+                }
+                return zip;
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    File.Delete(zip);
+                }
+                catch (Exception)
+                {
+                    // (left as it is: the folder is the report)
+                }
+                throw;
+            }
+        }
+
+        // ---------------------------------------------------------------- handing it over
+
+        /// <summary>
+        /// The summary on the clipboard, the file explorer on the reports' folder with the new zip (or folder) picked, the mod's
+        /// Discord in the browser. On Windows the explorer is started itself: a file address escaped for the browser
+        /// (Uri.AbsoluteUri) is read back in the system's code page, which mangles a user folder with accents or Chinese
+        /// characters. If it cannot be started, and on any other system, the folder's address is opened unescaped.
+        /// </summary>
+        public static void HandOver(string summary, string folder, string zip)
+        {
+            GUIUtility.systemCopyBuffer = summary;
+            if (!Explore(zip ?? folder))
+            {
+                Application.OpenURL(BugReportRules.FileUrl(Path.GetDirectoryName(folder)));
+            }
+            Application.OpenURL(DiscordUrl);
+        }
+
+        private static bool Explore(string picked)
+        {
+            if (Application.platform != RuntimePlatform.WindowsPlayer && Application.platform != RuntimePlatform.WindowsEditor)
+            {
+                return false;
+            }
+            try
+            {
+                using (Process.Start("explorer.exe", BugReportRules.ExplorerSelect(picked)))
+                {
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                return false;
+            }
+        }
+    }
+}
