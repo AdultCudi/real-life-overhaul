@@ -19,7 +19,8 @@ namespace RealLifeOverhaul
     ///   Bus stops                    every place of the bus network (TransitMap.Places)        by count no
     ///   Hotels                       the eight hotels (Hotels.Sites)                           yes      yes
     ///   Courthouse                   the courthouse (Courthouse.Front)                         yes      yes
-    ///   Places to study              the university, the game's school, the hospitals' wards   yes      yes
+    ///   Hudson City University       the university (CareersDirector.University), its own row  yes      yes
+    ///   Places to study              the game's school and the hospitals' wards                yes      yes
     ///   Tech companies               the city's tech companies' headquarters (Tech/Sites)      yes      yes
     ///   Your cloud                   the player's data centres: the cloud's regions            yes      no
     ///   Driving schools              the learner-plate boards (LicenceDesks)                   yes      yes
@@ -34,6 +35,13 @@ namespace RealLifeOverhaul
     ///
     /// (Police stations are Law's own category.) "By count": bus stops are ticked by default only in a city with
     /// forty or fewer; the bus network usually has over a hundred.
+    ///
+    /// Every building the mod claims as its own (Core/SpecialBuildings: the university, City Utilities, the courthouse, the
+    /// tech companies' towers, the hotels, the police stations) has a row of its own with its own icon, as the game's
+    /// special buildings have theirs (its school, its hospital), and its place is that building, so the row's tick lights
+    /// the building on the open map as the game lights its own. The university was once only one of the "Places to study",
+    /// under a star shared with the sights, so the map's filters had no row by its name and its arrow flew to the nearest
+    /// school or hospital instead (NavCheck/MapRowCheck.cs checks every claimed building has its row).
     ///
     /// How it keeps up: one look every three seconds (real time: the map pauses the game). Each kind has a stamp,
     /// a few integer operations over what the feature already holds (a count, the ids of the sites, where the
@@ -280,8 +288,17 @@ namespace RealLifeOverhaul
                     });
                 }
             });
-            // Careers: where to study. Hudson City University (a building the mod has made its own, with its own card), the game's
-            // school (Manhattan Business School, which keeps its own card) and the hospitals and clinics whose wards teach nursing.
+            // Careers: Hudson City University, a building the mod has made its own, with its own card: a row of its own under its
+            // name and icon, there while the university's part is on (CareersDirector.UniversityOpen) and gone with it.
+            _links.Add(new Link
+            {
+                Id = "university", TitleKey = "reallife_map_row_university", Colour = new Color(0.30f, 0.24f, 0.66f), Icon = MapIcon.Mortarboard, InStreet = true,
+                Enabled = () => Careers.CareersDirector.UniversityOpen,
+                Stamp = UniversityStamp,
+                Fill = UniversityPlace
+            });
+            // Careers: the other places to study. The game's school (Manhattan Business School, which keeps its own card) and the
+            // hospitals and clinics whose wards teach nursing.
             _links.Add(new Link
             {
                 Id = "study", TitleKey = "reallife_map_row_study", Colour = new Color(0.55f, 0.16f, 0.22f), Icon = MapIcon.Star, InStreet = true,
@@ -508,25 +525,42 @@ namespace RealLifeOverhaul
             });
         }
 
-        private static long StudyStamp()
+        // The university once it stands in a building of its own; read again when it moves or its name is switched on or off.
+        private static long UniversityStamp()
         {
             Careers.CareersDirector careers = Careers.CareersDirector.Instance;
+            Careers.CampusBuilding uni = careers != null ? careers.University : null;
+            if (uni == null || !uni.Usable || uni.Building == null)
+            {
+                return 0;   // (still being chosen, none to be had, or its part is off: no row)
+            }
+            unchecked
+            {
+                long stamp = ((uni.Street ?? string.Empty).GetHashCode() * 1000003L + uni.Number) * 4 + (SpecialBuildings.Active ? 2 : 1);
+                return stamp != 0L ? stamp : 1L;
+            }
+        }
+
+        // The university's one place: its door, under its own name, and its building, which the row lights on the open map
+        // and whose card on the map carries the name (Core/MapPlaces).
+        private static void UniversityPlace(List<MapPlace> places)
+        {
+            Careers.CampusBuilding uni = Careers.CareersDirector.Instance.University;
+            if (uni == null || !uni.Usable || uni.Building == null)
+            {
+                return;
+            }
+            places.Add(new MapPlace(uni.Front, SpecialBuildings.NameFor(uni.Building) ?? T("reallife_study_campus_university"), uni.Building)
+            {
+                CardTypeKey = "reallife_campus_card_type"
+            });
+        }
+
+        // The game's school and the hospitals: there once the city's buildings are.
+        private static long StudyStamp()
+        {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            if (careers == null || city == null || city.cityBuildingControllers == null || city.cityBuildingControllers.Length == 0)
-            {
-                return 0;
-            }
-            Careers.CampusBuilding uni = careers.University;
-            long stamp = 1;
-            if (uni != null && uni.Usable)
-            {
-                stamp = stamp * 1000003L + (uni.Street ?? string.Empty).GetHashCode() * 31L + uni.Number + 7;
-            }
-            else if (Careers.CareersDirector.UniversityOpen && (uni == null || !uni.Searched))
-            {
-                stamp = 2;   // (the university is still being chosen: the schools now, the university when it is there)
-            }
-            return stamp;
+            return Careers.CareersDirector.Instance != null && city != null && city.cityBuildingControllers != null && city.cityBuildingControllers.Length > 0 ? 1 : 0;
         }
 
         private static void StudyPlaces(List<MapPlace> places)
@@ -535,14 +569,6 @@ namespace RealLifeOverhaul
             SpecialBuildings.Findable(Careers.CareersGame.SchoolType);
             SpecialBuildings.Findable(HospitalType);
             SpecialBuildings.Findable(ClinicType);
-            Careers.CampusBuilding uni = Careers.CareersDirector.Instance.University;
-            if (uni != null && uni.Usable && uni.Building != null)
-            {
-                places.Add(new MapPlace(uni.Front, SpecialBuildings.NameFor(uni.Building) ?? T("reallife_study_campus_university"), uni.Building)
-                {
-                    CardTypeKey = "reallife_campus_card_type"
-                });
-            }
             CityBuildingController[] all = InstanceBehavior<CityManager>.Instance.cityBuildingControllers;
             string school = T("reallife_study_campus_school");
             string ward = T("reallife_map_study_ward");
