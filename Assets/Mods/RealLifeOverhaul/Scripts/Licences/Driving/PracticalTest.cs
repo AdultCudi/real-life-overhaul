@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using BAModAPI;
+using GleyTrafficSystem;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -50,8 +51,14 @@ namespace RealLifeOverhaul
     ///   braking is harsh only as a full stop held from speed (a dab of the brake key is as hard as the key gets);
     ///   speed over the limit has to be held for long enough to have seen it and lifted off;
     ///   being run into while standing or crawling is not the player's collision.
+    /// The route is planned over the lanes open at the time (TestRoute, TestRoutePlanner): a lane an accident's cordon has
+    /// closed is driven round, and the school's car is set out where a route can start (the other side of a closed road
+    /// if need be). That is asked before the fee is taken (<see cref="CanStage"/>), so a road that is shut is said at the
+    /// desk; should it still fail when the car is set out, the fee goes back and the reason is said. A checkpoint whose
+    /// lane is closed during the drive is passed over, and a closed bay or stop ends the drive with the parking not marked.
     /// Cost: while one is on, ten looks a second at the car (a few subtractions against RoadMap's
-    /// grid, one navigation-mesh sample), a 0.2 s step, and the marker drawn per frame. Otherwise nothing.
+    /// grid, one navigation-mesh sample), a 0.2 s step (with one look at the next checkpoint's lane), and the marker drawn
+    /// per frame. A planning (under a millisecond, eight at most) when a lesson or test is booked and when it starts. Otherwise nothing.
     /// </summary>
     internal sealed class PracticalTest
     {
@@ -104,6 +111,10 @@ namespace RealLifeOverhaul
         private readonly DoorPanel _park;
         private readonly Action _onParked;
         private readonly Action _onSheetClosed;
+        private readonly Func<Waypoint, bool, RouteOutcome> _planFrom;   // made once: asked by the school's car for each place it could stand
+        private int _wanted;                // checkpoints asked of the route being planned (five to seven)
+        private int _seed;                  // ...and the seed of its turns
+        private bool _endWaived;            // the road at the bay or the stop was closed during the drive: the parking is not marked
         private ShiftCard _card;
         private bool _parkWritten;
         private bool _closingSheet;
@@ -178,6 +189,7 @@ namespace RealLifeOverhaul
             _park = new DoorPanel(logger, "Licences check (parked panel)");
             _onParked = _park.Press(ParkedClicked);
             _onSheetClosed = SheetClosed;
+            _planFrom = PlanFrom;
             _lender = lender;
             _cast = cast;
             _parent = parent;
@@ -191,6 +203,43 @@ namespace RealLifeOverhaul
 
         /// <summary>The school's car of the test that is on, or null.</summary>
         public CarController Car => Active ? _car : null;
+
+        /// <summary>
+        /// Whether a lesson or test could be staged from a desk now, asked before the fee is taken: the roads, a place for
+        /// the school's car and a route from it (an accident's closed lanes driven round), without making the car. False
+        /// with the reason as a locale key. Once, when the player books; a planning for each place tried, eight at most.
+        /// </summary>
+        public bool CanStage(Vector3 desk, out string reasonKey)
+        {
+            reasonKey = Active ? "reallife_lic_no_busy"
+                : !TrafficTools.Ready || !RoadMap.Ensure() ? "reallife_lic_no_roads"
+                : null;
+            if (reasonKey == null)
+            {
+                NewDraw();
+                reasonKey = _lender.Placeable(desk, _planFrom);
+            }
+            if (Meta.Dev.Verbose)
+            {
+                _logger?.Info("Licences check (route, before the fee): " + (reasonKey == null
+                    ? "a place for the car and a route from it (" + _route.Expanded + " lane points looked at): PASS."
+                    : "none (" + reasonKey + "): the fee is not taken and the desk says why."));
+            }
+            return reasonKey == null;
+        }
+
+        // The checkpoints and the turns of the next route.
+        private void NewDraw()
+        {
+            _wanted = UnityEngine.Random.Range(TestRoutePlanner.Least, TestRoutePlanner.Most + 1);
+            _seed = UnityEngine.Random.Range(1, int.MaxValue);
+        }
+
+        // Asked by the school's car for each place it could stand: a route from there, over the lanes open now.
+        private RouteOutcome PlanFrom(Waypoint start, bool askWhy)
+        {
+            return _route.Plan(start, _wanted, _seed, askWhy);
+        }
 
         /// <summary>
         /// Starts a lesson or a test from a desk. False with a reason (a locale key) and nothing
@@ -209,19 +258,20 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_lic_no_roads";
                 return false;
             }
-            // Named and timed for the session record: the car is made by the game, in this one frame, and nothing else here is large.
-            int lending = SessionWatch.Mark("licences: the school's car being made and put out (the game's own vehicle spawn)");
-            CarController car = _lender.Lend(desk, kind == LicenceClass.Commercial);
+            NewDraw();
+            // Named and timed for the session record: the car is made by the game, in this one frame, after a place for it with a
+            // route from it (TestCar.FindSpot, a planning for each place tried, eight at most).
+            int lending = SessionWatch.Mark("licences: the school's car being made and put out (its route planned, the game's own vehicle spawn)");
+            CarController car = _lender.Lend(desk, kind == LicenceClass.Commercial, _planFrom, out reasonKey);
             SessionWatch.Done(lending);
             if (car == null)
             {
-                reasonKey = "reallife_lic_no_car_spot";
                 return false;
             }
             _car = car;
             _body = car.GetComponent<Rigidbody>();
-            JobSpots.CarFrame(car, out Vector3 centre, out Vector3 forward, out _halfLength, out _halfWidth);
-            if (_body == null || !_route.Build(centre, forward, _halfWidth, _halfLength, UnityEngine.Random.Range(5, 8)))
+            JobSpots.CarFrame(car, out Vector3 centre, out _, out _halfLength, out _halfWidth);
+            if (_body == null || !_route.Build(_halfWidth, _halfLength))
             {
                 _car = null;
                 _body = null;
@@ -242,6 +292,7 @@ namespace RealLifeOverhaul
             _outSince = -1f;
             _farSince = -1f;
             _reversed = 0f;
+            _endWaived = false;
             if (_card == null || !_card.Alive)
             {
                 _card = ShiftCard.Make(_logger);   // the game's job panel; null (one line says why) leaves the instruction to notifications
@@ -257,7 +308,8 @@ namespace RealLifeOverhaul
             Say("reallife_lic_test_meet");
             Show(Licences.T("reallife_lic_test_get_in"), car.transform.position, Licences.T("reallife_lic_marker_car"));
             _logger?.Info("Licences: " + (lesson ? "lesson" : "practical test") + " (" + kind + ") started: " + _route.Checkpoints.Count + " checkpoints over "
-                          + _route.Length.ToString("F0") + " m, " + (_route.HasBay ? "a bay at the kerb" : "no kerb with room for a bay: a stop at the end") + ".");
+                          + _route.Length.ToString("F0") + " m, " + (_route.HasBay ? "a bay at the kerb" : "no kerb with room for a bay: a stop at the end")
+                          + "; planned over the lanes open now (" + _route.Expanded + " lane points looked at).");
             return true;
         }
 
@@ -658,6 +710,24 @@ namespace RealLifeOverhaul
             if (now >= _stepEnd)
             {
                 Conclude(now, "reallife_lic_test_ended_time");
+                return;
+            }
+            // The lane at the next checkpoint closed since the route was planned (an accident's cordon came up on it): that
+            // checkpoint is passed over; the bay's or the stop's, and the drive ends there with the parking not marked.
+            if (_route.ClosedAt(_next))
+            {
+                _logger?.Info("Licences: the lane at " + (_step == Step.Drive ? "checkpoint " + (_next + 1) : "the end of the route")
+                              + " was closed during the drive (an accident or a street event); " + (_step == Step.Drive ? "it is passed over." : "the drive ends here, the parking not marked."));
+                if (_step == Step.Drive)
+                {
+                    Say("reallife_lic_test_closed_skip");
+                    _next++;
+                    _farSince = -1f;
+                    Aim();
+                    return;
+                }
+                _endWaived = true;
+                Conclude(now, null);
                 return;
             }
             Vector3 position = _body.position;
@@ -1116,6 +1186,10 @@ namespace RealLifeOverhaul
             if (ended)
             {
                 _text.Append(Licences.T(endedKey)).Append('\n').Append('\n');
+            }
+            else if (_endWaived)
+            {
+                _text.Append(Licences.T("reallife_lic_sheet_end_closed")).Append('\n').Append('\n');
             }
             if (_lesson)
             {

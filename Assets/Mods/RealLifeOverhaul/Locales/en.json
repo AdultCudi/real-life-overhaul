@@ -5280,7 +5280,7 @@
   "reallife_lic_no_on_foot": "The driving school needs you on foot at the desk, out of doors.",
   "reallife_lic_no_roads": "There is no traffic on the roads right now: the school cannot take you out.",
   "reallife_lic_no_car_spot": "There is no room at the roadside here for the school to bring its car round. Try again in a minute.",
-  "reallife_lic_no_route": "The examiner could not plan a route from this street. Try again from another desk.",
+  "reallife_lic_no_route": "The examiner could not plan a long enough drive from the roads here.",
   "reallife_school_prompt": "{key}: driving school",
   "reallife_school_closed": "The driving school is closed.",
   "reallife_school_next": "What else?",
@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Furnished police stations",
   "reallife_opt_tip_law_station_furniture": "Desks, lockers, a briefing room, a break room and the game's walls and floors, officers at work, and back offices on a large station's bare floor. Off, it is bare as before.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: driving lessons and tests plan their route round a road an accident has closed, bringing the car to the other side if need be, and when the road outside is shut the desk says so before you pay.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Each of the city's banks has its own app on the phone, under the game's name for it: your current account and statement, the loans you owe that bank with paying part or all of one, your card, what it offers you today and how it sees your rating. The banks' terms differ a little, so choosing one matters, and under a rating of 580 none of them lends. The mod's contacts have real pictures from the game: people show their faces, and services show a logo. Contacts has a search box at the top. Police stations are furnished with the game's own furniture: desks with computers, lockers, a water cooler, plants, a clock, lamps, and a toilet in the cell. Fixed: with all of the mod's apps on, the row of apps at the top of the full screen menu ran under the money and the date and off the screen; it now has pages, centred between the app's name and the money, turned with the wheel or the dots. Fixed: on the city map, a row of the mod's (Courthouse, Custom shops and the rest) could be unticked while its places stayed on the map; the places now follow the tick you see.",
   "reallife_rota_box_stock_ok": "Its goods keep up with the advised plan.",
@@ -18673,5 +18673,8 @@
   "reallife_rival_hello_1": "Bald Luthor arrives smiling, head polished, ready to sell the city everything.",
   "reallife_rival_hello_2": "\"Greetings, fellow human,\" said The Zucc. \"I am not a lizard. I also enjoy money.\"",
   "reallife_changes_025_0_title": "0.25.0",
-  "reallife_changes_025_0": "Rival tycoons for the late game: three named fortunes with holdings on the stock market grow with you and, once you are rich, buy up your district, open businesses near yours, poach your staff, take a stake or bid for your company, lobby, sue and go to the paper, each announced first; answer them, take them over, and beat them on the city's rich list."
+  "reallife_changes_025_0": "Rival tycoons for the late game: three named fortunes with holdings on the stock market grow with you and, once you are rich, buy up your district, open businesses near yours, poach your staff, take a stake or bid for your company, lobby, sue and go to the paper, each announced first; answer them, take them over, and beat them on the city's rich list.",
+  "reallife_lic_no_route_closed": "The road outside is closed by an accident, so the examiner cannot take you out now. Try again once it has been cleared.",
+  "reallife_lic_test_closed_skip": "Examiner: The road ahead has just been closed by an accident. We will leave that checkpoint out: drive on to the next.",
+  "reallife_lic_sheet_end_closed": "The road at the end of the route was closed by an accident during the drive, so the parking was not marked."
 }
