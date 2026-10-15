@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Flare
     /// text is a key; nothing here is kept. Called when the app shows something or a notification is made, never
     /// otherwise.
     /// </summary>
-    public static class FlareText
+    public static partial class FlareText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly StringBuilder Words = new StringBuilder(256);
@@ -182,9 +182,9 @@ namespace RealLifeOverhaul.Flare
         public static string Post(FlarePost p, string tagged, string job, string district, int niche = 0)
         {
             Words.Length = 0;
-            if (p.Author >= FlareAuthor.Influencer)
+            if (p.Author >= FlareAuthor.Influencer && p.Author != FlareAuthor.Network)
             {
-                return Other(p, district, niche);
+                return Other(p, district, niche);   // (another player's moment of a session reads as the player's own would)
             }
             if (p.Author == FlareAuthor.Friend)
             {

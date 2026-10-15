@@ -86,6 +86,10 @@ namespace RealLifeOverhaul.Flare
         private void Market(int day)
         {
             _market.Clear();
+            if (Following)
+            {
+                return;   // a guest that follows the host's feed has the market's posts from it
+            }
             try
             {
                 FlareBridges.Market?.Invoke(_market);
@@ -121,7 +125,7 @@ namespace RealLifeOverhaul.Flare
         // On the hour: the morning paper's headlines on the City Ledger's account, and shares sold soon after a viral post about them.
         private void CityHour(int day, int hour)
         {
-            if (hour >= 7 && _file.LedgerDay != day && FlareBridges.Headlines != null)
+            if (hour >= 7 && _file.LedgerDay != day && FlareBridges.Headlines != null && !Following)
             {
                 _file.LedgerDay = day;
                 _headlines.Clear();
@@ -138,10 +142,11 @@ namespace RealLifeOverhaul.Flare
                     int id = _file.NextId++;
                     _file.Posts.Add(new FlarePost
                     {
-                        Id = id, Day = day, Hour = 7, Author = FlareAuthor.Ledger, Source = FlareSource.Headline, Name = _headlines[i],
+                        Id = id, Day = day, Hour = 7, Minute = 5 + i * 9, Author = FlareAuthor.Ledger, Source = FlareSource.Headline, Name = _headlines[i], Topic = "cityledger",
                         Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 8000, Likes = 60 + FlareRules.Roll(_file.Seed, id, 5) / 8
                     });
                 }
+                Shared_Changed(null);
                 FlareRules.Prune(_file);
             }
             FollowedNotice(day, hour);

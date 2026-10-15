@@ -18,12 +18,15 @@ namespace RealLifeOverhaul.Flare
     ///     B|place|percent|until                               talk about a business, in its customers
     ///     V|stock|name|day                                    a viral post about a company the player holds
     ///   reallife:flare_posts
-    ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags
+    ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags|
+    ///         minute|reply to|text|picture|net id|token|author id|author name|district|topic|reactors|mention|reposts|player likes|
+    ///         case|flags2|when|picture in the session                          (the living network's fields, appended: an older save's lines lack them)
     ///   reallife:flare_cast
     ///     FC1|cast seed|month day|follow notice day|news today|news day|viral niche day|viral niche
     ///     I|id|handle|niche|district|followers|engagement|reliability|style|reputation|start|quit|star|person|scandal day|seed|staff
     ///     H|id|kind|place|name|from|to|percent|who,who|late|off message|backfired|ended
     ///     F|account                                           an account the player follows
+    ///   reallife:flare_net                                    (FlareLiveStore: the City Office's cases, the watches, the messages)
     ///
     /// Every number is written in the invariant culture. What is not understood is left out a line at a time: a post or
     /// a draft of a kind this version does not know (from a later one) is dropped, never read as something else, so an
@@ -41,9 +44,9 @@ namespace RealLifeOverhaul.Flare
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         // The kinds this version knows: anything past them is from a later one.
-        private const int Sources = (int)FlareSource.Interior + 1;   // (Graduated was left out of it, so a graduation's post was dropped when the save was read)
+        private const int Sources = (int)FlareSource.Answer + 1;     // (Graduated was once left out of it, so a graduation's post was dropped when the save was read)
         private const int Tones = (int)FlareTone.Cheeky + 1;
-        private const int Authors = (int)FlareAuthor.Ledger + 1;
+        private const int Authors = (int)FlareAuthor.Tycoon + 1;
         private const int Niches = (int)FlareNiche.Business + 1;
         private const int Styles = (int)FlareStyle.Wholesome + 1;
 
@@ -56,6 +59,7 @@ namespace RealLifeOverhaul.Flare
             data[AccountKey] = WriteAccount(f);
             data[PostsKey] = WritePosts(f);
             data[CastKey] = WriteCast(f);
+            data[FlareLiveStore.Key] = FlareLiveStore.Write(f.Net);
         }
 
         /// <summary>The save's file, or null if it has none this version can read (a new account is opened then).</summary>
@@ -76,12 +80,18 @@ namespace RealLifeOverhaul.Flare
                 {
                     SaveLines.Unreadable(data, PostsKey, "its account could not be read");
                     SaveLines.Unreadable(data, CastKey, "its account could not be read");
+                    SaveLines.Unreadable(data, FlareLiveStore.Key, "its account could not be read");
                 }
             }
             string cast;
             if (f != null && data.TryGetValue(CastKey, out cast))
             {
                 ReadCast(f, cast);
+            }
+            string net;
+            if (f != null && data.TryGetValue(FlareLiveStore.Key, out net))
+            {
+                FlareLiveStore.Read(f.Net, net);
             }
             return f;
         }
@@ -249,6 +259,12 @@ namespace RealLifeOverhaul.Flare
                 Join(b, p.Id, p.Day, p.Hour, (int)p.Author, p.Who, (int)p.Source, (int)p.Tone, p.Tag);
                 b.Append('|').Append(Clean(p.Place)).Append('|').Append(Clean(p.Name));
                 Join(b, p.Arg, p.Seed, p.Quality, p.Reach, p.Likes, p.Replies, p.Likers, p.Repliers, p.Gained, (p.Viral ? 1 : 0) | (p.Bad ? 2 : 0) | (p.Disclosed ? 4 : 0));
+                Join(b, p.Minute, p.ReplyTo);
+                Esc(b, p.Text, p.Pic);
+                Join(b, p.NetId, p.Token);
+                Esc(b, p.AuthorId, p.AuthorName, p.District, p.Topic, p.Reactors, p.Mention);
+                Join(b, p.Reposts, p.PlayerLikes, p.Case, (p.Liked ? 1 : 0) | (p.Reposted ? 2 : 0) | (p.Shared ? 4 : 0) | (p.Pending ? 8 : 0), p.When);
+                Esc(b, p.NetPic);
             }
             return b.ToString();
         }
@@ -337,12 +353,16 @@ namespace RealLifeOverhaul.Flare
                 {
                     continue;   // a kind of a later version's
                 }
-                int flags = I(c, 20);
+                int flags = I(c, 20), flags2 = I(c, 36);
                 f.Posts.Add(new FlarePost
                 {
                     Id = I(c, 1), Day = I(c, 2), Hour = I(c, 3), Author = (FlareAuthor)author, Who = I(c, 5, -1), Source = (FlareSource)source, Tone = (FlareTone)tone, Tag = I(c, 8, -1),
                     Place = Text(c[9]), Name = Text(c[10]), Arg = I(c, 11), Seed = I(c, 12), Quality = I(c, 13), Reach = Math.Max(0, I(c, 14)), Likes = Math.Max(0, I(c, 15)),
-                    Replies = Math.Max(0, I(c, 16)), Likers = I(c, 17), Repliers = I(c, 18), Gained = I(c, 19), Viral = (flags & 1) != 0, Bad = (flags & 2) != 0, Disclosed = (flags & 4) != 0
+                    Replies = Math.Max(0, I(c, 16)), Likers = I(c, 17), Repliers = I(c, 18), Gained = I(c, 19), Viral = (flags & 1) != 0, Bad = (flags & 2) != 0, Disclosed = (flags & 4) != 0,
+                    Minute = FlareRules.Clamp(I(c, 21), 0, 59), ReplyTo = I(c, 22, -1), Text = U(c, 23), Pic = U(c, 24), NetId = I(c, 25), Token = I(c, 26), AuthorId = U(c, 27),
+                    AuthorName = U(c, 28), District = U(c, 29), Topic = U(c, 30), Reactors = U(c, 31), Mention = U(c, 32), Reposts = Math.Max(0, I(c, 33)),
+                    PlayerLikes = Math.Max(0, I(c, 34)), Case = I(c, 35, -1), Liked = (flags2 & 1) != 0, Reposted = (flags2 & 2) != 0, Shared = (flags2 & 4) != 0,
+                    Pending = (flags2 & 8) != 0, When = I(c, 37, -1), NetPic = U(c, 38)
                 });
             }
         }
@@ -353,6 +373,20 @@ namespace RealLifeOverhaul.Flare
             {
                 b.Append('|').Append(values[i].ToString(Inv));
             }
+        }
+
+        // Typed text and the network's fields: escaped, so that what the player typed is kept as typed ('|' and all).
+        private static void Esc(StringBuilder b, params string[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                b.Append('|').Append(FlareNetShare.Esc(values[i]));
+            }
+        }
+
+        private static string U(string[] c, int at)
+        {
+            return at < c.Length ? FlareNetShare.Unesc(c[at]) : null;
         }
 
         private static string Clean(string text)

@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Flare
     public sealed partial class FlareDirector : MonoBehaviour
     {
         public const string AppId = "RealLifeFlare";
-        public const int TabFeed = 0, TabPost = 1, TabMe = 2, TabBusiness = 3, TabCity = 4;
+        public const int TabFeed = 0, TabPost = 1, TabMe = 2, TabBusiness = 3, TabCity = 4, TabNotices = 5, TabMessages = 6, TabExplore = 7;
         private static readonly string[] AppGlyphs = { "Icon-Heart", "Icon-Chat", "Icon-People" };
 
         public static IModLogger Logger;
@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Flare
         private FlareApp _view;
         private PhoneApp _app;
         private bool _running, _broken, _gaveUp;
-        private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openFeed, _openFeedTab, _openBusinessTab;
+        private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openFeed, _openFeedTab, _openBusinessTab, _openMessages, _openCompose;
 
         public bool Running => _running && !_broken;
 
@@ -60,6 +60,9 @@ namespace RealLifeOverhaul.Flare
             _openFeed = () => Open(TabMe);
             _openFeedTab = () => Open(TabFeed);
             _openBusinessTab = () => Open(TabBusiness);
+            _openMessages = () => Open(TabMessages);
+            _openCompose = () => Open(TabPost);
+            ShareRegister();
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -136,6 +139,7 @@ namespace RealLifeOverhaul.Flare
             {
                 Install();
             }
+            ShareSecond();
         }
 
         // ---------------------------------------------------------------- starting and stopping
@@ -165,6 +169,7 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             Cast(file, day);
+            LiveStart(file);
             _file = file;
             _running = true;
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed " + file.Seed + ")"
@@ -285,6 +290,7 @@ namespace RealLifeOverhaul.Flare
         private void Look(int day, int hour)
         {
             CityHour(day, hour);
+            LiveHour(day, hour);
             if (FlareBridges.Career != null)
             {
                 string employer;
@@ -348,6 +354,7 @@ namespace RealLifeOverhaul.Flare
             Rewrite(_talked, true);
             CastDay(day);
             CityDay(day);
+            LiveDay(day);
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {
@@ -396,7 +403,9 @@ namespace RealLifeOverhaul.Flare
             }
             try
             {
-                Made(FlareRules.Draft(_file, source, Save.Day, Save.Hour, person, place, name, arg));
+                FlareDraft d = FlareRules.Draft(_file, source, Save.Day, Save.Hour, person, place, name, arg);
+                Made(d);
+                SelfieBack(d);
                 if (source == FlareSource.Arrested)
                 {
                     Trended(Save.Day);
@@ -475,8 +484,14 @@ namespace RealLifeOverhaul.Flare
                 {
                     Tell(NotificationType.Success, "reallife_flare_note_viral", _openFeed, "followers", FlareText.N(p.Gained));
                 }
+                if (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie)
+                {
+                    p.Pic = !string.IsNullOrEmpty(p.Name) ? "f:" + p.Name : null;
+                }
+                p.Minute = minute % 60;
                 Influence(p, d);
                 CityInfluence(p, d);
+                PostLive(p);
                 Changed();
                 return true;
             }
@@ -529,7 +544,7 @@ namespace RealLifeOverhaul.Flare
         {
             if (_app != null && _file != null)
             {
-                _app.SetBadge(_app.Showing ? 0 : _file.Unseen + _file.Drafts.Count);
+                _app.SetBadge(_app.Showing ? 0 : _unread + _file.Drafts.Count);   // (the friends' likes and replies are among the notifications now)
             }
         }
 

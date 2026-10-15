@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Flare
     /// another feature directly, and the things that happen elsewhere and become drafts (a picture saved, an outing,
     /// a good deed, an arrest) are told to it from there (<see cref="FlareDirector.Happened"/>).
     /// </summary>
-    public static class FlareBridges
+    public static partial class FlareBridges
     {
         /// <summary>The people the player has met in the social life, as Flare reads them, into the list given. Default: nobody.</summary>
         public static Action<List<FlarePerson>> People;
@@ -163,6 +163,7 @@ namespace RealLifeOverhaul.Flare
             Issue = null;
             Campaign = null;
             Graduated = null;
+            ResetLive();
         }
 
         internal static T Ask<T>(Func<T> bridge, T otherwise)

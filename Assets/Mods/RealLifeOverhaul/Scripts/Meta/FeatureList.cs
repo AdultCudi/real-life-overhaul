@@ -543,7 +543,9 @@ namespace RealLifeOverhaul.Meta
             Features.Add("flare", "reallife_meta_title_flare")
                 .Group("reallife_flare_header")
                 .About("reallife_guide_flare_about").Help("reallife_guide_flare")
-                .Owns(Settings.SocialMediaId, Settings.SocialMediaNoticesId)
+                .Owns(Settings.SocialMediaId, Settings.SocialMediaNoticesId, Settings.FlareBusyId, Settings.FlareCityOfficeId, Settings.FlareSharePostsId, Settings.FlareSharePicturesId,
+                    Settings.FlareFilterId, Settings.FlareThemeId)
+                .Preset(Settings.FlareBusyId, 0, 2, 2)
                 .Data(Flare.FlareStore.Keys)
                 .Fact("flare_local", () => Whole(Flare.FlareRules.TierFrom[1]))
                 .Fact("flare_known", () => Whole(Flare.FlareRules.TierFrom[2]))
@@ -563,6 +565,17 @@ namespace RealLifeOverhaul.Meta
                 .Fact("flare_cast_most", () => Whole(Flare.FlareCast.Most))
                 .Fact("flare_never_days", () => Whole(Flare.FlareRules.NeverPostedDays))
                 .Fact("flare_abuse_days", () => Whole(Flare.FlareRules.AbuseDays))
+                .Fact("flare_text_most", () => Whole(Flare.FlareLiveRules.TextMost))
+                .Fact("flare_reports_day", () => Whole(Flare.FlareLiveRules.ReportsPerDay))
+                .Fact("flare_replies_day", () => Whole(Flare.FlareLiveRules.RepliesPerDay))
+                .Fact("flare_reply_most_hours", () => Whole(Flare.FlareLiveRules.ReplyMost / 60))
+                .Fact("flare_patrol_days", () => Whole(Flare.FlareLiveRules.PatrolDays))
+                .Fact("flare_cleanup_days", () => Whole(Flare.FlareLiveRules.CleanupDays))
+                .Fact("flare_inspection_days", () => Whole(Flare.FlareLiveRules.InspectionDays))
+                .Fact("flare_tally", () => Whole(Flare.FlareLiveRules.TallyToPaper))
+                .Fact("flare_crews_works", () => Whole(Flare.FlareLiveRules.CrewsPerWeek[(int)Flare.FlareOrder.Works]))
+                .Fact("flare_picture_kb", () => Whole(Flare.FlareSnap.MostBytes / 1024))
+                .Fact("flare_pictures_day", () => Whole(Flare.FlareRateBook.PicturesDay))
                 .ResetData(() => Flare.FlareDirector.Instance?.Forget());   // a new account opens from the (now empty) save on the next second
 
             // Standing, a city that reacts to the player's success: wealth, recognition and four reputations, the street,

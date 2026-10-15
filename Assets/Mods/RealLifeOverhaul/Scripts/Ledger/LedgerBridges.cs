@@ -50,6 +50,9 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>Opens the Utilities app on its internet page, where a connection is bought; false if it is not on the phone.</summary>
         public static Func<bool> OpenUtilities;
 
+        /// <summary>The host of a Going Public session: a guest's report for the city's paper (Social/News: its kind, where, its detail, its amount).</summary>
+        public static Action<int, float, float, string, int> Report;
+
         public static void Reset()
         {
             PaperDay = null;
@@ -62,6 +65,7 @@ namespace RealLifeOverhaul.Ledger
             Say = null;
             Connection = null;
             OpenUtilities = null;
+            Report = null;
         }
     }
 }

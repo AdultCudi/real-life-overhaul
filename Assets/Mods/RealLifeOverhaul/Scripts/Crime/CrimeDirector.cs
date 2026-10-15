@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
             _nextCheck = now + CheckInterval;
             try
             {
-                if (Settings.StreetCrime && CanStage() && Random.value < Settings.CrimeFrequency * 0.02f * PlaceShare() * Events.Weather.CrimeFactor)
+                if (Settings.StreetCrime && CanStage() && Random.value < Settings.CrimeFrequency * 0.02f * PlaceShare() * Events.Weather.CrimeFactor * CityWatch.CrimeScale)
                 {
                     Deal(now);
                 }

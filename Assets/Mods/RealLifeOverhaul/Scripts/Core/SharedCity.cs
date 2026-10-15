@@ -75,6 +75,8 @@ namespace RealLifeOverhaul
         private static readonly List<object> Guests = new List<object>(4);       // the host's links to guests that run this mod in the same version
         private static readonly StringBuilder[] Asked = new StringBuilder[128];   // a guest's requests not yet sent, by part letter
         private static readonly Action<object, byte[]> OnMessage = Received;
+        private static readonly Dictionary<string, StringBuilder> Private = new Dictionary<string, StringBuilder>(4);   // the host's lines for one player only, by Going Public's player id and the part's letter
+        private static bool _anyPrivate;
 
         private static bool _following;            // a guest: the host's snapshot is applied
         private static bool _refused;              // a guest: the host runs another version; told once
@@ -140,6 +142,41 @@ namespace RealLifeOverhaul
             {
                 part.Dirty = true;
             }
+        }
+
+        /// <summary>
+        /// The host: a line of a part for one player of the session only (a direct message), sent to that guest alone within
+        /// the second as an update of the part (a small letter): no other guest is sent it. False when that player is not a
+        /// guest that follows (the caller keeps it, or applies it itself when the player is the host).
+        /// </summary>
+        public static bool ToPlayer(char id, string player, string line)
+        {
+            if (!GoingPublic.IsHost || Guests.Count == 0 || string.IsNullOrEmpty(player) || string.IsNullOrEmpty(line))
+            {
+                return false;
+            }
+            bool there = false;
+            for (int i = 0; i < Guests.Count && !there; i++)
+            {
+                there = GoingPublicLink.PlayerOf(Guests[i]) == player;
+            }
+            if (!there)
+            {
+                return false;
+            }
+            string key = id + player;
+            StringBuilder b;
+            if (!Private.TryGetValue(key, out b))
+            {
+                b = new StringBuilder(128);
+                Private[key] = b;
+            }
+            if (b.Length < 16 * 1024)
+            {
+                b.Append(line.Replace('\n', ' ')).Append('\n');
+                _anyPrivate = true;
+            }
+            return true;
         }
 
         /// <summary>A guest: something the player did that changes the shared city, for the host to apply. One line; sent within the second.</summary>
@@ -318,6 +355,10 @@ namespace RealLifeOverhaul
                     Guests.RemoveAt(i);
                 }
             }
+            if (_anyPrivate)
+            {
+                SendPrivate();
+            }
             if (Guests.Count == 0 || now < _nextUpdate)
             {
                 return;
@@ -369,6 +410,31 @@ namespace RealLifeOverhaul
             {
                 Logger?.Info("Shared city check (host): an update of " + Describe(m) + ", " + bytes.Length + " bytes, to " + Guests.Count + " guest(s): PASS");
             }
+        }
+
+        // The host, once a second when there is any: each guest's own lines, to that guest alone.
+        private static void SendPrivate()
+        {
+            _anyPrivate = false;
+            for (int g = 0; g < Guests.Count; g++)
+            {
+                string player = GoingPublicLink.PlayerOf(Guests[g]);
+                SharedMessage m = null;
+                foreach (KeyValuePair<string, StringBuilder> pair in Private)
+                {
+                    if (pair.Value.Length == 0 || pair.Key.Length < 2 || string.CompareOrdinal(pair.Key, 1, player, 0, Math.Max(player.Length, pair.Key.Length - 1)) != 0)
+                    {
+                        continue;
+                    }
+                    (m ?? (m = New(SharedKind.Update))).Parts.Add(new SharedPart(char.ToLowerInvariant(pair.Key[0]), pair.Value.ToString()));
+                    pair.Value.Length = 0;
+                }
+                if (m != null)
+                {
+                    Send(Guests[g], m);
+                }
+            }
+            Private.Clear();   // (lines for a player who has left are not kept: they were never theirs to wait for)
         }
 
         // ---------------------------------------------------------------- messages
@@ -751,6 +817,8 @@ namespace RealLifeOverhaul
                 Parts[i].Dirty = false;
             }
             Guests.Clear();
+            Private.Clear();
+            _anyPrivate = false;
             _refused = false;
             _helloTries = 0;
             _lastSeen = 0;

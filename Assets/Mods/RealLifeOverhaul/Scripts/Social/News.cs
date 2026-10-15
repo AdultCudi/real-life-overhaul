@@ -101,12 +101,30 @@ namespace RealLifeOverhaul
         public static event Action<NewsKind, Vector3> ReportedAt;
 
         /// <summary>
+        /// Every report, also handed on as it is made (a guest of a Going Public session that follows the host's paper sends it
+        /// to the host's: Ledger/LedgerDirector.Share.cs, through Wiring/LedgerLinks). Nothing while it is not set.
+        /// </summary>
+        public static Action<NewsKind, Vector3, string, int> Forward;
+
+        /// <summary>
         /// Something happened that a newspaper would print. Safe to call from anywhere at any
         /// time: it does nothing until a save is loaded, or while the paper is switched off.
         /// </summary>
         /// <param name="detail">An id or a name that already exists as a string (never one built for this call).</param>
         public static void Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)
         {
+            Action<NewsKind, Vector3, string, int> forward = Forward;
+            if (forward != null && SaveGameManager.Current != null)
+            {
+                try
+                {
+                    forward(kind, where, detail, amount);
+                }
+                catch (Exception e)
+                {
+                    SocialDirector.Logger?.Error(e);
+                }
+            }
             Action<NewsKind, string, int> heard = Reported;
             if (heard != null && SaveGameManager.Current != null)
             {
