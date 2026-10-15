@@ -5280,6 +5280,7 @@
   "reallife_lic_no_on_foot": "Die Fahrschule braucht dich zu Fuß am Schalter, im Freien.",
   "reallife_lic_no_roads": "Auf den Straßen ist gerade kein Verkehr: Die Schule kann dich nicht mitnehmen.",
   "reallife_lic_no_car_spot": "Hier am Straßenrand ist kein Platz, damit die Schule ihr Auto heranbringen kann. Versuche es in einer Minute erneut.",
+  "reallife_lic_no_route": "Der Prüfer konnte von den Straßen hier aus keine ausreichend lange Fahrt planen.",
   "reallife_school_prompt": "{key}: Fahrschule",
   "reallife_school_closed": "Die Fahrschule ist geschlossen.",
   "reallife_school_next": "Was gibt es sonst?",
@@ -11775,6 +11776,7 @@
   "reallife_law_station_furniture": "Eingerichtete Polizeiwachen",
   "reallife_opt_tip_law_station_furniture": "Schreibtische, Spinde, ein Besprechungsraum, ein Pausenraum und die Wände und Böden des Spiels, Polizisten bei der Arbeit und Büros im Hintergrund auf dem kahlen Boden einer großen Wache. Aus, ist sie kahl wie zuvor.",
   "reallife_changes_next_title": "Nächste Version",
+  "reallife_changes_next": "Behoben: Fahrstunden und Prüfungen planen ihre Route um eine Straße, die ein Unfall gesperrt hat, und bringen das Auto bei Bedarf auf die andere Seite; und wenn die Straße vor der Tür gesperrt ist, sagt dir der Schalter das, bevor du bezahlst. Behoben: Leute standen innerhalb des Absperrbands einer Absperrung, sogar auf demjenigen, der verletzt auf der Straße lag, wenn beim Aufbau Passanten in der Nähe waren oder ein Übergang durch die Unfallstelle führte. Wer beim Aufbau des Bands drinnen ist, wird jetzt zur nächsten Stelle außerhalb gebracht, und das Band hält Fußgänger fern, solange es steht, auch an Übergängen; Zuschauer sehen vom Band aus zu.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Jede Bank der Stadt hat eine eigene App auf dem Handy, unter dem Namen im Spiel: dein Girokonto und Kontoauszug, die Kredite, die du dieser Bank schuldest, mit Zahlung eines Teils oder aller, deine Karte, was sie dir heute anbietet und wie sie deine Bonität sieht. Die Bedingungen der Banken unterscheiden sich ein wenig, daher zählt die Wahl, und unter einer Bonität von 580 verleiht keine von ihnen. Die Kontakte der Mod haben echte Bilder aus dem Spiel: Menschen zeigen ihr Gesicht, und Dienste zeigen ein Logo. Kontakte hat oben ein Suchfeld. Polizeiwachen sind mit den eigenen Möbeln des Spiels eingerichtet: Schreibtische mit Computern, Spinde, ein Wasserspender, Pflanzen, eine Uhr, Lampen und eine Toilette in der Zelle. Behoben: Bei allen eingeschalteten Apps der Mod lief die Reihe der Apps oben im Vollbildmenü unter dem Geld und dem Datum durch und vom Bildschirm; jetzt hat sie Seiten, zwischen dem Namen der App und dem Geld zentriert, die mit dem Rad oder den Punkten umgeblättert werden. Behoben: Auf der Stadtkarte konnte eine Zeile der Mod (Gericht, Werkstätten und der Rest) abgehakt werden, während ihre Orte auf der Karte blieben; die Orte folgen jetzt dem Haken, den du siehst.",
   "reallife_rota_box_stock_ok": "Seine Waren halten mit dem empfohlenen Plan mit.",
@@ -18671,5 +18673,8 @@
   "reallife_rival_hello_1": "Bald Luthor kommt lächelnd an, die Glatze poliert, bereit, der Stadt alles zu verkaufen.",
   "reallife_rival_hello_2": "„Sei gegrüßt, Mitmensch“, sagte The Zucc. „Ich bin keine Echse. Ich mag auch Geld.“",
   "reallife_changes_025_0_title": "0.25.0",
-  "reallife_changes_025_0": "Rivalen-Tycoons für das Endspiel: Drei Vermögen mit Namen und Holdings am Aktienmarkt wachsen mit dir und kaufen, sobald du reich bist, dein Stadtviertel auf, eröffnen Unternehmen in der Nähe deiner, werben dein Personal ab, nehmen einen Anteil oder bieten für dein Unternehmen, betreiben Lobbyarbeit, verklagen dich und gehen an die Zeitung, jeweils zuerst angekündigt; antworte ihnen, übernimm sie und schlage sie auf der Reichenliste der Stadt."
+  "reallife_changes_025_0": "Rivalen-Tycoons für das Endspiel: Drei Vermögen mit Namen und Holdings am Aktienmarkt wachsen mit dir und kaufen, sobald du reich bist, dein Stadtviertel auf, eröffnen Unternehmen in der Nähe deiner, werben dein Personal ab, nehmen einen Anteil oder bieten für dein Unternehmen, betreiben Lobbyarbeit, verklagen dich und gehen an die Zeitung, jeweils zuerst angekündigt; antworte ihnen, übernimm sie und schlage sie auf der Reichenliste der Stadt.",
+  "reallife_lic_no_route_closed": "Die Straße vor der Tür ist wegen eines Unfalls gesperrt, deshalb kann der Prüfer dich jetzt nicht hinausfahren lassen. Versuche es erneut, sobald sie geräumt ist.",
+  "reallife_lic_test_closed_skip": "Prüfer: Die Straße vor uns wurde gerade wegen eines Unfalls gesperrt. Wir lassen diesen Kontrollpunkt aus: Fahre weiter zum nächsten.",
+  "reallife_lic_sheet_end_closed": "Die Straße am Ende der Route wurde während der Fahrt wegen eines Unfalls gesperrt, deshalb wurde das Parken nicht bewertet."
 }
