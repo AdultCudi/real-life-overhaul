@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Photos
     /// <summary>
     /// The Camera and the Gallery, kept going: the two apps on the phone (CameraApp, GalleryApp), the save's photos listed
     /// (newest first, from its folder: PhotoStore), the latest photo's small copy for the viewfinder's Gallery button, the
-    /// phone's wallpaper from a photo, the look over deleted saves' photos once a game, the question when the Gallery is
+    /// photos marked as favourites (a file beside them), the phone's wallpaper from a photo, the look over deleted saves' photos once a game, the question when the Gallery is
     /// full, and the tests. The camera itself is CameraMode, added beside this.
     ///
     /// It has no Update. A one-second timer on the real clock waits for the save, puts the apps on the phone, follows the
@@ -45,6 +45,8 @@ namespace RealLifeOverhaul.Photos
         private string _latestName;
         private LastWins _wallpaperWrites = new LastWins();   // the wallpaper's line written by workers, the last choice winning (one for each save)
         private string _wallpaper;             // the photo set as the wallpaper, by name, or null
+        private readonly HashSet<string> _favourites = new HashSet<string>(StringComparer.Ordinal);   // the photos marked as favourites, by name
+        private LastWins _favouriteWrites = new LastWins();   // the favourites' file written by workers, the last change winning (one for each save)
         private Texture _wallpaperTexture;
         private int _armed;                    // a test waiting for the options page to close: 1 the camera, 2 the selfie, 3 the Gallery
         private float _armedUntil;
@@ -65,6 +67,11 @@ namespace RealLifeOverhaul.Photos
 
         /// <summary>The photo set as the phone's wallpaper, by name, or null.</summary>
         public string WallpaperName => _wallpaper;
+
+        /// <summary>The photos marked as favourites, by name (the Gallery's Favourites album).</summary>
+        public HashSet<string> Favourites => _favourites;
+
+        public bool IsFavourite(string name) => name != null && _favourites.Contains(name);
 
         private void Awake()
         {
@@ -157,6 +164,8 @@ namespace RealLifeOverhaul.Photos
             ClearWallpaper();
             DropLatest();
             _wallpaperWrites = new LastWins();
+            _favourites.Clear();
+            _favouriteWrites = new LastWins();
             _folder = PhotoStore.Folder(_root, id);
             StartCoroutine(Guard.Routine(List(_root, id, _folder, _generation)));
         }
@@ -164,6 +173,7 @@ namespace RealLifeOverhaul.Photos
         private IEnumerator List(string root, string id, string folder, int generation)
         {
             var found = new List<PhotoEntry>(PhotoStoreRules.Cap + 16);
+            var favourites = new HashSet<string>(StringComparer.Ordinal);
             string wallpaper = null;
             bool adopted = false;
             Task<bool> work = Task.Run(() =>
@@ -171,6 +181,7 @@ namespace RealLifeOverhaul.Photos
                 adopted = PhotoStore.Adopt(root, id);   // (an earlier build's folder of this save, moved to its name now)
                 bool read = PhotoStore.List(folder, found);
                 wallpaper = PhotoStore.Wallpaper(folder);
+                PhotoStore.Favourites(folder, favourites);
                 return read;
             });
             while (!work.IsCompleted)
@@ -194,7 +205,14 @@ namespace RealLifeOverhaul.Photos
             _listed = true;
             _wallpaper = wallpaper;
             _wallpaperWanted = wallpaper != null;
-            Logger?.Info("Gallery: " + _photos.Count + " photo(s) of this save" + (wallpaper != null ? ", one of them the phone's wallpaper" : string.Empty) + ".");
+            _favourites.Clear();
+            _favourites.UnionWith(favourites);
+            if (GalleryRules.Prune(_favourites, _photos) > 0)
+            {
+                WriteFavourites();   // (a photo deleted outside the game: its mark goes too)
+            }
+            Logger?.Info("Gallery: " + _photos.Count + " photo(s) of this save" + (wallpaper != null ? ", one of them the phone's wallpaper" : string.Empty)
+                         + (_favourites.Count > 0 ? ", " + _favourites.Count + " of them favourites" : string.Empty) + ".");
             StartCoroutine(Guard.Routine(LoadLatest(generation)));
             _galleryApp.Changed();
         }
@@ -210,6 +228,7 @@ namespace RealLifeOverhaul.Photos
             ClearWallpaper();
             DropLatest();
             _photos.Clear();
+            _favourites.Clear();
             _listed = false;
             _folder = null;
             _saveId = null;
@@ -338,10 +357,16 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The Gallery app opened (the viewfinder's Gallery button, a test).</summary>
+        /// <summary>The Gallery app opened on its photos (the Camera app's Gallery button, a test).</summary>
         public void OpenGallery()
         {
-            _galleryApp.Open();
+            _galleryApp.Open(false);
+        }
+
+        /// <summary>The Gallery app opened on the newest photo, shown whole (the viewfinder's button with its small copy, as a phone's camera has it).</summary>
+        public void OpenLatestPhoto()
+        {
+            _galleryApp.Open(true);
         }
 
         // ---------------------------------------------------------------- the photos
@@ -405,6 +430,10 @@ namespace RealLifeOverhaul.Photos
             {
                 SetWallpaper(null);
             }
+            if (GalleryRules.Prune(_favourites, _photos) > 0)
+            {
+                WriteFavourites();
+            }
             if (latest)
             {
                 DropLatest();
@@ -451,6 +480,30 @@ namespace RealLifeOverhaul.Photos
             PhotosGame.Destroy(_latest);
             _latest = null;
             _latestName = null;
+        }
+
+        // ---------------------------------------------------------------- the favourites
+
+        /// <summary>A photo marked a favourite, or unmarked; written down beside the photos on a worker. True if it is one now.</summary>
+        public bool ToggleFavourite(string name)
+        {
+            if (name == null || _folder == null || GalleryRules.IndexOf(_photos, name) < 0)
+            {
+                return false;
+            }
+            bool now = GalleryRules.Toggle(_favourites, name);
+            WriteFavourites();
+            return now;
+        }
+
+        // The favourites' file written whole on a worker from a copy taken now; two quick changes: the later is the one written.
+        private void WriteFavourites()
+        {
+            string folder = _folder;
+            var copy = new List<string>(_favourites);
+            LastWins writes = _favouriteWrites;
+            int ticket = writes.Next();
+            Task.Run(() => writes.Run(ticket, () => PhotoStore.SetFavourites(folder, copy)));
         }
 
         // ---------------------------------------------------------------- the wallpaper

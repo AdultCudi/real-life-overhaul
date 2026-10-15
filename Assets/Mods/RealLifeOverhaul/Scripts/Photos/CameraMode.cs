@@ -630,7 +630,7 @@ namespace RealLifeOverhaul.Photos
         private void Gallery()
         {
             Close("the Gallery button");
-            PhotosDirector.Instance?.OpenGallery();
+            PhotosDirector.Instance?.OpenLatestPhoto();   // the newest photo shown whole, as a phone's camera opens it
         }
 
         // ---------------------------------------------------------------- the shot
