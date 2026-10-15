@@ -57,8 +57,17 @@ namespace RealLifeOverhaul
         private float _lastMouseTime;
         private Vector3 _lastPos;
 
+        /// <summary>True while the chase camera is live, in the blend out of it too (for the bridge's hold).</summary>
+        public static bool InPicture { get; private set; }
+
+        private static ChaseCamera _instance;   // the city's one, for the feature's clean-up
+
         // Empire Motors' view on V is looked for behind the loading screen, not the first time this camera comes on (Camera/EmpireView).
-        private void Awake() => ScenePrewarm.Add("camera: Empire Motors' view from the driver's seat being found", EmpireView.Prewarm);
+        private void Awake()
+        {
+            _instance = this;
+            ScenePrewarm.Add("camera: Empire Motors' view from the driver's seat being found", EmpireView.Prewarm);
+        }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Camera: ChaseCamera.LateUpdate");
         private void LateUpdate()
@@ -67,6 +76,7 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                LetGo();
                 return;
             }
             try
@@ -83,6 +93,7 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
+            InPicture = _vcam != null && (_active || InPicture) && CinemachineCore.Instance.IsLive(_vcam);   // live, in a blend out too (the bridge's hold)
             CameraOrders orders = CameraYield.Orders;   // the one rule of when this mod's camera stands aside (Camera/CameraYieldRules)
             BridgeHold.Hold(orders.HoldBridges);        // (the on-foot camera holds them too: whichever runs first in the frame does it)
             if (!orders.Chase || vehicle == null)
@@ -228,7 +239,26 @@ namespace RealLifeOverhaul
         {
             SetLooking(false);
             Live = false;
-            BridgeHold.Release();   // the bridges back to the game's hiding as they were (the city unloading)
+            InPicture = false;
+            BridgeHold.Release();   // the bridge back to the game's hiding as it was (the city unloading)
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+        }
+
+        /// <summary>
+        /// The chase camera let go at once, the pointer freed and the bridge given back: for the camera feature's clean-up
+        /// (Meta/FeatureList), which the guard runs when it switches the feature off after its faults. Safe at any time.
+        /// </summary>
+        public static void LetGo()
+        {
+            if (_instance != null)
+            {
+                _instance.Deactivate();
+            }
+            InPicture = false;
+            BridgeHold.Release();
         }
     }
 }

@@ -24,7 +24,7 @@ namespace RealLifeOverhaul
         public GameView View;    // the game's own camera mode
         public bool Screen;      // a screen that needs the pointer is up (ThirdPersonCamera.IsUiOpen)
         public bool Talk;        // the game holds the player in a conversation (any of its dialogs), whose answers are clicked
-        public bool Dead;        // the player is dead: the funeral is the game's, filmed by its own timeline
+        public bool Dead;        // the player is dead: the pointer is the game's; the funeral's own camera is a moment like any other
         public bool OtherMod;    // another author's mod drives the camera (CameraYield's stand-down)
         public bool InCar;       // the player drives a car the chase camera follows (not a scooter or a hand truck)
         public bool CameraOn;    // the option: the third-person camera
@@ -34,6 +34,8 @@ namespace RealLifeOverhaul
         public bool CursorFreed; // the player freed the pointer (Left Alt unless rebound)
         public bool Focused;     // the game's window has the focus
         public bool CarMouse;    // the game's own setting: the car is steered with the mouse
+        public bool OnBridge;    // the player, or the car the player drives, is on a bridge's road (BridgeHold, asked four times a second)
+        public bool CloseInPicture;   // this mod's close camera (the chase camera, or the on-foot camera with its figures) is still live, in a blend out too
     }
 
     /// <summary>What this mod's camera does in the frame. Plain values.</summary>
@@ -44,7 +46,7 @@ namespace RealLifeOverhaul
         public bool Chase;            // the chase camera is the one looked through
         public bool Look;             // mouse look on foot (pointer locked, the mouse orbits)
         public bool ChaseLook;        // mouse look in the car
-        public bool HoldBridges;      // the bridges are kept out of the game's camera-block hiding (BridgeHold)
+        public bool HoldBridges;      // the bridge the player is on is kept out of the game's camera-block hiding (BridgeHold)
         public bool Moment;           // standing aside for a moment of the game's: its camera is not one of ordinary play
         public bool OutdoorLinger;    // the on-foot camera's figures are given back only once it has left the picture (not live, nor in a blend)
         public bool IndoorLinger;     // the indoor camera's likewise
@@ -129,15 +131,19 @@ namespace RealLifeOverhaul
     ///                                                           as taken for any other camera of the game's, once the
     ///                                                           camera carrying them has left the picture (so the
     ///                                                           game's blend starts where its camera was); at once when
-    ///                                                           an option is switched off, another mod takes the camera
-    ///                                                           or the player dies
+    ///                                                           an option is switched off or another mod takes the
+    ///                                                           camera. The player's death changes nothing by itself:
+    ///                                                           the funeral's camera is a moment, held through to its cut
     ///   the chase camera                                        only while the game asks for its vehicleCamera
     ///   mouse look on foot                                      only while the camera looked through is the one carrying
     ///                                                           the figures, no screen is up and the game does not hold
     ///                                                           the player in a conversation (the mod's own seats, bus
-    ///                                                           rides and activities block the walk too, and keep it)
-    ///   the bridges held                                        while this mod's close camera is looked through out of
-    ///                                                           doors (the chase camera, or the on-foot camera)
+    ///                                                           rides and activities block the walk too, and keep it);
+    ///                                                           none while the player is dead
+    ///   the bridge held                                         the one under the player (or the car), while this mod's
+    ///                                                           close camera is looked through out of doors (the chase
+    ///                                                           camera, or the on-foot camera) and through the blend out
+    ///                                                           of it; never a bridge overhead, which the game hides
     ///
     /// No Unity or game type: checked offline as it ships (NavCheck, CameraYieldCheck.cs).
     /// </summary>
@@ -155,16 +161,18 @@ namespace RealLifeOverhaul
         public static CameraOrders Decide(in CameraSignals s)
         {
             var o = new CameraOrders();
-            bool mine = s.CameraOn && !s.OtherMod && !s.Dead;
+            bool mine = s.CameraOn && !s.OtherMod;
             bool play = Play(s.View);
             o.OutdoorFigures = mine && play;
             o.IndoorFigures = mine && play && s.Indoors;
             o.Chase = mine && s.CarCamera && s.InCar && s.View == GameView.Driving;
             bool carried = (s.View == GameView.OnFoot && o.OutdoorFigures) || (s.View == GameView.Indoor && o.IndoorFigures);
-            bool pointer = s.MouseLook && !s.CursorFreed && s.Focused && !s.Screen;
+            bool pointer = s.MouseLook && !s.CursorFreed && s.Focused && !s.Screen && !s.Dead;
             o.Look = carried && pointer && !s.Talk;
             o.ChaseLook = o.Chase && pointer && !s.CarMouse;
-            o.HoldBridges = o.Chase || (s.View == GameView.OnFoot && o.OutdoorFigures);
+            // Only the bridge under the player, only under this mod's close camera, and on through the blend out of it (the
+            // game's look-back camera takes a second to swing away from the deck).
+            o.HoldBridges = s.OnBridge && (o.Chase || (s.View == GameView.OnFoot && o.OutdoorFigures) || (mine && s.CloseInPicture));
             o.Moment = mine && !play;
             o.OutdoorLinger = o.Moment;
             o.IndoorLinger = o.Moment && s.Indoors;
@@ -199,6 +207,16 @@ namespace RealLifeOverhaul
         public static float Uncopied(float copied, float lastWritten, float gameOwn)
         {
             return Math.Abs(copied - lastWritten) <= Copied ? gameOwn : copied;
+        }
+
+        /// <summary>
+        /// Whether the on-foot camera's distance is taken afresh this frame (<see cref="Wanted"/>): when the camera has just been
+        /// taken, and in the first frame after a moment of the game's ended while the camera never left the picture (the
+        /// interior designer shut within its blend: the game wrote its own distance back meanwhile, which is not a zoom).
+        /// </summary>
+        public static bool Fresh(bool taken, bool momentEnded)
+        {
+            return taken || momentEnded;
         }
 
         private static float Clamp(float v, float min, float max)

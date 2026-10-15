@@ -33,12 +33,12 @@ internal static partial class Program
         YieldTiming();
     }
 
-    // Ordinary play on foot, out of doors, every option on.
+    // Ordinary play on foot, out of doors, on a bridge's road (the highway's), every option on.
     private static CameraSignals Walking()
     {
         return new CameraSignals
         {
-            View = GameView.OnFoot, CameraOn = true, Indoors = true, CarCamera = true, MouseLook = true, Focused = true,
+            View = GameView.OnFoot, CameraOn = true, Indoors = true, CarCamera = true, MouseLook = true, Focused = true, OnBridge = true,
         };
     }
 
@@ -102,10 +102,20 @@ internal static partial class Program
         s.Talk = true;
         Check(CameraYieldRules.Decide(s).ChaseLook, "yield: a phone call of the game's while driving does not take the chase camera's mouse look");
 
-        // The player dead, another mod's camera, the option off: nothing at all.
+        // The player dead: the pointer is the game's, nothing else changes by itself (the funeral's camera is a moment, held through to its cut).
         s = Walking();
         s.Dead = true;
-        Check(Nothing(CameraYieldRules.Decide(s)) && !CameraYieldRules.Decide(s).Moment, "yield: the player dead (the game's funeral): nothing of this mod's camera");
+        o = CameraYieldRules.Decide(s);
+        Check(o.OutdoorFigures && !o.Look && !o.Moment && o.HoldBridges, "yield: the player dead, the game's on-foot camera still live: the figures and the bridge held through, no mouse look");
+        s.View = GameView.Moment;
+        o = CameraYieldRules.Decide(s);
+        Check(o.Moment && o.OutdoorLinger && !o.OutdoorFigures, "yield: the funeral's own camera: a moment, the figures given back only once the on-foot camera has left the picture");
+        s = Driving();
+        s.Dead = true;
+        o = CameraYieldRules.Decide(s);
+        Check(o.Chase && !o.ChaseLook, "yield: dead at the wheel: the chase camera stays until the game's camera cuts away, the pointer freed");
+
+        // Another mod's camera, the option off: nothing at all.
         s = Driving();
         s.OtherMod = true;
         Check(Nothing(CameraYieldRules.Decide(s)), "yield: another mod drives the camera: nothing of this mod's camera, in a car too");
@@ -174,6 +184,12 @@ internal static partial class Program
         CameraYieldRules.Decide(d);
         d.Dead = false;
         Check(SameOrders(walk, CameraYieldRules.Decide(d)), "yield: back from the player's death to walking, everything as before");
+        // A moment that ends while the camera never left the picture (the interior designer shut within its 0.3 s blend):
+        // the game wrote its own distance back meanwhile; the first frame after is fresh, so it is not taken for a zoom.
+        bool fresh = CameraYieldRules.Fresh(false, true);
+        Check(fresh && Near(CameraYieldRules.Wanted(fresh, true, false, 6f, 4f, 13f, 4f, 1f, 20f), 4f),
+            "yield: the designer shut within its blend: the game's 13 m written back is not a zoom, the camera stays at the player's 4 m");
+        Check(!CameraYieldRules.Fresh(false, false) && CameraYieldRules.Fresh(true, false), "yield: an ordinary frame is not fresh, a new take is");
         d.Talk = true;
         CameraYieldRules.Decide(d);
         d.Talk = false;
@@ -204,6 +220,29 @@ internal static partial class Program
         s = Driving();
         s.OtherMod = true;
         Check(!CameraYieldRules.Decide(s).HoldBridges, "highway: another mod's camera: the bridges the game's");
+
+        // Only the bridge under the player: an elevated road or a viaduct overhead stays the game's to hide, so it never
+        // covers the car or holds the chase camera inside it (the level14 junction and HighwayAvenue, the Park Ave viaduct).
+        s = Driving();
+        s.OnBridge = false;
+        Check(!CameraYieldRules.Decide(s).HoldBridges, "highway: driving under an elevated road with the chase camera pitched up: nothing held, the game hides the deck overhead");
+        s = Walking();
+        s.OnBridge = false;
+        Check(!CameraYieldRules.Decide(s).HoldBridges, "highway: walking under a viaduct: nothing held");
+
+        // The game's look-back camera blends a second away from the deck: the bridge stays held while the chase camera is in the picture.
+        s = Driving();
+        s.View = GameView.VehicleOther;
+        s.CloseInPicture = true;
+        Check(CameraYieldRules.Decide(s).HoldBridges, "highway: looking back on the bridge, the chase camera still in the blend: the bridge stays held (no flicker)");
+        s.CloseInPicture = false;
+        Check(!CameraYieldRules.Decide(s).HoldBridges, "highway: ...given back once the chase camera has left the picture");
+        s.CloseInPicture = true;
+        s.OnBridge = false;
+        Check(!CameraYieldRules.Decide(s).HoldBridges, "highway: a blend off the bridge holds nothing");
+        s.OnBridge = true;
+        s.CameraOn = false;
+        Check(!CameraYieldRules.Decide(s).HoldBridges, "highway: this mod's camera switched off: nothing lingers");
     }
 
     // Every combination of the signals keeps the rule's promises.
@@ -213,7 +252,7 @@ internal static partial class Program
         GameView[] views = { GameView.Moment, GameView.OnFoot, GameView.Indoor, GameView.Driving, GameView.VehicleOther, GameView.Map };
         foreach (GameView view in views)
         {
-            for (int bits = 0; bits < 1 << 12; bits++)
+            for (int bits = 0; bits < 1 << 14; bits++)
             {
                 var s = new CameraSignals
                 {
@@ -221,25 +260,27 @@ internal static partial class Program
                     Screen = (bits & 1) != 0, Talk = (bits & 2) != 0, Dead = (bits & 4) != 0, OtherMod = (bits & 8) != 0, InCar = (bits & 16) != 0,
                     CameraOn = (bits & 32) != 0, Indoors = (bits & 64) != 0, CarCamera = (bits & 128) != 0, MouseLook = (bits & 256) != 0,
                     CursorFreed = (bits & 512) != 0, Focused = (bits & 1024) != 0, CarMouse = (bits & 2048) != 0,
+                    OnBridge = (bits & 4096) != 0, CloseInPicture = (bits & 8192) != 0,
                 };
                 CameraOrders o = CameraYieldRules.Decide(s);
                 CameraOrders again = CameraYieldRules.Decide(s);
                 combos++;
-                bool off = !s.CameraOn || s.OtherMod || s.Dead;
+                bool off = !s.CameraOn || s.OtherMod;
                 bool ok = SameOrders(o, again)
                           && (!off || (Nothing(o) && !o.Moment && !o.OutdoorLinger && !o.IndoorLinger))
                           && (!o.Chase || (view == GameView.Driving && s.InCar && s.CarCamera))
-                          && (!o.ChaseLook || (o.Chase && !s.Screen && !s.CarMouse && !s.CursorFreed && s.Focused && s.MouseLook))
-                          && (!o.Look || ((view == GameView.OnFoot || view == GameView.Indoor) && !s.Screen && !s.Talk && !s.CursorFreed && s.Focused && s.MouseLook))
+                          && (!o.ChaseLook || (o.Chase && !s.Screen && !s.CarMouse && !s.CursorFreed && s.Focused && s.MouseLook && !s.Dead))
+                          && (!o.Look || ((view == GameView.OnFoot || view == GameView.Indoor) && !s.Screen && !s.Talk && !s.CursorFreed && s.Focused && s.MouseLook && !s.Dead))
                           && (!o.Look || !o.Chase)
-                          && (!o.HoldBridges || o.Chase || (view == GameView.OnFoot && o.OutdoorFigures))
-                          && (view != GameView.Moment || (!o.OutdoorFigures && !o.IndoorFigures && !o.Look && !o.Chase && !o.HoldBridges && (off || o.Moment)))
+                          && (!o.HoldBridges || (s.OnBridge && (o.Chase || (view == GameView.OnFoot && o.OutdoorFigures) || s.CloseInPicture)))
+                          && (!(s.OnBridge && (o.Chase || (view == GameView.OnFoot && o.OutdoorFigures))) || o.HoldBridges)
+                          && (view != GameView.Moment || (!o.OutdoorFigures && !o.IndoorFigures && !o.Look && !o.Chase && (!o.HoldBridges || s.CloseInPicture) && (off || o.Moment)))
                           && (!o.IndoorFigures || s.Indoors)
                           && (o.Moment == (view == GameView.Moment && !off));
                 bad += ok ? 0 : 1;
             }
         }
-        Check(bad == 0, "yield: every one of " + combos + " combinations of the signals keeps the rule (nothing while off, the chase only for the game's driving camera, mouse look only on the camera carrying the figures, bridges only under the close camera, a moment's camera never steered), the same twice: " + bad + " broke it");
+        Check(bad == 0, "yield: every one of " + combos + " combinations of the signals keeps the rule (nothing while off, the chase only for the game's driving camera, mouse look only on the camera carrying the figures, only the bridge under the player and only under the close camera or its blend out, a moment's camera never steered), the same twice: " + bad + " broke it");
     }
 
     // The game's figures given back exactly as they were taken.
@@ -317,16 +358,35 @@ internal static partial class Program
             "yield sources: neither camera decides from the options itself");
         Check(Body(third, "private void OnUpdate()").Contains("BridgeHold.Hold(orders.HoldBridges)") && Body(chase, "private void OnLateUpdate()").Contains("BridgeHold.Hold(orders.HoldBridges)"),
             "yield sources: the bridges are held by the order, from both cameras");
-        Check(Body(third, "private void OnDestroy()").Contains("BridgeHold.Release()") && Body(chase, "private void OnDestroy()").Contains("BridgeHold.Release()"),
+        Check(Body(third, "private void OnDestroy()").Contains("GiveBack()") && Body(third, "private void GiveBack()").Contains("BridgeHold.Release()") && Body(chase, "private void OnDestroy()").Contains("BridgeHold.Release()"),
             "yield sources: the bridges are given back when the city unloads");
         Handed(scripts, @"Camera\ThirdPersonCamera.cs", "BridgeHold.Prewarm", "the city's bridges for the camera");
         string find = Body(hold, "public static bool Prewarm()");
         Check(find.Contains("SceneFinds.All<BridgeController>(") && hold.IndexOf("SceneFinds.", StringComparison.Ordinal) == hold.IndexOf("SceneFinds.All<BridgeController>(", StringComparison.Ordinal),
             "yield sources: the bridges are searched for only behind the loading screen, never in play");
-        string take = Body(hold, "private static void Take()");
+        string take = Body(hold, "private static void Take(int bridge)");
         Check(take.Contains("SetCameraBlockMode(false)") && take.Contains("piece.enabled = false") && Body(hold, "public static void Release()").Contains("piece.enabled = true")
-              && Body(hold, "public static void Hold(bool want)").Contains("if (want == _held)"),
+              && Body(hold, "public static void Hold(bool want)").Contains("if (bridge == _held)") && Body(hold, "public static void Hold(bool want)").Contains("int bridge = want ? _under : -1;") && take.Contains("i < Start[bridge + 1]"),
             "yield sources: a bridge is shown and switched off when held, switched on again when given back, and nothing is done while the hold does not change");
+        string below = Body(hold, "private static int Below(GameManager gm)");
+        Check(Body(hold, "public static bool OnBridge(GameManager gm)").Contains("_next = now + Every") && below.Contains("GetBridgeBelow()") && below.Contains("IsRoadBelow(at)")
+              && yield.Contains("OnBridge = BridgeHold.OnBridge(gm)"),
+            "yield sources: only the bridge under the player is held, asked as the game asks it, four times a second (the car's bridge below it, or the road under the player)");
+        Check(yield.Contains("CloseInPicture = ChaseCamera.InPicture || ThirdPersonCamera.InPicture") && chase.Contains("CinemachineCore.Instance.IsLive(_vcam)"),
+            "yield sources: the bridge is held through the blend out of the close camera");
+        string observe = Body(yield, "public static void Observe()");
+        Check(observe.Contains("ViewOf(gm)") && !observe.Contains("View ==") && !observe.Contains("Orders"),
+            "yield sources: the other-mod count is made before the frame's orders, so they see it in the same frame");
+        string features = Source(scripts, @"Meta\FeatureList.cs");
+        int camera = features.IndexOf("Features.Add(\"camera\"", StringComparison.Ordinal);
+        int next = camera >= 0 ? features.IndexOf("Features.Add(", camera + 10, StringComparison.Ordinal) : -1;
+        string cleanup = camera >= 0 && next > camera ? features.Substring(camera, next - camera) : string.Empty;
+        Check(cleanup.Contains("ThirdPersonCamera.StandAside()") && cleanup.Contains("ChaseCamera.LetGo()")
+              && Body(third, "public static void StandAside()").Contains("BridgeHold.Release()") && Body(third, "private void GiveBack()").Contains("Apply(_indoor, false, null)")
+              && Body(chase, "public static void LetGo()").Contains("BridgeHold.Release()"),
+            "yield sources: the camera feature's clean-up (run by the guard when it switches the feature off) gives the figures, the pointer and the bridge back");
+        Check(Body(third, "if (FrameGuard.Off)").Contains("GiveBack();") && Body(chase, "if (FrameGuard.Off)").Contains("LetGo();"),
+            "yield sources: a camera found switched off by the guard gives everything back before it stops");
     }
 
     // The rule a frame: no allocation, a few nanoseconds.

@@ -145,8 +145,14 @@ namespace RealLifeOverhaul
         private PlacementCam _placement;   // the game's camera for placing items and the interior designer, found the first time it takes over
         private bool _moment;              // the last frame stood aside for a moment of the game's
 
+        private static ThirdPersonCamera _instance;   // the city's one, for the feature's clean-up
+
+        /// <summary>True while the on-foot camera carrying this mod's figures is live, in a blend out of it too (for the bridge's hold).</summary>
+        public static bool InPicture { get; private set; }
+
         private void Awake()
         {
+            _instance = this;
             CameraYield.Reset();   // a new city: nothing has been seen of another mod's camera in it yet
             ScenePrewarm.Add("camera: the city's bridges being found", BridgeHold.Prewarm);   // behind the loading screen (Camera/BridgeHold)
         }
@@ -160,6 +166,7 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                GiveBack();
                 return;
             }
             try
@@ -171,11 +178,7 @@ namespace RealLifeOverhaul
                 enabled = false;
                 try
                 {
-                    SetLooking(false);
-                    Apply(_outdoor, false, null);
-                    Apply(_indoor, false, null);
-                    Steering = false;
-                    BridgeHold.Release();
+                    GiveBack();
                 }
                 catch (System.Exception second)
                 {
@@ -244,10 +247,12 @@ namespace RealLifeOverhaul
             {
                 Uncopy(gm);   // the first frame of the moment: before its camera has blended in
             }
+            bool ended = _moment && !orders.Moment;
             _moment = orders.Moment;
             Transform player = gm.playerController.transform;
-            Apply(_outdoor, Keep(_outdoor, orders.OutdoorFigures, orders.OutdoorLinger), player);
-            Apply(_indoor, Keep(_indoor, orders.IndoorFigures, orders.IndoorLinger), player);
+            Apply(_outdoor, Keep(_outdoor, orders.OutdoorFigures, orders.OutdoorLinger), player, ended);
+            Apply(_indoor, Keep(_indoor, orders.IndoorFigures, orders.IndoorLinger), player, ended);
+            InPicture = _outdoor != null && _outdoor.Applied && CinemachineCore.Instance.IsLive(_outdoor.VCam);
             Steering = (_outdoor != null && _outdoor.Applied) || (_indoor != null && _indoor.Applied);
 
             if (Keys.Down(KeyAction.FreeCursor))
@@ -307,13 +312,37 @@ namespace RealLifeOverhaul
 
         private void OnDestroy()
         {
+            GiveBack();   // the bridge too, back to the game's hiding as it was (the city unloading)
+            DestroyTarget(_outdoor);
+            DestroyTarget(_indoor);
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+        }
+
+        /// <summary>
+        /// Everything of this camera's given back to the game at once: the pointer, the figures of both on-foot cameras, the
+        /// bridge held. For the camera feature's clean-up (Meta/FeatureList), which the guard runs when it switches the feature
+        /// off after its faults (Core/Guard), and the options page when the feature is switched off. Safe at any time.
+        /// </summary>
+        public static void StandAside()
+        {
+            if (_instance != null)
+            {
+                _instance.GiveBack();
+            }
+            BridgeHold.Release();
+        }
+
+        private void GiveBack()
+        {
             SetLooking(false);
             Apply(_outdoor, false, null);
             Apply(_indoor, false, null);
             Steering = false;
-            DestroyTarget(_outdoor);
-            DestroyTarget(_indoor);
-            BridgeHold.Release();   // the bridges back to the game's hiding as they were (the city unloading)
+            InPicture = false;
+            BridgeHold.Release();
         }
 
         /// <summary>Hold the look-behind key (the right mouse button unless rebound) while driving to look behind the car.</summary>
@@ -460,7 +489,7 @@ namespace RealLifeOverhaul
         /// exactly as they were taken. Taking writes the game's figures down first (<see cref="FigureHandover"/>), each time
         /// the camera is taken: what the game changed while it had the camera is what is given back after.
         /// </summary>
-        private void Apply(CamState state, bool enabled, Transform player)
+        private void Apply(CamState state, bool enabled, Transform player, bool momentEnded = false)
         {
             if (state == null || state.Cam == null)
             {
@@ -489,13 +518,14 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            bool fresh = state.Handover.Take(Figures(state));
-            if (fresh)
+            bool taken = state.Handover.Take(Figures(state));
+            if (taken)
             {
                 state.Follow = state.VCam.Follow;   // the game's own points, as it has them now
                 state.LookAt = state.VCam.LookAt;
             }
             CameraFigures game = state.Handover.Game;
+            bool fresh = CameraYieldRules.Fresh(taken, momentEnded);   // (a moment that ended within its blend: what the game wrote meanwhile is not a zoom)
 
             // The vanilla camera is a long-lens top-down view aimed at the player's feet. Up close that
             // only frames the legs, so orbit and aim at the upper body instead, with a wider lens.

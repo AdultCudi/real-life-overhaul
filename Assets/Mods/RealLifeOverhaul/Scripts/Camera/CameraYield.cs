@@ -153,6 +153,8 @@ namespace RealLifeOverhaul
                 CursorFreed = ThirdPersonCamera.CursorFreed,
                 Focused = Application.isFocused,
                 CarMouse = PlayerPrefSettings.VehicleMouseInput,
+                OnBridge = BridgeHold.OnBridge(gm),
+                CloseInPicture = ChaseCamera.InPicture || ThirdPersonCamera.InPicture,
             };
             if (signals.View != _view)
             {
@@ -197,7 +199,10 @@ namespace RealLifeOverhaul
                 _confirm = false;
                 Confirm();
             }
-            if (ThirdPersonCamera.IsUiOpen() || GameMembers.PlayerDead || View == GameView.Moment)
+            // The game's camera mode read here and not through the orders: they are made after this frame's count below, so
+            // that another mod's camera is stood aside for in the frame it is seen, not one later.
+            GameManager gm = InstanceBehavior<GameManager>.Instance;
+            if (ThirdPersonCamera.IsUiOpen() || GameMembers.PlayerDead || (gm != null && ViewOf(gm) == GameView.Moment))
             {
                 return;   // (a moment of the game's may film with a camera outside its own list: the funeral, CemeteryFuneralSetup; a car's preview, ShowcaseVehicleController)
             }

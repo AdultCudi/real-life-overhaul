@@ -47,7 +47,12 @@ namespace RealLifeOverhaul.Meta
                 .StandsAside(CameraYield.Sentence, Settings.CameraEnabledId, Settings.MouseLookId, Settings.MouseSensitivityId, Settings.CameraIndoorsId,
                     Settings.CameraPitchId, Settings.CameraDistanceId, Settings.CameraFovId, Settings.CameraHeightId, Settings.CarCameraId,
                     Settings.CarCameraDistanceId, Settings.CameraFollowId)
-                .Cleanup(() => ThirdPersonCamera.Focus = null);
+                .Cleanup(() =>
+                {
+                    ThirdPersonCamera.Focus = null;
+                    ThirdPersonCamera.StandAside();   // the figures, the pointer and the bridge back to the game (also when the guard switches the feature off)
+                    ChaseCamera.LetGo();
+                });
 
             Features.Add("character", "reallife_meta_title_character")
                 .Group("reallife_looks_header")
