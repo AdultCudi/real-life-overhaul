@@ -754,7 +754,8 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// Keeps the posts within their bounds: the city's posts older than a few days go first (and a reply goes with its
-        /// post), then the oldest post that is not the player's, and the player's own beyond forty.
+        /// post), then the oldest post that is not the player's, and the player's own beyond forty. A post of the player's
+        /// still on its way to a session's host is never let go (it would come back as a stranger's); it goes once it is back.
         /// </summary>
         public static void Prune(FlareFile f)
         {
@@ -763,21 +764,42 @@ namespace RealLifeOverhaul.Flare
             while (own > OwnMost)
             {
                 int at = Oldest(f.Posts, true);
+                if (at < 0 || !OwnAfter(f.Posts, at))
+                {
+                    break;   // every one left is on its way, but the newest (just made: it is on its way in a moment)
+                }
                 f.Posts.RemoveAt(at);
                 own--;
             }
             while (f.Posts.Count > PostsMost)
             {
                 int at = Oldest(f.Posts, false);
-                f.Posts.RemoveAt(at < 0 ? 0 : at);
+                at = at >= 0 ? at : Oldest(f.Posts, true);
+                if (at < 0)
+                {
+                    break;   // only posts on their way are left
+                }
+                f.Posts.RemoveAt(at);
             }
+        }
+
+        private static bool OwnAfter(List<FlarePost> posts, int at)
+        {
+            for (int i = at + 1; i < posts.Count; i++)
+            {
+                if (posts[i].Author == FlareAuthor.Player)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static int Oldest(List<FlarePost> posts, bool own)
         {
             for (int i = 0; i < posts.Count; i++)
             {
-                if ((posts[i].Author == FlareAuthor.Player) == own)
+                if ((posts[i].Author == FlareAuthor.Player) == own && !posts[i].Pending)
                 {
                     return i;
                 }

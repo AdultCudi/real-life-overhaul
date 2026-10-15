@@ -28,6 +28,7 @@ internal static partial class Program
         NoLimitTiming();
         NoLimitSources();
         NoLimitWords();
+        NoLimitReviewFixes();
         Console.WriteLine("  flare no limit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -360,6 +361,81 @@ internal static partial class Program
             "Flare no limit: a picture past the day's four is left off its post, and the player told");
         string side = ReviewSource("Social/Flare/FlareApp.Side.cs");
         Check(side.Contains("reallife_flare_side_standing") && !side.Contains("PostsToday"), "Flare no limit: the account's side shows no count of today's posts");
+    }
+
+    // ---------------------------------------------------------------- the review's fixes: the mood, the cases kept, friends, talk, posts on their way
+
+    private static void NoLimitReviewFixes()
+    {
+        var n = new FlareNet();
+        int counted = 0;
+        for (int i = 0; i < 25; i++)
+        {
+            counted += FlareLiveRules.Counted(n, 5, "me") ? 1 : 0;
+        }
+        Check(counted == FlareLiveRules.ReportsWeighed && FlareLiveRules.Counted(n, 5, "p:guest") && FlareLiveRules.Counted(n, 5, null) && FlareLiveRules.Counted(n, 6, "me"),
+            "Flare no limit: of 25 reports in a day only the first three move the mood, the tally and the paper; each player alone, the city's always, a new day again");
+        bool again;
+        FlareCase quiet = FlareLiveRules.File(n, FlareReport.Litter, "d3", null, "x", 0f, 0f, 100, "me", 1, 3, out again, false);
+        bool wasQuiet = !quiet.Counted;
+        FlareLiveRules.File(n, FlareReport.Litter, "d3", null, "x", 0f, 0f, 110, "c4", 2, 3, out again);
+        Check(wasQuiet && again && quiet.Counted, "Flare no limit: a case filed past the three moves nothing, until a counted report says the same");
+        var s = new FlareNet();
+        FlareLiveRules.File(s, FlareReport.Road, "d1", null, "x", 0f, 0f, 100, "me", 1, 3, out again, false);
+        string text = FlareLiveStore.Write(s);
+        var back = new FlareNet();
+        FlareLiveStore.Read(back, text);
+        string line = text.Split('\n').First(l => l.StartsWith("C|", StringComparison.Ordinal));
+        var old = new FlareNet();
+        FlareLiveStore.Read(old, text.Replace(line, line.Substring(0, line.LastIndexOf('|'))));
+        Check(back.Cases.Count == 1 && !back.Cases[0].Counted && old.Cases.Count == 1 && old.Cases[0].Counted,
+            "Flare no limit: a case's counted mark reads back from the save; a case from an older save reads as counted");
+        var host = new FlareNet();
+        for (int i = 0; i < FlareNet.CasesMost; i++)
+        {
+            FlareLiveRules.File(host, FlareReport.Business, "d1", "Shop~" + i, "x", 0f, 0f, 100 + i, "p:a", i, 3, out again);
+        }
+        FlareLiveRules.File(host, FlareReport.Business, "d1", "New~1", "x", 0f, 0f, 500, "p:b", 99, 3, out again);
+        bool aKept = host.Cases.Count(c => c.Reporter == "p:a") == FlareNet.CasesMost;
+        var mixed = new FlareNet();
+        for (int i = 0; i < FlareNet.CasesMost; i++)
+        {
+            FlareLiveRules.File(mixed, FlareReport.Business, "d1", "Shop~" + i, "x", 0f, 0f, 100 + i, i == 7 ? "me" : "p:a", i, 3, out again);
+        }
+        FlareLiveRules.File(mixed, FlareReport.Business, "d1", "New~1", "x", 0f, 0f, 500, "p:b", 99, 3, out again);
+        Check(aKept && host.Cases.Count == FlareNet.CasesMost && mixed.Cases.Count(c => c.Reporter == "p:a") == FlareNet.CasesMost - 1 && mixed.Cases.All(c => c.Reporter != "me")
+              && mixed.Cases.Any(c => c.Reporter == "p:b"),
+            "Flare no limit: with forty cases open the host never lets another player's open case go for somebody else's: the host's own goes first, else the new one");
+        var f = new FlareNet();
+        Check(FlareLiveRules.FirstToday(f, 5, FlareLiveRules.FriendKey('T', 3)) && !FlareLiveRules.FirstToday(f, 5, FlareLiveRules.FriendKey('T', 3)) && FlareLiveRules.FirstToday(f, 5, FlareLiveRules.FriendKey('P', 3))
+              && FlareLiveRules.FirstToday(f, 5, FlareLiveRules.TalkKey("Elm~1")) && !FlareLiveRules.FirstToday(f, 5, FlareLiveRules.TalkKey("Elm~1")) && FlareLiveRules.TalkKey(null) == null,
+            "Flare no limit: a tagged friend, the partner seeing it, and a business's talk each once a day");
+        string live = ReviewSource("Social/Flare/FlareDirector.Live.cs");
+        string links = FlareMethod(ReviewSource("Social/Flare/FlareDirector.Links.cs"), "private void Influence(");
+        string city = FlareMethod(ReviewSource("Social/Flare/FlareDirector.City.cs"), "private void CityInfluence(");
+        string answer = FlareMethod(live, "private void Answer(");
+        Check(answer.Contains("if (c.Counted)") && answer.IndexOf("if (c.Counted)", StringComparison.Ordinal) < answer.IndexOf("MayorMood", StringComparison.Ordinal)
+              && FlareMethod(live, "private void Escalation(").Contains("!c.Counted") && FlareMethod(live, "private FlareCase FileCase(").Contains("FlareLiveRules.Counted(")
+              && links.IndexOf("TalkKey(", StringComparison.Ordinal) >= 0 && links.IndexOf("TalkKey(", StringComparison.Ordinal) < links.IndexOf("AddBuzz(", StringComparison.Ordinal)
+              && links.Contains("FriendKey('T'") && city.Contains("FriendKey('P'"),
+            "Flare no limit: the mood, the tally and the paper wait on a counted case; the talk, a tagged friend and the partner's look go through their once a day");
+        FlareFile g = FlareRules.Open(7, 1, 10, 50);
+        var mine = new List<FlarePost>();
+        for (int i = 0; i < 60; i++)
+        {
+            FlarePost p = FlareRules.Post(g, NoLimitDraft(g, FlareSource.Life, 5, i), FlareTone.Cheerful, -1, null, 5, 10, 600);
+            p.Pending = i >= 10;   // the host has the first ten back; fifty still on their way
+            mine.Add(p);
+            FlareRules.Prune(g);
+        }
+        bool newest = mine.Skip(10).All(p => g.Post(p.Id) != null);
+        foreach (FlarePost p in mine)
+        {
+            p.Pending = false;
+        }
+        FlareRules.Prune(g);
+        Check(newest && g.OwnPosts == FlareRules.OwnMost && mine.Skip(20).All(p => g.Post(p.Id) != null),
+            "Flare no limit: a guest posting fast keeps its newest posts while they are on their way, and the forty kept are the newest");
     }
 
     // ---------------------------------------------------------------- the texts

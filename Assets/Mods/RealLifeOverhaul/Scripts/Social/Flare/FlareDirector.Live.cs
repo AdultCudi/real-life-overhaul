@@ -399,9 +399,14 @@ namespace RealLifeOverhaul.Flare
                 Logger?.Info("Flare: " + reporter + " reported " + kind + " in " + FlareGame.DistrictName(p.District) + " again today: in the feed and answered, with the case filed already.");
                 return null;
             }
-            FlareCase c = FlareLiveRules.File(_file.Net, kind, p.District, p.Place, p.Name, x, z, Now, reporter, p.Id, FlareLiveRules.CitySeed(_file), out again);
+            bool counted = FlareLiveRules.Counted(_file.Net, Save.Day, who);
+            FlareCase c = FlareLiveRules.File(_file.Net, kind, p.District, p.Place, p.Name, x, z, Now, reporter, p.Id, FlareLiveRules.CitySeed(_file), out again, counted);
             p.Case = c.Id;
-            if (again)
+            if (!counted)
+            {
+                Logger?.Info("Flare: " + reporter + " has made three reports today: this one is filed and answered, and moves no mood, tally or paper.");
+            }
+            if (again && counted)
             {
                 FlareLiveRules.Complained(_file.Net, kind, p.District, Save.Day, c.State == FlareCaseState.Acting);
                 Escalation(c, Save.Day);
@@ -454,12 +459,18 @@ namespace RealLifeOverhaul.Flare
                 Inspected(c, day);
             }
             bool acted = order != FlareOrder.Queued && order != FlareOrder.Answered;
-            FlareLiveRules.Complained(_file.Net, c.Kind, c.District, day, acted);
+            if (c.Counted)
+            {
+                FlareLiveRules.Complained(_file.Net, c.Kind, c.District, day, acted);   // (a report past its player's three a day: no tally, no mood)
+            }
             if (acted)
             {
                 FlareLiveRules.Answered(_file.Net, c.Kind, c.District);
             }
-            _file.MayorMood = FlareRules.Clamp(_file.MayorMood + (acted ? FlareLiveRules.MoodActed : order == FlareOrder.Queued ? FlareLiveRules.MoodQueued : 0), -100, 100);
+            if (c.Counted)
+            {
+                _file.MayorMood = FlareRules.Clamp(_file.MayorMood + (acted ? FlareLiveRules.MoodActed : order == FlareOrder.Queued ? FlareLiveRules.MoodQueued : 0), -100, 100);
+            }
             FlarePost reply = AnswerPost(c, answer, address, days);
             Logger?.Info("Flare: the City Office answers case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ", reported by " + c.Reporter + "): " + answer + ", " + order
                          + (order == FlareOrder.Works ? " (site " + site + " at " + address + ", about " + days + " days)" : c.Until >= 0 ? " until day " + c.Until : string.Empty)
@@ -532,7 +543,7 @@ namespace RealLifeOverhaul.Flare
         // The week's ignored complaints of a kind in a district: three, and it is in the paper, the mood falls, and the City Office acts after all.
         private void Escalation(FlareCase c, int day)
         {
-            if (!FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice))
+            if (!c.Counted || !FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice))
             {
                 return;
             }

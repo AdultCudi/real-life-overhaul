@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Flare
     ///   reallife:flare_net
     ///     NT1|next case|next message|notifications read to|city day|picture day|pictures today|next picture|replies day|
     ///         replies today|reports day|reports today|message day|city seed|moved day
-    ///     C|id|kind|district|place|name|x|z|filed|answer due|state|order|ref|until|post|answer|reporter|repeats|acted day   a case
+    ///     C|id|kind|district|place|name|x|z|filed|answer due|state|order|ref|until|post|answer|reporter|repeats|acted day|counted   a case
     ///     W|district|kind|until                                a watch on a district
     ///     K|kind|district|day|acted                            a complaint of the week
     ///     M|id|with|name|at|mine|text|key|data|read            a message
@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Flare
                 b.Append('|').Append(c.X.ToString("R", Inv)).Append('|').Append(c.Z.ToString("R", Inv)).Append('|').Append(c.Filed.ToString(Inv)).Append('|').Append(c.ReplyAt.ToString(Inv));
                 Ints(b, (int)c.State, (int)c.Order, c.Ref, c.Until, c.Post, c.Answer);
                 Texts(b, c.Reporter);
-                Ints(b, c.Repeats, c.ActedDay);
+                Ints(b, c.Repeats, c.ActedDay, c.Counted ? 1 : 0);
             }
             for (int i = 0; i < n.Watches.Count; i++)
             {
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Flare
                         {
                             Id = I(c, 1), Kind = (FlareReport)kind, District = U(c, 3), Place = U(c, 4), Name = U(c, 5), X = F(c, 6), Z = F(c, 7), Filed = L(c, 8), ReplyAt = L(c, 9),
                             State = (FlareCaseState)state, Order = (FlareOrder)order, Ref = I(c, 12, -1), Until = I(c, 13, -1), Post = I(c, 14, -1), Answer = I(c, 15, -1),
-                            Reporter = U(c, 16), Repeats = Math.Max(0, I(c, 17)), ActedDay = I(c, 18, -1)
+                            Reporter = U(c, 16), Repeats = Math.Max(0, I(c, 17)), ActedDay = I(c, 18, -1), Counted = I(c, 19, 1) != 0   // (a save from before: counted)
                         });
                     }
                     break;

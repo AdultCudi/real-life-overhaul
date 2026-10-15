@@ -655,13 +655,15 @@ namespace RealLifeOverhaul.Flare
         /// and it is returned with <paramref name="again"/>. Otherwise a new case, its answer due within hours: the more
         /// cases open, the longer.
         /// </summary>
-        public static FlareCase File(FlareNet net, FlareReport kind, string district, string place, string name, float x, float z, long now, string reporter, int post, int seed, out bool again)
+        public static FlareCase File(FlareNet net, FlareReport kind, string district, string place, string name, float x, float z, long now, string reporter, int post, int seed, out bool again,
+            bool counted = true)
         {
             again = false;
             FlareCase same = OpenCase(net, kind, district, place);
             if (same != null)
             {
                 same.Repeats++;
+                same.Counted |= counted;
                 again = true;
                 return same;
             }
@@ -672,16 +674,72 @@ namespace RealLifeOverhaul.Flare
             }
             var made = new FlareCase
             {
-                Id = net.NextCase++, Kind = kind, District = district, Place = place, Name = name, X = x, Z = z, Filed = now, Reporter = reporter, Post = post,
+                Id = net.NextCase++, Kind = kind, District = district, Place = place, Name = name, X = x, Z = z, Filed = now, Reporter = reporter, Post = post, Counted = counted,
                 ReplyAt = now + Math.Min(ReplyMost, ReplyLeast + ReplyPerOpen * open + FlareRules.Roll(seed, net.NextCase, 830) % 60)
             };
             net.Cases.Add(made);
             while (net.Cases.Count > FlareNet.CasesMost)
             {
-                int oldest = OldestClosed(net);
-                net.Cases.RemoveAt(oldest >= 0 ? oldest : 0);
+                net.Cases.RemoveAt(Evicted(net, reporter));
             }
             return made;
+        }
+
+        /// <summary>
+        /// The case that gives way when there are too many: the oldest closed one, else the oldest open one that is not
+        /// another player's (the city's people's, this machine's player's, or the new report's own reporter's). Another
+        /// player's open case is never let go for somebody else's; the newest (the one just filed) always qualifies.
+        /// </summary>
+        public static int Evicted(FlareNet net, string reporter)
+        {
+            int closed = OldestClosed(net);
+            if (closed >= 0)
+            {
+                return closed;
+            }
+            for (int i = 0; i < net.Cases.Count; i++)
+            {
+                string r = net.Cases[i].Reporter;
+                if (r == null || !r.StartsWith("p:", StringComparison.Ordinal) || string.Equals(r, reporter, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            return net.Cases.Count - 1;
+        }
+
+        /// <summary>
+        /// Whether a player's report today is one of their first three of the day (counted when it is): those move the feed's
+        /// mood, the week's tally and the paper; more are filed and answered and move none of them. 'who' as MoveKey has it;
+        /// null (the city's people) is always counted.
+        /// </summary>
+        public static bool Counted(FlareNet net, int day, string who)
+        {
+            if (who == null)
+            {
+                return true;
+            }
+            for (int n = 0; n < ReportsWeighed; n++)
+            {
+                string key = who + "|W|" + n;
+                if (!MovedToday(net, day, key))
+                {
+                    return FirstToday(net, day, key);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>A key for what a post does to a friend (tagged) or to the partner (seeing one tagged): once a day each (FirstToday).</summary>
+        public static string FriendKey(char what, int person)
+        {
+            return "me|" + what + "|" + person;
+        }
+
+        /// <summary>A key for the talk a post of the player's brings a business: once a day (FirstToday).</summary>
+        public static string TalkKey(string place)
+        {
+            return place != null ? "me|B|" + place : null;
         }
 
         /// <summary>The case still open or being acted on for a thing (a kind in a district; a business by its place), or null.</summary>

@@ -226,6 +226,7 @@ namespace RealLifeOverhaul.Flare
         public string Reporter;          // whose report: "me", "c:12" (one of the city's people), "p:id" (a player of the session)
         public int Repeats;              // others who said the same since
         public int ActedDay = -1;        // the day a crew was sent (the week's crews are counted by it); -1 for none
+        public bool Counted = true;      // filed by one of its player's first three reports of the day: moves the mood, the tally and the paper (FlareLiveRules.Counted)
     }
 
     /// <summary>
