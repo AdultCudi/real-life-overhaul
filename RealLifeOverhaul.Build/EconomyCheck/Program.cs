@@ -148,6 +148,7 @@ internal static partial class Program
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
+        Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

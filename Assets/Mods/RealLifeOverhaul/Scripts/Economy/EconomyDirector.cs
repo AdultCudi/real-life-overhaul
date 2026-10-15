@@ -920,6 +920,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The Finance app on the rivals' page.</summary>
+        public void OpenRivals()
+        {
+            if (_app != null && _view != null && _running)
+            {
+                _view.WantRivals();
+                _app.Open();
+            }
+        }
+
         /// <summary>The Finance app on the city's page.</summary>
         public void OpenCity()
         {

@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Markets
                 s.IndexLow, s.IndexLast, s.IndexPrevClose, city ? 0 : s.HeldDay, city ? 0 : s.HeldPhase);
             D(t, s.DayZ);
             D(t, s.DayVar);
+            Join(t, s.Weighted ? 1 : 0);
             t.Append("~e:");
             MarketTape.WriteEnv(t, s.Env);
             t.Append("~k:");
@@ -1045,6 +1046,7 @@ namespace RealLifeOverhaul.Markets
             s.HeldPhase = Clamp(I(c, 23), 0, MarketCatalogue.PhaseClose);
             s.DayZ = Clamp(F(c, 24, 0.0), -100.0, 100.0);
             s.DayVar = Clamp(F(c, 25, 0.0), 0.0, 10.0);
+            s.Weighted = I(c, 26) != 0;   // (appended: a save from before has none, and is set right at its first step: MarketEngine.Index)
             if (MarketState.Time(s.FrontierDay, s.FrontierPhase) < s.Now)
             {
                 s.FrontierDay = s.Day;

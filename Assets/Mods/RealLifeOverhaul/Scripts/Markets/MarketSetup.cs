@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Markets
                 Add(state, s, default(CarriedPrice), day, year, seed);
             }
             Indices(state, year);
+            state.Weighted = true;   // (no holding and no company over the cap at the start: the float-weighted, capped index is this one)
             MarketLife.DayBases(state, state.InSession);   // (as a save of this moment reads: MarketStore.Read)
             return state;
         }

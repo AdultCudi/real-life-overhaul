@@ -425,6 +425,7 @@ namespace RealLifeOverhaul.Markets
         public readonly int[] ManiaDays = new int[(int)MarketSector.Count];      // a craze: days it has run (0 none)
         public readonly double[] ManiaAdded = new double[(int)MarketSector.Count]; // what it has added so far (ln)
         public double IndexDivisor;              // the index is the market value of every listed company over this
+        public bool Weighted;                    // the divisors are those of the index weighed by free float and capped (MarketIndex); false: a save from before, set right at its first step
         public int ListingId, ListingDay;        // a listing announced: the company and its first day
         public int NextOrderId = 1;
         public bool CarriedOver;                 // the Ventures market's shares have been brought over

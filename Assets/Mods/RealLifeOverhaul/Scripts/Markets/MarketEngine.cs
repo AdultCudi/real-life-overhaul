@@ -1051,10 +1051,16 @@ namespace RealLifeOverhaul.Markets
             return cents >= int.MaxValue ? int.MaxValue : Math.Max(1, (int)Math.Round(cents));
         }
 
-        // The city's index and the sectors': every listed company's market value over their divisors.
+        private bool[] _capped;   // MarketIndex's scratch
+
+        // The city's index and the sectors': every listed company's free float value (capped for the city's: MarketIndex)
+        // over their divisors. A save from before the weighting has its divisors set right first, so that it does not jump.
         private void Index(out int index)
         {
-            double all = 0.0;
+            if (!State.Weighted)
+            {
+                Rebase();
+            }
             for (int sec = 0; sec < Sectors; sec++)
             {
                 _sectorValue[sec] = 0.0;
@@ -1062,14 +1068,12 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock s = State.Stocks[i];
-                if (!s.Listed)
+                if (s.Listed)
                 {
-                    continue;
+                    _sectorValue[(int)s.Sector] += MarketIndex.Value(s);
                 }
-                double value = s.Shares * s.Mid;
-                all += value;
-                _sectorValue[(int)s.Sector] += value;
             }
+            double all = MarketIndex.Total(State.Stocks, null, null, ref _capped);
             if (State.IndexDivisor <= 0.0)
             {
                 State.IndexDivisor = all / 1000.0;
@@ -1090,12 +1094,12 @@ namespace RealLifeOverhaul.Markets
         private void Reweigh(Stock s, bool joining)
         {
             Index(out int index);
-            double value = s.Shares * s.Mid;
+            double value = MarketIndex.Value(s);
             if (index > 0 && State.IndexDivisor > 0.0)
             {
-                double all = State.IndexDivisor * index / 100.0;
-                double after = all + (joining ? value : -value);
-                State.IndexDivisor = after > 0.0 ? after / (index / 100.0) : 0.0;
+                double before = joining ? MarketIndex.Total(State.Stocks, null, null, ref _capped) : MarketIndex.Total(State.Stocks, null, null, ref _capped);
+                double after = joining ? MarketIndex.Total(State.Stocks, null, s, ref _capped) : MarketIndex.Total(State.Stocks, s, null, ref _capped);
+                State.IndexDivisor = before > 0.0 && after > 0.0 ? State.IndexDivisor * after / before : 0.0;
             }
             int sec = (int)s.Sector;
             int level = State.SectorLast[sec];
@@ -1104,6 +1108,40 @@ namespace RealLifeOverhaul.Markets
                 double all = State.SectorDivisor[sec] * level / 100.0;
                 double after = all + (joining ? value : -value);
                 State.SectorDivisor[sec] = after > 0.0 ? after / (level / 100.0) : 0.0;
+            }
+        }
+
+        // A save from before the weighting: its divisors set so that the index and every sector stand where they stood
+        // under the old weighing (every share of every company), now weighed by float and capped. Once, at its first step.
+        private void Rebase()
+        {
+            State.Weighted = true;
+            double oldAll = 0.0;
+            var oldSector = new double[Sectors];
+            var newSector = new double[Sectors];
+            for (int i = 0; i < State.Stocks.Count; i++)
+            {
+                Stock s = State.Stocks[i];
+                if (!s.Listed)
+                {
+                    continue;
+                }
+                double whole = s.Shares * s.Mid;
+                oldAll += whole;
+                oldSector[(int)s.Sector] += whole;
+                newSector[(int)s.Sector] += MarketIndex.Value(s);
+            }
+            double newAll = MarketIndex.Total(State.Stocks, null, null, ref _capped);
+            if (oldAll > 0.0 && newAll > 0.0 && State.IndexDivisor > 0.0)
+            {
+                State.IndexDivisor *= newAll / oldAll;
+            }
+            for (int sec = 0; sec < Sectors; sec++)
+            {
+                if (oldSector[sec] > 0.0 && newSector[sec] > 0.0 && State.SectorDivisor[sec] > 0.0)
+                {
+                    State.SectorDivisor[sec] *= newSector[sec] / oldSector[sec];
+                }
             }
         }
 
@@ -1318,6 +1356,7 @@ namespace RealLifeOverhaul.Markets
                     OwnCorporate(s, day);   // (a player's company: its meetings, its investors, a bid for it: MarketEngine.Own.cs)
                     continue;
                 }
+                bool holding = s.Def != null && s.Def.Holding;   // (a rival tycoon's: it leaves only by its tycoon, never by the market's own bid, failure or penny delisting)
                 // A takeover bid due today completes or falls through (decided now, never before).
                 if (s.BidCents > 0 && s.BidEndDay <= day)
                 {
@@ -1337,14 +1376,14 @@ namespace RealLifeOverhaul.Markets
                 }
                 // Shares that have traded under a unit for weeks leave the market at their last price.
                 s.LowDays = s.Last * 1000L < (long)MarketCatalogue.PennyCents * Math.Max(100, State.Env.PriceLevel) ? s.LowDays + 1 : 0;
-                if (s.LowDays >= MarketCatalogue.PennyDays)
+                if (s.LowDays >= MarketCatalogue.PennyDays && !holding)
                 {
                     Leave(s, day, GoneReason.Delisted, s.Last);
                     continue;
                 }
                 // A company in distress may fail (the market prices the chance: MarketValuation.Fair).
                 double hazard = MarketValuation.Hazard(s.Distress);
-                if (hazard > 0.0 && MarketRandom.Unit(_secret, MarketRandom.Failure, s.Id, 0) < hazard / year)
+                if (!holding && hazard > 0.0 && MarketRandom.Unit(_secret, MarketRandom.Failure, s.Id, 0) < hazard / year)
                 {
                     int payout = 0;
                     if (MarketRandom.Unit(_secret, MarketRandom.Recovery, s.Id, 0) < MarketCatalogue.RecoveryChance)
@@ -1369,7 +1408,7 @@ namespace RealLifeOverhaul.Markets
                     }
                 }
                 // A bid for it: small companies are bid for more often (priced too: MarketValuation.TakeoverYield).
-                if (s.BidCents <= 0 && day - s.ListedDay > 10 && MarketValuation.TakeoverYield(s) > 0.0)
+                if (!holding && s.BidCents <= 0 && day - s.ListedDay > 10 && MarketValuation.TakeoverYield(s) > 0.0)
                 {
                     double chance = MarketCatalogue.TakeoverChanceYear / year * MarketCatalogue.TakeoverSizeScale[(int)s.Size];
                     if (MarketRandom.Unit(_secret, MarketRandom.Takeover, s.Id, 0) < chance)
@@ -1441,7 +1480,7 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock other = State.Stocks[i];
-                if (other.Listed && other != s && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0)
+                if (other.Listed && other != s && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0 && (other.Def == null || !other.Def.Holding))
                 {
                     _scratch.Add(other);
                 }
@@ -1582,7 +1621,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     CompanyDef d = MarketCatalogue.All[i];
                     Stock s = State.Stock(d.Id);
-                    bool can = d.Pipeline ? s == null : s != null && !s.Listed && day - s.GoneDay > 2 * Year;
+                    bool can = d.Holding ? false : d.Pipeline ? s == null : s != null && !s.Listed && day - s.GoneDay > 2 * Year;   // (a rival's holding comes only with its tycoon: ListHolding)
                     if (!can)
                     {
                         continue;

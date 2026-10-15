@@ -32,6 +32,7 @@
        haggling and the trade auction, customers and their offers, the dealership's finance and warranties, the books and the save's line, and a month of a reference dealership, and
        (ShowroomFloorChecks.cs) the Car Showroom's floor: the visitors an hour shows, the bays and their save line, the camera's limits and the texts, and
        (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and
+       (RivalChecks.cs, RivalReviewChecks.cs) the rival tycoons: their holdings, growth by the player's thresholds, the pace of their moves, each move's bounds, the counters and a takeover, the same moves from a seed, the save's line and the texts, and
        (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
@@ -161,6 +162,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketLife.cs" Link="Mod\MarketLife.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.cs" Link="Mod\MarketEngine.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Own.cs" Link="Mod\MarketEngine.Own.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Holdings.cs" Link="Mod\MarketEngine.Holdings.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketIndex.cs" Link="Mod\MarketIndex.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Bots.cs" Link="Mod\MarketEngine.Bots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketBots.cs" Link="Mod\MarketBots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\TrustRules.cs" Link="Mod\TrustRules.cs" />
@@ -254,6 +257,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankModel.cs" Link="Mod\OwnBankModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.cs" Link="Mod\RivalRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalStore.cs" Link="Mod\RivalStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankStore.cs" Link="Mod\OwnBankStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerCatalogue.cs" Link="Mod\DealerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerState.cs" Link="Mod\DealerState.cs" />

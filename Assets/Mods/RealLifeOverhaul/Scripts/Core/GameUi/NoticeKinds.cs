@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.GameUi
             "job_", "jobs_", "jobline_", "career_", "careers_", "work_", "life_", "own_", "study_", "campus_", "school_",
             "degrees_", "gig_", "pro_",
             // the player's businesses
-            "co_", "rota_", "biz_", "brand_", "svc_", "online_", "dealer_", "interior_", "business_", "businesstype_", "endscale_",
+            "co_", "rota_", "biz_", "brand_", "svc_", "online_", "dealer_", "interior_", "business_", "businesstype_", "endscale_", "rival_",
             // the tech sector
             "tech_", "infra_", "sites_", "bb_", "hire_", "talent_", "roles_", "hq_",
             // news

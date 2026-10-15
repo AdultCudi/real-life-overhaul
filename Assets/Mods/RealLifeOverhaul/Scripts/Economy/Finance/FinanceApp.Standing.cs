@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Economy
         {
             _standing = true;
             _city = false;
+            _rivals = false;
             _standingPick = null;
             Refresh();
         }

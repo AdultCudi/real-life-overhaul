@@ -51,6 +51,9 @@ namespace RealLifeOverhaul
     ///                     prices, the cleaning service, brands, Standing, the staff, the tech sector, Flare and the paper
     ///     OwnBankLinks    the player's own bank with Standing (its name), the council (defaults), the courts (what comes
     ///                     back), the Stocks app (its fund) and the City Ledger (its news)
+    ///     RivalLinks      the rival tycoons with the stock market (their holdings, a stake, a bid, a takeover), the company
+    ///                     (an offer to the staff), business pressure (footfall, a smear, inspections), property (prices),
+    ///                     the courts (a claim), Standing, the City Ledger and the Finance app's page
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -111,6 +114,7 @@ namespace RealLifeOverhaul
             Step("empty shops as offices", OfficeLinks.Connect);
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("the end game at scale", EndScaleLinks.Connect);
+            Step("rival tycoons", RivalLinks.Connect);   // after the city's economy, the company, Flare and the interiors: what it wraps of theirs (footfall, the deal, the paper) is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Logger?.Info("Wiring: the features are connected.");
         }
@@ -123,6 +127,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
+            Step("rival tycoons", RivalLinks.Disconnect);   // next: what it wrapped is put back before the others take theirs off
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper is put back first
             Step("the end game at scale", EndScaleLinks.Disconnect);
             Step("the district view", DistrictLinks.Disconnect);
