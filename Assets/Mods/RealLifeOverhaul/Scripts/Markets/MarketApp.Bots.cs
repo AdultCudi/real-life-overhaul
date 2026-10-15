@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Markets
     /// <summary>
     /// The Bots tab of the Stocks app (MarketBots): a row for each firm, hired or not, with what its bot is worth, its
     /// profit, its deepest fall and its trades; picking one puts its terms, its record and its settings in the box, with
-    /// the buttons to hire it, sell it up, start it again or let it go. Its settings are on three pages, chosen by the
+    /// the buttons to hire it, sell it up, start it again or let it go, and for a running bot, on its first page, to add
+    /// capital or take some out of its money not in shares (nothing is sold either way). Its settings are on three pages, chosen by the
     /// first selector so that the box keeps its foot: its trades (size, stop, limit), the shares it trades (its whole
     /// market, the companies picked for it, or the player's own holdings; with a picker over the player's own company and
     /// the companies they hold or watch) and its payouts (a share of new profit, daily, weekly or monthly). A bot's
@@ -34,7 +35,7 @@ namespace RealLifeOverhaul.Markets
 
         // The settings being written for the firm picked (its bot's own once it is hired).
         private int _botFirm, _botSize, _botStop, _botLoss;
-        private long _botCapital;
+        private long _botCapital, _botChange;   // the capital to hire with; the sum to add to a running bot or take out of it
         private int _botPage, _botPickAt, _botPay;
         private BotScope _botScope;
         private BotPayEvery _botEvery = BotPayEvery.Monthly;
@@ -104,6 +105,7 @@ namespace RealLifeOverhaul.Markets
                 _botStop = b != null ? b.Stop : f.Stop;
                 _botLoss = b != null ? b.Loss : f.Loss;
                 _botCapital = Math.Max(_director.BotCapitalLeast, 0);
+                _botChange = Math.Max(_director.BotChangeLeast, 0);
                 _botPage = PageTrading;
                 _botScope = BotScope.Market;
                 _botPay = 0;
@@ -171,6 +173,10 @@ namespace RealLifeOverhaul.Markets
                     i => UiClone.Safe(() => Settle(f, b, size, MarketBots.Stops[i], loss)));
                 box.Selector(MarketBots.Losses.Length, MarketBots.IndexOf(MarketBots.Losses, loss), i => MarketText.Fill("reallife_mkt_bot_set_loss", "pct", MarketBots.Losses[i].ToString()),
                     i => UiClone.Safe(() => Settle(f, b, size, stop, MarketBots.Losses[i])));
+                if (b != null && b.Status == BotStatus.Running)
+                {
+                    WriteBotCapital(box, f, b);
+                }
             }
             Transform buttons = box.ButtonRow();
             if (b == null)
@@ -192,6 +198,45 @@ namespace RealLifeOverhaul.Markets
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_mkt_bot_dismiss", () => UiClone.Safe(() => ConfirmDismiss(f)));
             }
             Meta.Guide.Point(box, BotsGuideTitle);
+        }
+
+        // A running bot's capital: what it has out of shares and the most that can be taken out, a sum typed in the game's
+        // own text box, and the buttons to add it or take it out (each asked first in the game's own question box).
+        private void WriteBotCapital(InfoBox box, BotFirm f, Bot b)
+        {
+            box.Line(MarketText.Fill("reallife_mkt_bot_box_capital", "cash", MarketText.Money(Math.Max(0L, b.Cash)), "most", MarketText.Money(_director.BotMostOut(f.Id))));
+            Transform row = box.ButtonRow();
+            AskNumber(row, InfoBox.Additional, MarketText.Fill("reallife_mkt_bot_change", "amount", MarketText.Money(_botChange)), "reallife_mkt_bot_change_placeholder", false,
+                value => _botChange = value);
+            InfoBox.Button(row, InfoBox.Positive, "reallife_mkt_bot_add", () => UiClone.Safe(() => ConfirmCapital(f, true)));
+            InfoBox.Button(row, InfoBox.Negative, "reallife_mkt_bot_take", () => UiClone.Safe(() => ConfirmCapital(f, false)));
+        }
+
+        // Capital added to a running bot or taken out, once the player says yes; the notification says what it trades with now.
+        private void ConfirmCapital(BotFirm f, bool adding)
+        {
+            long amount = _botChange;
+            Bot b = _director.State != null ? MarketBots.Hired(_director.State, f.Id) : null;
+            long after = b != null ? (adding ? b.Capital + amount : b.Capital - amount) : 0;
+            GameConfirm.Show(
+                (adding ? "reallife_mkt_bot_confirm_add" : "reallife_mkt_bot_confirm_take").Localize(new { firm = f.Name, amount = MarketText.Money(amount) }),
+                (adding ? "reallife_mkt_bot_confirm_add_body" : "reallife_mkt_bot_confirm_take_body").Localize(new { firm = f.Name, capital = MarketText.Money(after) }),
+                () => UiClone.Safe(() =>
+                {
+                    BotWhy why;
+                    bool done = adding ? _director.AddBotCapital(f.Id, amount, out why) : _director.TakeBotCapital(f.Id, amount, out why);
+                    Bot now = done && _director.State != null ? MarketBots.Hired(_director.State, f.Id) : null;
+                    if (now == null)
+                    {
+                        BotError(done ? BotWhy.NotHired : why);
+                    }
+                    else
+                    {
+                        Notifications.Show(NotificationType.Success, adding ? "reallife_mkt_bot_note_added" : "reallife_mkt_bot_note_taken",
+                            new Dictionary<string, string> { { "firm", f.Name }, { "amount", MarketText.Money(amount) }, { "capital", MarketText.Money(now.Capital) } }, 6f, null, null, true, false);
+                    }
+                    Refresh();
+                }), null, adding ? "reallife_mkt_bot_add" : "reallife_mkt_bot_take", "common_cancel", false, false);
         }
 
         // What a firm's strategy does, with its figures (MarketBots).
@@ -408,7 +453,8 @@ namespace RealLifeOverhaul.Markets
         {
             "reallife_mkt_bot_why_none", "reallife_mkt_bot_why_closed", "reallife_mkt_bot_why_held", "reallife_mkt_bot_why_behind", "reallife_mkt_bot_why_hired", "reallife_mkt_bot_why_full",
             "reallife_mkt_bot_why_too_little", "reallife_mkt_bot_why_no_cash", "reallife_mkt_bot_why_not_hired", "reallife_mkt_bot_why_not_stopped", "reallife_mkt_bot_why_too_little_left", "reallife_mkt_bot_why_off",
-            "reallife_mkt_bot_why_own_shares", "reallife_mkt_bot_why_not_listed", "reallife_mkt_bot_why_picks"
+            "reallife_mkt_bot_why_own_shares", "reallife_mkt_bot_why_not_listed", "reallife_mkt_bot_why_picks", "reallife_mkt_bot_why_not_running", "reallife_mkt_bot_why_change_too_little",
+            "reallife_mkt_bot_why_too_much_out"
         };
 
         private static void BotError(BotWhy why)

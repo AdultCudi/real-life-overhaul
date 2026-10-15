@@ -22,7 +22,8 @@ namespace RealLifeOverhaul.Markets
     ///      (its founder is a guest in another player's city): Markets/Listing. Never in the city's line.
     ///   b the player's trading bots (MarketBots): each its firm, money, settings, record, holdings and what it waits to
     ///      trade, then the shares it trades (its scope and picks), its payouts and its trading in the player's own
-    ///      company (a record without them: its whole market, no payout). Never in the city's line, nor is the news of a
+    ///      company (a record without them: its whole market, no payout), then capital added while it runs and the
+    ///      fee's money-days for it (a record without them: none). Never in the city's line, nor is the news of a
     ///      dividend paid to the player (MarketNewsKind.Paid). A bot's shares are written into the player's holding of part p as well
     ///      (each holding of b says so), and taken out of it again here: a version that does not know bots reads them as
     ///      the player's own shares, bought with the player's money, and nothing is lost.
@@ -35,7 +36,8 @@ namespace RealLifeOverhaul.Markets
     ///      whole at the open; read back, every order takes its place by its number again. Never in the city's line. (A
     ///      version before part g, read in the middle of a market day, loses that day's parked money: it knows nothing of it.)
     ///   A holding of part p may end with the share of each dividend it puts back, a line of part t with the worked order it
-    ///   is the day's slices of and whether it was bought with a dividend put back (each written only when there is one).
+    ///   is the day's slices of and whether it was bought with a dividend put back (each written only when there is one),
+    ///   and a bot's capital added or taken out is a payment in or a withdrawal of that bot's with a mark of 1 after them.
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
     /// founder, its name and sector, its reserve, board and meetings): another player's is in the city's line too.
     ///
@@ -190,18 +192,23 @@ namespace RealLifeOverhaul.Markets
             {
                 Trade r = s.Trades[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(r.Day.ToString(Inv));
-                Join(t, r.Phase, r.StockId, (int)r.Kind);
+                bool capital = r.Kind == TradeKind.BotAdded || r.Kind == TradeKind.BotTaken;
+                Join(t, r.Phase, r.StockId, (int)(capital ? (r.Kind == TradeKind.BotAdded ? TradeKind.Deposit : TradeKind.Withdrawal) : r.Kind));
                 L(t, r.Qty);
                 Join(t, r.PriceCents);
                 L(t, r.Value, r.Fee);
                 Join(t, r.Test ? 1 : 0);
-                if (r.Bot > 0 || r.Order > 0 || r.Back)
+                if (r.Bot > 0 || r.Order > 0 || r.Back || capital)
                 {
                     Join(t, r.Bot);
                 }
-                if (r.Order > 0 || r.Back)
+                if (r.Order > 0 || r.Back || capital)
                 {
                     Join(t, r.Order, r.Back ? 1 : 0);   // a worked order's day of slices, a dividend put back (a version before them reads a trade)
+                }
+                if (capital)
+                {
+                    Join(t, 1);   // a bot's capital added or taken out (a version before it reads a payment in or a withdrawal, marked with the bot)
                 }
             }
             t.Append("~w:");
@@ -461,6 +468,8 @@ namespace RealLifeOverhaul.Markets
                 Join(t, b.OwnDay);
                 L(t, b.OwnQty);
                 Join(t, b.OwnYear, b.OwnBoughtBp, b.OwnSoldBp, b.OwnBuyDay, b.OwnSellDay);
+                Join(t, b.TopUp);   // (after them: capital added while it runs, and the fee's money-days for it; a record without them has none)
+                L(t, b.MonthAdded);
             }
         }
 
@@ -528,6 +537,8 @@ namespace RealLifeOverhaul.Markets
                 b.OwnSoldBp = Clamp(I(c, 39), 0, 100000);
                 b.OwnBuyDay = I(c, 40);
                 b.OwnSellDay = I(c, 41);
+                b.TopUp = Clamp(I(c, 42), 0, MarketBots.TopUpDecided);
+                b.MonthAdded = L(c, 43);
                 s.Bots.Add(b);
             }
         }
@@ -868,8 +879,13 @@ namespace RealLifeOverhaul.Markets
                             string[] c = record.Split('|');
                             if (c.Length >= 9 && s.Trades.Count < MarketCatalogue.TradesKept)
                             {
-                                s.Trades.Add(new Trade { Day = I(c, 0), Phase = I(c, 1), StockId = I(c, 2), Kind = (TradeKind)Clamp(I(c, 3), 0, 9), Qty = L(c, 4), PriceCents = I(c, 5), Value = L(c, 6), Fee = L(c, 7), Test = I(c, 8) != 0,
-                                    Bot = MarketBots.Firm(I(c, 9)) != null ? I(c, 9) : 0, Order = Math.Max(0, I(c, 10)), Back = I(c, 11) != 0 });
+                                var trade = new Trade { Day = I(c, 0), Phase = I(c, 1), StockId = I(c, 2), Kind = (TradeKind)Clamp(I(c, 3), 0, 9), Qty = L(c, 4), PriceCents = I(c, 5), Value = L(c, 6), Fee = L(c, 7), Test = I(c, 8) != 0,
+                                    Bot = MarketBots.Firm(I(c, 9)) != null ? I(c, 9) : 0, Order = Math.Max(0, I(c, 10)), Back = I(c, 11) != 0 };
+                                if (I(c, 12) == 1 && trade.Bot > 0 && (trade.Kind == TradeKind.Deposit || trade.Kind == TradeKind.Withdrawal))
+                                {
+                                    trade.Kind = trade.Kind == TradeKind.Deposit ? TradeKind.BotAdded : TradeKind.BotTaken;   // (a bot's capital added or taken out)
+                                }
+                                s.Trades.Add(trade);
                             }
                         }
                         break;
