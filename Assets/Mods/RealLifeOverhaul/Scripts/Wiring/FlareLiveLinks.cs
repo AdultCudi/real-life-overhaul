@@ -197,7 +197,8 @@ namespace RealLifeOverhaul
                         return false;
                     }
                     int day = SaveGameManager.Current.Day;
-                    SiteState made = works.StartAt(kind == FlareReport.Lamp ? SiteKind.Utility : SiteKind.Roadworks, place, day, false, kind == FlareReport.Lamp ? LampHours : RoadHours);
+                    bool utility = kind == FlareReport.Lamp || kind == FlareReport.Unsafe;   // (a real unsafe place, of the city's faults, is made safe by a utility crew)
+                    SiteState made = works.StartAt(utility ? SiteKind.Utility : SiteKind.Roadworks, place, day, false, utility ? LampHours : RoadHours);
                     if (made == null)
                     {
                         return false;

@@ -114,6 +114,7 @@ namespace RealLifeOverhaul
             Step("the social media app's living network", FlareLiveLinks.Connect);   // after its own: its part of the paper follows the others'
             Step("the camera and the gallery", PhotosLinks.Connect);   // after Flare's: Flare's selfie button it wraps is theirs already
             Step("interiors and decor", InteriorLinks.Connect);   // after Flare's: its part of footfall goes on top of the others'
+            Step("the city's faults", FaultLinks.Connect);   // after Flare's and the interiors': its part of footfall goes on top of theirs
             Step("permadeath", PermadeathLinks.Connect);
             Step("the district view", DistrictLinks.Connect);
             Step("empty shops as offices", OfficeLinks.Connect);
@@ -138,6 +139,7 @@ namespace RealLifeOverhaul
             Step("the district view", DistrictLinks.Disconnect);
             Step("empty shops as offices", OfficeLinks.Disconnect);
             Step("permadeath", PermadeathLinks.Disconnect);
+            Step("the city's faults", FaultLinks.Disconnect);   // before Flare's: what it wrapped of footfall is put back first
             Step("interiors and decor", InteriorLinks.Disconnect);   // before the social media app's: what it wrapped is put back first
             Step("the camera and the gallery", PhotosLinks.Disconnect);   // before Flare's: the selfie button it wrapped is put back first
             Step("the social media app's living network", FlareLiveLinks.Disconnect);   // what it wrapped of the paper is put back first

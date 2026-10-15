@@ -262,6 +262,8 @@ namespace RealLifeOverhaul.Meta
                 S("crime").For("crime").Main("street_crime").Opts("crime_frequency").FreeOpts("crime_against_player").Also("robbery mugging thief theft burglar scam pickpocket"),
                 S("courts").For("justice").Main("justice").Opts("justice_lawyers", "justice_courthouse", "justice_no_prison", "justice_prison_cap", "justice_community",
                     "justice_civil", "justice_aftermath").Opt("justice_phone", "phone_contacts").Also("trial judge lawyer prison jail sentence bail"),
+                S("faults").For("faults").Main("city_faults").Opts("city_faults_count", "city_faults_false_cost")
+                    .Also("street light lamp lamps dark pothole potholes road litter rubbish manhole unsafe broken fault faults report reports crew"),
                 S("council").For("civic").Main("civic").Opts("civic_elections").Opt("civic_office", "civic_elections").Opts("civic_construction")
                     .Also("election vote mayor politics roadworks city hall candidate campaign councillor stand office"),
                 S("sounds").Guide("leisure").Need("leisure").Main("ambient_sound").Opts("ambient_birds", "ambient_night", "ambient_city", "ambient_crowd").Also("audio volume noise")),

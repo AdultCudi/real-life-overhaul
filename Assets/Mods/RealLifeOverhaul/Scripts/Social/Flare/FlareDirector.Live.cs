@@ -195,6 +195,7 @@ namespace RealLifeOverhaul.Flare
             f.Candidates.Clear();
             f.Busy = FlareRules.Clamp(Settings.FlareBusy, 0, 2);
             f.Following = Following;
+            f.RealFaults = FaultsReal;
             FlareGame.Districts(f.Districts);
             f.Mine.Clear();
             _myPlaces.Clear();
@@ -345,6 +346,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     c.State = FlareCaseState.Done;
                     Logger?.Info("Flare: the City Office's works for case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ") are done.");
+                    FlareBridges.FaultDone?.Invoke(c.Id);   // (a real fault the works were for is mended: Scripts/Faults)
                     Shared_CaseChanged(c);
                 }
             }
@@ -390,6 +392,10 @@ namespace RealLifeOverhaul.Flare
             var kind = (FlareReport)FlareRules.Clamp(p.Arg, 0, (int)FlareReport.Utilities);
             FlareCase c = FlareLiveRules.File(_file.Net, kind, p.District, p.Place, p.Name, x, z, Now, reporter, p.Id, FlareLiveRules.CitySeed(_file), out again);
             p.Case = c.Id;
+            if (again && c.State == FlareCaseState.Open && FaultsReal)
+            {
+                c.ReplyAt = FlareLiveRules.Sooner(c.ReplyAt, Now);   // the same real fault reported again: the City Office answers sooner
+            }
             if (again)
             {
                 FlareLiveRules.Complained(_file.Net, kind, p.District, Save.Day, c.State == FlareCaseState.Acting);
@@ -402,9 +408,23 @@ namespace RealLifeOverhaul.Flare
         // A case's answer is due: what the City Office does, its answer in character, the tally, the mood about the city's running.
         private void Answer(FlareCase c, int day)
         {
-            bool siteNear = c.Kind == FlareReport.Unsafe && FlareBridges.SiteNear != null && (c.X != 0f || c.Z != 0f) && FlareBridges.SiteNear(c.X, c.Z, 120f);
+            // The city's real faults judge the report first (Scripts/Faults): nothing there is answered so; a real fault sends the crew to where it is.
+            float fx = c.X, fz = c.Z;
+            int verdict = Settings.FlareCityOffice && FlareBridges.FaultCheck != null ? FlareBridges.FaultCheck(c.Kind, c.District, c.X, c.Z, c.Reporter, c.Id, c.Place, out fx, out fz) : -1;
+            if (verdict >= (int)FaultAnswer.Nothing && verdict <= (int)FaultAnswer.Barred)
+            {
+                NothingFound(c, day, (FaultAnswer)verdict);
+                return;
+            }
+            bool real = verdict == (int)FaultAnswer.True;
+            if (real)
+            {
+                c.X = fx;
+                c.Z = fz;
+            }
+            bool siteNear = !real && c.Kind == FlareReport.Unsafe && FlareBridges.SiteNear != null && (c.X != 0f || c.Z != 0f) && FlareBridges.SiteNear(c.X, c.Z, 120f);
             FlareAnswer answer;
-            FlareOrder order = FlareLiveRules.Decide(_file.Net, c, c.ReplyAt, Settings.FlareCityOffice, siteNear, out answer);
+            FlareOrder order = FlareLiveRules.Decide(_file.Net, c, c.ReplyAt, Settings.FlareCityOffice, siteNear, real, out answer);
             int site = -1, days = 0;
             string address = null;
             if (order == FlareOrder.Works)
@@ -420,9 +440,18 @@ namespace RealLifeOverhaul.Flare
                 FlareBridges.SiteReported?.Invoke(c.X, c.Z);
             }
             FlareLiveRules.Act(_file.Net, c, order, day, site);
-            if (order == FlareOrder.Inspection)
+            if (order == FlareOrder.Inspection && verdict == (int)FaultAnswer.Clean)
+            {
+                c.State = FlareCaseState.Done;   // the inspector found the business clean: nothing against it (and nothing for its owner's game to apply)
+                answer = FlareAnswer.Clean;
+            }
+            else if (order == FlareOrder.Inspection)
             {
                 Inspected(c, day);
+            }
+            if (real && (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup))
+            {
+                FlareBridges.FaultActed?.Invoke(c.Id, order == FlareOrder.Works);
             }
             bool acted = order != FlareOrder.Queued && order != FlareOrder.Answered;
             FlareLiveRules.Complained(_file.Net, c.Kind, c.District, day, acted);
@@ -442,6 +471,77 @@ namespace RealLifeOverhaul.Flare
             }
             Escalation(c, day);
             Shared_CaseChanged(c);
+        }
+
+        /// <summary>True while the city's faults are real (Scripts/Faults): reports are checked against them, and the city's people report those.</summary>
+        private static bool FaultsReal => FlareBridges.FaultsReal != null && FlareBridges.FaultsReal();
+
+        // A report the faults found nothing in: answered so, nothing ignored (no complaint for the tally, no mood), and a player's own costs a little reputation by the option.
+        private void NothingFound(FlareCase c, int day, FaultAnswer verdict)
+        {
+            FlareAnswer answer = verdict == FaultAnswer.Barred ? FlareAnswer.Barred : verdict == FaultAnswer.Warned ? FlareAnswer.Warned : FlareAnswer.Nothing;
+            FlareLiveRules.Act(_file.Net, c, FlareOrder.Answered, day, -1);
+            bool mine = c.Reporter == "me";
+            int was = _file.Reputation;
+            if (mine && verdict != FaultAnswer.Barred && Settings.CityFaultsFalseCost)
+            {
+                _file.Reputation = FlareLiveRules.FalseReport(_file.Reputation);
+            }
+            FlarePost reply = AnswerPost(c, answer, null, 0);
+            Logger?.Info("Flare: the City Office looked into case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ", reported by " + c.Reporter + ") and found nothing: "
+                         + answer + (mine && _file.Reputation != was ? "; the player's reputation on Flare " + was + " to " + _file.Reputation : string.Empty) + ".");
+            if (mine && reply != null && Settings.SocialMediaNotices && CaseNote(day))
+            {
+                int id = reply.Id;
+                Tell(answer == FlareAnswer.Nothing ? NotificationType.Info : NotificationType.Warning,
+                    answer == FlareAnswer.Barred ? "reallife_flare_note_barred" : answer == FlareAnswer.Warned ? "reallife_flare_note_warned" : "reallife_flare_note_nothing", () => OpenPost(id));
+            }
+            Shared_CaseChanged(c);
+        }
+
+        /// <summary>
+        /// One of the city's people reports a real fault of the city's (Scripts/Faults, on the city's runner only): a post
+        /// of theirs naming where it is, and a case of the City Office's like any other report. False when Flare cannot
+        /// take it (not running, a guest, no district).
+        /// </summary>
+        public bool CityReport(FlareReport kind, string district, string address, float x, float z)
+        {
+            if (!Running || Following || Save == null || district == null)
+            {
+                return false;
+            }
+            EnsureCitizens(_file);
+            if (_citizens.Count == 0)
+            {
+                return false;
+            }
+            int start = FlareRules.Roll(_file.Seed, _file.NextId, 880) % _citizens.Count;
+            FlareCitizen who = _citizens[start];
+            for (int i = 0; i < _citizens.Count; i++)
+            {
+                FlareCitizen c = _citizens[(start + i) % _citizens.Count];
+                if (string.Equals(c.District, district, StringComparison.Ordinal))
+                {
+                    who = c;   // somebody who lives there, if anybody does
+                    break;
+                }
+            }
+            int id = _file.NextId++;
+            int reach = 60 + FlareRules.Roll(_file.Seed, id, 531) * 3;
+            var p = new FlarePost
+            {
+                Id = id, Author = FlareAuthor.Citizen, Who = who.Index, Source = FlareSource.Report, Arg = (int)kind, District = district, Name = string.IsNullOrEmpty(address) ? null : address,
+                Topic = FlareLiveRules.ReportTag(kind), Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29), Reach = reach,
+                Likes = reach / 8 + FlareRules.Roll(_file.Seed, id, 533) % 12, Replies = FlareRules.Roll(_file.Seed, id, 534) % 6
+            };
+            FlareLiveRules.SetAt(p, Now);
+            _file.Posts.Add(p);
+            FileCase(p, "c" + who.Index, x, z);
+            FlareRules.Prune(_file);
+            Shared_Changed(p);
+            Recount();
+            Changed();
+            return true;
         }
 
         private bool CaseNote(int day)
@@ -528,6 +628,10 @@ namespace RealLifeOverhaul.Flare
             if (order == FlareOrder.Inspection)
             {
                 Inspected(c, day);
+            }
+            if (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup)
+            {
+                FlareBridges.FaultActed?.Invoke(c.Id, order == FlareOrder.Works);   // (a case the faults found true: its fault is taken; any other is passed over)
             }
             FlareLiveRules.Answered(_file.Net, c.Kind, c.District);
             AnswerPost(c, FlareAnswer.Pressure, address, days);

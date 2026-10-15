@@ -16,6 +16,9 @@ namespace RealLifeOverhaul
         public const string MapPlacesShownId = "map_places_shown";
         public const string SpecialNamesId = "special_names";
         public const string DistrictViewId = "district_view";
+        public const string CityFaultsId = "city_faults";
+        public const string CityFaultsCountId = "city_faults_count";
+        public const string CityFaultsFalseCostId = "city_faults_false_cost";
         public const string PhoneCameraId = "phone_camera";
         public const string PhoneCameraGridId = "phone_camera_grid";
         public const string MouseLookId = "camera_mouselook";
@@ -281,6 +284,9 @@ namespace RealLifeOverhaul
         public static int CameraPitch = 18;      // degrees above the horizon
         public static int CameraDistance = 6;    // metres behind the player
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
+        public static bool CityFaults = true;       // real faults in the city, rolled at random as the game runs: dark lamps, potholes, litter, crime hot spots, unsafe places; Flare's reports are checked against them (Scripts/Faults)
+        public static int CityFaultsCount = 1;      // ...how many at once: 0 a few, 1 some, 2 many (Faults/FaultRules.Most)
+        public static bool CityFaultsFalseCost = true;   // ...a report of nothing costs a little Flare reputation, and many stop the crews for a few days
         public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool PhoneCamera = true;      // the Camera and Gallery apps on the phone: rear camera and selfie, photos kept per save (Scripts/Photos)
         public static bool PhoneCameraGrid = true;  // ...the viewfinder opens with the rule of thirds' grid showing
@@ -584,6 +590,9 @@ namespace RealLifeOverhaul
             MapPlacesShown = Bool(modId, MapPlacesShownId, MapPlacesShown);
             SpecialNames = Bool(modId, SpecialNamesId, SpecialNames);
             DistrictView = Bool(modId, DistrictViewId, DistrictView);
+            CityFaults = Bool(modId, CityFaultsId, CityFaults);
+            CityFaultsCount = Int(modId, CityFaultsCountId, CityFaultsCount);
+            CityFaultsFalseCost = Bool(modId, CityFaultsFalseCostId, CityFaultsFalseCost);
             PhoneCamera = Bool(modId, PhoneCameraId, PhoneCamera);
             PhoneCameraGrid = Bool(modId, PhoneCameraGridId, PhoneCameraGrid);
             MouseLook = Bool(modId, MouseLookId, MouseLook);

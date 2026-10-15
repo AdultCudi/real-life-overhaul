@@ -67,6 +67,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart SaveCheck = ContractBook.Part("save_check", "savetools", "the save tools' test of whether the game may save here");
         public static readonly GamePart BenchSitters = ContractBook.Part("bench_sitters", "citylife", "people sitting on the game's benches");
         public static readonly GamePart StreetLamps = ContractBook.Part("street_lamps", "performance", "the savings on street lamps");
+        public static readonly GamePart LampsOut = ContractBook.Part("street_lamps_out", "faults", "street lights gone dark among the city's faults");
         public static readonly GamePart FarDistricts = ContractBook.Part("far_districts", "performance", "the far districts trial of the performance benchmark");
         public static readonly GamePart UiProbe = ContractBook.Part("ui_probe", "diagnostics", "the interface part of the performance probe");
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
@@ -201,6 +202,15 @@ namespace RealLifeOverhaul
         public static readonly GameMember LampGlow = Field(StreetLamps, Game, "StreetLamp", "volumetricLightObject", "GameObject");
         public static readonly GameMember LampIsOn = Field(StreetLamps, Game, "StreetLamp", "_isOn", "Boolean");
         public static readonly GameMember CullList = Field(StreetLamps, Game, "Culling.CullingGroupController", "_cullables", "List<ICullable>");   // (the lamps read from the game's culling list, 0.11.4)
+
+        // Faults/FaultWorld: a street lamp gone dark is kept dark by giving the lamp empty lists of lights to switch, and put back after
+        public static readonly GameMember LampOutLights = Field(LampsOut, Game, "StreetLamp", "lights", "Light[]");
+        public static readonly GameMember LampOutData = Field(LampsOut, Game, "StreetLamp", "additionalLightDatas", "HDAdditionalLightData[]");
+        public static readonly GameMember LampOutGlow = Field(LampsOut, Game, "StreetLamp", "volumetricLightObject", "GameObject");
+        public static readonly GameMember LampOutIsOn = Field(LampsOut, Game, "StreetLamp", "_isOn", "Boolean");
+        public static readonly GameMember LampOutHead = Field(LampsOut, Game, "StreetLamp", "parentMeshRenderer", "MeshRenderer");
+        public static readonly GameMember LampOutHeads = Field(LampsOut, Game, "StreetLamp", "childMeshRenderers", "MeshRenderer[]");
+        public static readonly GameMember LampOutEmission = Field(LampsOut, Game, "StreetLamp", "emissionMaterialIndex", "Int32");
 
         // Performance/PerfProbe (Unity's interface)
         public static readonly GameMember LayoutQueue = Field(UiProbe, UnityUi, "UnityEngine.UI.CanvasUpdateRegistry", "m_LayoutRebuildQueue", null);

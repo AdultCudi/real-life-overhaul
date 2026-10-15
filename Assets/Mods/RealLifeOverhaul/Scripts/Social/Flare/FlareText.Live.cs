@@ -37,6 +37,12 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_report_post_4", "reallife_flare_report_post_5", "reallife_flare_report_post_6", "reallife_flare_report_post_7"
         };
 
+        // One of the city's people reporting a real fault of the city's (Scripts/Faults): where it is, by the nearest address.
+        private static readonly string[] RealReportPostKeys =
+        {
+            "reallife_flare_report_real_0", "reallife_flare_report_real_1", "reallife_flare_report_real_2", "reallife_flare_report_real_3", "reallife_flare_report_real_4"
+        };
+
         /// <summary>A report's kind in a word or two, for its chip.</summary>
         public static readonly string[] ReportKeys =
         {
@@ -127,7 +133,7 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_answer_0", "reallife_flare_answer_1", "reallife_flare_answer_2", "reallife_flare_answer_3", "reallife_flare_answer_4",
             "reallife_flare_answer_5", "reallife_flare_answer_6", "reallife_flare_answer_7", "reallife_flare_answer_8", "reallife_flare_answer_9",
             "reallife_flare_answer_10", "reallife_flare_answer_11", "reallife_flare_answer_12", "reallife_flare_answer_13", "reallife_flare_answer_14",
-            "reallife_flare_answer_15"
+            "reallife_flare_answer_15", "reallife_flare_answer_16", "reallife_flare_answer_17", "reallife_flare_answer_18", "reallife_flare_answer_19"
         };
 
         private static readonly string[] InviteKeys = { "reallife_flare_invite_0", "reallife_flare_invite_1" };
@@ -228,7 +234,9 @@ namespace RealLifeOverhaul.Flare
                     string[] talk = TalkKeys[FlareRules.Clamp(p.Arg / 10, 0, TalkKeys.Length - 1)];
                     return Fill(talk[FlareRules.Clamp(p.Arg % 10, 0, talk.Length - 1)], "district", district, "name", Named(p.Name), "event", Named(p.Name));
                 case FlareSource.Report:
-                    return Fill(Of(ReportPostKeys, p.Arg), "district", district, "name", p.Name ?? district);
+                    return p.Author == FlareAuthor.Citizen && p.Name != null && p.Arg >= 0 && p.Arg < RealReportPostKeys.Length
+                        ? Fill(RealReportPostKeys[p.Arg], "district", district, "name", p.Name)
+                        : Fill(Of(ReportPostKeys, p.Arg), "district", district, "name", p.Name ?? district);
                 case FlareSource.Review:
                     return Fill(Of(ReviewKeys, p.Arg - 1), "name", p.Name);
                 case FlareSource.Announce:
