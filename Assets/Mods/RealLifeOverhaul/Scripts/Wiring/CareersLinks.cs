@@ -65,6 +65,9 @@ namespace RealLifeOverhaul
 
             internal static void Connect()
             {
+                // The university's permanent building is held for it from the start, before any feature chooses one (the
+                // police stations, the tech towers, the offices for rent, City Utilities, the courthouse), while its part is on.
+                SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber, () => CareersDirector.UniversityOpen);
                 CareersBridges.HomeInternet = HomeInternet;
                 CareersBridges.OthersPicked = OthersPicked;
                 CareersBridges.Headquarters = (string name, out string street, out int number) =>
@@ -110,6 +113,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                SpecialBuildings.Unreserve(CampusRules.BookId);
                 CareersBridges.Reset();
                 FitOut.FitDesks.Wanted = null;
                 FitOut.FitDesks.Made = null;

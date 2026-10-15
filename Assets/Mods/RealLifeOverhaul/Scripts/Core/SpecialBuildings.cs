@@ -72,11 +72,52 @@ namespace RealLifeOverhaul
             if (!done)
             {
                 SpecialEntry there = Book.At(street, number);
+                string reserved = Book.ReservedFor(street, number);
                 Logger?.Info("Special buildings: '" + id + "' at " + street + " " + number + " keeps the game's name ("
-                             + (!SpecialNameBook.Accepts(kind) ? kind + " keeps its own name" : there != null ? "the building is already '" + there.Id + "'" : "nothing to name it by") + ").");
+                             + (!SpecialNameBook.Accepts(kind) ? kind + " keeps its own name" : there != null ? "the building is already '" + there.Id + "'"
+                                 : reserved != null ? "the building is reserved for '" + reserved + "'" : "nothing to name it by") + ").");
             }
             SpecialNames.Changed();
             return done;
+        }
+
+        /// <summary>
+        /// Reserves one fixed address for a feature's id, before any feature chooses a building (the university's permanent
+        /// building, from Wiring/CareersLinks at start): while <paramref name="on"/> says yes every feature that chooses
+        /// passes it over and no other id is put in the book there, whether or not the feature has moved in yet. It
+        /// outlives the city's unloading; nothing of it is saved. False if another id reserves the address.
+        /// </summary>
+        public static bool Reserve(string id, string street, int number, Func<bool> on)
+        {
+            bool done = Book.Reserve(id, street, number, on);
+            if (!done)
+            {
+                Logger?.Warn("Special buildings: '" + id + "' could not reserve " + street + " " + number + " (another feature reserves it).");
+            }
+            SpecialNames.Changed();
+            return done;
+        }
+
+        /// <summary>Lets go of the id's reservation.</summary>
+        public static void Unreserve(string id)
+        {
+            if (Book.Unreserve(id))
+            {
+                SpecialNames.Changed();
+            }
+        }
+
+        /// <summary>The id the building at an address is reserved for while that feature is on; null for none.</summary>
+        public static string ReservedFor(string street, int number)
+        {
+            return Book.ReservedFor(street, number);
+        }
+
+        /// <summary>The id of the feature put in the book at a building, leaving reservations aside; null for none.</summary>
+        public static string FiledAt(CityBuildingController building)
+        {
+            Address address = building != null && building.building != null ? building.building.Address : null;
+            return address != null ? Book.FiledId(address.streetName, address.streetNumber) : null;
         }
 
         /// <summary>
@@ -213,6 +254,23 @@ namespace RealLifeOverhaul
         public static bool Holds(string street, int number)
         {
             return Book.Holds(street, number);
+        }
+
+        /// <summary>
+        /// True if a feature is in the building at an address now (put in the book), leaving reservations aside: for
+        /// a question about what the mod has made of a building (a floor it fits out, a door it uses), never about
+        /// what a feature may choose. A building only reserved (the player's two offices, the university's or City
+        /// Utilities' fixed address before it has moved in) is the game's as it stands, its businesses and jobs included.
+        /// </summary>
+        public static bool Filed(string street, int number)
+        {
+            return Book.FiledId(street, number) != null;
+        }
+
+        /// <summary>The same for a building in the street.</summary>
+        public static bool Filed(CityBuildingController building)
+        {
+            return FiledAt(building) != null;
         }
 
         /// <summary>True if a feature holds this building.</summary>

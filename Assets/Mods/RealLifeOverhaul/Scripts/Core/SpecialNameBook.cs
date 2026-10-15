@@ -48,11 +48,26 @@ namespace RealLifeOverhaul
     ///
     /// A name is looked up in the language of the moment the first time it is asked for and kept until the language
     /// changes (<see cref="Forget"/>). No Unity or game types: checked offline (EconomyCheck, SpecialNameChecks.cs).
+    ///
+    /// A feature whose building is one fixed address in every city (the university's permanent building) also reserves
+    /// it (<see cref="Reserve"/>), before any feature chooses: while its feature is on, the address is held for it
+    /// (<see cref="Holds"/>, <see cref="HolderOf"/>) whether or not the feature has moved in yet, so no other feature
+    /// chooses it or is put in the book there. A reservation is a fixed address, not a choice from the city, so it
+    /// outlives <see cref="Clear"/>; nothing of it is saved.
     /// </summary>
     public sealed class SpecialNameBook
     {
         private readonly Dictionary<string, SpecialEntry> _byId = new Dictionary<string, SpecialEntry>(StringComparer.Ordinal);
         private readonly Dictionary<string, SpecialEntry> _byAddress = new Dictionary<string, SpecialEntry>(StringComparer.Ordinal);
+        private readonly Dictionary<string, Reservation> _reserved = new Dictionary<string, Reservation>(StringComparer.Ordinal);   // by address key
+
+        private sealed class Reservation
+        {
+            public string Id;
+            public string Street;
+            public int Number;
+            public Func<bool> On;   // the feature's own option; null for always
+        }
 
         /// <summary>Buildings in the book.</summary>
         public int Count => _byId.Count;
@@ -85,7 +100,9 @@ namespace RealLifeOverhaul
             }
             Remove(id);   // (whatever the id held goes, even if the new building is refused: it is not that one any more)
             string key = Key(street, number);
-            if (string.IsNullOrEmpty(street) || string.IsNullOrEmpty(nameKey) || !Accepts(kind) || _byAddress.ContainsKey(key))
+            string reserved = ReservedFor(street, number);
+            if (string.IsNullOrEmpty(street) || string.IsNullOrEmpty(nameKey) || !Accepts(kind) || _byAddress.ContainsKey(key)
+                || (reserved != null && !string.Equals(reserved, id, StringComparison.Ordinal)))
             {
                 return false;
             }
@@ -141,10 +158,100 @@ namespace RealLifeOverhaul
         /// <summary>True while an entry's feature shows it: its own option is on (an entry with none always is).</summary>
         public static bool IsShown(SpecialEntry entry) => entry != null && (entry.Shown == null || entry.Shown());
 
-        /// <summary>True if any feature holds the building at an address, whether or not its name is shown just now.</summary>
+        /// <summary>
+        /// True if any feature holds the building at an address, whether or not its name is shown just now, or reserves it
+        /// while its feature is on (<see cref="Reserve"/>).
+        /// </summary>
         public bool Holds(string street, int number)
         {
-            return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.ContainsKey(Key(street, number));
+            return (_byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.ContainsKey(Key(street, number))) || ReservedFor(street, number) != null;
+        }
+
+        /// <summary>
+        /// True if a feature's building kept in a save gives way on load: a player now rents or owns it, or another
+        /// feature holds it (an id not starting with the feature's own <paramref name="ownPrefix"/>; a reserved address
+        /// included). The feature then chooses another and says that it has moved.
+        /// </summary>
+        public static bool GivesWay(bool players, string holder, string ownPrefix)
+        {
+            return players || (holder != null && (string.IsNullOrEmpty(ownPrefix) || !holder.StartsWith(ownPrefix, StringComparison.Ordinal)));
+        }
+
+        // ---------------------------------------------------------------- reserved addresses
+
+        /// <summary>
+        /// Reserves an address for a feature's id, in place of whatever the id reserved before: while <paramref name="on"/>
+        /// says yes (null: always) no other id is put in the book there and every feature that chooses a building passes it
+        /// over (<see cref="Holds"/>, <see cref="HolderOf"/>). False for a missing id or street, or an address another id
+        /// reserves (the id then reserves nothing).
+        /// </summary>
+        public bool Reserve(string id, string street, int number, Func<bool> on = null)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return false;
+            }
+            Unreserve(id);
+            string key = Key(street, number);
+            if (string.IsNullOrEmpty(street) || _reserved.ContainsKey(key))
+            {
+                return false;
+            }
+            _reserved[key] = new Reservation { Id = id, Street = street, Number = number, On = on };
+            Stamp++;
+            return true;
+        }
+
+        /// <summary>Lets go of the id's reservation. False if it had none.</summary>
+        public bool Unreserve(string id)
+        {
+            if (string.IsNullOrEmpty(id) || _reserved.Count == 0)
+            {
+                return false;
+            }
+            string found = null;
+            foreach (KeyValuePair<string, Reservation> r in _reserved)
+            {
+                if (string.Equals(r.Value.Id, id, StringComparison.Ordinal))
+                {
+                    found = r.Key;
+                    break;
+                }
+            }
+            if (found == null)
+            {
+                return false;
+            }
+            _reserved.Remove(found);
+            Stamp++;
+            return true;
+        }
+
+        /// <summary>The id an address is reserved for while that feature is on; null for none (most addresses: one count read).</summary>
+        public string ReservedFor(string street, int number)
+        {
+            if (_reserved.Count == 0 || string.IsNullOrEmpty(street) || !_reserved.TryGetValue(Key(street, number), out Reservation r))
+            {
+                return null;
+            }
+            return r.On == null || r.On() ? r.Id : null;
+        }
+
+        /// <summary>The address an id reserves, whether or not its feature is on now. False if it reserves none.</summary>
+        public bool ReservationOf(string id, out string street, out int number)
+        {
+            foreach (Reservation r in _reserved.Values)
+            {
+                if (string.Equals(r.Id, id, StringComparison.Ordinal))
+                {
+                    street = r.Street;
+                    number = r.Number;
+                    return true;
+                }
+            }
+            street = null;
+            number = 0;
+            return false;
         }
 
         /// <summary>
@@ -181,10 +288,26 @@ namespace RealLifeOverhaul
             return best;
         }
 
-        /// <summary>The id of the feature that holds the building at an address, whether or not its name is shown just now; null for none.</summary>
+        /// <summary>
+        /// The id of the feature that holds the building at an address, whether or not its name is shown just now; null for
+        /// none. An address reserved for a feature that is on is that feature's first, whoever is in the book there (one put
+        /// there before the reservation's feature was switched on moves off at its next choice).
+        /// </summary>
         public string HolderOf(string street, int number)
         {
+            string reserved = ReservedFor(street, number);
+            if (reserved != null)
+            {
+                return reserved;
+            }
             return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.TryGetValue(Key(street, number), out SpecialEntry entry) ? entry.Id : null;
+        }
+
+        /// <summary>The id of the entry put in the book at an address, shown or not, leaving reservations aside; null for none.</summary>
+        public string FiledId(string street, int number)
+        {
+            SpecialEntry entry = Filed(street, number);
+            return entry != null ? entry.Id : null;
         }
 
         /// <summary>The entry an id holds, shown or not, or null.</summary>

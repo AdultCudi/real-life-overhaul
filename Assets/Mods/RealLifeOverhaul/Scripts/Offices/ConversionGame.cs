@@ -167,6 +167,35 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
+        /// <summary>One of the two offices kept for the player (Core/CityReserves), as the game writes its address, for the Guide.</summary>
+        public static string PlayerOffice(int i)
+        {
+            try
+            {
+                string street = CityReserves.PlayerOfficeStreets[i];
+                string name = Streets.AddressHelper.GetStreetNameLocalized(street);
+                return CityReserves.PlayerOfficeAddress(i, string.IsNullOrEmpty(name) || name == street ? null : name);
+            }
+            catch (Exception)
+            {
+                return CityReserves.PlayerOfficeAddress(i, null);   // (outside the game: the Guide's page made offline)
+            }
+        }
+
+        /// <summary>City Utilities' building (Core/CityReserves), as the game writes its address, for the Guide.</summary>
+        public static string UtilitiesAddress()
+        {
+            try
+            {
+                string name = Streets.AddressHelper.GetStreetNameLocalized(CityReserves.UtilitiesStreet);
+                return CityReserves.UtilitiesAddress(string.IsNullOrEmpty(name) || name == CityReserves.UtilitiesStreet ? null : name);
+            }
+            catch (Exception)
+            {
+                return CityReserves.UtilitiesAddress(null);   // (outside the game: the Guide's page made offline)
+            }
+        }
+
         /// <summary>A business's name and its address, as the game writes them, for the save tools' report.</summary>
         public static string Named(BuildingRegistration reg, Building b)
         {

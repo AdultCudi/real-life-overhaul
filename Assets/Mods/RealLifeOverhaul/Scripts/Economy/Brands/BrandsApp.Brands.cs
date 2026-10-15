@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
             if (picked != null)
             {
-                WriteBrand(box, state, picked);
+                WriteBrand(box, state, picked, day);
             }
             else if (district != null)
             {
@@ -79,13 +79,13 @@ namespace RealLifeOverhaul.Economy.Brands
         private static void WriteBrandCells(TableRow row, int shops, int rec, int city, int standards, CellTone tone, int worth)
         {
             row.Set(2, shops.ToString(), shops);
-            row.Set(3, BrandsText.Points(rec), rec / 100.0);
-            row.Set(4, BrandsText.Points(city), city / 100.0);
+            row.Set(3, BrandsText.Rec(rec), rec / 100.0);
+            row.Set(4, BrandsText.Rec(city), city / 100.0);
             row.Set(5, Standards(standards), standards, tone);
             row.Set(6, BrandsText.Percent(worth), worth);
         }
 
-        private void WriteBrand(InfoBox box, BrandsState state, Brand b)
+        private void WriteBrand(InfoBox box, BrandsState state, Brand b, int day)
         {
             box.Title(b.Name);
             box.Subtitle(BrandsText.Type(b.Type));
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     WriteBrandCampaigns(box, state, b, out mainKey, out main);
                     break;
                 default:
-                    WriteBrandFigures(box, state, b);
+                    WriteBrandFigures(box, state, b, day);
                     break;
             }
             var last = box.ButtonRow();
@@ -129,18 +129,26 @@ namespace RealLifeOverhaul.Economy.Brands
             InfoBox.Button(last, InfoBox.Additional, "reallife_brand_back", Back);
         }
 
-        // What the brand's two figures are, what they are made of and what moves them.
-        private void WriteBrandFigures(InfoBox box, BrandsState state, Brand b)
+        // What the brand's two figures are, what they are made of, what moves them and whether the day's step has run.
+        private void WriteBrandFigures(InfoBox box, BrandsState state, Brand b, int today)
         {
             int members = BrandRules.Members(state, b, null), franchised = BrandRules.Franchised(state, b, null);
             box.Section("reallife_brand_col_shops");
             box.RowPair("reallife_ibox_members", members.ToString(), "reallife_ibox_franchised", franchised.ToString());
             box.Row("reallife_ibox_founded", FinanceText.Day(b.Founded));
             box.Section("reallife_brand_col_recognition");
-            box.Meter("reallife_brand_col_city", b.City / 10000f, BrandsText.Points(b.City), CellTone.Plain);
-            box.Meter("reallife_ibox_best_district", BrandRules.Best(b) / 10000f, BrandsText.Points(BrandRules.Best(b)), CellTone.Plain);
-            box.Note(BrandsText.Fill("reallife_brand_fig_rec", "city", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b)), "fade", BrandsText.Bp(BrandCatalogue.DecayBp),
+            box.Meter("reallife_brand_col_city", b.City / 10000f, BrandsText.Rec(b.City), CellTone.Plain);
+            box.Meter("reallife_ibox_best_district", BrandRules.Best(b) / 10000f, BrandsText.Rec(BrandRules.Best(b)), CellTone.Plain);
+            box.Note(BrandsText.Fill("reallife_brand_fig_rec", "city", BrandsText.Rec(b.City), "best", BrandsText.Rec(BrandRules.Best(b)), "fade", BrandsText.Bp(BrandCatalogue.DecayBp),
                 "empty", BrandsText.Bp(BrandCatalogue.DecayEmptyBp)));
+            // Whether the daily step has run: a figure that stands still because Brands was off says so here.
+            int days = Math.Max(0, today - b.Founded), missed = Math.Min(days, BrandRules.Missed(b, today));
+            box.Line(BrandsText.Fill(BrandRules.StepsKey(days, days - missed), "moved", (days - missed).ToString(), "days", days.ToString(), "day", b.Founded.ToString()));
+            if (missed > 0)
+            {
+                box.Line(BrandsText.Fill(BrandRules.MissedKey(missed), "missed", missed.ToString()), CellTone.Yellow);
+            }
+            box.Note(BrandsText.Fill("reallife_brand_fig_city", "districts", BrandCatalogue.CityDistricts.ToString(), "step", BrandsText.Bp(BrandCatalogue.CityStepBp)));
             string worst = null;
             int low = 101;
             for (int i = 0; i < state.Members.Count; i++)
@@ -280,8 +288,8 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteDistrict(InfoBox box, BrandsState state, Brand b, DistrictFile d)
         {
             int shops = BrandRules.Shops(state, b, d.Name), customers = BrandRules.Customers(state, b, d.Name);
-            int campaign = !b.Pushing ? 0 : b.Push == BrandCatalogue.PushCity ? (shops > 0 ? BrandCatalogue.CampaignCityGain : 0) : d.Name == b.PushDistrict ? BrandCatalogue.CampaignLocalGain : 0;
-            int gain = BrandRules.Gain(shops, customers, b.Standards, campaign);
+            int campaign = BrandRules.GainOn(state, b, d, b.Age + 1) - BrandRules.Gain(shops, customers, b.Standards, 0);   // (what tomorrow's campaign adds, as the step will count it)
+            int gain = BrandRules.GainOn(state, b, d, b.Age + 1);
             int next = BrandRules.Step(d.Rec, gain, shops > 0);
             int effective = BrandRules.Effective(b, d.Name);
             box.Title(BrandsText.T("reallife_brand_dist_title", "brand", b.Name, "district", BrandsText.District(d.Name)));

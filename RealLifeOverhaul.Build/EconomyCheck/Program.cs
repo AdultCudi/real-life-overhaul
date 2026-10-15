@@ -108,6 +108,8 @@ internal static partial class Program
         Helpers();
         CampusRulesChecks();
         ClassDoors();
+        CampusHome();
+        CityReserveChecks();   // the two largest offices kept for the player, the courthouse at the moving company, the moves told once (CityReserveChecks.cs)   // the university's permanent building, its reservation, the older game's rule and the fallback (CampusHomeChecks.cs)
         Internet();
         Broadband();
         Empire();
@@ -152,6 +154,7 @@ internal static partial class Program
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)
+        BrandRec();     // three gyms' recognition over 20 days, tenths shown, mornings missed, a quit influencer's paid posts, paid posts counted and saved (BrandRecChecks.cs)
         Photos();       // the Camera and the Gallery: names, the cap, deleted saves, the order from a folder, the photo and its small copy to Flare, the camera's rules, the restore, the sources, the texts (PhotoChecks.cs)
         Gallery();      // the Gallery: the photo that would not open, one tap, albums, days, rows in view, before and after, favourites, texts (GalleryChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");

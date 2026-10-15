@@ -28,9 +28,6 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>A line in the Business desk's messages (Business), to read back: why a business is closed. Its key and its names.</summary>
         public static Action<string, Dictionary<string, string>> Record;
 
-        /// <summary>True for a building another feature has made its own (the courthouse), which the office is not to be.</summary>
-        public static Func<CityBuildingController, bool> Taken;
-
         /// <summary>The credit grade, fair while nothing says otherwise.</summary>
         public static int GradeNow
         {
@@ -48,7 +45,6 @@ namespace RealLifeOverhaul.Utilities
             CloseFor = null;
             Release = null;
             Record = null;
-            Taken = null;
         }
     }
 }

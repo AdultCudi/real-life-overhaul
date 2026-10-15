@@ -16,17 +16,29 @@ namespace RealLifeOverhaul
         /// The other way round, every feature that chooses an office building asks Conversions.Holds itself (one line in its
         /// own choice), so none of them takes a shop made an office. Everything is read from what those features already
         /// keep in public; nothing of theirs is changed.
+        ///
+        ///   the player's offices  the two largest office buildings a player can rent or buy (Core/CityReserves) are
+        ///                 reserved in the book of the mod's buildings from the start, before any feature chooses, so every
+        ///                 feature passes them over; they are not refused to the player. Always, whatever the options.
         /// </summary>
         public static class OfficeLinks
         {
             internal static void Connect()
             {
                 Conversions.OthersPicked = OthersPicked;
+                for (int i = 0; i < CityReserves.PlayerOfficeStreets.Length; i++)
+                {
+                    SpecialBuildings.Reserve(CityReserves.PlayerOfficeId + (i + 1), CityReserves.PlayerOfficeStreets[i], CityReserves.PlayerOfficeNumbers[i], null);
+                }
             }
 
             internal static void Disconnect()
             {
                 Conversions.OthersPicked = null;
+                for (int i = 0; i < CityReserves.PlayerOfficeStreets.Length; i++)
+                {
+                    SpecialBuildings.Unreserve(CityReserves.PlayerOfficeId + (i + 1));
+                }
             }
 
             private static bool OthersPicked()

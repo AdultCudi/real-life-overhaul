@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Utilities
     ///              A save meeting that rule for the first time gives the businesses it already has a grace period of a
     ///              week on the game's clock (InternetRules.BeginGrace); a business started after that needs one at once.
     ///
-    /// The office stands a sign at its door; the desk is the game's own list (DeskList, UtilitiesDesk). The Utilities
+    /// The office is a desk at the door of 13 7th Street (UtilitiesOffice); the desk is the game's own list (DeskList, UtilitiesDesk). The Utilities
     /// app (UtilitiesApp) shows every account, its bills and auto debit. Nothing runs per frame but a few checks: the
     /// day's books once a morning, the effects once an hour, the office and its panel once a second.
     /// </summary>

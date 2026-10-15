@@ -250,9 +250,9 @@ namespace RealLifeOverhaul
     {
         private const int Most = 3;
         private const int PerTick = 30;
-        private const float Aside = 4.3f;        // metres along the wall from the door (a help-wanted board may stand at 2.4)
+        internal const float Aside = 4.3f;       // metres along the wall from the door (a help-wanted board may stand at 2.4; the university's place at the school's door keeps clear: CampusRules.DoorReachAt)
         private const float FromWall = 0.55f;
-        private const float Reach = 1.7f;
+        internal const float Reach = 1.7f;
         private const string SchoolType = "ba:businesstype_school";
 
         private readonly Transform _parent;

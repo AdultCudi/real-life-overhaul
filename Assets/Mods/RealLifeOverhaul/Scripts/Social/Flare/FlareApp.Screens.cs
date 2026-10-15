@@ -661,6 +661,13 @@ namespace RealLifeOverhaul.Flare
             var b = new System.Text.StringBuilder(160);
             b.Append(FlareText.Pair("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind)));
             b.Append('\n').Append(FlareText.Fill("reallife_flare_hire_days", "from", h.From.ToString(), "to", h.To.ToString(), "percent", h.Percent.ToString()));
+            // Its posts: when the first comes, how many have come and when the last did, and where they are.
+            string posts = FlareCast.HirePostsKey(h, day);
+            if (posts != null)
+            {
+                b.Append('\n').Append(FlareText.Fill(posts, "day", (h.Posted > 0 ? h.LastPost : h.From).ToString(), "count", h.Posted.ToString()));
+            }
+            b.Append('\n').Append(FlareText.T("reallife_flare_hire_posts_where"));
             if (h.Ended)
             {
                 b.Append('\n').Append(FlareText.T("reallife_flare_hire_ended"));
@@ -697,20 +704,12 @@ namespace RealLifeOverhaul.Flare
                 return string.Empty;
             }
             int day = _director.CurrentDay;
-            int talk = file.BuzzAt(row.Key, day), posts = 0, last = -1, reviews = 0, stars = 0;
+            int talk = file.BuzzAt(row.Key, day), own, last, reviews = 0, stars = 0;
+            int posts = FlareCast.PostsAbout(file, row.Key, out own, out last);   // (the player's own and the paid posts of the deals there)
             for (int k = 0; k < file.Posts.Count; k++)
             {
                 FlarePost p = file.Posts[k];
-                if (p.Place != row.Key)
-                {
-                    continue;
-                }
-                if (p.Author == FlareAuthor.Player && p.Source != FlareSource.Review)
-                {
-                    posts++;
-                    last = p.Day;
-                }
-                else if (p.Source == FlareSource.Review)
+                if (p.Place == row.Key && p.Source == FlareSource.Review)
                 {
                     reviews++;
                     stars += p.Arg;
@@ -718,6 +717,10 @@ namespace RealLifeOverhaul.Flare
             }
             string text = (talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"))
                           + "\n" + FlareText.Fill("reallife_flare_shop_posts_line", "posts", posts.ToString(), "last", last >= 0 ? FlareText.Fill("reallife_flare_day", "day", last.ToString()) : FlareText.T("reallife_flare_never"));
+            if (posts > own)
+            {
+                text += "\n" + FlareText.Pair("reallife_flare_shop_paid_posts", (posts - own).ToString());   // (the posts of the influencers hired for it, which the Feed shows among the newest)
+            }
             if (reviews > 0)
             {
                 text += "\n" + FlareText.Fill("reallife_flare_shop_reviews", "count", reviews.ToString(), "stars", (stars / (float)reviews).ToString("0.0"));

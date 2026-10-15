@@ -1,4 +1,5 @@
 using BAModAPI;
+using Streets;
 
 namespace RealLifeOverhaul
 {
@@ -53,6 +54,38 @@ namespace RealLifeOverhaul
             logger.Info(offices.Line("office"));
             logger.Info(shops.Line("retail"));
             logger.Info(warehouses.Line("warehouse"));
+            KeptCheck(buildings, logger);
+        }
+
+        // The two largest office buildings a player can rent or buy are still the two the mod keeps for the player
+        // (Core/CityReserves), and none of the mod's features holds them: one line, a warning if the game's city changed.
+        private static void KeptCheck(CityBuildingController[] buildings, IModLogger logger)
+        {
+            CityReserves.TopTwo(buildings.Length,
+                i => buildings[i] != null && buildings[i].building != null && buildings[i].building.BuildingType == Office && buildings[i].building.SpecialService == null,
+                i => buildings[i].building.totalSqm, i => buildings[i].building.StreetName, i => buildings[i].building.StreetNumber, out int first, out int second);
+            bool same = first >= 0 && second >= 0
+                        && CityReserves.IsPlayerOffice(buildings[first].building.StreetName, buildings[first].building.StreetNumber)
+                        && CityReserves.IsPlayerOffice(buildings[second].building.StreetName, buildings[second].building.StreetNumber);
+            string held = null;
+            for (int k = 0; k < 2; k++)
+            {
+                int i = k == 0 ? first : second;
+                string filed = i >= 0 ? SpecialBuildings.FiledAt(buildings[i]) : null;
+                held = filed != null ? filed : held;
+            }
+            string line = "Office supply: the player's two offices check (the two largest office buildings, "
+                          + (first >= 0 ? buildings[first].building.Address.ToFormattedString() : "none") + " and " + (second >= 0 ? buildings[second].building.Address.ToFormattedString() : "none")
+                          + ", reserved for the player: no feature of the mod takes them): "
+                          + (same && held == null ? "PASS" : !same ? "FAIL (the game's city has changed: they are not the two kept)" : "FAIL (" + held + " is in one)") + ".";
+            if (same && held == null)
+            {
+                logger.Info(line);
+            }
+            else
+            {
+                logger.Warn(line);
+            }
         }
     }
 }

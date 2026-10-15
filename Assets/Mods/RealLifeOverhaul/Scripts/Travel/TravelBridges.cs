@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul
@@ -124,6 +125,12 @@ namespace RealLifeOverhaul
 
         public static bool HasLeisure => _leisure != null;
 
+        /// <summary>
+        /// True once City Utilities has chosen its building (or is off): the hotels choose theirs after it, so the two never
+        /// race for a residential building and every machine of a Going Public session has the same. Null: nothing to wait for.
+        /// </summary>
+        public static Func<bool> UtilitiesPicked;
+
         /// <summary>Called when the city unloads: whoever took a door over is gone with it.</summary>
         public static void Reset()
         {
@@ -132,6 +139,7 @@ namespace RealLifeOverhaul
             _justice = null;
             _transport = null;
             _leisure = null;
+            UtilitiesPicked = null;
         }
 
         /// <summary>

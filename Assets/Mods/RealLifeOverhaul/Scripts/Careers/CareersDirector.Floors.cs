@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Careers
     {
         private CampusInterior _interior;
         private string _campusWas;          // "street|number" the university was at, as the save had it (or the old rule's building)
+        private bool _campusKept;           // the save had the university's address: the player has had the university before
+        private string _campusTold;         // what the save was last told of where the university is (CampusRules.AwayMark); null at home
         private bool _campusRead;
 
         /// <summary>The university's floors; null while the university is not there.</summary>
@@ -117,7 +119,9 @@ namespace RealLifeOverhaul.Careers
         private string _campusNow, _campusNowStreet;   // the university's building as the save writes it, and the street it was made from...
         private int _campusNowNumber;                  // ...and the number
 
-        // The university's building against the one the save had: a move is written to the log and told once.
+        // The university's building against the one the save had: a move is written to the log and told once. And, once
+        // per save and again only when it changes, why the university is not in its permanent building and where it is
+        // meanwhile (CampusRules.AwayMark), which also says any move; a move into the permanent building is said as such.
         private void CampusMoved()
         {
             if (_campus == null || !_campus.Usable || Save == null)
@@ -135,21 +139,39 @@ namespace RealLifeOverhaul.Careers
             {
                 _campusRead = true;
                 string kept = null;
-                _campusWas = Save.modData != null && Save.modData.TryGetValue(CareersStore.CampusKey, out kept) && !string.IsNullOrEmpty(kept) ? kept : _campus.Before;
+                _campusKept = Save.modData != null && Save.modData.TryGetValue(CareersStore.CampusKey, out kept) && !string.IsNullOrEmpty(kept);
+                _campusWas = _campusKept ? kept : _campus.Before;
+                string told = null;
+                _campusTold = Save.modData != null && Save.modData.TryGetValue(CareersStore.CampusToldKey, out told) ? told : null;
             }
-            if (string.IsNullOrEmpty(_campusWas) || string.Equals(_campusWas, now, StringComparison.Ordinal))
+            string mark = CampusRules.AwayMark(_campus.Place, _campus.Street, _campus.Number, _campus.Blocked);
+            bool moved = !string.IsNullOrEmpty(_campusWas) && !string.Equals(_campusWas, now, StringComparison.Ordinal);
+            bool away = CampusRules.TellAway(mark, _campusTold);
+            if (!moved && !away)
             {
                 _campusWas = now;
+                _campusTold = mark;
                 return;
             }
-            string was = _campusWas.Replace('|', ' ');
+            string was = moved ? _campusWas.Replace('|', ' ') : null;
             _campusWas = now;
+            _campusTold = mark;
             bool enrolled = FirstUniversityCourse() >= 0 || (_study != null && _study.GraduationCourse >= 0);
-            Logger?.Info("Careers: the university has moved from " + was + " to " + _campus.Name + " (a building of its own); "
-                         + (enrolled ? "the courses under way, their classes and progress stay as they were." : "nothing of the player's was under way there."));
-            if (enrolled)
+            if (CampusRules.SaysMove(moved, _campusKept))
             {
-                Tell(NotificationType.Info, "reallife_campus_note_moved", Data("address", _campus.Name), TabStudying, null);
+                Logger?.Info("Careers: the university has moved from " + was + " to " + _campus.Name + (_campus.AtHome ? " (its permanent building)" : " (a building of its own)") + "; "
+                             + (enrolled ? "the courses under way, their classes and progress stay as they were." : "nothing of the player's was under way there."));
+            }
+            if (away)
+            {
+                // Once: why it is not at home, and where it is meanwhile (a move included).
+                string why = CareersText.T(CampusRules.AwayKey(_campus.Blocked), "home", _campus.HomeName);
+                Tell(NotificationType.Info, CampusRules.AwayNoteKey(_campus.Place), Data("why", why, "address", _campus.Name), TabStudying, null);
+            }
+            else if (moved && (enrolled || _campusKept))
+            {
+                // A move into the permanent building, or between buildings, told to a player who has had the university before.
+                Tell(NotificationType.Info, _campus.AtHome ? "reallife_campus_note_home" : "reallife_campus_note_moved", Data("address", _campus.Name), TabStudying, null);
             }
         }
 
@@ -158,6 +180,17 @@ namespace RealLifeOverhaul.Careers
             if (!string.IsNullOrEmpty(_campusWas))
             {
                 data[CareersStore.CampusKey] = _campusWas;
+            }
+            if (_campusRead)
+            {
+                if (_campusTold != null)
+                {
+                    data[CareersStore.CampusToldKey] = _campusTold;
+                }
+                else
+                {
+                    data.Remove(CareersStore.CampusToldKey);   // (at home: a later move away is told again)
+                }
             }
         }
 
