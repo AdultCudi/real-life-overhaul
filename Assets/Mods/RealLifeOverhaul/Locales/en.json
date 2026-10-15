@@ -18403,5 +18403,20 @@
   "reallife_mkt_kind_bot_added": "Capital added",
   "reallife_mkt_kind_bot_taken": "Capital taken out",
   "reallife_changes_021_1_title": "0.21.1",
-  "reallife_changes_021_1": "A running trading bot can be given more capital, or have some of its money not in shares taken out, on the Bots tab: nothing is sold, and its fee, profit share, loss limit and payouts count the new capital."
+  "reallife_changes_021_1": "A running trading bot can be given more capital, or have some of its money not in shares taken out, on the Bots tab: nothing is sold, and its fee, profit share, loss limit and payouts count the new capital.",
+  "reallife_meta_bug_button": "Report a bug",
+  "reallife_opt_caption_report": "Report",
+  "reallife_opt_sec_help": "Something wrong?",
+  "reallife_bug_title": "Report a bug",
+  "reallife_bug_placeholder": "What went wrong? You may leave this empty.",
+  "reallife_bug_make": "Make the report",
+  "reallife_bug_ask_menu": "The mod puts what a bug report needs in a zip file on your computer: the game's log, your settings and the mod's last warnings. It sends nothing. The folder and the mod's Discord then open: post the file in #bug-reports and say there what went wrong.",
+  "reallife_bug_waits": "The bug report opens when you close the menu.",
+  "reallife_bug_busy": "A bug report is being made. It takes a few seconds.",
+  "reallife_bug_done": "Your bug report is ready and its folder is open. Post the zip file in #bug-reports on the mod's Discord, which opens in your browser. A summary is copied: paste it with the file.",
+  "reallife_bug_done_folder": "Your bug report is ready and its folder is open. Post the files in it in #bug-reports on the mod's Discord, which opens in your browser. A summary is copied: paste it with them.",
+  "reallife_bug_failed": "The bug report could not be written: {error}. Post your Player.log in #bug-reports on the mod's Discord instead.",
+  "reallife_guide_trouble_report": "# Reporting a bug\n- Press 'Report a bug', under Start here on the options page or in the Mod settings app on your phone. Say in a sentence or two what went wrong, or leave it empty.\n- The mod writes a report to your computer, in the game's data folder under RealLifeOverhaul, Reports: the versions of the mod and the game, your settings, the day and time, the mod's last warnings, the game's log and a picture of the screen. Your Windows user name and Steam ids are taken out. Names, such as your Steam name, may still be in the log: look through the zip before you post it where everyone can read it. The mod sends nothing.\n- Its folder then opens with the report as a zip file, and the mod's Discord opens in your browser. Post the zip in #bug-reports and paste the summary the mod copied for you.",
+  "reallife_changes_022_0_title": "0.22.0",
+  "reallife_changes_022_0": "Report a bug from inside the game: the button under Start here on the options page, also in the Mod settings app, writes a report with your settings and the game's log to your computer, then opens its folder and the mod's Discord for you to post it. The mod sends nothing itself."
 }

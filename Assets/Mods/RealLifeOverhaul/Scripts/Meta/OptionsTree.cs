@@ -211,7 +211,8 @@ namespace RealLifeOverhaul.Meta
                 S("guide").Buttons("reallife_meta_settings_button", "reallife_meta_guide_button"),
                 S("presets").Buttons("reallife_meta_preset_button_relaxed", "reallife_meta_preset_button_standard", "reallife_meta_preset_button_realistic",
                     "reallife_meta_preset_button_hardcore").Also("difficulty easy hard realism"),
-                S("choices").Buttons("reallife_meta_reset_button", "reallife_meta_export_button", "reallife_meta_import_button").Also("settings file share defaults")).Flat(),
+                S("choices").Buttons("reallife_meta_reset_button", "reallife_meta_export_button", "reallife_meta_import_button").Also("settings file share defaults"),
+                S("help").Buttons("reallife_meta_bug_button").Also("bug report problem crash error broken discord log help")).Flat(),
 
             G("you",
                 S("needs").For("home").Main("home_life").Opts("home_needs", "home_strip", "home_easy", "home_sleep", "home_morning", "home_illness")

@@ -1,4 +1,4 @@
-0.21.1
+0.22.0
 
 New
-- A running trading bot can be given more capital, or have some of its money not in shares taken out, on the Bots tab: nothing is sold, and its fee, profit share, loss limit and payouts count the new capital.
+- Report a bug from inside the game: the button under Start here on the options page, also in the Mod settings app, writes a report with your settings and the game's log to your computer, then opens its folder and the mod's Discord for you to post it. The mod sends nothing itself.
