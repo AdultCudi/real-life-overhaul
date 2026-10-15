@@ -36,8 +36,8 @@ internal static partial class Program
 
     private static void PhotoWholeLoads()
     {
-        string gallery = Read(@"Photos\GalleryApp.cs");
-        string came = Between(gallery, "private void Came(", "// The photo as large as the right side");
+        string gallery = Read(@"Photos\GalleryApp.Viewer.cs");
+        string came = Between(gallery, "private void Came(", "// The photo (or its stand-in) as large");
         string drop = Between(gallery, "private void DropWhole()", "\n        }");
         Check(Regex.IsMatch(gallery, @"load = \+\+_wholeLoad;\s*_director\.StartCoroutine\(Guard\.Routine\(PhotosGame\.Load\([^;]*Came\(t, name, opening, load\)")
               && Regex.IsMatch(came, @"if \(load != _wholeLoad \|\|[^)]*\)\s*\{\s*PhotosGame\.Destroy\(texture\);\s*return;")

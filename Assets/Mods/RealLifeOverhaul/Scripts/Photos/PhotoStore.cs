@@ -7,9 +7,9 @@ using System.Threading;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Camera's photos on disk, done by <see cref="PhotoStoreRules"/>: a save's folder listed in the Gallery's order, a
-    /// new photo's unique name, a photo deleted with its small copy, the wallpaper's line, and the look over the photos of
-    /// deleted saves. Game-free (System.IO only): every call takes its folders as given, so the offline checks run it as it
+    /// The Camera's photos on disk, done by <see cref="PhotoStoreRules"/>: a save's folder listed newest first, a new
+    /// photo's unique name, a photo deleted with its small copy, the wallpaper's line, the favourites' file, and the look
+    /// over the photos of deleted saves. Game-free (System.IO only): every call takes its folders as given, so the offline checks run it as it
     /// is on a folder of their own (EconomyCheck, PhotoChecks.cs).
     ///
     /// Every call here runs on a worker thread (PhotosDirector hands it over), never the game's: a folder of 300 photos is
@@ -221,6 +221,58 @@ namespace RealLifeOverhaul.Photos
                 }
                 Directory.CreateDirectory(folder);
                 byte[] bytes = Encoding.UTF8.GetBytes(name);
+                return WriteWhole(file, bytes, bytes.Length);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- the favourites
+
+        /// <summary>The photos marked as favourites ("favourites.txt" beside them: GalleryRules.ReadFavourites), into a set (emptied first). None if there is no file or it cannot be read.</summary>
+        public static void Favourites(string folder, HashSet<string> into)
+        {
+            into.Clear();
+            try
+            {
+                string file = Path.Combine(folder, GalleryRules.FavouritesFile);
+                if (File.Exists(file))
+                {
+                    GalleryRules.ReadFavourites(File.ReadAllText(file), into);
+                }
+            }
+            catch (IOException)
+            {
+                into.Clear();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                into.Clear();
+            }
+        }
+
+        /// <summary>The favourites written down, whole (none: the file taken away). False if they could not be.</summary>
+        public static bool SetFavourites(string folder, ICollection<string> favourites)
+        {
+            try
+            {
+                string file = Path.Combine(folder, GalleryRules.FavouritesFile);
+                if (favourites == null || favourites.Count == 0)
+                {
+                    if (File.Exists(file))
+                    {
+                        File.Delete(file);
+                    }
+                    return true;
+                }
+                Directory.CreateDirectory(folder);
+                byte[] bytes = Encoding.UTF8.GetBytes(GalleryRules.WriteFavourites(favourites));
                 return WriteWhole(file, bytes, bytes.Length);
             }
             catch (IOException)

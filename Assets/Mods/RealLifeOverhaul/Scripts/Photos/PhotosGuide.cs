@@ -27,7 +27,6 @@ namespace RealLifeOverhaul.Photos
                 .Fact("photos_lines", () => Photos.PhotoPixels.PhotoHeight.ToString(Inv))
                 .Fact("photos_small", () => PhotoThumbs.Width.ToString(Inv))
                 .Fact("photos_zoom", () => CameraRules.ZoomMost.ToString("0", Inv))
-                .Fact("photos_page", () => PhotoStoreRules.PerPage.ToString(Inv))
                 .Cleanup(() => PhotosDirector.Instance?.StopAll());
         }
     }

@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Photos
 
     /// <summary>
     /// The rules of the Camera's photos on disk, in plain numbers and names: where a save's photos are, what a photo is
-    /// called, the Gallery's order and pages, the cap a save keeps and the oldest offered for deletion when it is full, and
+    /// called, the order photos are taken in, the cap a save keeps and the oldest offered for deletion when it is full, and
     /// what becomes of the photos of a save the player has deleted. No Unity or game type and no file is touched here, so
     /// every rule is run as it is by the offline checks (EconomyCheck, PhotoChecks.cs); PhotoStore does the files with these.
     ///
@@ -46,9 +46,6 @@ namespace RealLifeOverhaul.Photos
     {
         public const int Cap = 300;               // photos a save keeps at most: some 150 MB of 1080-line photos
         public const int OfferAtOnce = 10;        // photos offered for deletion when the Gallery is full: room for a session's shooting
-        public const int Columns = 5;             // the Gallery's grid: five across...
-        public const int Rows = 4;                // ...four down
-        public const int PerPage = Columns * Rows;
         public const int GraceDays = 30;          // real days the photos of a deleted save are kept after it is first found gone
         public const string Extension = ".jpg";
         public const string PhotoPrefix = "Photo_";
@@ -59,9 +56,6 @@ namespace RealLifeOverhaul.Photos
         public const string GoneFile = "gone.txt";
         public const string Unsaved = "unsaved";             // the folder of a save with no id (a new game not saved yet)
         public const int NameMost = 80;                      // characters of a save's folder's name at most
-
-        /// <summary>The Gallery's tabs: every photo, or the selfies alone.</summary>
-        public const int TabAll = 0, TabSelfies = 1;
 
         // ---------------------------------------------------------------- the folders
 
@@ -259,9 +253,9 @@ namespace RealLifeOverhaul.Photos
             return at;
         }
 
-        // ---------------------------------------------------------------- the order and the pages
+        // ---------------------------------------------------------------- the order
 
-        /// <summary>The Gallery's order: newest first; within one second the later number first; then by name, so that it is one order whatever the folder gave.</summary>
+        /// <summary>The order photos were taken in, newest first (the Gallery groups them by the game's day after: GalleryRules.ByDay); within one second the later number first; then by name, so that it is one order whatever the folder gave.</summary>
         public static int Newest(PhotoEntry a, PhotoEntry b)
         {
             if (a.Stamp != b.Stamp)
@@ -277,56 +271,10 @@ namespace RealLifeOverhaul.Photos
 
         private static readonly Comparison<PhotoEntry> NewestFirst = Newest;
 
-        /// <summary>Puts a list in the Gallery's order (newest first).</summary>
+        /// <summary>Puts a list in the order the photos were taken, newest first.</summary>
         public static void Order(List<PhotoEntry> photos)
         {
             photos.Sort(NewestFirst);
-        }
-
-        /// <summary>Whether a photo is on a tab: every photo on the first, the selfies alone on the second.</summary>
-        public static bool OnTab(PhotoEntry photo, int tab)
-        {
-            return tab != TabSelfies || photo.Selfie;
-        }
-
-        /// <summary>The photos of a tab, in order, into a list (emptied first).</summary>
-        public static void Of(List<PhotoEntry> ordered, int tab, List<PhotoEntry> into)
-        {
-            into.Clear();
-            for (int i = 0; i < ordered.Count; i++)
-            {
-                if (OnTab(ordered[i], tab))
-                {
-                    into.Add(ordered[i]);
-                }
-            }
-        }
-
-        /// <summary>The pages a number of photos fills: at least one (an empty Gallery has one empty page).</summary>
-        public static int Pages(int count)
-        {
-            return count <= 0 ? 1 : (count + PerPage - 1) / PerPage;
-        }
-
-        /// <summary>A page asked for, kept between the first and the last there is.</summary>
-        public static int ClampPage(int page, int count)
-        {
-            return Math.Max(0, Math.Min(page, Pages(count) - 1));
-        }
-
-        /// <summary>The first photo of a page and how many it shows.</summary>
-        public static int PageRange(int page, int count, out int shown)
-        {
-            page = ClampPage(page, count);
-            int first = page * PerPage;
-            shown = Math.Max(0, Math.Min(PerPage, count - first));
-            return first;
-        }
-
-        /// <summary>The page a photo stands on, by its place in the list.</summary>
-        public static int PageOf(int index)
-        {
-            return index <= 0 ? 0 : index / PerPage;
         }
 
         // ---------------------------------------------------------------- the cap

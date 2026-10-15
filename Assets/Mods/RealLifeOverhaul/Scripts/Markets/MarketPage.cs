@@ -76,6 +76,17 @@ namespace RealLifeOverhaul.Markets
                     rect.anchorMin = Vector2.zero;
                     rect.anchorMax = Vector2.one;
                     rect.offsetMin = rect.offsetMax = Vector2.zero;
+                    // The game keeps this background switched off (MyEmployees' prefab has it so, and nothing of the game's switches
+                    // it on), so its copy is switched off too: up to 0.27.0 the page stood on no sheet at all. Switched on here, white
+                    // as the white box whose dark lines, title and selectors the page is made of (and as the sheet made below when the
+                    // game has none), its rounded corners kept; it only draws: a click on it falls through as before.
+                    var sheet = copy.GetComponent<Image>();
+                    if (sheet != null)
+                    {
+                        sheet.color = Color.white;
+                        sheet.raycastTarget = false;
+                    }
+                    copy.SetActive(true);
                 }
                 else
                 {
