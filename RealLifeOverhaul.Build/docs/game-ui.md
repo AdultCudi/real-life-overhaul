@@ -60,7 +60,7 @@ there at every money, date, language, resolution and interface scale, the narrow
 The pages fill in order, six apps and the More apps button each, only the last shorter; every page starts where the
 game's own row starts (the row's left padding, alignment upper left), so the button, on the seventh tile, never
 moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
-`ButtonEffects` and the badge kept), a neutral tile painted by `AppIconPainter` with the game's `Icon-Arrows`
+`ButtonEffects` and the badge kept), a light grey tile painted by `AppIconPainter` with the game's `Icon-Arrows` in dark ink
 (a code-drawn double chevron if that sprite is not in memory), the name "More apps" and the page "2 / 3" under the
 picture; it stands beside the row under `Topbar`, placed on the tile by hand, so neither the layout nor other mods'
 pagers count it. It goes to the next page and from the last to the first; the wheel over the row or the button turns
@@ -74,7 +74,9 @@ diagnostics on, each opening writes one line: where the row ends against where t
 A ninth button has no room, so the home screen gets pages: the game's eight fill one page; with more, seven apps and
 the More apps button on the eighth tile (lower right) a page. A short page keeps the full page's left edge (the grid's
 alignment set to upper left with the full page's padding while there are pages, put back after). The button's badge
-(the game's own) counts the apps on pages not showing that have something new. It runs on `OnEnable`,
+(the game's own) counts the buttons on pages not showing whose own badge is up, the game's Contacts and MyEmployees
+too (it listens to `SmartphoneUI.OnUpdatedBadgeCount`). Every child the layout places is paged, other mods' buttons too
+(Going Public's Business, Chat and Hub), so none is laid out under the button. It runs on `OnEnable`,
 `OnTransformChildrenChanged`, the button, the box's change of size and the scroll event only.
 
 Other mods page this grid as well (studied, not copied: BizSuite's `PhoneAppsPager` puts a component on the grid and

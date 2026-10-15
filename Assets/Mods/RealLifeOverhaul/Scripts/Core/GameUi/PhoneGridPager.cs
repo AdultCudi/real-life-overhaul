@@ -34,8 +34,8 @@ namespace RealLifeOverhaul.GameUi
     /// pages fill in order, only the last may be shorter, and the row stands where a full page stands, so the button
     /// never moves. The wheel over the row or the button turns the page too. The page of the app that is open is the one
     /// shown when the menu opens. The rows' own alignment and padding are put back when only the game's own apps are left.
-    /// On the HUD phone the button carries the game's red badge with the number of apps on other pages that have
-    /// something new.
+    /// On the HUD phone the button carries the game's red badge with the number of buttons on other pages whose own badge
+    /// is up (the game's apps, the mod's and other mods'), counted again when the game says a badge changed.
     ///
     /// One pager per grid, shared by every app on it, for as long as the game's interface stands: an app that goes
     /// takes its buttons out of the grid and leaves the pages to page what is left (PhoneApp.Remove). What a pager
@@ -74,8 +74,9 @@ namespace RealLifeOverhaul.GameUi
         private const string MoreIconName = "AppIcon-MoreApps";
         private const float GlyphShare = 0.42f;                          // of the tile: the glyph's size on every app icon of the mod's (AppIconPainter)
         private const float LineStep = 1.25f;                            // font sizes: from the name's line to the page's, on the HUD phone's button
-        private static readonly Color32 MoreTop = new Color32(150, 160, 174, 255);     // upper left of the tile: a neutral slate, no app's colour
-        private static readonly Color32 MoreBottom = new Color32(84, 94, 110, 255);    // lower right of the tile
+        private static readonly Color32 MoreTop = new Color32(240, 242, 245, 255);     // upper left of the tile: a light grey, no app's colour (every app's tile is a strong colour)
+        private static readonly Color32 MoreBottom = new Color32(196, 201, 209, 255);  // lower right of the tile
+        private static readonly Color32 MoreInk = new Color32(54, 62, 76, 255);        // the glyph: dark on the light tile
 
         public static IModLogger Logger;
 
@@ -85,7 +86,6 @@ namespace RealLifeOverhaul.GameUi
 
         private Transform _template;
         private readonly List<Transform> _apps = new List<Transform>(24);
-        private readonly List<Transform> _attention = new List<Transform>(2);
         private readonly List<MonoBehaviour> _scripts = new List<MonoBehaviour>(4);
         private int _page;
         private bool _aside;        // someone else pages this grid
@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.GameUi
         private bool _strip;            // the full menu's row of app buttons, not the HUD phone's grid
         private RectTransform _rightData;
         private int _tiles;             // the strip's tiles on a page: the game's own row, counted once (0: not yet)
+        private int _gameApps = -1;     // the strip's buttons of the game's own apps, counted once (-1: not yet)
         private float _pagesLeft;       // the strip's place for a page, in the row's space: where the game's own row begins
         private bool _own;              // the strip holds only the game's own apps: laid out as the game lays it out
         private bool _pending;          // a pass is asked for before the frame is drawn
@@ -102,10 +103,13 @@ namespace RealLifeOverhaul.GameUi
         private RectTransform _more;    // the "More apps" button, beside the grid under its parent
         private TextLocalizationComponent _morePage;
         private global::UI.Elements.Badge _moreBadge;
+        private int _badgeShown = -1;   // the number last put on the button's badge
+        private UnityEngine.Events.UnityAction<AppName> _onBadge;   // the game's word that an app's badge changed, through the guard: made once, kept for taking off
         private int _labelPage = -1, _labelPages = -1;
         private Canvas.WillRenderCanvases _late;
         private static bool _toldByHand;
         private static readonly Vector3[] Corners = new Vector3[4];
+        private static readonly Dictionary<Type, bool> KnownScripts = new Dictionary<Type, bool>(8);   // a script on the grid: the game's, Unity's or the mod's (true), another mod's (false)
 
         public int Pages { get; private set; } = 1;
         public int Count => _apps.Count;
@@ -128,8 +132,49 @@ namespace RealLifeOverhaul.GameUi
             }
             pager._template = template;
             pager._ready = true;
+            pager.HearBadges();
             pager.Refresh();
             return pager;
+        }
+
+        // The HUD phone's button counts every badge on the pages not showing, the game's own (Contacts, MyEmployees) too:
+        // the game says when one changes. Once for the pager; taken off when it goes.
+        private void HearBadges()
+        {
+            if (_onBadge != null)
+            {
+                return;
+            }
+            _onBadge = Guard.Listener<AppName>(BadgeChanged);   // (a fault here never reaches the game's own listeners: Core/Guard)
+            try
+            {
+                ListenBadges(true);
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the game's own badges on the More apps button");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ListenBadges(bool on)
+        {
+            if (on)
+            {
+                SmartphoneUI.OnUpdatedBadgeCount.AddListener(_onBadge);
+            }
+            else
+            {
+                SmartphoneUI.OnUpdatedBadgeCount.RemoveListener(_onBadge);
+            }
+        }
+
+        private void BadgeChanged(AppName app)
+        {
+            if (this != null)
+            {
+                Paint();
+            }
         }
 
         /// <summary>
@@ -249,22 +294,12 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Marks a button as having something new: the "More apps" button's badge counts those on pages that are not showing.</summary>
+        /// <summary>
+        /// A button's badge has changed (an app of the mod's): the "More apps" button's badge counts again the buttons on
+        /// pages not showing whose badge is up. The badges themselves say what is new, whoever set them.
+        /// </summary>
         public void SetAttention(Transform button, bool on)
         {
-            bool has = _attention.Contains(button);
-            if (on == has)
-            {
-                return;
-            }
-            if (on)
-            {
-                _attention.Add(button);
-            }
-            else
-            {
-                _attention.Remove(button);
-            }
             Paint();
         }
 
@@ -355,9 +390,13 @@ namespace RealLifeOverhaul.GameUi
 
         // ---------------------------------------------------------------- which button is on which page
 
-        // The apps are the buttons of the game's kind in the grid that are showing, or that a pager of this grid has
-        // switched off for being on another page (this one or one before it: the PageMark says so). A button somebody
-        // else keeps switched off is not counted: it is theirs to show, and its PageMark tells this pager when it is.
+        // The apps are every child of the grid its layout places (all but the template and what the layout leaves out),
+        // whoever made it: the game's and the mod's buttons, and other mods' (Going Public's Business, Chat and Hub
+        // buttons are copies with the game's script taken off). Those that are showing, or that a pager of this grid has
+        // switched off for being on another page (this one or one before it: the PageMark says so). A child somebody else
+        // keeps switched off is not counted: it is theirs to show, and its PageMark tells this pager when it is. (Before,
+        // only buttons with the game's script were counted, and the layout put another mod's button on the More apps
+        // button's tile, under it.)
         private void Collect()
         {
             _apps.Clear();
@@ -377,20 +416,13 @@ namespace RealLifeOverhaul.GameUi
                 {
                     mark.Pager = this;
                 }
-                if (child.GetComponent<AppButton>() == null)
+                if (!(child is RectTransform placed) || Ignored(placed))
                 {
-                    continue;
+                    continue;   // (placed by whoever put it there, not by the layout)
                 }
                 if (child.gameObject.activeSelf || mark != null && mark.Off)
                 {
                     _apps.Add(child);
-                }
-            }
-            for (int i = _attention.Count - 1; i >= 0; i--)
-            {
-                if (_attention[i] == null || !_apps.Contains(_attention[i]))
-                {
-                    _attention.RemoveAt(i);
                 }
             }
         }
@@ -465,15 +497,20 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             RowAsBuilt built = AsBuilt(layout);
-            int own = 0;
-            for (int i = 0; i < count; i++)
+            if (_gameApps < 0)
             {
-                own += Enum.TryParse(_apps[i].name, out AppName _) ? 1 : 0;   // the game names its buttons after its apps
+                int counted = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    counted += Enum.TryParse(_apps[i].name, out AppName _) ? 1 : 0;   // the game names its buttons after its apps
+                }
+                if (counted >= PagerRules.LeastTiles)
+                {
+                    _gameApps = counted;   // once: the game's own apps are made with the menu and never come or go
+                    _tiles = PagerRules.StripTiles(counted);   // the game's own row is the room a page has, at any money, date or language
+                }
             }
-            if (_tiles == 0 && own >= PagerRules.LeastTiles)
-            {
-                _tiles = PagerRules.StripTiles(own);   // once: the game's own row is the room a page has, at any money, date or language
-            }
+            int own = _gameApps;
             if (own == count)
             {
                 _own = true;   // nothing of the mod's (or anyone's) on it: the game's row as the game laid it out
@@ -774,7 +811,8 @@ namespace RealLifeOverhaul.GameUi
                 _more.gameObject.SetActive(false);
                 return;
             }
-            _more.sizeDelta = size;
+            _more.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size.x);
+            _more.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size.y);
             _more.localScale = transform.localScale;
             _more.position = transform.TransformPoint(centre);
             int grid = transform.GetSiblingIndex(), now = _more.GetSiblingIndex();
@@ -856,11 +894,15 @@ namespace RealLifeOverhaul.GameUi
                 return false;
             }
             var rect = (RectTransform)copy.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            var row = (RectTransform)transform;
+            rect.anchorMin = row.anchorMin;   // anchored as the row or grid is: it moves with them when the bar or the phone changes size
+            rect.anchorMax = row.anchorMax;
+            rect.pivot = new Vector2(0.5f, 0.5f);
             rect.localRotation = Quaternion.identity;
             if (Tile(0, out Vector3 _, out Vector2 size))
             {
-                rect.sizeDelta = size;   // (the tile's size before the page's line is placed under its name or picture)
+                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size.x);   // (the tile's size before the page's line is placed under its name or picture)
+                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size.y);
             }
             Image picture = Picture(copy.transform);   // (through the game's own field, before its script is taken off)
             var title = copy.GetComponentInChildren<TextLocalizationComponent>(true);
@@ -895,7 +937,7 @@ namespace RealLifeOverhaul.GameUi
             rect.SetParent(parent, false);
             Destroy(dormant.gameObject);
             _more = rect;
-            _labelPage = _labelPages = -1;
+            _labelPage = _labelPages = _badgeShown = -1;
             return true;
         }
 
@@ -959,7 +1001,8 @@ namespace RealLifeOverhaul.GameUi
             };
         }
 
-        // The game's red badge on the button (the HUD phone's): how many apps on pages not showing have something new.
+        // The game's red badge on the button (the HUD phone's): how many buttons on pages not showing have their own
+        // badge up, the game's apps', the mod's and other mods' alike. Written only when the number changes.
         private void Paint()
         {
             if (_moreBadge == null || _aside)
@@ -967,14 +1010,24 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             int waiting = 0;
-            for (int a = 0; a < _attention.Count; a++)
+            if (Pages > 1)
             {
-                int index = _apps.IndexOf(_attention[a]);
-                waiting += index >= 0 && PageOf(index) != _page ? 1 : 0;
+                for (int i = 0; i < _apps.Count; i++)
+                {
+                    if (_apps[i] != null && PageOf(i) != _page && BadgeUp(_apps[i]))
+                    {
+                        waiting++;
+                    }
+                }
             }
+            if (waiting == _badgeShown)
+            {
+                return;
+            }
+            _badgeShown = waiting;
             try
             {
-                ShowBadge(_moreBadge, Pages > 1 ? waiting : 0);
+                ShowBadge(_moreBadge, waiting);
             }
             catch (Exception e) when (Guard.Missing(e))
             {
@@ -983,18 +1036,25 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        // Whether a button's own badge shows (the game's Badge switches its object on for a number over 0).
+        private static bool BadgeUp(Transform button)
+        {
+            var badge = button.GetComponentInChildren<global::UI.Elements.Badge>(true);
+            return badge != null && badge.gameObject.activeSelf;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ShowBadge(global::UI.Elements.Badge badge, int count)
         {
             badge.UpdateBadge(count);
         }
 
-        // The button's picture: an app icon of the game's manner in a neutral colour, with the game's double chevron, or
+        // The button's picture: an app icon of the game's manner on a light grey tile, with the game's double chevron in dark ink, or
         // one drawn the same way if the game's is not in memory.
         private static Sprite MoreIcon(Sprite like)
         {
             Sprite glyph = GameSprites.Get(MoreGlyph) ?? DrawnGlyph();
-            return AppIconPainter.Paint(like, glyph, MoreTop, MoreBottom, GlyphShare, MoreIconName);
+            return AppIconPainter.Paint(like, glyph, MoreTop, MoreBottom, GlyphShare, MoreIconName, MoreInk);
         }
 
         // Two white chevrons pointing on, 64 by 64 as the game's glyph: made once a session, kept.
@@ -1097,16 +1157,27 @@ namespace RealLifeOverhaul.GameUi
                 {
                     continue;
                 }
-                string assembly = script.GetType().Assembly.GetName().Name;
-                bool known = script.GetType().Assembly == typeof(SmartphoneUI).Assembly || assembly.StartsWith("Unity", StringComparison.Ordinal)
-                             || assembly.StartsWith("BigAmbitions", StringComparison.Ordinal) || assembly == "HGPlugins" || assembly == "HGExtensions"
-                             || assembly == "ExternalPlugins" || script.GetType().Assembly == typeof(PhoneGridPager).Assembly;
-                if (!known)
+                if (!Known(script.GetType()))
                 {
                     return true;
                 }
             }
             return false;
+        }
+
+        // Whether a script is the game's, Unity's or the mod's: worked out once for each kind of script (its assembly's name is made each time it is asked).
+        private static bool Known(Type type)
+        {
+            if (KnownScripts.TryGetValue(type, out bool known))
+            {
+                return known;
+            }
+            string assembly = type.Assembly.GetName().Name;
+            known = type.Assembly == typeof(SmartphoneUI).Assembly || assembly.StartsWith("Unity", StringComparison.Ordinal)
+                    || assembly.StartsWith("BigAmbitions", StringComparison.Ordinal) || assembly == "HGPlugins" || assembly == "HGExtensions"
+                    || assembly == "ExternalPlugins" || type.Assembly == typeof(PhoneGridPager).Assembly;
+            KnownScripts[type] = known;
+            return known;
         }
 
         private void StepAside()
@@ -1141,6 +1212,18 @@ namespace RealLifeOverhaul.GameUi
 
         private void OnDestroy()
         {
+            if (_onBadge != null)
+            {
+                try
+                {
+                    ListenBadges(false);   // (the game's event outlives the city: taken off on every path)
+                }
+                catch (Exception e) when (Guard.Missing(e))
+                {
+                    Guard.DoesWithout(e, "the game's own badges on the More apps button");
+                }
+                _onBadge = null;
+            }
             if (GameManager.isCitySceneBeingUnloaded)
             {
                 return;   // (the interface goes with the city)
