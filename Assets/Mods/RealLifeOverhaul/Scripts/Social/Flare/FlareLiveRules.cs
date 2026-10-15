@@ -334,6 +334,12 @@ namespace RealLifeOverhaul.Flare
         {
             int roll = FlareRules.Roll(seed, day * 67 + k, 509);
             district = c.District;
+            if (facts.RealFaults)
+            {
+                // The city's faults are real: its people report those as they see them (Scripts/Faults); here only the buses in the rain.
+                kind = FlareReport.Transit;
+                return facts.Rain && roll < 500 && district != null;
+            }
             if ((facts.News & (FlareCast.NewsCrime | FlareCast.NewsBreakIn)) != 0 && roll < 350)
             {
                 kind = FlareReport.Crime;
@@ -769,6 +775,29 @@ namespace RealLifeOverhaul.Flare
             return -1;
         }
 
+        public const int SoonerMinutes = 40;       // the city's people report the same real fault again: its answer comes so much sooner...
+        public const int SoonestMinutes = 20;      // ...but never sooner than this after now
+
+        /// <summary>An open case reported again by the city's people while the faults are real: its answer comes sooner, never sooner than a little after now.</summary>
+        public static long Sooner(long replyAt, long now)
+        {
+            return Math.Max(now + SoonestMinutes, replyAt - SoonerMinutes);
+        }
+
+        /// <summary>True for a verdict of the city's faults that found nothing (nothing, a warning, no crews for now).</summary>
+        public static bool FoundNothing(int verdict)
+        {
+            return verdict >= (int)FaultAnswer.Nothing && verdict <= (int)FaultAnswer.Barred;
+        }
+
+        public const int FalseReportCost = 2;      // points of the player's reputation on Flare a report of nothing costs (the city's faults: Scripts/Faults)
+
+        /// <summary>The player's reputation after a report of nothing: <see cref="FalseReportCost"/> less, never below 0.</summary>
+        public static int FalseReport(int reputation)
+        {
+            return FlareRules.Clamp(reputation - FalseReportCost, 0, 100);
+        }
+
         /// <summary>The cases whose answer is due by now, into the list given (oldest first).</summary>
         public static void Due(FlareNet net, long now, List<FlareCase> into)
         {
@@ -804,6 +833,15 @@ namespace RealLifeOverhaul.Flare
         /// </summary>
         public static FlareOrder Decide(FlareNet net, FlareCase c, long now, bool acts, bool siteNear, out FlareAnswer answer)
         {
+            return Decide(net, c, now, acts, siteNear, false, out answer);
+        }
+
+        /// <summary>
+        /// The same, for a report the city's faults found true (<paramref name="realFault"/>): an unsafe place that is real
+        /// gets a works crew to make it safe, as a road or a lamp does.
+        /// </summary>
+        public static FlareOrder Decide(FlareNet net, FlareCase c, long now, bool acts, bool siteNear, bool realFault, out FlareAnswer answer)
+        {
             answer = FlareAnswer.Received;
             if (!acts)
             {
@@ -819,6 +857,7 @@ namespace RealLifeOverhaul.Flare
                 case FlareReport.Crime: order = FlareOrder.Patrol; answer = FlareAnswer.Patrol; break;
                 case FlareReport.Litter: order = FlareOrder.Cleanup; answer = FlareAnswer.Cleanup; break;
                 case FlareReport.Business: order = FlareOrder.Inspection; answer = FlareAnswer.Inspect; break;
+                case FlareReport.Unsafe when realFault: order = FlareOrder.Works; answer = FlareAnswer.Works; break;
                 default:
                     order = siteNear ? FlareOrder.SiteCheck : FlareOrder.Patrol;
                     answer = siteNear ? FlareAnswer.Site : FlareAnswer.Patrol;
@@ -1042,12 +1081,16 @@ namespace RealLifeOverhaul.Flare
         /// </summary>
         public static FlareOrder EscalationOrder(FlareNet net, FlareCase c, long now, bool acts)
         {
-            if (c == null || !Escalates(c.Kind, acts) || c.State == FlareCaseState.Acting)
+            if (c == null || !Escalates(c.Kind, acts) || c.State == FlareCaseState.Acting || FoundNothing(c.Verdict))
             {
-                return FlareOrder.None;
+                return FlareOrder.None;   // (a case the city's faults found nothing in is never acted on, whatever the paper says)
+            }
+            if (c.Kind == FlareReport.Business && c.Verdict == (int)FaultAnswer.Clean)
+            {
+                return FlareOrder.None;   // a business found clean is not inspected
             }
             FlareOrder order = c.Kind == FlareReport.Crime ? FlareOrder.Patrol : c.Kind == FlareReport.Litter ? FlareOrder.Cleanup : c.Kind == FlareReport.Business ? FlareOrder.Inspection
-                : c.Kind == FlareReport.Unsafe ? FlareOrder.Patrol : FlareOrder.Works;
+                : c.Kind == FlareReport.Unsafe ? (c.Verdict == (int)FaultAnswer.True ? FlareOrder.Works : FlareOrder.Patrol) : FlareOrder.Works;   // (a real unsafe place: a works crew, as when answered)
             return CrewsUsed(net, order, now) >= CrewsPerWeek[(int)order] ? FlareOrder.None : order;
         }
 

@@ -387,7 +387,12 @@ internal static partial class Program
         FlareLiveStore.Read(back, text);
         string line = text.Split('\n').First(l => l.StartsWith("C|", StringComparison.Ordinal));
         var old = new FlareNet();
-        FlareLiveStore.Read(old, text.Replace(line, line.Substring(0, line.LastIndexOf('|'))));
+        string older = line;
+        for (int k = 0; k < 3; k++)
+        {
+            older = older.Substring(0, older.LastIndexOf('|'));   // (the case's last fields: Counted, and the city's faults' verdict and fault after it)
+        }
+        FlareLiveStore.Read(old, text.Replace(line, older));
         Check(back.Cases.Count == 1 && !back.Cases[0].Counted && old.Cases.Count == 1 && old.Cases[0].Counted,
             "Flare no limit: a case's counted mark reads back from the save; a case from an older save reads as counted");
         var host = new FlareNet();

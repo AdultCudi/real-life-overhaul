@@ -715,6 +715,13 @@ namespace RealLifeOverhaul.Flare
                 {
                     SessionEffect(p);   // (today's: on joining, the earlier days' reviews have had their days)
                 }
+                if (p.Source == FlareSource.Answer && (p.Arg == (int)FlareAnswer.Nothing || p.Arg == (int)FlareAnswer.Warned) && parent != null && parent.Author == FlareAuthor.Player
+                    && Settings.CityFaultsFalseCost)
+                {
+                    int was = _file.Reputation;
+                    _file.Reputation = FlareLiveRules.FalseReport(_file.Reputation);   // the host's City Office found nothing where this player reported: their own reputation, here
+                    Logger?.Info("Flare: the host's City Office found nothing where this player reported; their reputation on Flare " + was + " to " + _file.Reputation + ".");
+                }
             }
             return p.NetId;
         }

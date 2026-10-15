@@ -100,7 +100,21 @@ namespace RealLifeOverhaul.Flare
         Brand = 12,      // a brand answers being called on
         Tycoon = 13,     // a rival tycoon answers an announcement in its trade
         Pressure = 14,   // after the paper: the City Office acts after all
-        Site = 15        // a building site was reported: the inspector goes
+        Site = 15,       // a building site was reported: the inspector goes
+        Nothing = 16,    // the city's faults (Scripts/Faults): a report of nothing, "we looked and found nothing"
+        Warned = 17,     // ...nothing again: a warning
+        Barred = 18,     // ...too many reports of nothing: no crew for this player's reports for a few days
+        Clean = 19       // ...a business inspected and found clean: nothing against it
+    }
+
+    /// <summary>What the city's real faults (Scripts/Faults, its FaultVerdict: the same numbers) make of a report, as Flare reads it through FlareBridges.FaultCheck.</summary>
+    public enum FaultAnswer
+    {
+        True = 0,        // a real fault there: the crew goes to it
+        Nothing = 1,     // nothing there
+        Warned = 2,      // nothing again: a warning
+        Barred = 3,      // the player's reports bring no crew for now
+        Clean = 4        // a business inspected and found clean
     }
 
     /// <summary>What the City Office did about a case. Saved as a number.</summary>
@@ -204,6 +218,7 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlareBiz> Mine = new List<FlareBiz>(8);     // the player's own
         public int Busy = 1;             // the option: 0 quiet, 1 normal, 2 busy
         public bool Following;           // a guest of a session that follows the host's feed: the city's posts are the host's
+        public bool RealFaults;          // the city's faults are real (Scripts/Faults): its people report only those, through the faults themselves
     }
 
     /// <summary>A case of the City Office's: a report, its answer and what was done. Saved (FlareStore, the network's line).</summary>
@@ -227,6 +242,8 @@ namespace RealLifeOverhaul.Flare
         public int Repeats;              // others who said the same since
         public int ActedDay = -1;        // the day a crew was sent (the week's crews are counted by it); -1 for none
         public bool Counted = true;      // filed by one of its player's first three reports of the day: moves the mood, the tally and the paper (FlareLiveRules.Counted)
+        public int Verdict = -1;         // what the city's real faults made of it when it was answered (FaultAnswer's number); -1 not judged (Scripts/Faults)
+        public int Fault = -1;           // ...the fault it found and may take (a real one no other case has in hand); -1 none
     }
 
     /// <summary>

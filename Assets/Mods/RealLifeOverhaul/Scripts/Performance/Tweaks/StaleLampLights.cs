@@ -262,6 +262,7 @@ namespace RealLifeOverhaul
             _stale = false;
             _sweeping = null;
             _lamps.Clear();
+            Faults.FaultDirector.KeepDark();   // (a street lamp of the city's faults stays dark: what was put back here of it is switched off again)
         }
 
         public override string Describe() => "lamps the game has off whose lights were still enabled: " + _entries.Count + " lamps, " + _parts + " light components disabled";

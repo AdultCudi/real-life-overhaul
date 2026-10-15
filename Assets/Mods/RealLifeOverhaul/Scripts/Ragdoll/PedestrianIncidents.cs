@@ -197,6 +197,79 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- hits
 
+        private const float TripForward = 1.4f, TripUp = 0.8f;   // m/s: a trip throws a walker forward and a little up, as a stumble does
+        private static readonly List<Transform> TripRemotes = new List<Transform>(4);
+
+        // True if a walker is (or holds, or is held by) another player of a Going Public session.
+        private static bool IsRemote(Transform walker)
+        {
+            for (int i = 0; i < TripRemotes.Count; i++)
+            {
+                Transform r = TripRemotes[i];
+                if (r != null && (walker == r || walker.IsChildOf(r) || r.IsChildOf(walker)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// One of the game's pedestrians within <paramref name="within"/> metres of a point trips (an unsafe place of the
+        /// city's faults: Scripts/Faults): knocked down, back on their feet a few seconds later, never hurt worse and nobody
+        /// to blame. False if nobody walking is that near or no ragdoll can be had. A pass over the walkers on the street,
+        /// on the faults' own timer.
+        /// </summary>
+        public bool Trip(Vector3 at, float within, Vector3 forward)
+        {
+            try
+            {
+                List<Pedestrian> walkers = PerfGame.Pedestrians;
+                Pedestrian nearest = null;
+                float best = within * within;
+                TripRemotes.Clear();
+                GoingPublic.RemotePlayers(TripRemotes);   // (Going Public's players are not the game's walkers, but never throw one down even so)
+                for (int i = 0; walkers != null && i < walkers.Count; i++)
+                {
+                    Pedestrian p = walkers[i];
+                    if (p == null || p.tpc == null || IsRemote(p.tpc.transform))
+                    {
+                        continue;
+                    }
+                    Vector3 offset = p.tpc.transform.position - at;
+                    float sqr = offset.x * offset.x + offset.z * offset.z;
+                    if (sqr < best)
+                    {
+                        best = sqr;
+                        nearest = p;
+                    }
+                }
+                if (nearest == null || CanStrike(nearest.tpc) != Strike.Down)
+                {
+                    return false;
+                }
+                Casualty casualty = FreeCasualty();
+                if (casualty == null)
+                {
+                    return false;
+                }
+                HornReactions.LetGo(nearest);
+                if (!casualty.BeginPedestrian(nearest, forward * TripForward + Vector3.up * TripUp, Casualty.Outcome.Knocked, false, Time.time))
+                {
+                    return false;
+                }
+                _anyone = true;
+                _nextTick = Time.time + TickInterval;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                ClearAll();
+                return false;
+            }
+        }
+
         /// <summary>The player's car has run into one of the game's pedestrians.</summary>
         /// <param name="speed">Impact speed in m/s.</param>
         public Strike StrikePedestrian(Pedestrian pedestrian, Vector3 carVelocity, float speed, Rigidbody playerCar)

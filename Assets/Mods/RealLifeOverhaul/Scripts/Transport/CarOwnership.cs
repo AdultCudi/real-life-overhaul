@@ -355,11 +355,44 @@ namespace RealLifeOverhaul
             _body = null;
             _fuel = null;
             _record = null;
+            _wasAtSet = false;
             HideHelp("the car was left, or car ownership was switched off");
             CarDash.Hide();
         }
 
         // ---------------------------------------------------------------- at the wheel, twice a second
+
+        /// <summary>
+        /// The city's potholes (Scripts/Faults, through Wiring/FaultLinks): whether the car's path since the last tick went
+        /// over one, and if so the share of tyre life it takes and the jolt (m/s upwards), more at speed. Null: no potholes.
+        /// </summary>
+        public static RoadHitAsk RoadHit;
+
+        public delegate bool RoadHitAsk(Vector3 from, Vector3 to, float speed, out float tyreWear, out float jolt);
+
+        private const float JoltAhead = 1.3f;   // metres ahead of the car's centre the jolt lifts: the front wheels hit first
+
+        private Vector3 _wasAt;
+        private bool _wasAtSet;
+
+        // Over a pothole since the last tick: the tyres worn (not on the easy setting) and the car jolted at its front wheels.
+        private void Pothole(float speed, bool easy)
+        {
+            Vector3 here = _body != null ? _body.position : _car.transform.position;
+            if (_wasAtSet && RoadHit != null && speed > 1f && RoadHit(_wasAt, here, speed, out float wear, out float jolt))
+            {
+                if (_record != null && !easy)
+                {
+                    _record.Tyres = Mathf.Max(0f, _record.Tyres - wear);
+                }
+                if (_body != null)
+                {
+                    _body.AddForceAtPosition(Vector3.up * (jolt * _body.mass), here + _car.transform.forward * JoltAhead, ForceMode.Impulse);
+                }
+            }
+            _wasAt = here;
+            _wasAtSet = true;
+        }
 
         private void Drive(float now, GameInstance save)
         {
@@ -368,6 +401,7 @@ namespace RealLifeOverhaul
             float speed = Mathf.Sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
             float km = speed * DriveTick / 1000f;
             float damage = _car.vehicleInstance != null ? _car.vehicleInstance.damage : 0f;
+            Pothole(speed, easy);
 
             if (_record != null)
             {

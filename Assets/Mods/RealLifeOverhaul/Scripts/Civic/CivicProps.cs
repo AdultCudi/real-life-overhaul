@@ -219,6 +219,9 @@ namespace RealLifeOverhaul
             private static readonly Color Earth = new Color(0.27f, 0.20f, 0.13f);
             private static readonly Color Concrete = new Color(0.60f, 0.60f, 0.58f);
             private static readonly Color Red = new Color(0.72f, 0.12f, 0.10f);
+            private static readonly Color Broken = new Color(0.20f, 0.20f, 0.21f);   // a road's broken edge, a little lighter than the road
+            private static readonly Color Hole = new Color(0.025f, 0.025f, 0.03f);   // the wet bottom of a hole
+            private static readonly Color Paper = new Color(0.78f, 0.77f, 0.72f);
 
             private static readonly Builder B = new Builder();
 
@@ -387,6 +390,26 @@ namespace RealLifeOverhaul
                         break;
                     case "bucket":
                         B.Box(0f, 0.14f, 0f, 0.28f, 0.28f, 0.28f, White);
+                        break;
+                    // ---- the city's faults (Faults/FaultWorld)
+                    case "pothole":
+                        // 1.00 x 0.02 x 0.85: a hole in the road, its broken edge a little lighter than the road, its bottom dark and wet, loose chips round it. Pivot: road level at its middle; lies along Z.
+                        B.Box(0f, 0.004f, 0f, 0.95f, 0.008f, 0.55f, Broken);
+                        B.Box(0.05f, 0.004f, 0.02f, 0.60f, 0.008f, 0.85f, Broken);
+                        B.Box(0f, 0.007f, 0f, 0.74f, 0.008f, 0.40f, Asphalt);
+                        B.Box(0.04f, 0.007f, 0.02f, 0.44f, 0.008f, 0.66f, Asphalt);
+                        B.Box(0.02f, 0.010f, 0.01f, 0.52f, 0.006f, 0.30f, Hole);
+                        B.Box(-0.52f, 0.015f, 0.12f, 0.08f, 0.03f, 0.06f, Broken);
+                        B.Box(0.41f, 0.012f, -0.31f, 0.06f, 0.024f, 0.07f, Broken);
+                        B.Box(0.12f, 0.012f, 0.47f, 0.07f, 0.024f, 0.05f, Broken);
+                        break;
+                    case "litter_pile":
+                        // 0.43 x 0.10 x 0.41, as the bundle's model: a sheet of newspaper, a paper cup, a crushed can, a carton, a crisp packet. Pivot: ground centre.
+                        B.Box(0f, 0.004f, 0f, 0.36f, 0.008f, 0.26f, Paper);
+                        B.Box(0.12f, 0.04f, 0.10f, 0.08f, 0.08f, 0.10f, White, 90f);
+                        B.Box(-0.13f, 0.035f, -0.09f, 0.065f, 0.065f, 0.12f, Red, 90f);
+                        B.Box(-0.05f, 0.03f, 0.13f, 0.16f, 0.05f, 0.10f, Board);
+                        B.Box(0.10f, 0.012f, -0.14f, 0.12f, 0.02f, 0.09f, Yellow);
                         break;
                     default:
                         return null;

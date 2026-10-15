@@ -225,6 +225,13 @@ namespace RealLifeOverhaul
         /// <summary>The same, with where that lane point is: which side of somebody on the pavement the road lies.</summary>
         public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh, out Vector3 at)
         {
+            return NearestLane(position, out distance, out runs, out limitKmh, out at, out _);
+        }
+
+        /// <summary>The same, with the lane point itself (the city's faults slow traffic at a pothole through its limit).</summary>
+        public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh, out Vector3 at, out Waypoint point)
+        {
+            point = null;
             at = position;
             distance = float.MaxValue;
             runs = Vector3.forward;
@@ -261,6 +268,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             distance = Mathf.Sqrt(best);
+            point = nearest;
             at = nearest.position;
             int next = nearest.neighbors[0];
             if (next >= 0 && next < _lanes.Length && _lanes[next] != null)

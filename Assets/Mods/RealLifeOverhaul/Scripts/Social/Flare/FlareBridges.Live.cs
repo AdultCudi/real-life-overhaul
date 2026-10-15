@@ -65,8 +65,32 @@ namespace RealLifeOverhaul.Flare
         /// <summary>One of the player's businesses is hiring (an announcement this week): somebody may write asking for work. Default: no.</summary>
         public static Func<bool> Hiring;
 
+        /// <summary>
+        /// The city's real faults (Scripts/Faults) judge a report before the City Office acts: kind, district, where it was
+        /// made (zero for a district picked), the reporter ("me", "p:" a player, "c" one of the city's people), the case and,
+        /// for a business, its place. FaultVerdict's number (0 true, 1 nothing, 2 nothing and a warning, 3 no crew for
+        /// this player for now, 4 a clean business), or -1 to answer as without them; for a real fault, where it is.
+        /// Default: not judged.
+        /// </summary>
+        public static FaultAsk FaultCheck;
+
+        public delegate int FaultAsk(FlareReport kind, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz, out int fault);
+
+        /// <summary>A crew is sent on a case the faults judged true: the case, the fault it found (-1: one another case has in hand), works or not. Default: nothing.</summary>
+        public static Action<int, int, bool> FaultActed;
+
+        /// <summary>A case's works are handed over: its fault is mended. Default: nothing.</summary>
+        public static Action<int> FaultDone;
+
+        /// <summary>True while the city's faults are real: the city's people report only those (they post them through the faults). Default: no.</summary>
+        public static Func<bool> FaultsReal;
+
         private static void ResetLive()
         {
+            FaultCheck = null;
+            FaultActed = null;
+            FaultDone = null;
+            FaultsReal = null;
             CityFacts = null;
             Works = null;
             WorksDone = null;
