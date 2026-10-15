@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using BAModAPI;
+using Localizor.LanguageChangeEvent;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,75 +15,94 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>
     /// Pages for the HUD phone's home screen. The game's grid is two buttons wide and exactly four rows fit above the
     /// phone's lower edge (cells of 250 by 225 in a box 868 high), so its own eight apps fill it: a ninth button has
-    /// to go on a second page. The wheel over the grid turns the page, and so do the dots under it.
+    /// to go on a second page.
     ///
     /// The same pages serve the row of app buttons in the top bar of the full-screen menu (OnStrip). The game centres
     /// that row in a box beside the app's name ("AppButtons", 1400 wide on the game's canvas of 3840, a
     /// HorizontalLayoutGroup of spacing 20, upper centre) and its own seven apps run a little past both ends of the
     /// box. With the mod's apps the centred row grew both ways, under the money, the date and the time ("RightData")
-    /// and off the screen. There, the row may take the room from where the game's own apps begin to the left edge of
-    /// the money, measured each time the menu opens (the money and a language's date differ in width). The apps are
-    /// shared out evenly over as few pages as fit (21 over three pages is seven, seven and seven, never six, six, six
-    /// and three), each page centred where the widest stands, and the dots stand still after that place, level with
-    /// the apps' pictures. The page of the app that is open is the one shown when the menu opens. The row's own
-    /// alignment and padding are put back when only the game's own apps are left.
+    /// and off the screen.
+    ///
+    /// A page is a set number of tiles, the same every time (PagerRules): eight on the HUD phone, and on the full menu's
+    /// row as many as the game's own row has (seven), counted once, because the game's own apps stand there at every
+    /// money, date, language, resolution and interface scale: the narrowest room the row can ever have. (Before, the
+    /// room was measured each time the menu opened, from the game's apps to the left edge of the money, so the number
+    /// of apps on a page, the number of pages and the row's length changed with the money and the date.) When the apps
+    /// fit on one page there are no pages. Otherwise the last tile of every page is the "More apps" button: a copy of
+    /// the game's app button (its rounded tile, a neutral colour, the game's double chevron in white), its name where the
+    /// apps show theirs and the page under it ("2 / 3"); it goes to the next page, and from the last to the first. The
+    /// pages fill in order, only the last may be shorter, and the row stands where a full page stands, so the button
+    /// never moves. The wheel over the row or the button turns the page too. The page of the app that is open is the one
+    /// shown when the menu opens. The rows' own alignment and padding are put back when only the game's own apps are left.
+    /// On the HUD phone the button carries the game's red badge with the number of apps on other pages that have
+    /// something new.
     ///
     /// One pager per grid, shared by every app on it, for as long as the game's interface stands: an app that goes
     /// takes its buttons out of the grid and leaves the pages to page what is left (PhoneApp.Remove). What a pager
     /// does to the grid is written on the grid itself, so any pager that comes after carries on from it: a button
     /// switched off for being on another page carries a PageMark, the row keeps how the game built it in a
-    /// RowAsBuilt, and the dots are the one holder of that name under the grid's parent. (Before, every app's
-    /// removal destroyed the shared pager; one destroyed before the menu was first opened never put back what it
-    /// had switched off, and the next counted only what it could see: the mod's icons went missing for the session
-    /// and a second set of dots was left on the bar.)
+    /// RowAsBuilt, and the button is the one object of that name under the grid's parent (not in the grid: its layout
+    /// and other mods' pagers leave it alone). (Before, every app's removal destroyed the shared pager; one destroyed
+    /// before the menu was first opened never put back what it had switched off, and the next counted only what it could
+    /// see: the mod's icons went missing for the session and a second set of page marks was left on the bar.)
     ///
     /// Other mods page this grid too, each by switching the buttons on and off. Two doing that would undo each other,
     /// so this one steps aside for good as soon as it sees anyone else at it: a component on the grid that is neither
     /// the game's nor this mod's, or a button it had switched off that someone has shown again. Everything it hid is
-    /// shown then, and the other mod's pages are the pages.
+    /// shown then, its button is taken away, and the other mod's pages are the pages.
     ///
     /// The row's own layout places the page that shows, and the pager checks that it did: two buttons that show
     /// standing where one does (the layout switched off by another hand, or a button switched on that the layout was
     /// never told of) are placed by the pager itself, the same way the layout would, and one line in Player.log says
     /// what was on the row. (Before, the mod's apps put on after the menu was built, the bank apps among them, could
-    /// stand one on top of another at the place of the button they were copied from.)
+    /// stand one on top of another at the place of the button they were copied from.) With Developer diagnostics on,
+    /// each opening of the menu writes one line: where the row ends against where the money begins.
     ///
     /// Nothing here runs per frame: it acts when the grid is shown, when its children change, when one of them is
     /// shown or hidden by any hand (every button carries a PageMark that says so: one pass before the frame is drawn,
-    /// however many changed), when the row's box changes size, and on the wheel.
+    /// however many changed), when the row's box changes size, on the button and on the wheel. The button is made
+    /// once, when a second page is first needed.
     /// </summary>
     public sealed class PhoneGridPager : MonoBehaviour, IScrollHandler
     {
         private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneGridPager", typeof(PhoneGridPager));   // the game's calls of it (Core/Guard)
 
-        public const int PerPage = 8;
-        private const float DotSize = 14f, DotGap = 14f, DotsFromBottom = 22f;
-        private const float StripRightGap = 60f, StripDotsGap = 34f;
-        private const string DotsName = "RealLife PageDots";
+        private const string MoreName = "RealLife MoreApps";
+        private const string MoreTitleKey = "reallife_apps_more";       // "More apps", where the apps show their names
+        private const string MorePageKey = "reallife_apps_page";        // "{page} / {pages}", under the name
+        private const string MoreGlyph = "Icon-Arrows";                  // the game's double chevron, white, 64 by 64 (sharedassets1)
+        private const string MoreIconName = "AppIcon-MoreApps";
+        private const float GlyphShare = 0.42f;                          // of the tile: the glyph's size on every app icon of the mod's (AppIconPainter)
+        private const float LineStep = 1.25f;                            // font sizes: from the name's line to the page's, on the HUD phone's button
+        private static readonly Color32 MoreTop = new Color32(150, 160, 174, 255);     // upper left of the tile: a neutral slate, no app's colour
+        private static readonly Color32 MoreBottom = new Color32(84, 94, 110, 255);    // lower right of the tile
 
         public static IModLogger Logger;
 
         private static FieldInfo _pictureField;
         private static bool _pictureLooked;
+        private static Sprite _drawnGlyph;
 
         private Transform _template;
-        private Sprite _dotSprite;
-        private RectTransform _dots;
         private readonly List<Transform> _apps = new List<Transform>(24);
         private readonly List<Transform> _attention = new List<Transform>(2);
-        private readonly List<Image> _dotImages = new List<Image>(4);
         private readonly List<MonoBehaviour> _scripts = new List<MonoBehaviour>(4);
         private int _page;
         private bool _aside;        // someone else pages this grid
         private bool _working;      // our own changes must not start another pass
-        private bool _ready;        // the template and the dot's picture are known
+        private bool _ready;        // the template is known
         private float _lastTurn;
         private bool _strip;            // the full menu's row of app buttons, not the HUD phone's grid
         private RectTransform _rightData;
-        private float _pagesLeft;       // the strip's place for a page, in the row's space: where the widest page begins
-        private float _pagesWidth;      // and how wide it is
+        private int _tiles;             // the strip's tiles on a page: the game's own row, counted once (0: not yet)
+        private float _pagesLeft;       // the strip's place for a page, in the row's space: where the game's own row begins
         private bool _own;              // the strip holds only the game's own apps: laid out as the game lays it out
         private bool _pending;          // a pass is asked for before the frame is drawn
+        private bool _checkDue;         // the menu has opened: one line on where the row ends (Developer diagnostics)
+        private RectTransform _more;    // the "More apps" button, beside the grid under its parent
+        private TextLocalizationComponent _morePage;
+        private global::UI.Elements.Badge _moreBadge;
+        private int _labelPage = -1, _labelPages = -1;
         private Canvas.WillRenderCanvases _late;
         private static bool _toldByHand;
         private static readonly Vector3[] Corners = new Vector3[4];
@@ -88,6 +111,10 @@ namespace RealLifeOverhaul.GameUi
         public int Count => _apps.Count;
         public bool SteppedAside => _aside;
 
+        // Tiles on a page: the HUD phone's eight, the full menu's as many as the game's own row.
+        private int Tiles => _strip ? (_tiles > 0 ? _tiles : PagerRules.GameRowApps) : PagerRules.PhoneTiles;
+
+        /// <summary>Pages for the HUD phone's grid. (<paramref name="dot"/>: the pages had dots before they had a button; not used.)</summary>
         public static PhoneGridPager On(Transform grid, Transform template, Sprite dot)
         {
             if (grid == null)
@@ -100,13 +127,15 @@ namespace RealLifeOverhaul.GameUi
                 pager = grid.gameObject.AddComponent<PhoneGridPager>();   // its OnEnable runs here, before it knows the template: it waits
             }
             pager._template = template;
-            pager._dotSprite = dot;
             pager._ready = true;
             pager.Refresh();
             return pager;
         }
 
-        /// <summary>Pages for the full menu's row of app buttons, which must end before <paramref name="rightData"/> (the money, date and time; null: the top bar's right edge).</summary>
+        /// <summary>
+        /// Pages for the full menu's row of app buttons. <paramref name="rightData"/> (the money, date and time) is only
+        /// looked at for the line in Player.log with Developer diagnostics on; <paramref name="dot"/> is not used.
+        /// </summary>
         public static PhoneGridPager OnStrip(Transform strip, Transform template, Sprite dot, RectTransform rightData)
         {
             if (strip == null || !(strip is RectTransform) || strip.GetComponent<HorizontalLayoutGroup>() == null)
@@ -121,7 +150,6 @@ namespace RealLifeOverhaul.GameUi
             pager._strip = true;
             pager._rightData = rightData;
             pager._template = template;
-            pager._dotSprite = dot;
             pager._ready = true;
             pager.Refresh();
             return pager;
@@ -134,6 +162,7 @@ namespace RealLifeOverhaul.GameUi
 
         private void OnEnable()
         {
+            _checkDue = _strip;
             Refresh();
             if (_strip && !_aside)
             {
@@ -162,6 +191,10 @@ namespace RealLifeOverhaul.GameUi
                 _pending = false;
                 Canvas.willRenderCanvases -= _late;
             }
+            if (_more != null && _more.gameObject.activeSelf)
+            {
+                _more.gameObject.SetActive(false);   // (it stands beside the grid, not in it: it goes with it)
+            }
         }
 
         private void OnTransformChildrenChanged()
@@ -169,13 +202,10 @@ namespace RealLifeOverhaul.GameUi
             Refresh();
         }
 
-        // The row's box changed size (the screen, the interface's scale): how many fit on a page may have changed.
+        // The grid's box changed size (the screen, the interface's scale): where the page and its button stand may have changed.
         private void OnRectTransformDimensionsChange()
         {
-            if (_strip)
-            {
-                Changed();
-            }
+            Changed();
         }
 
         /// <summary>
@@ -219,7 +249,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Marks a button as having something new: the dot of a page that is not showing turns the badge's red.</summary>
+        /// <summary>Marks a button as having something new: the "More apps" button's badge counts those on pages that are not showing.</summary>
         public void SetAttention(Transform button, bool on)
         {
             bool has = _attention.Contains(button);
@@ -246,16 +276,31 @@ namespace RealLifeOverhaul.GameUi
             }
             try
             {
-                if (_aside || Pages < 2 || Time.unscaledTime - _lastTurn < 0.15f || Mathf.Abs(eventData.scrollDelta.y) < 0.01f)
-                {
-                    return;
-                }
-                _lastTurn = Time.unscaledTime;
-                Turn(_page + (eventData.scrollDelta.y < 0f ? 1 : -1));
+                Wheel(eventData);
             }
             catch (Exception fault)
             {
                 Guard.Fail(FrameGuard, fault);
+            }
+        }
+
+        // The wheel over the row or its button: one page on or back, stopping at either end.
+        internal void Wheel(PointerEventData eventData)
+        {
+            if (_aside || Pages < 2 || eventData == null || Time.unscaledTime - _lastTurn < 0.15f || Mathf.Abs(eventData.scrollDelta.y) < 0.01f)
+            {
+                return;
+            }
+            _lastTurn = Time.unscaledTime;
+            Turn(PagerRules.Wheel(_page, Pages, eventData.scrollDelta.y < 0f));
+        }
+
+        // The "More apps" button: the next page, and from the last back to the first.
+        private void NextPage()
+        {
+            if (!_aside)
+            {
+                Turn(PagerRules.Next(_page, Pages));
             }
         }
 
@@ -291,7 +336,7 @@ namespace RealLifeOverhaul.GameUi
                     }
                     else
                     {
-                        Pages = Mathf.Max(1, (_apps.Count + PerPage - 1) / PerPage);
+                        Pages = PagerRules.Pages(_apps.Count, Tiles);
                     }
                     _page = Mathf.Clamp(_page, 0, Pages - 1);
                     Apply();
@@ -350,28 +395,10 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The page a button is on. The HUD phone's grid fills its pages in turn, eight to a page (a grid of two by four
-        // reads like the game's own); the full menu's row shares its buttons out evenly, the first pages one more where
-        // they do not divide.
+        // The page a button is on: the pages fill in turn, every one but the last full (PagerRules).
         private int PageOf(int index)
         {
-            if (!_strip || Pages < 2)
-            {
-                return _strip ? 0 : index / PerPage;
-            }
-            int count = _apps.Count;
-            int small = count / Pages, extra = count % Pages, big = small + 1;
-            return index < extra * big ? index / big : extra + (index - extra * big) / Mathf.Max(1, small);
-        }
-
-        private int PageSize(int page)
-        {
-            if (!_strip)
-            {
-                return Mathf.Clamp(_apps.Count - page * PerPage, 0, PerPage);
-            }
-            int count = _apps.Count;
-            return count / Pages + (page < count % Pages ? 1 : 0);
+            return PagerRules.PageOf(index, _apps.Count, Tiles);
         }
 
         private static bool PagedOff(Transform button)
@@ -404,14 +431,22 @@ namespace RealLifeOverhaul.GameUi
             {
                 PlaceStripPage();
             }
-            Dots();
+            else
+            {
+                PlaceGridPage();
+            }
+            More();
+            if (_checkDue && _strip && Meta.Dev.Verbose && isActiveAndEnabled)
+            {
+                _checkDue = false;
+                StripCheck();
+            }
         }
 
         // ---------------------------------------------------------------- the full menu's row
 
-        // How many pages the row needs and where they stand: from where the game's own apps begin as the game lays them
-        // out to the left edge of the money, in the row's space, so the same at any screen size. A block of the widest
-        // page and the dots after it, centred in that room.
+        // How many pages the row needs and where they stand: where the game's own apps begin as the game lays them out,
+        // in the row's space, so the same at any screen size; a page as wide as the game's own row (PagerRules).
         private void StripPages()
         {
             var strip = (RectTransform)transform;
@@ -435,37 +470,21 @@ namespace RealLifeOverhaul.GameUi
             {
                 own += Enum.TryParse(_apps[i].name, out AppName _) ? 1 : 0;   // the game names its buttons after its apps
             }
+            if (_tiles == 0 && own >= PagerRules.LeastTiles)
+            {
+                _tiles = PagerRules.StripTiles(own);   // once: the game's own row is the room a page has, at any money, date or language
+            }
             if (own == count)
             {
                 _own = true;   // nothing of the mod's (or anyone's) on it: the game's row as the game laid it out
                 return;
             }
-            float spacing = layout.spacing;
-            float rectLeft = strip.rect.xMin;
             float inner = strip.rect.width - built.Left - layout.padding.right;
-            float left = rectLeft + built.Left + (inner - (Mathf.Max(1, own) * pitch - spacing)) * ((int)built.Alignment % 3) * 0.5f;
-            float right = RightLimit(strip) - StripRightGap;
-            int pages = 1;
-            if (count > Mathf.FloorToInt((right - left + spacing) / pitch))
-            {
-                // Room for the dots too; more pages make the dots wider, so until the count settles (it only grows).
-                for (pages = 2; pages < count; pages++)
-                {
-                    int most = Mathf.Max(1, Mathf.FloorToInt((right - left - StripDotsGap - DotsWidth(pages) + spacing) / pitch));
-                    if ((count + most - 1) / most <= pages)
-                    {
-                        break;
-                    }
-                }
-            }
-            Pages = pages;
-            int widest = (count + pages - 1) / pages;
-            _pagesWidth = widest * pitch - spacing;
-            float block = _pagesWidth + (pages > 1 ? StripDotsGap + DotsWidth(pages) : 0f);
-            _pagesLeft = left + Mathf.Max(0f, (right - left - block) * 0.5f);
+            _pagesLeft = strip.rect.xMin + built.Left + (inner - PagerRules.RowWidth(Tiles, pitch, layout.spacing)) * ((int)built.Alignment % 3) * 0.5f;
+            Pages = PagerRules.Pages(count, Tiles);
         }
 
-        // The page that shows, centred where the widest page stands.
+        // The page that shows, from where a full page begins: a shorter last page keeps the same left edge.
         private void PlaceStripPage()
         {
             var strip = (RectTransform)transform;
@@ -477,13 +496,12 @@ namespace RealLifeOverhaul.GameUi
             }
             if (_own || _apps.Count == 0)
             {
-                RestoreStrip();
+                RestoreRow();
                 return;
             }
             RowAsBuilt built = AsBuilt(layout);
             float pitch = Pitch(layout, cell);
-            float width = PageSize(_page) * pitch - layout.spacing;
-            float begin = _pagesLeft + Mathf.Max(0f, (_pagesWidth - width) * 0.5f);
+            float begin = _pagesLeft;
             var alignment = (TextAnchor)((int)built.Alignment / 3 * 3);   // the same row, from the left
             int padding = Mathf.RoundToInt(begin - strip.rect.xMin);
             if (layout.childAlignment != alignment || layout.padding.left != padding)
@@ -493,7 +511,7 @@ namespace RealLifeOverhaul.GameUi
             }
             if (strip.gameObject.activeInHierarchy)
             {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(strip);   // in place before anything is drawn (and before the dots look)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(strip);   // in place before anything is drawn
                 if (!layout.isActiveAndEnabled || Stacked(strip, pitch))
                 {
                     ByHand(strip, layout, begin, pitch - layout.spacing);
@@ -585,8 +603,8 @@ namespace RealLifeOverhaul.GameUi
             return ignorer != null && ignorer.ignoreLayout;
         }
 
-        // How the game built the row, kept on the row the first time it is paged, so that any pager after this one knows it.
-        private RowAsBuilt AsBuilt(HorizontalLayoutGroup layout)
+        // How the game built the row or the grid, kept on it the first time it is paged, so that any pager after this one knows it.
+        private RowAsBuilt AsBuilt(LayoutGroup layout)
         {
             var built = GetComponent<RowAsBuilt>();
             if (built == null)
@@ -605,15 +623,10 @@ namespace RealLifeOverhaul.GameUi
             return width + layout.spacing;
         }
 
-        private static float DotsWidth(int pages)
+        // The row or the grid as the game laid it out.
+        private void RestoreRow()
         {
-            return pages * DotSize + (pages - 1) * DotGap;
-        }
-
-        // The row as the game laid it out.
-        private void RestoreStrip()
-        {
-            var layout = GetComponent<HorizontalLayoutGroup>();
+            var layout = GetComponent<LayoutGroup>();
             var built = GetComponent<RowAsBuilt>();
             if (layout == null || built == null || layout.childAlignment == built.Alignment && layout.padding.left == built.Left)
             {
@@ -622,6 +635,25 @@ namespace RealLifeOverhaul.GameUi
             layout.childAlignment = built.Alignment;
             layout.padding.left = built.Left;
             LayoutRebuilder.MarkLayoutForRebuild((RectTransform)transform);
+        }
+
+        // With Developer diagnostics on, once each time the menu opens: where a full page and its button end against
+        // where the money, the date and the time begin, in the row's space.
+        private void StripCheck()
+        {
+            var strip = (RectTransform)transform;
+            var layout = GetComponent<HorizontalLayoutGroup>();
+            var cell = _template as RectTransform;
+            if (_own || Pages < 2 || layout == null || cell == null)
+            {
+                return;
+            }
+            float end = _pagesLeft + PagerRules.RowWidth(Tiles, Pitch(layout, cell), layout.spacing);
+            float money = RightLimit(strip);
+            Logger?.Info("Game UI: full menu row check (" + _apps.Count + " apps, " + Pages + " pages of " + (Tiles - 1) + " and the More apps button, as wide as the game's own "
+                         + Tiles + "): the row runs from " + _pagesLeft.ToString("0") + " to " + end.ToString("0") + ", the money and the date begin at "
+                         + (money == float.MaxValue ? "nothing found" : money.ToString("0")) + ": "
+                         + (end <= money ? "PASS" : "the money begins under the row's end, where the game's own apps end too") + ".");
         }
 
         // The left edge of what is drawn of the money, the date and the time, in the row's space; failing them, the top
@@ -669,94 +701,343 @@ namespace RealLifeOverhaul.GameUi
             return strip.InverseTransformPoint(Corners[0]).x;
         }
 
-        // ---------------------------------------------------------------- the dots
+        // ---------------------------------------------------------------- the HUD phone's grid
 
-        // The page dots: under the HUD phone's grid, on the phone's own panel (not in the grid: its layout would place
-        // them); after the full menu's pages, level with the apps' pictures. One holder of the name under that parent:
-        // one left by a pager before this one is taken away.
-        private void Dots()
+        // A page that is not full keeps the full page's left edge: the game's grid centres the columns it uses, so one
+        // app alone would stand in the middle. From the left, at the place the full page's first column begins.
+        private void PlaceGridPage()
         {
+            var grid = GetComponent<GridLayoutGroup>();
+            if (grid == null)
+            {
+                return;
+            }
             if (Pages < 2)
             {
-                if (_dots != null)
+                RestoreRow();
+                return;
+            }
+            if (grid.startCorner != GridLayoutGroup.Corner.UpperLeft || grid.startAxis != GridLayoutGroup.Axis.Horizontal)
+            {
+                return;   // not the grid the game builds: its own layout
+            }
+            RowAsBuilt built = AsBuilt(grid);
+            var alignment = (TextAnchor)((int)built.Alignment / 3 * 3);   // the same rows, from the left
+            int padding = Mathf.RoundToInt(GridLeft(grid, built));
+            if (grid.childAlignment != alignment || grid.padding.left != padding)
+            {
+                grid.childAlignment = alignment;
+                grid.padding.left = padding;
+                LayoutRebuilder.MarkLayoutForRebuild((RectTransform)transform);
+            }
+        }
+
+        // Where a full page's first column begins, from the grid's left edge, as the game's layout places it.
+        private static float GridLeft(GridLayoutGroup grid, RowAsBuilt built)
+        {
+            float width = ((RectTransform)grid.transform).rect.width;
+            int columns = Columns(grid, built);
+            float required = columns * grid.cellSize.x + (columns - 1) * grid.spacing.x;
+            return built.Left + (width - built.Left - grid.padding.right - required) * ((int)built.Alignment % 3) * 0.5f;
+        }
+
+        private static int Columns(GridLayoutGroup grid, RowAsBuilt built)
+        {
+            if (grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount)
+            {
+                return Mathf.Max(1, grid.constraintCount);
+            }
+            float width = ((RectTransform)grid.transform).rect.width - built.Left - grid.padding.right;
+            return Mathf.Max(1, PagerRules.Fit(width, grid.cellSize.x + grid.spacing.x, grid.spacing.x));
+        }
+
+        // ---------------------------------------------------------------- the "More apps" button
+
+        // The button on the last tile of the page, shown while there are pages.
+        private void More()
+        {
+            if (!PagerRules.ButtonShown(Pages) || _aside || !isActiveAndEnabled)
+            {
+                // (with the grid not showing it is placed again, or made, when the grid is: OnEnable)
+                if (_more != null && _more.gameObject.activeSelf)
                 {
-                    _dots.gameObject.SetActive(false);
+                    _more.gameObject.SetActive(false);
                 }
                 return;
             }
-            if (_dots == null)
+            if (_more == null && !MakeMore())
             {
-                Transform parent = transform.parent;
-                for (int i = parent.childCount - 1; i >= 0; i--)
-                {
-                    Transform old = parent.GetChild(i);
-                    if (old.name == DotsName)
-                    {
-                        old.gameObject.SetActive(false);
-                        old.name = DotsName + " (gone)";
-                        Destroy(old.gameObject);
-                    }
-                }
-                var holder = new GameObject(DotsName, typeof(RectTransform));
-                _dots = (RectTransform)holder.transform;
-                _dots.SetParent(parent, false);
-                _dots.anchorMin = _dots.anchorMax = new Vector2(0.5f, 0f);
-                _dots.pivot = new Vector2(0.5f, 0.5f);
-                _dots.anchoredPosition = new Vector2(0f, DotsFromBottom);
-                _dots.sizeDelta = new Vector2(200f, DotSize + 16f);
+                return;
             }
-            _dots.gameObject.SetActive(true);
-            while (_dotImages.Count < Pages)
+            if (!Tile(PagerRules.ButtonTile(Tiles), out Vector3 centre, out Vector2 size))
             {
-                int page = _dotImages.Count;
-                var dot = new GameObject("Dot", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-                dot.transform.SetParent(_dots, false);
-                var image = dot.GetComponent<Image>();
-                image.sprite = _dotSprite;
-                var button = dot.GetComponent<Button>();
-                button.transition = Selectable.Transition.None;
-                button.onClick.AddListener(Guard.Listener(() => Turn(page)));
-                _dotImages.Add(image);
+                _more.gameObject.SetActive(false);
+                return;
             }
-            float width = DotsWidth(Pages);
-            if (_strip)
+            _more.sizeDelta = size;
+            _more.localScale = transform.localScale;
+            _more.position = transform.TransformPoint(centre);
+            int grid = transform.GetSiblingIndex(), now = _more.GetSiblingIndex();
+            if (now != grid + 1)
             {
-                PlaceStripDots(width);
+                _more.SetSiblingIndex(now < grid ? grid : grid + 1);   // drawn just after the grid, as one of its tiles
             }
-            for (int i = 0; i < _dotImages.Count; i++)
+            if (!_more.gameObject.activeSelf)
             {
-                Image image = _dotImages[i];
-                image.gameObject.SetActive(i < Pages);
-                var rect = (RectTransform)image.transform;
-                rect.sizeDelta = new Vector2(DotSize, DotSize);
-                rect.anchoredPosition = new Vector2(-width * 0.5f + DotSize * 0.5f + i * (DotSize + DotGap), 0f);
+                _more.gameObject.SetActive(true);
             }
+            Label();
             Paint();
         }
 
-        // In the row's space: after the place of the widest page (so they stand still as the pages turn), level with
-        // the middle of the apps' pictures.
-        private void PlaceStripDots(float width)
+        // The middle of a page's tile (from 0) in the grid's space, and the tile's size.
+        private bool Tile(int tile, out Vector3 centre, out Vector2 size)
         {
-            var strip = (RectTransform)transform;
-            float x = _pagesLeft + _pagesWidth + StripDotsGap + width * 0.5f;
-            float y = strip.rect.center.y;
-            for (int i = 0; i < _apps.Count; i++)
+            centre = Vector3.zero;
+            size = Vector2.zero;
+            var box = ((RectTransform)transform).rect;
+            if (_strip)
             {
-                if (!_apps[i].gameObject.activeSelf)
+                var layout = GetComponent<HorizontalLayoutGroup>();
+                var cell = _template as RectTransform;
+                if (layout == null || cell == null)
                 {
-                    continue;
+                    return false;
                 }
-                Image picture = Picture(_apps[i]);
-                if (picture != null)
-                {
-                    RectTransform rect = picture.rectTransform;
-                    y = strip.InverseTransformPoint(rect.TransformPoint(rect.rect.center)).y;
-                }
-                break;
+                float pitch = Pitch(layout, cell);
+                float height = cell.rect.height;
+                float top = layout.padding.top + (box.height - layout.padding.vertical - height) * ((int)layout.childAlignment / 3 * 0.5f);
+                size = new Vector2(pitch - layout.spacing, height);
+                centre = new Vector3(_pagesLeft + tile * pitch + size.x * 0.5f, box.yMax - top - height * 0.5f, 0f);
+                return size.x >= 1f;
             }
-            _dots.sizeDelta = new Vector2(width + 16f, DotSize + 16f);
-            _dots.position = strip.TransformPoint(new Vector3(x, y, 0f));
+            var grid = GetComponent<GridLayoutGroup>();
+            if (grid == null)
+            {
+                return false;
+            }
+            RowAsBuilt built = AsBuilt(grid);
+            int columns = Columns(grid, built);
+            int rows = (Tiles + columns - 1) / columns;
+            float column = tile % columns, line = tile / columns;
+            float needed = rows * grid.cellSize.y + (rows - 1) * grid.spacing.y;
+            float from = grid.padding.top + (box.height - grid.padding.vertical - needed) * ((int)built.Alignment / 3 * 0.5f);
+            size = grid.cellSize;
+            centre = new Vector3(box.xMin + GridLeft(grid, built) + column * (size.x + grid.spacing.x) + size.x * 0.5f,
+                                 box.yMax - from - line * (size.y + grid.spacing.y) - size.y * 0.5f, 0f);
+            return size.x >= 1f;
+        }
+
+        // The button, made once from the template the apps are made from, asleep until it is dressed: the game's own
+        // tile, title and hover; the game's scripts that would make it an app taken off, so that nobody counts it as one.
+        // One object of the name under the grid's parent: one a pager left before this one is taken away.
+        private bool MakeMore()
+        {
+            Transform parent = transform.parent;
+            if (parent == null || _template == null)
+            {
+                return false;
+            }
+            for (int i = parent.childCount - 1; i >= 0; i--)
+            {
+                Transform old = parent.GetChild(i);
+                if (old.name == MoreName)
+                {
+                    old.gameObject.SetActive(false);
+                    old.name = MoreName + " (gone)";
+                    Destroy(old.gameObject);
+                }
+            }
+            Transform dormant = UiClone.Dormant(parent, MoreName + " (making)");
+            GameObject copy = UiClone.Asleep(_template.gameObject, dormant, MoreName);
+            if (copy == null)
+            {
+                Destroy(dormant.gameObject);
+                return false;
+            }
+            var rect = (RectTransform)copy.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.localRotation = Quaternion.identity;
+            if (Tile(0, out Vector3 _, out Vector2 size))
+            {
+                rect.sizeDelta = size;   // (the tile's size before the page's line is placed under its name or picture)
+            }
+            Image picture = Picture(copy.transform);   // (through the game's own field, before its script is taken off)
+            var title = copy.GetComponentInChildren<TextLocalizationComponent>(true);
+            UiClone.StripGameScripts(copy, KeptOnMore);
+            Transform selected = copy.transform.Find("SelectedIcon");
+            if (selected != null)
+            {
+                DestroyImmediate(selected.gameObject);
+            }
+            if (UiClone.Rewire(copy.transform, NextPage) == null)
+            {
+                UiClone.Fallback("the phone's app button has no Button, so the pages have no More apps button (the wheel still turns them)");
+                Destroy(dormant.gameObject);
+                return false;
+            }
+            if (picture != null)
+            {
+                Sprite icon = MoreIcon(picture.sprite);
+                if (icon != null)
+                {
+                    picture.sprite = icon;
+                }
+            }
+            if (title != null)
+            {
+                UiClone.Key(title, MoreTitleKey);
+                _morePage = PageLine(rect, title, picture);
+            }
+            _moreBadge = copy.GetComponentInChildren<global::UI.Elements.Badge>(true);
+            copy.AddComponent<MoreAppsWheel>().Pager = this;
+            copy.SetActive(false);
+            rect.SetParent(parent, false);
+            Destroy(dormant.gameObject);
+            _more = rect;
+            _labelPage = _labelPages = -1;
+            return true;
+        }
+
+        // What stays of the game's scripts on the button: its hover and sound, and the HUD phone's badge.
+        private static bool KeptOnMore(MonoBehaviour script)
+        {
+            return script is ButtonEffects || script is global::UI.Elements.Badge;
+        }
+
+        // The page, in a copy of the name's text: under the picture where the name stands over it (the full menu's
+        // button), one line under the name where it stands under the picture (the HUD phone's).
+        private static TextLocalizationComponent PageLine(RectTransform button, TextLocalizationComponent title, Image picture)
+        {
+            var titleRect = (RectTransform)title.transform;
+            GameObject copy = Instantiate(title.gameObject, titleRect.parent, false);
+            copy.name = "Page";
+            var rect = (RectTransform)copy.transform;
+            var words = copy.GetComponent<TMP_Text>();
+            float line = words != null && words.fontSize > 1f ? words.fontSize * LineStep : 34f;
+            RectTransform pictureRect = picture != null ? picture.rectTransform : null;
+            if (pictureRect != null && pictureRect.parent == titleRect.parent && titleRect.localPosition.y > pictureRect.localPosition.y)
+            {
+                float bottom = pictureRect.localPosition.y + pictureRect.rect.yMin;
+                float anchor = Mathf.Lerp(button.rect.yMin, button.rect.yMax, rect.anchorMax.y);
+                rect.pivot = new Vector2(rect.pivot.x, 1f);
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, line);
+                rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, bottom - anchor);
+            }
+            else
+            {
+                rect.anchoredPosition = titleRect.anchoredPosition - new Vector2(0f, line);
+            }
+            if (words != null)
+            {
+                words.verticalAlignment = VerticalAlignmentOptions.Top;
+            }
+            var page = copy.GetComponent<TextLocalizationComponent>();
+            UiClone.Key(page, MorePageKey);
+            return page;
+        }
+
+        // The page under the name, "2 / 3": written again only when it changes. A new set of names each time, because
+        // the game's text writes itself again only when it is given another object.
+        private void Label()
+        {
+            if (_morePage == null)
+            {
+                return;
+            }
+            PagerRules.Shown(_page, Pages, out int shown, out int of);
+            if (shown == _labelPage && of == _labelPages)
+            {
+                return;
+            }
+            _labelPage = shown;
+            _labelPages = of;
+            _morePage.Arguments = new Dictionary<string, string>(2)
+            {
+                { "page", shown.ToString(CultureInfo.InvariantCulture) },
+                { "pages", of.ToString(CultureInfo.InvariantCulture) },
+            };
+        }
+
+        // The game's red badge on the button (the HUD phone's): how many apps on pages not showing have something new.
+        private void Paint()
+        {
+            if (_moreBadge == null || _aside)
+            {
+                return;
+            }
+            int waiting = 0;
+            for (int a = 0; a < _attention.Count; a++)
+            {
+                int index = _apps.IndexOf(_attention[a]);
+                waiting += index >= 0 && PageOf(index) != _page ? 1 : 0;
+            }
+            try
+            {
+                ShowBadge(_moreBadge, Pages > 1 ? waiting : 0);
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the badge on the More apps button");
+                _moreBadge = null;   // (a game without the badge's call: the button goes without it)
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ShowBadge(global::UI.Elements.Badge badge, int count)
+        {
+            badge.UpdateBadge(count);
+        }
+
+        // The button's picture: an app icon of the game's manner in a neutral colour, with the game's double chevron, or
+        // one drawn the same way if the game's is not in memory.
+        private static Sprite MoreIcon(Sprite like)
+        {
+            Sprite glyph = GameSprites.Get(MoreGlyph) ?? DrawnGlyph();
+            return AppIconPainter.Paint(like, glyph, MoreTop, MoreBottom, GlyphShare, MoreIconName);
+        }
+
+        // Two white chevrons pointing on, 64 by 64 as the game's glyph: made once a session, kept.
+        private static Sprite DrawnGlyph()
+        {
+            if (_drawnGlyph != null)
+            {
+                return _drawnGlyph;
+            }
+            const int size = 64;
+            const float stroke = 9f;   // pixels: the width of each chevron's line, as heavy as the game's glyph
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float distance = Mathf.Min(Chevron(x + 0.5f, y + 0.5f, 30f), Chevron(x + 0.5f, y + 0.5f, 48f));
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(stroke * 0.5f - distance + 0.5f) * 255f));
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            texture.hideFlags = HideFlags.DontUnloadUnusedAsset;   // kept for the session
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            sprite.name = "RealLife-MoreAppsGlyph";
+            sprite.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            _drawnGlyph = sprite;
+            return sprite;
+        }
+
+        // How far a point is from a chevron pointing right with its tip at (tip, 32): two lines from 14 to the left of it.
+        private static float Chevron(float x, float y, float tip)
+        {
+            return Mathf.Min(Segment(x, y, tip - 14f, 14f, tip, 32f), Segment(x, y, tip - 14f, 50f, tip, 32f));
+        }
+
+        private static float Segment(float x, float y, float ax, float ay, float bx, float by)
+        {
+            float dx = bx - ax, dy = by - ay;
+            float t = Mathf.Clamp01(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy));
+            float px = ax + t * dx - x, py = ay + t * dy - y;
+            return Mathf.Sqrt(px * px + py * py);
         }
 
         // An app button's picture: the game's own field for it (AppButton's "icon": the "Logo" of the full menu's
@@ -793,26 +1074,6 @@ namespace RealLifeOverhaul.GameUi
                 }
             }
             return null;
-        }
-
-        private void Paint()
-        {
-            if (_dots == null || _aside)
-            {
-                return;
-            }
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            Color red = references != null ? (Color)references.colors.red : Color.red;
-            for (int i = 0; i < _dotImages.Count && i < Pages; i++)
-            {
-                bool wanted = false;
-                for (int a = 0; a < _attention.Count; a++)
-                {
-                    int index = _apps.IndexOf(_attention[a]);
-                    wanted |= index >= 0 && PageOf(index) == i;
-                }
-                _dotImages[i].color = i == _page ? Color.white : wanted ? red : new Color(1f, 1f, 1f, 0.35f);
-            }
         }
 
         // ---------------------------------------------------------------- another mod at it
@@ -852,10 +1113,11 @@ namespace RealLifeOverhaul.GameUi
         {
             _aside = true;
             ShowAll();
-            RestoreStrip();
-            if (_dots != null)
+            RestoreRow();
+            if (_more != null)
             {
-                _dots.gameObject.SetActive(false);
+                Destroy(_more.gameObject);
+                _more = null;
             }
             UiClone.Fallback(_strip ? "another mod pages the full menu's app buttons, so this one leaves the pages to it"
                                     : "another mod pages the phone's home screen, so this one leaves the pages to it");
@@ -884,10 +1146,40 @@ namespace RealLifeOverhaul.GameUi
                 return;   // (the interface goes with the city)
             }
             ShowAll();
-            RestoreStrip();
-            if (_dots != null)
+            RestoreRow();
+            if (_more != null)
             {
-                Destroy(_dots.gameObject);
+                Destroy(_more.gameObject);
+            }
+        }
+    }
+
+    /// <summary>
+    /// On the "More apps" button: the wheel over it turns the pages, as over the row itself (the button stands beside
+    /// the grid, so the grid does not hear the wheel there). It has no Update.
+    /// </summary>
+    public sealed class MoreAppsWheel : MonoBehaviour, IScrollHandler
+    {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MoreAppsWheel", typeof(MoreAppsWheel));   // the game's calls of it (Core/Guard)
+
+        internal PhoneGridPager Pager;
+
+        public void OnScroll(PointerEventData eventData)
+        {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                if (Pager != null)
+                {
+                    Pager.Wheel(eventData);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
             }
         }
     }
@@ -919,7 +1211,7 @@ namespace RealLifeOverhaul.GameUi
         }
     }
 
-    /// <summary>On the full menu's row of app buttons: its alignment and left padding as the game built them, kept from the first time it was paged.</summary>
+    /// <summary>On the full menu's row of app buttons, and on the HUD phone's grid: its alignment and left padding as the game built them, kept from the first time it was paged.</summary>
     public sealed class RowAsBuilt : MonoBehaviour
     {
         public TextAnchor Alignment;

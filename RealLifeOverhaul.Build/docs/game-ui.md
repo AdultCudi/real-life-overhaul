@@ -53,18 +53,29 @@ lays out as the ninth child (it is an ordinary child of a layout group).
 The full menu's row of app buttons (`Topbar/AppButtons`, a HorizontalLayoutGroup of spacing 20, upper centre, in a
 box 1400 wide at x 1650 of the 3840 canvas) is centred for the game's own seven apps, which already run a little past
 both ends of the box. Every further button grew it both ways, under the money, the date and the time
-(`Topbar/RightData`) and off the screen. The same pager pages that row: the room runs from where the game's own apps
-begin (as the game's alignment places them) to the left edge of the money less 60, measured when the menu opens and
-when a button is added; the apps are shared out evenly over as few pages as fit, each page centred in the room by the
-row's left padding with the alignment set to upper left, and the dots stand after the page level with the icons. The
-wheel over the row or a dot turns the page; opening an app shows its page. The row's alignment and padding are put
-back when the pager goes or steps aside. Measured offline from `level4`; not seen in the game yet.
+(`Topbar/RightData`) and off the screen. The same pager pages that row. A page has a set number of tiles
+(`Core/GameUi/PagerRules`): as many as the game's own row (seven), counted once, because the game's own apps stand
+there at every money, date, language, resolution and interface scale, the narrowest room the row can ever have. (Until
+0.26.x the room was measured from the money each time the menu opened, so the count and the row's length changed.)
+The pages fill in order, six apps and the More apps button each, only the last shorter; every page starts where the
+game's own row starts (the row's left padding, alignment upper left), so the button, on the seventh tile, never
+moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
+`ButtonEffects` and the badge kept), a neutral tile painted by `AppIconPainter` with the game's `Icon-Arrows`
+(a code-drawn double chevron if that sprite is not in memory), the name "More apps" and the page "2 / 3" under the
+picture; it stands beside the row under `Topbar`, placed on the tile by hand, so neither the layout nor other mods'
+pagers count it. It goes to the next page and from the last to the first; the wheel over the row or the button turns
+the page and stops at the ends; opening an app shows its page. With one page it is hidden. The row's alignment and
+padding are put back when only the game's own apps are left, when the pager goes or steps aside. With Developer
+diagnostics on, each opening writes one line: where the row ends against where the money begins. Checked offline
+(ContractCheck, PagerChecks); not seen in the game yet.
 
 ### Pages on the HUD phone (`GameUi.PhoneGridPager`)
 
-A ninth button has no room, so the home screen gets pages of eight: the wheel over the grid or a dot under it turns
-the page; a dot turns the badge's red when a page that is not showing has something new. It runs on `OnEnable`,
-`OnTransformChildrenChanged` and the scroll event only.
+A ninth button has no room, so the home screen gets pages: the game's eight fill one page; with more, seven apps and
+the More apps button on the eighth tile (lower right) a page. A short page keeps the full page's left edge (the grid's
+alignment set to upper left with the full page's padding while there are pages, put back after). The button's badge
+(the game's own) counts the apps on pages not showing that have something new. It runs on `OnEnable`,
+`OnTransformChildrenChanged`, the button, the box's change of size and the scroll event only.
 
 Other mods page this grid as well (studied, not copied: BizSuite's `PhoneAppsPager` puts a component on the grid and
 shows or hides every child but the template; AlunaPhonePages pages every child that has a `SmartphoneAppButton`,
@@ -72,7 +83,8 @@ and re-reads the grid when its child count changes). Two pagers would undo each 
 for good** as soon as it sees a component on the grid from an assembly that is neither the game's nor the mod's, or
 finds a button it had hidden shown again. It then shows everything it hid and logs one line. For that to work the
 mod's button stays what those pagers look for: a real `SmartphoneAppButton`, a direct child of the grid, with no
-"Template" in its name. The full menu's bar is not paged: seven buttons and one more fit.
+"Template" in its name. The More apps button is not in the grid, so those pagers never see it; when this pager
+steps aside it takes the button away.
 
 ## 2. The frame of an app (`GameUi.AppShell`, copied from MyEmployees)
 
