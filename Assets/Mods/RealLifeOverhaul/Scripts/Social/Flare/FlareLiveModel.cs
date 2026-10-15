@@ -242,6 +242,8 @@ namespace RealLifeOverhaul.Flare
         public int Repeats;              // others who said the same since
         public int ActedDay = -1;        // the day a crew was sent (the week's crews are counted by it); -1 for none
         public bool Counted = true;      // filed by one of its player's first three reports of the day: moves the mood, the tally and the paper (FlareLiveRules.Counted)
+        public int Verdict = -1;         // what the city's real faults made of it when it was answered (FaultAnswer's number); -1 not judged (Scripts/Faults)
+        public int Fault = -1;           // ...the fault it found and may take (a real one no other case has in hand); -1 none
     }
 
     /// <summary>

@@ -33,6 +33,62 @@ internal static partial class Program
         FaultsFlare();
         FaultsTexts();
         FaultsTiming();
+        FaultsReview();
+    }
+
+    // The review round of the city's faults (merged with main 0.27.6): a fault in hand reported again, the case keeping its
+    // fault and verdict in the save, the paper never acting on nothing, a guest never rolling, the lamps put back safely.
+    private static void FaultsReview()
+    {
+        // A case keeps what the faults made of it, and the fault it found, through the save (after main's Counted).
+        var n = new FlareNet();
+        n.Cases.Add(new FlareCase { Id = 4, Kind = FlareReport.Unsafe, District = "d", Reporter = "c3", Verdict = (int)FaultAnswer.True, Fault = 12, Counted = false });
+        n.Cases.Add(new FlareCase { Id = 5, Kind = FlareReport.Lamp, District = "d", Reporter = "me" });
+        string line = FlareLiveStore.Write(n);
+        var r = new FlareNet();
+        FlareLiveStore.Read(r, line);
+        Check(r.Cases.Count == 2 && r.Cases[0].Verdict == (int)FaultAnswer.True && r.Cases[0].Fault == 12 && !r.Cases[0].Counted && r.Cases[1].Verdict == -1 && r.Cases[1].Fault == -1,
+            "faults, review: a case keeps its verdict and the fault it found in the save, beside main's Counted");
+        var old = new FlareNet();
+        FlareLiveStore.Read(old, Regex.Replace(line, @"\|1\|-1\|-1(\r?\n|$)", "|1$1"));
+        Check(old.Cases.Count == 2 && old.Cases[1].Verdict == -1 && old.Cases[1].Fault == -1, "faults, review: a case from an older save is not judged");
+
+        // The paper's pressure never acts on nothing, sends works to a real unsafe place, and inspects no clean business.
+        var net = new FlareNet();
+        FlareOrder nothing = FlareLiveRules.EscalationOrder(net, new FlareCase { Kind = FlareReport.Lamp, Verdict = (int)FaultAnswer.Nothing }, 0, true);
+        FlareOrder barred = FlareLiveRules.EscalationOrder(net, new FlareCase { Kind = FlareReport.Road, Verdict = (int)FaultAnswer.Barred }, 0, true);
+        FlareOrder realUnsafe = FlareLiveRules.EscalationOrder(net, new FlareCase { Kind = FlareReport.Unsafe, Verdict = (int)FaultAnswer.True }, 0, true);
+        FlareOrder plainUnsafe = FlareLiveRules.EscalationOrder(net, new FlareCase { Kind = FlareReport.Unsafe }, 0, true);
+        FlareOrder clean = FlareLiveRules.EscalationOrder(net, new FlareCase { Kind = FlareReport.Business, Verdict = (int)FaultAnswer.Clean }, 0, true);
+        FlareOrder business = FlareLiveRules.EscalationOrder(net, new FlareCase { Kind = FlareReport.Business }, 0, true);
+        Check(nothing == FlareOrder.None && barred == FlareOrder.None && realUnsafe == FlareOrder.Works && plainUnsafe == FlareOrder.Patrol && clean == FlareOrder.None && business == FlareOrder.Inspection,
+            "faults, review: under the paper's eye the City Office acts on no report found to be nothing, sends works to a real unsafe place, and inspects no clean business");
+
+        string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
+        string director = FaultSource(scripts, "Faults/FaultDirector.cs");
+        string reports = FaultSource(scripts, "Faults/FaultDirector.Reports.cs");
+        string world = FaultSource(scripts, "Faults/FaultWorld.cs");
+        string flare = FaultSource(scripts, "Social/Flare/FlareDirector.Live.cs");
+        Check(director.Contains("if (!Following && !GoingPublic.IsGuest)") && Regex.IsMatch(director, @"public void Crime\(Vector3 where\)\s*\{\s*if \([^)]*GoingPublic\.IsGuest")
+              && reports.Contains("|| Following || GoingPublic.IsGuest)"),
+            "faults, review: a Going Public guest never rolls, turns or reports faults, nor marks a hot spot, even while the host sends none");
+        Check(reports.Contains("fault = FaultRules.Claimable(f) ? f.Id : -1;") && !reports.Contains("_caseFault") && flare.Contains("c.Fault = verdict == (int)FaultAnswer.True ? fault : -1;")
+              && Regex.Matches(flare, @"FaultActed\?\.Invoke\(c\.Id, c\.Fault,").Count == 2 && flare.Contains("if (c.Verdict == (int)FaultAnswer.True && (order == FlareOrder.Works"),
+            "faults, review: the fault a case found is kept with the case, not in memory, and a crew sent under the paper's eye takes it only for a case found true");
+        Match stop = Regex.Match(director, @"private void Stop\(string why\)\s*\{(.*?)\n        \}", RegexOptions.Singleline);
+        Match destroy = Regex.Match(director, @"private void OnDestroy\(\)\s*\{(.*?)\n        \}", RegexOptions.Singleline);
+        Check(stop.Success && !stop.Groups[1].Value.Contains("FaultGame.Forget") && destroy.Success && destroy.Groups[1].Value.Contains("FaultGame.Forget()"),
+            "faults, review: stopping (a new save, the option off) keeps the city's lists; only the director's end lets them go");
+        Check(Regex.IsMatch(world, @"if \(ReferenceEquals\(LampLights\.GetValue\(lamp\), NoLights\)\)\s*\{\s*return;")
+              && world.IndexOf("ReferenceEquals(LampLights.GetValue(lamp), NoLights)", StringComparison.Ordinal) < world.IndexOf("LampLights.SetValue(lamp, NoLights)", StringComparison.Ordinal),
+            "faults, review: a lamp already dark is never darkened twice (its own lists are the ones put back)");
+        Check(world.Contains("if (lamp.isActiveAndEnabled && !GameManager.isCitySceneBeingUnloaded && InstanceBehavior<GameManager>.Instance != null)")
+              && Regex.IsMatch(world, @"foreach \(Shown s in _shown\.Values\)\s*\{\s*try\s*\{\s*Hide\(s\);"),
+            "faults, review: a lamp is relit by the game's call only while the city stands, and one that cannot be put back never leaves the others dark");
+        string stale = FaultSource(scripts, "Performance/Tweaks/StaleLampLights.cs");
+        string trip = FaultSource(scripts, "Ragdoll/PedestrianIncidents.cs");
+        Check(Regex.IsMatch(stale, @"protected override void Restore\(\)[\s\S]*?Faults\.FaultDirector\.KeepDark\(\);[^\n]*\s*\}") && trip.Contains("GoingPublic.RemotePlayers(TripRemotes)") && trip.Contains("IsRemote(p.tpc.transform)"),
+            "faults, review: the performance tools putting their lamps back leave the city's dark lamps dark, and a trip never lands on another Going Public player");
     }
 
     // A source of chance the checks control: a plain linear congruential sequence from a seed.
@@ -211,7 +267,8 @@ internal static partial class Program
 
         Fault held = FaultRules.Add(file, FaultKind.Litter, "ba:neighborhood_garment", null, 950f, 0f, 950f, 0f, 1, 4000);
         FaultRules.Taken(held, 8, 4000, false);
-        Check(FaultRules.Match(file, FaultKind.Litter, null, true, 950f, 950f) == heap, "faults: a fault a crew is clearing is no longer the one a new report finds; an untouched one near it still is");
+        Check(FaultRules.Match(file, FaultKind.Litter, null, true, 950f, 950f) == held && !FaultRules.Claimable(held) && FaultRules.Claimable(heap),
+            "faults: a fault a crew is already clearing is still there, so a report of it is true; the first case keeps it and a later one takes nothing");
         gone.Clear();
         FaultRules.Turn(file, 4000 + 6 * 60 - 1, 0, gone);
         bool before = file.Find(held.Id) != null;
@@ -358,7 +415,7 @@ internal static partial class Program
         Check(Regex.IsMatch(shared, @"SharedCityPart part = Find\(change \? char\.ToUpperInvariant\(id\) : id\);\s*if \(part == null\)\s*\{\s*continue;")
               && Regex.IsMatch(shared, @"for \(int i = 0; i < Parts\.Count; i\+\+\)\s*\{\s*SharedCityPart part = Parts\[i\];\s*string text = m\.Part\(part\.Id\);"),
             "faults, Going Public: an RLO that knows no part K passes over it (an update looks a part up by its letter and skips one it has not; a snapshot applies only the parts it knows)");
-        Check(Regex.IsMatch(director, @"if \(!Following\)\s*\{[^}]*FaultRules\.Turn") && director.Contains("changed |= Roll(now);") && director.IndexOf("changed |= Roll(now);", StringComparison.Ordinal) < director.IndexOf("if (changed)", StringComparison.Ordinal)
+        Check(Regex.IsMatch(director, @"if \(!Following && !GoingPublic\.IsGuest\)[^{]*\{[^}]*FaultRules\.Turn") && director.Contains("changed |= Roll(now);") && director.IndexOf("changed |= Roll(now);", StringComparison.Ordinal) < director.IndexOf("if (changed)", StringComparison.Ordinal)
               && director.Contains("Id = FaultShare.Part") && director.Contains("Write = () => _loaded && !_failed && Settings.CityFaults ? FaultShare.Write(_file) : null")
               && director.Contains("SharedCity.Changed(FaultShare.Part)") && Regex.IsMatch(director, @"public void Crime\(Vector3 where\)\s*\{\s*if \([^)]*Following"),
             "faults, Going Public: only the city's runner rolls (a guest that follows never does), the host sends the faults whole when they change and to a joining guest");

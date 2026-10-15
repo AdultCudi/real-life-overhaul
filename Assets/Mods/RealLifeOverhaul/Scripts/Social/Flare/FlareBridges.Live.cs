@@ -74,10 +74,10 @@ namespace RealLifeOverhaul.Flare
         /// </summary>
         public static FaultAsk FaultCheck;
 
-        public delegate int FaultAsk(FlareReport kind, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz);
+        public delegate int FaultAsk(FlareReport kind, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz, out int fault);
 
-        /// <summary>A crew is sent on a case the faults judged true (works or not). Default: nothing.</summary>
-        public static Action<int, bool> FaultActed;
+        /// <summary>A crew is sent on a case the faults judged true: the case, the fault it found (-1: one another case has in hand), works or not. Default: nothing.</summary>
+        public static Action<int, int, bool> FaultActed;
 
         /// <summary>A case's works are handed over: its fault is mended. Default: nothing.</summary>
         public static Action<int> FaultDone;

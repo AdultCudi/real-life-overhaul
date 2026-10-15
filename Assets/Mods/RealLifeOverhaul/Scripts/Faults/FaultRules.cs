@@ -378,9 +378,9 @@ namespace RealLifeOverhaul.Faults
         }
 
         /// <summary>
-        /// The real fault a report is about, or null: of its kind and not already mended; with a point (the report was made
-        /// where the player stands) the nearest within <see cref="MatchMetres"/>, else one in the district reported (the
-        /// longest standing).
+        /// The real fault a report is about, or null: of its kind (one a crew has in hand already is still there, so a
+        /// report of it is true); with a point (the report was made where the player stands) the nearest within
+        /// <see cref="MatchMetres"/>, else one in the district reported (the longest standing).
         /// </summary>
         public static Fault Match(FaultFile file, FaultKind kind, string district, bool point, float x, float z)
         {
@@ -389,7 +389,7 @@ namespace RealLifeOverhaul.Faults
             for (int i = 0; i < file.Faults.Count; i++)
             {
                 Fault f = file.Faults[i];
-                if (f.Kind != kind || f.FixAt >= 0)
+                if (f.Kind != kind)
                 {
                     continue;
                 }
@@ -446,6 +446,12 @@ namespace RealLifeOverhaul.Faults
                 return FaultVerdict.Warned;
             }
             return FaultVerdict.Nothing;
+        }
+
+        /// <summary>True if a case may take the fault: no crew has it in hand yet (else the first case keeps it).</summary>
+        public static bool Claimable(Fault f)
+        {
+            return f != null && !f.Fixing && f.FixAt < 0;
         }
 
         /// <summary>A case takes a fault: a crew is on its way. A cleaning round or patrols end it after their time; works when they are handed over.</summary>

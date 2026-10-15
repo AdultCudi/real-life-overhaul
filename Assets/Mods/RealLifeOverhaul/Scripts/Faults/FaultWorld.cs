@@ -142,7 +142,14 @@ namespace RealLifeOverhaul.Faults
         {
             foreach (Shown s in _shown.Values)
             {
-                Hide(s);
+                try
+                {
+                    Hide(s);
+                }
+                catch (Exception e)
+                {
+                    FaultDirector.Logger?.Error(e);   // (one lamp or prop that cannot be put back never leaves the others as they were)
+                }
             }
             _shown.Clear();
             DarkLamps = 0;
@@ -182,6 +189,10 @@ namespace RealLifeOverhaul.Faults
             {
                 return;   // (the lamps not read yet: tried again at the next sync)
             }
+            if (ReferenceEquals(LampLights.GetValue(lamp), NoLights))
+            {
+                return;   // dark already (another fault of the same lamp): never darkened twice, or the empty lists would be "put back"
+            }
             s.Lamp = lamp;
             s.Lights = LampLights.GetValue(lamp) as Light[];
             s.Data = LampData.GetValue(lamp) as HDAdditionalLightData[];
@@ -214,6 +225,18 @@ namespace RealLifeOverhaul.Faults
                 Glow(lamp, false);
             }
             DarkLamps++;
+        }
+
+        /// <summary>Every dark lamp's lights switched off again now.</summary>
+        public void KeepDark()
+        {
+            foreach (Shown s in _shown.Values)
+            {
+                if (s.Kind == FaultKind.Lamp && s.Lamp != null)
+                {
+                    KeepDark(s);
+                }
+            }
         }
 
         // A dark lamp's lights kept off: anything else that switched one on again (the performance tools putting back what they held) is switched off. A few enabled tests.
@@ -250,9 +273,9 @@ namespace RealLifeOverhaul.Faults
                 LampGlow.SetValue(lamp, s.Glow);
                 LampEmission.SetValue(lamp, s.Emission);
                 LampIsOn.SetValue(lamp, false);
-                if (lamp.isActiveAndEnabled)
+                if (lamp.isActiveAndEnabled && !GameManager.isCitySceneBeingUnloaded && InstanceBehavior<GameManager>.Instance != null)
                 {
-                    Light(lamp);
+                    Light(lamp);   // (not while the city unloads: the game's own call reads its time of day then gone)
                 }
             }
             s.Lamp = null;

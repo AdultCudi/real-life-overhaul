@@ -37,7 +37,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 FlareBridges.FaultCheck = Check;
-                FlareBridges.FaultActed = (caseId, works) => FaultDirector.Instance?.Acted(caseId, works);
+                FlareBridges.FaultActed = (caseId, fault, works) => FaultDirector.Instance?.Acted(caseId, fault, works);
                 FlareBridges.FaultDone = caseId => FaultDirector.Instance?.Done(caseId);
                 FlareBridges.FaultsReal = () => FaultDirector.Real;
                 FaultBridges.CityReport = CityReport;
@@ -73,14 +73,15 @@ namespace RealLifeOverhaul
                 News.ReportedAt -= Heard;
             }
 
-            private static int Check(FlareReport kind, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz)
+            private static int Check(FlareReport kind, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz, out int fault)
             {
                 fx = x;
                 fz = z;
+                fault = -1;
                 try
                 {
                     FaultDirector d = FaultDirector.Instance;
-                    return d != null ? d.Check((int)kind, district, x, z, reporter, caseId, place, out fx, out fz) : -1;
+                    return d != null ? d.Check((int)kind, district, x, z, reporter, caseId, place, out fx, out fz, out fault) : -1;
                 }
                 catch (Exception e)
                 {

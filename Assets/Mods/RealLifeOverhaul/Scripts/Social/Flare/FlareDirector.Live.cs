@@ -444,8 +444,11 @@ namespace RealLifeOverhaul.Flare
         {
             // The city's real faults judge the report first (Scripts/Faults): nothing there is answered so; a real fault sends the crew to where it is.
             float fx = c.X, fz = c.Z;
-            int verdict = Settings.FlareCityOffice && FlareBridges.FaultCheck != null ? FlareBridges.FaultCheck(c.Kind, c.District, c.X, c.Z, c.Reporter, c.Id, c.Place, out fx, out fz) : -1;
-            if (verdict >= (int)FaultAnswer.Nothing && verdict <= (int)FaultAnswer.Barred)
+            int fault = -1;
+            int verdict = Settings.FlareCityOffice && FlareBridges.FaultCheck != null ? FlareBridges.FaultCheck(c.Kind, c.District, c.X, c.Z, c.Reporter, c.Id, c.Place, out fx, out fz, out fault) : -1;
+            c.Verdict = verdict;
+            c.Fault = verdict == (int)FaultAnswer.True ? fault : -1;   // (kept with the case, so a crew sent later, under the paper's eye, takes the same fault)
+            if (FlareLiveRules.FoundNothing(verdict))
             {
                 NothingFound(c, day, (FaultAnswer)verdict);
                 return;
@@ -485,7 +488,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (real && (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup))
             {
-                FlareBridges.FaultActed?.Invoke(c.Id, order == FlareOrder.Works);
+                FlareBridges.FaultActed?.Invoke(c.Id, c.Fault, order == FlareOrder.Works);
             }
             bool acted = order != FlareOrder.Queued && order != FlareOrder.Answered;
             if (c.Counted)
@@ -669,9 +672,9 @@ namespace RealLifeOverhaul.Flare
             {
                 Inspected(c, day);
             }
-            if (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup)
+            if (c.Verdict == (int)FaultAnswer.True && (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup))
             {
-                FlareBridges.FaultActed?.Invoke(c.Id, order == FlareOrder.Works);   // (a case the faults found true: its fault is taken; any other is passed over)
+                FlareBridges.FaultActed?.Invoke(c.Id, c.Fault, order == FlareOrder.Works);   // (the fault the case found when it was answered is taken)
             }
             FlareLiveRules.Answered(_file.Net, c.Kind, c.District);
             AnswerPost(c, FlareAnswer.Pressure, address, days);

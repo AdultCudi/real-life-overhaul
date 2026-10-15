@@ -784,6 +784,12 @@ namespace RealLifeOverhaul.Flare
             return Math.Max(now + SoonestMinutes, replyAt - SoonerMinutes);
         }
 
+        /// <summary>True for a verdict of the city's faults that found nothing (nothing, a warning, no crews for now).</summary>
+        public static bool FoundNothing(int verdict)
+        {
+            return verdict >= (int)FaultAnswer.Nothing && verdict <= (int)FaultAnswer.Barred;
+        }
+
         public const int FalseReportCost = 2;      // points of the player's reputation on Flare a report of nothing costs (the city's faults: Scripts/Faults)
 
         /// <summary>The player's reputation after a report of nothing: <see cref="FalseReportCost"/> less, never below 0.</summary>
@@ -1075,12 +1081,16 @@ namespace RealLifeOverhaul.Flare
         /// </summary>
         public static FlareOrder EscalationOrder(FlareNet net, FlareCase c, long now, bool acts)
         {
-            if (c == null || !Escalates(c.Kind, acts) || c.State == FlareCaseState.Acting)
+            if (c == null || !Escalates(c.Kind, acts) || c.State == FlareCaseState.Acting || FoundNothing(c.Verdict))
             {
-                return FlareOrder.None;
+                return FlareOrder.None;   // (a case the city's faults found nothing in is never acted on, whatever the paper says)
+            }
+            if (c.Kind == FlareReport.Business && c.Verdict == (int)FaultAnswer.Clean)
+            {
+                return FlareOrder.None;   // a business found clean is not inspected
             }
             FlareOrder order = c.Kind == FlareReport.Crime ? FlareOrder.Patrol : c.Kind == FlareReport.Litter ? FlareOrder.Cleanup : c.Kind == FlareReport.Business ? FlareOrder.Inspection
-                : c.Kind == FlareReport.Unsafe ? FlareOrder.Patrol : FlareOrder.Works;
+                : c.Kind == FlareReport.Unsafe ? (c.Verdict == (int)FaultAnswer.True ? FlareOrder.Works : FlareOrder.Patrol) : FlareOrder.Works;   // (a real unsafe place: a works crew, as when answered)
             return CrewsUsed(net, order, now) >= CrewsPerWeek[(int)order] ? FlareOrder.None : order;
         }
 

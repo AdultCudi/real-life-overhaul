@@ -70,6 +70,16 @@ namespace RealLifeOverhaul.Faults
         /// <summary>True while the faults are real in this game: the City Office checks reports, the city's people report only real ones.</summary>
         public static bool Real => Instance != null && Instance._loaded && !Instance._failed && Settings.CityFaults;
 
+        /// <summary>The dark lamps' lights switched off again now (something else, the performance tools putting back what they held, may have switched one on).</summary>
+        public static void KeepDark()
+        {
+            FaultDirector d = Instance;
+            if (d != null && d._loaded)
+            {
+                d._world.KeepDark();
+            }
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -94,6 +104,7 @@ namespace RealLifeOverhaul.Faults
             {
                 Stop("the mod is unloading");
                 _world.Dispose();
+                FaultGame.Forget();   // (the city's lists let go with the director; a new save or a switch off and on keeps them: FaultGame.Ready tells another city)
             }
             catch (Exception e)
             {
@@ -222,7 +233,6 @@ namespace RealLifeOverhaul.Faults
             _save = null;
             _file = null;
             _hour = -1;
-            FaultGame.Forget();
             Logger?.Info("City faults: stopped (" + why + "); every lamp, lane and prop put back as the game had it.");
         }
 
@@ -238,7 +248,6 @@ namespace RealLifeOverhaul.Faults
             if (_loaded)
             {
                 _file = new FaultFile();
-                _caseFault.Clear();
                 Changed(true);
             }
         }
@@ -280,7 +289,7 @@ namespace RealLifeOverhaul.Faults
             using var hotSpot = HotSpots.Time(HotHour);
             long now = FaultGame.Now();
             bool changed = false;
-            if (!Following)
+            if (!Following && !GoingPublic.IsGuest)   // (a guest never rolls, even while the host sends no faults)
             {
                 _gone.Clear();
                 changed |= FaultRules.Turn(_file, now, Settings.Civic ? CivicPolicy.Position(Lever.Cleaning) : 0, _gone);
@@ -495,7 +504,7 @@ namespace RealLifeOverhaul.Faults
         /// <summary>A crime reported in the street at a point (Social/News): one more of a hot spot there, or now and then a new one. Never on a guest.</summary>
         public void Crime(Vector3 where)
         {
-            if (!_loaded || _failed || Following || !Settings.CityFaults || where == Vector3.zero || !FaultGame.Ready)
+            if (!_loaded || _failed || Following || GoingPublic.IsGuest || !Settings.CityFaults || where == Vector3.zero || !FaultGame.Ready)
             {
                 return;
             }

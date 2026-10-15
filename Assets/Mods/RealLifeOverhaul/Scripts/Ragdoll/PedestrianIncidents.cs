@@ -198,6 +198,21 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- hits
 
         private const float TripForward = 1.4f, TripUp = 0.8f;   // m/s: a trip throws a walker forward and a little up, as a stumble does
+        private static readonly List<Transform> TripRemotes = new List<Transform>(4);
+
+        // True if a walker is (or holds, or is held by) another player of a Going Public session.
+        private static bool IsRemote(Transform walker)
+        {
+            for (int i = 0; i < TripRemotes.Count; i++)
+            {
+                Transform r = TripRemotes[i];
+                if (r != null && (walker == r || walker.IsChildOf(r) || r.IsChildOf(walker)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         /// <summary>
         /// One of the game's pedestrians within <paramref name="within"/> metres of a point trips (an unsafe place of the
@@ -212,10 +227,12 @@ namespace RealLifeOverhaul
                 List<Pedestrian> walkers = PerfGame.Pedestrians;
                 Pedestrian nearest = null;
                 float best = within * within;
+                TripRemotes.Clear();
+                GoingPublic.RemotePlayers(TripRemotes);   // (Going Public's players are not the game's walkers, but never throw one down even so)
                 for (int i = 0; walkers != null && i < walkers.Count; i++)
                 {
                     Pedestrian p = walkers[i];
-                    if (p == null || p.tpc == null)
+                    if (p == null || p.tpc == null || IsRemote(p.tpc.transform))
                     {
                         continue;
                     }

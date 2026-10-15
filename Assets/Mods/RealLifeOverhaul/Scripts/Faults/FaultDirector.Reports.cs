@@ -1,28 +1,29 @@
 using System;
-using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
     /// The City Office's look before it acts on a report (Flare, through Wiring/FaultLinks): a report of a road, a lamp,
     /// crime, litter or an unsafe place is checked against the city's real faults where it was made; a business's
-    /// inspection against how clean the business is. Only the city's runner files cases, so only it is asked.
-    /// COST: a pass over a dozen faults for a report.
+    /// inspection against how clean the business is. Only the city's runner files cases, so only it is asked. The fault a
+    /// case found is kept with the case (Flare's FlareCase.Fault, in the save), so a crew sent later, under the paper's
+    /// eye, takes the same one. COST: a pass over a dozen faults for a report.
     /// </summary>
     public sealed partial class FaultDirector
     {
-        private readonly Dictionary<int, int> _caseFault = new Dictionary<int, int>(8);   // a case answered true: the fault it found, until a crew is sent
-
         /// <summary>
         /// What a report comes to (FaultVerdict's number), or -1 when the faults do not judge it (switched off, a guest, a
         /// kind they do not know: the City Office answers as it always has). For a real fault its place comes back, so the
-        /// crew goes there. Reports of nothing count against a player (never the city's people) when the option says so.
+        /// crew goes there, and its id when the case may take it (-1 when another case has it in hand already: the report
+        /// is true, costs nothing, and the first case keeps the fault). Reports of nothing count against a player (never
+        /// the city's people) when the option says so.
         /// </summary>
-        public int Check(int report, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz)
+        public int Check(int report, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz, out int fault)
         {
             fx = x;
             fz = z;
-            if (!_loaded || _failed || !Settings.CityFaults || Following)
+            fault = -1;
+            if (!_loaded || _failed || !Settings.CityFaults || Following || GoingPublic.IsGuest)
             {
                 return -1;
             }
@@ -47,8 +48,8 @@ namespace RealLifeOverhaul.Faults
             {
                 fx = f.X;
                 fz = f.Z;
-                _caseFault[caseId] = f.Id;
-                Logger?.Info("City faults: the report of case " + caseId + " is true: the " + f.Kind + " at " + Where(f) + ".");
+                fault = FaultRules.Claimable(f) ? f.Id : -1;
+                Logger?.Info("City faults: the report of case " + caseId + " is true: the " + f.Kind + " at " + Where(f) + (fault < 0 ? " (a crew has it in hand already)." : "."));
                 return (int)FaultVerdict.True;
             }
             if (!player || !Settings.CityFaultsFalseCost)
@@ -63,16 +64,11 @@ namespace RealLifeOverhaul.Faults
 
         private const int BusinessReport = 5;   // FlareReport.Business
 
-        /// <summary>A crew is sent on a case answered true: its fault is taken (works end it when handed over; a cleaning round or patrols after their time).</summary>
-        public void Acted(int caseId, bool works)
+        /// <summary>A crew is sent on a case answered true: the fault it found is taken (works end it when handed over; a cleaning round or patrols after their time). Nothing for a fault another case has in hand.</summary>
+        public void Acted(int caseId, int faultId, bool works)
         {
-            if (!_loaded || !_caseFault.TryGetValue(caseId, out int id))
-            {
-                return;
-            }
-            _caseFault.Remove(caseId);
-            Fault f = _file.Find(id);
-            if (f == null)
+            Fault f = _loaded && faultId >= 0 ? _file.Find(faultId) : null;
+            if (f == null || !FaultRules.Claimable(f))
             {
                 return;
             }
