@@ -67,6 +67,7 @@ internal static partial class Program
         PointGrids();
         LoadPace();
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
+        Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

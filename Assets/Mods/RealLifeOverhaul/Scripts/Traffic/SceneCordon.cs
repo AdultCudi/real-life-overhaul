@@ -32,8 +32,13 @@ namespace RealLifeOverhaul
     /// is also a wall for anyone on foot (the game moves people on its navigation mesh, so the
     /// wall is cut out of that; a collider would stop nobody): one wall along every run of tape
     /// that actually went up, the barriers with it, and an entry left open at each end for the
-    /// crews, and for the player to get out by. Whether each wall really cut the mesh is said in
-    /// the log. The cones are a taper: a short diagonal upstream of each end that traffic
+    /// crews, and for the player to get out by. Where a crossing runs through the scene the tape is
+    /// walled all the same: the crossing is shut to people on foot while the tape is up, and where
+    /// a walkway of the game's pedestrians runs through an opening (or a stretch of tape that was
+    /// left out) a bar across it, cut out of the mesh as the walls are, shuts that too; so nobody
+    /// on foot finds a way in, and those already inside as the tape goes up are put at the nearest
+    /// place outside it (People/CordonClear, Traffic/CordonRules), on that same frame. Whether each
+    /// wall and bar really cut the mesh is said in the log. The cones are a taper: a short diagonal upstream of each end that traffic
     /// arrives at, beyond the response vehicles standing there, laid once those have parked
     /// and taken in when the first of them leaves. From then on the gate lets the cars already
     /// waiting through a few at a time, on a timer.
@@ -72,6 +77,10 @@ namespace RealLifeOverhaul
         private const int MaxCones = TaperCones * 2;
         private const int MaxBarriers = 8;
         private const int Walls = 8;
+        private const int Bars = 4;               // bars across openings a walkway runs through (each a cut in the mesh, nothing to see)
+        private const int BarPoints = 96;         // points of one line of tape looked at for a walkway: 47 m at one every half metre (the longest line, a parade's, is 38 m)
+        private const float BarReach = 1.1f;      // metres off the tape's line a wall may stand and still cover it (a post is moved in 1 m at most)
+        private const float WalkwayReach = 0.45f; // metres from a point of the line to the pedestrians' own mesh that make it a walkway
         private const int Markers = 4;
 
         private static readonly List<Waypoint> Found = new List<Waypoint>(96);
@@ -101,6 +110,12 @@ namespace RealLifeOverhaul
         private readonly Vector3[] _wallTo = new Vector3[Walls];     // ...to this one
         private readonly float[] _wallOut = new float[Walls];        // -1 or 1 for an end (its barriers are part of it), 0 for a side
         private int _wallCount;
+        private NavMeshObstacle[] _bars;
+        private int _barCount;       // bars standing across openings a walkway runs through
+        private static readonly bool[] BarOpen = new bool[BarPoints];
+        private readonly bool[] _walkway = new bool[BarPoints * 4];   // the pedestrians' mesh under each point of each line, as found when the tape first went up
+        private static readonly float[] BarFrom = new float[Bars];
+        private static readonly float[] BarTo = new float[Bars];
         private int _segment = -1;   // the wall the tape now being run belongs to; -1 to start another
         private float _lastAlong, _lastAcross;   // where on the rectangle the last post was asked for (before any moving in)
         private float _outward;
@@ -398,7 +413,7 @@ namespace RealLifeOverhaul
             if (_props != null && _props.activeSelf)
             {
                 _props.SetActive(false);   // the walls with them: people on foot can cross again
-                MeshCuts.Note("a cordon's walls taken down", _wallCount);
+                MeshCuts.Note("a cordon's walls taken down", _wallCount + _barCount);
                 Logger?.Info("Cordon: tape, barriers and cones taken down; the road stays closed until the scene is cleared.");
             }
         }
@@ -591,27 +606,34 @@ namespace RealLifeOverhaul
         /// </summary>
         public Vector3 KeepOutside(Vector3 point, float margin)
         {
-            if (!Inside(point, -margin))
+            if (!Surveyed)
             {
                 return point;
             }
             Vector3 offset = point - _scene;
             float along = Vector3.Dot(offset, _forward);
             float across = Vector3.Dot(offset, _right);
-            float toLeft = across - (_left - margin);
-            float toRight = _rightEdge + margin - across;
-            float toBack = along - (_back - margin);
-            float toFront = _front + margin - along;
-            float least = Mathf.Min(Mathf.Min(toLeft, toRight), Mathf.Min(toBack, toFront));
-            if (least == toLeft)
+            CordonRules.Outside(Box, along, across, margin, out float outAlong, out float outAcross);
+            return point + _forward * (outAlong - along) + _right * (outAcross - across);
+        }
+
+        /// <summary>The rectangle the tape runs round (or will), in the road's frame at the scene (see <see cref="Frame"/>).</summary>
+        public CordonBox Box => new CordonBox(_back, _front, _left, _rightEdge);
+
+        private const float WaitOut = 1.2f;   // metres outside the tape a place for somebody who only waits is kept: clear of the wall's cut
+
+        /// <summary>
+        /// True while the tape is measured and a place is inside it or against it (CordonRules.Inside): a place nobody but the
+        /// scene's own people may be sent to, such as one an onlooker would watch from. False if never measured.
+        /// </summary>
+        public bool Shuts(Vector3 point)
+        {
+            if (!Surveyed)
             {
-                return point - _right * toLeft;
+                return false;
             }
-            if (least == toRight)
-            {
-                return point + _right * toRight;
-            }
-            return least == toBack ? point - _forward * toBack : point + _forward * toFront;
+            Vector3 offset = point - _scene;
+            return CordonRules.Inside(Box, Vector3.Dot(offset, _forward), Vector3.Dot(offset, _right));
         }
 
         /// <summary>
@@ -1316,10 +1338,12 @@ namespace RealLifeOverhaul
             float reach = Mathf.Max(0f, span * 0.5f - _doorWidth * 0.5f - 0.6f);
             _doorAcross = Mathf.Clamp(door, (_left + _rightEdge) * 0.5f - reach, (_left + _rightEdge) * 0.5f + reach);
 
+            // Whoever is only waiting stands outside the tape, never inside it: a place the street's mesh moved in over the
+            // line (a crossing inside the tape is walkway too) is put back out through the nearest side.
             for (int i = 0; i < 4; i++)
             {
                 Vector3 corner = Point(i == 0 || i == 3 ? _back - 1f : _front + 1f, i < 2 ? _left - 1f : _rightEdge + 1f);
-                _corners[i] = StreetSpots.OnRoad(corner, 1.5f, out Vector3 ground) ? ground : corner;
+                _corners[i] = KeepOutside(StreetSpots.OnRoad(corner, 1.5f, out Vector3 ground) ? ground : corner, WaitOut);
             }
             // At the end traffic arrives at, on the side it is let past.
             Vector3 duty = Point(_back - 1.6f, _entry > 0f ? _left - 0.8f : _rightEdge + 0.8f);
@@ -1333,8 +1357,8 @@ namespace RealLifeOverhaul
             // Where people with no business inside are sent: the pavement by the near entry, or failing
             // that the road just outside it.
             Vector3 aside = Point(_back - 2.5f, (_entry > 0f ? _rightEdge : _left) + _entry * 2.5f);
-            Kerbside = StreetSpots.OnPavement(aside, 4f, out Vector3 kerb) ? kerb
-                : StreetSpots.OnRoad(Point(_back - 3f, (_entry > 0f ? _rightEdge : _left) - _entry * 1f), 2f, out kerb) ? kerb : DirectorPost;
+            Kerbside = KeepOutside(StreetSpots.OnPavement(aside, 4f, out Vector3 kerb) ? kerb
+                : StreetSpots.OnRoad(Point(_back - 3f, (_entry > 0f ? _rightEdge : _left) - _entry * 1f), 2f, out kerb) ? kerb : DirectorPost, WaitOut);
 
             // Just outside the far end's opening, looking up the road away from the scene.
             float opening = Mathf.Min(EntryGap, span * 0.5f);
@@ -1544,8 +1568,10 @@ namespace RealLifeOverhaul
                 HideFrom(_cones, 0);
             }
 
-            // The tape that went up, as walls for anyone on foot: the openings are simply where no tape runs.
-            bool walled = !_crossing && _wallCount > 0;
+            // The tape that went up, as walls for anyone on foot: the openings are simply where no tape runs. A crossing
+            // through the scene is walled like the rest of the road: it is shut while the tape is up, and nobody walks
+            // through the scene (or stops on whoever lies there) on their way over the road.
+            bool walled = _wallCount > 0;
             _wallsChanged = 0;
             for (int i = 0; i < Walls; i++)
             {
@@ -1557,17 +1583,140 @@ namespace RealLifeOverhaul
                     box.SetActive(used);
                 }
             }
+            // ...and a bar across every opening a walkway of the game's pedestrians runs through, so that their mesh inside
+            // the tape is an island nobody on it can reach.
+            _barCount = walled ? Bar() : 0;
+            for (int i = _barCount; i < Bars; i++)
+            {
+                GameObject box = _bars[i].gameObject;
+                if (box.activeSelf)
+                {
+                    _wallsChanged++;
+                    box.SetActive(false);
+                }
+            }
             MeshCuts.Note("a cordon's walls", _wallsChanged);   // all in this one frame: the engine cuts the mesh once for the lot
             _props.SetActive(true);
             _carveAt = walled ? now + CarveWait : 0f;
             _carveTries = 0;
             Logger?.Info($"Cordon: tape up, {length:F0} x {width:F0} m, {_placed} post(s), {_taped} length(s) of tape, {barriers} barrier(s), "
-                         + (_crossing ? "not walled (a crossing runs through it)"
-                             : $"{_wallCount} wall(s), open at the near end {_doorAcross - _left:F1} m from the left edge ({_doorWidth:F1} m wide: the crew's corridor) and at the far end's {(_entry > 0f ? "right" : "left")} corner")
+                         + $"{_wallCount} wall(s), open at the near end {_doorAcross - _left:F1} m from the left edge ({_doorWidth:F1} m wide: the crew's corridor) and at the far end's {(_entry > 0f ? "right" : "left")} corner"
+                         + (_crossing ? "; a crossing runs through it, shut to people on foot while the tape is up" : "")
+                         + (_barCount > 0 ? $"; {_barCount} bar(s) across an opening a walkway runs through" : "")
                          + $", kerb {(_kerbLeft ? (_kerbRight ? "both sides" : "left") : _kerbRight ? "right" : "on neither side")}"
                          + (_movedPosts > 0 ? $"; {_movedPosts} post(s) moved in off their line" : "")
                          + (_tapeBlocked > 0 ? $"; {_tapeBlocked} stretch(es) of tape left out, in the way: '{_blockedBy}'" : "") + ".");
             CheckWay(barriers);
+            // Nobody but the scene's own people inside it: whoever is, is put at the nearest place outside, on the frame the tape appears.
+            CordonClear.Out(this, Logger);
+        }
+
+        // Every line of the tape's rectangle, looked at a point every half metre: where no wall stands on the line and the
+        // game's pedestrians have their mesh (a crossing through an opening, or under a stretch of tape left out), the
+        // open points are joined into runs (CordonRules.Gaps) and each run gets a bar, cut out of the mesh as a wall is.
+        // Nothing to see: the opening stays open for the crews, whom no mesh steers. Where the pedestrians' mesh is is
+        // asked once, when the tape first goes up (nothing of the cordon has cut the mesh yet), and kept for the tape
+        // run again round the crew's way, when the walls of the first dressing still cut it. Returns how many bars stand.
+        private int Bar()
+        {
+            if (!_redress)
+            {
+                FindWalkways();
+            }
+            int used = 0;
+            for (int line = 0; line < 4 && used < Bars; line++)
+            {
+                // 0 the near end and 1 the far end (across the road), 2 the left side and 3 the right side (along it).
+                Vector3 from = Point(line == 1 ? _front : _back, line == 3 ? _rightEdge : _left);
+                Vector3 to = Point(line == 0 ? _back : _front, line == 2 ? _left : _rightEdge);
+                Vector3 run = to - from;
+                run.y = 0f;
+                float length = run.magnitude;
+                if (length < 0.5f)
+                {
+                    continue;
+                }
+                Vector3 way = run / length;
+                int count = Mathf.Min(CordonRules.Points(length), BarPoints);
+                for (int k = 0; k < count; k++)
+                {
+                    float at = CordonRules.At(k, count, length);
+                    BarOpen[k] = _walkway[line * BarPoints + k] && !Covered(from, way, at);
+                }
+                int runs = CordonRules.Gaps(BarOpen, count, length, BarFrom, BarTo, Bars - used);
+                for (int r = 0; r < runs; r++)
+                {
+                    Vector3 centre = from + way * ((BarFrom[r] + BarTo[r]) * 0.5f);
+                    centre.y = StreetSpots.Ground(centre, out float ground) ? ground : _scene.y;
+                    var size = new Vector3(WallThickness, 3f, Mathf.Max(0.5f, BarTo[r] - BarFrom[r]));
+                    if (Stand(_bars[used], centre, Quaternion.LookRotation(way, Vector3.up), size))
+                    {
+                        _wallsChanged++;
+                    }
+                    _bars[used].gameObject.SetActive(true);
+                    used++;
+                }
+            }
+            return used;
+        }
+
+        // True if a wall that is up stands on a line of the tape at a distance along it: one that runs with the line, within
+        // reach of it (a post is moved in off its line a metre at most), and reaches past that point.
+        private bool Covered(Vector3 from, Vector3 way, float at)
+        {
+            for (int i = 0; i < _wallCount && i < Walls; i++)
+            {
+                if (!_walls[i].gameObject.activeSelf)
+                {
+                    continue;
+                }
+                Vector3 a = _wallFrom[i] - from;
+                Vector3 b = _wallTo[i] - from;
+                float alongA = a.x * way.x + a.z * way.z;
+                float alongB = b.x * way.x + b.z * way.z;
+                float offA = Mathf.Abs(a.x * way.z - a.z * way.x);
+                float offB = Mathf.Abs(b.x * way.z - b.z * way.x);
+                if (offA < BarReach && offB < BarReach && at >= Mathf.Min(alongA, alongB) - WallThickness && at <= Mathf.Max(alongA, alongB) + WallThickness)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Where along each line of the rectangle the game's own pedestrians have their mesh (a pavement or a crossing):
+        // a point every half metre, at the height of the ground between the line's two ends (two looks at the ground a
+        // line, one sample of the mesh a point: some hundred and twenty for a cordon of the usual size, once).
+        private void FindWalkways()
+        {
+            for (int line = 0; line < 4; line++)
+            {
+                Vector3 from = Point(line == 1 ? _front : _back, line == 3 ? _rightEdge : _left);
+                Vector3 to = Point(line == 0 ? _back : _front, line == 2 ? _left : _rightEdge);
+                from.y = StreetSpots.Ground(from, out float low) ? low : _scene.y;
+                to.y = StreetSpots.Ground(to, out float high) ? high : _scene.y;
+                Vector3 run = to - from;
+                run.y = 0f;
+                float length = run.magnitude;
+                int count = Mathf.Min(CordonRules.Points(length), BarPoints);
+                for (int k = 0; k < BarPoints; k++)
+                {
+                    _walkway[line * BarPoints + k] = k < count && length >= 0.5f
+                                                     && Walkway(Vector3.Lerp(from, to, length > 0f ? CordonRules.At(k, count, length) / length : 0f));
+                }
+            }
+        }
+
+        // True where the game's own pedestrians have their mesh right at a point of the ground.
+        private static bool Walkway(Vector3 point)
+        {
+            if (!NavMesh.SamplePosition(point, out NavMeshHit hit, WalkwayReach, StreetSpots.Pavement))
+            {
+                return false;
+            }
+            Vector3 off = hit.position - point;
+            off.y = 0f;
+            return off.sqrMagnitude < WalkwayReach * WalkwayReach;
         }
 
         // With the crew's way known: what stands of the cordon is measured against it, anything still on it is taken in,
@@ -1640,31 +1789,38 @@ namespace RealLifeOverhaul
                 depth = BarrierWall;
                 centre += _forward * (_wallOut[index] * (BarrierWall - WallThickness) * 0.5f);
             }
-            NavMeshObstacle wall = _walls[index];
-            GameObject box = wall.gameObject;
-            Transform stands = wall.transform;
-            Quaternion facing = Quaternion.LookRotation(run / length, Vector3.up);
             // From a metre under the road to two above it: the mesh need not lie exactly where the road's collider does.
             var size = new Vector3(depth, 3f, length + (_wallOut[index] != 0f ? 0f : WallThickness));
-            // The tape run again round the crew's way finds most walls where they stand. A wall that has not moved is
-            // left exactly as it is, so the engine does not cut the mesh a second time for it; one that has is moved
-            // while switched off (a carving obstacle moved while it carves is un-cut and cut again).
+            if (Stand(_walls[index], centre, Quaternion.LookRotation(run / length, Vector3.up), size))
+            {
+                _wallsChanged++;
+            }
+            return true;
+        }
+
+        // Puts a wall or a bar where it is to stand; true if it was moved (switched off for that: the caller switches it on).
+        // The tape run again round the crew's way finds most walls where they stand. One that has not moved is left exactly
+        // as it is, so the engine does not cut the mesh a second time for it; one that has is moved while switched off (a
+        // carving obstacle moved while it carves is un-cut and cut again).
+        private static bool Stand(NavMeshObstacle wall, Vector3 centre, Quaternion facing, Vector3 size)
+        {
+            GameObject box = wall.gameObject;
+            Transform stands = wall.transform;
             if (box.activeSelf && (stands.position - centre).sqrMagnitude < WallSame * WallSame && Quaternion.Angle(stands.rotation, facing) < 0.5f
                 && (wall.size - size).sqrMagnitude < WallSame * WallSame)
             {
-                return true;
+                return false;
             }
             box.SetActive(false);
             wall.carveOnlyStationary = true;
             stands.SetPositionAndRotation(centre, facing);
             wall.center = new Vector3(0f, 0.5f, 0f);
             wall.size = size;
-            _wallsChanged++;
             return true;
         }
 
-        // Asks the navigation mesh, a moment after the walls went up, whether each really is a hole in it: the mesh
-        // right under a wall's middle is gone if it was cut. A wall that was not is set to cut at once (not only
+        // Asks the navigation mesh, a moment after the walls (and bars) went up, whether each really is a hole in it: the
+        // mesh right under a wall's middle is gone if it was cut. A wall that was not is set to cut at once (not only
         // when it has stood still) and asked about once more. Said in the log either way, once per raising.
         private void CheckWalls(float now)
         {
@@ -1676,33 +1832,11 @@ namespace RealLifeOverhaul
                 Report.Length = 0;
                 for (int i = 0; i < _wallCount && i < Walls; i++)
                 {
-                    NavMeshObstacle wall = _walls[i];
-                    if (!wall.gameObject.activeInHierarchy)
-                    {
-                        continue;
-                    }
-                    standing++;
-                    Vector3 at = wall.transform.position;
-                    bool whole = false;
-                    if (NavMesh.SamplePosition(at, out NavMeshHit hit, 0.6f, StreetActor.RoadFilter))
-                    {
-                        Vector3 off = hit.position - at;
-                        off.y = 0f;
-                        whole = off.sqrMagnitude < 0.12f * 0.12f;
-                    }
-                    if (!whole)
-                    {
-                        cut++;
-                    }
-                    else if (_carveTries == 0)
-                    {
-                        wall.carveOnlyStationary = false;
-                        wall.gameObject.SetActive(false);
-                        wall.gameObject.SetActive(true);
-                        MeshCuts.Note("a cordon's wall told to cut at once");
-                    }
-                    Report.Append(Report.Length > 0 ? ", " : "").Append(_wallOut[i] != 0f ? "end " : "side ")
-                        .Append(wall.size.z.ToString("F1")).Append(whole ? " m NOT cut" : " m cut");
+                    Probe(_walls[i], _wallOut[i] != 0f ? "end " : "side ", ref standing, ref cut);
+                }
+                for (int i = 0; i < _barCount && i < Bars; i++)
+                {
+                    Probe(_bars[i], "bar ", ref standing, ref cut);
                 }
                 if (standing == 0)
                 {
@@ -1724,6 +1858,36 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
+        }
+
+        // One wall or bar for CheckWalls: is the mesh under its middle gone? One that is not is told to cut at once, the first time.
+        private void Probe(NavMeshObstacle wall, string kind, ref int standing, ref int cut)
+        {
+            if (!wall.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+            standing++;
+            Vector3 at = wall.transform.position;
+            bool whole = false;
+            if (NavMesh.SamplePosition(at, out NavMeshHit hit, 0.6f, StreetActor.RoadFilter))
+            {
+                Vector3 off = hit.position - at;
+                off.y = 0f;
+                whole = off.sqrMagnitude < 0.12f * 0.12f;
+            }
+            if (!whole)
+            {
+                cut++;
+            }
+            else if (_carveTries == 0)
+            {
+                wall.carveOnlyStationary = false;
+                wall.gameObject.SetActive(false);
+                wall.gameObject.SetActive(true);
+                MeshCuts.Note("a cordon's wall told to cut at once");
+            }
+            Report.Append(Report.Length > 0 ? ", " : "").Append(kind).Append(wall.size.z.ToString("F1")).Append(whole ? " m NOT cut" : " m cut");
         }
 
         /// <summary>
@@ -2228,6 +2392,18 @@ namespace RealLifeOverhaul
                 obstacle.carving = true;
                 obstacle.carveOnlyStationary = true;
                 _walls[i] = obstacle;
+            }
+            _bars = new NavMeshObstacle[Bars];
+            for (int i = 0; i < Bars; i++)
+            {
+                var bar = new GameObject("Bar");
+                bar.transform.SetParent(root, false);
+                bar.SetActive(false);
+                NavMeshObstacle obstacle = bar.AddComponent<NavMeshObstacle>();
+                obstacle.shape = NavMeshObstacleShape.Box;
+                obstacle.carving = true;
+                obstacle.carveOnlyStationary = true;
+                _bars[i] = obstacle;
             }
         }
 
