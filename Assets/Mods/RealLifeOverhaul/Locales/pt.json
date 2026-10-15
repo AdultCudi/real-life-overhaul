@@ -19047,5 +19047,6 @@
   "reallife_degrees_test_away_school": "Teste: a universidade age como se o próprio prédio e todos os prédios comerciais estivessem ocupados e vai para a porta da Manhattan Business School. Clique de novo para um prédio comercial livre.",
   "reallife_degrees_test_away_office": "Teste: a universidade age como se só o próprio prédio estivesse ocupado e vai para o maior prédio comercial livre. Clique de novo para encerrar o teste.",
   "reallife_degrees_test_away_over": "Teste encerrado: a universidade volta para o próprio prédio, 26 2nd Avenue, se ele estiver livre.",
-  "reallife_degrees_test_away_inside": "Saia primeiro do prédio da universidade e clique de novo."
+  "reallife_degrees_test_away_inside": "Saia primeiro do prédio da universidade e clique de novo.",
+  "reallife_campus_away_held": "O prédio próprio da universidade, {home}, ainda abriga outro serviço da cidade por enquanto."
 }

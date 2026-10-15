@@ -19047,5 +19047,6 @@
   "reallife_degrees_test_away_school": "Test: the university acts as if its own building and every office building were taken, and moves to the door of Manhattan Business School. Press again for a free office.",
   "reallife_degrees_test_away_office": "Test: the university acts as if only its own building were taken, and moves to the largest free office building. Press again to end the test.",
   "reallife_degrees_test_away_over": "Test over: the university moves back to its own building, 26 2nd Avenue, if it is free.",
-  "reallife_degrees_test_away_inside": "Leave the university's building first, then press again."
+  "reallife_degrees_test_away_inside": "Leave the university's building first, then press again.",
+  "reallife_campus_away_held": "The university's own building, {home}, still houses another city service for now."
 }

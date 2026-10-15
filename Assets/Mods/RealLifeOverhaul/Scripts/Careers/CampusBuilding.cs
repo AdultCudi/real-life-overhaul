@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Careers
         private const string Office = "ba:buildingtype_office";
         private const float FromWall = 0.30f;
         private const float Reach = 2.2f;
-        private const float ReachAtDoor = 3f;
+        private static readonly float ReachAtSchool = CampusRules.DoorReachAt(CampusPlace.School, LicenceDesks.Aside, LicenceDesks.Reach);   // metres: clear of the driving school's desk at the school's door
         private const int WaitForOthers = 30;   // seconds to wait for the utilities office and the courthouse to choose theirs
         private static readonly float[] Aside = { -4.6f, 4.6f, -6.2f, 6.2f };   // (the courthouse tries the other side first)
 
@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Careers
                 return false;
             }
             Vector3 offset = Front - player;
-            float reach = _sign != null ? Reach : ReachAtDoor;
+            float reach = _sign != null ? Reach : Place == CampusPlace.School ? ReachAtSchool : CampusRules.DoorReach;
             return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < reach * reach;
         }
 
@@ -323,10 +323,9 @@ namespace RealLifeOverhaul.Careers
             CityBuildingController h = _home;
             BuildingRegistration r = h != null ? h.buildingRegistration : null;
             string filed = SpecialBuildings.FiledAt(h);
-            bool serves = r != null && May(h) && CampusRules.HomeIsAsChosen(h.building.BuildingType, h.building.BuildingSize, h.building.BuildingVersion, h.building.SpecialService != null)
-                          && (filed == null || filed == CampusRules.BookId);
+            bool serves = r != null && May(h) && CampusRules.HomeIsAsChosen(h.building.BuildingType, h.building.BuildingSize, h.building.BuildingVersion, h.building.SpecialService != null);
             return CampusRules.HomeBlockOf(serves, r != null ? r.businessTypeName : null, r != null && r.RentedByPlayer, r != null && r.BuildingOwnedByPlayer,
-                r != null ? r.businessOwnerRivalId : null, r != null && !string.IsNullOrEmpty(r.Layout));
+                r != null ? r.businessOwnerRivalId : null, r != null && !string.IsNullOrEmpty(r.Layout), filed != null && filed != CampusRules.BookId);
         }
 
         // The block in words, for the log.
@@ -338,6 +337,7 @@ namespace RealLifeOverhaul.Careers
                 case HomeBlock.Business: return "its permanent building " + CampusRules.HomeAddress(null) + " holds a business (the game's, a rival's or another mod's)";
                 case HomeBlock.Left: return "its permanent building " + CampusRules.HomeAddress(null) + " has a layout left inside";
                 case HomeBlock.Missing: return "its permanent building " + CampusRules.HomeAddress(null) + " cannot be used in this city";
+                case HomeBlock.Held: return "its permanent building " + CampusRules.HomeAddress(null) + " is still another of the mod's buildings, chosen while the university was off, until it moves off at its next choice";
                 default: return "its permanent building is free";
             }
         }

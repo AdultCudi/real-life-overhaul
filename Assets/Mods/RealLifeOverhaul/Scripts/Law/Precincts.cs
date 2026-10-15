@@ -201,14 +201,24 @@ namespace RealLifeOverhaul.Law
 
             // What the save says first: the same buildings as last time, by address.
             var saved = new Dictionary<string, CityBuildingController>(Most, StringComparer.Ordinal);
+            var gaveWay = new HashSet<string>(StringComparer.Ordinal);   // districts whose saved station gave way: its new one is told as a move
             if (!string.IsNullOrEmpty(LawState.PrecinctAddresses))
             {
                 foreach (string address in LawState.PrecinctAddresses.Split(';'))
                 {
                     CityBuildingController found = Find(buildings, address);
-                    string holder = found != null ? SpecialBuildings.HolderOf(found) : null;
-                    if (found != null && Usable(found, out _) && !SpecialBuildings.Players(found) && !saved.ContainsKey(found.building.Neighbourhood)   // (one the player has since rented or bought gives way)
-                        && (holder == null || holder.StartsWith("police_", StringComparison.Ordinal)))   // (and one another feature holds: the university's permanent building)
+                    if (found == null)
+                    {
+                        continue;
+                    }
+                    // One the player has since rented or bought gives way, and so does one another feature holds (the
+                    // university's permanent building); either way the district's new station is said to have moved.
+                    if (SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), "police_"))
+                    {
+                        gaveWay.Add(found.building.Neighbourhood);
+                        continue;
+                    }
+                    if (Usable(found, out _) && !saved.ContainsKey(found.building.Neighbourhood))
                     {
                         saved[found.building.Neighbourhood] = found;
                     }
@@ -264,7 +274,7 @@ namespace RealLifeOverhaul.Law
                 precinct.Name = precinct.NameKey.GetLocalization();
                 _all.Add(precinct);
                 walkIn += precinct.WalkIn ? 1 : 0;
-                if (had && !ReferenceEquals(pick.Building, kept))
+                if ((had && !ReferenceEquals(pick.Building, kept)) || (!had && gaveWay.Contains(district.Key)))
                 {
                     moved = (moved != null ? moved + ", " : string.Empty) + precinct.Name;
                 }

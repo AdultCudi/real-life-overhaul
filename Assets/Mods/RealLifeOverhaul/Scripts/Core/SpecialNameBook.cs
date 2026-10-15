@@ -167,6 +167,16 @@ namespace RealLifeOverhaul
             return (_byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.ContainsKey(Key(street, number))) || ReservedFor(street, number) != null;
         }
 
+        /// <summary>
+        /// True if a feature's building kept in a save gives way on load: a player now rents or owns it, or another
+        /// feature holds it (an id not starting with the feature's own <paramref name="ownPrefix"/>; a reserved address
+        /// included). The feature then chooses another and says that it has moved.
+        /// </summary>
+        public static bool GivesWay(bool players, string holder, string ownPrefix)
+        {
+            return players || (holder != null && (string.IsNullOrEmpty(ownPrefix) || !holder.StartsWith(ownPrefix, StringComparison.Ordinal)));
+        }
+
         // ---------------------------------------------------------------- reserved addresses
 
         /// <summary>

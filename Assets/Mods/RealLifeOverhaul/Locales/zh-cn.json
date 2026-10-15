@@ -19047,5 +19047,6 @@
   "reallife_degrees_test_away_school": "测试：大学视作自己的大楼和所有办公楼都已被占用，搬到曼哈顿商学院门口。再按一次改为空闲的办公楼。",
   "reallife_degrees_test_away_office": "测试：大学视作只有自己的大楼被占用，搬到最大的空闲办公楼。再按一次结束测试。",
   "reallife_degrees_test_away_over": "测试结束：如果自己的大楼 26 2nd Avenue 空闲，大学就搬回那里。",
-  "reallife_degrees_test_away_inside": "请先离开大学的大楼，然后再按一次。"
+  "reallife_degrees_test_away_inside": "请先离开大学的大楼，然后再按一次。",
+  "reallife_campus_away_held": "大学自己的大楼 {home} 目前仍由城市的其他服务机构使用。"
 }

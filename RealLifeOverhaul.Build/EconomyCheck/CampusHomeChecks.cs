@@ -79,6 +79,19 @@ internal static partial class Program
             "university home: a business in it (the game's, a rival's, or another mod's own business type) keeps the university out");
         Check(CampusRules.HomeBlockOf(true, "ba:businesstype_empty", false, false, null, true) == HomeBlock.Left && CampusRules.HomeBlockOf(false, null, false, false, null, false) == HomeBlock.Missing,
             "university home: a layout left inside, or the building missing from the city, keeps it out too");
+        Check(CampusRules.HomeBlockOf(true, "ba:businesstype_empty", false, false, null, false, true) == HomeBlock.Held
+              && CampusRules.AwayKey(HomeBlock.Held) == "reallife_campus_away_held"
+              && CampusRules.HomeBlockOf(true, "ba:businesstype_empty", true, false, null, false, true) == HomeBlock.Players,
+            "university home: switched on after a police station took the building, the reason is that another service is still there (never \"cannot be used\"); a player's comes first");
+        Check(SpecialNameBook.GivesWay(true, null, "police_") && SpecialNameBook.GivesWay(false, CampusRules.BookId, "police_")
+              && !SpecialNameBook.GivesWay(false, "police_2", "police_") && !SpecialNameBook.GivesWay(false, null, "police_"),
+            "university home: a police station the save kept gives way when a player has the building or another feature holds it (the university), and keeps it otherwise");
+        float schoolReach = CampusRules.DoorReachAt(CampusPlace.School, 4.3f, 1.7f);
+        Check(schoolReach <= 2.4f + 0.0001f && CampusRules.Apart(4.3f, schoolReach, 1.7f) && !CampusRules.Apart(4.3f, CampusRules.DoorReach, 1.7f)
+              && CampusRules.DoorReachAt(CampusPlace.Home, 4.3f, 1.7f) == CampusRules.DoorReach && CampusRules.DoorReachAt(CampusPlace.Office, 4.3f, 1.7f) == CampusRules.DoorReach,
+            "university home: at the school's door the class panel's reach stops short of the driving school's desk (2.4 m and 1.7 m, 4.3 m apart, 0.2 m between); elsewhere 3 m");
+        Check(CampusRules.SaysMove(true, true) && !CampusRules.SaysMove(true, false) && !CampusRules.SaysMove(false, true),
+            "university home: a move is logged only when the save had an address (a new game's first choice is no move)");
         Check(CampusRules.MovesHome(false, true, false, false), "university home: standing elsewhere, it moves there once the building is free");
         Check(!CampusRules.MovesHome(true, true, false, false), "university home: at home it never moves again (once, for good)");
         Check(!CampusRules.MovesHome(false, false, false, false), "university home: while a player or anyone has it, the university stays where it is");
@@ -192,7 +205,7 @@ internal static partial class Program
         }
         var words = new (string Key, string[] Names)[]
         {
-            ("reallife_campus_away_players", new[] { "{home}" }), ("reallife_campus_away_business", new[] { "{home}" }), ("reallife_campus_away_missing", new[] { "{home}" }),
+            ("reallife_campus_away_players", new[] { "{home}" }), ("reallife_campus_away_held", new[] { "{home}" }), ("reallife_campus_away_business", new[] { "{home}" }), ("reallife_campus_away_missing", new[] { "{home}" }),
             ("reallife_campus_note_away_office", new[] { "{why}", "{address}" }), ("reallife_campus_note_away_school", new[] { "{why}", "{address}" }),
             ("reallife_campus_note_home", new[] { "{address}" }), ("reallife_guide_careers_degrees", new[] { "{degrees_address}" })
         };
@@ -208,7 +221,7 @@ internal static partial class Program
             }
         }
         Check(missing.Count == 0, "university home: every new text, and the Guide's degrees page with its address fact, is in en, pt and zh-cn with its {names}" + (missing.Count > 0 ? ": " + string.Join(", ", missing) : string.Empty));
-        foreach (HomeBlock block in new[] { HomeBlock.Players, HomeBlock.Business, HomeBlock.Missing })
+        foreach (HomeBlock block in new[] { HomeBlock.Players, HomeBlock.Business, HomeBlock.Missing, HomeBlock.Held })
         {
             foreach (CampusPlace place in new[] { CampusPlace.Office, CampusPlace.School })
             {
@@ -256,14 +269,30 @@ internal static partial class Program
         Check(building.Contains("Dev.Always(_logger, \"Careers: the university is "), "university home: where the university is, and why, is one log line whatever the diagnostics switch says");
         Check(CampusCount(map, "Careers.CampusRules.OnMap(uni.Usable, uni.Building != null, uni.Place)") == 2,
             "university home: the map's row and its marker both follow CampusRules.OnMap, so the row is there in the fallback places too");
-        Check(precincts.Contains("holder == null || holder.StartsWith(\"police_\", StringComparison.Ordinal)"), "university home: a police station the save put in the reserved building gives way");
         Check(court.Contains("SpecialBuildings.ReservedFor(") && brands.Contains("SpecialBuildings.Holds(building.StreetName, building.StreetNumber)"),
             "university home: the courthouse and the brands' franchise sites pass over it too");
         Check(interior.Contains("campus.Place == CampusPlace.School"), "university home: at the game's school no floors are made (the school inside stays the game's)");
         Check(guide.Contains("Fact(\"degrees_address\", CareersGame.HomeAddress)"), "university home: the Guide's {degrees_address} is filled from the code");
         Check(floors.Contains("CampusRules.TellAway(") && list.Contains("CareersStore.CampusToldKey"), "university home: told once through the save's mark, and the mark is listed among the feature's save keys");
+        Check(building.Contains("filed != null && filed != CampusRules.BookId)") && !building.Contains("&& (filed == null || filed == CampusRules.BookId)"),
+            "university home: another feature filed in the building is a reason of its own, not a building missing from the city");
+        Check(precincts.Contains("SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), \"police_\")") && precincts.Contains("|| (!had && gaveWay.Contains(district.Key))"),
+            "university home: a district whose saved station gave way (to the university or a player) has its new station named in the precincts-moved notice");
+        string desks = Read(@"Licences\Driving\DrivingSchool.cs");
+        float aside = CampusConst(desks, "Aside"), deskReach = CampusConst(desks, "Reach");
+        Check(aside > 0f && deskReach > 0f && CampusRules.Apart(aside, CampusRules.DoorReachAt(CampusPlace.School, aside, deskReach), deskReach)
+              && building.Contains("CampusRules.DoorReachAt(CampusPlace.School, LicenceDesks.Aside, LicenceDesks.Reach)") && building.Contains("Place == CampusPlace.School ? ReachAtSchool"),
+            "university home: the driving school's own desk figures (" + aside + " m along, " + deskReach + " m reach) keep the school-door panels apart, and the building uses them");
+        Check(floors.Contains("CampusRules.SaysMove(moved, _campusKept)"), "university home: the move line goes through SaysMove");
         Check(list.Contains("\"reallife_degrees_test_away\"") && Read(@"Core\RealLifeOverhaulMod.cs").Contains("AddButton(\"reallife_degrees_test_away\", () => Careers.CareersDirector.Instance?.TestAway())"),
             "university home: Options > Tests has the places meanwhile (a free office, the school's door, back home) without an older save");
+    }
+
+    // A float constant of a source ("internal const float Aside = 4.3f;"), or -1.
+    private static float CampusConst(string source, string name)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(source, "const float " + name + " = ([0-9.]+)f;");
+        return m.Success ? float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : -1f;
     }
 
     private static int CampusCount(string text, string what)

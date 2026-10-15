@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Careers
             _campusWas = now;
             _campusTold = mark;
             bool enrolled = FirstUniversityCourse() >= 0 || (_study != null && _study.GraduationCourse >= 0);
-            if (moved)
+            if (CampusRules.SaysMove(moved, _campusKept))
             {
                 Logger?.Info("Careers: the university has moved from " + was + " to " + _campus.Name + (_campus.AtHome ? " (its permanent building)" : " (a building of its own)") + "; "
                              + (enrolled ? "the courses under way, their classes and progress stay as they were." : "nothing of the player's was under way there."));

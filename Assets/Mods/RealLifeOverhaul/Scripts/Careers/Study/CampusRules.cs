@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Careers
         Missing = 1,   // not in this city as chosen, or no door to the street
         Players = 2,   // rented or owned by a player (another player's in a Going Public session)
         Business = 3,  // a business in it: the game's, a rival's, or another mod's
-        Left = 4       // a layout left inside
+        Left = 4,      // a layout left inside
+        Held = 5       // another of the city's services the mod placed there (a police station chosen while the university was off), until it moves off
     }
 
     /// <summary>
@@ -217,10 +218,12 @@ namespace RealLifeOverhaul.Careers
         /// <summary>
         /// What keeps the university out of its permanent building, from what the city shows now; <see cref="HomeBlock.None"/>
         /// when it is free and the university takes it. A player's comes first (rented or owned: in a Going Public session
-        /// another player's too), then a business (the game's, a rival's, or another mod's: any business type that is not
-        /// the game's empty one), then something left inside (a layout). Missing: not in this city as chosen, or no door.
+        /// another player's too), then another of the mod's services filed there (<paramref name="heldByOther"/>: one that chose
+        /// it while the university was off), then a business (the game's, a rival's, or another mod's: any business type
+        /// that is not the game's empty one), then something left inside (a layout). Missing: not in this city as chosen,
+        /// or no door.
         /// </summary>
-        public static HomeBlock HomeBlockOf(bool homeServes, string businessType, bool rentedByPlayer, bool ownedByPlayer, string businessOwner, bool layoutLeft)
+        public static HomeBlock HomeBlockOf(bool homeServes, string businessType, bool rentedByPlayer, bool ownedByPlayer, string businessOwner, bool layoutLeft, bool heldByOther = false)
         {
             if (!homeServes)
             {
@@ -229,6 +232,10 @@ namespace RealLifeOverhaul.Careers
             if (rentedByPlayer || ownedByPlayer)
             {
                 return HomeBlock.Players;
+            }
+            if (heldByOther)
+            {
+                return HomeBlock.Held;   // (another feature's book entry there: it moves off at its next choice, the university waits)
             }
             if (!NoBusinessIn(businessType, false, false, businessOwner))
             {
@@ -265,6 +272,26 @@ namespace RealLifeOverhaul.Careers
             return usable && hasBuilding && place != CampusPlace.None;
         }
 
+        public const float DoorReach = 3f;        // metres: the university's place at its own door, with no board
+        public const float PanelGap = 0.2f;       // metres kept between two places' reaches, so the game's panels never both show
+
+        /// <summary>
+        /// How near the door the player stands to be at the university when it has no board: <see cref="DoorReach"/>, but at
+        /// the door of Manhattan Business School no further than leaves <see cref="PanelGap"/> before the driving school's
+        /// desk (<paramref name="deskAside"/> metres along the wall from the door, reached within <paramref name="deskReach"/>),
+        /// so the class panel and the desk's panel never both show.
+        /// </summary>
+        public static float DoorReachAt(CampusPlace place, float deskAside, float deskReach)
+        {
+            return place == CampusPlace.School ? Math.Max(0.5f, Math.Min(DoorReach, deskAside - deskReach - PanelGap)) : DoorReach;
+        }
+
+        /// <summary>True if two places this far apart, reached within these distances, can never both be reached at once (with the gap kept).</summary>
+        public static bool Apart(float distance, float reachA, float reachB)
+        {
+            return reachA + reachB + PanelGap <= distance + 0.0001f;
+        }
+
         /// <summary>The locale key of the sentence that says why the university is not in its permanent building; null when it is.</summary>
         public static string AwayKey(HomeBlock block)
         {
@@ -274,6 +301,7 @@ namespace RealLifeOverhaul.Careers
                 case HomeBlock.Business: return "reallife_campus_away_business";
                 case HomeBlock.Left: return "reallife_campus_away_business";
                 case HomeBlock.Missing: return "reallife_campus_away_missing";
+                case HomeBlock.Held: return "reallife_campus_away_held";
                 default: return null;
             }
         }
@@ -297,6 +325,12 @@ namespace RealLifeOverhaul.Careers
             return ((int)place).ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + street + "|" + number.ToString(System.Globalization.CultureInfo.InvariantCulture)
                    + "|" + ((int)block).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
+
+        /// <summary>
+        /// True if a move of the university is written to the log: its building differs from the one the save had, and the
+        /// save had one (a new game's first choice, against the earlier rule's guess, is no move).
+        /// </summary>
+        public static bool SaysMove(bool moved, bool saveHadAddress) => moved && saveHadAddress;
 
         /// <summary>True if the notice of where the university is is to be told now: it is away from home and the save has not been told this.</summary>
         public static bool TellAway(string mark, string told)
