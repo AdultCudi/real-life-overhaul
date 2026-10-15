@@ -122,6 +122,7 @@ internal static partial class Program
         Flare();
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         FlareReview();   // the review round of Flare as a living network (FlareReviewChecks.cs)
+        FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
         Shared();
         Fame();
         Endings();
