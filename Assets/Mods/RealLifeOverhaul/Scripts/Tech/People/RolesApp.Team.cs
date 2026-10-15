@@ -214,13 +214,21 @@ namespace RealLifeOverhaul.Tech
             box.Line(promote
                 ? TechText.Fill("reallife_roles_career_promote", "level", TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))
                 : TechText.Fill("reallife_roles_career_no_promote", "rating", TalentCatalogue.PromoteRating.ToString(), "least", TechText.Percent(p.Level + 1 < TalentCatalogue.Levels ? TalentCatalogue.LevelSkillLeast[p.Level + 1] - 5 : 100)));
-            Transform rises = box.ButtonRow();
-            if (promote)
+            if (TalentRules.CanRise(p, day))
             {
-                InfoBox.Button(rises, InfoBox.Positive, "reallife_roles_button_promote", () => Do(() => _director.Promote(key)));
+                Transform rises = box.ButtonRow();
+                if (promote)
+                {
+                    InfoBox.Button(rises, InfoBox.Positive, "reallife_roles_button_promote", () => Do(() => _director.Promote(key)));
+                }
+                InfoBox.Button(rises, InfoBox.Additional, "reallife_roles_button_rise_3", () => Do(() => _director.GiveRise(key, 300)));
+                InfoBox.Button(rises, InfoBox.Additional, "reallife_roles_button_rise_8", () => Do(() => _director.GiveRise(key, 800)));
             }
-            InfoBox.Button(rises, InfoBox.Additional, "reallife_roles_button_rise_3", () => Do(() => _director.GiveRise(key, 300)));
-            InfoBox.Button(rises, InfoBox.Additional, "reallife_roles_button_rise_8", () => Do(() => _director.GiveRise(key, 800)));
+            else
+            {
+                // (one rise or promotion in WageRules' period: the next waits, so a rise is never stacked on a rise day after day)
+                box.Note(TechText.T("reallife_wage_rested_line", "day", WageRules.NextDay(p.RecognisedDay).ToString()));
+            }
             if (p.OnCourse(day))
             {
                 box.Line(TechText.T(p.CourseSkill == 2 ? "reallife_roles_career_on_degree" : p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course", "day", p.CourseEnd.ToString()));

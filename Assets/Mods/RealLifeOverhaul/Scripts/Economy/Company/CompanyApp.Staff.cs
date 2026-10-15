@@ -168,11 +168,16 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_emp_match", () => _director.AnswerOffer(id, true));
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_co_emp_let_go", () => _director.AnswerOffer(id, false));
             }
-            else if (f.LeaveDay == 0 && f.Going > f.Paid)
+            else if (StaffRules.CanGive(f, _director.Today))
             {
                 // Nobody has asked (or a request lapsed): the player may still bring them up to the going rate, the same as agreeing to a request.
                 box.Note(CompanyText.T("reallife_co_emp_give_what", "raise", CompanyText.Wage(f.Going - f.Paid)));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_co_emp_give", () => _director.GiveRaise(id));
+            }
+            else if (f.LeaveDay == 0 && f.Going > f.Paid)
+            {
+                // (a raise was answered lately: one in the rest's time, as their own requests come)
+                box.Note(CompanyText.T("reallife_wage_rested_line", "day", f.AskRest.ToString()));
             }
             box.Section("reallife_ibox_sec_pay");
             box.Row("reallife_co_emp_wage", CompanyText.Wage(f.Wage));

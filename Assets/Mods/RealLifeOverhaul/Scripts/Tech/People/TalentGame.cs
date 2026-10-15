@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Tech
     /// their wage and hours this week, the business they are assigned to and its type; the game's own wage for a skill
     /// (EmployeeHelper.CalculateHourlyWageForSkill).
     ///
-    /// DONE, each the game's own way: a rise is a higher EmployeeInstance.hourlyWage (never a lower one); morale moves the
+    /// DONE, each the game's own way: a rise is a higher EmployeeInstance.hourlyWage (never a lower one, never past WageRules'
+    /// cap of the game's own wage for the skill; a wage the mod ran past it before the cap is brought back to it on load); morale moves the
     /// game's satisfaction a few points a day; a burnt-out employee is off sick through the game's own next sick day; one
     /// who resigns leaves as the game has an employee leave whose complaint went unanswered; a lay-off or a dismissal is
     /// the game's own firing (RemoveEmployee); a mentor's help is the game's IncreaseSkill. Money is the mod's own dated
@@ -263,12 +264,53 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- doing
 
-        /// <summary>A rise in basis points on the game's wage. Never lowers it.</summary>
-        public static void Rise(EmployeeInstance e, int bp)
+        /// <summary>
+        /// The game's own wage for the employee's main skill at its value, cents an hour (EmployeeHelper.CalculateHourlyWageForSkill,
+        /// the figure a hire of the game's starts from): what every raise of the mod's is bounded by (WageRules). 0 if it cannot be read.
+        /// </summary>
+        public static int FormulaCents(EmployeeInstance e)
         {
-            float before = e.hourlyWage;
-            e.hourlyWage = Mathf.Max(before, before * (10000 + Mathf.Max(0, bp)) / 10000f);
-            Logger?.Info("Tech: " + NameOf(e) + "'s wage " + before.ToString("F2") + " -> " + e.hourlyWage.ToString("F2") + ".");
+            try
+            {
+                return e != null && e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null
+                    ? Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(e.characterData.skills[0]) * 100f)
+                    : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>A rise in basis points on the game's wage: never lowers it, never past WageRules' cap for the skill. True if it rose.</summary>
+        public static bool Rise(EmployeeInstance e, int bp)
+        {
+            int formula = FormulaCents(e), before = WageCents(e), after = WageRules.Rise(before, bp, formula);
+            if (after <= before)
+            {
+                Logger?.Info("Tech: " + NameOf(e) + "'s wage stays at " + (before / 100f).ToString("F2") + " (the most a raise of the mod's takes it to is " + (WageRules.Cap(formula) / 100f).ToString("F2") + ").");
+                return false;
+            }
+            e.hourlyWage = after / 100f;
+            Logger?.Info("Tech: " + NameOf(e) + "'s wage " + (before / 100f).ToString("F2") + " -> " + e.hourlyWage.ToString("F2") + ".");
+            return true;
+        }
+
+        /// <summary>
+        /// A wage the mod raised past WageRules' cap (before the bound existed), brought back to the cap as a save loads.
+        /// The game's satisfaction is left as it is. True if it was lowered.
+        /// </summary>
+        public static bool Mend(EmployeeInstance e)
+        {
+            int formula = FormulaCents(e), before = WageCents(e), after = WageRules.Mended(before, formula);
+            if (after >= before)
+            {
+                return false;
+            }
+            e.hourlyWage = after / 100f;
+            Logger?.Info("Tech: " + NameOf(e) + "'s wage, raised by the mod past " + (WageRules.CapBp / 10000) + " times the game's own for the skill (" + (formula / 100f).ToString("F2")
+                         + "), brought back from " + (before / 100f).ToString("F2") + " to " + e.hourlyWage.ToString("F2") + ".");
+            return true;
         }
 
         /// <summary>The game's satisfaction moved by a few points, kept within 1 and 100 (the game's own leaving at 0 is left to the game).</summary>
