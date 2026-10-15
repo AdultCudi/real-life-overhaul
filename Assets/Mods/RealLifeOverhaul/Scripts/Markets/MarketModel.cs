@@ -232,8 +232,12 @@ namespace RealLifeOverhaul.Markets
         public bool IsOpen => State == OrderState.Open;
     }
 
-    /// <summary>What a line of the account's history is.</summary>
-    public enum TradeKind { Bought = 0, Sold = 1, Dividend = 2, DividendPaid = 3, Payout = 4, Interest = 5, BorrowFee = 6, Deposit = 7, Withdrawal = 8, Shortfall = 9 }
+    /// <summary>
+    /// What a line of the account's history is. BotAdded and BotTaken (capital given to a running bot or taken out of
+    /// it: no money moves) are written in the save as a payment in and a withdrawal with a mark after them
+    /// (MarketStore), so a version before them reads them as those, never as the last kind it knows.
+    /// </summary>
+    public enum TradeKind { Bought = 0, Sold = 1, Dividend = 2, DividendPaid = 3, Payout = 4, Interest = 5, BorrowFee = 6, Deposit = 7, Withdrawal = 8, Shortfall = 9, BotAdded = 10, BotTaken = 11 }
 
     /// <summary>One line of the account's history.</summary>
     public sealed class Trade

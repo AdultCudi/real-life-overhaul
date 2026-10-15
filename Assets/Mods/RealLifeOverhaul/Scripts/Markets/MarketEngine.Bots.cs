@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>Why something asked of a bot cannot be done. Each has a sentence (reallife_mkt_bot_why_...).</summary>
-    public enum BotWhy { None = 0, Closed, Held, Behind, Hired, Full, TooLittle, NoCash, NotHired, NotStopped, TooLittleLeft, Off, OwnShares, NotListed, Picks, Count }
+    public enum BotWhy { None = 0, Closed, Held, Behind, Hired, Full, TooLittle, NoCash, NotHired, NotStopped, TooLittleLeft, Off, OwnShares, NotListed, Picks, NotRunning, ChangeTooLittle, TooMuchOut, Count }
 
     public sealed partial class MarketEngine
     {
@@ -54,7 +54,10 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- the player's asks
 
-        /// <summary>A firm's bot hired with so much capital and its settings (each held to its choices). Null with the reason when it cannot be.</summary>
+        /// <summary>
+        /// A firm's bot hired with so much capital and its settings (each held to its choices), the capital out of the cash
+        /// not already given to the player's other bots (<see cref="BotCashFree"/>). Null with the reason when it cannot be.
+        /// </summary>
         public Bot Hire(int firm, long capital, int size, int stop, int loss, out BotWhy why)
         {
             Finish();   // (a moment half played is played out first: Midway)
@@ -76,7 +79,7 @@ namespace RealLifeOverhaul.Markets
             {
                 why = BotWhy.TooLittle;
             }
-            else if (capital > Wallet.Cash)
+            else if (capital > BotCashFree)
             {
                 why = BotWhy.NoCash;
             }
@@ -194,6 +197,70 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
+        /// <summary>
+        /// The cash a hire or capital added may use: what can be afforded in the market (with the money worked orders have
+        /// with the broker) less what is already given to the player's bots to trade (MarketBots.Committed). Never below nothing.
+        /// </summary>
+        public long BotCashFree => Math.Max(0L, Wallet.Cash - MarketBots.Committed(State));
+
+        /// <summary>The least added to a running bot or taken out of it at a time, at today's prices.</summary>
+        public long BotChangeLeast => AtPrices(MarketBots.ChangeLeastAtStart);
+
+        /// <summary>
+        /// More of the player's cash given to a running bot to trade (MarketBots.Add): nothing sold, nothing moved, a line
+        /// of the history. It puts the money to work from its next decision (at once while the market is shut). False
+        /// with the reason: not running, less than <see cref="BotChangeLeast"/>, or more than the cash not already given to
+        /// the player's bots (<see cref="BotCashFree"/>, as at a hire).
+        /// </summary>
+        public bool AddCapital(int firm, long amount, out BotWhy why)
+        {
+            Finish();   // (a moment half played is played out first: Midway)
+            Bot b = Asked(firm, out why);
+            if (b != null)
+            {
+                why = b.Status != BotStatus.Running ? BotWhy.NotRunning : amount < BotChangeLeast ? BotWhy.ChangeTooLittle : amount > BotCashFree ? BotWhy.NoCash : BotWhy.None;
+            }
+            if (why != BotWhy.None)
+            {
+                return false;
+            }
+            MarketBots.Add(b, amount);
+            MarketTrading.AddTrade(State, new Trade { Day = State.Day, Phase = State.Phase, Kind = TradeKind.BotAdded, Value = amount, Bot = firm });
+            Rethink(b);
+            return true;
+        }
+
+        /// <summary>The most that can be taken out of a hired bot now without selling anything (MarketBots.MostOut); 0 for none.</summary>
+        public long BotMostOut(int firm)
+        {
+            Bot b = MarketBots.Hired(State, firm);
+            return b != null ? MarketBots.MostOut(State, b, BotCapitalLeast, State.Phase) : 0;
+        }
+
+        /// <summary>
+        /// Capital taken out of a running bot, off its money not in shares (MarketBots.TakeOut): nothing sold, nothing
+        /// moved, a line of the history. False with the reason: not running, less than <see cref="BotChangeLeast"/>, or more
+        /// than <see cref="BotMostOut"/>.
+        /// </summary>
+        public bool TakeCapital(int firm, long amount, out BotWhy why)
+        {
+            Finish();   // (a moment half played is played out first: Midway)
+            Bot b = Asked(firm, out why);
+            if (b != null)
+            {
+                why = b.Status != BotStatus.Running ? BotWhy.NotRunning : amount < BotChangeLeast ? BotWhy.ChangeTooLittle
+                    : amount > MarketBots.MostOut(State, b, BotCapitalLeast, State.Phase) ? BotWhy.TooMuchOut : BotWhy.None;
+            }
+            if (why != BotWhy.None)
+            {
+                return false;
+            }
+            MarketBots.TakeOut(b, amount);
+            MarketTrading.AddTrade(State, new Trade { Day = State.Day, Phase = State.Phase, Kind = TradeKind.BotTaken, Value = -amount, Bot = firm });
+            Rethink(b);
+            return true;
+        }
+
         /// <summary>A bot asked to sell everything at the market's next step and stop.</summary>
         public bool SellUp(int firm, out BotWhy why)
         {
@@ -205,6 +272,7 @@ namespace RealLifeOverhaul.Markets
                 return false;
             }
             b.Pending.Clear();
+            b.TopUp = 0;
             b.Status = b.Holdings.Count > 0 ? BotStatus.SellingUp : BotStatus.Stopped;
             return true;
         }
@@ -343,6 +411,10 @@ namespace RealLifeOverhaul.Markets
                 {
                     Execute(b, day, phase);
                 }
+                if (k == 1 && MarketBots.TopUpDue(b))
+                {
+                    MarketBots.TopUpTraded(b, b.ShortDay == day);   // (traded now; once more the next market day if the cash was short of it)
+                }
                 for (int j = b.Holdings.Count - 1; j >= 0; j--)
                 {
                     BotHolding h = b.Holdings[j];
@@ -406,8 +478,8 @@ namespace RealLifeOverhaul.Markets
             }
             long worth = MarketBots.Worth(State, b, MarketCatalogue.PhaseClose);
             int days = MarketBots.MarketDaysIn(b.Month, Year);
-            long full = MarketBots.Fee(f, worth, AtPrices(MarketBots.FeeLeastAtStart));
             int hired = Math.Max(b.MonthDays, b.MonthTrades > 0 ? 1 : 0);   // (a day it traded is a day, whether or not a close came after it)
+            long full = MarketBots.Fee(f, MarketBots.FeeWorth(b, worth, hired), AtPrices(MarketBots.FeeLeastAtStart));   // (capital added or taken out: for the days it was there)
             long fee = (full * Math.Min(days, hired) + days - 1) / days;
             long share = 0;
             long after = worth - fee;
@@ -437,7 +509,8 @@ namespace RealLifeOverhaul.Markets
                 b.MonthPaid = 0;
                 b.MonthTrades = 0;
                 b.MonthDays = 0;
-                b.Month = MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), Year);
+                b.MonthAdded = 0;
+                b.Month =MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), Year);
             }
             return fee + share;
         }
@@ -467,8 +540,9 @@ namespace RealLifeOverhaul.Markets
             {
                 BotOrder o = b.Pending[i];
                 Stock s = o.Buy ? State.Stock(o.StockId) : null;
-                if (s == null || f == null || !MarketBots.Allowed(State, b, s, day) || b.Holding(s.Id) != null)
+                if (s == null || f == null || !MarketBots.Allowed(State, b, s, day) || (b.Holding(s.Id) != null && !MarketBots.TopUpDue(b)))
                 {
+                    // (more of what it holds only when capital added was decided on: MarketBots.Decide)
                     continue;
                 }
                 long qty = Math.Min(o.Qty, MarketBots.Room(State, s));
@@ -538,7 +612,8 @@ namespace RealLifeOverhaul.Markets
             }
             SellAll(b, phase);
             b.Pending.Clear();
-            b.Status = b.Holdings.Count > 0 ? BotStatus.SellingUp : BotStatus.Stopped;   // (shares of the player's own company it may not sell yet: sold as soon as it may)
+            b.TopUp = 0;
+            b.Status =b.Holdings.Count > 0 ? BotStatus.SellingUp : BotStatus.Stopped;   // (shares of the player's own company it may not sell yet: sold as soon as it may)
             Tell(new BotNote { Kind = BotNoteKind.Limit, Firm = b.Firm, A = MarketBots.Worth(State, b, phase), B = floor });
         }
 
