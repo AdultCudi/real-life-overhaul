@@ -34,9 +34,11 @@ namespace RealLifeOverhaul
         ///   the paper     Flare's stories with their names (a pile-on, ignored complaints) in the morning's City Ledger,
         ///                 chained on to the others' (Social/News.Extra)
         ///
-        /// Tycoons is left unset: the rival tycoons of the end game (feature/rival-tycoons) are not in the mod yet; when they
-        /// are, one line here hands Flare their names. COST: nothing per frame; each answer is asked on Flare's day, its hour
-        /// or a click.
+        ///   Tycoons      the rival tycoons in play (Rivals: those come forward and not taken over, while the rivals run and do
+        ///                 not rest), each with the kind of their latest move announced in the last two days, for their posts
+        ///                 in their own voice
+        ///
+        /// COST: nothing per frame; each answer is asked on Flare's day, its hour or a click.
         /// </summary>
         public static class FlareLiveLinks
         {
@@ -62,6 +64,7 @@ namespace RealLifeOverhaul
                 FlareBridges.SiteNear = (x, z, within) => CivicDirector.Instance != null && CivicDirector.Instance.Works != null && CivicDirector.Instance.Works.Nearest(new Vector3(x, 0f, z), within) != null;
                 FlareBridges.SiteReported = SiteReported;
                 FlareBridges.Watched = Watched;
+                FlareBridges.Tycoons = Tycoons;
                 FlareBridges.PlayerDistrict = Districts.DistrictGame.PlayerDistrict;
                 FlareBridges.Staff = Staff;
                 FlareBridges.PlayerName = PlayerName;
@@ -237,6 +240,36 @@ namespace RealLifeOverhaul
                 if (clean && Settings.Civic)
                 {
                     CivicEffects.Keep(ModState.CivicClean, 2);
+                }
+            }
+
+            // The rivals in play, each with their latest move announced (the last two days), for Flare.
+            private static void Tycoons(List<FlareTycoon> into)
+            {
+                Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
+                if (f == null)
+                {
+                    return;
+                }
+                for (int i = 0; i < f.Tycoons.Length; i++)
+                {
+                    Rivals.Tycoon t = f.Tycoons[i];
+                    if (t == null || !t.Active)
+                    {
+                        continue;
+                    }
+                    int move = -1, at = -1;
+                    for (int m = 0; m < f.Moves.Count; m++)
+                    {
+                        Rivals.RivalMove mv = f.Moves[m];
+                        if (mv.Tycoon == t.Index && mv.Live && !mv.Test && mv.Announced >= f.SettledDay - 2 && mv.Announced > at)
+                        {
+                            at = mv.Announced;
+                            move = (int)mv.Kind;
+                        }
+                    }
+                    into.Add(new FlareTycoon { Index = t.Index, Name = t.Def.Name, Move = move });
                 }
             }
 

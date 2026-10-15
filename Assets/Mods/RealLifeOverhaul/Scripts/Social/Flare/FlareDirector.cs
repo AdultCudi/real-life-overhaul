@@ -172,6 +172,11 @@ namespace RealLifeOverhaul.Flare
             LiveStart(file);
             _file = file;
             _running = true;
+            if (FlareLiveRules.StartDay(file.Net, day, Following))
+            {
+                LiveDay(day);   // the city's posts of today now (an update to this version, a new account): not an empty feed until tomorrow
+            }
+            ShareStart();
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed " + file.Seed + ")"
                                             : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), " + file.Drafts.Count + " draft(s)") + ".");
             Badge();
@@ -184,6 +189,8 @@ namespace RealLifeOverhaul.Flare
             {
                 FlareStore.Save(Save.modData, _file);
             }
+            ShareStop();
+            FlareBridges.Watched?.Invoke(false, false);   // no patrols or cleaners of Flare's once it stops (Crime/CityWatch back to 1)
             _running = false;
             _file = null;
             if (_view != null)

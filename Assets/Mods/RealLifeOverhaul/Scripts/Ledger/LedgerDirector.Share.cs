@@ -23,6 +23,8 @@ namespace RealLifeOverhaul.Ledger
         private readonly List<LedgerPiece> _taken = new List<LedgerPiece>(8);
         private int _guestPiecesDay = -1, _sentPiecesDay = -1;
         private float _reprintAt = -1f;
+        private bool _hostEdition;                 // a guest: the edition shown is the host's
+        private LedgerEdition _ownToday;           // ...and this player's own of the same day, kept for when it stops following that day
 
         private void ShareRegister()
         {
@@ -52,6 +54,11 @@ namespace RealLifeOverhaul.Ledger
             {
                 return true;   // an older one than this player has: nothing to do
             }
+            if (_state.Edition != null && _state.Edition.Day == e.Day && !_hostEdition)
+            {
+                _ownToday = _state.Edition;   // this player's own of today, printed before it followed: back if it stops following today
+            }
+            _hostEdition = true;
             KeepEarlier(_state.Edition, e.Day);
             _state.Edition = e;
             _page?.Changed();
@@ -94,12 +101,30 @@ namespace RealLifeOverhaul.Ledger
                 else if (f[0] == "P")
                 {
                     LedgerPiece piece = LedgerShare.ReadPiece(f);
-                    if (piece != null && _guestPieces.Count < 32)
+                    if (LedgerShare.Admit(_guestPieces, who, piece, LedgerBridges.Filter != null ? text2 => LedgerBridges.Filter(text2, who) : (Func<string, string>)null))
                     {
-                        _guestPieces.Add(new KeyValuePair<string, LedgerPiece>(who, piece));
-                        _reprintAt = Time.unscaledTime + ReprintWait;
+                        _reprintAt = LedgerShare.ReprintAt(_reprintAt, Time.unscaledTime, ReprintWait);
                     }
                 }
+            }
+        }
+
+        // No longer following: this player's own edition of today back, if the host's took its place today.
+        private void OwnAgain(int day)
+        {
+            if (!_hostEdition)
+            {
+                return;
+            }
+            _hostEdition = false;
+            LedgerEdition own = _ownToday;
+            _ownToday = null;
+            if (own != null && own.Day == day && _state.Edition != null && _state.Edition.Day == day)
+            {
+                _state.Edition = own;
+                _page?.Changed();
+                _stand?.Changed();
+                Logger?.Info("City Ledger: no longer the host's paper; this player's own edition of day " + day + " is back.");
             }
         }
 
@@ -167,9 +192,10 @@ namespace RealLifeOverhaul.Ledger
         /// </summary>
         public void GuestReport(int kind, float x, float z, string detail, int amount)
         {
-            if (Running && SharedCity.Follows(LedgerShare.Part))
+            string line = Running && SharedCity.Follows(LedgerShare.Part) ? LedgerShare.AskReport(kind, x, z, detail, amount) : null;
+            if (line != null)
             {
-                SharedCity.Ask(LedgerShare.Part, LedgerShare.AskReport(kind, x, z, detail, amount));
+                SharedCity.Ask(LedgerShare.Part, line);   // (the city's kinds only: the player's own go as pieces about them)
             }
         }
     }

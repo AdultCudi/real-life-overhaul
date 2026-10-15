@@ -23,63 +23,87 @@ namespace RealLifeOverhaul.Flare
         private const float ShotWait = 0.35f;   // real seconds after the phone is put away (its fade is a tenth of a second)
         private bool _shooting;
 
-        // The camera button's shot (CameraPressed is the one line that chooses what the button does).
+        // The camera button's shot (CameraPressed is the one line that chooses what the button does). Not while the game's
+        // question box is up: putting the phone away would leave the box in the picture, so the shot is refused with a word.
         private void TakeShot()
         {
             if (_shooting || !Running || _app == null)
             {
                 return;
             }
+            if (GameConfirm.IsOpen)
+            {
+                Tell(NotificationType.Warning, "reallife_flare_note_shot_busy", null);
+                return;
+            }
             _shooting = true;
             StartCoroutine(Guard.Routine(Shoot()));
         }
 
+        // Whatever happens from the read of the screen on (a fault, Flare stopping), the screen's copy is let go and the
+        // camera is free again: a finally around it all (on the worker when the worker still has it).
         private IEnumerator Shoot()
         {
-            FlareLiveGame.CloseMenu();
-            float until = Time.unscaledTime + ShotWait;
-            while (Time.unscaledTime < until)
+            FlareLiveGame.Shot shot = null;
+            Task<bool> work = null;
+            try
             {
-                yield return null;
+                FlareLiveGame.CloseMenu();
+                float until = Time.unscaledTime + ShotWait;
+                while (Time.unscaledTime < until)
+                {
+                    yield return null;
+                }
+                yield return new WaitForEndOfFrame();
+                shot = FlareLiveGame.Capture();
+                if (_app != null && Running)
+                {
+                    _app.Open();   // back to the compose sheet, which says the picture is on its way
+                }
+                if (shot == null)
+                {
+                    Tell(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
+                    yield break;
+                }
+                string path = Path.Combine(FlarePictures.Folder, "RealLifeOverhaul_Flare_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
+                FlareLiveGame.Shot taken = shot;
+                work = Task.Run(() =>
+                {
+                    int w, h;
+                    byte[] rows = FlareLiveGame.Shrink(taken, PhotoThumbs.Width, 1024, out w, out h);
+                    if (rows == null)
+                    {
+                        return false;
+                    }
+                    PhotoThumbs.Write(PhotoThumbs.FileOf(path), rows, w, h);
+                    return System.IO.File.Exists(PhotoThumbs.FileOf(path));
+                });
+                while (!work.IsCompleted)
+                {
+                    yield return null;
+                }
+                bool made = work.Status == TaskStatus.RanToCompletion && work.Result;
+                if (!made || !Running)
+                {
+                    Tell(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
+                    yield break;
+                }
+                Logger?.Info("Flare: a shot of the screen for a post (" + Path.GetFileName(path) + ", its small copy only).");
+                _view?.Attach("f:" + path);
             }
-            yield return new WaitForEndOfFrame();
-            FlareLiveGame.Shot shot = FlareLiveGame.Capture();
-            if (_app != null && Running)
-            {
-                _app.Open();   // back to the compose sheet, which says the picture is on its way
-            }
-            if (shot == null)
+            finally
             {
                 _shooting = false;
-                Tell(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
-                yield break;
-            }
-            string path = Path.Combine(FlarePictures.Folder, "RealLifeOverhaul_Flare_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
-            Task<bool> work = Task.Run(() =>
-            {
-                int w, h;
-                byte[] rows = FlareLiveGame.Shrink(shot, PhotoThumbs.Width, 1024, out w, out h);
-                if (rows == null)
+                FlareLiveGame.Shot left = shot;
+                if (work != null && !work.IsCompleted)
                 {
-                    return false;
+                    work.ContinueWith(_ => FlareLiveGame.Drop(left));
                 }
-                PhotoThumbs.Write(PhotoThumbs.FileOf(path), rows, w, h);
-                return System.IO.File.Exists(PhotoThumbs.FileOf(path));
-            });
-            while (!work.IsCompleted)
-            {
-                yield return null;
+                else
+                {
+                    FlareLiveGame.Drop(left);   // (Shrink lets it go itself; a second drop does nothing)
+                }
             }
-            _shooting = false;
-            bool made = work.Status == TaskStatus.RanToCompletion && work.Result;
-            if (!made || !Running)
-            {
-                FlareLiveGame.Drop(shot);
-                Tell(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
-                yield break;
-            }
-            Logger?.Info("Flare: a shot of the screen for a post (" + Path.GetFileName(path) + ", its small copy only).");
-            _view?.Attach("f:" + path);
         }
 
         /// <summary>True while the camera is taking a shot (the compose sheet says so).</summary>

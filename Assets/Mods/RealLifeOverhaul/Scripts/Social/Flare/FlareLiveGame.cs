@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Flare
 
         private static bool _filterTried, _filterOn;
         private static object _chat, _nobody;
+        private static FieldInfo _steamIdValue;
 
         // ---------------------------------------------------------------- businesses
 
@@ -136,9 +137,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>
         /// What another player typed, through Steam's own text filter (ISteamUtils.FilterText, through the game's Steam
         /// library, Core/GameContract): profanity and slurs starred as Steam does for the player's own settings. Null when
-        /// Steam's filter is not there (not running, an older library): the caller then uses the mod's word list.
+        /// Steam's filter is not there (not running, an older library): the caller then uses the mod's word list. The
+        /// author's session id is passed as their Steam account when it is one (FlareFilter.SteamIdOf), else nobody.
         /// </summary>
-        public static string SteamFilter(string text)
+        public static string SteamFilter(string text, string author = null)
         {
             if (string.IsNullOrEmpty(text))
             {
@@ -155,6 +157,7 @@ namespace RealLifeOverhaul.Flare
                         ParameterInfo[] ps = filter.GetParameters();
                         _chat = Enum.ToObject(ps[0].ParameterType, 2);   // TextFilteringContext.Chat
                         _nobody = Activator.CreateInstance(ps[1].ParameterType);   // a SteamId of 0: nobody in particular
+                        _steamIdValue = ps[1].ParameterType.GetField("Value", BindingFlags.Public | BindingFlags.Instance);
                         _filterOn = init.Invoke(null, null) is bool on && on;
                     }
                 }
@@ -171,7 +174,14 @@ namespace RealLifeOverhaul.Flare
             }
             try
             {
-                return GameContract.SteamFilterText.Method.Invoke(null, new[] { _chat, _nobody, text }) as string;
+                object who = _nobody;
+                ulong id = FlareFilter.SteamIdOf(author);
+                if (id != 0UL && _steamIdValue != null && _steamIdValue.FieldType == typeof(ulong))
+                {
+                    who = Activator.CreateInstance(_nobody.GetType());
+                    _steamIdValue.SetValue(who, id);   // (a boxed copy: set in place)
+                }
+                return GameContract.SteamFilterText.Method.Invoke(null, new[] { _chat, who, text }) as string;
             }
             catch (Exception e)
             {

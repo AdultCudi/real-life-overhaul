@@ -54,7 +54,8 @@ namespace RealLifeOverhaul.Flare
         private readonly List<FlarePost> _made = new List<FlarePost>(32);
         private readonly List<FlareCase> _due = new List<FlareCase>(8);
         private readonly List<string> _staff = new List<string>(8);
-        private readonly List<string> _tycoons = new List<string>(4);
+        private readonly List<string> _tycoons = new List<string>(4);              // their names, for the accounts called on
+        private readonly List<FlareTycoon> _tycoonsIn = new List<FlareTycoon>(4);
         private readonly List<FlareReaction> _reactions = new List<FlareReaction>(16);
         private readonly List<FlareNotice> _notices = new List<FlareNotice>(64);
         private readonly List<string> _myPlaces = new List<string>(8);
@@ -161,12 +162,16 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             ReadFacts(day);
+            bool newDay = _file.Net.CityDay != day;
             int made = FlareLiveRules.CityDay(_file, _facts, _citizens, _made);
             for (int i = 0; i < _made.Count; i++)
             {
                 CityMade(_made[i]);
             }
-            Tycoons(day);
+            if (newDay)
+            {
+                Tycoons(day);
+            }
             CityDm(day);
             if (made > 0)
             {
@@ -235,23 +240,52 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The rival tycoons of the end game, once that feature is in the mod: one of them posts, now and then.
+        // The rival tycoons of the end game (Rivals): one of them posts in their own voice, now and then, about their latest move if they have one.
         private void Tycoons(int day)
         {
-            Names(FlareBridges.Tycoons, _tycoons);
-            if (_tycoons.Count == 0 || Following || FlareRules.Roll(FlareLiveRules.CitySeed(_file), day, 950) >= 350)
+            ReadTycoons();
+            if (Following)
             {
                 return;
             }
-            int id = _file.NextId++;
-            var p = new FlarePost
+            FlarePost p = FlareLiveRules.TycoonPost(_file, _tycoonsIn, day);
+            if (p != null)
             {
-                Id = id, Author = FlareAuthor.Tycoon, Source = FlareSource.BusinessPost, Arg = 5 + FlareRules.Roll(_file.Seed, day, 951) % 2,
-                Name = _tycoons[FlareRules.Roll(_file.Seed, day, 952) % _tycoons.Count], Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 20000, Likes = 400 + FlareRules.Roll(_file.Seed, id, 3),
-                Topic = "business"
-            };
-            FlareLiveRules.SetAt(p, FlareLiveRules.Now(day, 9 + FlareRules.Roll(_file.Seed, day, 953) % 10, FlareRules.Roll(_file.Seed, day, 954) % 60));
-            _file.Posts.Add(p);
+                _file.Posts.Add(p);
+                Logger?.Info("Flare: " + p.Name + " posts on day " + day + (p.Arg >= FlareLiveRules.TycoonMoveArg ? " about their move (" + (p.Arg - FlareLiveRules.TycoonMoveArg) + ")." : "."));
+            }
+        }
+
+        private void ReadTycoons()
+        {
+            _tycoonsIn.Clear();
+            _tycoons.Clear();
+            try
+            {
+                FlareBridges.Tycoons?.Invoke(_tycoonsIn);
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Flare: the rival tycoons could not be read (" + e.Message + ").");
+                _tycoonsIn.Clear();
+            }
+            for (int i = 0; i < _tycoonsIn.Count; i++)
+            {
+                _tycoons.Add(_tycoonsIn[i].Name);
+            }
+        }
+
+        // A tycoon's voice by their name (their place in the catalogue); -1 for a name not in play.
+        private int TycoonVoice(string name)
+        {
+            for (int i = 0; i < _tycoonsIn.Count; i++)
+            {
+                if (_tycoonsIn[i].Name == name)
+                {
+                    return _tycoonsIn[i].Index;
+                }
+            }
+            return -1;
         }
 
         // One of the city's people writes to the player, now and then.
@@ -469,7 +503,7 @@ namespace RealLifeOverhaul.Flare
         // The week's ignored complaints of a kind in a district: three, and it is in the paper, the mood falls, and the City Office acts after all.
         private void Escalation(FlareCase c, int day)
         {
-            if (!FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day))
+            if (!FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice))
             {
                 return;
             }
@@ -478,13 +512,12 @@ namespace RealLifeOverhaul.Flare
             _file.MayorMood = FlareRules.Clamp(_file.MayorMood + FlareLiveRules.MoodEscalated, -100, 100);
             Logger?.Info("Flare: " + FlareLiveRules.Tally(_file.Net, c.Kind, c.District, day) + " complaints about " + c.Kind + " in " + FlareGame.DistrictName(c.District)
                          + " this week, none acted on: in tomorrow's City Ledger; the feed's mood " + _file.MayorMood + ".");
-            if (!Settings.FlareCityOffice || c.State == FlareCaseState.Acting || c.Kind == FlareReport.Transit || c.Kind == FlareReport.Utilities)
+            // Under the paper's eye a crew is found after all, if one of the week's is free.
+            FlareOrder order = FlareLiveRules.EscalationOrder(_file.Net, c, Now, Settings.FlareCityOffice);
+            if (order == FlareOrder.None)
             {
                 return;
             }
-            // Under the paper's eye a crew is found after all.
-            FlareOrder order = c.Kind == FlareReport.Crime ? FlareOrder.Patrol : c.Kind == FlareReport.Litter ? FlareOrder.Cleanup : c.Kind == FlareReport.Business ? FlareOrder.Inspection
-                : c.Kind == FlareReport.Unsafe ? FlareOrder.Patrol : FlareOrder.Works;
             int site = -1, days = 0;
             string address = null;
             if (order == FlareOrder.Works && (FlareBridges.Works == null || !FlareBridges.Works(c.Kind, c.District, c.X, c.Z, FlareLiveRules.CitySeed(_file) + c.Id, out site, out days, out address)))
@@ -600,6 +633,7 @@ namespace RealLifeOverhaul.Flare
                 a.Author = m[0] == 'b' ? FlareAuthor.Brand : FlareAuthor.Tycoon;
                 a.Name = m.Substring(2);
                 a.Arg = (int)(m[0] == 'b' ? FlareAnswer.Brand : FlareAnswer.Tycoon);
+                a.Who = m[0] == 'b' ? -1 : TycoonVoice(a.Name);   // a tycoon answers in their own voice
             }
             FlareLiveRules.SetAt(a, p.At + 30 + FlareRules.Roll(_file.Seed, id, 4) % 90);
             _file.Posts.Add(a);
@@ -855,9 +889,13 @@ namespace RealLifeOverhaul.Flare
             int career = FlareBridges.Career != null ? FlareBridges.Career(out employer) : -1;
             bool boss = career >= 0 && FlareRules.BossFollows(_file.Seed, career, _file.Tier) && shift < 0;
             p.Reactors = FlareLiveRules.Reactors(p, _people, _staff, boss, _line);
+            bool hostAnswers = FlareLiveRules.HostAnswers(Following, Settings.FlareSharePosts, p.Source);   // (the host's replies come back with the post)
             if (p.Source != FlareSource.Reply)
             {
-                FlareLiveRules.CityReplies(_file, p, null);
+                if (!hostAnswers)
+                {
+                    FlareLiveRules.CityReplies(_file, p, null);
+                }
                 if (FlareLiveRules.PileOn(p))
                 {
                     FlareLiveRules.Story(_file.Net, p.Day + 1, "reallife_flare_news_pileon", "name", MyName, "handle", MyHandle);
@@ -872,11 +910,18 @@ namespace RealLifeOverhaul.Flare
             {
                 BusinessEffect(p, true);
             }
+            if (p.Source == FlareSource.Announce && _tycoons.Count == 0)
+            {
+                ReadTycoons();
+            }
             if (p.Source == FlareSource.Announce && _tycoons.Count > 0 && FlareRules.Roll(_file.Seed, p.Id, 870) < 400)
             {
                 p.Mention = p.Mention ?? "t:" + _tycoons[FlareRules.Roll(_file.Seed, p.Id, 871) % _tycoons.Count];
             }
-            MentionAnswer(p);
+            if (!hostAnswers)
+            {
+                MentionAnswer(p);
+            }
             FlareRules.Prune(_file);
             Shared_Own(p);
         }

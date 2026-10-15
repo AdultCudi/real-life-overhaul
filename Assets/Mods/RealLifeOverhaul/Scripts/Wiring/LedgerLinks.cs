@@ -57,7 +57,8 @@ namespace RealLifeOverhaul
                 LedgerBridges.Connection = Connection;
                 LedgerBridges.OpenUtilities = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
                 Planner.PlannerDirector.Instance?.AddSource(Renewals);
-                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);
+                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);   // (the city's kinds only: News and LedgerShare.CityKind)
+                LedgerBridges.Filter = Flare.FlareDirector.Filter;
                 LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
             }
 

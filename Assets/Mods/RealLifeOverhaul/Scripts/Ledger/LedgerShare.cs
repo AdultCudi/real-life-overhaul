@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Ledger
         public const int ValueMost = 120;            // characters of a name's value in a guest's piece
         public const int PairsMost = 8;
         public const int AsksMost = 24;              // lines of one request the host reads
+        public const int CityKinds = 7;              // Social/News.NewsKind: Accident, PedestrianHit, HitAndRun, Crime, Arrest, BreakIn, CarBreakIn (the city's); after them the player's own and Story
+        public const int GuestPiecesMost = 32;       // the guests' pieces the host keeps for a day, all guests together
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         /// <summary>The keys of pieces about a player, the only ones a guest may send for the paper.</summary>
@@ -80,9 +82,23 @@ namespace RealLifeOverhaul.Ledger
             return LedgerStore.Finish(e);
         }
 
-        /// <summary>A guest's report for the host's paper, as a line of its request.</summary>
+        /// <summary>
+        /// Whether a report of the paper's is the city's (a crash, a knockdown, a hit and run, a crime, an arrest, a break-in),
+        /// to go to the host's paper from a guest. The player's own crash, arrest and knockdown and a finished story are not:
+        /// in the host's paper they would be the host player's.
+        /// </summary>
+        public static bool CityKind(int kind)
+        {
+            return kind >= 0 && kind < CityKinds;
+        }
+
+        /// <summary>A guest's report for the host's paper, as a line of its request; null for one that is not the city's.</summary>
         public static string AskReport(int kind, float x, float z, string detail, int amount)
         {
+            if (!CityKind(kind))
+            {
+                return null;
+            }
             return "N|" + kind.ToString(Inv) + "|" + x.ToString("0.#", Inv) + "|" + z.ToString("0.#", Inv) + "|" + LedgerStore.Clean(detail) + "|" + amount.ToString(Inv);
         }
 
@@ -124,7 +140,7 @@ namespace RealLifeOverhaul.Ledger
             kind = amount = 0;
             x = z = 0f;
             detail = null;
-            if (f.Length < 6 || f[0] != "N" || !int.TryParse(f[1], NumberStyles.Integer, Inv, out kind) || kind < 0 || kind >= kinds)
+            if (f.Length < 6 || f[0] != "N" || !int.TryParse(f[1], NumberStyles.Integer, Inv, out kind) || kind < 0 || kind >= kinds || !CityKind(kind))
             {
                 return false;
             }
@@ -157,6 +173,52 @@ namespace RealLifeOverhaul.Ledger
                 data[i] = Cut(f[5 + i]);
             }
             return new LedgerPiece((LedgerSection)section, Math.Max(0, Math.Min(100, weight)), f[3], f[4].Length > 0 && f[4].Length <= 80 ? f[4] : null, data);
+        }
+
+        /// <summary>
+        /// The host takes a guest's piece for today's edition: each guest's first few (<see cref="PiecesPerGuestDay"/>), each
+        /// once, and a few in all; its values (names, words) through the filter given (what another player's game wrote, as the
+        /// host's players will read it). True when it was taken.
+        /// </summary>
+        public static bool Admit(List<KeyValuePair<string, LedgerPiece>> pieces, string who, LedgerPiece p, Func<string, string> filter)
+        {
+            if (p == null || pieces.Count >= GuestPiecesMost)
+            {
+                return false;
+            }
+            who = who ?? string.Empty;
+            int n = 0;
+            string id = p.Key + "|" + string.Join("|", p.Data);
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                if (pieces[i].Key == who)
+                {
+                    n++;
+                    if (pieces[i].Value.Key + "|" + string.Join("|", pieces[i].Value.Data) == id)
+                    {
+                        return false;
+                    }
+                }
+            }
+            if (n >= PiecesPerGuestDay)
+            {
+                return false;
+            }
+            if (filter != null)
+            {
+                for (int i = 1; i < p.Data.Length; i += 2)
+                {
+                    p.Data[i] = filter(p.Data[i]) ?? string.Empty;
+                }
+            }
+            pieces.Add(new KeyValuePair<string, LedgerPiece>(who, p));   // (its head is a locale key of the paper's own, not words)
+            return true;
+        }
+
+        /// <summary>When today's edition is printed again with the guests' pieces: a while after the first of them came, not put off by each that follows.</summary>
+        public static float ReprintAt(float set, float now, float wait)
+        {
+            return set >= 0f ? set : now + wait;
         }
 
         private static string Cut(string value)

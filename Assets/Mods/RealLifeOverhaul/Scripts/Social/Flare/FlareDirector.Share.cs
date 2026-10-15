@@ -35,14 +35,17 @@ namespace RealLifeOverhaul.Flare
         private readonly HashSet<int> _casesChanged = new HashSet<int>();
         private readonly List<KeyValuePair<string, string>> _netPics = new List<KeyValuePair<string, string>>(PicturesKept);
         private readonly List<string> _newPics = new List<string>(4);
-        private readonly Dictionary<string, FlareSnapParts> _pieces = new Dictionary<string, FlareSnapParts>(4);
+        private readonly FlarePieceBook _pieces = new FlarePieceBook();
         private readonly HashSet<string> _likedBy = new HashSet<string>();
+        private readonly HashSet<string> _sharedBy = new HashSet<string>();
         private readonly FlareOutbox _outbox = new FlareOutbox();
         private readonly FlareRateBook _rates = new FlareRateBook();
         private readonly List<string> _chunks = new List<string>(8);
         private readonly StringBuilder _lines = new StringBuilder(4096);
-        private Action<string> _askF;
+        private readonly int _session = Environment.TickCount & 0x7FFFFFFF;   // this run of the game as a host: in the whole part's head
+        private Func<string, bool> _askF;
         private bool _watchesChanged;
+        private bool _offToSend;                   // the host: Flare stopped in a session; the guests are sent an empty whole once
         private int _netFromId = int.MaxValue;     // the host: posts from this number on are new since the last update
 
         private bool Hosting => SharedCity.Leading && Running;
@@ -54,13 +57,45 @@ namespace RealLifeOverhaul.Flare
             SharedCity.Register(new SharedCityPart
             {
                 Id = FlareNetShare.Part, Name = "Flare",
-                Ready = () => Running && Save != null,
+                Ready = () => (Running && Save != null) || _offToSend,
                 Write = HostWhole,
                 Changes = HostChanges,
                 Apply = GuestApply,
                 Request = HostRequest,
-                Left = () => _outbox.Clear()
+                Left = HostGone
             });
+        }
+
+        // A guest: the host's feed is no longer followed (the host left, or stopped Flare): what was on its way is the player's own.
+        private void HostGone()
+        {
+            _outbox.Clear();
+            int kept = FlareNetShare.HostLeft(_file);
+            if (kept > 0)
+            {
+                Logger?.Info("Flare: the host's feed is no longer followed; " + kept + " post(s) of this player's that were on their way stay as their own.");
+                Changed();
+            }
+        }
+
+        // The host: Flare stops (switched off, or the city unloads) in a session: its guests are sent an empty whole, so they run their own again.
+        private void ShareStop()
+        {
+            if (GoingPublic.IsHost && _running)
+            {
+                _offToSend = true;
+                SharedCity.Changed(FlareNetShare.Part);
+            }
+        }
+
+        // The host: Flare starts in a session: its guests are sent its feed whole.
+        private void ShareStart()
+        {
+            _offToSend = false;
+            if (GoingPublic.IsHost)
+            {
+                SharedCity.Changed(FlareNetShare.Part);
+            }
         }
 
         // Once a second: a guest's lines for the host, as many as a request may carry.
@@ -114,13 +149,14 @@ namespace RealLifeOverhaul.Flare
         {
             if (!Running || Save == null)
             {
+                _offToSend = false;   // (the empty whole that tells the guests Flare stopped here: sent once)
                 return null;
             }
             if (_netFromId == int.MaxValue)
             {
                 _netFromId = _file.NextId;
             }
-            return FlareNetShare.WriteWhole(_file, Save.Day, MyId, MyName, Settings.FlareSharePosts, _netPics);
+            return FlareNetShare.WriteWhole(_file, Save.Day, MyId, MyName, Settings.FlareSharePosts, _netPics, _session);
         }
 
         // The host's update: the shared posts made or changed since the last, the cases that moved, the watches, new pictures.
@@ -193,7 +229,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     continue;
                 }
-                if (!_rates.Allow(who, ask.Kind, UnityEngine.Time.unscaledTime, Save.Day))
+                if (!_rates.Allow(who, ask.Kind, UnityEngine.Time.unscaledTime, Save.Day, ask.Kind == 'X' ? ask.Index : 0))
                 {
                     refused++;
                     continue;
@@ -227,18 +263,10 @@ namespace RealLifeOverhaul.Flare
                     GuestPost(ask, who);
                     break;
                 case 'L':
-                    p = ByNet(ask.NetId);
-                    if (p != null && (ask.On ? _likedBy.Add(ask.NetId + "|" + who) : _likedBy.Remove(ask.NetId + "|" + who)))
-                    {
-                        p.PlayerLikes = Math.Max(0, p.PlayerLikes + (ask.On ? 1 : -1));
-                        _netChanged.Add(p.Id);
-                    }
-                    break;
                 case 'S':
                     p = ByNet(ask.NetId);
-                    if (p != null)
+                    if (FlareNetShare.Count(p, ask, who, _likedBy, _sharedBy))   // (once a player: a like, its taking back, a share)
                     {
-                        p.Reposts++;
                         _netChanged.Add(p.Id);
                     }
                     break;
@@ -279,10 +307,11 @@ namespace RealLifeOverhaul.Flare
             p.NetId = id;
             p.Author = FlareAuthor.Network;
             p.AuthorId = who;
-            p.AuthorName = ask.Name != null ? Filter(ask.Name) : who;
+            p.AuthorName = ask.Name ?? who;
+            FlareNetShare.CleanPost(p, text => Filter(text, who));   // its words, names and tags as the others will see them
+            p.AuthorName = p.AuthorName ?? who;
             p.Token = ask.Token;
             p.ReplyTo = parent != null ? parent.Id : -1;
-            p.Text = p.Text != null ? Filter(p.Text) : null;
             p.Pic = p.Pic != null && p.Pic.StartsWith("n:" + who + "/", StringComparison.Ordinal) ? p.Pic : null;
             p.Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29);
             p.Likes = p.Reach * FlareRules.LikeShare / 1000;
@@ -309,31 +338,17 @@ namespace RealLifeOverhaul.Flare
         // A piece of a guest's picture: kept until the picture is whole, then it goes to everybody with the next update.
         private void Piece(FlareAsk ask, string who)
         {
-            if (!ask.PicId.StartsWith(who + "/", StringComparison.Ordinal))
-            {
-                return;   // a picture is only ever its own player's
-            }
-            FlareSnapParts parts;
-            if (!_pieces.TryGetValue(ask.PicId, out parts) || parts.Count != ask.Count)
-            {
-                if (_pieces.Count >= 8)
-                {
-                    _pieces.Clear();   // (pictures half sent by players who left: the ones on their way are sent again)
-                }
-                parts = new FlareSnapParts(ask.PicId, ask.Count);
-                _pieces[ask.PicId] = parts;
-            }
-            if (!parts.Add(ask.Index, ask.Text))
+            string whole = _pieces.Add(who, ask, UnityEngine.Time.unscaledTime);
+            if (whole == null)
             {
                 return;
             }
-            _pieces.Remove(ask.PicId);
-            if (parts.Bytes() == null)
+            if (whole.Length == 0)
             {
                 Logger?.Warn("Flare: a picture of " + who + "'s came damaged and is left out.");
                 return;
             }
-            KeepPicture(ask.PicId, parts.Text());
+            KeepPicture(ask.PicId, whole);
             _newPics.Add(ask.PicId);
         }
 
@@ -342,11 +357,11 @@ namespace RealLifeOverhaul.Flare
         // A post of the player's: in a session, to the others (a guest's through the host; the host's goes with its next update).
         private void Shared_Own(FlarePost p)
         {
-            if (!GoingPublic.InSession || !Settings.FlareSharePosts)
+            if (!GoingPublic.InSession || !FlareLiveRules.ToSession(Settings.FlareSharePosts, p.Source))
             {
-                return;
+                return;   // (a report goes always: it is the City Office's, which on a guest is the host's)
             }
-            bool picture = p.Pic != null && Settings.FlareSharePictures && PictureAllowed();
+            bool picture = p.Pic != null && Settings.FlareSharePosts && Settings.FlareSharePictures && PictureAllowed();
             if (picture)
             {
                 p.NetPic = "n:" + MyId + "/" + _file.Net.PicNext++;
@@ -429,9 +444,8 @@ namespace RealLifeOverhaul.Flare
             {
                 _outbox.Add(FlareNetShare.AskLike(p.NetId, on));
             }
-            else if (GoingPublic.IsHost && FlareNetShare.IsShared(_file, p, true) && (on ? _likedBy.Add(p.Id + "|" + MyId) : _likedBy.Remove(p.Id + "|" + MyId)))
+            else if (GoingPublic.IsHost && FlareNetShare.IsShared(_file, p, true) && FlareNetShare.Count(p, new FlareAsk { Kind = 'L', On = on }, MyId, _likedBy, _sharedBy))
             {
-                p.PlayerLikes = Math.Max(0, p.PlayerLikes + (on ? 1 : -1));
                 Shared_Changed(p);
             }
         }
@@ -444,6 +458,7 @@ namespace RealLifeOverhaul.Flare
             }
             else if (GoingPublic.IsHost)
             {
+                _sharedBy.Add((p.NetId > 0 ? p.NetId : p.Id) + "|" + MyId);
                 Shared_Changed(p);
             }
         }
@@ -493,7 +508,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
-            FlareLiveRules.Dm(_file.Net, "p:" + from, name != null ? Filter(name) : from, Math.Min(at, Now), false, Filter(text), null, null);
+            FlareLiveRules.Dm(_file.Net, "p:" + from, name != null ? Filter(name, from) : from, Math.Min(at, Now), false, Filter(text, from), null, null);
             if (Settings.SocialMediaNotices)
             {
                 Tell(NotificationType.Info, "reallife_flare_note_dm", _openMessages, "name", name ?? from);
@@ -515,13 +530,22 @@ namespace RealLifeOverhaul.Flare
             HashSet<int> present = null;
             if (whole)
             {
-                string[] head = lines[0].TrimEnd('\r').Split('|');
-                if (head.Length < 3 || head[0] != FlareNetShare.Version)
+                int hostDay, seed;
+                string hostKey;
+                if (!FlareNetShare.ReadHead(lines[0], out hostDay, out seed, out hostKey))
                 {
                     return false;
                 }
-                int seed;
-                if (int.TryParse(head[2], out seed) && seed != 0 && seed != _file.Net.CitySeed)
+                if (FlareNetShare.NewHost(_file, hostKey))
+                {
+                    Logger?.Info("Flare: a host or session other than the last (" + hostKey + "): the posts of the last session go, and this player's own are theirs alone again.");
+                }
+                int dropped = FlareNetShare.DropOwnCity(_file, Save.Day);
+                if (dropped > 0)
+                {
+                    Logger?.Info("Flare: following the host's city: " + dropped + " post(s) of this player's own city of today give way to the host's.");
+                }
+                if (seed != 0 && seed != _file.Net.CitySeed)
                 {
                     _file.Net.CitySeed = seed;   // the host's city's people, from now on (their names stay theirs after the session)
                     EnsureCitizens(_file);
@@ -590,7 +614,7 @@ namespace RealLifeOverhaul.Flare
                             if (FlareNetShare.ReadGoing(f, out who, out goer, out when, out invite) && !_file.Net.IsHidden(who))
                             {
                                 FlarePost p = ByNet(invite);
-                                FlareLiveRules.Dm(_file.Net, "p:" + who, goer, Math.Min(when, Now), false, null, "reallife_flare_dm_going", "event=" + (p != null ? FlareText.InviteName(p) : "?"));
+                                FlareLiveRules.Dm(_file.Net, "p:" + who, goer != null ? Filter(goer, who) : who, Math.Min(when, Now), false, null, "reallife_flare_dm_going", "event=" + (p != null ? FlareText.InviteName(p) : "?"));
                             }
                             break;
                     }
@@ -667,10 +691,11 @@ namespace RealLifeOverhaul.Flare
             }
             p.Id = _file.NextId++;
             p.ReplyTo = parent != null ? parent.Id : -1;
-            if (p.Author == FlareAuthor.Network && p.Text != null)
+            if (p.Author == FlareAuthor.Network)
             {
-                p.Text = Filter(p.Text);
-                p.AuthorName = p.AuthorName != null ? Filter(p.AuthorName) : p.AuthorId;
+                string author = p.AuthorId;
+                FlareNetShare.CleanPost(p, text => Filter(text, author));   // another player's words, names and tags
+                p.AuthorName = p.AuthorName ?? p.AuthorId;
             }
             if (p.Source == FlareSource.Answer && p.Case >= 0)
             {
@@ -685,9 +710,9 @@ namespace RealLifeOverhaul.Flare
                 {
                     _file.Net.Applied.RemoveAt(0);
                 }
-                if (p.Source == FlareSource.Review || p.Source == FlareSource.Announce)
+                if (FlareNetShare.AppliesOnArrival(p, Save.Day))
                 {
-                    SessionEffect(p);
+                    SessionEffect(p);   // (today's: on joining, the earlier days' reviews have had their days)
                 }
             }
             return p.NetId;
@@ -748,14 +773,14 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- the text and the pictures of others
 
-        /// <summary>What another player typed, as this player is shown it: Steam's filter (else the mod's word list), and at Strict both and addresses.</summary>
-        private static string Filter(string text)
+        /// <summary>What another player typed, as this player is shown it: Steam's filter as its author's (else the mod's word list), and at Strict both and addresses. Also the City Ledger's pieces of guests (Wiring/LedgerLinks).</summary>
+        public static string Filter(string text, string author)
         {
             if (string.IsNullOrEmpty(text))
             {
                 return text;
             }
-            string steam = FlareLiveGame.SteamFilter(text);
+            string steam = FlareLiveGame.SteamFilter(text, author);
             string clean = steam ?? FlareFilter.Clean(text, FlareFilter.Standard);
             return Settings.FlareFilter >= FlareFilter.Strict ? FlareFilter.Clean(clean, FlareFilter.Strict) : clean;
         }

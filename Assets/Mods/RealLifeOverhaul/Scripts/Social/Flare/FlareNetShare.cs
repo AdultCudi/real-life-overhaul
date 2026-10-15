@@ -92,11 +92,16 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- writing
 
-        /// <summary>The host's whole part: every shared post, case and watch, and the newest pictures.</summary>
-        public static string WriteWhole(FlareFile f, int day, string hostId, string hostName, bool hostShares, IList<KeyValuePair<string, string>> pictures)
+        /// <summary>
+        /// The host's whole part: every shared post, case and watch, and the newest pictures. Its head names the host and
+        /// its session (a number drawn when the host starts), so that a guest's save knows whose session numbers it holds.
+        /// </summary>
+        public static string WriteWhole(FlareFile f, int day, string hostId, string hostName, bool hostShares, IList<KeyValuePair<string, string>> pictures, int session)
         {
             var b = new StringBuilder(32 * 1024);
             b.Append(Version).Append('|').Append(day.ToString(Inv)).Append('|').Append(f.Net.CitySeed.ToString(Inv));
+            Texts(b, hostId);
+            Ints(b, session);
             for (int i = 0; i < f.Posts.Count; i++)
             {
                 if (IsShared(f, f.Posts[i], hostShares))
@@ -129,7 +134,7 @@ namespace RealLifeOverhaul.Flare
             int reply = parent != null ? (parent.NetId > 0 ? parent.NetId : parent.Id) : -1;
             b.Append("P|").Append(net.ToString(Inv));
             Ints(b, p.Day, p.Hour, p.Minute, own ? (int)FlareAuthor.Network : (int)p.Author, p.Who, (int)p.Source, (int)p.Tone, p.Arg);
-            Texts(b, p.Place, p.Name, p.District, p.Topic, p.Text, own ? p.NetPic : p.Pic != null && p.Pic.StartsWith("n:", StringComparison.Ordinal) ? p.Pic : null);
+            Texts(b, p.Place, NameOut(p), p.District, p.Topic, p.Text, own ? p.NetPic : p.Pic != null && p.Pic.StartsWith("n:", StringComparison.Ordinal) ? p.Pic : null);
             Ints(b, reply);
             Texts(b, own ? hostId : p.AuthorId, own ? hostName : p.AuthorName);
             Ints(b, p.Likes, p.Replies, p.Reposts, p.PlayerLikes, p.Reach, p.When);
@@ -186,7 +191,7 @@ namespace RealLifeOverhaul.Flare
             var b = new StringBuilder(256 + (p.Text?.Length ?? 0) * 2);
             b.Append("P|").Append(p.Token.ToString(Inv));
             Ints(b, (int)p.Source, (int)p.Tone, p.Arg);
-            Texts(b, p.Place, p.Name, p.District, p.Topic, p.Text, p.NetPic);
+            Texts(b, p.Place, NameOut(p), p.District, p.Topic, p.Text, p.NetPic);
             Ints(b, replyNet, p.Reach, p.When);
             Texts(b, p.Mention, Clip(name, NameMost));
             Ints(b, (p.Viral ? 1 : 0) | (p.Bad ? 2 : 0));
@@ -450,6 +455,216 @@ namespace RealLifeOverhaul.Flare
             return from != null && text != null;
         }
 
+        // ---------------------------------------------------------------- the session's bounds
+
+        /// <summary>
+        /// The head of the host's whole part: its day, the seed of its city's people, and the key of the host and its session
+        /// ("host id/session"; null from a host that gave none). False for a head this version does not read.
+        /// </summary>
+        public static bool ReadHead(string line, out int day, out int seed, out string hostKey)
+        {
+            day = seed = 0;
+            hostKey = null;
+            string[] head = (line ?? string.Empty).TrimEnd('\r').Split('|');
+            if (head.Length < 3 || head[0] != Version)
+            {
+                return false;
+            }
+            day = I(head, 1);
+            seed = I(head, 2);
+            string host = U(head, 3);
+            hostKey = host != null ? Clip(host, 64) + "/" + I(head, 4).ToString(Inv) : null;
+            return true;
+        }
+
+        /// <summary>
+        /// A guest's save meets a host (or a session of it) other than the one its session numbers came from: those numbers
+        /// mean nothing here now. The posts of the other session go, the player's own keep only their own number (their
+        /// session number and "on its way" cleared: this host has never had them), and what was applied by session number
+        /// is forgotten. True when the key was another (the save is cleared of it); the key is kept either way.
+        /// </summary>
+        public static bool NewHost(FlareFile f, string hostKey)
+        {
+            if (f == null || hostKey == null || string.Equals(f.Net.HostKey, hostKey, StringComparison.Ordinal))
+            {
+                return false;
+            }
+            f.Net.HostKey = hostKey;
+            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Shared)
+                {
+                    f.Posts.RemoveAt(i);
+                }
+                else
+                {
+                    p.NetId = 0;
+                    p.Pending = false;
+                }
+            }
+            f.Net.Applied.Clear();
+            return true;
+        }
+
+        /// <summary>
+        /// A guest starts following: the city's posts it made itself today (its own city's people, officials, businesses and
+        /// tycoons) go, as the host's city's take their place; a reply of the city's to one of the player's own posts stays.
+        /// How many went.
+        /// </summary>
+        public static int DropOwnCity(FlareFile f, int day)
+        {
+            int n = 0;
+            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Shared || p.Day != day || !(p.Author == FlareAuthor.Citizen || p.Author == FlareAuthor.Official || p.Author == FlareAuthor.Business || p.Author == FlareAuthor.Tycoon))
+                {
+                    continue;
+                }
+                FlarePost parent = p.ReplyTo >= 0 ? f.Post(p.ReplyTo) : null;
+                if (parent != null && parent.Author == FlareAuthor.Player)
+                {
+                    continue;
+                }
+                f.Posts.RemoveAt(i);
+                n++;
+            }
+            return n;
+        }
+
+        /// <summary>The host has gone: the player's posts still on their way to it are the player's own, as they stand. How many.</summary>
+        public static int HostLeft(FlareFile f)
+        {
+            int n = 0;
+            for (int i = 0; f != null && i < f.Posts.Count; i++)
+            {
+                if (f.Posts[i].Pending)
+                {
+                    f.Posts[i].Pending = false;
+                    n++;
+                }
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// Whether a review of the host's feed moves a business here when it first comes: only one of today's (when a guest
+        /// joins, the whole feed comes: the reviews of earlier days have had their days at the session's machines then).
+        /// </summary>
+        public static bool AppliesOnArrival(FlarePost p, int today)
+        {
+            return p != null && p.Source == FlareSource.Review && p.Day == today;
+        }
+
+        /// <summary>
+        /// What another player wrote, as this player is shown it: the typed text and the names (their own, a business's)
+        /// through the filter given; a place or an account called on that the filter would change is left out (they are
+        /// keys, not words); and the tags made again from what is left: a tag the filter would star is left out, never
+        /// shown starred or cut.
+        /// </summary>
+        public static void CleanPost(FlarePost p, Func<string, string> filter)
+        {
+            if (p == null || filter == null)
+            {
+                return;
+            }
+            p.Text = p.Text != null ? filter(p.Text) : null;
+            p.AuthorName = p.AuthorName != null ? filter(p.AuthorName) : null;
+            p.Name = p.Name != null ? filter(p.Name) : null;
+            p.Place = p.Place != null && filter(p.Place) == p.Place ? p.Place : null;
+            p.Mention = p.Mention != null && filter(p.Mention) == p.Mention ? p.Mention : null;
+            p.Topic = CleanTopic(p.Topic, filter);
+        }
+
+        /// <summary>The tags of a post kept only where the filter leaves them as they are, and each a tag (letters, figures, '_'; not too long); null for none.</summary>
+        public static string CleanTopic(string topic, Func<string, string> filter)
+        {
+            if (string.IsNullOrEmpty(topic))
+            {
+                return null;
+            }
+            var b = new StringBuilder(topic.Length);
+            string[] tags = topic.Split(' ');
+            int n = 0;
+            for (int i = 0; i < tags.Length && n < FlareLiveRules.TagsMost; i++)
+            {
+                string tag = tags[i];
+                if (tag.Length == 0 || tag.Length > FlareLiveRules.TagLength || !IsTag(tag) || (filter != null && filter(tag) != tag))
+                {
+                    continue;
+                }
+                b.Append(b.Length > 0 ? " " : string.Empty).Append(tag);
+                n++;
+            }
+            return b.Length > 0 ? b.ToString() : null;
+        }
+
+        private static bool IsTag(string tag)
+        {
+            for (int i = 0; i < tag.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(tag[i]) && tag[i] != '_')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// A post's name as it leaves this machine: a photo's or a selfie's is the photo's path on disk, of which only the
+        /// file's name goes (a path would show the Windows user's name to the other players), as does any name that is a
+        /// path; any other name as it is.
+        /// </summary>
+        public static string NameOut(FlarePost p)
+        {
+            string name = p != null ? p.Name : null;
+            if (name == null)
+            {
+                return null;
+            }
+            bool path = p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie || name.IndexOf(@":\", StringComparison.Ordinal) > 0 || name.StartsWith(@"\\", StringComparison.Ordinal);
+            if (!path)
+            {
+                return name;
+            }
+            int cut = Math.Max(name.LastIndexOf('\\'), name.LastIndexOf('/'));
+            return cut >= 0 ? name.Substring(cut + 1) : name;
+        }
+
+        /// <summary>
+        /// The host takes a guest's like or share of a post: each player likes a post once and takes it back once, and shares
+        /// it once. True when the post's figures changed.
+        /// </summary>
+        public static bool Count(FlarePost p, FlareAsk ask, string who, HashSet<string> liked, HashSet<string> shared)
+        {
+            if (p == null || string.IsNullOrEmpty(who))
+            {
+                return false;
+            }
+            string key = (p.NetId > 0 ? p.NetId : p.Id).ToString(Inv) + "|" + who;
+            switch (ask.Kind)
+            {
+                case 'L':
+                    if (ask.On ? !liked.Add(key) : !liked.Remove(key))
+                    {
+                        return false;
+                    }
+                    p.PlayerLikes = Math.Max(0, p.PlayerLikes + (ask.On ? 1 : -1));
+                    return true;
+                case 'S':
+                    if (!shared.Add(key))
+                    {
+                        return false;
+                    }
+                    p.Reposts++;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         // ---------------------------------------------------------------- the text of a line
 
         /// <summary>A text as a field of a line: '%', '|' and line breaks written as %25, %7C, %0A and %0D.</summary>
@@ -572,7 +787,9 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>The lines for this second: at most 'room', and only one piece of a picture. Returns how many went.</summary>
-        public int Send(Action<string> ask, int room)
+        /// <remarks>'ask' says whether the shared city took the line: one it has no room for this second (its request is
+        /// full) stays here, with all after it, for the next second. Nothing is ever dropped for want of room.</remarks>
+        public int Send(Func<string, bool> ask, int room)
         {
             int sent = 0;
             bool piece = false;
@@ -588,7 +805,10 @@ namespace RealLifeOverhaul.Flare
                     }
                     piece = true;
                 }
-                ask(line);
+                if (!ask(line))
+                {
+                    break;
+                }
                 _lines.RemoveAt(i);
                 sent++;
             }
@@ -614,8 +834,12 @@ namespace RealLifeOverhaul.Flare
         private readonly Dictionary<string, int> _day = new Dictionary<string, int>(16);
         private int _dayOf = -1;
 
-        /// <summary>True, and counted, if the player may ask this now.</summary>
-        public bool Allow(string player, char kind, float now, int day)
+        /// <summary>
+        /// True, and counted, if the player may ask this now. A piece of a picture ('X') gives its number: the first of each
+        /// picture counts one of the day's pictures (four), and every piece one of the day's pieces (as many as four
+        /// pictures have at most), so pictures of one piece each are four a day too.
+        /// </summary>
+        public bool Allow(string player, char kind, float now, int day, int piece = 0)
         {
             if (string.IsNullOrEmpty(player))
             {
@@ -625,6 +849,18 @@ namespace RealLifeOverhaul.Flare
             {
                 _day.Clear();
                 _dayOf = day;
+            }
+            if (kind == 'X' && piece == 0)
+            {
+                int pictures;
+                string pictureKey = player + "|#";
+                _day.TryGetValue(pictureKey, out pictures);
+                if (pictures >= PicturesDay || !Allow(player, 'X', now, day, -1))
+                {
+                    return false;
+                }
+                _day[pictureKey] = pictures + 1;
+                return true;
             }
             int most = kind == 'P' ? PostsWindow : kind == 'D' ? DmsWindow : kind == 'X' ? int.MaxValue : LikesWindow;
             string key = player + "|" + kind;
@@ -657,6 +893,96 @@ namespace RealLifeOverhaul.Flare
         {
             _times.Clear();
             _day.Clear();
+        }
+    }
+
+    /// <summary>
+    /// The host's pictures on their way in, piece by piece: a few at once, each its own player's. When they are many, a
+    /// player's own oldest unfinished one gives way to its new one, or one no piece has come to for two minutes (its
+    /// player has gone); a picture of another player that is still coming is never cleared for it: the new one waits
+    /// (its pieces are refused, and the guest's picture goes without it). Game-free: the caller gives the time.
+    /// </summary>
+    public sealed class FlarePieceBook
+    {
+        public const int Most = 8;               // pictures on their way at once
+        public const float Stale = 120f;         // real seconds without a piece: its player has gone
+
+        private sealed class Coming
+        {
+            public string Who;
+            public FlareSnapParts Parts;
+            public float Last;
+        }
+
+        private readonly List<Coming> _coming = new List<Coming>(Most);
+
+        public int Count => _coming.Count;
+
+        /// <summary>A piece of a player's picture. The whole picture's Base64 once its last piece is in, else null (also for a piece refused).</summary>
+        public string Add(string who, FlareAsk ask, float now)
+        {
+            if (string.IsNullOrEmpty(who) || ask.PicId == null || !ask.PicId.StartsWith(who + "/", StringComparison.Ordinal))
+            {
+                return null;   // a picture is only ever its own player's
+            }
+            Coming c = null;
+            for (int i = 0; i < _coming.Count; i++)
+            {
+                if (_coming[i].Parts.Id == ask.PicId)
+                {
+                    c = _coming[i];
+                    if (c.Parts.Count != ask.Count)
+                    {
+                        _coming.RemoveAt(i);   // the same picture sent again in another number of pieces: from the start
+                        c = null;
+                    }
+                    break;
+                }
+            }
+            if (c == null)
+            {
+                if (_coming.Count >= Most && !MakeRoom(who, now))
+                {
+                    return null;
+                }
+                c = new Coming { Who = who, Parts = new FlareSnapParts(ask.PicId, ask.Count) };
+                _coming.Add(c);
+            }
+            c.Last = now;
+            if (!c.Parts.Add(ask.Index, ask.Text))
+            {
+                return null;
+            }
+            _coming.Remove(c);
+            return c.Parts.Bytes() != null ? c.Parts.Text() : string.Empty;   // (empty: it came damaged)
+        }
+
+        private bool MakeRoom(string who, float now)
+        {
+            int stale = -1;
+            for (int i = 0; i < _coming.Count; i++)
+            {
+                if (_coming[i].Who == who)
+                {
+                    _coming.RemoveAt(i);   // (the oldest of its own: the list is in the order they began)
+                    return true;
+                }
+                if (stale < 0 && now - _coming[i].Last > Stale)
+                {
+                    stale = i;
+                }
+            }
+            if (stale >= 0)
+            {
+                _coming.RemoveAt(stale);
+                return true;
+            }
+            return false;
+        }
+
+        public void Clear()
+        {
+            _coming.Clear();
         }
     }
 }

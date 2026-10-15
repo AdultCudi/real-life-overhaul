@@ -41,8 +41,8 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The names of the staff of the player's businesses, a few of them, into the list given. Default: none.</summary>
         public static Action<List<string>> Staff;
 
-        /// <summary>The rival tycoons of the end game, by name, into the list given (feature/rival-tycoons, once it is in the mod). Default: none.</summary>
-        public static Action<List<string>> Tycoons;
+        /// <summary>The rival tycoons of the end game who are in play (Rivals), into the list given, each with their latest move announced. Default: none.</summary>
+        public static Action<List<FlareTycoon>> Tycoons;
 
         /// <summary>The player's own name, as the game has it. Default: none (the app says "you").</summary>
         public static Func<string> PlayerName;

@@ -20,6 +20,9 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The city's paper as it stands, as pieces sorted into their sections (the old masthead left out).</summary>
         public static Action<List<LedgerPiece>> Paper;
 
+        /// <summary>The host: what another player's game wrote (a guest's piece's values), as this city's players are shown it, by its author's id (Flare's filter). Null: as it came.</summary>
+        public static Func<string, string, string> Filter;
+
         /// <summary>The market at its last close written into an edition (the index, the sectors, every company), with its news from a day on.</summary>
         public static Action<LedgerEdition, int> Market;
 
@@ -57,6 +60,7 @@ namespace RealLifeOverhaul.Ledger
         {
             PaperDay = null;
             Paper = null;
+            Filter = null;
             Market = null;
             Economy = null;
             Extra = null;

@@ -104,6 +104,24 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_biz_post_5", "reallife_flare_biz_post_6"
         };
 
+        /// <summary>The tycoons' own everyday lines, by their place in the rivals' catalogue (Space Karen, Bald Luthor, The Zucc).</summary>
+        private static readonly string[][] TycoonKeys =
+        {
+            new[] { "reallife_flare_tycoon_0_0", "reallife_flare_tycoon_0_1", "reallife_flare_tycoon_0_2" },
+            new[] { "reallife_flare_tycoon_1_0", "reallife_flare_tycoon_1_1", "reallife_flare_tycoon_1_2" },
+            new[] { "reallife_flare_tycoon_2_0", "reallife_flare_tycoon_2_1", "reallife_flare_tycoon_2_2" }
+        };
+
+        /// <summary>A tycoon about the move they have just announced, by its kind (Rivals.RivalMoveKind).</summary>
+        private static readonly string[] TycoonMoveKeys =
+        {
+            "reallife_flare_tycoon_move_0", "reallife_flare_tycoon_move_1", "reallife_flare_tycoon_move_2", "reallife_flare_tycoon_move_3",
+            "reallife_flare_tycoon_move_4", "reallife_flare_tycoon_move_5", "reallife_flare_tycoon_move_6", "reallife_flare_tycoon_move_7"
+        };
+
+        /// <summary>A tycoon answering an announcement, in their own voice.</summary>
+        private static readonly string[] TycoonAnswerKeys = { "reallife_flare_tycoon_answer_0", "reallife_flare_tycoon_answer_1", "reallife_flare_tycoon_answer_2" };
+
         private static readonly string[] AnswerKeys =
         {
             "reallife_flare_answer_0", "reallife_flare_answer_1", "reallife_flare_answer_2", "reallife_flare_answer_3", "reallife_flare_answer_4",
@@ -220,10 +238,19 @@ namespace RealLifeOverhaul.Flare
                     int v = p.Arg / 10 == (int)FlareOfficialPost.Rate ? p.Arg % 10 : Pick(p.Seed, 1, off.Length) - 1;
                     return Fill(off[FlareRules.Clamp(v, 0, off.Length - 1)], "district", district, "name", p.Name);
                 case FlareSource.BusinessPost:
+                    if (p.Author == FlareAuthor.Tycoon)
+                    {
+                        return p.Arg >= FlareLiveRules.TycoonMoveArg ? Fill(Of(TycoonMoveKeys, p.Arg - FlareLiveRules.TycoonMoveArg), "name", p.Name)
+                            : Fill(Of(TycoonKeys[FlareRules.Clamp(p.Who, 0, TycoonKeys.Length - 1)], p.Arg), "name", p.Name);
+                    }
                     return Fill(Of(BusinessPostKeys, p.Arg), "name", p.Name, "district", district);
                 case FlareSource.Invite:
                     return Fill(InviteKeys[Pick(p.Seed, 1, InviteKeys.Length) - 1], "event", InviteName(p), "time", Hour(p.When));
                 case FlareSource.Answer:
+                    if (p.Author == FlareAuthor.Tycoon && p.Arg == (int)FlareAnswer.Tycoon && p.Who >= 0 && p.Who < TycoonAnswerKeys.Length)
+                    {
+                        return Fill(TycoonAnswerKeys[p.Who], "name", p.Name);
+                    }
                     return Fill(Of(AnswerKeys, p.Arg), "district", district, "address", p.Name ?? district, "days", p.When > 0 ? p.When.ToString() : "1", "name", p.Name, "author", author);
                 case FlareSource.Reply:
                     if (p.Author == FlareAuthor.Citizen)

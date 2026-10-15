@@ -101,8 +101,11 @@ namespace RealLifeOverhaul
         public static event Action<NewsKind, Vector3> ReportedAt;
 
         /// <summary>
-        /// Every report, also handed on as it is made (a guest of a Going Public session that follows the host's paper sends it
-        /// to the host's: Ledger/LedgerDirector.Share.cs, through Wiring/LedgerLinks). Nothing while it is not set.
+        /// The city's reports, also handed on as they are made (a guest of a Going Public session that follows the host's
+        /// paper sends them to the host's: Ledger/LedgerDirector.Share.cs, through Wiring/LedgerLinks): only Accident to
+        /// CarBreakIn (LedgerShare.CityKind). The player's own crash, arrest and knockdown, and a finished story, are never
+        /// handed on: in the host's paper they would read as the host player's; a guest's own go as pieces about that
+        /// player instead. Nothing while it is not set.
         /// </summary>
         public static Action<NewsKind, Vector3, string, int> Forward;
 
@@ -114,7 +117,7 @@ namespace RealLifeOverhaul
         public static void Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)
         {
             Action<NewsKind, Vector3, string, int> forward = Forward;
-            if (forward != null && SaveGameManager.Current != null)
+            if (forward != null && Ledger.LedgerShare.CityKind((int)kind) && SaveGameManager.Current != null)
             {
                 try
                 {

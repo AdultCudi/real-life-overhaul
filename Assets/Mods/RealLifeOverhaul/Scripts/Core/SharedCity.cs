@@ -179,19 +179,27 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>A guest: something the player did that changes the shared city, for the host to apply. One line; sent within the second.</summary>
-        public static void Ask(char id, string line)
+        public const int AskedMost = 16 * 1024;     // characters of one part's request waiting for the second
+
+        /// <summary>
+        /// A guest: something the player did that changes the shared city, for the host to apply. One line; sent within the
+        /// second. False when it was not taken: not following, or this second's request of the part is full (a caller that
+        /// must not lose the line keeps it for the next second).
+        /// </summary>
+        public static bool Ask(char id, string line)
         {
             if (!_following || string.IsNullOrEmpty(line) || id >= Asked.Length)
             {
-                return;
+                return false;
             }
             StringBuilder b = Asked[id] ?? (Asked[id] = new StringBuilder(64));
-            if (b.Length < 16 * 1024)
+            if (b.Length > 0 && b.Length + line.Length + 1 > AskedMost)
             {
-                b.Append(line.Replace('\n', ' ')).Append('\n');
-                _anyAsked = true;
+                return false;
             }
+            b.Append(line.Replace('\n', ' ')).Append('\n');
+            _anyAsked = true;
+            return true;
         }
 
         /// <summary>

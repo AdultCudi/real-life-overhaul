@@ -201,6 +201,7 @@ namespace RealLifeOverhaul.Ledger
                 }
                 else
                 {
+                    OwnAgain(day);
                     Print(day, hour, false);
                     Reprint(day, hour);
                 }

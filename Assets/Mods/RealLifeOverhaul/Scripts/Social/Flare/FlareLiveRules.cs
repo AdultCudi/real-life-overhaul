@@ -721,7 +721,8 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < net.Cases.Count; i++)
             {
                 FlareCase c = net.Cases[i];
-                n += c.Order == order && c.Filed >= from && c.State != FlareCaseState.Open ? 1 : 0;
+                long sent = c.ActedDay >= 0 ? c.ActedDay * 1440L : c.Filed;   // (a case of an older save: when it was filed)
+                n += c.Order == order && sent >= from && c.State != FlareCaseState.Open && c.State != FlareCaseState.Queued ? 1 : 0;
             }
             return n;
         }
@@ -767,6 +768,10 @@ namespace RealLifeOverhaul.Flare
         {
             c.Order = order;
             c.Ref = siteRef;
+            if (order != FlareOrder.Queued && order != FlareOrder.Answered && order != FlareOrder.None)
+            {
+                c.ActedDay = day;   // a crew sent today: one of the week's
+            }
             switch (order)
             {
                 case FlareOrder.Patrol:
@@ -897,9 +902,9 @@ namespace RealLifeOverhaul.Flare
         /// Whether the week's ignored complaints of a kind in a district are a story for the paper now: three or more, and
         /// not in the paper already this week. True takes it (it is noted).
         /// </summary>
-        public static bool Escalate(FlareNet net, FlareReport kind, string district, int day)
+        public static bool Escalate(FlareNet net, FlareReport kind, string district, int day, bool acts)
         {
-            if (district == null || Tally(net, kind, district, day) < TallyToPaper)
+            if (!Escalates(kind, acts) || district == null || Tally(net, kind, district, day) < TallyToPaper)
             {
                 return false;
             }
@@ -913,6 +918,89 @@ namespace RealLifeOverhaul.Flare
             }
             net.Escalated.Add(prefix + day);
             return true;
+        }
+
+        public const int TycoonVoices = 3, TycoonLines = 3, TycoonMoves = 8;   // the tycoons with a voice of their own, their everyday lines, the kinds of move they post about
+        public const int TycoonMoveArg = 10;                                     // a post's Arg from here on: about a move of that kind (Arg - 10)
+
+        /// <summary>
+        /// A rival tycoon's post of the day, now and then (about a third of days), in their own voice: the move they have just
+        /// announced if there is one (it is news, and they brag), else one of their everyday lines. Who is the tycoon's place
+        /// in the catalogue (their voice), Name their name. Null on a day without one. The same city and day make the same.
+        /// </summary>
+        public static FlarePost TycoonPost(FlareFile f, IList<FlareTycoon> tycoons, int day)
+        {
+            int seed = CitySeed(f);
+            if (tycoons == null || tycoons.Count == 0 || FlareRules.Roll(seed, day, 950) >= 350)
+            {
+                return null;
+            }
+            FlareTycoon t = null;
+            for (int i = 0; i < tycoons.Count && t == null; i++)
+            {
+                t = tycoons[i] != null && tycoons[i].Move >= 0 && tycoons[i].Move < TycoonMoves ? tycoons[i] : null;   // the one with news first
+            }
+            t = t ?? tycoons[FlareRules.Roll(seed, day, 952) % tycoons.Count];
+            if (t == null || string.IsNullOrEmpty(t.Name))
+            {
+                return null;
+            }
+            int id = f.NextId++;
+            var p = new FlarePost
+            {
+                Id = id, Author = FlareAuthor.Tycoon, Source = FlareSource.BusinessPost, Who = FlareRules.Clamp(t.Index, 0, TycoonVoices - 1),
+                Arg = t.Move >= 0 && t.Move < TycoonMoves ? TycoonMoveArg + t.Move : FlareRules.Roll(seed, day, 951) % TycoonLines,
+                Name = t.Name, Seed = FlareRules.Roll(seed, id, 17) * 1000, Reach = 20000, Likes = 400 + FlareRules.Roll(seed, id, 3), Topic = "business"
+            };
+            SetAt(p, Now(day, 9 + FlareRules.Roll(seed, day, 953) % 10, FlareRules.Roll(seed, day, 954) % 60));
+            return p;
+        }
+
+        /// <summary>
+        /// Whether ignored complaints of a kind can reach the paper and pull on the mayor's approval: only while the City
+        /// Office acts on reports (with the option off it only answers, so nothing is "ignored"), and never for the buses or
+        /// the power, which the office answers and passes on (FlareOrder.Answered: not the city's to act on).
+        /// </summary>
+        public static bool Escalates(FlareReport kind, bool acts)
+        {
+            return acts && kind != FlareReport.Transit && kind != FlareReport.Utilities;
+        }
+
+        /// <summary>
+        /// What the City Office does once ignored complaints are in the paper: the crew for the case's kind, if the case is
+        /// not being acted on already and a crew of that kind is free this week (escalated or not, a crew is one of the
+        /// week's); None otherwise.
+        /// </summary>
+        public static FlareOrder EscalationOrder(FlareNet net, FlareCase c, long now, bool acts)
+        {
+            if (c == null || !Escalates(c.Kind, acts) || c.State == FlareCaseState.Acting)
+            {
+                return FlareOrder.None;
+            }
+            FlareOrder order = c.Kind == FlareReport.Crime ? FlareOrder.Patrol : c.Kind == FlareReport.Litter ? FlareOrder.Cleanup : c.Kind == FlareReport.Business ? FlareOrder.Inspection
+                : c.Kind == FlareReport.Unsafe ? FlareOrder.Patrol : FlareOrder.Works;
+            return CrewsUsed(net, order, now) >= CrewsPerWeek[(int)order] ? FlareOrder.None : order;
+        }
+
+        /// <summary>Whether the city's posts of a day are still to be made when Flare starts (an update, a new account): not on a guest that follows.</summary>
+        public static bool StartDay(FlareNet net, int day, bool following)
+        {
+            return !following && net.CityDay != day;
+        }
+
+        /// <summary>Whether a post of the player's goes to the session: every post while they share their posts, and a report always (it is the City Office's to act on).</summary>
+        public static bool ToSession(bool sharePosts, FlareSource source)
+        {
+            return sharePosts || source == FlareSource.Report;
+        }
+
+        /// <summary>
+        /// Whether the host answers a post of this player's (the city's replies, an account's answer): true on a guest that
+        /// follows and sends it; it then does not answer it itself, or the replies would come twice.
+        /// </summary>
+        public static bool HostAnswers(bool following, bool sharePosts, FlareSource source)
+        {
+            return following && ToSession(sharePosts, source);
         }
 
         /// <summary>A story for a morning's paper, kept until it is printed (a few at most, the oldest go).</summary>

@@ -225,6 +225,19 @@ namespace RealLifeOverhaul.Flare
         public int Answer = -1;          // the answer's post (local number)
         public string Reporter;          // whose report: "me", "c:12" (one of the city's people), "p:id" (a player of the session)
         public int Repeats;              // others who said the same since
+        public int ActedDay = -1;        // the day a crew was sent (the week's crews are counted by it); -1 for none
+    }
+
+    /// <summary>
+    /// A rival tycoon of the end game as Flare knows them (Rivals, through Wiring/FlareLiveLinks): who they are (their
+    /// place in the rivals' catalogue, which is their voice on Flare), their name, and the kind of their latest move
+    /// announced, if one is (Rivals.RivalMoveKind's number; -1 for none).
+    /// </summary>
+    public sealed class FlareTycoon
+    {
+        public int Index;
+        public string Name;
+        public int Move = -1;
     }
 
     /// <summary>The police or a cleaning crew in a district until a day: what each machine applies to its own (FlareLiveRules).</summary>
@@ -298,6 +311,7 @@ namespace RealLifeOverhaul.Flare
         public int ReportsDay = -1;      // ...and the reports
         public int ReportsToday;
         public int DmDay = -1;           // the last day one of the city's people wrote
+        public string HostKey;           // a guest: the host and session whose session numbers (NetId) this save's posts carry (FlareNetShare.NewHost)
         public int CitySeed;             // the seed of the city's people on Flare: this save's, or the host's of the session it followed (their names stay theirs)
 
         public FlareCase Case(int id)

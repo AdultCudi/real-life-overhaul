@@ -43,6 +43,19 @@ namespace RealLifeOverhaul.Flare
             return words;
         }
 
+        public const ulong SteamIdLeast = 76561197960265728UL, SteamIdMost = 76561202255233023UL;   // a person's Steam account, as a 64-bit number
+
+        /// <summary>
+        /// The author's Steam account for Steam's own filter (it filters by what that author is to the player), when the
+        /// session's id of a player is one; 0 (nobody in particular) when it is a name.
+        /// </summary>
+        public static ulong SteamIdOf(string player)
+        {
+            ulong id;
+            return player != null && player.Length == 17 && ulong.TryParse(player, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out id)
+                   && id >= SteamIdLeast && id <= SteamIdMost ? id : 0UL;
+        }
+
         /// <summary>How many words the list has (for the checks).</summary>
         public static int Count => Words.Length;
 
