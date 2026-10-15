@@ -1,4 +1,4 @@
-0.23.0
+0.24.0
 
 New
-- The mod can now be read in German, French, Spanish and Russian: it follows the language the game is set to, and a text not yet translated is in English.
+- The end game at scale: data centres, the cloud and the hyperscaler, your broadband company and your bank now cost hundreds of millions to build, keep crews of staff and pay upkeep, and earn in proportion. A data centre or cloud pays back in 120 to 360 game days, a broadband network or a bank in two to six game years. What you buy is at the new prices at once; a save that had them comes to the new running costs and income over four weeks. It has its own option.
