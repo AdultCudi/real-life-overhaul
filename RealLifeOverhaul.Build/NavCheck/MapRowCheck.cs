@@ -264,12 +264,9 @@ internal static partial class Program
             {
                 continue;
             }
-            foreach (string line in pair.Value.Split('\n'))
+            if (pair.Value.IndexOf(prefix + words, StringComparison.Ordinal) >= 0)   // (a row joins its entries with spaces)
             {
-                if (line.StartsWith(prefix + words, StringComparison.Ordinal))
-                {
-                    return true;
-                }
+                return true;
             }
         }
         return false;
