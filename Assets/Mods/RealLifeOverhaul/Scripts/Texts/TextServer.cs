@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -253,10 +254,11 @@ namespace RealLifeOverhaul.Texts
             args.Append("-m \"").Append(_start.Model).Append("\" --host 127.0.0.1 --port ").Append(_port)
                 .Append(" --api-key ").Append(_key)
                 .Append(" -t ").Append(_start.Threads).Append(" -tb ").Append(_start.Threads)
-                .Append(" -c 1024 -np 1 --no-webui --prio -1");
+                .Append(" -c 1024 -np 1 --no-webui --prio -1 --offline");   // (offline: llama.cpp never reaches the network, even to fetch a model)
             if (_start.Cache != null)
             {
                 Directory.CreateDirectory(_start.Cache);
+                Stale(_start.Cache);
                 args.Append(" --slot-save-path \"").Append(_start.Cache.TrimEnd('\\', '/')).Append('"');
             }
             if (_start.Device != null)
@@ -280,6 +282,7 @@ namespace RealLifeOverhaul.Texts
                 RedirectStandardOutput = false,
                 RedirectStandardError = false
             };
+            Offline(info);
             try
             {
                 _process = Process.Start(info);
@@ -526,8 +529,7 @@ namespace RealLifeOverhaul.Texts
 
         private void Kill()
         {
-            Process p = _process;
-            _process = null;
+            Process p = Interlocked.Exchange(ref _process, null);   // (once: Dispose and the worker may both end it)
             if (p != null)
             {
                 try
@@ -544,10 +546,66 @@ namespace RealLifeOverhaul.Texts
                 }
                 p.Dispose();
             }
-            if (_job != IntPtr.Zero)
+            IntPtr job = Interlocked.Exchange(ref _job, IntPtr.Zero);
+            if (job != IntPtr.Zero)
             {
-                CloseHandle(_job);   // (kill on close: anything still in the job ends now)
-                _job = IntPtr.Zero;
+                CloseHandle(job);   // (kill on close: anything still in the job ends now)
+            }
+            string head = Interlocked.Exchange(ref _headFile, null);
+            if (head != null && _start.Cache != null)
+            {
+                try
+                {
+                    File.Delete(Path.Combine(_start.Cache, head));   // (this server's own head state: the cache never grows)
+                }
+                catch (Exception)
+                {
+                    // (in use or gone: the next start's sweep takes it)
+                }
+            }
+        }
+
+        /// <summary>The head files a server of an earlier session left behind (a crash), taken away at a start.</summary>
+        private static void Stale(string cache)
+        {
+            try
+            {
+                foreach (string file in Directory.GetFiles(cache, "rlo-head-*.bin"))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception)
+                    {
+                        // (another game's server has it open: left)
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // (no folder: nothing to sweep)
+            }
+        }
+
+        /// <summary>
+        /// A child process of llama.cpp's kept offline and to the mod's own arguments: no LLAMA_ARG_ variable (which would set
+        /// any of its options, a host or a model's address among them) and no HF_ one (Hugging Face's downloads) reaches it.
+        /// </summary>
+        public static void Offline(ProcessStartInfo info)
+        {
+            var drop = new List<string>(4);
+            foreach (System.Collections.DictionaryEntry e in info.EnvironmentVariables)
+            {
+                string name = e.Key as string;
+                if (name != null && (name.StartsWith("LLAMA_ARG_", StringComparison.OrdinalIgnoreCase) || name.StartsWith("HF_", StringComparison.OrdinalIgnoreCase)))
+                {
+                    drop.Add(name);
+                }
+            }
+            for (int i = 0; i < drop.Count; i++)
+            {
+                info.EnvironmentVariables.Remove(drop[i]);
             }
         }
 

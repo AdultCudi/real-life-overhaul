@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Ledger;
 using RealLifeOverhaul.Texts;
@@ -16,12 +18,18 @@ namespace RealLifeOverhaul
         ///   the phone  friends, the partner, Mom, the in-laws, roommates, the boss and the lender: a text held back a moment
         ///              for its words (TextsPhone), sent with the written line when they are not there in time
         ///   face to face  a friend's greeting at an outing, guessed when the player walks up and taken at the click
-        ///   the paper  the City Ledger's briefs, written ahead of the morning's edition
+        ///   the paper  the City Ledger's economy briefs, asked when an edition is written (at dawn); the words are used only if
+        ///              they come before any piece of that edition has been shown, so a page never changes in front of the player
+        ///   kept texts let go once the game no longer has what they belong to (<see cref="StillThere"/>)
         ///
         /// COST: nothing per frame. A request is made when the feature makes its message, never on a timer of its own.
         /// </summary>
         public static class TextsLinks
         {
+            public const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: written at dawn, read later
+
+            private static readonly HashSet<int> LedgerShown = new HashSet<int>();   // the editions (by day) a piece of which has been shown
+
             internal static void Connect()
             {
                 FlareBridges.TextAsk = r => TextsDirector.Words.Ask(r, TextClock.Now);
@@ -30,7 +38,9 @@ namespace RealLifeOverhaul
                 FlareBridges.TextWhen = TextsGame.When;
                 FlareBridges.TextSeconds = TextsGame.SecondsFor;
                 LedgerBridges.TextsEdition = Edition;
-                LedgerBridges.TextsBody = p => p != null ? TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(p.Key, p.Data)) : null;
+                LedgerBridges.TextsBody = Body;
+                TextsDirector.StillThere = StillThere;
+                LedgerShown.Clear();
                 TextsPhone.Connect();
             }
 
@@ -43,10 +53,21 @@ namespace RealLifeOverhaul
                 FlareBridges.TextSeconds = null;
                 LedgerBridges.TextsEdition = null;
                 LedgerBridges.TextsBody = null;
+                TextsDirector.StillThere = null;
                 TextsPhone.Disconnect();
             }
 
-            public const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: it is written at dawn and read later
+            // A piece's words as the page draws it; drawing marks its edition shown, after which no new words are taken for it.
+            private static string Body(LedgerPiece p)
+            {
+                int day = LedgerDirector.Instance != null ? LedgerDirector.Instance.DayOf(p) : -1;
+                if (p == null || day < 0)
+                {
+                    return null;
+                }
+                LedgerShown.Add(day);
+                return TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(day, p.Key, p.Data));
+            }
 
             // The City Ledger's briefs of an edition: the economy's (prices, the bank rate, a district's fortunes), asked as it is written.
             private static void Edition(LedgerEdition e)
@@ -58,6 +79,8 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
+                    int day = e.Day;
+                    LedgerShown.Remove(day);   // (written again: a new edition of the day)
                     for (int i = 0; i < e.Pieces.Count; i++)
                     {
                         LedgerPiece p = e.Pieces[i];
@@ -68,8 +91,9 @@ namespace RealLifeOverhaul
                         }
                         var r = new TextRequest
                         {
-                            Use = TextUse.Ledger, Intent = intent, Key = TextsMapRules.LedgerKey(p.Key, p.Data), Speaker = "ledger", Priority = TextPriority.Background,
-                            Seconds = LedgerSeconds, Keep = !shared, Shared = shared, Day = e.Day, Done = words => { }
+                            Use = TextUse.Ledger, Intent = intent, Key = TextsMapRules.LedgerKey(day, p.Key, p.Data), Speaker = "ledger", Priority = TextPriority.Background,
+                            Seconds = LedgerSeconds, Keep = !shared, Shared = shared, Day = day, Done = words => { },
+                            Wanted = () => !LedgerShown.Contains(day)   // (once a piece of the edition is shown, its words stay as shown)
                         };
                         r.Who.When = TextsGame.When();
                         string change = p.Value("change"), points = p.Value("points"), district = p.Value("district");
@@ -91,6 +115,61 @@ namespace RealLifeOverhaul
                 catch (Exception ex)
                 {
                     Fault("RLO Texts, the City Ledger", ex);
+                }
+            }
+
+            /// <summary>
+            /// Whether the game still has what a kept text belongs to: a Flare post ("fp:id"), a friend's reply under one
+            /// ("fr:post:person"), a message ("fd:with:at"), an edition of the paper ("lp:day:hash"). While Flare or the paper is
+            /// not running its texts are kept (nothing is judged on a feature that is not there to ask).
+            /// </summary>
+            public static bool StillThere(string key)
+            {
+                try
+                {
+                    if (key == null || key.Length < 4)
+                    {
+                        return false;
+                    }
+                    string[] f = key.Split(':');
+                    switch (f[0])
+                    {
+                        case "fp":
+                        case "fr":
+                            FlareFile file = FlareDirector.Instance?.File;
+                            return file == null || (f.Length >= 2 && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) && file.Post(id) != null);
+                        case "fd":
+                            FlareFile dms = FlareDirector.Instance?.File;
+                            if (dms == null)
+                            {
+                                return true;
+                            }
+                            int cut = key.LastIndexOf(':');
+                            string with = key.Substring(3, Math.Max(0, cut - 3));
+                            if (!long.TryParse(key.Substring(cut + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out long at))
+                            {
+                                return false;
+                            }
+                            for (int i = 0; i < dms.Net.Dms.Count; i++)
+                            {
+                                if (dms.Net.Dms[i].At == at && dms.Net.Dms[i].With == with)
+                                {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        case "lp":
+                            LedgerDirector ledger = LedgerDirector.Instance;
+                            return ledger == null || ledger.State == null
+                                   || (f.Length >= 2 && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int day) && ledger.HasDay(day));
+                        default:
+                            return false;   // (nothing else is kept)
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, letting kept texts go", e);
+                    return true;
                 }
             }
         }

@@ -32,22 +32,19 @@ namespace RealLifeOverhaul.Texts
         public const int LinesMost = 300;        // lines of the whole part (a day of the feed and the paper)
         public const int ReadMost = 400;         // lines a guest reads of one message
 
-        /// <summary>One shared text as a line.</summary>
+        /// <summary>One shared text as a line, ending with its line break (so that changes put together in a message stay lines).</summary>
         public static void Line(StringBuilder b, string key, string intent, string words)
         {
-            if (b.Length > 0)
-            {
-                b.Append('\n');
-            }
             b.Append("w|");
             TextsStore.Escape(key, b);
             b.Append('|');
             TextsStore.Escape(intent ?? string.Empty, b);
             b.Append('|');
             TextsStore.Escape(words.Length > WordsMost ? words.Substring(0, WordsMost) : words, b);
+            b.Append('\n');
         }
 
-        /// <summary>The host's whole part: every shared text kept (the newest <see cref="LinesMost"/>); null with none.</summary>
+        /// <summary>The host's whole part: every shared text this machine wrote as the host (never one it was sent), the newest <see cref="LinesMost"/>; null with none.</summary>
         public static string Whole(TextsStore store)
         {
             var b = new StringBuilder(4096);
@@ -55,7 +52,7 @@ namespace RealLifeOverhaul.Texts
             int from = 0, count = 0;
             for (int i = all.Count - 1; i >= 0 && count < LinesMost; i--)
             {
-                if (all[i].Shared)
+                if (Own(all[i]))
                 {
                     from = i;
                     count++;
@@ -63,7 +60,7 @@ namespace RealLifeOverhaul.Texts
             }
             for (int i = from; i < all.Count && count > 0; i++)
             {
-                if (all[i].Shared)
+                if (Own(all[i]))
                 {
                     Line(b, NetKey(all[i].Key), all[i].Intent, all[i].Words);
                 }
@@ -71,9 +68,19 @@ namespace RealLifeOverhaul.Texts
             return b.Length > 0 ? b.ToString() : null;
         }
 
-        /// <summary>A guest: reads the host's lines, checks each again, and keeps the ones that pass. Returns how many were kept.</summary>
-        public static int Apply(string text, TextsStore store, int day, List<string> refused)
+        // A shared text this machine wrote itself as the host ("fp:", "lp:"), not one a host sent it.
+        private static bool Own(TextKept k) => k.Shared && !k.Received;
+
+        /// <summary>
+        /// A guest: reads the host's lines, checks each again, and keeps the ones that pass, as received (never saved, never
+        /// sent on). The host's whole part replaces every text received before it. Returns how many were kept.
+        /// </summary>
+        public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole)
         {
+            if (whole)
+            {
+                store.ClearReceived();
+            }
             if (string.IsNullOrEmpty(text))
             {
                 return 0;
@@ -98,7 +105,7 @@ namespace RealLifeOverhaul.Texts
                     refused?.Add(key + " (" + verdict + ")");
                     continue;
                 }
-                store.Keep(key, day, intentKey, words, true);
+                store.Keep(key, day, intentKey, words, true, true);
                 kept++;
             }
             return kept;

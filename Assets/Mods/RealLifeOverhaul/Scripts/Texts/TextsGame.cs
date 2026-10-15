@@ -21,18 +21,18 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The fixed folder for packs, the speed file, the server's log and its cache: "RLO Texts" in the game's own data folder.</summary>
         public static string Home => Path.Combine(Application.persistentDataPath, TextPacks.Fixed);
 
-        /// <summary>Every place a pack may be (TextPacks.Find): the fixed folder, the folders the packs' own small mod announced, ModsLocal, the Workshop.</summary>
+        /// <summary>
+        /// Every place a pack may be (TextPacks.Find): the fixed folder, the folders the packs' own small mod announced,
+        /// ModsLocal, and on the Workshop only RLO's own two pack items, by their ids (TextPacks.WorkshopItems), switched on
+        /// in the mod list or not. No other Workshop item is ever looked in.
+        /// </summary>
         public static List<string> Places()
         {
             var places = new List<string>(6) { Home };
             object announced = AppDomain.CurrentDomain.GetData(TextPacks.Announced);
             places.AddRange(TextPacks.Split(announced as string));
             places.Add(Path.Combine(Application.persistentDataPath, "ModsLocal"));
-            string workshop = TextPacks.WorkshopOf(Application.dataPath, AppId);
-            if (workshop != null)
-            {
-                places.Add(workshop);
-            }
+            places.AddRange(TextPacks.WorkshopPacks(TextPacks.WorkshopOf(Application.dataPath, AppId), TextPacks.WorkshopItems));
             return places;
         }
 

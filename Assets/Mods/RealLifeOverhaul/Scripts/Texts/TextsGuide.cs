@@ -26,7 +26,6 @@ namespace RealLifeOverhaul.Texts
                 .Fact("texts_per_minute", () => TextQueue.PerMinute.ToString(Inv))
                 .Fact("texts_slow", () => TextSpeed.FullSlow.ToString("0", Inv))
                 .Fact("texts_ahead", () => TextSpeed.AheadSlow.ToString("0", Inv))
-                .Fact("texts_keep_days", () => TextsStore.KeepDays.ToString(Inv))
                 .Cleanup(() => TextsDirector.Words.Clear())
                 .ResetData(() => TextsDirector.Words.Store.Clear());
         }

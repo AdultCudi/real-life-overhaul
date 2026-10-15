@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Texts
         private const float BusyEvery = 0.1f;      // ...while requests wait (a reply on the GPU comes back in 0.05 s)
         private const float HookEvery = 2f;        // ...between two checks that the save hook is attached
         private const int DevicesWaitMs = 8000;    // the most llama.cpp may take to list its devices
+        private const int WhyMost = 60;            // characters of a reason in the status notice
 
         public static IModLogger Logger;
         public static TextsDirector Instance { get; private set; }
@@ -64,9 +65,12 @@ namespace RealLifeOverhaul.Texts
         private static string _device, _deviceLabel, _serverFor;
         private static int _threads, _cores;
         private static volatile bool _finding;
-        private static bool _found, _quitHooked, _speedTold;
+        private static bool _found, _quitHooked, _speedTold, _refusedTold;
         private static Action _onQuit;
         private static List<TextPack> _packs;
+        private static TextPack _verified, _refused;       // the best pack whose runtime is llama.cpp's own; the first that was not
+        private static string _refusedWhy;
+        private static int _runDevice = -1, _runThreads = -1;   // the options the server was started with
         private static List<TextDevice> _devices;
         private static readonly System.Text.StringBuilder Changes = new System.Text.StringBuilder(1024);
 
@@ -76,6 +80,9 @@ namespace RealLifeOverhaul.Texts
         private bool _loaded;
         private int _prunedDay = -1;
         private Action _onSave;
+
+        /// <summary>Whether the game still has what a kept text's key belongs to (a post, a message, an edition); set by Wiring/TextsLinks.</summary>
+        public static Func<string, bool> StillThere;
 
         /// <summary>The hub requests go through (Wiring/TextsLinks hands it to the features' bridges).</summary>
         public static TextsHub Words => Hub;
@@ -98,7 +105,8 @@ namespace RealLifeOverhaul.Texts
                 Ready = () => _loaded,
                 Write = () => _loaded ? TextsShare.Whole(Hub.Store) : null,
                 Changes = TakeChanges,
-                Apply = (text, whole) => FromHost(text)
+                Apply = FromHost,
+                Left = () => Hub.Store.ClearReceived()
             });
         }
 
@@ -123,7 +131,7 @@ namespace RealLifeOverhaul.Texts
         {
             try
             {
-                StopServer("the game is closing");
+                StopServer("the game is closing", true);
             }
             catch (Exception)
             {
@@ -186,12 +194,16 @@ namespace RealLifeOverhaul.Texts
                 Find();
                 return;
             }
+            if (!_loaded)
+            {
+                return;   // (the main menu: the model is started only once a save is loaded, so its memory is used only while playing)
+            }
+            Run();
             if (_pack == null)
             {
                 Hub.Clear();
                 return;
             }
-            Run();
             if (_server != null)
             {
                 _server.Quiet = TextsGame.Quiet(_frameTime);
@@ -227,10 +239,14 @@ namespace RealLifeOverhaul.Texts
                 _nextHook = now + HookEvery;
                 SaveHook.Keep(_onSave);   // the game clears its event hub on every load: the save hook is kept attached
             }
-            if (save.Day != _prunedDay)
+            if (save.Day != _prunedDay && StillThere != null)
             {
                 _prunedDay = save.Day;
-                Hub.Store.Prune(save.Day);
+                int gone = Hub.Store.Prune(StillThere);
+                if (gone > 0)
+                {
+                    Logger?.Info("RLO Texts: " + gone + " kept text(s) let go: what they belonged to is gone from the game.");
+                }
             }
         }
 
@@ -284,7 +300,19 @@ namespace RealLifeOverhaul.Texts
                 {
                     _packs = TextPacks.Find(places);
                     _cores = TextCores.Real();
-                    _devices = _packs.Count > 0 ? TextPacks.Devices(TextPacks.ListDevices(_packs[0].Exe, DevicesWaitMs)) : new List<TextDevice>();
+                    _devices = new List<TextDevice>();
+                    for (int i = 0; i < _packs.Count; i++)
+                    {
+                        string why = TextPacks.Verify(_packs[i], TextRuntime.Files);   // (before anything of the pack is started: llama.cpp's pinned files, byte for byte)
+                        if (why == null)
+                        {
+                            _verified = _packs[i];
+                            _devices = TextPacks.Devices(TextPacks.ListDevices(_verified.Exe, DevicesWaitMs));
+                            break;
+                        }
+                        _refused = _refused ?? _packs[i];
+                        _refusedWhy = _refusedWhy ?? why;
+                    }
                 }
                 catch (Exception)
                 {
@@ -299,16 +327,27 @@ namespace RealLifeOverhaul.Texts
         // The server for the options as they are: started, or started again when the device or threads change.
         private static void Run()
         {
-            if (_pack == null && _packs != null && _packs.Count > 0)
+            if (_server != null && _runDevice == Settings.TextsDevice && _runThreads == Settings.TextsThreads)
             {
-                _pack = _packs[0];
+                return;   // (as it was started: the common case, two comparisons)
+            }
+            if (_pack == null && _verified != null)
+            {
+                _pack = _verified;
                 Logger?.Info("RLO Texts: the pack " + _pack.Name + " (version " + _pack.Version + ", " + (_pack.ModelBytes / (1024 * 1024)) + " MB) in " + _pack.Folder
-                             + (_packs.Count > 1 ? "; " + (_packs.Count - 1) + " other pack(s) found and not used" : "") + ".");
+                             + ", llama.cpp's files checked" + (_packs.Count > 1 ? "; " + (_packs.Count - 1) + " other pack(s) found and not used" : "") + ".");
+            }
+            if (_refused != null && !_refusedTold)
+            {
+                _refusedTold = true;
+                Logger?.Warn("RLO Texts: the pack in " + _refused.Folder + " is not run: " + _refusedWhy + " (its runtime must be llama.cpp " + TextRuntime.Release + " as released).");
             }
             if (_pack == null)
             {
                 return;
             }
+            _runDevice = Settings.TextsDevice;
+            _runThreads = Settings.TextsThreads;
             string device = TextPacks.Choose(Mathf.Clamp(Settings.TextsDevice, 0, 2), _devices, _pack.ModelBytes);
             int threads = TextSpeed.Threads(_cores, Settings.TextsThreads <= 0 ? 0 : Settings.TextsThreads + 1);   // (the option: 0 Auto, then 2, 3, 4)
             string wanted = _pack.Name + " " + _pack.Version + ";" + (device ?? "cpu") + ";" + threads;
@@ -344,15 +383,24 @@ namespace RealLifeOverhaul.Texts
                          + _cores + " core(s); the written lines are used until it is ready.");
         }
 
-        private static void StopServer(string why)
+        private static void StopServer(string why, bool now = false)
         {
             Hub.Clear();
             Hub.Runner = null;
-            if (_server != null)
+            TextServer server = _server;
+            if (server != null)
             {
-                _server.Dispose();
                 _server = null;
                 _serverFor = null;
+                _runDevice = _runThreads = -1;
+                if (now)
+                {
+                    server.Dispose();   // (the game is closing: no thread pool to wait for)
+                }
+                else
+                {
+                    ThreadPool.QueueUserWorkItem(_ => server.Dispose());   // (killing it and ending its worker can take a second: never on the game's thread)
+                }
                 Logger?.Info("RLO Texts: the model stopped (" + why + "); the written lines are used.");
             }
         }
@@ -411,7 +459,8 @@ namespace RealLifeOverhaul.Texts
 
         // ---------------------------------------------------------------- Going Public: part T
 
-        // The host: a shared text was kept; it goes with the next update.
+        // The host: a shared text was kept; it goes with the next update as a change (the shared city reads Changes at every
+        // update, so the whole part is never marked to go again: only a late joiner's snapshot carries it whole).
         private static void SharedKept(TextKept k)
         {
             if (!GoingPublic.IsHost)
@@ -419,7 +468,6 @@ namespace RealLifeOverhaul.Texts
                 return;
             }
             TextsShare.Line(Changes, TextsShare.NetKey(k.Key), k.Intent, k.Words);
-            SharedCity.Changed(TextsShare.Part);
         }
 
         private static string TakeChanges()
@@ -434,10 +482,10 @@ namespace RealLifeOverhaul.Texts
         }
 
         // A guest: the host's words, checked again here; a text that fails keeps the written line.
-        private static bool FromHost(string text)
+        private static bool FromHost(string text, bool whole)
         {
             var refused = new List<string>(2);
-            int kept = TextsShare.Apply(text, Hub.Store, TextsGame.Day, refused);
+            int kept = TextsShare.Apply(text, Hub.Store, TextsGame.Day, refused, whole);
             if (kept > 0 || refused.Count > 0)
             {
                 Logger?.Info("RLO Texts: the host's words for " + kept + " shared item(s)" + (refused.Count > 0 ? "; refused on arrival: " + string.Join(", ", refused) : "") + ".");
@@ -531,10 +579,17 @@ namespace RealLifeOverhaul.Texts
                 key = "reallife_texts_status_looking";
                 return data;
             }
+            if (_pack == null && _refused != null)
+            {
+                key = "reallife_texts_status_failed";
+                data["pack"] = _refused.Name;
+                data["why"] = Cap("pack files changed: " + _refusedWhy);
+                return data;
+            }
             if (_pack == null)
             {
                 key = "reallife_texts_status_none";
-                data["folder"] = TextsGame.Home;
+                data["folder"] = "LocalLow/\u2026/" + TextPacks.Fixed;
                 return data;
             }
             data["pack"] = _pack.Name;
@@ -551,9 +606,15 @@ namespace RealLifeOverhaul.Texts
             key = state == TextServerState.Ready ? "reallife_texts_status_ready" : state == TextServerState.Failed ? "reallife_texts_status_failed" : "reallife_texts_status_loading";
             if (state == TextServerState.Failed)
             {
-                data["why"] = _server.Why ?? "?";
+                data["why"] = Cap(_server.Why ?? "?");
             }
             return data;
+        }
+
+        // A reason short enough for a notice (the notices hold 240 characters).
+        private static string Cap(string why)
+        {
+            return why.Length <= WhyMost ? why : why.Substring(0, WhyMost - 1) + "\u2026";
         }
 
         /// <summary>The options page's status button: the status as one of the game's notices.</summary>

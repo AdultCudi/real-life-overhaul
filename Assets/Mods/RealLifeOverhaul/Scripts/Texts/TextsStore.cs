@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Texts
         public string Intent;     // the intent it was written for (a guest checks the host's words by it)
         public string Words;
         public bool Shared;       // the host's words for the session's shared feed or paper (go to guests)
+        public bool Received;     // ...sent by the host of a session to this guest: shown, never saved and never sent on
     }
 
     /// <summary>
@@ -23,7 +24,8 @@ namespace RealLifeOverhaul.Texts
     ///
     ///     v=1^w=key|day|intent|shared|words^...
     ///
-    /// At most <see cref="Most"/> records, none older than <see cref="KeepDays"/> days (the oldest go first). A line of a
+    /// Each record is kept while the game still has what it belongs to (<see cref="Prune"/>, once a game day), and at most
+    /// <see cref="Most"/> records in all (past that the oldest go: a bound on the save's line, not a rule of time). A line of a
     /// later version, or one that cannot be read, gives none and is kept in the save as it was read (Core/SaveLines).
     /// Without the line nothing changes: the written lines are shown. Game-free (EconomyCheck, TextsChecks.cs).
     /// COST: nothing unless a save is loaded or written, or words come back (a dictionary write).
@@ -32,8 +34,7 @@ namespace RealLifeOverhaul.Texts
     {
         public const string SaveKey = "reallife:texts";
         public const int Version = 1;
-        public const int Most = 800;            // records kept
-        public const int KeepDays = 21;         // days a record is kept (Flare keeps its feed a week; a thread is read back for a while)
+        public const int Most = 2000;           // records kept at most (Flare keeps a few hundred posts and 120 messages; the paper a week of editions)
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private readonly Dictionary<string, TextKept> _byKey = new Dictionary<string, TextKept>(64, StringComparer.Ordinal);
@@ -55,7 +56,7 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>Keeps words under a key (replacing any), and lets the oldest go past the limit.</summary>
-        public TextKept Keep(string key, int day, string intent, string words, bool shared)
+        public TextKept Keep(string key, int day, string intent, string words, bool shared, bool received = false)
         {
             if (key == null || words == null)
             {
@@ -65,7 +66,7 @@ namespace RealLifeOverhaul.Texts
             {
                 _order.Remove(old);
             }
-            var k = new TextKept { Key = key, Day = day, Intent = intent, Words = words, Shared = shared };
+            var k = new TextKept { Key = key, Day = day, Intent = intent, Words = words, Shared = shared, Received = received };
             _byKey[key] = k;
             _order.Add(k);
             while (_order.Count > Most)
@@ -76,13 +77,32 @@ namespace RealLifeOverhaul.Texts
             return k;
         }
 
-        /// <summary>Records older than the days kept let go.</summary>
-        public int Prune(int today)
+        /// <summary>
+        /// Records whose post, message or edition the game no longer has let go (never by age alone: words are shown for as
+        /// long as what they belong to is, and never change once seen). <paramref name="stillThere"/> answers for a key.
+        /// </summary>
+        public int Prune(Func<string, bool> stillThere)
         {
             int gone = 0;
             for (int i = _order.Count - 1; i >= 0; i--)
             {
-                if (today - _order[i].Day > KeepDays)
+                if (!_order[i].Received && !stillThere(_order[i].Key))
+                {
+                    _byKey.Remove(_order[i].Key);
+                    _order.RemoveAt(i);
+                    gone++;
+                }
+            }
+            return gone;
+        }
+
+        /// <summary>Every text a host sent let go (a new whole part, the session left).</summary>
+        public int ClearReceived()
+        {
+            int gone = 0;
+            for (int i = _order.Count - 1; i >= 0; i--)
+            {
+                if (_order[i].Received)
                 {
                     _byKey.Remove(_order[i].Key);
                     _order.RemoveAt(i);
@@ -107,6 +127,10 @@ namespace RealLifeOverhaul.Texts
             for (int i = 0; i < _order.Count; i++)
             {
                 TextKept k = _order[i];
+                if (k.Received)
+                {
+                    continue;   // (the host's, for this session only)
+                }
                 t.Append("^w=");
                 Escape(k.Key, t);
                 t.Append('|').Append(k.Day.ToString(Inv)).Append('|');

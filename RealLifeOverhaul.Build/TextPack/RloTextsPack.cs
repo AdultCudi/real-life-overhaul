@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.TextPack
             {
                 string folder = context.ModRootPath;
                 string known = AppDomain.CurrentDomain.GetData(Slot) as string;
-                if (!string.IsNullOrEmpty(folder) && (known == null || known.IndexOf(folder, StringComparison.OrdinalIgnoreCase) < 0))
+                if (!string.IsNullOrEmpty(folder) && !Listed(known, folder))
                 {
                     AppDomain.CurrentDomain.SetData(Slot, string.IsNullOrEmpty(known) ? folder : known + "|" + folder);
                 }
@@ -38,6 +38,23 @@ namespace RealLifeOverhaul.TextPack
                 context.Logger?.Warn("RLO Texts pack: could not say where it is (" + e.Message + "); Real Life Overhaul looks in the Workshop's folder itself.");
             }
             return Task.CompletedTask;
+        }
+
+        // The folder is among those already said ('|' between each), compared whole.
+        private static bool Listed(string known, string folder)
+        {
+            if (string.IsNullOrEmpty(known))
+            {
+                return false;
+            }
+            foreach (string one in known.Split('|'))
+            {
+                if (string.Equals(one, folder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public Task OnUnloadAsync()

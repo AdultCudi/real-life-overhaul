@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Texts
             {
                 for (int i = 0; i < history.Count; i++)
                 {
-                    sheet.History.Add(history[i]);
+                    sheet.History.Add(new TextSaid(Plain(history[i].Who), Plain(history[i].Said)));   // (a player's typed words among them: one line, no turn markers)
                 }
             }
             sheet.Write = intent.Write;
@@ -188,6 +188,28 @@ namespace RealLifeOverhaul.Texts
             }
             sheet.Lang = "en";
             return true;
+        }
+
+        /// <summary>
+        /// A thread's line as a card may carry it: line breaks made spaces, and the prompt's turn markers ("&lt;|", "|&gt;")
+        /// taken out, so that nothing typed (a player's own post or message) can end the card's turn or start another.
+        /// </summary>
+        public static string Plain(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text ?? string.Empty;
+            }
+            if (text.IndexOf('\n') < 0 && text.IndexOf('\r') < 0 && text.IndexOf("<|", StringComparison.Ordinal) < 0 && text.IndexOf("|>", StringComparison.Ordinal) < 0)
+            {
+                return text;
+            }
+            string plain = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
+            while (plain.IndexOf("<|", StringComparison.Ordinal) >= 0 || plain.IndexOf("|>", StringComparison.Ordinal) >= 0)
+            {
+                plain = plain.Replace("<|", string.Empty).Replace("|>", string.Empty);
+            }
+            return plain;
         }
 
         // A line with its {slots} put in; null if one has no value.

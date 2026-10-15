@@ -166,12 +166,12 @@ namespace RealLifeOverhaul.Texts
                     i++;
                     continue;
                 }
-                int start = i;
-                while (i < words.Length && (char.IsDigit(words[i]) || ((words[i] == ',' || words[i] == '.' || words[i] == ':') && i + 1 < words.Length && char.IsDigit(words[i + 1]))))
+                int start = i > 0 && words[i - 1] == '$' ? i - 1 : i;   // (money with its sign: "$40" must be on the card as "$40")
+                while (i < words.Length && (char.IsDigit(words[i]) || (Joins(words[i]) && i + 1 < words.Length && char.IsDigit(words[i + 1]))))
                 {
                     i++;
                 }
-                if (card == null || card.IndexOf(words.Substring(start, i - start), StringComparison.Ordinal) < 0)
+                if (card == null || !Whole(card, words.Substring(start, i - start)))
                 {
                     return false;
                 }
@@ -179,14 +179,39 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
+        private static bool Joins(char c) => c == ',' || c == '.' || c == ':';
+
+        // The token on the card as a whole number: no digit (or a digit's comma or point) right before or after it, so that
+        // "40" is not found in "400" nor "$40" in "$4,000".
+        private static bool Whole(string card, string token)
+        {
+            int at = card.IndexOf(token, StringComparison.Ordinal);
+            while (at >= 0)
+            {
+                int end = at + token.Length;
+                bool before = at > 0 && token[0] != '$' && (char.IsDigit(card[at - 1]) || (Joins(card[at - 1]) && at > 1 && char.IsDigit(card[at - 2])));
+                bool after = end < card.Length && (char.IsDigit(card[end]) || (Joins(card[end]) && end + 1 < card.Length && char.IsDigit(card[end + 1])));
+                if (!before && !after)
+                {
+                    return true;
+                }
+                at = card.IndexOf(token, at + 1, StringComparison.Ordinal);
+            }
+            return false;
+        }
+
         private static bool HasDash(string words)
         {
             for (int i = 0; i < words.Length; i++)
             {
                 char c = words[i];
-                if (c == '–' || c == '—' || c == '‒' || c == '―')
+                if (c == '–' || c == '—' || c == '‒' || c == '―' || c == '‐' || c == '‑' || c == '−')
                 {
-                    return true;
+                    return true;   // en, em, figure and other dashes, the Unicode hyphens and the minus sign
+                }
+                if (c == '-' && i + 1 < words.Length && words[i + 1] == '-')
+                {
+                    return true;   // two hyphens: a dash typed
                 }
                 if (c == '-' && (i == 0 || words[i - 1] == ' ' || i == words.Length - 1 || words[i + 1] == ' '))
                 {

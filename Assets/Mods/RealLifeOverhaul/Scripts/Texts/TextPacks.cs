@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace RealLifeOverhaul.Texts
 {
@@ -32,10 +33,15 @@ namespace RealLifeOverhaul.Texts
     ///
     ///   the fixed folder   "RLO Texts" in the game's own data folder (LocalLow/Hovgaard Games/Big Ambitions), a pack
     ///                      in it or in any folder under it (a pack put there by hand)
-    ///   the Workshop       the folder of every Workshop item of the game's (steamapps/workshop/content/1331550): a pack
-    ///                      is its own item (RLO Texts, RLO Texts Lite), apart from the mod's
+    ///   the Workshop       only the folders of RLO's own two pack items (<see cref="WorkshopItems"/>), switched on in the
+    ///                      game's mod list or not; never any other item's
     ///   announced          the folders the pack's own small mod told the game's process when the game loaded it
     ///   ModsLocal          a pack placed as a local mod
+    ///
+    /// SAFETY. A pack's exe and model must lie inside its own folder (a path that leaves it is refused), its rank is one
+    /// of the two known packs' (1 Lite, 2 the full one), and its runtime folder must hold exactly llama.cpp's files as
+    /// pinned in <see cref="TextRuntime"/>, byte for byte (SHA-256), and no other .exe or .dll (<see cref="Verify"/>, off
+    /// the game's thread, once a session, before anything of the pack is started). A pack that fails is not run.
     ///
     /// The best is the highest rank, then the newest version. Device: Auto runs on the processor unless a GPU has ample
     /// free memory (<see cref="Ample"/>), asked once of llama.cpp itself (--list-devices). Game-free (EconomyCheck,
@@ -47,6 +53,104 @@ namespace RealLifeOverhaul.Texts
         public const string Fixed = "RLO Texts";       // the folder under the game's data folder
         public const string Announced = "RealLifeOverhaul.TextPacks";   // the process's data slot the pack's mod writes its folder into ('|' between several)
         public const int SpareMiB = 1024;               // a GPU is ample with twice the model and this much more free
+        public const int RankMost = 2;                  // the full pack; Lite is 1: no pack may claim more
+
+        /// <summary>
+        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite), by their item ids: empty until they are published
+        /// (not-in-repo WORKSHOP.txt says to fill them in). Only these Workshop folders are ever looked in.
+        /// </summary>
+        public static readonly string[] WorkshopItems = { "", "" };
+
+        /// <summary>The folders of RLO's own pack items under the game's Workshop content folder (none while their ids are empty).</summary>
+        public static List<string> WorkshopPacks(string workshopContent, string[] items)
+        {
+            var list = new List<string>(2);
+            for (int i = 0; workshopContent != null && i < items.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(items[i]) && IsDigits(items[i]))
+                {
+                    list.Add(Path.Combine(workshopContent, items[i]));
+                }
+            }
+            return list;
+        }
+
+        private static bool IsDigits(string s)
+        {
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (s[i] < '0' || s[i] > '9')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>True if a full path lies inside a folder (the folder and a separator start it).</summary>
+        public static bool Inside(string folder, string path)
+        {
+            if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+            string root = folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            return path.StartsWith(root, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Whether a pack's runtime is exactly llama.cpp's pinned files: every one there with its SHA-256, and no other .exe or
+        /// .dll in its folder. Null when it is; else why not. Reads about 82 MB: off the game's thread, once a session.
+        /// </summary>
+        public static string Verify(TextPack pack, string[] pinned)
+        {
+            string runtime = Path.GetDirectoryName(pack.Exe);
+            if (!Inside(pack.Folder, pack.Exe) || !string.Equals(Path.GetFileName(pack.Exe), pinned[0], StringComparison.OrdinalIgnoreCase))
+            {
+                return "the server is not where the pack keeps it";
+            }
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using (SHA256 sha = SHA256.Create())
+            {
+                for (int i = 0; i + 1 < pinned.Length; i += 2)
+                {
+                    allowed.Add(pinned[i]);
+                    string file = Path.Combine(runtime, pinned[i]);
+                    if (!System.IO.File.Exists(file))
+                    {
+                        return pinned[i] + " is missing";
+                    }
+                    using (FileStream s = System.IO.File.OpenRead(file))
+                    {
+                        if (!string.Equals(Hex(sha.ComputeHash(s)), pinned[i + 1], StringComparison.Ordinal))
+                        {
+                            return pinned[i] + " is not llama.cpp's own";
+                        }
+                    }
+                }
+            }
+            foreach (string file in Directory.GetFiles(runtime))
+            {
+                string ext = Path.GetExtension(file);
+                if ((string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) || string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase))
+                    && !allowed.Contains(Path.GetFileName(file)))
+                {
+                    return Path.GetFileName(file) + " is not one of llama.cpp's files";
+                }
+            }
+            return null;
+        }
+
+        private static string Hex(byte[] bytes)
+        {
+            var c = new char[bytes.Length * 2];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                c[i * 2] = "0123456789abcdef"[bytes[i] >> 4];
+                c[i * 2 + 1] = "0123456789abcdef"[bytes[i] & 15];
+            }
+            return new string(c);
+        }
 
         /// <summary>Reads a pack.txt; null if it is not a usable pack (no model or no exe on disk).</summary>
         public static TextPack Read(string folder)
@@ -75,9 +179,10 @@ namespace RealLifeOverhaul.Texts
                     case "version": int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pack.Version); break;
                 }
             }
-            if (pack.Model == null || pack.Exe == null || !System.IO.File.Exists(pack.Model) || !System.IO.File.Exists(pack.Exe))
+            if (pack.Model == null || pack.Exe == null || !Inside(folder, pack.Model) || !Inside(folder, pack.Exe) || pack.Rank < 1 || pack.Rank > RankMost
+                || !System.IO.File.Exists(pack.Model) || !System.IO.File.Exists(pack.Exe))
             {
-                return null;
+                return null;   // (a path out of its own folder, a rank no pack of RLO's has, or files missing: not a pack)
             }
             pack.Name = pack.Name ?? Path.GetFileName(folder);
             pack.ModelBytes = new FileInfo(pack.Model).Length;
@@ -248,6 +353,7 @@ namespace RealLifeOverhaul.Texts
                     RedirectStandardError = true,
                     WorkingDirectory = Path.GetDirectoryName(exe)
                 };
+                TextServer.Offline(info);
                 using (Process p = Process.Start(info))
                 {
                     if (p == null)

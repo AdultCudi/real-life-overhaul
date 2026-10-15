@@ -77,7 +77,6 @@ namespace RealLifeOverhaul.Flare
                 {
                     continue;
                 }
-                _textAsked.Add(p.Id);
                 bool shared = GoingPublic.InSession && FlareNetShare.IsShared(_file, p, hostShares);
                 TextRequest r = PostRequest(p, shared);
                 if (r == null)
@@ -92,7 +91,10 @@ namespace RealLifeOverhaul.Flare
                 FlarePost post = p;
                 r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;   // (words after it went up are not used)
                 r.Done = words => { };   // (kept by the hub under the post's key; drawn from there)
-                FlareBridges.TextAsk(r);
+                if (FlareBridges.TextAsk(r))
+                {
+                    _textAsked.Add(p.Id);   // (asked: not again; one not asked is looked at again on the next event)
+                }
             }
         }
 

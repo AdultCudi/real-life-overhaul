@@ -170,6 +170,7 @@ namespace RealLifeOverhaul.Flare
             }
             Cast(file, day);
             LiveStart(file);
+            _textAsked.Clear();   // (RLO Texts: post numbers are this file's)
             _file = file;
             _running = true;
             if (FlareLiveRules.StartDay(file.Net, day, Following))
@@ -193,6 +194,7 @@ namespace RealLifeOverhaul.Flare
             FlareBridges.Watched?.Invoke(false, false);   // no patrols or cleaners of Flare's once it stops (Crime/CityWatch back to 1)
             _running = false;
             _file = null;
+            _textAsked.Clear();
             if (_view != null)
             {
                 _view.Dispose();
@@ -227,6 +229,7 @@ namespace RealLifeOverhaul.Flare
         {
             _running = false;
             _file = null;
+            _textAsked.Clear();
             if (_view != null)
             {
                 _view.Changed();

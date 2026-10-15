@@ -121,10 +121,11 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The key a piece's words are kept under: its key and values, hashed (FNV-1a, the same on every machine, so a guest
-        /// of a session finds the host's words for the same piece).
+        /// The key a piece's words are kept under: its edition's day, and its key and values hashed (FNV-1a, the same on every
+        /// machine, so a guest of a session finds the host's words for the same piece; the day keeps the same news of two
+        /// editions apart).
         /// </summary>
-        public static string LedgerKey(string key, string[] data)
+        public static string LedgerKey(int day, string key, string[] data)
         {
             unchecked
             {
@@ -135,7 +136,7 @@ namespace RealLifeOverhaul.Texts
                     h = Fnv(h, "|");
                     h = Fnv(h, data[i]);
                 }
-                return "lp:" + h.ToString("x8", System.Globalization.CultureInfo.InvariantCulture);
+                return "lp:" + day.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + h.ToString("x8", System.Globalization.CultureInfo.InvariantCulture);
             }
         }
 
@@ -273,8 +274,8 @@ namespace RealLifeOverhaul.Texts
                 problems.Add("the partner's arrest lines map to the minor and serious cards");
             }
             if (Ledger("reallife_macro_news_rate_up") != "ledger.rate_up" || Ledger("reallife_macro_news_rate_hold") != null || Ledger("reallife_macro_news_cycle_boom") != null
-                || LedgerKey("k", new[] { "a", "1" }) != LedgerKey("k", new[] { "a", "1" }) || LedgerKey("k", new[] { "a", "1" }) == LedgerKey("k", new[] { "a", "2" })
-                || LedgerKey("k", null) != "lp:" + "ee0c38ea")
+                || LedgerKey(4, "k", new[] { "a", "1" }) != LedgerKey(4, "k", new[] { "a", "1" }) || LedgerKey(4, "k", new[] { "a", "1" }) == LedgerKey(4, "k", new[] { "a", "2" })
+                || LedgerKey(4, "k", null) != "lp:4:" + "ee0c38ea" || LedgerKey(4, "k", null) == LedgerKey(5, "k", null))
             {
                 problems.Add("the paper's briefs map by their key, a rate held or the economy's state keep their written lines, and a piece's key is the same on every machine");
             }

@@ -223,6 +223,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsShare.cs" Link="Mod\TextsShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsHub.cs" Link="Mod\TextsHub.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsMapRules.cs" Link="Mod\TextsMapRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRuntime.cs" Link="Mod\TextRuntime.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.cs" Link="Mod\FlareTextsMap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityShare.cs" Link="Mod\CityShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CivicCatalogue.cs" Link="Mod\CivicCatalogue.cs" />

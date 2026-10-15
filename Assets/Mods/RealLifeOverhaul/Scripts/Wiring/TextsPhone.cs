@@ -227,11 +227,18 @@ namespace RealLifeOverhaul
 
             private static TextRequest Request(string intent, string branch, string speaker, string key, Dictionary<string, string> data, Action<string, Dictionary<string, string>> send)
             {
+                GameInstance save = SaveGameManager.Current;   // (the save it belongs to: never sent into another one)
                 return new TextRequest
                 {
                     Use = TextUse.People, Intent = intent, Branch = branch, Key = "ph:" + speaker + ":" + key, Speaker = speaker, Priority = TextPriority.Soon,
                     Seconds = HoldSeconds, Flush = true, Day = TextsGame.Day,
-                    Done = words => send(words != null ? SocialLinks.WordsKey : key, words != null ? new Dictionary<string, string>(1) { { "text", words } } : data)
+                    Done = words =>
+                    {
+                        if (ReferenceEquals(save, SaveGameManager.Current))
+                        {
+                            send(words != null ? SocialLinks.WordsKey : key, words != null ? new Dictionary<string, string>(1) { { "text", words } } : data);
+                        }
+                    }
                 };
             }
 
