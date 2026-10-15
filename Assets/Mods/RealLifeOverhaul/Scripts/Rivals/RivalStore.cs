@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Rivals
     ///     RV|version|seed|start|settled|next move|next id|tier|player worth|player a week ago|week day|top day
     ///     T|index|worth|a week ago|came forward|taken over|quiet until|slow until|barred until|last move|stake day|bid day|
     ///        listed|outbid day,poach day,press day,lobby day,takeover day|break-up money|break-up day
-    ///     M|id|tycoon|kind|state|announced|comes|ends|amount|second|rented|test|place|name|district|type|who|answered   a move
+    ///     M|id|tycoon|kind|state|announced|comes|ends|amount|second|rented|test|place|name|district|type|who   a move
     ///     C|id|tycoon|kind|day|cost|move                                                                       a counter
     ///
     /// Every number is written in the invariant culture, so what is read back is exactly what was written. A NEWER
@@ -79,7 +79,6 @@ namespace RealLifeOverhaul.Rivals
                 Join(b, m.Amount, m.Second);
                 Join(b, m.Rented ? 1 : 0, m.Test ? 1 : 0);
                 b.Append('|').Append(Clean(m.Place)).Append('|').Append(Clean(m.Name)).Append('|').Append(Clean(m.District)).Append('|').Append(Clean(m.Type)).Append('|').Append(Clean(m.Who));
-                Join(b, m.Answered);
             }
             for (int i = 0; i < f.Counters.Count; i++)
             {
@@ -193,7 +192,7 @@ namespace RealLifeOverhaul.Rivals
             f.Moves.Add(new RivalMove
             {
                 Id = I(c, 1), Tycoon = tycoon, Kind = (RivalMoveKind)kind, State = (RivalMoveState)state, Announced = I(c, 5), Land = I(c, 6), End = I(c, 7), Amount = L(c, 8), Second = L(c, 9),
-                Rented = I(c, 10) != 0, Test = I(c, 11) != 0, Place = c[12], Name = c[13], District = c[14], Type = c[15], Who = c.Length > 16 ? c[16] : string.Empty, Answered = c.Length > 17 ? I(c, 17) : 0
+                Rented = I(c, 10) != 0, Test = I(c, 11) != 0, Place = c[12], Name = c[13], District = c[14], Type = c[15], Who = c.Length > 16 ? c[16] : string.Empty
             });
         }
 

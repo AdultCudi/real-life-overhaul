@@ -221,6 +221,7 @@ namespace RealLifeOverhaul.Markets
         public const double ImpactMemorySteps = 12.0;    // the player's recent trading in a company counts towards the next order for about this long
         public const int OrderShareOfVolumePct = 20;     // one order: at most this share of a day's usual volume
         public const int HoldingShareBp = 1000;          // at most 10% of a company's shares
+        public const int HoldingFounderBp = 7500;        // a rival tycoon's own stake in their holding: the rest is its free float, all the market trades (MarketIndex)
         public const int ParticipationPct = 25;          // a resting order takes at most this share of a step's volume
         public const int GoodTillDays = 60;              // market days an order "until cancelled" stays open
         public const int OrdersMost = 60;
@@ -457,9 +458,9 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(141, "Mossbank Residential Trust", "MRT", Pt, S, 280, 1500, null, false, Third),
             new CompanyDef(142, "Gullpoint Hotel Trust", "GHT", Pt, S, 320, 1700, null, false, Third),
             // ---- the rival tycoons' holdings (Scripts/Rivals/RivalCatalogue): on the market only once their tycoon comes forward (MarketEngine.ListHolding)
-            new CompanyDef(143, "Thornfield Holdings", "THF", Pr, M, 1400, 3800, null, true, 0, true),
-            new CompanyDef(144, "Merriweather Group", "MWG", St, M, 1800, 2900, null, true, 0, true),
-            new CompanyDef(145, "Valecrest Capital", "VCC", Fi, M, 1100, 5200, null, true, 0, true),
+            new CompanyDef(143, "Karen Aerospace & Motors", "KRN", Pr, M, 1400, 3800, null, true, 0, true),
+            new CompanyDef(144, "Luthor Everything Co.", "LUTH", St, M, 1800, 2900, null, true, 0, true),
+            new CompanyDef(145, "Zucc Social Holdings", "ZUCC", Fi, M, 1100, 5200, null, true, 0, true),
             // ---- the pipeline: companies that may come to the market later
             new CompanyDef(201, "Seedling Biotech", "SEED", Hc, S, 120, 1800, null, true),
             new CompanyDef(202, "Rooftop Solar Works", "RSW", Pw, S, 200, 1400, null, true),

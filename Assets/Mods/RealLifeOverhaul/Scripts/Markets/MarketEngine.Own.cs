@@ -452,7 +452,7 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock other = State.Stocks[i];
-                if (other.Listed && other != s && other.Own == null && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0)
+                if (other.Listed && other != s && other.Own == null && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0 && (other.Def == null || !other.Def.Holding))
                 {
                     _scratch.Add(other);
                 }

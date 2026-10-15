@@ -53,6 +53,13 @@ namespace RealLifeOverhaul.Rivals
             "reallife_rival_about_outbid", "reallife_rival_about_poach", "reallife_rival_about_press", "reallife_rival_about_lobby", "reallife_rival_about_takeover"
         };
 
+        /// <summary>Each tycoon's way with words, by their index: a line closing the paper's pieces about them, and one as they come forward.</summary>
+        private static readonly string[] QuipKeys = { "reallife_rival_quip_0", "reallife_rival_quip_1", "reallife_rival_quip_2" };
+        private static readonly string[] HelloKeys = { "reallife_rival_hello_0", "reallife_rival_hello_1", "reallife_rival_hello_2" };
+
+        public static string Quip(int tycoon) => T(QuipKeys[RivalCatalogue.Clamp(tycoon, 0, QuipKeys.Length - 1)]);
+        public static string Hello(int tycoon) => T(HelloKeys[RivalCatalogue.Clamp(tycoon, 0, HelloKeys.Length - 1)]);
+
         private static readonly string[] WhyKeys =
         {
             null, "reallife_rival_why_out", "reallife_rival_why_rest", "reallife_rival_why_nothing", "reallife_rival_why_no_holding", "reallife_rival_why_short", "reallife_rival_why_money"
@@ -62,6 +69,8 @@ namespace RealLifeOverhaul.Rivals
         public static IEnumerable<string> ListedKeys()
         {
             foreach (string k in WhatKeys) yield return k;
+            foreach (string k in QuipKeys) yield return k;
+            foreach (string k in HelloKeys) yield return k;
             foreach (string k in CameKeys) yield return k;
             foreach (string k in CounterDoneKeys) yield return k;
             foreach (string k in PaperCameKeys) yield return k;
@@ -170,7 +179,7 @@ namespace RealLifeOverhaul.Rivals
             TycoonDef t = RivalCatalogue.Tycoons[RivalCatalogue.Clamp(m.Tycoon, 0, RivalCatalogue.TycoonCount - 1)];
             return Data("rival", t.Name, "holding", t.Holding, "business", string.IsNullOrEmpty(m.Name) ? T("reallife_rival_your_business") : m.Name,
                 "district", RivalGame.DistrictName(m.District), "size", Size(m), "rent", Permille(m.Second), "days", N(m.Land - m.Announced), "day", N(m.Land),
-                "end", N(m.End), "what", What(m), "name", string.IsNullOrEmpty(m.Who) ? T("reallife_rival_your_best") : m.Who);
+                "end", N(m.End), "what", What(m), "name", string.IsNullOrEmpty(m.Who) ? T("reallife_rival_your_best") : m.Who, "quip", Quip(m.Tycoon));
         }
 
         /// <summary>A move as a short phrase ("buying up buildings in Midtown").</summary>

@@ -53,10 +53,10 @@ namespace RealLifeOverhaul
                 RivalBridges.Playthrough = Playthrough;
                 RivalBridges.MarketHere = () => Settings.Markets && MarketDirector.Instance != null && MarketDirector.Instance.RivalsMayAct;
                 RivalBridges.Listed = () => MarketDirector.Instance != null && MarketDirector.Instance.MyCompany != null;
-                RivalBridges.CompanyDays = () => MarketDirector.Instance != null ? MarketDirector.Instance.CompanyDays() : -1;
-                RivalBridges.YearDays = () => MarketDirector.Instance != null ? MarketDirector.Instance.YearDays : 365;
-                RivalBridges.ListHolding = (id, worth) => MarketDirector.Instance != null && MarketDirector.Instance.ListHolding(id, worth);
-                RivalBridges.DelistHolding = id => MarketDirector.Instance != null && MarketDirector.Instance.DelistHolding(id);
+                RivalBridges.CompanyDays = CompanyDays;
+                RivalBridges.YearDays = YearDays;
+                RivalBridges.ListHolding = ListHolding;
+                RivalBridges.DelistHolding = DelistHolding;
                 RivalBridges.Holding = Holding;
                 RivalBridges.Stake = id => MarketDirector.Instance != null && MarketDirector.Instance.RivalStake(id);
                 RivalBridges.Bid = id => MarketDirector.Instance != null && MarketDirector.Instance.RivalBid(id);
@@ -71,7 +71,7 @@ namespace RealLifeOverhaul
                 RivalBridges.CourtOn = () => DebtClaims.Available;
                 RivalBridges.Sue = RivalClaims.File;
                 RivalBridges.Withdraw = Withdraw;
-                RivalBridges.Revalue = () => EstateDirector.Instance?.Revalue();
+                RivalBridges.Revalue = Revalue;
                 RivalBridges.Customers = delta => FameDirector.Instance?.Moved(FamePart.Customers, FameCause.Press, delta);
                 RivalBridges.PaperOn = () => Settings.SocialNewspaper;
                 RivalBridges.ShowList = ShowList;
@@ -120,6 +120,70 @@ namespace RealLifeOverhaul
                 {
                     Fault("RivalLinks.Withdraw", e);
                     return false;
+                }
+            }
+
+            private static int CompanyDays()
+            {
+                try
+                {
+                    return MarketDirector.Instance != null ? MarketDirector.Instance.CompanyDays() : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.CompanyDays", e);
+                    return -1;
+                }
+            }
+
+            private static int YearDays()
+            {
+                try
+                {
+                    return MarketDirector.Instance != null ? MarketDirector.Instance.YearDays : 365;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.YearDays", e);
+                    return 365;
+                }
+            }
+
+            private static bool ListHolding(int id, long worth)
+            {
+                try
+                {
+                    return MarketDirector.Instance != null && MarketDirector.Instance.ListHolding(id, worth);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.ListHolding", e);
+                    return false;
+                }
+            }
+
+            private static bool DelistHolding(int id)
+            {
+                try
+                {
+                    return MarketDirector.Instance != null && MarketDirector.Instance.DelistHolding(id);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.DelistHolding", e);
+                    return false;
+                }
+            }
+
+            private static void Revalue()
+            {
+                try
+                {
+                    EstateDirector.Instance?.Revalue();
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Revalue", e);
                 }
             }
 

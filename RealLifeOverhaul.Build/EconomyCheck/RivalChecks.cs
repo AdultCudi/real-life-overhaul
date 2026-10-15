@@ -450,22 +450,16 @@ internal static partial class Program
         {
             f.Moves[0].Name = "A|B\nC";
             f.Moves[0].Who = "Ann Lee";
-            f.Moves[0].Answered = 0;
-        }
-        if (f.Moves.Count > 1)
-        {
-            f.Moves[1].Answered = 5;
         }
         RivalRules.Counter(f, 0, RivalCounter.Poach, 80, 777, 1200);
         string line = RivalStore.Write(f);
         RivalFile back = RivalStore.Read(line, out int version);
         Check(back != null && version == RivalStore.Version && RivalStore.Write(back) == line, "rivals save: the line read back is written again exactly (" + f.Moves.Count + " moves, " + f.Counters.Count + " counters)");
-        Check(back != null && back.Moves.Count > 0 && back.Moves[0].Name == "A/B C" && back.Moves[0].Who == "Ann Lee" && back.Tycoons[2].BreakUp == 123456789012L && back.Tycoons[2].BreakUpDay == 99 && back.Tycoons[1].CounterDay[2] == 44
-              && (back.Moves.Count < 2 || back.Moves[1].Answered == 5),
+        Check(back != null && back.Moves.Count > 0 && back.Moves[0].Name == "A/B C" && back.Moves[0].Who == "Ann Lee" && back.Tycoons[2].BreakUp == 123456789012L && back.Tycoons[2].BreakUpDay == 99 && back.Tycoons[1].CounterDay[2] == 44,
             "rivals save: names cleaned of the dividers, large sums and the counters' days kept");
 
         // An older line (a move without its last field), a later version's (more fields, a line of a new letter, a kind and a state not known), damaged ones.
-        string older = line.Replace("|Ann Lee|0", string.Empty);
+        string older = line.Replace("|Ann Lee", string.Empty);
         RivalFile old = RivalStore.Read(older, out int _);
         Check(old != null && old.Moves.Count == back.Moves.Count && old.Moves[0].Who == string.Empty, "rivals save: a move written without its employee's name reads with none");
         string later = line.Replace("RV|1|", "RV|2|") + "|99" + "\nZ|1|2|3" + "\nM|900|0|42|0|1|3|5|1|0|0|0|p|n|d|t|w" + "\nM|901|0|1|9|1|3|5|1|0|0|0|p|n|d|t|w" + "\nC|902|0|8|1|1|0";

@@ -282,6 +282,13 @@ namespace RealLifeOverhaul.Rivals
                 t.SlowUntil += t.SlowUntil > f.SettledDay - skipped ? skipped : 0;
                 t.BarredUntil += t.BarredUntil > f.SettledDay - skipped ? skipped : 0;
                 t.BreakUpDay += t.BreakUp > 0 ? skipped : 0;
+                t.LastMoveDay += t.LastMoveDay >= 0 ? skipped : 0;
+                t.StakeDay += t.StakeDay >= 0 ? skipped : 0;
+                t.BidDay += t.BidDay >= 0 ? skipped : 0;
+                for (int k = 0; k < t.CounterDay.Length; k++)
+                {
+                    t.CounterDay[k] += t.CounterDay[k] >= 0 ? skipped : 0;
+                }
             }
             if (f.WeekDay >= 0)
             {
@@ -760,23 +767,20 @@ namespace RealLifeOverhaul.Rivals
             {
                 case RivalCounter.Outbid:
                     target = FirstOf(f, tycoon, RivalMoveKind.Property, RivalMoveKind.Outlet, false);
-                    return target == null ? RivalWhy.Nothing : Used(target, kind) ? RivalWhy.Rest : RivalWhy.None;
+                    return target == null ? RivalWhy.Nothing : RivalWhy.None;
                 case RivalCounter.Lobby:
                     target = FirstOf(f, tycoon, RivalMoveKind.Lobby, RivalMoveKind.Lobby, true);
-                    return target != null && Used(target, kind) ? RivalWhy.Rest : RivalWhy.None;
+                    return RivalWhy.None;
                 case RivalCounter.Press:
                 {
                     RivalMove pending = f.Pending();
                     target = pending != null && pending.Tycoon == tycoon && pending.Kind != RivalMoveKind.Bid ? pending : null;   // (a bid is answered by the founder's own defences, not a piece in the paper)
-                    return target != null && Used(target, kind) ? RivalWhy.Rest : RivalWhy.None;
+                    return RivalWhy.None;
                 }
                 default:
                     return RivalWhy.None;
             }
         }
-
-        // True when an answer has been used against a move already: each is used once against one move.
-        private static bool Used(RivalMove m, RivalCounter kind) => (m.Answered & (1 << (int)kind)) != 0;
 
         // The first live move of a tycoon of either kind (running only when asked).
         private static RivalMove FirstOf(RivalFile f, int tycoon, RivalMoveKind a, RivalMoveKind b, bool runningOnly)
@@ -832,11 +836,7 @@ namespace RealLifeOverhaul.Rivals
                     t.BarredUntil = Math.Max(t.BarredUntil, day + RivalCatalogue.LobbyBarDays);
                     break;
             }
-            t.CounterDay[(int)kind] = day;
-            if (target != null)
-            {
-                target.Answered |= 1 << (int)kind;
-            }
+            t.CounterDay[(int)kind] = day;   // (an answer that stops a move ends it: a second finds nothing of it to stop)
             return Note(f, tycoon, kind, day, cost, target != null ? target.Id : 0);
         }
 
@@ -868,10 +868,14 @@ namespace RealLifeOverhaul.Rivals
             breakUp = value / 1000L * RivalCatalogue.BreakUpPermille;
         }
 
-        /// <summary>A fortune a share of a holding, in cents.</summary>
+        /// <summary>
+        /// A holding's worth a share by its tycoon's fortune, in cents: the fortune is the tycoon's own stake
+        /// (Markets/MarketCatalogue.HoldingFounderBp), so the whole holding is the fortune over that stake.
+        /// </summary>
         public static long WorthCents(long fortune, long shares)
         {
-            return shares > 0 && fortune > 0 ? fortune / shares * 100L + fortune % shares * 100L / shares : 0L;
+            long whole = fortune > 0 ? fortune / Markets.MarketCatalogue.HoldingFounderBp * 10000L : 0L;
+            return shares > 0 && whole > 0 ? whole / shares * 100L + whole % shares * 100L / shares : 0L;
         }
 
         /// <summary>Why the player cannot take a holding over: it is not listed here, or they hold less than the most one holder may (in shares).</summary>

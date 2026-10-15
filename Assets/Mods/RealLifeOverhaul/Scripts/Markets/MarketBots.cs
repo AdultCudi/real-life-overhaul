@@ -312,7 +312,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A company a bot may buy: listed long enough, not the player's or another player's, no bid on it, not a penny share, of a size it trades.</summary>
         public static bool Buyable(MarketState state, BotFirm f, Stock s, int day)
         {
-            return s.Listed && s.Own == null && s.BidCents <= 0 && day - s.ListedDay >= ListedDaysLeast && (f.Small || s.Size != MarketSize.Small)
+            return s.Listed && s.Own == null && (s.Def == null || !s.Def.Holding) && s.BidCents <= 0 && day - s.ListedDay >= ListedDaysLeast && (f.Small || s.Size != MarketSize.Small)
                    && s.Last * 1000L >= 2L * MarketCatalogue.PennyCents * Math.Max(100, state.Env.PriceLevel);
         }
 

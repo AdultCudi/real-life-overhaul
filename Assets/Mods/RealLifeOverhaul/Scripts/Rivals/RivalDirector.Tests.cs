@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Rivals
                 }
                 Keep();
                 RivalRules.Defeat(_file, t.Index, day, 0, 0);
-                WriteFootfall(null);
+                Released(null);
                 RivalGame.Tell(NotificationType.Success, RivalText.CounterDoneKey(RivalCounter.Takeover), RivalText.Data("rival", t.Def.Name, "holding", t.Def.Holding, "amount", RivalText.Money(0),
                     "back", RivalText.Money(0), "days", RivalCatalogue.BreakUpDays.ToString()), _openPage);
                 TestDone(t.Def.Name + " is out (a test: nothing paid)");
@@ -295,7 +295,7 @@ namespace RealLifeOverhaul.Rivals
                 }
                 _beforeTests = null;
                 Save.modData?.Remove(RivalStore.TestKey);
-                WriteFootfall(null);
+                Released(null);
                 RivalGame.Tell(NotificationType.Info, "reallife_rival_test_back_done", null, _openPage);
                 TestDone("put back as before the tests, " + withdrawn + " test claim(s) withdrawn");
             });

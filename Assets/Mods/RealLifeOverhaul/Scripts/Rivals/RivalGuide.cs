@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Rivals
                 .Fact("rival_press_cut", () => Permille(RivalCatalogue.PressWorthCut))
                 .Fact("rival_lobby_bar", () => Whole(RivalCatalogue.LobbyBarDays))
                 .Fact("rival_poach_rest", () => Whole(RivalCatalogue.CounterRestDays[(int)RivalCounter.Poach]))
+                .Fact("rival_outbid_rest", () => Whole(RivalCatalogue.CounterRestDays[(int)RivalCounter.Outbid]))
                 .Fact("rival_press_rest", () => Whole(RivalCatalogue.CounterRestDays[(int)RivalCounter.Press]))
                 .Fact("rival_takeover_premium", () => (RivalCatalogue.TakeoverPremiumBp / 100).ToString(Inv) + "%")
                 .Fact("rival_breakup", () => Permille(RivalCatalogue.BreakUpPermille))

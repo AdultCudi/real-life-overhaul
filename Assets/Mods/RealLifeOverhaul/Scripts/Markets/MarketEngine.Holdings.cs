@@ -15,8 +15,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// A rival's holding (a catalogue company marked Holding) comes to the market now, sized by its tycoon's fortune
         /// (<paramref name="worth"/>, dollars; 0 for the catalogue's own size): the whole company scaled together (its
-        /// takings, profit, debt, equity, past results and shares), so a share is what it would be and its shares at their
-        /// price are the fortune. True if it is listed (or already was).
+        /// takings, profit, debt, equity, past results and shares), so a share is what it would be and the tycoon's own stake
+        /// (<see cref="MarketCatalogue.HoldingFounderBp"/>) at its price is the fortune. Only the rest, its free float, trades
+        /// and counts in the index (MarketIndex). True if it is listed (or already was).
         /// </summary>
         public bool ListHolding(int id, long worth)
         {
@@ -45,7 +46,7 @@ namespace RealLifeOverhaul.Markets
             double cap = s.Shares * (double)s.MidCents / 100.0;
             if (worth > 0 && cap > 0.0)
             {
-                Scale(s, MarketValuation.Clamp(worth / cap, 0.001, 1000.0));
+                Scale(s, MarketValuation.Clamp(worth * 10000.0 / MarketCatalogue.HoldingFounderBp / cap, 0.001, 100000.0));   // (the tycoon's own stake is their fortune)
             }
             Reweigh(s, true);   // (before it is counted: the indices stay where they were)
             State.Stocks.Add(s);
@@ -62,7 +63,7 @@ namespace RealLifeOverhaul.Markets
             s.Equity *= k;
             s.QRev *= k;
             s.QNi *= k;
-            s.Adv *= k;
+            s.Adv *= k * (10000.0 - MarketCatalogue.HoldingFounderBp) / 10000.0;   // (only its free float trades: the tycoon's own stake never does)
             s.Shares = Math.Max(100000L, (long)Math.Round(s.Shares * k));
             for (int i = 0; i < s.Results.Count; i++)
             {

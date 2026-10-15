@@ -44,7 +44,6 @@ namespace RealLifeOverhaul.Rivals
         public bool Rented;                    // property: the player's business there pays rent
         public bool Test;                      // made by a test button
         public string Who = string.Empty;      // a poaching: the employee approached, as the company named them
-        public int Answered;                   // a bit for each of the player's answers used against this move: each once
 
         public bool Live => State == RivalMoveState.Announced || State == RivalMoveState.Running;
     }

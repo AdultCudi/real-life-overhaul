@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Rivals
         }
     }
 
-    /// <summary>An old fortune on the city's rich list: a family that has been rich for a long time and does nothing to the player.</summary>
+    /// <summary>An old fortune on the city's rich list: a name that has been rich for a long time and does nothing to the player.</summary>
     public struct FortuneDef
     {
         public readonly string Name;
@@ -91,9 +91,9 @@ namespace RealLifeOverhaul.Rivals
         public static readonly TycoonDef[] Tycoons =
         {
             //                 name                  holding                stock   worth at start  aim   property outlet poach stake bid lobby suit press
-            new TycoonDef("Augusta Thorne", "Thornfield Holdings", 143, 40000000L, 700, new[] { 30, 10, 10, 15, 10, 25, 10, 10 }),
-            new TycoonDef("Silas Merriweather", "Merriweather Group", 144, 60000000L, 900, new[] { 10, 35, 30, 10, 5, 10, 5, 15 }),
-            new TycoonDef("Dorian Vale", "Valecrest Capital", 145, 90000000L, 1100, new[] { 10, 10, 10, 30, 25, 5, 25, 20 })
+            new TycoonDef("Space Karen", "Karen Aerospace & Motors", 143, 40000000L, 700, new[] { 30, 10, 10, 15, 10, 25, 10, 10 }),
+            new TycoonDef("Bald Luthor", "Luthor Everything Co.", 144, 60000000L, 900, new[] { 10, 35, 30, 10, 5, 10, 5, 15 }),
+            new TycoonDef("The Zucc", "Zucc Social Holdings", 145, 90000000L, 1100, new[] { 10, 10, 10, 30, 25, 5, 25, 20 })
         };
 
         public const int TycoonCount = 3;
@@ -101,12 +101,12 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>The city's old fortunes on the rich list beside the tycoons and the player: they never move against anybody.</summary>
         public static readonly FortuneDef[] Fortunes =
         {
-            new FortuneDef("The Ashcombe family", 2200000000L),
-            new FortuneDef("The Rookwood family", 1400000000L),
-            new FortuneDef("The Penhallow family", 900000000L),
-            new FortuneDef("The Fairbrook family", 650000000L),
-            new FortuneDef("The Kestrel family", 400000000L),
-            new FortuneDef("The Dunmore family", 250000000L)
+            new FortuneDef("The Oracle of Omaha", 2200000000L),
+            new FortuneDef("The Wolf in Cashmere", 1400000000L),
+            new FortuneDef("Chair-Leap Bill", 900000000L),
+            new FortuneDef("Developers Steve", 650000000L),
+            new FortuneDef("Yacht Larry", 400000000L),
+            new FortuneDef("Rocket Richard", 250000000L)
         };
 
         // ---------------------------------------------------------------- the tiers: how far the player has come

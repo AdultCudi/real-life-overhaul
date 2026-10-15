@@ -120,7 +120,7 @@ namespace RealLifeOverhaul.Rivals
                 return WhyKey(RivalWhy.Money);
             }
             RivalRules.Defeat(_file, tycoon, day, cost, breakUp);
-            WriteFootfall(null);
+            Released(null);
             RivalGame.Tell(NotificationType.Success, RivalText.CounterDoneKey(RivalCounter.Takeover), RivalText.Data("rival", d.Name, "holding", d.Holding, "amount", RivalText.Money(cost),
                 "back", RivalText.Money(breakUp), "days", RivalCatalogue.BreakUpDays.ToString()), _openPage);
             Logger?.Info("Rivals: the player took " + d.Holding + " over for " + cost + "; " + d.Name + " is out; its parts bring " + breakUp + " on day " + _file.Tycoons[tycoon].BreakUpDay + ".");
