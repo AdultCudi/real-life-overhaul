@@ -1,4 +1,4 @@
-0.28.0
+0.28.1
 
-New
-- The city's faults are real: street lights go dark, potholes open, litter piles up and unsafe places appear at random as you play, and Flare reports are checked against them, with crews for real ones and a cost for reports of nothing.
+Fixed
+- A brand with its shops spread over several districts can now offer franchises once the brand as a whole is well known, not only when one district reaches 40.
