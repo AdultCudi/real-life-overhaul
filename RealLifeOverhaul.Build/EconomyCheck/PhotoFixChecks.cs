@@ -28,6 +28,48 @@ internal static partial class Program
         PhotoHolds();
         PhotoFlareFallback();
         PhotoWaysOut();
+        PhotoWholeLoads();
+        PhotoFullWords();
+    }
+
+    // ---------------------------------------------------------------- the whole photo's loads
+
+    private static void PhotoWholeLoads()
+    {
+        string gallery = Read(@"Photos\GalleryApp.cs");
+        string came = Between(gallery, "private void Came(", "// The photo as large as the right side");
+        string drop = Between(gallery, "private void DropWhole()", "\n        }");
+        Check(Regex.IsMatch(gallery, @"load = \+\+_wholeLoad;\s*_director\.StartCoroutine\(Guard\.Routine\(PhotosGame\.Load\([^;]*Came\(t, name, opening, load\)")
+              && Regex.IsMatch(came, @"if \(load != _wholeLoad \|\|[^)]*\)\s*\{\s*PhotosGame\.Destroy\(texture\);\s*return;")
+              && Regex.IsMatch(came, @"if \(_wholeTexture != null && _wholeTexture != texture\)\s*\{\s*PhotosGame\.Destroy\(_wholeTexture\);") && drop.Contains("_wholeLoad++;"),
+            "gallery whole loads: each load of the whole photo has its own number; an earlier load's texture (the same photo viewed again before it came) is destroyed, and the one shown before is let go");
+    }
+
+    // ---------------------------------------------------------------- the full Gallery's question
+
+    private static void PhotoFullWords()
+    {
+        bool named = true;
+        var wrong = new List<string>();
+        foreach (string language in new[] { "en", "pt", "zh-cn" })
+        {
+            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(PhotoLocales, language + ".json"));
+            if (words == null || !words.TryGetValue("reallife_gallery_full_no", out string keep))
+            {
+                named = false;
+                wrong.Add(language);
+                continue;
+            }
+            foreach (string key in new[] { "reallife_gallery_full_body", "reallife_gallery_test_full_armed" })
+            {
+                if (!words.TryGetValue(key, out string text) || !text.Contains(keep))
+                {
+                    named = false;
+                    wrong.Add(language + " " + key);
+                }
+            }
+        }
+        Check(named, "gallery full words: the question and the test's notice name the button that keeps every photo as each language's button says it" + (wrong.Count > 0 ? " (" + string.Join(", ", wrong) + ")" : string.Empty));
     }
 
     // ---------------------------------------------------------------- 1. a photo taken this session reaches the Gallery

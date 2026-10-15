@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Photos
         private string _picked;                 // the photo chosen, by name
         private Texture2D _wholeTexture;
         private string _wholeName;
+        private int _wholeLoad;                // counts the whole photo's loads: only the latest one's texture is kept, any other destroyed
         private float _laidWidth = -1f, _laidHeight = -1f;
 
         // One place of the grid: its frame (the click), the small copy, and its two marks.
@@ -603,8 +604,8 @@ namespace RealLifeOverhaul.Photos
                 FlareKit.Show(_whole, false);
                 FlareKit.Set(_wholeCaption, PhotosText.T("reallife_gallery_loading"));
                 string name = photo.Name;
-                int opening = _opening;
-                _director.StartCoroutine(Guard.Routine(PhotosGame.Load(Path.Combine(_director.Folder, name), t => Came(t, name, opening))));
+                int opening = _opening, load = ++_wholeLoad;
+                _director.StartCoroutine(Guard.Routine(PhotosGame.Load(Path.Combine(_director.Folder, name), t => Came(t, name, opening, load))));
             }
             else
             {
@@ -612,12 +613,18 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        private void Came(Texture2D texture, string name, int opening)
+        // A load's answer: kept only if it is the latest load asked for (the same photo viewed again before an earlier load
+        // ended gives two answers; the earlier is destroyed, never left unowned), and the texture shown before it let go.
+        private void Came(Texture2D texture, string name, int opening, int load)
         {
-            if (opening != _opening || name != _wholeName || !_viewing || !Showing)
+            if (load != _wholeLoad || opening != _opening || name != _wholeName || !_viewing || !Showing)
             {
                 PhotosGame.Destroy(texture);
                 return;
+            }
+            if (_wholeTexture != null && _wholeTexture != texture)
+            {
+                PhotosGame.Destroy(_wholeTexture);
             }
             _wholeTexture = texture;
             _whole.texture = texture;
@@ -645,6 +652,7 @@ namespace RealLifeOverhaul.Photos
 
         private void DropWhole()
         {
+            _wholeLoad++;   // (a load under way for the photo let go is destroyed when it comes)
             PhotosGame.Destroy(_wholeTexture);
             _wholeTexture = null;
             _wholeName = null;
