@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Careers
         public const string Key = "reallife:careers";
         public const string NewsKey = "reallife:careers_news";
         public const string CampusKey = "reallife:careers_campus";   // "street|number" of the university's building, so that a move is said once
+        public const string CampusToldKey = "reallife:careers_campus_told";   // where the university is away from its permanent building, as last told (CampusRules.AwayMark), so that it is said once
         public const int Version = 1;
 
         public static StudyFile Load(Dictionary<string, string> data, out int version)

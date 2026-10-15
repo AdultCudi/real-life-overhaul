@@ -161,7 +161,8 @@ namespace RealLifeOverhaul.Meta
     /// The "Developer diagnostics" switch. Off (as the mod ships), the keys the features registered as development
     /// aids (the performance measurements and the F8 and F9 dumps) do nothing, and Info lines do not go to the log;
     /// warnings and errors always do. No feature is edited for this: a key is switched off in <see cref="Keys"/>,
-    /// and the one logger every class is handed (<see cref="Gated"/>) drops Info lines while the switch is off.
+    /// and the one logger every class is handed (<see cref="Gated"/>) drops Info lines while the switch is off, but for
+    /// the few a player's log must show, written through <see cref="Always"/>.
     /// </summary>
     public static class Dev
     {
@@ -173,6 +174,9 @@ namespace RealLifeOverhaul.Meta
             {
                 _inner = inner;
             }
+
+            /// <summary>The game's own logger behind the switch (<see cref="Always"/>).</summary>
+            public IModLogger Inner => _inner;
 
             public void Info(string message)
             {
@@ -199,6 +203,22 @@ namespace RealLifeOverhaul.Meta
         }
 
         private static bool _verbose;
+
+        /// <summary>
+        /// One plain Info line that goes to the log whatever the switch says: for the rare line a player's log must show
+        /// to answer a report (where Hudson City University is, and why). Once per event, never per frame.
+        /// </summary>
+        public static void Always(IModLogger logger, string message)
+        {
+            if (logger is GatedLogger gated)
+            {
+                gated.Inner.Info(message);
+            }
+            else
+            {
+                logger?.Info(message);
+            }
+        }
 
         /// <summary>
         /// True while "Developer diagnostics" is on. For the few places where a diagnostic line costs something to

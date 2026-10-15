@@ -660,7 +660,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    if (building == null || building.BuildingType != kind || building.SpecialService != null || RivalsHelper.IgnoredAddresses.Contains(building.Address))
+                    if (building == null || building.BuildingType != kind || building.SpecialService != null || RivalsHelper.IgnoredAddresses.Contains(building.Address)
+                        || SpecialBuildings.Holds(building.StreetName, building.StreetNumber))   // (one of the mod's buildings, or the university's permanent one: off the market)
                     {
                         continue;
                     }

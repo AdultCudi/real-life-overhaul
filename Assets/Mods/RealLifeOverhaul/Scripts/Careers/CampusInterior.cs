@@ -163,9 +163,9 @@ namespace RealLifeOverhaul.Careers
             get
             {
                 CampusBuilding campus = Campus;
-                if (campus == null || !campus.Usable || campus.Building == null)
+                if (campus == null || !campus.Usable || campus.Building == null || campus.Place == CampusPlace.School)
                 {
-                    return false;
+                    return false;   // (at the game's own school its classes are joined at the door: the school inside is the game's)
                 }
                 if (!_checked)
                 {
