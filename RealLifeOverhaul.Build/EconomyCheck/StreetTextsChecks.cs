@@ -11,8 +11,43 @@ using RealLifeOverhaul.Texts;
 // within the hold, v4 first, the written line otherwise.
 internal static partial class Program
 {
+    // What a pack is asked by its data: a data 4 pack (the published packs since their version 3) every street line's own
+    // v4 card; a data 3 pack never a v4 card, and v3's card where one fits (StreetTexts tries v4, then v3).
+    private static void StreetCardsByPack()
+    {
+        TextRequest V4Ask(string key)
+        {
+            string intent = StreetCards.V4(StreetLine.OpenWarm, out string branch, out _);
+            TextRequest r = TextsAskOf(key, intent, null, w => { }, TextPriority.Now, 30);   // (time enough for any queue: what is tried is the pack's data)
+            r.Branch = branch;
+            r.Who.Role = StreetCards.Role(intent, branch);
+            r.Slots.Set("player", "Alex").Set("job", "nurse").Set("district", "Midtown");
+            r.Who.Mood = TextWords.Mood(0);
+            r.Who.Style = StreetRules.Styles[0];
+            return r;
+        }
+        TextRequest V3Ask(string key)
+        {
+            TextRequest r = TextsAskOf(key, StreetCards.V3(StreetLine.SmallWarm, out _, out _), null, w => { }, TextPriority.Now, 30);   // (time enough for any queue: what is tried is the pack's data)
+            r.History.Add(new TextSaid("Alex", "Nice day for it."));
+            r.Who.Handle = "@dana_reyes12";
+            r.Who.Mood = TextWords.Mood(0);
+            r.Who.Style = StreetRules.Styles[0];
+            return r;
+        }
+        var hub = new TextsHub(new TextQueue()) { Runner = new PretendRunner(), Data = TextIntents.DataV4 };
+        bool four = hub.Ask(V4Ask("st4"), 0) && hub.Ask(V3Ask("st3"), 0);
+        hub.Data = TextIntents.DataV3;
+        bool three = !hub.Ask(V4Ask("st4b"), 0) && hub.Ask(V3Ask("st3b"), 0);
+        string source = File.ReadAllText(System.IO.Path.Combine(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts")), "Wiring", "StreetTexts.cs"));
+        bool order = source.Contains("TextRequest r = RequestV4(c, line, data, back, false);") && source.Contains("r = RequestV3(c, line, data, back, false);")
+                     && source.IndexOf("RequestV4(c, line, data, back, false)", StringComparison.Ordinal) < source.IndexOf("RequestV3(c, line, data, back, false)", StringComparison.Ordinal);
+        Check(four && three && order, "street talk, RLO Texts: a data 4 pack is asked the street line's own v4 card; a data 3 pack never one, and v3's card where one fits; v4 is tried first");
+    }
+
     private static void StreetCardsUsed()
     {
+        StreetCardsByPack();
         var missing = new List<string>();
         int v4 = 0, v3 = 0;
         for (int i = 0; i < (int)StreetLine.Count; i++)
