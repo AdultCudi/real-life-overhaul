@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Flare
     ///     S|place|first day|best|days                         a business as Flare has seen it
     ///     B|place|percent|until                               talk about a business, in its customers
     ///     V|stock|name|day                                    a viral post about a company the player holds
+    ///     R|key                                               a friend's reply the player liked (key: post number * 32 + the reply's place); an older version skips the line
     ///   reallife:flare_posts
     ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags|
     ///         minute|reply to|text|picture|net id|token|author id|author name|district|topic|reactors|mention|reposts|player likes|
@@ -247,6 +248,14 @@ namespace RealLifeOverhaul.Flare
                 b.Append('|').Append(Clean(v.Name));
                 Join(b, v.Day);
             }
+            for (int i = 0; i < f.ReplyLikes.Count; i++)
+            {
+                if (f.Post(f.ReplyLikes[i] / 32) != null)   // (one whose post is gone is not kept)
+                {
+                    b.Append("\nR");
+                    Join(b, f.ReplyLikes[i]);
+                }
+            }
             return b.ToString();
         }
 
@@ -327,6 +336,16 @@ namespace RealLifeOverhaul.Flare
                     }
                 }
                 ReadPosts(f, posts);
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    string[] c = lines[i].TrimEnd('\r').Split('|');
+                    int key = c.Length >= 2 && c[0] == "R" ? I(c, 1, -1) : -1;
+                    if (key >= 0 && f.ReplyLikes.Count < FlareRules.ReplyLikesMost && !f.ReplyLikes.Contains(key))
+                    {
+                        f.ReplyLikes.Add(key);
+                    }
+                }
+                FlareRules.DropReplyLikes(f);   // (the posts are read now: a like of a reply whose post is gone is let go)
                 return f;
             }
             catch (Exception)

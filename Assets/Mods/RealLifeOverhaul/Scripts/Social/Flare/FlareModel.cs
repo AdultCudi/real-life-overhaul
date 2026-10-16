@@ -200,6 +200,7 @@ namespace RealLifeOverhaul.Flare
         public int Reposts;          // shares, the city's and the players'
         public int PlayerLikes;      // likes from other players of the session
         public int Case = -1;        // the City Office's case it opened (FlareCase.Id); -1 for none
+        public int Slot = -1;        // a friend's reply made for display under a post of the player's: its place among that post's reactions (never saved); -1 for any other
         public bool Liked;           // the player liked it
         public bool Reposted;        // the player shared it
         public bool Shared;          // it came from the session's shared feed (a guest's copy of the host's)
@@ -272,6 +273,7 @@ namespace RealLifeOverhaul.Flare
         public int MayorMood;            // -100 to 100: how the feed feels about the city's running, which pulls a little on the mayor's approval
         public int IssueDay = -1;        // the last day an issue was drafted
         public readonly List<FlareViralShares> ViralShares = new List<FlareViralShares>(4);   // viral posts about companies the player holds: selling soon after is market abuse
+        public readonly List<int> ReplyLikes = new List<int>(4);   // the friends' replies the player liked, each as FlareRules.ReplyKey (post and place): those replies are made for display and have no post of their own
         public readonly FlareNet Net = new FlareNet();   // the living network: the City Office's cases, the messages, the watches (FlareLiveModel)
 
         public FlareInfluencer Influencer(int id)

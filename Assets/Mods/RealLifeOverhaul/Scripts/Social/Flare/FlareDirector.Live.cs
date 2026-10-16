@@ -1057,6 +1057,24 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
+        /// <summary>
+        /// The player likes a friend's reply under one of their posts, or takes the like back. Those replies are made for
+        /// display, so the like is kept in the file by the post and the reply's place. Nothing else changes and nothing is
+        /// sent (the reply is the player's own and is never shared).
+        /// </summary>
+        public void LikeReply(int parentId, int slot)
+        {
+            if (!Running)
+            {
+                return;
+            }
+            FlareRules.ToggleReplyLike(_file, parentId, slot);
+            Changed();
+        }
+
+        /// <summary>True if the player liked this friend's reply.</summary>
+        public bool IsReplyLiked(int parentId, int slot) => Running && FlareRules.ReplyLiked(_file, parentId, slot);
+
         /// <summary>The player shares a post with their followers (once).</summary>
         public void Repost(int postId)
         {
