@@ -172,6 +172,7 @@ namespace RealLifeOverhaul.Flare
             LiveStart(file);
             _textAsked.Clear();   // (RLO Texts: post numbers are this file's)
             _textDms.Clear();
+            CommentsForget();
             _file = file;
             _running = true;
             if (FlareLiveRules.StartDay(file.Net, day, Following))
@@ -197,6 +198,7 @@ namespace RealLifeOverhaul.Flare
             _file = null;
             _textAsked.Clear();
             _textDms.Clear();
+            CommentsForget();
             if (_view != null)
             {
                 _view.Dispose();
@@ -233,6 +235,7 @@ namespace RealLifeOverhaul.Flare
             _file = null;
             _textAsked.Clear();
             _textDms.Clear();
+            CommentsForget();
             if (_view != null)
             {
                 _view.Changed();

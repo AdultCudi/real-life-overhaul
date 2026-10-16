@@ -133,6 +133,7 @@ internal static partial class Program
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
+        FlareComments();   // the comments under posts that are not the player's: never more than the count, in time, the same after a save and on a guest, the cards, the texts, the cost (FlareCommentChecks.cs)
         Shared();
         Fame();
         Endings();

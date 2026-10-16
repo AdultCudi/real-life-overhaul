@@ -120,7 +120,7 @@ namespace RealLifeOverhaul
 
             /// <summary>
             /// Whether the game still has what a kept text belongs to: a Flare post ("fp:id"), a friend's reply under one
-            /// ("fr:post:person"), a message ("fd:with:at"), an edition of the paper ("lp:day:hash"). While Flare or the paper is
+            /// ("fr:post:person"), a comment under one ("fc:post:slot:who"), a message ("fd:with:at"), an edition of the paper ("lp:day:hash"). While Flare or the paper is
             /// not running its texts are kept (nothing is judged on a feature that is not there to ask).
             /// </summary>
             public static bool StillThere(string key)
@@ -136,6 +136,7 @@ namespace RealLifeOverhaul
                     {
                         case "fp":
                         case "fr":
+                        case "fc":
                             FlareFile file = FlareDirector.Instance?.File;
                             return file == null || (f.Length >= 2 && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) && file.Post(id) != null);
                         case "fd":

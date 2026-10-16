@@ -109,6 +109,7 @@ namespace RealLifeOverhaul.Flare
                     TextsDm(m, asked != null ? asked.Text : null);
                 }
             }
+            CommentsAhead(null);   // (the comments under the posts not the player's: a few more asked, FlareDirector.Comments)
         }
 
         // The friends' replies of a post of the player's, as its reactors say (FlareLiveRules.Reactors): asked when it is posted.
