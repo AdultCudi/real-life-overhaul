@@ -18,6 +18,95 @@ namespace RealLifeOverhaul.Texts
         public static double Now => (Stopwatch.GetTimestamp() - Zero) / (double)Stopwatch.Frequency;
     }
 
+    /// <summary>The stages of the runner's start, in order.</summary>
+    public enum TextStartStage
+    {
+        Launch,      // a port, the exe started, tied to the game's process
+        Load,        // the model read (/health)
+        WarmUp,      // the first reply (a GPU's shaders built)
+        Head,        // the prompt's head read and its state saved
+        Speed        // the speed test
+    }
+
+    /// <summary>
+    /// The start's watch: the stage the worker is in, since when, and its limit. The watchdog (a timer of the runner's)
+    /// asks it twice a second; a stage past its limit and <see cref="Grace"/> is overdue once, and the start then ends for
+    /// certain, whatever the wait it is stuck in (a runtime that does not honour a socket's time-out, a server that takes the
+    /// connection and never answers). Game-free and thread-safe (EconomyCheck, TextsChecks.cs).
+    /// COST: a lock and a few numbers a stage; nothing on the game's thread.
+    /// </summary>
+    public sealed class TextStartWatch
+    {
+        public const double Grace = 5.0;   // seconds past a stage's own limit before the watchdog ends it (the stage's own time-out comes first)
+
+        private readonly object _lock = new object();
+        private TextStartStage _stage;
+        private double _began, _limit = -1.0;
+        private bool _over;
+
+        /// <summary>True once the watchdog has ended the start.</summary>
+        public bool Over
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _over;
+                }
+            }
+        }
+
+        /// <summary>A stage begins, with the most it may take.</summary>
+        public void Enter(TextStartStage stage, double limit, double now)
+        {
+            lock (_lock)
+            {
+                _stage = stage;
+                _began = now;
+                _limit = Math.Max(0.0, limit);
+            }
+        }
+
+        /// <summary>The stage has ended; returns the seconds it took.</summary>
+        public double Leave(double now)
+        {
+            lock (_lock)
+            {
+                _limit = -1.0;
+                return Math.Max(0.0, now - _began);
+            }
+        }
+
+        /// <summary>True once, when the stage under way is past its limit and the grace: the start is over from then on.</summary>
+        public bool Overdue(double now, out TextStartStage stage, out double limit)
+        {
+            lock (_lock)
+            {
+                stage = _stage;
+                limit = _limit;
+                if (_over || _limit < 0.0 || now - _began <= _limit + Grace)
+                {
+                    return false;
+                }
+                _over = true;
+                return true;
+            }
+        }
+
+        /// <summary>A stage as the log names it.</summary>
+        public static string Name(TextStartStage stage)
+        {
+            switch (stage)
+            {
+                case TextStartStage.Launch: return "starting the server";
+                case TextStartStage.Load: return "loading the model";
+                case TextStartStage.WarmUp: return "the first reply";
+                case TextStartStage.Head: return "reading the prompt's head";
+                default: return "the speed test";
+            }
+        }
+    }
+
     /// <summary>How the runner stands.</summary>
     public enum TextServerState
     {
@@ -36,6 +125,7 @@ namespace RealLifeOverhaul.Texts
         public int Threads = 2;      // 2 to 4
         public string Device;        // null for the processor; else a llama.cpp device name ("Vulkan0")
         public double LoadSeconds = 90.0;   // the most the model may take to load before the runner gives up
+        public double WarmSeconds = 30.0;   // the most the first reply (a GPU's shaders built) or the head's read may take
         public string Cache;         // a folder for the cached head's state (the server's slot file); null: no prompt cache
         public string SpeedFor;      // what a speed test is for (pack, device, threads)
         public TextSpeedResult Known; // a speed measured before for the same: no test this time
@@ -50,7 +140,10 @@ namespace RealLifeOverhaul.Texts
     ///   start      a free port from the system, the exe started hidden (no window), BelowNormal, its own log; tied to a
     ///              Windows job object that ends it when the game's process ends, even in a crash; then the worker waits
     ///              for /health (the model loading, within <see cref="TextServerStart.LoadSeconds"/>) and writes one short
-    ///              reply to warm it (the first reply on a GPU builds its shaders)
+    ///              reply to warm it (the first reply on a GPU builds its shaders). Each stage is logged with its time and
+    ///              has a limit of its own; a watchdog on a timer (<see cref="TextStartWatch"/>) ends a stage stuck past
+    ///              it for certain (the line written, the socket closed, the server killed). Every wait on the server is
+    ///              bounded by Socket.Poll, not the socket's time-outs, which Mono on Windows does not honour
     ///   the head   every prompt starts with the same system turn and "who: " (<see cref="Head"/>, 57 tokens of the 2B
     ///              model): read once, its state saved in the server's slot file, and put back before each request, so
     ///              only the card itself is read (the 2B is a hybrid model whose state llama.cpp cannot reuse in part by
@@ -69,6 +162,10 @@ namespace RealLifeOverhaul.Texts
         public const double TimeOut = 4.0;          // seconds a reply may take on the processor before it is given up
         public const double TimeOutGpu = 2.0;       // ...on a GPU
         public const int WakeMs = 250;              // the worker's longest sleep between two looks at the queue
+        public const double LaunchSeconds = 10.0;   // seconds the exe may take to start (a port, the process, the job object)
+        public const double SaveSeconds = 10.0;     // seconds the head's state may take to be saved, after its read
+        public const double RestoreSeconds = 2.0;   // seconds the head's state may take to be put back before the speed test
+        public const int DogMs = 500;               // milliseconds between two looks of the start's watchdog
 
         private readonly TextQueue _queue;
         private readonly TextServerStart _start;
@@ -87,6 +184,10 @@ namespace RealLifeOverhaul.Texts
         private double _took, _headMs;
         private bool _headSaved;
         private string _headFile;
+        private readonly TextStartWatch _watch = new TextStartWatch();
+        private readonly object _failing = new object();
+        private Timer _dog;
+        private TcpClient _socket;   // the request under way (the worker's), closed by the watchdog or a stop to end its wait
 
         /// <summary>The fixed head of every prompt: the system turn and the opening of the user's.</summary>
         public static string Head => "<|im_start|>system\n" + TextCard.System + "<|im_end|>\n<|im_start|>user\n";
@@ -148,6 +249,15 @@ namespace RealLifeOverhaul.Texts
         {
             _stop = true;
             _wake.Set();
+            Interlocked.Exchange(ref _dog, null)?.Dispose();
+            try
+            {
+                Interlocked.Exchange(ref _socket, null)?.Close();   // (a request under way ends its wait now)
+            }
+            catch (Exception)
+            {
+                // (closed already)
+            }
             Kill();
             if (_thread != null && !_thread.Join(1500))
             {
@@ -166,7 +276,12 @@ namespace RealLifeOverhaul.Texts
         {
             try
             {
-                if (!Launch() || !WaitReady() || !WarmUp() || !SpeedTest())
+                _dog = new Timer(Watchdog, null, DogMs, DogMs);
+                bool ready = Stage(TextStartStage.Launch, LaunchSeconds, Launch) && Stage(TextStartStage.Load, _start.LoadSeconds, WaitReady)
+                             && Stage(TextStartStage.WarmUp, _start.WarmSeconds, WarmUp) && Stage(TextStartStage.Head, _start.WarmSeconds + SaveSeconds, KeepHead)
+                             && Stage(TextStartStage.Speed, TextSpeed.TestSeconds + RestoreSeconds, SpeedTest);
+                Interlocked.Exchange(ref _dog, null)?.Dispose();
+                if (!ready)
                 {
                     Kill();
                     _state = TextServerState.Failed;
@@ -194,9 +309,49 @@ namespace RealLifeOverhaul.Texts
             }
             catch (Exception e)
             {
+                Interlocked.Exchange(ref _dog, null)?.Dispose();
                 Fail("the worker: " + e.GetType().Name + ": " + e.Message);
                 Kill();
                 _queue.Clear();
+            }
+        }
+
+        // One stage of the start, timed and watched: its own limit first, the watchdog's a little past it. Logged with its time when
+        // it ends, so a start that hangs shows where.
+        private bool Stage(TextStartStage stage, double limit, Func<bool> step)
+        {
+            _watch.Enter(stage, limit, TextClock.Now);
+            bool ok = !_stop && step();
+            double took = _watch.Leave(TextClock.Now);
+            if (_watch.Over)
+            {
+                return false;   // (the watchdog ended it and wrote its line)
+            }
+            if (ok)
+            {
+                _log?.Invoke("RLO Texts: start-up, " + TextStartWatch.Name(stage) + " in " + took.ToString("0.0") + " s.");
+            }
+            return ok;
+        }
+
+        // The watchdog, on a timer of its own while the start runs: a stage past its limit and the grace (a wait the runtime did
+        // not end; Mono on Windows does not honour a socket's ReceiveTimeout) ends the start for certain: the line written, the
+        // request's socket closed, the server killed, so the worker's wait returns.
+        private void Watchdog(object unused)
+        {
+            try
+            {
+                if (!_watch.Overdue(TextClock.Now, out TextStartStage stage, out double limit))
+                {
+                    return;
+                }
+                Fail(TextStartWatch.Name(stage) + " took longer than " + limit.ToString("0") + " s");
+                Interlocked.Exchange(ref _socket, null)?.Close();
+                Kill();
+            }
+            catch (Exception)
+            {
+                // (the process gone already: the worker sees it)
             }
         }
 
@@ -311,9 +466,10 @@ namespace RealLifeOverhaul.Texts
         private bool WaitReady()
         {
             double begun = TextClock.Now;
-            while (!_stop)
+            while (!_stop && !_watch.Over)
             {
-                if (_process.HasExited)
+                Process p = _process;
+                if (p == null || p.HasExited)
                 {
                     return Fail("the server ended while loading (exit code " + Exit() + ")");
                 }
@@ -339,29 +495,34 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        // One short reply before the first real one (the first reply builds a GPU's shaders and fills the processor's
-        // caches), then the head read and its state saved for every request after.
+        // One short reply before the first real one (the first reply builds a GPU's shaders and fills the processor's caches).
         private bool WarmUp()
         {
             try
             {
                 double begun = TextClock.Now;
-                Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), 30000);
+                Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(_start.WarmSeconds));
                 LoadedIn += TextClock.Now - begun;
+                return true;
             }
             catch (Exception e)
             {
                 return Fail("the first reply failed: " + e.Message);
             }
+        }
+
+        // The head read and its state saved for every request after (without a cache folder, each request reads it).
+        private bool KeepHead()
+        {
             if (_start.Cache == null)
             {
                 return true;
             }
             try
             {
-                string head = Post("/completion", TextJson.Request(Head, 1, 0), 30000);
+                string head = Post("/completion", TextJson.Request(Head, 1, 0), Ms(_start.WarmSeconds));
                 _headFile = "rlo-head-" + _port + ".bin";
-                string saved = Post("/slots/0?action=save", "{\"filename\":\"" + _headFile + "\"}", 10000);
+                string saved = Post("/slots/0?action=save", "{\"filename\":\"" + _headFile + "\"}", Ms(SaveSeconds));
                 _headSaved = saved != null && saved.IndexOf("n_saved", StringComparison.Ordinal) >= 0;
                 _headMs = TextJson.Number(head, "prompt_ms");
                 _log?.Invoke("RLO Texts: the prompt's fixed head (" + TextJson.Number(head, "prompt_n") + " tokens, " + _headMs.ToString("0") + " ms to read) is "
@@ -375,6 +536,8 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
+        private static int Ms(double seconds) => (int)(seconds * 1000.0);
+
         // The head's state put back, so the server reads only the card (its own cache does this by itself for a model it can reuse in part).
         private void Restore(string prompt)
         {
@@ -384,7 +547,7 @@ namespace RealLifeOverhaul.Texts
             }
             try
             {
-                Post("/slots/0?action=restore", "{\"filename\":\"" + _headFile + "\"}", 2000);
+                Post("/slots/0?action=restore", "{\"filename\":\"" + _headFile + "\"}", Ms(RestoreSeconds));
             }
             catch (Exception)
             {
@@ -444,7 +607,10 @@ namespace RealLifeOverhaul.Texts
 
         private string Post(string path, string body, int timeoutMs) => Http("POST", path, body, timeoutMs);
 
-        // One request over a fresh local socket (Connection: close), the answer's body as text. Throws on a time-out.
+        // One request over a fresh local socket (Connection: close), the answer's body as text. Throws on a time-out. Every wait
+        // is bounded by this method's own clock (Socket.Poll before each read), never by the socket's ReceiveTimeout, which
+        // Mono on Windows does not honour: a server that takes the connection and never answers would hold the worker for
+        // ever. The socket is kept in _socket while in use, so the watchdog or a stop can close it.
         private string Http(string method, string path, string body, int timeoutMs)
         {
             byte[] payload = body != null ? Encoding.UTF8.GetBytes(body) : null;
@@ -456,7 +622,10 @@ namespace RealLifeOverhaul.Texts
                 head.Append("Content-Type: application/json\r\nContent-Length: ").Append(payload.Length).Append("\r\n");
             }
             head.Append("\r\n");
-            using (var client = new TcpClient(AddressFamily.InterNetwork))
+            double until = TextClock.Now + timeoutMs / 1000.0;
+            var client = new TcpClient(AddressFamily.InterNetwork);
+            Interlocked.Exchange(ref _socket, client);
+            try
             {
                 client.NoDelay = true;
                 client.SendTimeout = timeoutMs;
@@ -467,34 +636,41 @@ namespace RealLifeOverhaul.Texts
                     throw new IOException("no connection");
                 }
                 client.EndConnect(connect);
-                using (NetworkStream net = client.GetStream())
+                NetworkStream net = client.GetStream();
+                byte[] h = Encoding.ASCII.GetBytes(head.ToString());
+                net.Write(h, 0, h.Length);
+                if (payload != null)
                 {
-                    byte[] h = Encoding.ASCII.GetBytes(head.ToString());
-                    net.Write(h, 0, h.Length);
-                    if (payload != null)
-                    {
-                        net.Write(payload, 0, payload.Length);
-                    }
-                    var all = new MemoryStream(1024);
-                    var buffer = new byte[4096];
-                    double until = TextClock.Now + timeoutMs / 1000.0;
-                    int read;
-                    while ((read = net.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        all.Write(buffer, 0, read);
-                        if (TextClock.Now > until)
-                        {
-                            throw new IOException("too slow");
-                        }
-                    }
-                    string text = Encoding.UTF8.GetString(all.GetBuffer(), 0, (int)all.Length);
-                    int split = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
-                    if (!text.StartsWith("HTTP/1.1 200", StringComparison.Ordinal) && !text.StartsWith("HTTP/1.0 200", StringComparison.Ordinal))
-                    {
-                        return null;
-                    }
-                    return split >= 0 ? text.Substring(split + 4) : null;
+                    net.Write(payload, 0, payload.Length);
                 }
+                var all = new MemoryStream(1024);
+                var buffer = new byte[4096];
+                while (true)
+                {
+                    double left = until - TextClock.Now;
+                    if (left <= 0.0 || !client.Client.Poll((int)(left * 1000000.0), SelectMode.SelectRead))
+                    {
+                        throw new IOException("too slow");   // (nothing within the time: the wait ends here, whatever the runtime does with time-outs)
+                    }
+                    int read = net.Read(buffer, 0, buffer.Length);   // (readable: data, or the end of the answer)
+                    if (read <= 0)
+                    {
+                        break;
+                    }
+                    all.Write(buffer, 0, read);
+                }
+                string text = Encoding.UTF8.GetString(all.GetBuffer(), 0, (int)all.Length);
+                int split = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+                if (!text.StartsWith("HTTP/1.1 200", StringComparison.Ordinal) && !text.StartsWith("HTTP/1.0 200", StringComparison.Ordinal))
+                {
+                    return null;
+                }
+                return split >= 0 ? text.Substring(split + 4) : null;
+            }
+            finally
+            {
+                Interlocked.CompareExchange(ref _socket, null, client);
+                client.Close();
             }
         }
 
@@ -521,8 +697,15 @@ namespace RealLifeOverhaul.Texts
 
         private bool Fail(string why)
         {
-            Why = why;
-            _state = TextServerState.Failed;
+            lock (_failing)
+            {
+                if (_state == TextServerState.Failed)
+                {
+                    return false;   // (one line: the watchdog and the worker may both end the same start)
+                }
+                Why = why;
+                _state = TextServerState.Failed;
+            }
             _log?.Invoke("RLO Texts: " + why + "; the written lines are used.");
             return false;
         }

@@ -59,8 +59,12 @@ internal static partial class Program
         return CreditLedger.Score.Value;
     }
 
-    private static int Main()
+    private static int Main(string[] args)
     {
+        if (args.Length > 1 && args[0] == "-m")
+        {
+            return PretendLlama(args);   // (started by TextServer as a pretend llama-server: TextsStartChecks.cs)
+        }
         Catalogue();
         Start();
         CleanHistory();
@@ -127,6 +131,7 @@ internal static partial class Program
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
+        TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
         Shared();
         Fame();
