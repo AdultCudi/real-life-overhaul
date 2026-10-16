@@ -54,6 +54,15 @@ namespace RealLifeOverhaul.Street
         /// <summary>RLO Texts: the guessed opening line, taken at the press: the words, or null for the written line.</summary>
         public static Func<StreetChat, string> TakeGuess;
 
+        /// <summary>
+        /// RLO Texts: the answer to the blue button, asked as soon as it is shown (the line the rules would choose and the
+        /// player's words), on a machine where a reply takes more than half the hold. Null: never.
+        /// </summary>
+        public static Action<StreetChat, StreetLine, Dictionary<string, string>, string> Ahead;
+
+        /// <summary>RLO Texts: the answer asked ahead, taken at the click: the words, or null (then it is asked as usual).</summary>
+        public static Func<StreetChat, string> TakeAhead;
+
         /// <summary>True while the interact key is street talk's (its panel is up, or its button ran this frame): the mod's own key stands aside.</summary>
         public static bool TakesInteractKey => Instance != null && Instance._door.TakesKey;
 
@@ -94,6 +103,8 @@ namespace RealLifeOverhaul.Street
             _onClosed = DialogClosed;
             _onSaid = Said;
             _onTyped = TypingClosed;
+            _onSayOrBye = SayOrBye;
+            _onGoodbye = Goodbye;
             _onWords = WordsCame;
         }
 

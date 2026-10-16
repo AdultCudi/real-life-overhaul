@@ -68,6 +68,7 @@ namespace RealLifeOverhaul.Texts
         public const int BackgroundPerMinute = 6;       // ...of which the background's
         public const double StartGuess = 1.5;           // seconds a reply is expected to take before any is measured (the 2B on two threads)
         public const double GuessWeight = 0.2;          // how much each measured time moves the expectation
+        public const double ExpectedMost = 60.0;        // seconds: a speed test's figure past this is no figure (it failed), and the guess stays
 
         private readonly object _lock = new object();
         private readonly List<TextJob> _waiting = new List<TextJob>(Most);
@@ -87,6 +88,22 @@ namespace RealLifeOverhaul.Texts
         public int Count
         {
             get { lock (_lock) { return _waiting.Count; } }
+        }
+
+        /// <summary>
+        /// The expected time set from what the speed test measured on this machine (TextSpeedResult.Estimate), so that the
+        /// first spoken lines are not refused for the start's cautious guess (<see cref="StartGuess"/>: 1.5 s, past a
+        /// spoken line's hold of 1.1 s, which only measured replies used to bring down). Measured replies move it as before.
+        /// </summary>
+        public void Expected(double seconds)
+        {
+            if (seconds > 0 && seconds < ExpectedMost)   // (NaN fails both; no figure at all keeps the guess)
+            {
+                lock (_lock)
+                {
+                    _expect = seconds;
+                }
+            }
         }
 
         /// <summary>The least urgent kind taken now (TextBudget lowers it while too many requests miss): Background takes every kind.</summary>

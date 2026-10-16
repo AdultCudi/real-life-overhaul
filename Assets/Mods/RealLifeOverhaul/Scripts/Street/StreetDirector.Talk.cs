@@ -14,14 +14,21 @@ namespace RealLifeOverhaul.Street
 {
     /// <summary>
     /// One conversation in the street, in the game's own dialogue panel. Each entry is the person's line with the game's
-    /// three buttons: the choice offered (blue), "Something else" for the next one (orange: the mod's PersonDialog does the
-    /// same on the phone) and "Goodbye" (grey, also the game's cancel key). The way to a place asks which kind first, the
-    /// same three ways. "Say something of your own" opens the game's text box over the panel.
+    /// three buttons: the choice that fits the moment and what they just said (blue: StreetRules.Choices), "Something else"
+    /// for the next one (orange: the mod's PersonDialog does the same on the phone) and "Say something of your own" (grey:
+    /// the game's text box over the panel, one press away). The game's cancel key (Esc) calls the grey button's action
+    /// too (DialogUI.OnCancel: the game's dialogue shows no key hints), and from the key it says goodbye; Goodbye is also
+    /// the last choice but rudeness of the round. Without the game's text box the grey button is Goodbye. The way to a
+    /// place asks which kind first, the same three ways.
     ///
     /// Speed: the person turns to the player at the press (StreetHold); the panel opens after that beat
     /// (<see cref="StreetRules.Beat"/>) with the first line ready: the model's when it came in time, guessed while the
     /// player looked at them, never later than <see cref="StreetRules.Hold"/>; else the written line. Every later line is
-    /// asked when the player clicks and shown when its words come or the hold is over: the panel never waits longer.
+    /// asked when the player clicks and shown when its words come or the hold is over: the panel never waits longer. On a
+    /// machine where a reply takes more than half the hold, the answer to the blue button is asked as soon as it is shown
+    /// (StreetTexts: guessed ahead), so it is there when it is clicked.
+    /// With Developer diagnostics on, one line a turn says what the player chose, what the person said, where its words came
+    /// from (RLO Texts: the card and the time, or the written line and why) and the warmth and rapport after it.
     /// COST: on a press or a click, a few short strings; while it is open, the director's tick (ten times a second) keeps
     /// the person stopped and watches that they and the player are still there.
     /// </summary>
@@ -42,8 +49,12 @@ namespace RealLifeOverhaul.Street
         private Vector3 _met;                  // where the player stood when it began
         private readonly List<StreetAsk> _choices = new List<StreetAsk>((int)StreetAsk.Count);
         private readonly string[] _two = new string[2];
-        private Action _onClosed, _onTyped;
+        private Action _onClosed, _onTyped, _onSayOrBye, _onGoodbye;
         private Action<string> _onSaid, _onWords, _onFirst;
+        private string _turnSaid;              // what the player chose or typed this turn, for the turn's log line
+        private StreetAsk _aheadAsk = StreetAsk.Count;   // the blue button whose answer was asked ahead, and its line
+        private StreetLine _aheadLine;
+        private bool _aheadNow;                // the click is the blue button asked ahead (its words may be ready)
 
         // ---------------------------------------------------------------- the press
 
@@ -98,8 +109,10 @@ namespace RealLifeOverhaul.Street
             _aim.Clear();
             _chat = chat;
             _phase = 1;
-            _pending = _typing = _flirted = false;
+            _pending = _typing = _flirted = _aheadNow = false;
+            _aheadAsk = StreetAsk.Count;
             _lastKey = null;
+            _turnSaid = "stopped them (\"" + StreetText.T(StreetLines.Opener) + "\")";
             _met = player.transform.position;
             StreetGame.TurnPlayer(this, p.transform.position);
             _firstLine = chat.Approach.Brush != StreetBrush.None ? StreetRules.BrushLine(chat.Approach.Brush) : chat.Approach.Opening;
@@ -214,14 +227,27 @@ namespace RealLifeOverhaul.Street
             return _chat.Approach.Brush != StreetBrush.None ? Closing(entry) : Menu(entry);
         }
 
-        // A line of theirs: the model's words, or a written line of the kind (never the one they said last).
+        // A line of theirs: the model's words, or a written line of the kind (never the one they said last, nor one they said
+        // to the player earlier today). Every line but the "go on" between choices is the turn's: it is what the next round
+        // follows from, and with Developer diagnostics on it is written to the log.
         private DialogEntry Line(StreetLine kind, Dictionary<string, string> data, string words)
         {
-            string key = StreetLines.Pick(kind, _chat.Who.Seed, _chat.Turns, _lastKey);
+            string key = StreetLines.Pick(kind, _chat.Who.Seed, _chat.Turns, _lastKey, kind != StreetLine.Waiting ? _chat.Memo.Lines : null);
             _lastKey = key;
             if (kind != StreetLine.Waiting)
             {
-                _chat.Said(false, words ?? StreetText.T(key, data));
+                string said = words ?? StreetText.T(key, data);
+                _chat.Said(false, said);
+                _chat.Last = kind;
+                if (words == null)
+                {
+                    _chat.Memo.Said(key);
+                }
+                if (Meta.Dev.Verbose)
+                {
+                    TurnLine(kind, key, said, words != null);
+                }
+                _chat.Heard = null;
             }
             return new DialogEntry
             {
@@ -229,25 +255,67 @@ namespace RealLifeOverhaul.Street
             };
         }
 
-        // The choices under a line: what is offered, "Something else", "Goodbye".
+        // The turn's log line (Developer diagnostics): what the player chose or typed, what they said and where its words came
+        // from, and how the talk stands after it.
+        private void TurnLine(StreetLine kind, string key, string said, bool model)
+        {
+            StreetChat c = _chat;
+            string how = model ? "RLO Texts" + (c.Heard != null ? ", " + c.Heard : string.Empty)
+                : "written " + key + (c.Heard != null ? ": " + c.Heard : kind == StreetLine.Tired ? ": their time is up (always written)" : ": RLO Texts was not asked");
+            Logger?.Info("Street talk turn " + c.Turns + " with " + c.Who.Name + ": the player " + (_turnSaid ?? "said nothing new") + "; " + kind + ": \"" + said + "\" (" + how + "); warmth "
+                         + c.Approach.Warmth + ", rapport " + c.Rapport + " (today " + c.Memo.Rapport + "), " + Math.Max(0, StreetRules.Turns(c) - c.Turns) + " of " + StreetRules.Turns(c) + " turn(s) left.");
+            _turnSaid = null;
+        }
+
+        // The choices under a line: the one that fits now (blue), "Something else" (orange), the player's own words (grey; the
+        // game's cancel key says goodbye from it). The blue button's answer may be asked ahead (RLO Texts on a slow machine).
         private DialogEntry Menu(DialogEntry entry)
         {
-            StreetRules.Choices(_chat, _facts, StreetGame.CanType, _choices);
+            StreetRules.Choices(_chat, _facts, _choices);
             if (_choices.Count == 0)
             {
                 return Closing(entry);
             }
             StreetAsk ask = _choices[_chat.Menu % _choices.Count];
-            entry.ConfirmTextOverride = Label(ask).Localize(Data(_chat));
+            Dictionary<string, string> data = Data(_chat);
+            entry.ConfirmTextOverride = Label(ask).Localize(data);
             entry.OnConfirm = () => Choose(ask);
             if (_choices.Count > 1)
             {
                 entry.SecondOptionTextOverride = "reallife_social_btn_else";
                 entry.OnSecondOption = Else;
             }
-            entry.CancelTextOverride = "reallife_street_btn_goodbye";
-            entry.OnCancel = Goodbye;
+            bool type = StreetGame.CanType;
+            entry.CancelTextOverride = type ? StreetLines.Asks[(int)StreetAsk.Say] : StreetLines.Asks[(int)StreetAsk.Bye];
+            entry.OnCancel = type ? _onSayOrBye : _onGoodbye;
+            if (_chat.Menu == 0)
+            {
+                AskAhead(ask, data);
+            }
             return entry;
+        }
+
+        // The answer to the blue button asked of RLO Texts as soon as it is shown, when it is one the rules decide without the
+        // game (not the way, a number, an invitation, the business, the area, the election or rudeness): the line the rules
+        // will choose at the click is the one they choose now.
+        private void AskAhead(StreetAsk ask, Dictionary<string, string> data)
+        {
+            _aheadAsk = StreetAsk.Count;
+            if (Ahead == null)
+            {
+                return;
+            }
+            switch (ask)
+            {
+                case StreetAsk.SmallTalk: case StreetAsk.AboutThem: case StreetAsk.Name: case StreetAsk.Compliment: case StreetAsk.Joke: case StreetAsk.Flirt:
+                case StreetAsk.Economy: case StreetAsk.Day: case StreetAsk.Event: case StreetAsk.Work: case StreetAsk.Thanks: case StreetAsk.Bye:
+                    break;
+                default:
+                    return;
+            }
+            _aheadAsk = ask;
+            _aheadLine = StreetRules.Answer(_chat, ask, _facts, StreetRules.Seed(_chat.Who.Seed, _chat.Turns + 1, (int)ask)).Line;   // (the roll of the click's turn: Act's)
+            Ahead(_chat, _aheadLine, data, StreetText.T(Label(ask), data));
         }
 
         // The last line: only the way out.
@@ -286,23 +354,50 @@ namespace RealLifeOverhaul.Street
             return Menu(Line(StreetLine.Waiting, Data(_chat), null));
         }
 
-        private void Goodbye()
+        // The grey button: the player's own words in the game's text box; from the game's cancel key (Esc), goodbye.
+        private void SayOrBye()
         {
-            if (_chat == null || _pending)
+            if (_chat == null || _pending || _typing)
             {
                 return;
             }
-            _chat.Said(true, StreetText.T("reallife_street_btn_goodbye"));
-            Show(Closing(Line(StreetRules.Score(_chat) >= 0 ? StreetLine.Bye : StreetLine.ByeCool, Data(_chat), null)));
+            if (StreetGame.CancelKey)
+            {
+                Goodbye();
+                return;
+            }
+            _typing = StreetGame.AskWords(_onSaid, _onTyped);
         }
 
-        // What the player says for a choice (the button, and the player's line on the card).
+        private void Goodbye()
+        {
+            if (_chat == null || _pending || _typing)
+            {
+                return;
+            }
+            Show(Farewell());
+        }
+
+        // Goodbye, from the round, the grey button or the key: their goodbye (the model's when it comes in time), then only the way out.
+        private DialogEntry Farewell()
+        {
+            Dictionary<string, string> data = Data(_chat);
+            _turnSaid = "said goodbye";
+            return Respond(StreetRules.Answer(_chat, StreetAsk.Bye, _facts, 0).Line, data, StreetText.T(StreetLines.Asks[(int)StreetAsk.Bye]), true);
+        }
+
+        // What the player says for a choice (the button, and the player's line on the card): the remark that suits the
+        // moment, and the person's own wording of a question, by their seed.
         private string Label(StreetAsk ask)
         {
+            int seed = _chat.Who.Seed;
             switch (ask)
             {
-                case StreetAsk.SmallTalk: return _facts.Raining ? StreetLines.AskRain : StreetRules.Night(_facts.Hour) || _facts.Hour >= 20 ? StreetLines.AskNight : StreetLines.Asks[0];
+                case StreetAsk.SmallTalk: return StreetLines.Small[StreetRules.SmallTopic(_chat.Who, _facts)];
                 case StreetAsk.Invite: return _flirted ? StreetLines.AskDinner : StreetLines.Asks[(int)StreetAsk.Invite];
+                case StreetAsk.Day: return StreetLines.DayAsks[StreetRules.Roll(seed, 42, StreetLines.DayAsks.Length)];
+                case StreetAsk.Work: return _chat.Who.Job == SocialCatalogue.Jobs.Length - 1 ? StreetLines.AskWorkRetired : StreetLines.WorkAsks[StreetRules.Roll(seed, 43, StreetLines.WorkAsks.Length)];
+                case StreetAsk.Thanks: return _chat.Last == StreetLine.DirNone || _chat.Last == StreetLine.AreaNothing ? StreetLines.AskThanksAnyway : StreetLines.Asks[(int)ask];
                 default: return StreetLines.Asks[(int)ask];
             }
         }
@@ -317,7 +412,8 @@ namespace RealLifeOverhaul.Street
                 { "player", _facts.Player ?? string.Empty },
                 { "job", SocialCatalogue.Jobs[Mathf.Clamp(s.Job, 0, SocialCatalogue.Jobs.Length - 1)].GetLocalization() },
                 { "district", SocialPlaces.District(s.District) },
-                { "shop", _facts.Shops.Count > 0 ? _facts.Shops[0] : string.Empty }
+                { "shop", _facts.Shops.Count > 0 ? _facts.Shops[0] : string.Empty },
+                { "event", _facts.EventToday ?? string.Empty }
             };
         }
 
@@ -329,24 +425,22 @@ namespace RealLifeOverhaul.Street
             {
                 return null;
             }
+            _aheadNow = ask == _aheadAsk;   // (the blue button of this round, asked ahead)
+            if (ask == StreetAsk.Bye)
+            {
+                return Farewell();
+            }
             _chat.Turns++;
             _chat.Done[(int)ask] = true;
             Dictionary<string, string> data = Data(_chat);
             string player = StreetText.T(Label(ask), data);
+            _turnSaid = "chose " + ask + " (\"" + player + "\")";
             switch (ask)
             {
                 case StreetAsk.Directions:
                     _chat.Said(true, player);
                     _chat.PlaceAt = 0;
                     return Places(Line(StreetLine.DirAsk, data, null));
-                case StreetAsk.Say:
-                    _chat.Turns--;   // (the words, not the box, are the turn)
-                    if (!StreetGame.AskWords(_onSaid, _onTyped))
-                    {
-                        return Menu(Line(StreetLine.Waiting, data, null));
-                    }
-                    _typing = true;
-                    return null;
                 default:
                     return Act(ask, player, data, new StreetSaid { Kind = StreetSayKind.Other, Place = StreetPlace.Count, Shop = -1 });
             }
@@ -357,7 +451,16 @@ namespace RealLifeOverhaul.Street
         {
             var kind = (StreetPlace)(_chat.PlaceAt % (int)StreetPlace.Count);
             entry.ConfirmTextOverride = StreetLines.Places[(int)kind].Localize();
-            entry.OnConfirm = () => _pending || _chat == null ? null : Way(kind, null, StreetText.T(StreetLines.Places[(int)kind]), Data(_chat));
+            entry.OnConfirm = () =>
+            {
+                if (_pending || _chat == null)
+                {
+                    return null;
+                }
+                string place = StreetText.T(StreetLines.Places[(int)kind]);
+                _turnSaid = "asked the way to " + kind + " (\"" + place + "\")";
+                return Way(kind, null, place, Data(_chat));
+            };
             entry.SecondOptionTextOverride = "reallife_street_btn_somewhere_else";
             entry.OnSecondOption = () =>
             {
@@ -405,12 +508,16 @@ namespace RealLifeOverhaul.Street
                     return Way(said.Place, said.Target, player, data);
                 default:
                     StreetOutcome o = StreetRules.Answer(c, ask, _facts, roll);
-                    c.Rapport += o.Rapport;
+                    c.Gain(o.Rapport);
                     line = o.Line;
                     ends = o.Ends;
                     switch (ask)
                     {
-                        case StreetAsk.Name: m.Named |= line == StreetLine.NameGive; break;
+                        case StreetAsk.Name:
+                            m.Named |= line == StreetLine.NameGive;
+                            m.Told = true;   // (the player gave their name, whatever came back)
+                            break;
+                        case StreetAsk.AboutThem: c.Shared = line == StreetLine.AboutJob || line == StreetLine.AboutRetired; break;
                         case StreetAsk.Compliment: m.Complimented = true; break;
                         case StreetAsk.Joke: m.Joked = true; break;
                         case StreetAsk.Flirt:
@@ -433,7 +540,15 @@ namespace RealLifeOverhaul.Street
         // Their answer to what the player said: the model's words if RLO Texts has them within the hold, else the written line.
         private DialogEntry Respond(StreetLine line, Dictionary<string, string> data, string player, bool ends)
         {
+            bool ahead = _aheadNow && line == _aheadLine;
+            _aheadNow = false;
+            _aheadAsk = StreetAsk.Count;
             _chat.Said(true, player);
+            string words = ahead && TakeAhead != null ? TakeAhead(_chat) : null;   // (asked when the button was shown: ready now, or asked as usual)
+            if (words != null)
+            {
+                return Next(Line(line, data, words), ends);
+            }
             if (Words != null && Words(_chat, line, data, player, _onWords))
             {
                 _pending = true;
@@ -467,6 +582,7 @@ namespace RealLifeOverhaul.Street
                 Show(said);
                 return Closing(Line(StreetLine.Tired, Data(_chat), null));
             }
+            _chat.Menu = 0;   // (the round starts again from what fits now: the follow-ups of what they just said)
             return Menu(said);
         }
 
@@ -500,7 +616,7 @@ namespace RealLifeOverhaul.Street
             m.Swapped = true;
             m.Named = true;
             m.Cast = cast;
-            _chat.Rapport += 1;
+            _chat.Gain(1);
             return line;
         }
 
@@ -537,7 +653,7 @@ namespace RealLifeOverhaul.Street
                     m.Swapped = true;
                     m.Named = true;
                     m.Cast = cast;
-                    _chat.Rapport += 1;
+                    _chat.Gain(1);
                     data["place"] = a.Place;
                     data["time"] = a.When;
                     data["t_time"] = a.CardWhen;
@@ -564,7 +680,7 @@ namespace RealLifeOverhaul.Street
             _chat.Memo.Mentioned = true;
             if (StreetRules.Told(line) && _mouth.Tell(_addresses[at], TimeHelper.CurrentDay))
             {
-                _chat.Rapport += 1;
+                _chat.Gain(1);
                 StreetBridges.MouthChanged?.Invoke(_addresses[at]);
                 StreetGame.Notice(NotificationType.Info, "reallife_street_note_mouth", new Dictionary<string, string>(2)
                 {
@@ -622,7 +738,7 @@ namespace RealLifeOverhaul.Street
                 data["walk"] = minutes == 1 ? StreetText.T("reallife_street_walk_one")
                     : StreetText.T("reallife_street_walk_many", new Dictionary<string, string>(1) { { "n", minutes.ToString(System.Globalization.CultureInfo.InvariantCulture) } });
                 StreetGame.Destination(venue);
-                _chat.Rapport += StreetRules.Score(_chat) >= 0 ? 1 : 0;
+                _chat.Gain(StreetRules.Score(_chat) >= 0 ? 1 : 0);
             }
             Logger?.Info("Street talk: the way to " + (named ?? kind.ToString()) + ": " + (found ? venue.Name + ", " + metres.ToString("F0") + " m" : "none within " + StreetRules.FindMetres.ToString("F0") + " m") + ".");
             return Respond(line, data, player, false);
@@ -672,12 +788,13 @@ namespace RealLifeOverhaul.Street
             }
             StreetSaid said = StreetSay.Read(words, _facts.Shops);
             _chat.Turns++;
-            Logger?.Info("Street talk: the player's words read as " + said.Kind + (said.Place != StreetPlace.Count ? " (" + said.Place + ")" : string.Empty) + ".");
+            _aheadNow = false;
+            _turnSaid = "typed \"" + words + "\" (read as " + said.Kind + (said.Place != StreetPlace.Count ? ", " + said.Place : string.Empty) + ")";
             if (said.Kind == StreetSayKind.Threat)
             {
                 _facts.PoliceNear = StreetBridges.PoliceNear != null && StreetBridges.PoliceNear(_met, StreetRules.PoliceMetres);
                 StreetOutcome o = StreetRules.Threat(_facts);
-                _chat.Rapport += o.Rapport;
+                _chat.Gain(o.Rapport);
                 _chat.Memo.Rude = true;
                 if (o.Police)
                 {
@@ -694,7 +811,7 @@ namespace RealLifeOverhaul.Street
             if (ask == StreetAsk.Count)
             {
                 StreetOutcome o = StreetRules.Said(_chat, said.Kind);
-                _chat.Rapport += o.Rapport;
+                _chat.Gain(o.Rapport);
                 return Respond(o.Line, data, words, o.Ends);
             }
             if ((ask == StreetAsk.Number || ask == StreetAsk.Invite) && !_facts.SocialOn)

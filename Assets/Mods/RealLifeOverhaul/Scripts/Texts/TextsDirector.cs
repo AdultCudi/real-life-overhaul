@@ -423,6 +423,7 @@ namespace RealLifeOverhaul.Texts
             }
             double estimate = speed.Estimate;
             Hub.AheadOnly = TextSpeed.AheadOnly(estimate);
+            Hub.Queue.Expected(estimate);   // (the queue starts from this machine's own figure, not its cautious guess)
             KeepSpeed(speed);
             if (Hub.AheadOnly)
             {
