@@ -122,6 +122,12 @@ namespace RealLifeOverhaul.Street
             return days > 0 ? days / Math.Max(1, SocialPlaces.DaysPerYear) : 35;
         }
 
+        /// <summary>Their look as the game made it (its appearance data), as a kept look's text (People/PersonLook); null if it has none.</summary>
+        public static string Look(Pedestrian p)
+        {
+            return p != null && p.tpc != null && p.tpc.appearanceSetter != null ? PersonLookGame.Of(p.tpc.appearanceSetter.data) : null;
+        }
+
         /// <summary>0 nothing, 1 looking at their phone, 2 on a call: the game's own animation on the figure.</summary>
         public static int Phone(Pedestrian p)
         {

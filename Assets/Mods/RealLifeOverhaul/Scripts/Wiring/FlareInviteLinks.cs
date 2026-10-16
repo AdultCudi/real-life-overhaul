@@ -153,7 +153,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Somebody new said yes on Flare: met online, as they are on Flare (their name; their sex and age where Flare says them).
+            // Somebody new said yes on Flare: met online, as they are on Flare (their name; their sex, age and face where Flare says them).
             private static void MeetOnline(SocialPerson p, FlareInviteBook b)
             {
                 if (!string.IsNullOrEmpty(b.First) && !string.IsNullOrEmpty(b.Last))
@@ -166,7 +166,11 @@ namespace RealLifeOverhaul
                 }
                 if (b.Age > 0)
                 {
-                    p.Age = Mathf.Clamp(b.Age, 18, 75);
+                    p.Age = Mathf.Clamp(b.Age, 18, 85);   // (a retiree of the city is 82 at most: the age their face is drawn at)
+                }
+                if (b.Face > 0)
+                {
+                    p.Seed = b.Face;   // the face they have on Flare, in the street and on their contact's picture as well
                 }
                 p.Origin = SocialOrigin.Online;
                 ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);   // (their face under the name they now have: the contact's picture)

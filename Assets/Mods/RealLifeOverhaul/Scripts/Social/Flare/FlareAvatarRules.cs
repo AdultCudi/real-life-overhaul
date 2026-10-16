@@ -297,7 +297,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A face's file among the portrait cache's: its round picture, by its look.</summary>
         public static string FaceName(bool female, int age, int seed)
         {
-            return FilePrefix + "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + FileExtension;
+            return FilePrefix + "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + PersonLooks.Mark(seed) + FileExtension;   // (a kept look's apart: People/PersonLook)
         }
 
         /// <summary>One of the staff's round picture's file, by the save and the name (a stable hash: the same file each session).</summary>

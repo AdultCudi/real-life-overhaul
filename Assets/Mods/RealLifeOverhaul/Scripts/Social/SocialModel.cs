@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
         public string Name;
         public bool Female;
         public int Age;              // years
-        public int Seed;             // of their look, for the game's appearance system
+        public int Seed;             // of their look, for the game's appearance system (a kept look's own: People/PersonLook.SeedOf)
         public SocialOrigin Origin;
         public SocialTrait Traits;
         public int Job;              // index into SocialCatalogue.Jobs
@@ -96,6 +96,7 @@ namespace RealLifeOverhaul
         public int Loan;             // what they owe the player
         public int LoanDue;
         public int BirthdayYear = -1;   // the year (day / days per year) in which the player last remembered it
+        public string Look;          // the look they had when met in the street, as the game made it (People/PersonLook's text); null for a look of the seed
         public readonly List<SocialMemory> Memories = new List<SocialMemory>(MaxMemories);
 
         public bool Has(SocialTrait trait) => (Traits & trait) != 0;
@@ -427,6 +428,7 @@ namespace RealLifeOverhaul
             Plan.Clear();
             Offer.Clear();
             CastSeed = 0;
+            PersonLooks.Forget();
             Day = 0;
             TextsDay = 0;
             TextsToday = 0;
@@ -570,6 +572,7 @@ namespace RealLifeOverhaul
                     }
                     text.Append((int)p.Memories[m].Code).Append(':').Append(p.Memories[m].Day);
                 }
+                text.Append(Field).Append(p.Look ?? string.Empty);   // (appended: an older version reads the 41 before it and leaves this; the look's text holds no '|' or line break)
             }
             data[KeyPeople] = text.ToString();
 
@@ -624,6 +627,7 @@ namespace RealLifeOverhaul
                 {
                     continue;   // (as Read: a record it would not take)
                 }
+                ReadLook(p, f);
                 SocialCatalogue.FixLook(p);
                 found[index] = true;
                 count++;
@@ -635,6 +639,22 @@ namespace RealLifeOverhaul
             if (count != People.Length)
             {
                 into.Clear();   // (as Read: a cast that is not whole is made anew, and nobody of it is met yet)
+            }
+        }
+
+        // The look kept with somebody met in the street (field 41, since 0.29.0), made known by its seed, which is theirs: a
+        // look that cannot be read is let go, and they have the look of the seed they were saved with.
+        private static void ReadLook(SocialPerson p, string[] f)
+        {
+            if (f.Length < 42 || f[41].Length == 0 || p.Origin == SocialOrigin.Family || p.Origin == SocialOrigin.OldFriend)
+            {
+                return;   // (Mom and Alex: their one look of every game, SocialCatalogue.FixLook)
+            }
+            int seed = PersonLooks.Remember(f[41]);
+            if (seed != 0)
+            {
+                p.Look = f[41];
+                p.Seed = seed;
             }
         }
 
@@ -689,6 +709,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
+                ReadLook(p, f);
                 SocialCatalogue.FixLook(p);   // Mom and Alex: the one look of every game, a save from before's own given up (before a later version's origin is read as an old friend below)
                 if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
                 {

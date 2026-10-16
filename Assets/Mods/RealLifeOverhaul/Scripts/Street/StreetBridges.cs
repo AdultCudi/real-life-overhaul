@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Street
         public int Job, District;
         public SocialTrait Traits;
         public bool Warm;          // the talk went well (the social life's warm first meeting)
+        public string Look;        // the figure's look as the game made it (People/PersonLook's text); null if it could not be read
     }
 
     /// <summary>

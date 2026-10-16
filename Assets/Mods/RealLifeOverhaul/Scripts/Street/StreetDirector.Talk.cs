@@ -461,7 +461,11 @@ namespace RealLifeOverhaul.Street
         private StreetMeet Meeting()
         {
             StreetStranger s = _chat.Who;
-            return new StreetMeet { First = s.First, Last = s.Last, Female = s.Female, Age = s.Age, Job = s.Job, District = s.District, Traits = s.Traits, Warm = StreetRules.Score(_chat) >= StreetRules.NumberAt };
+            return new StreetMeet
+            {
+                First = s.First, Last = s.Last, Female = s.Female, Age = s.Age, Job = s.Job, District = s.District, Traits = s.Traits, Warm = StreetRules.Score(_chat) >= StreetRules.NumberAt,
+                Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Walker) : null
+            };
         }
 
         // Their number: the rules decide; a yes makes them somebody the player knows (the social life, met in the street).

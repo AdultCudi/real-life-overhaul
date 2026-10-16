@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.Flare
                 a.Last = c.Last;
                 a.Sex = FlareInviteRules.SexOf(c);
                 a.Age = FlareTextsMap.Age(c, citySeed);
+                a.Face = FlareAvatarRules.Citizen(citySeed, number).Seed;   // (the face they have on Flare, kept when they are met)
                 a.NightOwl = c.Persona == FlarePersona.NightOwl;
                 a.Grumpy = c.Persona == FlarePersona.Grumpy;
                 a.Taken = FlareInviteRules.Taken(citySeed, number) && number != _testInvitee;

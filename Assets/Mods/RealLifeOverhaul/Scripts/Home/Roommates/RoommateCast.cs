@@ -254,7 +254,10 @@ namespace RealLifeOverhaul.Roommates
             try
             {
                 appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 80) * year;
-                appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), Casual, seed);
+                if (!PersonLookGame.Dress(appearance, seed))   // (somebody met in the street: the look they had there, People/PersonLook)
+                {
+                    appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), Casual, seed);
+                }
                 appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
                 Looks.Count("roommates: the roommate's look being built (a mesh merge)");
                 appearance.UpdateVisuals();

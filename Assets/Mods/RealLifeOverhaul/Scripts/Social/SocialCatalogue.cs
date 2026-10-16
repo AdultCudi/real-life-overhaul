@@ -230,10 +230,11 @@ namespace RealLifeOverhaul
             bool female = mom ? FixedLooks.MomFemale : FixedLooks.AlexFemale;
             int age = mom ? FixedLooks.MomAge : FixedLooks.AlexAge;
             int seed = mom ? FixedLooks.MomSeed : FixedLooks.AlexSeed;
-            bool changed = p.Female != female || p.Age != age || p.Seed != seed;
+            bool changed = p.Female != female || p.Age != age || p.Seed != seed || p.Look != null;
             p.Female = female;
             p.Age = age;
             p.Seed = seed;
+            p.Look = null;   // (never anybody's look from the street)
             return changed;
         }
 

@@ -38,7 +38,8 @@ namespace RealLifeOverhaul.Flare
         public bool Influencer;          // "i:3"
         public string First, Last;       // a city person's name (the stranger as the social life would meet them)
         public int Sex = -1;             // 1 a woman, 0 a man, -1 not known (FlareInviteRules.SexOf: the person's own, as their card and face have it)
-        public int Age;                  // as their cards say it
+        public int Age;                  // as their cards say it (FlareLiveRules.CitizenAge, as their face has it)
+        public int Face;                 // a city person's face's seed (FlareAvatarRules.Citizen): the face they keep when met; 0 not known
         public int Hour;                 // of the message
         public bool NightOwl, Grumpy, Taken;   // a city person's persona and their own life (FlareInviteRules.Citizen)
         public int Chats;                // their messages to the player shown so far (earlier answers, a message they started)
@@ -83,6 +84,7 @@ namespace RealLifeOverhaul.Flare
         public string First, Last;       // ...their name, sex and age (FlareInviteRules.SexOf, FlareTextsMap.Age)
         public int Sex = -1;
         public int Age;
+        public int Face;                 // ...and their face's seed (0 for a yes saved before 0.29.0: the seat's own)
     }
 
     /// <summary>
@@ -761,6 +763,10 @@ namespace RealLifeOverhaul.Flare
                 Pair(b, "l", a.Last);
                 Pair(b, "sx", a.Sex.ToString(CultureInfo.InvariantCulture));
                 Pair(b, "ag", a.Age.ToString(CultureInfo.InvariantCulture));
+                if (a.Face > 0)
+                {
+                    Pair(b, "fc", a.Face.ToString(CultureInfo.InvariantCulture));
+                }
             }
             return b.ToString();
         }
@@ -816,10 +822,11 @@ namespace RealLifeOverhaul.Flare
             }
             int.TryParse(Value(data, "sx"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int sex);
             int.TryParse(Value(data, "ag"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int age);
+            int.TryParse(Value(data, "fc"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int face);
             return new FlareInviteBook
             {
                 Kind = (PlanKind)kind, At = at, Street = Value(data, "st"), Number = number, Place = Value(data, "place"), Cast = cast,
-                First = Value(data, "f"), Last = Value(data, "l"), Sex = sex, Age = age
+                First = Value(data, "f"), Last = Value(data, "l"), Sex = sex, Age = age, Face = Math.Max(0, face)
             };
         }
 

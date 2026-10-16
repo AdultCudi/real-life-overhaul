@@ -19,7 +19,8 @@ namespace RealLifeOverhaul
         ///   PoliceNear    a parked patrol car or an officer of the beat within earshot (People/PolicePresence, BeatPatrol)
         ///   Noticed       the police watch more closely for the rest of the day (Law: Reputation.Noticed)
         ///   CanMeet, Meet somebody of the social life's cast still to meet takes on the stranger's name, sex, age, job,
-        ///                 home district and traits, and is met in the street (SocialOrigin.Street, SocialLife.Meet): People
+        ///                 home district, traits and look (the game's own appearance of the figure, kept with them: People/
+        ///                 PersonLook), and is met in the street (SocialOrigin.Street, SocialLife.Meet): People
         ///   InviteLook, InviteBook  an invitation decided with Flare's own look (FlareBridges.InviteLook: a plan on already, a
         ///                 place near the player, the first hour that suits) and a yes booked as a call books a plan
         ///                 (SocialLife.MakePlan), meeting the stranger in the street first
@@ -132,7 +133,7 @@ namespace RealLifeOverhaul
                 return either;
             }
 
-            // Somebody new met in the street: who they were in the street (the seat of the cast keeps its own look and face).
+            // Somebody new met in the street: who they were in the street, their face and clothes too.
             private static int Meet(StreetMeet m)
             {
                 try
@@ -161,9 +162,15 @@ namespace RealLifeOverhaul
                 p.District = m.District;
                 p.Traits = m.Traits;
                 p.Origin = SocialOrigin.Street;
+                int seed = PersonLooks.Remember(m.Look);   // the look the game gave the figure, kept: the same person in the street, on the contact's picture and on Flare
+                if (seed != 0)
+                {
+                    p.Look = m.Look;
+                    p.Seed = seed;
+                }
                 ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);   // (their face under the name they now have: the contact's picture)
                 SocialLife.Meet(p, m.Warm);
-                SocialDirector.Logger?.Info("Social: " + p.Name + " swapped numbers with the player in the street: met in the street.");
+                SocialDirector.Logger?.Info("Social: " + p.Name + " swapped numbers with the player in the street: met in the street" + (seed != 0 ? ", with the look they had there." : " (their look could not be read: the seat's own)."));
             }
 
             // A yes's plan booked as a call books it; -1 if it cannot be now (a plan on already, the place gone, nobody of the cast left).

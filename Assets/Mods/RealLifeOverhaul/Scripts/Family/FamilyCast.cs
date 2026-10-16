@@ -341,7 +341,10 @@ namespace RealLifeOverhaul.Family
             try
             {
                 appearance.data.ageInDays = age * year;
-                appearance.RandomizeElements(female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), Casual, seed);
+                if (!PersonLookGame.Dress(appearance, seed))   // (a partner met in the street: the look they had there, People/PersonLook)
+                {
+                    appearance.RandomizeElements(female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), Casual, seed);
+                }
                 if (formal)
                 {
                     var roll = new System.Random(seed ^ 0x5f3759df);

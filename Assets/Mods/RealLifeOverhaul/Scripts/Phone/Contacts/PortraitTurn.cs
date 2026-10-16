@@ -22,7 +22,8 @@ namespace RealLifeOverhaul
     /// A FACE OF A LOOK (<see cref="Face"/>): built exactly as the mod builds the person in the city, AppearanceSetter.
     /// RandomizeElements with the person's sex, the skin of their seed, casual clothes and their seed, their age, and the
     /// build capped as the mod's own people are (Social/SocialCast.Dress); the beard's colour rolled from the same seed with
-    /// the engine's dice put back. A FACE OF A CHARACTER (<see cref="Character"/>): one the game has (one of the player's
+    /// the engine's dice put back; for the seed of a kept look (People/PersonLook: somebody met in the street) that look as
+    /// it was. A FACE OF A CHARACTER (<see cref="Character"/>): one the game has (one of the player's
     /// staff), drawn from its own data.
     ///
     /// COST: nothing at rest. A face is the game's portrait render with its read-back (some 10 to 30 ms of one frame, once
@@ -110,6 +111,12 @@ namespace RealLifeOverhaul
                     _toldFallback = true;
                     ContactPictures.Logger?.Warn("Portraits: the portrait camera is built another way in this version of the game: faces are drawn with the game's own random look for each person.");
                 }
+                CharacterData kept = PersonLookGame.Data(seed, days);
+                if (kept != null)
+                {
+                    PortraitGenerator.Create(kept, null, null, Safe(back));   // (a kept look needs no camera of the mod's: it is whole)
+                    return true;
+                }
                 PortraitGenerator.Create(gender, days, seed.ToString(), seed, null, null, Safe(back));
                 return true;
             }
@@ -118,7 +125,10 @@ namespace RealLifeOverhaul
             try
             {
                 setter.data.ageInDays = days;
-                setter.RandomizeElements(gender, SkinColorHelper.GetRandom(seed), Casual, seed);
+                if (!PersonLookGame.Dress(setter, seed))   // (a kept look, People/PersonLook: somebody met in the street as they were there)
+                {
+                    setter.RandomizeElements(gender, SkinColorHelper.GetRandom(seed), Casual, seed);
+                }
                 setter.data.fatness = Mathf.Min(setter.data.fatness, BuildMost);
                 PortraitGenerator.Create(setter.data, null, null, Safe(back));
             }
