@@ -2,7 +2,7 @@
 ; It puts the mod in the game's ModsLocal folder, where the game loads it exactly as it loads a Workshop item.
 ;
 ; Build (see build-installer.ps1, which also stages the files):
-;   ISCC.exe /DAppVersion=0.28.3 /DSourceDir=<folder holding the RealLifeOverhaul folder> /DOutputDir=<folder> RealLifeOverhaul.iss
+;   ISCC.exe /DAppVersion=0.28.4 /DSourceDir=<folder holding the RealLifeOverhaul folder> /DOutputDir=<folder> RealLifeOverhaul.iss
 
 #ifndef AppVersion
   #error Pass /DAppVersion=<version>
