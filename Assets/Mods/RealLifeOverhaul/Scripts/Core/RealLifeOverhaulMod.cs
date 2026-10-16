@@ -583,6 +583,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
                 .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
                 .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())
+                .AddButton("reallife_flare_test_invitee", () => Flare.FlareDirector.Instance?.TestInvitee())
                 .AddButton("reallife_flare_test_invite", () => Flare.FlareDirector.Instance?.TestInvite())
                 .AddButton("reallife_flare_test_escalate", () => Flare.FlareDirector.Instance?.TestEscalate())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())

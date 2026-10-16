@@ -754,6 +754,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>True for somebody already on their way to be met (a friend brings them, or they are walking up now): not to be met another way meanwhile (a yes on Flare, Wiring/FlareInviteLinks).</summary>
+        public static bool Expected(SocialPerson person)
+        {
+            return Instance != null && person != null && (person == Instance._pendingMeet || person == Instance._introStranger);
+        }
+
         /// <summary>The first person of the cast the player has still to meet, or null.</summary>
         public static SocialPerson NextStranger()
         {

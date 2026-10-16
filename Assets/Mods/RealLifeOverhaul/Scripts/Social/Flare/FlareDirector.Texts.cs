@@ -187,6 +187,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
+            InviteCard(answer, influencer, r);   // (an invitation's answer: its own intent and values)
             r.History.Add(new TextSaid(MyName, typed));
             long at = answer.At;
             r.Seconds = Seconds(at - Now);

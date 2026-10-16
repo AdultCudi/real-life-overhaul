@@ -1118,8 +1118,9 @@ namespace RealLifeOverhaul.Flare
         public bool IsGoing(int postId) => Running && _file.Net.Going.Contains(postId);
 
         /// <summary>
-        /// The player writes a message. One of the city's people answers within the hour or two in character (what they say
-        /// never depends on what was typed); a player of a session gets it as written, through the host.
+        /// The player writes a message. One of the city's people answers within the hour or two in character; an invitation
+        /// in it (coffee, a meal, drinks...) is answered yes, maybe or no by the game's own rules, and a yes books the plan
+        /// (FlareDirector.Invites.cs). A player of a session gets it as written, through the host.
         /// </summary>
         public bool SendDm(string with, string text)
         {
@@ -1137,7 +1138,8 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 string what = with.StartsWith("i:", StringComparison.Ordinal) ? "collab" : with.StartsWith("o:", StringComparison.Ordinal) ? "office" : "chat";
-                FlareDm answer = FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
+                FlareDm answer = Invite(with, text, now)   // (an invitation: the game decides, FlareDirector.Invites.cs)
+                                 ?? FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
                 TextsDm(answer, text);   // (its words asked now, RLO Texts)
             }
             Changed();

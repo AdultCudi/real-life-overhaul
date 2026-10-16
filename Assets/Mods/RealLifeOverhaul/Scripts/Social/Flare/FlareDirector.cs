@@ -140,6 +140,7 @@ namespace RealLifeOverhaul.Flare
                 Install();
             }
             ShareSecond();
+            InvitesTick();   // (a yes due is booked: one comparison otherwise, FlareDirector.Invites.cs)
         }
 
         // ---------------------------------------------------------------- starting and stopping

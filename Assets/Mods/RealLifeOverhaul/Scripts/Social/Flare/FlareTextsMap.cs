@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Flare
             {
                 case "reallife_flare_dm_answer_chat": return "citizen.dm.chat";
                 case "reallife_flare_dm_answer_collab": return "citizen.dm.collab";
-                default: return null;
+                default: return FlareInviteRules.TrainedIntent(key, false);   // (an invitation's answer, once the model in use is trained on it)
             }
         }
 
