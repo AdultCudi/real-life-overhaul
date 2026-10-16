@@ -502,16 +502,33 @@ namespace RealLifeOverhaul.Flare
         /// every other kind of post has its own comments (citizen.comment.*, <see cref="CommentKind"/>), and a post of no
         /// kind is commented on its words (citizen.comment.words). Null where the training has nothing that fits: such a post
         /// shows only its count of replies.
+        ///
+        /// A pack of data v3 or later answers a post on a v2 topic (citizen.thread.*) on its words instead
+        /// (citizen.comment.words, the post's words in history as before): v2's thread rows answer the topic, not the post,
+        /// and the 2B v5 model wrote replies that missed the post more often than not ("They put the price up and made it
+        /// smaller." under "Tried the new noodle place on 5th Avenue. Worth the queue."), where on the words it answered the
+        /// post itself (the offline run of 16 Oct 2026). Who may comment (a friend who cares about the topic) still goes by
+        /// the topic: <see cref="CommentTaste"/>.
         /// </summary>
         public static string Comment(FlarePost p, int niche, int data = TextIntents.DataV2)
         {
             string v2 = CommentV2(p, niche);
-            if (v2 != null || data < TextIntents.DataV3)
+            if (data < TextIntents.DataV3)
+            {
+                return v2;
+            }
+            if (v2 != null && !v2.StartsWith("citizen.thread.", System.StringComparison.Ordinal))
             {
                 return v2;
             }
             string kind = CommentKind(p, niche);
             return kind != null ? "citizen.comment." + kind : p.Author != FlareAuthor.Player ? "citizen.comment.words" : null;
+        }
+
+        /// <summary>What a friend must care about to comment under a post (FlareTaste), by the post's topic whatever intent words the comment; None: no friend comments.</summary>
+        public static FlareTaste CommentTaste(FlarePost p, int niche)
+        {
+            return Taste(CommentV2(p, niche));
         }
 
         private static string CommentV2(FlarePost p, int niche)
@@ -1013,7 +1030,8 @@ namespace RealLifeOverhaul.Flare
             FlarePost P(FlareAuthor a, FlareSource s, int arg) => new FlarePost { Author = a, Source = s, Arg = arg };
             Want(Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Accident * 10), -1, v3) == "citizen.comment.accident"
                  && Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Accident * 10), -1, v2) == null
-                 && Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Weather * 10), -1, v3) == "citizen.thread.weather"
+                 && Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Weather * 10), -1, v3) == "citizen.comment.words"
+                 && Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Weather * 10), -1, v2) == "citizen.thread.weather"
                  && Comment(P(FlareAuthor.Influencer, FlareSource.Niche, 0), (int)FlareNiche.Tech, v3) == "citizen.comment.niche_tech"
                  && Comment(P(FlareAuthor.Ledger, FlareSource.Headline, 0), -1, v3) == "citizen.comment.ledger_headline"
                  && Comment(P(FlareAuthor.Business, FlareSource.BusinessPost, 3), -1, v3) == "citizen.comment.biz_late"
@@ -1026,7 +1044,7 @@ namespace RealLifeOverhaul.Flare
                  && Comment(P(FlareAuthor.Brand, FlareSource.BrandNews, 0), -1, v3) == "citizen.comment.brand_news"
                  && Comment(P(FlareAuthor.Influencer, FlareSource.Apology, 0), -1, v3) == "citizen.comment.words"
                  && Comment(P(FlareAuthor.Influencer, FlareSource.Apology, 0), -1, v2) == null,
-                "a v3 pack's comments: every kind of post has its own (an accident, a niche, the paper, a shop's, a rival's move, a review, results, an official notice), a post of no kind on its words; v2's maps stay");
+                "a v3 pack's comments: every kind of post has its own (an accident, a niche, the paper, a shop's, a rival's move, a review, results, an official notice), a post on a v2 topic or of no kind on its words; v2's maps stay");
             var c = new FlareCitizen { Index = 3, First = "Dana", Last = "Reyes", Handle = "@dana_reyes12", Persona = FlarePersona.Student };
             int age = Age(c, 77);
             Want(age == FlareLiveRules.CitizenAge(77, 3) && Age(c, 77) == age, "a city person's card says their own age, the one their face has, the same every time");

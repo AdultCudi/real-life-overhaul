@@ -191,6 +191,15 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>A comment's words came for this post: its thread is written again if it is the screen showing (else nothing).</summary>
+        public void ThreadChanged(int postId)
+        {
+            if (_at.Screen == FlareScreen.Thread && _at.Post == postId)
+            {
+                Changed();
+            }
+        }
+
         // A picture came in: the cards in view are shown again (a card's height may grow with it), and the sheet's.
         private void PictureCame()
         {

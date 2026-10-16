@@ -145,6 +145,7 @@ namespace RealLifeOverhaul.Flare
             if (Running)
             {
                 PhotosSecond();
+                CommentsSecond();   // (a comment's words came back: the next asked now; one comparison otherwise, FlareDirector.Comments.cs)
             }
         }
 

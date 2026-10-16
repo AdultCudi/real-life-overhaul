@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Texts
         public string Raw;              // the model's words as they came back
         public double Took;             // seconds the model took
         public string Why;              // why it was missed, for the log
+        public bool Ran;                // the worker took it (the model was asked): a miss after that is the model's or the machine's, never the budget's own holding back
         public object Owner;            // the asker's own record (what to do with the words), never read by the queue
     }
 
@@ -234,6 +235,7 @@ namespace RealLifeOverhaul.Texts
                     _startedBack.Enqueue(now);
                 }
                 best.State = TextJobState.Running;
+                best.Ran = true;
                 return best;
             }
         }
