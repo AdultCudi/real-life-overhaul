@@ -1,5 +1,7 @@
-0.28.3
+0.28.4
+
+New
+- Flare's city now has 400 people and more influencers, with no limit on how many are active. Mom and Alex look the same in every game.
 
 Fixed
-- When the city's market held goods of a mod that is no longer loaded, the game stopped every night halfway, so staff wages grew day by day, staff's hours and days a week were counted wrong against what they ask for, and brand recognition never moved. Those goods are now taken out at night and the counts put right before the wages.
-- You can like your friends' replies under your posts on Flare.
+- The map marker of an accident or another scene could stay on screen after the scene was over.
