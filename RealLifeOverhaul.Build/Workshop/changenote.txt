@@ -1,7 +1,7 @@
-0.29.1
+0.29.2
 
 New
-- RLO Texts: both packs have new models with better words. RLO Texts Lite now runs LFM2.5 by Liquid AI, smaller and faster for weaker PCs, and the mod also finds RLO Texts Medium, a pack between the two, once it is on the Workshop. In the street the model now words five more things people say: how their day is going, the street event, their work, their answer to thanks and hello again, and small talk knows the rain, the hour and the day's event. Report a bug now lists your staff with each wage next to the game's usual wage for the skill and their hours, and yesterday's and today's money in and out by kind, so a report on wages or a sudden loss shows where the money went.
+- Flare: the city's posts carry photos more often, and the photos fit. While you are out, on foot or driving, Flare quietly photographs the streets, shop fronts, parks, sights and street events you pass in each district, by day, at dusk and at night, dry or in the rain, and a post shows one that fits its place, kind, hour and weather, or none. The photos option now starts at Some.
 
 Fixed
-- In street talk a stranger no longer calls you by a name you never told them, unless they know your face as somebody famous or infamous.
+- Under the city's Flare posts every comment the count promises is now written out and shown, up to sixteen a post, each at its own time, and RLO Texts writes them ahead so a thread is usually full before you open it. A comment under a person's post now answers what the post says.
