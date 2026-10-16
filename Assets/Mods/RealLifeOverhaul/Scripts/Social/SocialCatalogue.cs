@@ -210,8 +210,31 @@ namespace RealLifeOverhaul
                 }
                 p.LastContactDay = day;
                 p.StageDay = day;
+                FixLook(p);   // (after the rolls above, so the others are dealt as they always were for a seed)
                 people[i] = p;
             }
+        }
+
+        /// <summary>
+        /// Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks): its sex, age and seed. For
+        /// anybody else nothing changes. A save from before had a look of its own rolled for them: it is changed to this one
+        /// as the save is read, and stays so. True if anything changed.
+        /// </summary>
+        public static bool FixLook(SocialPerson p)
+        {
+            if (p == null || (p.Origin != SocialOrigin.Family && p.Origin != SocialOrigin.OldFriend))
+            {
+                return false;
+            }
+            bool mom = p.Origin == SocialOrigin.Family;
+            bool female = mom ? FixedLooks.MomFemale : FixedLooks.AlexFemale;
+            int age = mom ? FixedLooks.MomAge : FixedLooks.AlexAge;
+            int seed = mom ? FixedLooks.MomSeed : FixedLooks.AlexSeed;
+            bool changed = p.Female != female || p.Age != age || p.Seed != seed;
+            p.Female = female;
+            p.Age = age;
+            p.Seed = seed;
+            return changed;
         }
 
         private static int[] Shuffled(Random random, int count)

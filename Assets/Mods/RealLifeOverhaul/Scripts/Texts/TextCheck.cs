@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Texts
 {
@@ -17,7 +18,8 @@ namespace RealLifeOverhaul.Texts
         Exclaim,     // an exclamation mark from a voice that never uses one
         Banned,      // a word on Flare's list
         Language,    // letters of another script while the card asks for English
-        Repeat       // the same, or nearly the same, as one of the last few things this person said
+        Repeat,      // the same, or nearly the same, as one of the last few things this person said
+        Machine      // the speaker calls itself an AI, a bot, an assistant or a language model
     }
 
     /// <summary>
@@ -35,6 +37,10 @@ namespace RealLifeOverhaul.Texts
     ///   English    no letters of another script while the card says lang: en
     ///   repeats    not the same, or nearly the same, as the last few things the same person said (words compared:
     ///              three quarters of them shared, of four or more, counts as nearly)
+    ///   no machine the speaker never calls itself an AI, a bot, a chatbot, an assistant or a language model ("I'm an
+    ///              AI", "as an AI", "I am a bot"; the 2B v3 wrote "I'd blush, but I'm an AI, so no."): first person only,
+    ///              so a post or comment about the city's AI labs passes ("an AI lab", "as an AI researcher"); the words
+    ///              "chatbot" and "language model" pass only when the card itself names them
     ///
     /// Game-free (EconomyCheck, TextsChecks.cs: each rule made to fail). COST: one pass over a line of 200 characters.
     /// </summary>
@@ -109,6 +115,10 @@ namespace RealLifeOverhaul.Texts
             {
                 return TextVerdict.Language;
             }
+            if (Machine(words, cardText))
+            {
+                return TextVerdict.Machine;
+            }
             if (recent != null)
             {
                 for (int i = 0; i < recent.Count; i++)
@@ -122,9 +132,38 @@ namespace RealLifeOverhaul.Texts
             return TextVerdict.Ok;
         }
 
+        // The speaker naming itself a machine: "I'm" (I am, Im, "I'm just") or "as a" or "as an" before an AI, a bot, a
+        // chatbot, an assistant or a language model, as a whole word not followed by what makes it a person's trade ("an AI
+        // researcher", "an assistant at the clinic"). "As AI gets better" (no article) is the trade's talk, not a self.
+        private static readonly Regex SelfMachine = new Regex(
+            @"(?:\b(?:i\s*'?\s*m|i\s+am)\s+(?:(?:just|only|merely|simply|really|actually|literally|basically)\s+)?(?:an?\s+)?|\bas\s+an?\s+)(?:large\s+)?"
+            + @"(?:a\.?i\.?|artificial\s+intelligence|ai\s+assistant|ai\s+model|ai\s+language\s+model|bot|chat\s*bot|robot\s+assistant|virtual\s+assistant|digital\s+assistant|assistant|language\s+model|llm)"
+            + @"(?![a-z])(?!\s+(?:researcher|research|lab|labs|company|companies|startup|start\s*up|engineer|engineers|developer|developers|expert|experts|fan|fans|enthusiast|"
+            + @"investor|investors|firm|firms|sector|stock|stocks|share|shares|job|jobs|team|teams|course|class|degree|student|ethicist|manager|to|at|for|in|on)\b)",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        // The words that only a machine would use of itself, unless the card is about them.
+        private static readonly Regex MachineWords = new Regex(@"\b(?:chat\s*bots?|language\s+models?)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        /// <summary>True if the words have the speaker call itself an AI, a bot, an assistant or a language model (first person), or say "chatbot" or "language model" while the card does not.</summary>
+        public static bool Machine(string words, string cardText)
+        {
+            if (string.IsNullOrEmpty(words))
+            {
+                return false;
+            }
+            string plain = words.IndexOf('\u2019') >= 0 ? words.Replace('\u2019', '\'') : words;
+            if (SelfMachine.IsMatch(plain))
+            {
+                return true;
+            }
+            return MachineWords.IsMatch(plain) && (cardText == null || !MachineWords.IsMatch(cardText));
+        }
+
         /// <summary>
         /// A guest's check of the host's words on arrival (the card is the host's): tidy, one line, the intent's length, no
-        /// dash, "!" only for the voices that use it, none of Flare's list, no other script. Unknown intent: refused.
+        /// dash, "!" only for the voices that use it, none of Flare's list, no speaker calling itself a machine, no other
+        /// script. Unknown intent: refused.
         /// </summary>
         public static TextVerdict JudgeShared(string words, TextIntent intent, int filterStrength = 1)
         {
@@ -151,6 +190,10 @@ namespace RealLifeOverhaul.Texts
             if (Flare.FlareFilter.Clean(words, filterStrength) != words)
             {
                 return TextVerdict.Banned;
+            }
+            if (SelfMachine.IsMatch(words.IndexOf('\u2019') >= 0 ? words.Replace('\u2019', '\'') : words))
+            {
+                return TextVerdict.Machine;   // (a guest has no card: the speaker calling itself a machine is refused; the host's card judged the rest)
             }
             return OtherScript(words) ? TextVerdict.Language : TextVerdict.Ok;
         }

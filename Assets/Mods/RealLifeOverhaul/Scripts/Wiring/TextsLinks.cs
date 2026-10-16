@@ -18,6 +18,8 @@ namespace RealLifeOverhaul
         ///   the phone  friends, the partner, Mom, the in-laws, roommates, the boss and the lender: a text held back a moment
         ///              for its words (TextsPhone), sent with the written line when they are not there in time
         ///   face to face  a friend's greeting at an outing, guessed when the player walks up and taken at the click
+        ///   answers    with a v3 pack, the authors' answers under the player's typed replies and the answers to typed
+        ///              messages and mentions (Social/Flare/FlareDirector.Answers.cs, FlareDirector.Texts.cs)
         ///   the paper  the City Ledger's economy briefs, asked when an edition is written (at dawn); the words are used only if
         ///              they come before any piece of that edition has been shown, so a page never changes in front of the player
         ///   kept texts let go once the game no longer has what they belong to (<see cref="StillThere"/>)
@@ -37,6 +39,9 @@ namespace RealLifeOverhaul
                 FlareBridges.TextWants = (use, shared) => TextsDirector.Words.Wants(use, shared);
                 FlareBridges.TextWhen = TextsGame.When;
                 FlareBridges.TextSeconds = TextsGame.SecondsFor;
+                FlareBridges.TextData = () => TextsDirector.Words.Data;
+                FlareBridges.TextFriend = TextsPhone.FlareFriend;
+                FlareBridges.TextListed = Listed;
                 LedgerBridges.TextsEdition = Edition;
                 LedgerBridges.TextsBody = Body;
                 TextsDirector.StillThere = StillThere;
@@ -51,10 +56,20 @@ namespace RealLifeOverhaul
                 FlareBridges.TextWants = null;
                 FlareBridges.TextWhen = null;
                 FlareBridges.TextSeconds = null;
+                FlareBridges.TextData = null;
+                FlareBridges.TextFriend = null;
+                FlareBridges.TextListed = null;
                 LedgerBridges.TextsEdition = null;
                 LedgerBridges.TextsBody = null;
                 TextsDirector.StillThere = null;
                 TextsPhone.Disconnect();
+            }
+
+            // The player's listed company's name (a rival's stake in it or bid for it names it); null while there is none.
+            private static string Listed()
+            {
+                Markets.Stock own = Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.MyCompany : null;
+                return own != null && !string.IsNullOrEmpty(own.Name) ? own.Name : null;
             }
 
             // A piece's words as the page draws it; drawing marks its edition shown, after which no new words are taken for it.
@@ -120,7 +135,7 @@ namespace RealLifeOverhaul
 
             /// <summary>
             /// Whether the game still has what a kept text belongs to: a Flare post ("fp:id"), a friend's reply under one
-            /// ("fr:post:person"), a comment under one ("fc:post:slot:who"), a message ("fd:with:at"), an edition of the paper ("lp:day:hash"). While Flare or the paper is
+            /// ("fr:post:person"), a comment under one ("fc:post:slot:who"), the answer under a reply of the player's ("fa:reply"), a message ("fd:with:at"), an edition of the paper ("lp:day:hash"). While Flare or the paper is
             /// not running its texts are kept (nothing is judged on a feature that is not there to ask).
             /// </summary>
             public static bool StillThere(string key)
@@ -137,6 +152,7 @@ namespace RealLifeOverhaul
                         case "fp":
                         case "fr":
                         case "fc":
+                        case "fa":
                             FlareFile file = FlareDirector.Instance?.File;
                             return file == null || (f.Length >= 2 && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) && file.Post(id) != null);
                         case "fd":

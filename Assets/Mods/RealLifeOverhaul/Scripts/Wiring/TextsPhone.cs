@@ -247,6 +247,22 @@ namespace RealLifeOverhaul
                 return TextsDirector.Words.Ask(r, TextClock.Now);
             }
 
+            /// <summary>
+            /// A friend or the partner of the social life as the speaker of a Flare message's answer (FlareBridges.TextFriend),
+            /// by their number; false for nobody met, or Mom (no card of hers answers a Flare message).
+            /// </summary>
+            internal static bool FlareFriend(int index, TextWho who, out bool partner)
+            {
+                SocialPerson p = SocialState.Get(index);
+                partner = p != null && p.Together;
+                if (p == null || !p.Met || p.IsFamily)
+                {
+                    return false;
+                }
+                FriendWho(p, who, partner, false);
+                return true;
+            }
+
             // A friend (or the partner, or a roommate) as the speaker: their own data in the training's words.
             private static void FriendWho(SocialPerson p, TextWho who, bool partner, bool expecting)
             {

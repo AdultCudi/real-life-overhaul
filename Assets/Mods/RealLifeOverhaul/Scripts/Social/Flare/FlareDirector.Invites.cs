@@ -151,12 +151,13 @@ namespace RealLifeOverhaul.Flare
                 "place", b.Place, "time", FlareInviteRules.Value(m.Data, "time"));
         }
 
-        // RLO Texts: an invitation's answer is asked with its own intent and card values (FlareInviteRules), not the chat's.
-        private static void InviteCard(FlareDm answer, bool influencer, TextRequest r)
+        // RLO Texts: an invitation's answer is asked with its own intent and card values (FlareInviteRules), not the chat's:
+        // a v3 pack's decided answer (an influencer's worded as a city person's: data v3 has no influencer's), a v2 pack none.
+        private static void InviteCard(FlareDm answer, int data, TextRequest r)
         {
             if (FlareInviteRules.AnswerOf(answer.Key, out _))
             {
-                r.Intent = FlareInviteRules.TrainedIntent(answer.Key, influencer);
+                r.Intent = FlareInviteRules.TrainedIntent(answer.Key, data);
                 FlareInviteRules.Slots(answer, r.Slots);
             }
         }

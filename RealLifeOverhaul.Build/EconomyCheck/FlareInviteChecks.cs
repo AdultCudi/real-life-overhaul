@@ -312,7 +312,7 @@ internal static partial class Program
         for (int k = 0; k < kinds.Length; k++)
         {
             string key = FlareInviteRules.Key(FlareInviteAnswer.Yes, FlareInviteWhy.Yes, plans[k]);
-            yesKeys &= key == FlareInviteRules.KeyStart + "yes_" + kinds[k] && FlareInviteRules.Intent(key, false) == "citizen.dm.invite_yes"
+            yesKeys &= key == FlareInviteRules.KeyStart + "yes_" + kinds[k] && FlareInviteRules.Intent(key) == "citizen.dm.invite_yes"
                        && FlareInviteRules.AnswerOf(key, out FlareInviteAnswer a) && a == FlareInviteAnswer.Yes;
         }
         Check(yesKeys, "flare invitations: a yes's line is its outing's; its intent citizen.dm.invite_yes");
@@ -321,43 +321,47 @@ internal static partial class Program
         {
             string m = FlareInviteRules.Key(FlareInviteAnswer.Maybe, why, PlanKind.Coffee), n = FlareInviteRules.Key(FlareInviteAnswer.No, why, PlanKind.Coffee);
             maybes &= m.StartsWith(FlareInviteRules.KeyStart + "maybe_", StringComparison.Ordinal) && FlareInviteRules.Keys().Contains(m)
-                      && FlareInviteRules.Intent(m, false) == "citizen.dm.invite_maybe" && FlareInviteRules.Intent(m, true) == "influencer.dm.invite_maybe";
+                      && FlareInviteRules.Intent(m) == "citizen.dm.invite_maybe";
             nos &= n.StartsWith(FlareInviteRules.KeyStart + "no_", StringComparison.Ordinal) && FlareInviteRules.Keys().Contains(n)
-                   && FlareInviteRules.Intent(n, false) == "citizen.dm.invite_no" && FlareInviteRules.Intent(n, true) == "influencer.dm.invite_no";
+                   && FlareInviteRules.Intent(n) == "citizen.dm.invite_no";
         }
-        Check(maybes && nos, "flare invitations: every maybe and no has a line of its reason, and the intents citizen.dm.invite_maybe and _no (an influencer's influencer.dm.invite_*)");
+        Check(maybes && nos, "flare invitations: every maybe and no has a line of its reason, and the intents citizen.dm.invite_maybe and _no (an influencer worded as a city person: data v3 has no influencer's)");
         Check(FlareInviteRules.Key(FlareInviteAnswer.Maybe, FlareInviteWhy.Plan, PlanKind.Coffee) == FlareInviteRules.KeyStart + "maybe_plan"
               && FlareInviteRules.Key(FlareInviteAnswer.No, FlareInviteWhy.Taken, PlanKind.Coffee) == FlareInviteRules.KeyStart + "no_taken"
-              && FlareInviteRules.Intent("reallife_flare_dm_answer_chat", false) == null && !FlareInviteRules.AnswerOf(null, out _),
+              && FlareInviteRules.Intent("reallife_flare_dm_answer_chat") == null && !FlareInviteRules.AnswerOf(null, out _),
             "flare invitations: the plan on already and a relationship have their own lines; any other answer is not an invitation's");
 
-        // The model: these intents wait for data v3; until they are registered every answer is its written line.
-        bool pending = true;
+        // The model: the decided answers are asked only of a pack trained on data v3; a v2 pack keeps every written line.
+        bool versions = true;
         foreach (string key in FlareInviteRules.Keys())
         {
-            pending &= FlareInviteRules.TrainedIntent(key, false) == (TextIntents.Find(FlareInviteRules.Intent(key, false)) != null ? FlareInviteRules.Intent(key, false) : null);
+            versions &= FlareInviteRules.TrainedIntent(key, TextIntents.DataV2) == null
+                        && FlareInviteRules.TrainedIntent(key, TextIntents.DataV3) == (key.EndsWith("maybe_plan", StringComparison.Ordinal) ? null : FlareInviteRules.Intent(key))
+                        && (FlareInviteRules.TrainedIntent(key, TextIntents.DataV3) == null || TextIntents.Find(FlareInviteRules.TrainedIntent(key, TextIntents.DataV3)).Data == TextIntents.DataV3);
         }
-        Check(pending, "flare invitations: an answer asks the model only with an intent the mod has registered (the trained pack's); otherwise its written line");
+        Check(versions, "flare invitations: an answer asks the model only of a v3 pack, with an intent the mod registers as data v3's (a maybe for the plan on already keeps its written line)");
         var answer = new FlareDm { With = "c6", At = 990, Key = FlareInviteRules.KeyStart + "yes_coffee", Data = "outing=coffee~t_outing=coffee~place=Bean There~time=Monday 18:00~t_time=Monday 18:00" };
-        bool registered = TextIntents.Find("citizen.dm.invite_yes") != null;
-        Check(FlareTextsMap.DmWants(answer, 900) == registered && (FlareTextsMap.Dm(answer.Key) == (registered ? "citizen.dm.invite_yes" : null)),
-            "flare invitations: an invitation's answer wants the model's words exactly when its intent is registered (" + (registered ? "registered" : "waiting for data v3") + ")");
+        Check(FlareTextsMap.DmWants(answer, 900, TextIntents.DataV3) && !FlareTextsMap.DmWants(answer, 900, TextIntents.DataV2)
+              && FlareTextsMap.Dm(answer.Key, FlareDmSpeaker.Citizen, TextIntents.DataV3) == "citizen.dm.invite_yes" && FlareTextsMap.Dm(answer.Key, FlareDmSpeaker.Citizen, TextIntents.DataV2) == null,
+            "flare invitations: an invitation's answer wants the model's words of a v3 pack, never of a v2 pack");
 
-        // The yes card: the outing, the place and the time as facts; the place and the time as must.
-        TextIntent yesCard = FlareInviteRules.Card("citizen.dm.invite_yes");
+        // The yes card (SPEC_v3): the city person's face with their mood, the outing, the place and the time as facts, the place and the time as must.
+        TextIntent yesCard = TextIntents.Find("citizen.dm.invite_yes");
         var who = new TextWho();
         var c = new FlareCitizen { Index = 6, First = "Hana", Last = "Hollis", Handle = "@hana_hollis12", Persona = FlarePersona.Foodie };
         FlareTextsMap.Fill(who, c, "Midtown", 77, "Monday 15:10");
+        who.Mood = FlareInviteRules.CardMood(answer.Key, "a bit low");
         var slots = new TextSlots();
         FlareInviteRules.Slots(answer, slots);
         var sheet = new TextSheet();
         bool built = yesCard != null && TextIntents.Build(yesCard, who, slots, new List<TextSaid> { new TextSaid("Alex", "you up for a coffee?") }, sheet);
         Check(built && sheet.Facts.Count == 3 && sheet.Facts[0] == "outing: coffee" && sheet.Facts[1] == "place: Bean There" && sheet.Facts[2] == "time: Monday 18:00"
               && sheet.Must.Count == 2 && sheet.Must[0] == "Bean There" && sheet.Must[1] == "Monday 18:00" && sheet.Write == "flare dm reply"
-              && sheet.Who == "Hana (@hana_hollis12), " + FlareTextsMap.Age(c, 77) + ", lives in Midtown" && sheet.Role == "a person on Flare you messaged",
-            "flare invitations: the yes card has the outing, the place and the time ('Monday 18:00') as facts, the place and the time as must, the city person's face");
+              && sheet.Who == "Hana (@hana_hollis12), " + FlareTextsMap.Age(c, 77) + ", lives in Midtown" && sheet.Role == "a person on Flare you messaged" && sheet.Mood == "fine"
+              && sheet.News == "Hana says yes to your invitation; the plan is booked",
+            "flare invitations: the yes card has the outing, the place and the time ('Monday 18:00') as facts, the place and the time as must, the city person's face, a mood fit for a yes");
         string card = built ? TextCard.Card(sheet) : string.Empty;
-        Check(card.Contains("outing: coffee") && card.Contains("place: Bean There") && card.Contains("time: Monday 18:00") && card.Contains("Alex: you up for a coffee?"),
+        Check(card.Contains("outing: coffee") && card.Contains("place: Bean There") && card.Contains("time: Monday 18:00") && card.Contains("Alex: you up for a coffee?") && card.Contains("mood: fine"),
             "flare invitations: the card written out carries them and the player's message");
         var none = new TextSlots();
         none.Set("outing", "coffee");
@@ -366,13 +370,34 @@ internal static partial class Program
                        && FlareInviteRules.CardOuting(PlanKind.Cinema) == "the cinema" && FlareInviteRules.CardOuting(PlanKind.Walk) == "a walk"
                        && FlareInviteRules.CardOuting(PlanKind.Workout) == "a workout";
         Check(outings, "flare invitations: the card names the outing as agreed: coffee, dinner, drinks, the cinema, a walk, a workout");
+
+        // The reasons: each maybe and no by the training's own words.
+        string K(string rest) => FlareInviteRules.KeyStart + rest;
+        Check(FlareInviteRules.CardReason(K("maybe_stranger"), null) == "they barely know you" && FlareInviteRules.CardReason(K("maybe_influencer"), null) == "they barely know you"
+              && FlareInviteRules.CardReason(K("maybe_later"), null) == "they barely know you" && FlareInviteRules.CardReason(K("maybe_night"), null) == "they are busy at the moment"
+              && FlareInviteRules.CardReason(K("maybe_busy"), null) == "they are busy at the moment" && FlareInviteRules.CardReason(K("maybe_nowhere"), null) == "they are busy at the moment"
+              && FlareInviteRules.CardReason(K("no_taken"), null) == "they are seeing someone" && FlareInviteRules.CardReason(K("no_mood"), null) == "they are too busy"
+              && FlareInviteRules.CardReason(K("no_pass"), null) == "they are not interested" && FlareInviteRules.CardReason(K("no_dislikes"), "t_outing=coffee") == "they are not interested"
+              && FlareInviteRules.CardReason(K("no_dislikes"), "t_outing=coffee~t_rude=1") == "you were rude to them before"
+              && FlareInviteRules.CardReason(K("yes_coffee"), null) == null && FlareInviteRules.CardReason(K("maybe_plan"), null) == null && FlareInviteRules.CardReason("reallife_flare_dm_answer_chat", null) == null,
+            "flare invitations: every maybe and no gives the card one of data v3's reasons, word for word (a grudge 'you were rude to them before' only when they remember something)");
+        var grudge = new FlareInviteAsk { Kind = PlanKind.Coffee, Known = true, Dislikes = true, Outing = "coffee" };
+        FlareInviteAnswer g = FlareInviteRules.Decide(grudge, out FlareInviteWhy gWhy);
+        var stranger = new FlareInviteAsk { Kind = PlanKind.Coffee, Standing = 10, Reputation = 50, Outing = "coffee" };
+        FlareInviteAnswer s = FlareInviteRules.Decide(stranger, out FlareInviteWhy sWhy);
+        Check(g == FlareInviteAnswer.No && gWhy == FlareInviteWhy.Dislikes && FlareInviteRules.Value(FlareInviteRules.Data(grudge, g, gWhy), "t_rude") == "1"
+              && s == FlareInviteAnswer.No && sWhy == FlareInviteWhy.Dislikes && FlareInviteRules.Value(FlareInviteRules.Data(stranger, s, sWhy), "t_rude") == null,
+            "flare invitations: a no from somebody who remembers something keeps t_rude in its data; a stranger put off by a low name does not");
+        Check(FlareInviteRules.CardMood(K("yes_coffee"), "having a rough day") == "fine" && FlareInviteRules.CardMood(K("yes_coffee"), "having a great day") == "having a great day"
+              && FlareInviteRules.CardMood(K("no_mood"), "in a good mood") == "having a rough day" && FlareInviteRules.CardMood(K("maybe_busy"), "a bit low") == "a bit low",
+            "flare invitations: the card's mood fits the decision (a yes never on a low day, a no for a rough day says so)");
         bool cards = true;
-        foreach (string intent in new[] { "citizen.dm.invite_yes", "citizen.dm.invite_maybe", "citizen.dm.invite_no", "influencer.dm.invite_maybe", "influencer.dm.invite_no" })
+        foreach (string intent in new[] { "citizen.dm.invite_yes", "citizen.dm.invite_maybe", "citizen.dm.invite_no" })
         {
-            TextIntent t = FlareInviteRules.Card(intent);
-            cards &= t != null && t.Voice == "citizen" && t.Channel == "flare_reply" && t.Use == TextUse.People && t.MaxLen == 160;
+            TextIntent t = TextIntents.Find(intent);
+            cards &= t != null && t.Voice == "citizen" && t.Channel == "flare_reply" && t.Use == TextUse.People && t.MaxLen == 160 && t.Face == TextFace.CitizenDmMood && !t.Exclaims;
         }
-        Check(cards, "flare invitations: a card waits for every intent an answer can have (a city person's message reply, 160 characters)");
+        Check(cards, "flare invitations: every intent an answer can have is registered (a city person's message reply with their mood, 160 characters, no exclamation mark)");
     }
 
     // ---------------------------------------------------------------- the written lines
@@ -466,7 +491,7 @@ internal static partial class Program
         Check(!invites.Contains("void Update") && !invites.Contains("LateUpdate") && !links.Contains("void Update") && director.Contains("InvitesTick();")
               && invites.Contains("if (_inviteDue == long.MaxValue || Now < _inviteDue)"),
             "flare invitations: nothing per frame: one comparison on Flare's one-second timer while no yes is due");
-        Check(TextsSource(@"Social\Flare\FlareDirector.Texts.cs").Contains("InviteCard(answer, influencer, r);") && TextsSource(@"Social\Flare\FlareTextsMap.cs").Contains("FlareInviteRules.TrainedIntent(key, false)"),
+        Check(TextsSource(@"Social\Flare\FlareDirector.Texts.cs").Contains("InviteCard(answer, data, r);") && TextsSource(@"Social\Flare\FlareTextsMap.cs").Contains("FlareInviteRules.TrainedIntent(key, data)"),
             "flare invitations: RLO Texts asks an invitation's answer with its own intent and values");
         Check(TextsSource(@"Core\RealLifeOverhaulMod.cs").Contains("reallife_flare_test_invitee") && invites.Contains("public void TestInvitee()"),
             "flare invitations: the Tests page has an entry for somebody talked with, to invite out without waiting");

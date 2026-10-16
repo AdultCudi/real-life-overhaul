@@ -72,7 +72,7 @@ namespace RealLifeOverhaul
 
         private ICrimeScene _scene;
         private string _markerLabel;
-        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark();
+        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark("street crime");
         private string _lastId;
         private float _nextCheck;
         private float _nextTick;
@@ -95,6 +95,7 @@ namespace RealLifeOverhaul
         {
             Instance = this;
             Crime.Logger = Logger;
+            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _nextCheck = Time.time + CheckInterval;
             _patrol = new ResponseUnit(gameObject);
             _suspect = new ResponseUnit(gameObject);

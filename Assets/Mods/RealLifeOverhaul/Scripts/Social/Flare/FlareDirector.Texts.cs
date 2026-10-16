@@ -21,7 +21,19 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>Real seconds until something so many game minutes away.</summary>
         public static Func<double, double> TextSeconds;
+
+        /// <summary>The data version of the running pack (TextsHub.Data): which intents may be asked. Default: v2's.</summary>
+        public static Func<int> TextData;
+
+        /// <summary>A friend or the partner of the social life as a card's speaker, by their number (false: not known); 'partner' says which.</summary>
+        public static TextFriendOf TextFriend;
+
+        /// <summary>The player's listed company's name, or null (a rival's stake or bid names it).</summary>
+        public static Func<string> TextListed;
     }
+
+    /// <summary>Fills a card's speaker from a person of the social life by their number; false if there is none.</summary>
+    public delegate bool TextFriendOf(int index, TextWho who, out bool partner);
 
     /// <summary>
     /// Flare's posts worded by RLO Texts: when the game has made a post that goes up later (the city's posts of the day,
@@ -40,6 +52,9 @@ namespace RealLifeOverhaul.Flare
     {
         private readonly FlareTextsAsked<int> _textAsked = new FlareTextsAsked<int>();         // the posts, by number
         private readonly FlareTextsAsked<string> _textDms = new FlareTextsAsked<string>();     // the answers to the player's messages, by key
+
+        // The data version of the pack in use: a v3 intent is asked only of a v3 pack (the hub refuses it otherwise too).
+        private static int TextData => FlareBridges.TextData != null ? FlareBridges.TextData() : TextIntents.DataV2;
 
         /// <summary>The model's words for a post, or null for its written line: the post's own (its number, or the session's on a guest's copy).</summary>
         public string ModelWords(FlarePost p)
@@ -73,9 +88,14 @@ namespace RealLifeOverhaul.Flare
             }
             long now = Now;
             bool hostShares = Settings.FlareSharePosts;
+            int data = TextData;
             for (int i = 0; i < _file.Posts.Count; i++)
             {
                 FlarePost p = _file.Posts[i];
+                if (data >= TextIntents.DataV3 && p.Author == FlareAuthor.Player && p.Source == FlareSource.Reply)
+                {
+                    TextsAnswer(p, now);   // (the author's answer to a reply of the player's: FlareDirector.Answers)
+                }
                 if (p.At <= now || p.Text != null || p.Shared || !_textAsked.May(p.Id))
                 {
                     continue;
@@ -103,7 +123,7 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < _file.Net.Dms.Count; i++)
             {
                 FlareDm m = _file.Net.Dms[i];
-                if (FlareTextsMap.DmWants(m, now))
+                if (FlareTextsMap.DmWants(m, now, data))
                 {
                     FlareDm asked = FlareTextsMap.DmAsked(_file.Net.Dms, m);
                     TextsDm(m, asked != null ? asked.Text : null);
@@ -153,10 +173,14 @@ namespace RealLifeOverhaul.Flare
         }
 
         // The answer to a message of the player's (FlareDirector.SendDm): asked when it is scheduled, and again on the next
-        // event while it is still to come if it came back without words. Its speaker is read as Flare keys the account.
+        // event while it is still to come if it came back without words. Its speaker is read as Flare keys the account
+        // (FlareTextsMap.DmSpeakerOf): with a v3 pack every account the city answers for answers what was typed (a city
+        // person, an influencer, a friend, the partner, an official account, a brand or a business, a rival); with a v2
+        // pack only a city person's chat and an influencer's. An invitation the game decided has its own card.
         private void TextsDm(FlareDm answer, string typed)
         {
-            if (FlareBridges.TextAsk == null || Save == null || !FlareTextsMap.DmWants(answer, Now) || string.IsNullOrEmpty(typed))
+            int data = TextData;
+            if (FlareBridges.TextAsk == null || Save == null || !FlareTextsMap.DmWants(answer, Now, data) || string.IsNullOrEmpty(typed))
             {
                 return;
             }
@@ -165,29 +189,13 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
-            FlareTextsMap.DmSpeaker(answer.With, out bool influencer, out int number);
-            var r = new TextRequest { Use = TextUse.People, Intent = FlareTextsMap.Dm(answer.Key), Key = key, Keep = true, Day = Save.Day };
-            if (!influencer && number < _citizens.Count)
-            {
-                FlareCitizen c = _citizens[number];
-                FlareTextsMap.Fill(r.Who, c, FlareGame.DistrictName(c.District), FlareLiveRules.CitySeed(_file), When());
-                r.Speaker = "c:" + number;   // (as the city person's posts and replies name them, for the repeat check)
-            }
-            else if (influencer && _file.Influencer(number) is FlareInfluencer inf)
-            {
-                r.Who.Name = r.Who.First = answer.Name ?? inf.Handle;
-                r.Who.Handle = inf.Handle;
-                r.Who.Age = TextWords.Age(_file.Seed * 17 + number, 21, 40);
-                r.Who.District = FlareGame.DistrictName(inf.District);
-                r.Who.Style = TextWords.CitizenStyle(_file.Seed * 17 + number);
-                r.Who.When = When();
-                r.Speaker = answer.With;
-            }
-            else
+            FlareDmSpeaker speaker = FlareTextsMap.DmSpeakerOf(answer.With, out int number);
+            var r = new TextRequest { Use = TextUse.People, Intent = FlareTextsMap.Dm(answer.Key, speaker, data), Key = key, Keep = true, Day = Save.Day };
+            if (!DmWho(answer, speaker, number, r))
             {
                 return;
             }
-            InviteCard(answer, influencer, r);   // (an invitation's answer: its own intent and values)
+            InviteCard(answer, data, r);   // (an invitation's answer: its own intent and values)
             r.History.Add(new TextSaid(MyName, typed));
             long at = answer.At;
             r.Seconds = Seconds(at - Now);
@@ -196,6 +204,69 @@ namespace RealLifeOverhaul.Flare
             if (FlareBridges.TextAsk(r))
             {
                 _textDms.Asked(key);
+            }
+        }
+
+        // The speaker of an answer to a message, by the account; false for one the model has no card for (the written line).
+        private bool DmWho(FlareDm answer, FlareDmSpeaker speaker, int number, TextRequest r)
+        {
+            int citySeed = FlareLiveRules.CitySeed(_file);
+            switch (speaker)
+            {
+                case FlareDmSpeaker.Citizen:
+                    if (number < 0 || number >= _citizens.Count)
+                    {
+                        return false;
+                    }
+                    FlareCitizen c = _citizens[number];
+                    FlareTextsMap.Fill(r.Who, c, FlareGame.DistrictName(c.District), citySeed, When());
+                    r.Who.Mood = FlareInviteRules.CardMood(answer.Key, FlareTextsMap.Mood(citySeed, number, Save.Day, c.Persona == FlarePersona.Grumpy));
+                    r.Speaker = "c:" + number;   // (as the city person's posts and replies name them, for the repeat check)
+                    return true;
+                case FlareDmSpeaker.Influencer:
+                    FlareInfluencer inf = _file.Influencer(number);
+                    if (inf == null)
+                    {
+                        return false;
+                    }
+                    r.Who.Name = r.Who.First = answer.Name ?? inf.Handle;
+                    r.Who.Handle = inf.Handle;
+                    r.Who.Age = TextWords.Age(_file.Seed * 17 + number, 21, 40);
+                    r.Who.District = FlareGame.DistrictName(inf.District);
+                    r.Who.Style = TextWords.CitizenStyle(_file.Seed * 17 + number);
+                    r.Who.Mood = FlareInviteRules.CardMood(answer.Key, FlareTextsMap.Mood(_file.Seed * 17, number, Save.Day, false));
+                    r.Who.When = When();
+                    r.Speaker = answer.With;
+                    return true;
+                case FlareDmSpeaker.Friend:
+                case FlareDmSpeaker.Partner:
+                    if (FlareBridges.TextFriend == null || !FlareBridges.TextFriend(number, r.Who, out bool partner))
+                    {
+                        return false;
+                    }
+                    r.Intent = partner ? "partner.dm.answer" : "friend.dm.answer";   // (who they are to the player now, whatever the conversation's key)
+                    r.Speaker = (partner ? "p" : "f") + number;
+                    return true;
+                case FlareDmSpeaker.Official:
+                    r.Use = TextUse.Official;
+                    r.Who.Name = FlareText.OfficialName(FlareRules.Clamp(number, 0, (int)FlareOfficial.Bank));
+                    r.Who.When = When();
+                    r.Speaker = "o:" + number;
+                    return true;
+                case FlareDmSpeaker.Business:
+                    string shop = FlareTextsMap.DmName(answer.With);
+                    r.Who.Name = shop;
+                    r.Who.Style = TextWords.BusinessStyle(citySeed ^ shop.GetHashCode());
+                    r.Who.When = When();
+                    r.Speaker = "b:" + shop;
+                    return true;
+                case FlareDmSpeaker.Tycoon:
+                    string name = FlareTextsMap.DmName(answer.With);
+                    r.Use = TextUse.Rivals;
+                    Tycoon(TycoonVoice(name), name, r);
+                    return true;
+                default:
+                    return false;
             }
         }
 
@@ -212,17 +283,26 @@ namespace RealLifeOverhaul.Flare
                         return null;
                     }
                     FlarePost parent = _file.Post(p.ReplyTo);
-                    string kind = parent != null && parent.Author == FlareAuthor.Player ? FlareTextsMap.PostKind(parent.Source) : null;
-                    string reaction = FlareTextsMap.Reaction((FlareReplyKind)p.Arg, kind);
-                    if (reaction == null)
+                    r.Intent = FlareTextsMap.Reply(parent, (FlareReplyKind)p.Arg, TextData);   // (its words, its kind, or a comment on its kind: the game chose the reply)
+                    if (r.Intent == null)
                     {
                         return null;
                     }
                     r.Use = TextUse.Replies;
                     r.Priority = TextPriority.Soon;
-                    r.Intent = "citizen.reply." + kind;
-                    r.Slots.Set("reaction", reaction);
-                    r.History.Add(new TextSaid(MyName, PostWords(parent)));
+                    if (r.Intent == "citizen.reply.words")
+                    {
+                        r.History.Add(new TextSaid(MyName, parent.Text));
+                    }
+                    else if (r.Intent.StartsWith("citizen.reply.", StringComparison.Ordinal))
+                    {
+                        r.Slots.Set("reaction", FlareTextsMap.Reaction((FlareReplyKind)p.Arg, FlareTextsMap.PostKind(parent.Source)));
+                        r.History.Add(new TextSaid(MyName, PostWords(parent)));
+                    }
+                    else
+                    {
+                        FlareTextsMap.MineSlots(r.Slots, parent, MyName, string.IsNullOrEmpty(parent.District) ? null : FlareGame.DistrictName(parent.District));
+                    }
                     return Use(r, shared);
                 case FlareSource.CityTalk:
                     if (p.Author != FlareAuthor.Citizen || !Citizen(p.Who, r))
@@ -263,8 +343,10 @@ namespace RealLifeOverhaul.Flare
                     if (p.Author == FlareAuthor.Tycoon)
                     {
                         r.Use = TextUse.Rivals;
-                        r.Intent = FlareTextsMap.Tycoon(p.Arg >= FlareLiveRules.TycoonMoveArg ? p.Arg - FlareLiveRules.TycoonMoveArg : -1);
+                        int move = p.Arg >= FlareLiveRules.TycoonMoveArg ? p.Arg - FlareLiveRules.TycoonMoveArg : -1;
+                        r.Intent = FlareTextsMap.Tycoon(move, TextData);
                         Tycoon(p.Who, p.Name, r);
+                        TycoonTarget(move, r.Slots);
                         if (!string.IsNullOrEmpty(p.District))
                         {
                             r.Slots.Set("district", FlareGame.DistrictName(p.District));
@@ -295,7 +377,9 @@ namespace RealLifeOverhaul.Flare
                 return null;
             }
             r.Priority = TextPriority.Soon;
-            r.Intent = FlareTextsMap.Answer((FlareAnswer)p.Arg, p.Author);
+            bool typed = FlareTextsMap.AnswersMention((FlareAnswer)p.Arg) && parent.Author == FlareAuthor.Player && !string.IsNullOrEmpty(parent.Text);
+            r.Intent = (typed ? FlareTextsMap.Said(p.Author, TextData) : null) ?? FlareTextsMap.Answer((FlareAnswer)p.Arg, p.Author);   // (data v3: what was typed, answered)
+            typed &= r.Intent != null && r.Intent.EndsWith(".said", StringComparison.Ordinal);
             if (r.Intent == null)
             {
                 return null;
@@ -320,11 +404,22 @@ namespace RealLifeOverhaul.Flare
                     r.Who.When = When();
                     r.Speaker = "b:" + p.Name;
                     return string.IsNullOrEmpty(p.Name) ? null : Use(r, shared);
+                case FlareAuthor.Brand:
+                    if (!typed || string.IsNullOrEmpty(p.Name))
+                    {
+                        return null;   // (a brand answers in words of its own only what was typed to it: business.answer.said)
+                    }
+                    r.Use = TextUse.Posts;
+                    r.Who.Name = p.Name;
+                    r.Who.Style = TextWords.BusinessStyle(FlareLiveRules.CitySeed(_file) ^ p.Name.GetHashCode());
+                    r.Who.When = When();
+                    r.Speaker = "b:" + p.Name;
+                    return Use(r, shared);
                 case FlareAuthor.Tycoon:
                     r.Use = TextUse.Rivals;
                     Tycoon(p.Who, p.Name, r);
                     r.Slots.Set("shop", parent.Name);
-                    return p.Who < 0 || string.IsNullOrEmpty(parent.Name) ? null : Use(r, shared);
+                    return p.Who < 0 || (!typed && string.IsNullOrEmpty(parent.Name)) ? null : Use(r, shared);
                 default:
                     return null;
             }
@@ -358,6 +453,23 @@ namespace RealLifeOverhaul.Flare
             r.Who.Style = TextsMapRules.TycoonStyles[v];
             r.Who.When = When();
             r.Speaker = "t:" + v;
+        }
+
+        // A rival's stake or bid names the player's listed company; a suit, the player (data v3's tycoon.stake, .bid, .suit).
+        private void TycoonTarget(int move, TextSlots slots)
+        {
+            if (move == 3 || move == 4)
+            {
+                string listed = FlareBridges.TextListed != null ? FlareBridges.TextListed() : null;
+                if (!string.IsNullOrEmpty(listed))
+                {
+                    slots.Set("target", listed);   // (none: the card is not built, the written line)
+                }
+            }
+            else if (move == 6)
+            {
+                slots.Set("player", MyName);
+            }
         }
 
         // A post's author as a thread line names them.

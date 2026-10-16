@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Texts
         public string Exe;           // llama-server.exe, full path
         public int Rank;             // the better model the higher (the full pack 2, Lite 1)
         public int Version;
+        public int Data = TextIntents.DataV2;   // the training data its model learnt ("data=3"); a pack.txt without the line is v2's
         public long ModelBytes;
     }
 
@@ -29,8 +30,11 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt (name, model, exe, rank, version, each
-    /// "key=value" on a line; paths relative to the folder). The mod looks, once a session:
+    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt (name, model, exe, rank, version and
+    /// data, each "key=value" on a line; paths relative to the folder). Data is the version of the training data its model
+    /// learnt: 2 for the first packs (no data line), 3 for the retrained ones; the mod asks a pack only the intents of its
+    /// data version or older (TextIntent.Data, TextsHub.Data), so a v2 pack is never asked what it never learnt. The mod
+    /// looks, once a session:
     ///
     ///   the fixed folder   "RLO Texts" in the game's own data folder (LocalLow/Hovgaard Games/Big Ambitions), a pack
     ///                      in it or in any folder under it (a pack put there by hand)
@@ -178,6 +182,7 @@ namespace RealLifeOverhaul.Texts
                     case "exe": pack.Exe = Path.GetFullPath(Path.Combine(folder, value)); break;
                     case "rank": int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pack.Rank); break;
                     case "version": int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pack.Version); break;
+                    case "data": pack.Data = int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int data) && data >= TextIntents.DataV2 ? data : TextIntents.DataV2; break;
                 }
             }
             if (pack.Model == null || pack.Exe == null || !Inside(folder, pack.Model) || !Inside(folder, pack.Exe) || pack.Rank < 1 || pack.Rank > RankMost

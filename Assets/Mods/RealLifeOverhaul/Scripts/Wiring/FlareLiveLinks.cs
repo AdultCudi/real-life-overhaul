@@ -50,7 +50,9 @@ namespace RealLifeOverhaul
             private static readonly List<FlareStory> Stories = new List<FlareStory>(4);
             private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(16);
             private static readonly List<BuildingRegistration> Shops = new List<BuildingRegistration>(16);
-            private static readonly GuideMark EventMark = new GuideMark();
+            private static Vector3 _eventAt;   // where Flare's way to a city event points
+            // Flare's way to a city event: nothing else takes it off, so the watch does once that event is over (Core/GameUi/GuideMarkWatch).
+            private static readonly GuideMark EventMark = new GuideMark("Flare's way to a city event").While(EventGoesOn);
 
             internal static void Connect()
             {
@@ -338,7 +340,14 @@ namespace RealLifeOverhaul
                 {
                     return false;
                 }
+                _eventAt = at;
                 return EventMark.Show(at, nameKey != null ? nameKey.GetLocalization() : string.Empty);
+            }
+
+            // The street event Flare's way points to is still on, where it was.
+            private static bool EventGoesOn()
+            {
+                return EventDirector.StreetEvent(out Vector3 at, out string _) && (at - _eventAt).sqrMagnitude < 4f;
             }
 
             // ---------------------------------------------------------------- the paper

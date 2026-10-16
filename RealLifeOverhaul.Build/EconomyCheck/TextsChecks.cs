@@ -205,6 +205,28 @@ internal static partial class Program
         var problems = new List<string>();
         var mapped = new List<string>(TextsMapRules.Mapped());
         mapped.AddRange(RealLifeOverhaul.Flare.FlareTextsMap.Mapped());
+        List<string> v3 = RealLifeOverhaul.Flare.FlareTextsMap.Mapped(TextIntents.DataV3);
+        var notV2 = new List<string>();
+        foreach (string key in RealLifeOverhaul.Flare.FlareTextsMap.Mapped())
+        {
+            TextIntent t = TextIntents.Find(key) ?? TextIntents.Find(key, "on") ?? TextIntents.Find(key, "minor");
+            if (t != null && t.Data != TextIntents.DataV2)
+            {
+                notV2.Add(key);   // (a v2 pack's map gives only v2's intents)
+            }
+        }
+        Check(notV2.Count == 0, "texts, pack versions: what a v2 pack is asked maps only to data v2's intents (v3 in it: " + string.Join(", ", notV2) + ")");
+        var v3Missing = new List<string>();
+        foreach (TextIntent t in TextIntents.All)
+        {
+            if (t.Data == TextIntents.DataV3 && !v3.Contains(t.Key) && t.Key != "citizen.comment.biz_rain" && t.Key != "citizen.comment.biz_closed")
+            {
+                v3Missing.Add(t.Key);
+            }
+        }
+        Check(v3Missing.Count == 0, "texts, data v3: every v3 intent the game has a situation for is one Flare's map gives a v3 pack (" + v3.Count + " mapped; unused: " + string.Join(", ", v3Missing)
+                                    + "; a rainy day's and a closed day's shop posts are not made by the game)");
+        mapped.AddRange(v3);
         foreach (string key in mapped)
         {
             if (TextIntents.Find(key) == null && TextIntents.Find(key, "on") == null && TextIntents.Find(key, "minor") == null)
@@ -271,6 +293,48 @@ internal static partial class Program
         Check(TextCheck.JudgeShared("Lovely to see it open.", reply) == TextVerdict.Ok && TextCheck.JudgeShared("Lovely - open now.", reply) == TextVerdict.Dash
               && TextCheck.JudgeShared(": Lovely", reply) == TextVerdict.Empty && TextCheck.JudgeShared("Lovely", null) == TextVerdict.Empty,
             "texts, the checker: a guest checks the host's words again on arrival (untidy, dashes or an unknown intent refused)");
+        TextsCheckerMachine();
+    }
+
+    // The speaker never calls itself an AI, a bot, an assistant or a language model (the 2B model of data v3 wrote "I'd blush,
+    // but I'm an AI, so no."), first person only: the city's AI labs and the people who work in them pass.
+    private static void TextsCheckerMachine()
+    {
+        TextIntent dm = TextIntents.Find("citizen.dm.answer");
+        var who = new TextWho { First = "Dana", Handle = "@dana", Age = 30, District = "Midtown", Mood = "fine", Style = "warm", When = "Monday 10:00" };
+        var sheet = new TextSheet();
+        TextIntents.Build(dm, who, new TextSlots(), new List<TextSaid> { new TextSaid("Alex", "you look cute today") }, sheet);
+        string card = TextCard.Card(sheet);
+        var machine = new List<string>();
+        foreach (string w in new[] { "I'd blush, but I'm an AI, so no.", "As an AI, I don't really drink coffee.", "I am a bot, sorry.", "im just a chatbot lol", "Sorry, I\u2019m an AI language model.",
+                     "I'm a large language model, I don't go out.", "Honestly I'm only an assistant here.", "AS A BOT I cannot say.", "I am an A.I. so no dates." })
+        {
+            if (TextCheck.Judge(w, dm, sheet, card, null) != TextVerdict.Machine)
+            {
+                machine.Add(w);
+            }
+        }
+        Check(machine.Count == 0, "texts, the checker: the speaker calling itself an AI, a bot, a chatbot, an assistant or a language model is refused, any case (let through: " + string.Join(" | ", machine) + ")");
+        var person = new List<string>();
+        foreach (string w in new[] { "The new AI lab in Midtown is hiring again.", "As an AI researcher I find that funny.", "As AI gets better, the jobs change.", "I'm an assistant at the clinic, so mornings are busy.",
+                     "Robots and AI everywhere, and still no flying cars.", "I'm aiming for Friday.", "My boss is a bot, I swear." })
+        {
+            if (TextCheck.Judge(w, dm, sheet, card, null) != TextVerdict.Ok)
+            {
+                person.Add(w);
+            }
+        }
+        Check(person.Count == 0, "texts, the checker: talk of AI and of the people who work with it passes (refused: " + string.Join(" | ", person) + ")");
+        TextIntent tech = TextIntents.Find("citizen.comment.niche_tech");
+        var post = new TextSheet();
+        TextIntents.Build(tech, new TextWho { First = "Omar", Handle = "@omar", Age = 40, District = "Midtown", Style = "dry", When = "Monday 10:00" }, new TextSlots().Set("other", "Rosa"),
+            new List<TextSaid> { new TextSaid("@rosa", "The city's AI lab launched a chatbot for the buses today.") }, post);
+        Check(TextCheck.Judge("Another chatbot, just what the buses needed.", tech, post, TextCard.Card(post), null) == TextVerdict.Ok
+              && TextCheck.Judge("Another chatbot, just what the buses needed.", dm, sheet, card, null) == TextVerdict.Machine
+              && TextCheck.Judge("I'm a chatbot, ask the lab.", tech, post, TextCard.Card(post), null) == TextVerdict.Machine,
+            "texts, the checker: 'chatbot' and 'language model' pass on a card about them (a post about the city's AI lab), never a speaker calling itself one");
+        Check(TextCheck.JudgeShared("I'd blush, but I'm an AI, so no.", dm) == TextVerdict.Machine && TextCheck.JudgeShared("The AI lab is hiring.", dm) == TextVerdict.Ok,
+            "texts, the checker: a guest refuses the host's words where the speaker calls itself a machine");
     }
 
     // ---------------------------------------------------------------- the queue
@@ -454,6 +518,21 @@ internal static partial class Program
 
     private static void TextsHubs()
     {
+        // A v2 pack is never asked a v3 intent: the hub refuses it before any card is built (the written line), and asks it of a v3 pack.
+        var versions = new TextsHub(new TextQueue()) { Runner = new PretendRunner(), Data = TextIntents.DataV2 };
+        bool v2Refuses = !versions.Ask(TextsAskOf("dm", "friend.dm.answer", null, w => { }), 0) && versions.Ask(TextsAskOf("crash", "friend.crash", null, w => { }), 0);
+        versions.Data = TextIntents.DataV3;
+        bool v3Asks = versions.Ask(TextsAskOf("dm", "friend.dm.answer", null, w => { }), 0) && versions.Ask(TextsAskOf("crash2", "friend.crash", null, w => { }), 0);
+        int v3Intents = 0;
+        foreach (TextIntent t in TextIntents.All)
+        {
+            v3Intents += t.Data == TextIntents.DataV3 ? 1 : 0;
+        }
+        Check(v2Refuses && v3Asks && v3Intents == 60,
+            "texts, pack versions: a v2 pack is asked only v2's intents, a v3 pack v3's and v2's (" + v3Intents + " intents of data v3, " + TextIntents.All.Count + " in all)");
+        string director = TextsSource("Texts/TextsDirector.cs");
+        Check(director.Contains("Hub.Data = _pack.Data;"), "texts, pack versions: the hub is told the running pack's data version when it starts");
+
         var q = new TextQueue();
         var hub = new TextsHub(q) { Runner = new PretendRunner() };
         string got = "(none)";
@@ -617,6 +696,13 @@ internal static partial class Program
             List<TextPack> found = TextPacks.Find(new[] { root, lite, null, System.IO.Path.Combine(root, "nowhere") });
             Check(found.Count == 2 && found[0].Name == "RLO Texts" && found[1].Name == "RLO Texts Lite" && found[0].ModelBytes == 5 && found[0].Exe.EndsWith("llama-server.exe", StringComparison.Ordinal),
                 "texts, packs: packs are found in a folder of packs or by their own folder, once each, the best (the full pack) first; a pack whose model is missing is no pack");
+            // The data version: a pack.txt without the line is v2's; "data=3" a retrained pack's; anything unreadable v2's.
+            File.WriteAllText(System.IO.Path.Combine(lite, TextPacks.File), "name=RLO Texts Lite\nmodel=model/b.gguf\nexe=runtime/llama-server.exe\nrank=1\nversion=4\ndata=3\n");
+            TextPack v3 = TextPacks.Read(lite);
+            File.WriteAllText(System.IO.Path.Combine(lite, TextPacks.File), "name=RLO Texts Lite\nmodel=model/b.gguf\nexe=runtime/llama-server.exe\nrank=1\nversion=4\ndata=three\n");
+            TextPack odd = TextPacks.Read(lite);
+            Check(found[0].Data == TextIntents.DataV2 && found[1].Data == TextIntents.DataV2 && v3 != null && v3.Data == TextIntents.DataV3 && odd != null && odd.Data == TextIntents.DataV2,
+                "texts, pack versions: a pack.txt without a data line is data v2's, 'data=3' a v3 pack's, an unreadable one v2's");
         }
         finally
         {
@@ -992,6 +1078,7 @@ internal static partial class Program
                                                                + " answered; refused: " + hub.Refused + ")");
             Check(!File.Exists(System.IO.Path.Combine(cache, "rlo-head-1.bin")) && Directory.GetFiles(cache, "rlo-head-*.bin").Length == 1,
                 "texts, the runner: a crashed session's head file is gone at the start, and the server keeps one of its own");
+            TextsRunnerV3(lite, q, server);
         }
         Check(Directory.GetFiles(cache, "rlo-head-*.bin").Length == 0, "texts, the runner: the server's head file goes with it (the cache never grows)");
         try
@@ -1002,5 +1089,71 @@ internal static partial class Program
         {
         }
         Check(Process.GetProcessesByName("llama-server").Length == 0 || true, "texts, the runner: the server is ended with the runner");
+    }
+
+    private const int RunnerTries = 4;   // replies asked of each v3 card at most: the 360M model is off now and then, and the checker refuses what is off
+
+    // Data v3's cards through the real runner and the checker, built as the game builds them (evaluate_v3.py forms the same
+    // prompt: common.chatml): a city person answering "you up for a coffee?", a decided yes with its place and time, a
+    // comment under an accident post, a rival's suit. Each answer is printed with the checker's verdict.
+    private static void TextsRunnerV3(TextPack lite, TextQueue q, TextServer server)
+    {
+        if (lite.Data < TextIntents.DataV3)
+        {
+            Console.WriteLine("SKIPPED: texts, the runner, data v3: the Lite pack on this machine is data v" + lite.Data + " (" + lite.Model + "); the new cards are checked with a v3 pack (data=3 in its pack.txt).");
+            return;
+        }
+        var dana = new TextWho { First = "Dana", Name = "Dana Reyes", Handle = "@dana_reyes12", Age = 31, District = "Midtown", Mood = "in a good mood", Style = "warm", When = "Saturday 11:10" };
+        var omar = new TextWho { First = "Omar", Name = "Omar Hale", Handle = "@omar_hale", Age = 44, District = "Hell's Kitchen", Style = "dry", When = "Monday 09:40" };
+        var karen = new TextWho { Name = "Space Karen", Job = RealLifeOverhaul.Flare.FlareTextsMap.TycoonCompanies[0], Style = TextsMapRules.TycoonStyles[0], When = "Tuesday 10:15" };
+        var cards = new List<(string what, string intent, TextWho who, TextSlots slots, TextSaid[] history)>
+        {
+            ("a city person answers \"you up for a coffee?\"", "citizen.dm.answer", dana, new TextSlots(), new[] { new TextSaid("Alex", "you up for a coffee?") }),
+            ("a decided yes with its place and time", "citizen.dm.invite_yes", dana, new TextSlots().Set("outing", "coffee").Set("place", "Bean There").Set("time", "Saturday 15:00"),
+                new[] { new TextSaid("Alex", "you up for a coffee?") }),
+            ("a comment under an accident post", "citizen.comment.accident", omar, new TextSlots().Set("other", "Priya"),
+                new[] { new TextSaid("@priya_nyc", "Another accident at the junction on 5th Ave this morning. Drive carefully, everyone.") }),
+            ("a rival's suit", "tycoon.suit", karen, new TextSlots().Set("player", "Alex"), new TextSaid[0])
+        };
+        int passed = 0;
+        var refused = new List<string>();
+        q.SetBudget(120, TextQueue.BackgroundPerMinute);   // (the check asks more a minute than the game's budget lets the game ask)
+        foreach (var c in cards)
+        {
+            TextIntent intent = TextIntents.Find(c.intent);
+            var sheet = new TextSheet();
+            if (intent == null || !TextIntents.Build(intent, c.who, c.slots, c.history, sheet))
+            {
+                refused.Add(c.intent + ": not built");
+                continue;
+            }
+            string card = TextCard.Card(sheet), prompt = TextCard.ChatMl(sheet);
+            for (int t = 0; t < RunnerTries; t++)
+            {
+                var job = new TextJob { Key = "v3:" + c.intent + ":" + t, Prompt = prompt, Priority = TextPriority.Now, Deadline = TextClock.Now + 30 };
+                if (!q.Add(job, TextClock.Now))
+                {
+                    refused.Add(c.intent + ": not queued");
+                    break;
+                }
+                server.Nudge();
+                var each = Stopwatch.StartNew();
+                while (job.State != TextJobState.Written && job.State != TextJobState.Missed && each.Elapsed.TotalSeconds < 35)
+                {
+                    System.Threading.Thread.Sleep(20);
+                }
+                string words = TextCheck.Tidy(job.Raw);
+                TextVerdict verdict = job.State == TextJobState.Written ? TextCheck.Judge(words, intent, sheet, card, null) : TextVerdict.Empty;
+                Console.WriteLine("  texts, the runner, v3 (" + c.what + "): \"" + words + "\" in " + each.Elapsed.TotalSeconds.ToString("0.00") + " s: " + verdict);
+                if (verdict == TextVerdict.Ok)
+                {
+                    passed++;
+                    break;
+                }
+                refused.Add(c.intent + " " + verdict);
+            }
+        }
+        Check(passed == cards.Count, "texts, the runner, data v3: the new cards (an answer to a typed message, a decided yes, a comment, a rival's suit) go through the v3 Lite model and pass the checker ("
+                                     + passed + " of " + cards.Count + " within " + RunnerTries + " tries; refused on the way: " + (refused.Count > 0 ? string.Join(", ", refused) : "none") + ")");
     }
 }

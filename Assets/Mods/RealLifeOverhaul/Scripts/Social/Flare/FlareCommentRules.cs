@@ -281,6 +281,66 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A number for what was asked already, by post and slot (this file's posts).</summary>
         public static long Asked(int postId, int slot) => (long)postId << 4 | (uint)(slot & 15);
 
+        // ---------------------------------------------------------------- answers in a thread (data v3)
+
+        public const int EarlierShare = 350;     // thousandths: a written comment after the first answers the one before it (data v3's comments; the training's share)
+        public const int AuthorAnswers = 600;    // thousandths: a city person answers the player's typed reply under their own post this often
+        public const int AccountAnswers = 450;   // ...an account (an official one, a business, a brand, a rival) under its own post
+        public const int AuthorLeast = 12;       // game minutes after the reply a person's answer comes at the earliest...
+        public const int AuthorSpread = 80;      // ...and within this many more
+        public const int AccountLeast = 30;      // game minutes: an account answers within half an hour to two hours, as it answers a mention
+        public const int AccountSpread = 90;
+        private const int SaltEarlier = 850, SaltAnswer = 851, SaltAnswerAt = 852;
+        private const int AnswerBase = -(1 << 28);   // the numbers answers are shown under: below the friends' replies, above the comments' (IsDisplay stays false)
+
+        /// <summary>
+        /// Whether a written comment answers the one before it under the same post (data v3 comments only: the caller asks
+        /// this for a citizen.comment.* intent). From the post's comment seed, so the same on every machine.
+        /// </summary>
+        public static bool AnswersEarlier(FlarePost p, int citySeed, int slot)
+        {
+            return slot >= 1 && FlareRules.Roll(Seed(p, citySeed), slot, SaltEarlier) % 1000 < EarlierShare;
+        }
+
+        /// <summary>
+        /// Whether the author of a post answers the player's typed reply under it, and when (game minutes): a city person
+        /// under their own post on a topic the training's answers know (FlareTextsMap.AnswerTopic) <see cref="AuthorAnswers"/>
+        /// times in a thousand, <see cref="AuthorLeast"/> to <see cref="AuthorLeast"/> + <see cref="AuthorSpread"/> minutes
+        /// later; an official account, a city business, a brand or a rival under its own post <see cref="AccountAnswers"/>
+        /// times in a thousand, half an hour to two hours later. Never a reply under a reply, a reply with nothing typed, or
+        /// a post on its way to the host. From the reply's own seed and number: the same after a load. Data v3 only (its
+        /// answers have no written line: an answer the model did not word in time is not shown).
+        /// </summary>
+        public static bool AuthorAnswer(FlarePost reply, FlarePost parent, out long at)
+        {
+            at = 0;
+            if (reply == null || parent == null || reply.Author != FlareAuthor.Player || reply.Source != FlareSource.Reply || reply.ReplyTo != parent.Id
+                || string.IsNullOrEmpty(reply.Text) || parent.ReplyTo >= 0 || parent.Pending || reply.Pending)
+            {
+                return false;
+            }
+            bool person = parent.Author == FlareAuthor.Citizen && FlareTextsMap.AnswerTopic(parent) != null;
+            bool account = parent.Author == FlareAuthor.Official && parent.Source == FlareSource.Official
+                           || (parent.Author == FlareAuthor.Business || parent.Author == FlareAuthor.Tycoon) && parent.Source == FlareSource.BusinessPost
+                           || parent.Author == FlareAuthor.Brand && parent.Source == FlareSource.BrandNews;
+            if (!person && !account)
+            {
+                return false;
+            }
+            if (FlareRules.Roll(reply.Seed, reply.Id, SaltAnswer) % 1000 >= (person ? AuthorAnswers : AccountAnswers))
+            {
+                return false;
+            }
+            at = reply.At + (person ? AuthorLeast : AccountLeast) + FlareRules.Roll(reply.Seed, reply.Id, SaltAnswerAt) % (person ? AuthorSpread : AccountSpread);
+            return true;
+        }
+
+        /// <summary>The key an answer's words are kept by: the player's reply's number ("fa:31").</summary>
+        public static string AnswerKey(FlarePost reply) => "fa:" + reply.Id;
+
+        /// <summary>The number an answer is shown under (made for display, never a post of the file's), one for each reply.</summary>
+        public static int AnswerDisplayId(int replyId) => AnswerBase - replyId;
+
         // One of the city's people, not the author and not one already in the thread.
         private static int Citizen(FlarePost p, int seed, int slot, int citizens, List<FlareComment> taken)
         {

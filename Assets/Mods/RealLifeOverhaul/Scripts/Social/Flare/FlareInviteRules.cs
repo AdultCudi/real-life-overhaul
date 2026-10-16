@@ -741,7 +741,7 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// The answer's values as a message keeps them ("name=value", separated by '~'): what its written line shows (the
-        /// outing, the place and the time in the game's language), the card's (t_outing, t_time), and for a yes what the
+        /// outing, the place and the time in the game's language), the card's (t_outing, t_time, and t_rude for a grudge), and for a yes what the
         /// booking needs (the kind, the minute, the street and number, the person of the social life or -1 for somebody new,
         /// and the city person's name, sex and age). Built once per answer.
         /// </summary>
@@ -756,6 +756,10 @@ namespace RealLifeOverhaul.Flare
                 Pair(b, "place", a.Place);
                 Pair(b, "time", a.When);
                 Pair(b, "t_time", a.CardWhen);
+            }
+            if (why == FlareInviteWhy.Dislikes && a.Dislikes)
+            {
+                Pair(b, "t_rude", "1");   // (they remember something the player did: the card's reason, CardReason)
             }
             if (answer == FlareInviteAnswer.Yes)
             {
@@ -911,68 +915,79 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The intent of an answer by its key and who answers: citizen.dm.invite_yes, _maybe or _no (an influencer's influencer.dm.invite_*); null for another key.</summary>
-        public static string Intent(string key, bool influencer)
+        /// <summary>The intent of an answer by its key: citizen.dm.invite_yes, _maybe or _no (an influencer is worded as a city person: data v3 has no influencer's); null for another key.</summary>
+        public static string Intent(string key)
         {
             if (!AnswerOf(key, out FlareInviteAnswer a))
             {
                 return null;
             }
-            return (influencer ? "influencer" : "citizen") + ".dm.invite_" + (a == FlareInviteAnswer.Yes ? "yes" : a == FlareInviteAnswer.No ? "no" : "maybe");
+            return "citizen.dm.invite_" + (a == FlareInviteAnswer.Yes ? "yes" : a == FlareInviteAnswer.No ? "no" : "maybe");
         }
 
         /// <summary>
-        /// The intent of an answer if the model in use knows it (the intents are registered in TextIntents once the retrained
-        /// pack is there); null otherwise, and the answer keeps its written line. An influencer whose own intents are missing
-        /// is worded with a city person's.
+        /// The intent of an answer if the pack in use is trained on it (data v3 and later); null otherwise, and the answer keeps
+        /// its written line. A maybe because a plan with them is on already keeps its written line too: it names that plan's
+        /// place and time, which the maybe card has no line for.
         /// </summary>
-        public static string TrainedIntent(string key, bool influencer)
+        public static string TrainedIntent(string key, int data)
         {
-            string intent = Intent(key, influencer);
-            if (intent != null && TextIntents.Find(intent) == null && influencer)
+            return data >= TextIntents.DataV3 && key != KeyStart + "maybe_plan" ? Intent(key) : null;
+        }
+
+        // The reasons as data v3 learnt them (defs_v3.REASONS), word for word.
+        public const string ReasonBarely = "they barely know you", ReasonBusy = "they are busy at the moment";
+        public const string ReasonTaken = "they are seeing someone", ReasonNot = "they are not interested", ReasonRude = "you were rude to them before", ReasonTooBusy = "they are too busy";
+
+        /// <summary>
+        /// The reason on a maybe's or a no's card, by the answer's key (and, for a no because they do not think well of the
+        /// player, whether they remember something the player did: the message's data says so): a maybe because they hardly
+        /// know the player, need to know them better or are an influencer is "they barely know you"; at night, busy or with
+        /// nowhere near "they are busy at the moment"; a no for somebody else "they are seeing someone", for a rough day
+        /// "they are too busy", for a grudge "you were rude to them before", for a low name or a plain no "they are not
+        /// interested". Null for a yes, the plan on already, or another key.
+        /// </summary>
+        public static string CardReason(string key, string data)
+        {
+            if (key == null || !key.StartsWith(KeyStart, StringComparison.Ordinal))
             {
-                intent = Intent(key, false);
+                return null;
             }
-            return intent != null && TextIntents.Find(intent) != null ? intent : null;
+            switch (key.Substring(KeyStart.Length))
+            {
+                case "maybe_stranger":
+                case "maybe_later":
+                case "maybe_influencer": return ReasonBarely;
+                case "maybe_night":
+                case "maybe_busy":
+                case "maybe_nowhere": return ReasonBusy;
+                case "no_taken": return ReasonTaken;
+                case "no_mood": return ReasonTooBusy;
+                case "no_dislikes": return Value(data, "t_rude") == "1" ? ReasonRude : ReasonNot;
+                case "no_pass": return ReasonNot;
+                default: return null;
+            }
         }
 
         /// <summary>
-        /// The cards these answers will be asked with (a city person's face, as citizen.dm.chat; facts and must for a yes as
-        /// agreed). Waiting for data v3 (the data agent's citizen.dm.invite_* and influencer.dm.invite_*): once its generator
-        /// has them, these lines are made to match its cards byte for byte (fixtures in TextsCards.jsonl) and registered with
-        /// TextIntents; until then nothing asks the model for them and every answer is its written line.
+        /// A city person's mood on an invitation's card: their mood of the day, except that a yes is never given on a low
+        /// day (it reads "fine" then: the training's yes has fine, a good mood or a great day) and a no for a rough day says
+        /// so ("having a rough day").
         /// </summary>
-        public static readonly TextIntent[] Cards =
+        public static string CardMood(string key, string dayMood)
         {
-            new TextIntent("citizen.dm.invite_yes", null, "citizen", "flare_reply", 160, TextFace.CitizenDm, TextUse.People,
-                "{first} says yes to your invitation: {outing} at {place}, {time}", new[] { "outing: {outing}", "place: {place}", "time: {time}" },
-                "flare dm reply", new[] { "{place}", "{time}" }),
-            new TextIntent("citizen.dm.invite_maybe", null, "citizen", "flare_reply", 160, TextFace.CitizenDm, TextUse.People,
-                "{first} answers your invitation to {outing}: maybe another time", new[] { "outing: {outing}" }, "flare dm reply", null),
-            new TextIntent("citizen.dm.invite_no", null, "citizen", "flare_reply", 160, TextFace.CitizenDm, TextUse.People,
-                "{first} answers your invitation to {outing}: no", new[] { "outing: {outing}" }, "flare dm reply", null),
-            new TextIntent("influencer.dm.invite_maybe", null, "citizen", "flare_reply", 160, TextFace.CitizenDm, TextUse.People,
-                "{first} is an influencer and answers your invitation to {outing}: maybe another time", new[] { "outing: {outing}" }, "flare dm reply", null),
-            new TextIntent("influencer.dm.invite_no", null, "citizen", "flare_reply", 160, TextFace.CitizenDm, TextUse.People,
-                "{first} is an influencer and answers your invitation to {outing}: no", new[] { "outing: {outing}" }, "flare dm reply", null)
-        };
-
-        /// <summary>The card of an answer by its intent's name (registered or still waiting), or null.</summary>
-        public static TextIntent Card(string intent)
-        {
-            TextIntent t = intent != null ? TextIntents.Find(intent) : null;
-            for (int i = 0; t == null && intent != null && i < Cards.Length; i++)
+            if (AnswerOf(key, out FlareInviteAnswer a) && a == FlareInviteAnswer.Yes)
             {
-                t = Cards[i].Key == intent ? Cards[i] : null;
+                return dayMood == TextWords.Moods[0] || dayMood == TextWords.Moods[1] ? TextWords.Moods[2] : dayMood;
             }
-            return t;
+            return key == KeyStart + "no_mood" ? TextWords.Moods[0] : dayMood;
         }
 
-        /// <summary>The card's values of an answer from its message's data: the outing, and for a yes the place and the time.</summary>
+        /// <summary>The card's values of an answer from its message's data: the outing, for a yes the place and the time, for a maybe or a no the reason.</summary>
         public static void Slots(FlareDm m, TextSlots slots)
         {
             slots.Set("outing", Value(m.Data, "t_outing"));
-            string place = Value(m.Data, "place"), when = Value(m.Data, "t_time");
+            string place = Value(m.Data, "place"), when = Value(m.Data, "t_time"), reason = CardReason(m.Key, m.Data);
             if (!string.IsNullOrEmpty(place))
             {
                 slots.Set("place", place);
@@ -980,6 +995,10 @@ namespace RealLifeOverhaul.Flare
             if (!string.IsNullOrEmpty(when))
             {
                 slots.Set("time", when);
+            }
+            if (reason != null)
+            {
+                slots.Set("reason", reason);
             }
         }
     }

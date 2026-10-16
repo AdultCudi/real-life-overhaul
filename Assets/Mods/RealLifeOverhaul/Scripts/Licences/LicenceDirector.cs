@@ -99,6 +99,7 @@ namespace RealLifeOverhaul
             _desk = new SchoolDesk(this, _screens, Logger);
             _car = new TestCar(this, Logger);
             _practical = new PracticalTest(_car, Cast, transform, Logger, _screens);
+            _practical.KeptBy(this);
             _desks = new LicenceDesks(transform, Logger);
             _enforcement = new DrivingEnforcement(this, Logger, IsSchoolCar);
             _enforcement.Attach();

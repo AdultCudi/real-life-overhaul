@@ -69,7 +69,7 @@ namespace RealLifeOverhaul
         private int _promptState;       // 1 hire, 2 return, 3 browse
         private int _worldState;        // 0 not up, 1 up, 2 refused by the game's own panel
         private int _keyFrame = -1;
-        private readonly GuideMark _mark = new GuideMark();
+        private readonly GuideMark _mark = new GuideMark("bikes and scooters");
 
         // the marker that points at a two-wheeler just handed over or asked for
         private float _pointUntil;         // unscaled time; 0 = not pointing (the only thing the idle frame tests)
@@ -91,6 +91,12 @@ namespace RealLifeOverhaul
             _onUse = UseClicked;
             _onPick = Picked;
             _onListClosed = ListClosed;
+        }
+
+        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        internal void KeptBy(Behaviour host)
+        {
+            _mark.Keep(host);
         }
 
         /// <summary>

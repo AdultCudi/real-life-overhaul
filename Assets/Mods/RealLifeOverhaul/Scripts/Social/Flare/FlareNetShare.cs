@@ -384,9 +384,14 @@ namespace RealLifeOverhaul.Flare
             {
                 return false;
             }
+            int who = I(f, 6, -1);
+            if (author == (int)FlareAuthor.Citizen && (who < 0 || who >= FlareLiveRules.Citizens))
+            {
+                return false;   // one of the city's people this version does not have: left out, as any line it does not understand
+            }
             p = new FlarePost
             {
-                NetId = I(f, 1), Day = I(f, 2), Hour = FlareRules.Clamp(I(f, 3), 0, 23), Minute = FlareRules.Clamp(I(f, 4), 0, 59), Author = (FlareAuthor)author, Who = I(f, 6, -1),
+                NetId = I(f, 1), Day = I(f, 2), Hour = FlareRules.Clamp(I(f, 3), 0, 23), Minute = FlareRules.Clamp(I(f, 4), 0, 59), Author = (FlareAuthor)author, Who = who,
                 Source = (FlareSource)source, Tone = (FlareTone)tone, Arg = I(f, 9), Place = U(f, 10), Name = U(f, 11), District = U(f, 12), Topic = U(f, 13),
                 Text = FlareLiveRules.Clip(U(f, 14)), Pic = U(f, 15), AuthorId = Clip(U(f, 17), 64), AuthorName = Clip(U(f, 18), NameMost),
                 Likes = Math.Max(0, I(f, 19)), Replies = Math.Max(0, I(f, 20)), Reposts = Math.Max(0, I(f, 21)), PlayerLikes = Math.Max(0, I(f, 22)), Reach = Math.Max(0, I(f, 23)),

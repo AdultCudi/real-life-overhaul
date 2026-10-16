@@ -275,6 +275,7 @@ internal static partial class Program
             "Flare comments map: another player's post draws strangers' replies (citizen.reply.*); an influencer's by their niche; a friend's by its topic");
         var all = new List<string>();
         FlareTextsMap.CommentIntents(all);
+        FlareTextsMap.CommentIntents(all, TextIntents.DataV3);
         var unknown = new List<string>();
         foreach (string key in all)
         {
@@ -297,6 +298,7 @@ internal static partial class Program
         string path = System.IO.Path.Combine(TextsBuildFolder(), "EconomyCheck", "TextsCards.jsonl");
         var wanted = new List<string>();
         FlareTextsMap.CommentIntents(wanted);
+        FlareTextsMap.CommentIntents(wanted, TextIntents.DataV3);   // (data v3's comments: every kind of post, and the answers to an earlier comment)
         var covered = new HashSet<string>(StringComparer.Ordinal);
         int rows = 0, same = 0;
         var wrong = new List<string>();
@@ -331,6 +333,27 @@ internal static partial class Program
                 Words = history.GetArrayLength() > 0 ? history[0][1].GetString() : null,
                 District = Slot(slots, "district"), Home = Slot(slots, "home"), Tycoon = Slot(slots, "tycoon"), Company = Slot(slots, "company"), Reaction = Slot(slots, "reaction")
             };
+            if (FlareTextsMap.AnswersComments(intent))
+            {
+                // data v3: a news kind has the post in news and facts and only an earlier comment in history; the rest the post first
+                string kind = intent.Substring("citizen.comment.".Length);
+                bool newsKind = kind != "words" && kind != "reply" && kind != "ledger_headline" && Array.IndexOf(TextIntents.ThreadKinds, kind) < 0;
+                int earlierAt = newsKind ? 0 : 1;
+                post.Shop = Slot(slots, "shop");
+                post.Stars = Slot(slots, "stars");
+                post.Target = Slot(slots, "target");
+                post.Player = Slot(slots, "player");
+                if (newsKind)
+                {
+                    post.Handle = post.Words = null;
+                }
+                if (history.GetArrayLength() > earlierAt)
+                {
+                    post.EarlierFirst = Slot(slots, "other2");
+                    post.EarlierHandle = history[earlierAt][0].GetString();
+                    post.EarlierWords = history[earlierAt][1].GetString();
+                }
+            }
             var sheet = new TextSheet();
             bool built = FlareTextsMap.CommentCard(request, intent, post) && request.Use == TextUse.Replies
                          && TextIntents.Build(TextIntents.Find(request.Intent), request.Who, request.Slots, request.History, sheet);

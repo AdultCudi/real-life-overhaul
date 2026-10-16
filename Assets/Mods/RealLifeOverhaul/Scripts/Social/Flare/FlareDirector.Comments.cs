@@ -10,7 +10,9 @@ namespace RealLifeOverhaul.Flare
     /// (with the other words of Flare), when the feed is shown, and when a thread is opened (that post first). They are
     /// kept by the comment's key, so a load shows the same, and a comment shows only once its words are there and its time
     /// has come, so it never changes in front of the player. In a Going Public session the host asks for the shared feed's
-    /// comments and sends them (Texts/TextsShare); a guest only shows what came.
+    /// comments and sends them (Texts/TextsShare); a guest only shows what came. With a v3 pack every kind of post has
+    /// comments (FlareTextsMap.Comment), and now and then a comment answers the one before it (FlareCommentRules.AnswersEarlier):
+    /// it is asked once that one's words are here (or once it is known to have none, then it answers the post alone).
     /// COST: on those events, one walk over the posts (a few hundred) with a plan of at most eight comments for each that
     /// has replies; at most <see cref="CommentsWaitingMost"/> requests waiting at once; nothing per frame.
     /// </summary>
@@ -21,6 +23,7 @@ namespace RealLifeOverhaul.Flare
         public const long CommentsAheadMinutes = 180;      // game minutes ahead of now a post may go up and have its comments asked already
 
         private readonly HashSet<long> _commentsAsked = new HashSet<long>();
+        private readonly HashSet<string> _commentsPending = new HashSet<string>();   // the keys of comments whose request waits
         private readonly List<FlareComment> _commentPlan = new List<FlareComment>(FlareCommentRules.WrittenMost);
         private int _commentsWaiting;
         private long _commentsLooked = -1;
@@ -80,6 +83,7 @@ namespace RealLifeOverhaul.Flare
         private void CommentsForget()
         {
             _commentsAsked.Clear();
+            _commentsPending.Clear();
             _commentsLooked = -1;
         }
 
@@ -99,6 +103,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
+            int citySeed = FlareLiveRules.CitySeed(_file);
             for (int i = 0; i < _commentPlan.Count && _commentsWaiting < CommentsWaitingMost; i++)
             {
                 FlareComment c = _commentPlan[i];
@@ -107,13 +112,22 @@ namespace RealLifeOverhaul.Flare
                 {
                     continue;
                 }
+                string key = FlareCommentRules.Key(p, c), earlier = null;
+                if (i > 0 && FlareTextsMap.AnswersComments(intent) && FlareCommentRules.AnswersEarlier(p, citySeed, c.Slot))
+                {
+                    string before = FlareCommentRules.Key(p, _commentPlan[i - 1]);
+                    earlier = FlareBridges.TextKept != null ? FlareBridges.TextKept(before) : null;
+                    if (earlier == null && (_commentsPending.Contains(before) || !_commentsAsked.Contains(FlareCommentRules.Asked(p.Id, _commentPlan[i - 1].Slot))))
+                    {
+                        continue;   // (the comment it answers has no words yet: asked on a later look, once it has them or is known to have none)
+                    }
+                }
                 _commentsAsked.Add(asked);   // (asked once a session: kept words stay, a miss is not asked again until a load)
-                string key = FlareCommentRules.Key(p, c);
                 if (FlareBridges.TextKept != null && FlareBridges.TextKept(key) != null)
                 {
                     continue;
                 }
-                TextRequest r = CommentRequest(p, c, intent, now);
+                TextRequest r = CommentRequest(p, c, intent, now, earlier != null ? _commentPlan[i - 1] : c, earlier);
                 if (r == null)
                 {
                     continue;
@@ -124,12 +138,13 @@ namespace RealLifeOverhaul.Flare
                 if (FlareBridges.TextAsk(r))
                 {
                     _commentsWaiting++;
+                    _commentsPending.Add(key);
                 }
             }
         }
 
-        // A comment's card: the commenter as the speaker, the post it answers; null if a value is missing.
-        private TextRequest CommentRequest(FlarePost p, FlareComment c, string intent, long now)
+        // A comment's card: the commenter as the speaker, the post it answers (and the earlier comment it answers, with words); null if a value is missing.
+        private TextRequest CommentRequest(FlarePost p, FlareComment c, string intent, long now, FlareComment before, string earlier)
         {
             var r = new TextRequest { Priority = TextPriority.Background, Day = (int)(c.At / 1440) };
             string home;
@@ -140,6 +155,13 @@ namespace RealLifeOverhaul.Flare
             r.Speaker = c.Kind + ":" + c.Who;
             FlareCommentPost post = Poster(p);
             post.Home = home;
+            var them = earlier != null ? new TextWho() : null;
+            if (them != null && Commenter(before, them, out _))
+            {
+                post.EarlierFirst = them.First;
+                post.EarlierHandle = them.Handle;
+                post.EarlierWords = earlier;
+            }
             post.Reaction = p.Author == FlareAuthor.Network ? FlareTextsMap.CommentReaction(p, FlareCommentRules.Seed(p, FlareLiveRules.CitySeed(_file)), c.Slot) : null;
             if (!FlareTextsMap.CommentCard(r, intent, post))
             {
@@ -148,7 +170,12 @@ namespace RealLifeOverhaul.Flare
             r.Seconds = System.Math.Max(CommentSeconds, Seconds(c.At - now));
             FlarePost parent = p;
             r.Wanted = () => _file != null && _file.Post(parent.Id) == parent;
-            r.Done = words => _commentsWaiting = System.Math.Max(0, _commentsWaiting - 1);
+            string key = FlareCommentRules.Key(p, c);
+            r.Done = words =>
+            {
+                _commentsWaiting = System.Math.Max(0, _commentsWaiting - 1);
+                _commentsPending.Remove(key);
+            };
             return r;
         }
 
@@ -238,10 +265,25 @@ namespace RealLifeOverhaul.Flare
             }
             post.Words = p.Text ?? WordsFor(p, post.First);   // (what was typed, else the built line: what the reader sees first)
             post.District = string.IsNullOrEmpty(p.District) ? null : FlareGame.DistrictName(p.District);
+            post.Player = MyName;
+            if (p.Author == FlareAuthor.Business || p.Author == FlareAuthor.Brand || p.Source == FlareSource.Review)
+            {
+                post.Shop = p.Name;   // (data v3's news kinds: the business that posted, or the one reviewed)
+            }
+            if (p.Source == FlareSource.Review)
+            {
+                post.Stars = FlareRules.Clamp(p.Arg, 1, 5).ToString();
+            }
+            if (p.Source == FlareSource.Results)
+            {
+                post.Target = p.Name;
+            }
             if (p.Author == FlareAuthor.Tycoon)
             {
                 post.Tycoon = p.Name;
                 post.Company = FlareTextsMap.TycoonCompanies[FlareRules.Clamp(p.Who, 0, FlareTextsMap.TycoonCompanies.Length - 1)];
+                int move = p.Arg - FlareLiveRules.TycoonMoveArg;
+                post.Target = move == 3 || move == 4 ? (FlareBridges.TextListed != null ? FlareBridges.TextListed() : null) : null;   // (a stake or a bid: in the player's listed company)
             }
             return post;
         }
@@ -250,7 +292,7 @@ namespace RealLifeOverhaul.Flare
         private string CommentIntent(FlarePost p)
         {
             FlareInfluencer inf = p.Author == FlareAuthor.Influencer ? _file.Influencer(p.Who) : null;
-            return FlareTextsMap.Comment(p, inf != null ? (int)inf.Niche : -1);
+            return FlareTextsMap.Comment(p, inf != null ? (int)inf.Niche : -1, TextData);
         }
 
         // An influencer's name as their posts show it: a friend's own name if they are one, else the handle without its @.

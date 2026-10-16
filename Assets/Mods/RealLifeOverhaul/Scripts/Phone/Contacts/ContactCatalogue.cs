@@ -19,16 +19,36 @@ namespace RealLifeOverhaul
         public bool Female;         // a person
         public int Age;             // a person: years
         public string LikeGame;     // a logo: one of the game's own contact pictures to use instead when the game has it; null for none
+        public int Seed;            // a person: their look's seed when it is the same in every game (Mom, Alex); 0 for one of each save's own
 
         public static ContactLook Logo(string id, string shape, byte r, byte g, byte b, string likeGame = null)
         {
             return new ContactLook { Id = id, Kind = PictureKind.Logo, Shape = shape, R = r, G = g, B = b, LikeGame = likeGame };
         }
 
-        public static ContactLook Person(string id, bool female, int age)
+        public static ContactLook Person(string id, bool female, int age, int seed = 0)
         {
-            return new ContactLook { Id = id, Kind = PictureKind.Person, Female = female, Age = age };
+            return new ContactLook { Id = id, Kind = PictureKind.Person, Female = female, Age = age, Seed = seed };
         }
+    }
+
+    /// <summary>
+    /// The two people the player's life starts with look the same in every game and every save: Mom a woman of 58, Alex,
+    /// the old friend, a man of 30 (about the player's age at the start; neither follows the player's own sex or age, so
+    /// the face never changes). One look each, used by everything that shows them: the social life's street character
+    /// (Social/SocialCast), the contact's picture with the social life on or off (Phone/Contacts), the wedding's mother
+    /// (Family/FamilyCast) and Flare's pictures, which take the social life's look. The game builds a look from its seed
+    /// alone (AppearanceSetter.RandomizeElements: System.Random of the seed, and the engine's dice set from it for the
+    /// beard's colour), so a constant seed is a constant face. Game-free.
+    /// </summary>
+    public static class FixedLooks
+    {
+        public const int MomSeed = 77171;        // Mom's look (the wedding's mother has always had this one)
+        public const int MomAge = 58;            // years
+        public const bool MomFemale = true;
+        public const int AlexSeed = 52817;       // Alex's look
+        public const int AlexAge = 30;           // years
+        public const bool AlexFemale = false;
     }
 
     /// <summary>
@@ -53,8 +73,8 @@ namespace RealLifeOverhaul
             // The emergency line, the doctor, an old friend and Mom (Phone/PhoneContacts; Mom and Alex are the social life's when it is on)
             ContactLook.Logo("reallife-911", "lawfirm2", 186, 42, 42),
             ContactLook.Person("reallife-doctor", true, 46),
-            ContactLook.Person("reallife-friend", false, 30),
-            ContactLook.Person("reallife-mom", true, 58),
+            ContactLook.Person("reallife-friend", FixedLooks.AlexFemale, FixedLooks.AlexAge, FixedLooks.AlexSeed),
+            ContactLook.Person("reallife-mom", FixedLooks.MomFemale, FixedLooks.MomAge, FixedLooks.MomSeed),
             // Money (Economy/Debt): the collections agency is a firm; the private lender and the adviser are people
             ContactLook.Logo("reallife-collections", "bank2", 128, 40, 52),
             ContactLook.Person("reallife-lender", false, 44),

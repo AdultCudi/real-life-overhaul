@@ -116,6 +116,7 @@ namespace RealLifeOverhaul
             _props = new JobProps(transform);
             Body = new JobBody(_props, Logger);
             _run = new JogRun(Logger);
+            _run.KeptBy(this);
             HomeHealth.Logger = Logger;
             HomeOffers.Logger = Logger;
             HomeFridgeButton.Logger = Logger;

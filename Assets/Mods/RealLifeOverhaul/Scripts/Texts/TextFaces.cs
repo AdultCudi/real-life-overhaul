@@ -8,6 +8,7 @@ namespace RealLifeOverhaul.Texts
         Friend,          // a friend, the partner, a roommate: "Name Surname, 34, nurse, lives in Midtown", their role, traits, mood, style, the player
         Citizen,         // one of the city's people on Flare: "Dana (@dana_nyc), 34, lives in Midtown", a city resident on Flare
         CitizenDm,       // ...answering the player's message: a person on Flare you messaged
+        CitizenDmMood,   // ...the same with their mood (data v3: the mood decides the tone, and a yes, maybe or no to an invitation)
         Mom,             // "Mom, 60, retired", your mother, her mood, style, the player
         InLaws,          // "Dana's parents", your in-laws, style, the player
         Boss,            // "Ms Halloran, your manager at Hudson Logistics", your boss; you work there as a clerk
@@ -50,7 +51,7 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The first lines of a card by its face, as the training generator wrote them (world.sheet_of, world.cit_sheet,
+    /// The first lines of a card by its face, as the training generator wrote them (world.sheet_of, world.cit_sheet, v3's citizen_dm_sheet,
     /// defs_people.mom_sheet, defs_work's boss and lender, defs_flare's official, tycoon, business and Ledger sheets).
     /// Game-free. COST: a few short strings a request.
     /// </summary>
@@ -70,8 +71,10 @@ namespace RealLifeOverhaul.Texts
                     break;
                 case TextFace.Citizen:
                 case TextFace.CitizenDm:
+                case TextFace.CitizenDmMood:
                     s.Who = w.First + " (" + w.Handle + "), " + w.Age + ", lives in " + w.District;
                     s.Role = face == TextFace.Citizen ? "a city resident on Flare" : "a person on Flare you messaged";
+                    s.Mood = face == TextFace.CitizenDmMood ? w.Mood : null;
                     s.Style = w.Style;
                     break;
                 case TextFace.Mom:
