@@ -5,28 +5,36 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// The comments under posts that are not the player's (FlareCommentRules): who writes them and when is the game's, from
-    /// the post's seed; their words are RLO Texts' alone (the owner's rule, 16 Oct 2026: no written comment lines). The
-    /// words are asked early, at the lowest priority, a few at a time: when the city's posts are made and each game hour
-    /// (with the other words of Flare), when the feed is shown, and when a thread is opened (that post first). They are
-    /// kept by the comment's key, so a load shows the same, and a comment shows only once its words are there and its time
-    /// has come, so it never changes in front of the player. In a Going Public session the host asks for the shared feed's
-    /// comments and sends them (Texts/TextsShare); a guest only shows what came. With a v3 pack every kind of post has
-    /// comments (FlareTextsMap.Comment), and now and then a comment answers the one before it (FlareCommentRules.AnswersEarlier):
-    /// it is asked once that one's words are here (or once it is known to have none, then it answers the post alone).
-    /// COST: on those events, one walk over the posts (a few hundred) with a plan of at most eight comments for each that
-    /// has replies; at most <see cref="CommentsWaitingMost"/> requests waiting at once; nothing per frame.
+    /// the post's seed; their words are RLO Texts' alone (the owner's rule, 16 Oct 2026: no written comment lines). Every
+    /// comment a post's count promises is written out, up to FlareCommentRules.WrittenMost, so the words of every one are
+    /// asked ahead, at the lowest priority, a few waiting at once: when the city's posts are made and each game hour (with
+    /// the other words of Flare), when the feed is shown, and again on the director's second while a request has just come
+    /// back (the next one asked at once, so a GPU writes a whole thread long before it is opened). In the walk the comments
+    /// already due come first (newest posts first), then those still to come. When a thread is opened, its due comments
+    /// without words are asked first and ahead of the background (<see cref="CommentThreadSeconds"/>), and the thread is
+    /// written again the moment words come. A request handed back without words frees the comment to be asked again
+    /// (FlareCommentAsks, at most four asks a session). Words are kept by the comment's key, so a load shows the same, and
+    /// a comment shows only once its words are there and its time has come. In a Going Public session the host asks for
+    /// the shared feed's comments and sends them (Texts/TextsShare); a guest only shows what came. With a v3 pack every kind
+    /// of post has comments (FlareTextsMap.Comment), and now and then a comment answers the one before it
+    /// (FlareCommentRules.AnswersEarlier): it is asked once that one's words are here (or once it is known to have none,
+    /// then it answers the post alone).
+    /// COST: on those events, one walk over the posts of the last day (a few dozen) with a plan of at most sixteen comments
+    /// for each that has replies, a dictionary look per comment; at most <see cref="CommentsWaitingMost"/> background
+    /// requests waiting at once; nothing per frame (the second's look is one comparison while nothing came back).
     /// </summary>
     public sealed partial class FlareDirector
     {
-        public const int CommentsWaitingMost = 6;          // comments' requests waiting at once: a share of the background's budget, never all of it
+        public const int CommentsWaitingMost = 8;          // comments' background requests waiting at once: a share of the queue (TextQueue.Most 48), never all of it
         public const double CommentSeconds = 900.0;        // real seconds a comment's words may take at least: a comment waits for its words, nobody waits for it
+        public const double CommentThreadSeconds = 60.0;   // ...the open thread's due comments: asked ahead of the background, past the ahead-only notice (TextSpeed.AheadSeconds 30)
         public const long CommentsAheadMinutes = 180;      // game minutes ahead of now a post may go up and have its comments asked already
 
-        private readonly HashSet<long> _commentsAsked = new HashSet<long>();
-        private readonly HashSet<string> _commentsPending = new HashSet<string>();   // the keys of comments whose request waits
+        private readonly FlareCommentAsks _commentAsks = new FlareCommentAsks();
         private readonly List<FlareComment> _commentPlan = new List<FlareComment>(FlareCommentRules.WrittenMost);
-        private int _commentsWaiting;
         private long _commentsLooked = -1;
+        private int _commentsDay = -1;
+        private bool _commentsFreed;   // a request came back since the last walk: the next are asked on the second's look
 
         /// <summary>The comments a post has (its written ones, whether their words are here or not), in the order they come in; none for a post whose comments have no intent.</summary>
         public int CommentsOf(FlarePost p, List<FlareComment> into)
@@ -38,7 +46,8 @@ namespace RealLifeOverhaul.Flare
                 return 0;
             }
             bool city = FlareCommentRules.City(p);
-            return FlareCommentRules.Plan(p, FlareLiveRules.CitySeed(_file), _citizens.Count, city ? null : _people, FlareTextsMap.Taste(intent),
+            FlareInfluencer inf = p.Author == FlareAuthor.Influencer ? _file.Influencer(p.Who) : null;
+            return FlareCommentRules.Plan(p, FlareLiveRules.CitySeed(_file), _citizens.Count, city ? null : _people, FlareTextsMap.CommentTaste(p, inf != null ? (int)inf.Niche : -1),
                 city ? null : _file.Influencers, into);
         }
 
@@ -49,9 +58,10 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// Asks for the words of comments still without them: 'first' before the rest (a thread just opened), then the posts
-        /// up or going up soon, newest first, while fewer than <see cref="CommentsWaitingMost"/> wait. The walk runs once a
-        /// game minute at most.
+        /// Asks for the words of comments still without them: 'first' before the rest (a thread just opened: its due comments
+        /// ahead of the background, then its others), then the walk over the posts up or going up soon, the due comments
+        /// first, while fewer than <see cref="CommentsWaitingMost"/> wait. The walk runs once a game minute at most, or again
+        /// once a request has come back.
         /// </summary>
         public void CommentsAhead(FlarePost first)
         {
@@ -62,34 +72,57 @@ namespace RealLifeOverhaul.Flare
             long now = Now;
             if (first != null)
             {
-                AskComments(first, now);
+                AskComments(first, now, true, true);
+                AskComments(first, now, false, false);
             }
-            if (now == _commentsLooked)
+            if (now == _commentsLooked && !_commentsFreed)
             {
                 return;
             }
             _commentsLooked = now;
-            for (int i = _file.Posts.Count - 1; i >= 0 && _commentsWaiting < CommentsWaitingMost; i--)
+            _commentsFreed = false;
+            int day = (int)(now / 1440);
+            if (day != _commentsDay)
             {
-                FlarePost p = _file.Posts[i];
-                if (p.At <= now + CommentsAheadMinutes && p.At + 1440 > now)
+                _commentsDay = day;
+                FlareFile file = _file;
+                _commentAsks.Prune(id => file.Post(id) != null);   // (the comments of posts that are gone let go, once a game day)
+            }
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = _file.Posts.Count - 1; i >= 0 && _commentAsks.Background < CommentsWaitingMost; i--)
                 {
-                    AskComments(p, now);
+                    FlarePost p = _file.Posts[i];
+                    if (p.At <= now + CommentsAheadMinutes && p.At + 1440 > now)
+                    {
+                        AskComments(p, now, pass == 0, false);   // (the first pass the comments already due, the second those still to come)
+                    }
                 }
+            }
+        }
+
+        // The second's look (the director's timer): a request came back, so the next comments are asked now, not at the next event.
+        private void CommentsSecond()
+        {
+            if (_commentsFreed)
+            {
+                CommentsAhead(null);
             }
         }
 
         // Forgets what was asked (another file, or none).
         private void CommentsForget()
         {
-            _commentsAsked.Clear();
-            _commentsPending.Clear();
+            _commentAsks.Clear();
             _commentsLooked = -1;
+            _commentsDay = -1;
+            _commentsFreed = false;
         }
 
-        private void AskComments(FlarePost p, long now)
+        // A post's comments asked: 'due' those whose time has come, else those still to come; 'urgent' the open thread's (ahead of the background, past the cap).
+        private void AskComments(FlarePost p, long now, bool due, bool urgent)
         {
-            if (!FlareCommentRules.Has(p) || p.Shared || _commentsWaiting >= CommentsWaitingMost)
+            if (!FlareCommentRules.Has(p) || p.Shared || (!urgent && _commentAsks.Background >= CommentsWaitingMost))
             {
                 return;   // (a guest's copy of a shared post: the host's words come, a guest never asks)
             }
@@ -104,30 +137,30 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             int citySeed = FlareLiveRules.CitySeed(_file);
-            for (int i = 0; i < _commentPlan.Count && _commentsWaiting < CommentsWaitingMost; i++)
+            for (int i = 0; i < _commentPlan.Count && (urgent || _commentAsks.Background < CommentsWaitingMost); i++)
             {
                 FlareComment c = _commentPlan[i];
                 long asked = FlareCommentRules.Asked(p.Id, c.Slot);
-                if (_commentsAsked.Contains(asked))
+                if ((c.At <= now) != due || !_commentAsks.May(asked, urgent))
                 {
                     continue;
                 }
                 string key = FlareCommentRules.Key(p, c), earlier = null;
+                if (FlareBridges.TextKept != null && FlareBridges.TextKept(key) != null)
+                {
+                    _commentAsks.Kept(asked);   // (kept from before a load, or sent by the host: never asked again)
+                    continue;
+                }
                 if (i > 0 && FlareTextsMap.AnswersComments(intent) && FlareCommentRules.AnswersEarlier(p, citySeed, c.Slot))
                 {
-                    string before = FlareCommentRules.Key(p, _commentPlan[i - 1]);
-                    earlier = FlareBridges.TextKept != null ? FlareBridges.TextKept(before) : null;
-                    if (earlier == null && (_commentsPending.Contains(before) || !_commentsAsked.Contains(FlareCommentRules.Asked(p.Id, _commentPlan[i - 1].Slot))))
+                    long beforeAsked = FlareCommentRules.Asked(p.Id, _commentPlan[i - 1].Slot);
+                    earlier = FlareBridges.TextKept != null ? FlareBridges.TextKept(FlareCommentRules.Key(p, _commentPlan[i - 1])) : null;
+                    if (earlier == null && (_commentAsks.Waiting(beforeAsked) || _commentAsks.May(beforeAsked, false)))
                     {
                         continue;   // (the comment it answers has no words yet: asked on a later look, once it has them or is known to have none)
                     }
                 }
-                _commentsAsked.Add(asked);   // (asked once a session: kept words stay, a miss is not asked again until a load)
-                if (FlareBridges.TextKept != null && FlareBridges.TextKept(key) != null)
-                {
-                    continue;
-                }
-                TextRequest r = CommentRequest(p, c, intent, now, earlier != null ? _commentPlan[i - 1] : c, earlier);
+                TextRequest r = CommentRequest(p, c, intent, now, earlier != null ? _commentPlan[i - 1] : c, earlier, asked, urgent);
                 if (r == null)
                 {
                     continue;
@@ -137,16 +170,15 @@ namespace RealLifeOverhaul.Flare
                 r.Shared = shared;
                 if (FlareBridges.TextAsk(r))
                 {
-                    _commentsWaiting++;
-                    _commentsPending.Add(key);
+                    _commentAsks.Asked(asked, urgent);
                 }
             }
         }
 
         // A comment's card: the commenter as the speaker, the post it answers (and the earlier comment it answers, with words); null if a value is missing.
-        private TextRequest CommentRequest(FlarePost p, FlareComment c, string intent, long now, FlareComment before, string earlier)
+        private TextRequest CommentRequest(FlarePost p, FlareComment c, string intent, long now, FlareComment before, string earlier, long asked, bool urgent)
         {
-            var r = new TextRequest { Priority = TextPriority.Background, Day = (int)(c.At / 1440) };
+            var r = new TextRequest { Priority = urgent ? TextPriority.Soon : TextPriority.Background, Day = (int)(c.At / 1440) };
             string home;
             if (!Commenter(c, r.Who, out home))
             {
@@ -167,14 +199,18 @@ namespace RealLifeOverhaul.Flare
             {
                 return null;
             }
-            r.Seconds = System.Math.Max(CommentSeconds, Seconds(c.At - now));
+            r.Seconds = urgent ? CommentThreadSeconds : System.Math.Max(CommentSeconds, Seconds(c.At - now));
             FlarePost parent = p;
             r.Wanted = () => _file != null && _file.Post(parent.Id) == parent;
-            string key = FlareCommentRules.Key(p, c);
+            long at = c.At;
             r.Done = words =>
             {
-                _commentsWaiting = System.Math.Max(0, _commentsWaiting - 1);
-                _commentsPending.Remove(key);
+                _commentAsks.Ended(asked, words != null);   // (none: free to be asked again, FlareCommentAsks)
+                _commentsFreed = true;
+                if (words != null && at <= Now)
+                {
+                    _view?.ThreadChanged(parent.Id);   // (its time has come: shown now if its thread is open, never a placeholder before)
+                }
             };
             return r;
         }

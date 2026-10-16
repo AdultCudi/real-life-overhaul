@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Texts
     {
         public const string SaveKey = "reallife:texts";
         public const int Version = 1;
-        public const int Most = 2000;           // records kept at most (Flare keeps a few hundred posts and 120 messages; the paper a week of editions)
+        public const int Most = 3000;           // records kept at most (Flare keeps 220 posts, every comment under them up to sixteen a post, and 120 messages; the paper a week of editions): about 1,300 in a busy city, so the bound never drops words still shown
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private readonly Dictionary<string, TextKept> _byKey = new Dictionary<string, TextKept>(64, StringComparer.Ordinal);

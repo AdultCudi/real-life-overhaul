@@ -41,6 +41,16 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The names of the staff of the player's businesses, a few of them, into the list given. Default: none.</summary>
         public static Action<List<string>> Staff;
 
+        /// <summary>The park or sight of the city's the player stands at (Leisure's landmarks, found behind the loading screen): its id and where it is. False at none, or before they are found (never a search). Default: none.</summary>
+        public static SightAtAsk SightAt;
+
+        public delegate bool SightAtAsk(float x, float z, out string id, out float sightX, out float sightZ);
+
+        /// <summary>The street event that is on (never a fire): where its middle is and its label. False with none on. Default: none.</summary>
+        public static StreetEventAsk StreetEventAt;
+
+        public delegate bool StreetEventAsk(out float x, out float y, out float z, out string label);
+
         /// <summary>The save's own photos' folder (Photos: persistentDataPath/RealLifeOverhaul/Photos/(the save)), where the city's photos are kept beside them. Default: none (no city photos).</summary>
         public static Func<string> PictureFolder;
 
@@ -107,6 +117,8 @@ namespace RealLifeOverhaul.Flare
             Staff = null;
             PictureFolder = null;
             MarkPictureFolder = null;
+            SightAt = null;
+            StreetEventAt = null;
             Tycoons = null;
             PlayerName = null;
             Destination = null;

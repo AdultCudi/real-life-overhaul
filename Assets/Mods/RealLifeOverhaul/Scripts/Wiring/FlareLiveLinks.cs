@@ -72,6 +72,8 @@ namespace RealLifeOverhaul
                 FlareBridges.PlayerName = PlayerName;
                 FlareBridges.Destination = Destination;
                 FlareBridges.EventDestination = EventDestination;
+                FlareBridges.SightAt = SightAt;
+                FlareBridges.StreetEventAt = StreetEventAt;
                 FlareBridges.TakeSelfie = () => Leisure.PhotoMode.Instance?.ArmSelfie();
                 FlareLiveGame.Logger = FlareDirector.Logger;
                 _paperBefore = News.Extra;
@@ -84,6 +86,34 @@ namespace RealLifeOverhaul
                 _paperBefore = null;
                 CityWatch.Set(false);
                 EventMark.Hide();
+            }
+
+            // ---------------------------------------------------------------- the city photos' places (Flare/FlareDirector.Photos.cs)
+
+            // The park or sight the player stands at, from Leisure's list as it is (found behind the loading screen; an empty list is none, never a search).
+            private static bool SightAt(float x, float z, out string id, out float sightX, out float sightZ)
+            {
+                id = null;
+                sightX = sightZ = 0f;
+                Leisure.Landmark mark = Leisure.LeisureVenues.LandmarkAt(new Vector3(x, 0f, z));
+                if (mark == null)
+                {
+                    return false;
+                }
+                id = mark.Id;
+                sightX = mark.Position.x;
+                sightZ = mark.Position.z;
+                return true;
+            }
+
+            // The street event on now (Events/EventDirector), its middle and its label.
+            private static bool StreetEventAt(out float x, out float y, out float z, out string label)
+            {
+                bool on = EventDirector.StreetEvent(out Vector3 at, out label);
+                x = at.x;
+                y = at.y;
+                z = at.z;
+                return on;
             }
 
             // ---------------------------------------------------------------- the city as the day's posts read it

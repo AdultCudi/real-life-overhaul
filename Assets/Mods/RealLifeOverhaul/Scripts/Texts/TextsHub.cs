@@ -46,9 +46,9 @@ namespace RealLifeOverhaul.Texts
     /// (<see cref="Look"/>, a few times a second while anything waits, from TextsDirector) what came back is checked
     /// (TextCheck) and handed to its asker, and what missed its deadline is handed over as null, the written line. A
     /// guess (face to face) waits until its asker takes it (<see cref="TakeGuess"/>). The adaptive budget (TextBudget)
-    /// hears every end. Words that pass are remembered by speaker for the repeat check, and kept in the store
-    /// (TextsStore) when the asker wants them kept. Only the intents of the running pack's data version or older are
-    /// asked (<see cref="Data"/>).
+    /// hears every end but a background request the queue held back itself (<see cref="BudgetMiss"/>). Words that pass
+    /// are remembered by speaker for the repeat check, and kept in the store (TextsStore) when the asker wants them kept.
+    /// Only the intents of the running pack's data version or older are asked (<see cref="Data"/>).
     /// COST: a request is a card of a few hundred characters; a look is a pass over the waiting requests (a few).
     /// </summary>
     public sealed class TextsHub
@@ -211,7 +211,7 @@ namespace RealLifeOverhaul.Texts
                 else if (state == TextJobState.Missed || state == TextJobState.Dropped)
                 {
                     w.Request.Why = state == TextJobState.Missed ? "missed: " + (w.Job.Why ?? "the model gave nothing") : "asked again or dropped";
-                    Over(i, state == TextJobState.Missed);
+                    Over(i, state == TextJobState.Missed && BudgetMiss(w.Job));
                     handed++;
                 }
                 else if (now > w.Job.Deadline)
@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Texts
                     w.Request.Why = "the hold of " + w.Request.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s ran out while it was "
                                     + (state == TextJobState.Running ? "being written" : "waiting in the queue");
                     _queue.Drop(w.Job);   // (a running one comes back later and is let go)
-                    Over(i, true);
+                    Over(i, BudgetMiss(w.Job));
                     handed++;
                 }
             }
@@ -321,6 +321,18 @@ namespace RealLifeOverhaul.Texts
             _budget.Ended(false);
             _budget.Apply(_queue);
             End(i, words, true);
+        }
+
+        /// <summary>
+        /// Whether a miss tells the budget the model is too busy (TextBudget.Ended): one the worker ran (late, or failed), or
+        /// one of the kinds the budget lets through that still waited past its time. Never a background request the queue
+        /// held back itself (the game not quiet, the background's share of the minute used, or below the budget's floor):
+        /// counted, those kept the budget at its lowest steps for good, since at step 2 the background is held, its requests
+        /// run out, and every one counted as another miss (Flare's comments were never written, 16 Oct 2026).
+        /// </summary>
+        public bool BudgetMiss(TextJob job)
+        {
+            return job.Ran || (job.Priority != TextPriority.Background && job.Priority <= _queue.Floor);
         }
 
         private void Over(int i, bool missed)

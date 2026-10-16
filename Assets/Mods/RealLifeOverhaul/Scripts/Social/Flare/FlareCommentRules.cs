@@ -16,20 +16,20 @@ namespace RealLifeOverhaul.Flare
     /// <summary>
     /// The comments under a post that is not the player's (the city's people's, the accounts', the businesses', the rivals',
     /// another player's, a friend's, an influencer's): the post's number of replies (FlarePost.Replies) is the count on its
-    /// card; a handful of it is written out, by people chosen from the post's seed, each coming in at the moment the count
-    /// reaches it, and the thread says how many more there are. Nothing is stored: the same post always gives the same
-    /// comments, on every machine of a Going Public session (a shared post's seed is the city's seed and its session number,
-    /// which every machine has; only the city's people comment on a shared post, never anybody's own friends or influencers).
-    /// The words are asked of RLO Texts and kept by <see cref="Key"/>: a comment without words is not shown and counts among
-    /// the more. Game-free (EconomyCheck, FlareCommentChecks.cs).
+    /// card; every one of them is written out, up to what a phone's thread shows at once (<see cref="WrittenMost"/>), by
+    /// people chosen from the post's seed, each coming in at the moment the count reaches it, and only past that does the
+    /// thread say how many more there are (the owner's words, 16 Oct 2026: "it just shows 2 more replies and not the real
+    /// replies"). Nothing is stored: the same post always gives the same comments, on every machine of a Going Public session
+    /// (a shared post's seed is the city's seed and its session number, which every machine has; only the city's people
+    /// comment on a shared post, never anybody's own friends or influencers). The words are asked of RLO Texts and kept by
+    /// <see cref="Key"/>: a comment whose words have not come yet is not shown and counts among the more until they come.
+    /// Game-free (EconomyCheck, FlareCommentChecks.cs, FlareCommentAskChecks.cs).
     /// COST: when a thread is drawn or the comments are asked for, a few rolls and a short search of the curve for each
     /// written comment (at most <see cref="WrittenMost"/>, eleven steps each); nothing per frame, nothing allocated.
     /// </summary>
     public static class FlareCommentRules
     {
-        public const int WrittenLeast = 2;          // comments written out under a post with a few replies (fewer only if it has fewer)
-        public const int WrittenMost = 8;           // ...and at most, however many replies it has: the rest is the "more" line
-        public const int WideReach = 5000;          // people who saw a post from which one more comment is written out
+        public const int WrittenMost = 16;          // comments written out at most, however many replies a post has: a phone's thread shows about this many before "more" (and a slot is four bits of a like's key)
         public const int FriendShare = 150;         // thousandths: a slot a friend who cares about the topic may take (their own posts only)
         public const int InfluencerShare = 80;      // thousandths: a slot an influencer may take (their own posts only)
         public const int LikesBase = 3;             // a comment's likes at least spread over 0 to this
@@ -70,20 +70,10 @@ namespace RealLifeOverhaul.Flare
             return City(p) ? FlareRules.Roll(citySeed, Net(p), SaltSeed) * 1000 + FlareRules.Roll(citySeed, Net(p), SaltSeed + 1) : p.Seed;
         }
 
-        /// <summary>How many of a post's replies are written out: a handful, more for more replies and a wider reach, never more than it has.</summary>
-        public static int Written(int total, int reach)
+        /// <summary>How many of a post's replies are written out: every one, up to <see cref="WrittenMost"/>; the rest is the "more" line.</summary>
+        public static int Written(int total)
         {
-            if (total <= 0)
-            {
-                return 0;
-            }
-            int n = WrittenLeast;
-            for (int t = total; t > 1; t >>= 1)
-            {
-                n++;   // (one more for each doubling: 3 replies 3, 5 replies 4, 10 replies 5, 50 replies 7)
-            }
-            n += reach >= WideReach ? 1 : 0;
-            return Math.Min(total, FlareRules.Clamp(n, WrittenLeast, WrittenMost));
+            return FlareRules.Clamp(total, 0, WrittenMost);
         }
 
         /// <summary>The count a written comment comes in at: spread over the replies, the first at the first, each later one further on (strictly rising, at most the total).</summary>
@@ -131,7 +121,7 @@ namespace RealLifeOverhaul.Flare
                 return 0;
             }
             bool city = City(p);
-            int seed = Seed(p, citySeed), total = p.Replies, written = Written(total, p.Reach);
+            int seed = Seed(p, citySeed), total = p.Replies, written = Written(total);
             int likes = LikesBase + Math.Min(LikesMost, p.Likes / 20);
             for (int slot = 0; slot < written; slot++)
             {
@@ -421,6 +411,131 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Which comments' words are asked, by the slot's number (<see cref="FlareCommentRules.Asked"/>): waiting (and whether
+    /// the request is the open thread's, asked ahead of the rest), worded (kept: never asked again), or asked so many times.
+    /// A request handed back without words (its time ran out, the checker refused them, the model restarted) frees the
+    /// comment, and it is asked again on the next look, up to <see cref="Most"/> times a session: a comment is never left
+    /// without words because one request missed (the screenshot of 16 Oct 2026: two of three comments never written).
+    /// A comment waiting at the background's priority is asked again at the open thread's when its thread is opened.
+    /// Game-free (EconomyCheck, FlareCommentAskChecks.cs). COST: a dictionary look a comment; nothing per frame.
+    /// </summary>
+    public sealed class FlareCommentAsks
+    {
+        public const int Most = 4;   // asks of one comment a session at most: a miss is asked again; past this it waits for the next load
+
+        private struct Entry
+        {
+            public bool Waiting, Urgent, Worded;
+            public int Asks;
+        }
+
+        private readonly Dictionary<long, Entry> _all = new Dictionary<long, Entry>(256);
+        private readonly List<long> _gone = new List<long>(32);
+
+        /// <summary>Requests waiting at the background's priority (the walk's share of the queue).</summary>
+        public int Background { get; private set; }
+
+        /// <summary>How many comments are known.</summary>
+        public int Count => _all.Count;
+
+        /// <summary>True once its words are kept: never asked again.</summary>
+        public bool Worded(long id) => _all.TryGetValue(id, out Entry e) && e.Worded;
+
+        /// <summary>True while a request for it waits.</summary>
+        public bool Waiting(long id) => _all.TryGetValue(id, out Entry e) && e.Waiting;
+
+        /// <summary>
+        /// True if it may be asked now: not worded, asked fewer than <see cref="Most"/> times, and not waiting (or, for the
+        /// open thread, waiting only at the background's priority: then it is asked again ahead).
+        /// </summary>
+        public bool May(long id, bool urgent)
+        {
+            if (!_all.TryGetValue(id, out Entry e))
+            {
+                return true;
+            }
+            if (e.Worded || e.Asks >= Most)
+            {
+                return false;
+            }
+            return !e.Waiting || (urgent && !e.Urgent);
+        }
+
+        /// <summary>Its words were found kept (a load, or another look): never asked again.</summary>
+        public void Kept(long id)
+        {
+            _all.TryGetValue(id, out Entry e);
+            if (e.Waiting && !e.Urgent)
+            {
+                Background--;
+            }
+            e.Waiting = false;
+            e.Worded = true;
+            _all[id] = e;
+        }
+
+        /// <summary>A request for it was taken by the hub.</summary>
+        public void Asked(long id, bool urgent)
+        {
+            _all.TryGetValue(id, out Entry e);
+            if (e.Waiting && !e.Urgent)
+            {
+                Background--;
+            }
+            e.Waiting = true;
+            e.Urgent = urgent;
+            e.Asks++;
+            if (!urgent)
+            {
+                Background++;
+            }
+            _all[id] = e;
+        }
+
+        /// <summary>Its request came back: words (worded, never asked again) or none (free to be asked again).</summary>
+        public void Ended(long id, bool words)
+        {
+            if (!_all.TryGetValue(id, out Entry e))
+            {
+                return;
+            }
+            if (e.Waiting && !e.Urgent)
+            {
+                Background--;
+            }
+            e.Waiting = false;
+            e.Urgent = false;
+            e.Worded |= words;
+            _all[id] = e;
+        }
+
+        /// <summary>Lets go of the comments of posts that are gone (by the post's number: <see cref="FlareCommentRules.Asked"/>). How many went.</summary>
+        public int Prune(System.Func<int, bool> postKept)
+        {
+            _gone.Clear();
+            foreach (KeyValuePair<long, Entry> kv in _all)
+            {
+                if (!kv.Value.Waiting && !postKept((int)(kv.Key >> 4)))
+                {
+                    _gone.Add(kv.Key);
+                }
+            }
+            for (int i = 0; i < _gone.Count; i++)
+            {
+                _all.Remove(_gone[i]);
+            }
+            return _gone.Count;
+        }
+
+        /// <summary>Another file, or none: nothing asked.</summary>
+        public void Clear()
+        {
+            _all.Clear();
+            Background = 0;
         }
     }
 }

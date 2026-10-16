@@ -48,18 +48,15 @@ internal static partial class Program
 
     private static void CommentsWritten()
     {
-        bool bounded = true;
-        for (int total = 0; total <= 3000; total++)
+        bool every = true;
+        for (int total = -3; total <= 3000; total++)
         {
-            for (int reach = 0; reach <= 20000; reach += 2500)
-            {
-                int w = FlareCommentRules.Written(total, reach);
-                bounded &= w <= total && w <= FlareCommentRules.WrittenMost && (total == 0 ? w == 0 : w >= Math.Min(total, FlareCommentRules.WrittenLeast));
-            }
+            int w = FlareCommentRules.Written(total);
+            every &= w == (total <= 0 ? 0 : Math.Min(total, FlareCommentRules.WrittenMost));
         }
-        Check(bounded, "Flare comments: a handful written out, never more than the post's replies, at least two when it has two, at most eight");
-        Check(FlareCommentRules.Written(0, 9000) == 0 && FlareCommentRules.Written(1, 60) == 1 && FlareCommentRules.Written(5, 60) == 4 && FlareCommentRules.Written(300, 60) == 8
-              && FlareCommentRules.Written(10, 60) < FlareCommentRules.Written(10, 6000), "Flare comments: more replies and a wider reach write out more (0 none, 1 one, 5 four, 300 eight)");
+        Check(every, "Flare comments: every reply the count promises is written out, up to " + FlareCommentRules.WrittenMost + " (what a phone's thread shows before \"more\")");
+        Check(FlareCommentRules.Written(0) == 0 && FlareCommentRules.Written(1) == 1 && FlareCommentRules.Written(3) == 3 && FlareCommentRules.Written(16) == 16 && FlareCommentRules.Written(300) == 16
+              && FlareCommentRules.WrittenMost <= 16, "Flare comments: 0 none, 1 one, 3 three (the screenshot's post), 16 sixteen, 300 sixteen and the rest the \"more\" line; a slot fits a like's key");
         Check(FlareCommentRules.Plan(CommentPost(1, 0, 600), 77, FlareLiveRules.Citizens, null, FlareTaste.None, null, new List<FlareComment>()) == 0,
             "Flare comments: a post with no replies has none (the thread keeps its note)");
         var mine = CommentPost(2, 5, 600, FlareAuthor.Player);
@@ -453,8 +450,8 @@ internal static partial class Program
         Check(!director.Contains("void Update") && !director.Contains("LateUpdate")
               && CountOf(screens, "_director.CommentsAhead(") == 2 && CountOf(texts, "CommentsAhead(null)") == 1 && CountOf(screens, "CommentsOf(") == 1,
             "Flare comments sources: nothing per frame: a thread's comments are made only when it is drawn; their words are asked on the feed, a thread opened and Flare's own events");
-        Check(director.Contains("Priority = TextPriority.Background") && director.Contains("CommentsWaitingMost") && director.Contains("if (now == _commentsLooked)"),
-            "Flare comments sources: their words are asked at the lowest priority, a few waiting at once, the walk once a game minute at most");
+        Check(director.Contains("Priority = urgent ? TextPriority.Soon : TextPriority.Background") && director.Contains("CommentsWaitingMost") && director.Contains("if (now == _commentsLooked && !_commentsFreed)"),
+            "Flare comments sources: their words are asked at the lowest priority (the open thread's ahead of it), a few waiting at once, the walk once a game minute at most or once a request came back");
         Check(!director.Contains("FlareText.T(") && !director.Contains("FlareText.Fill(") && director.Contains("FlareCommentRules.Key(p, c)"),
             "Flare comments sources: a comment's words are only the model's, read by its key (no written line stands in)");
         Check(director.Contains("p.Shared") && director.Contains("TextWants(TextUse.Replies, shared)"),
@@ -481,7 +478,7 @@ internal static partial class Program
         long bytes = CommentsPlanBytes(p, plan, 2000);
         double ms = CommentsPlanTime(p, plan, 2000);
         Check(bytes < 1024, "Flare comments: drawing a thread's plan allocates nothing (" + bytes + " bytes for 2,000 plans)");
-        Check(ms < 200.0, "Flare comments: 2,000 plans of eight comments take " + ms.ToString("0.0") + " ms (well under a frame for a thread drawn once)");
+        Check(ms < 200.0, "Flare comments: 2,000 plans of sixteen comments take " + ms.ToString("0.0") + " ms (well under a frame for a thread drawn once)");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
