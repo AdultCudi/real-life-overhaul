@@ -200,17 +200,24 @@ namespace RealLifeOverhaul
                 }),
                 OnCancel = PhoneContacts.HangUp
             };
+            // By phone, the second button shows the way to the employer's office (the gig board is the Gig Line's, and the board's own).
+            bool showWay = DialogController.current.dialogType == DialogType.PhoneCall && CareerOfficeRules.Has(Career.OfficeAddress(at));
             if (can)
             {
                 entry.ConfirmTextOverride = "reallife_career_sign_on".Localize();
                 entry.OnConfirm = G(() => Rota(at, 0));
-                entry.SecondOptionTextOverride = "reallife_career_gig_board";
-                entry.OnSecondOption = G(() => JobLineDialog.Offer(0));
+                entry.SecondOptionTextOverride = showWay ? "reallife_career_office_show" : "reallife_career_gig_board";
+                entry.OnSecondOption = showWay ? G(() => ShowOffice(at)) : G(() => JobLineDialog.Offer(0));
             }
             else
             {
                 entry.ConfirmTextOverride = "reallife_career_gig_board".Localize();
                 entry.OnConfirm = G(() => JobLineDialog.Offer(0));
+                if (showWay)
+                {
+                    entry.SecondOptionTextOverride = "reallife_career_office_show";
+                    entry.OnSecondOption = G(() => ShowOffice(at));
+                }
             }
             return entry;
         }
@@ -280,7 +287,9 @@ namespace RealLifeOverhaul
             CareerDirector career = Career;
             float rate = JobDirector.PayScale();   // the wage as it will really be paid, owners' cut included
             string note = CareerState.ReviewDue
-                ? (career.CanReview(inPerson) ? "reallife_career_note_review_here" : "reallife_career_note_review").GetLocalization()
+                ? (career.CanReview(inPerson) ? "reallife_career_note_review_here".GetLocalization()
+                    : CareerOfficeRules.Key("reallife_career_note_review", career.OfficeAddress(CareerState.EmployerIndex)).GetLocalization()
+                        .Replace("{address}", career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty))
                 : CareerState.OnNotice
                     ? "reallife_career_note_notice".GetLocalization().Replace("{left}", CareerState.NoticeShiftsLeft.ToString())
                     : string.Empty;
@@ -332,7 +341,11 @@ namespace RealLifeOverhaul
             return career.ClockOn(out string reason)
                 ? PhoneContacts.Closing(CareerState.Employer != null && CareerState.Employer.Job == JobCatalogue.Vendor && CareerState.CurrentRank.Work == CareerWork.Gig
                     ? "reallife_career_clocked_on_cart" : "reallife_career_clocked_on_time", new { time = CareerClock.Span(CareerState.RotaHour) })
-                : PhoneContacts.Closing(reason ?? "reallife_job_no_now", new { time = CareerClock.Span(CareerState.RotaHour) });
+                : PhoneContacts.Closing(reason ?? "reallife_job_no_now", new
+                {
+                    time = CareerClock.Span(CareerState.RotaHour),
+                    address = career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty
+                });
         }
 
         private static DialogEntry Other(bool inPerson)
@@ -368,8 +381,52 @@ namespace RealLifeOverhaul
                 OnCancel = PhoneContacts.HangUp
             };
             entry.SecondOptionTextOverride = "reallife_career_more";
-            entry.OnSecondOption = G(() => Other3());
+            entry.OnSecondOption = G(() => OfficeOffered() ? Office() : Other3());
             return entry;
+        }
+
+        // ---------------------------------------------------------------- where the office is
+
+        // The office of the job the player has, when this city has a board for it.
+        private static bool OfficeOffered()
+        {
+            CareerDirector career = Career;
+            return career != null && CareerState.Employed && CareerOfficeRules.Has(career.OfficeAddress(CareerState.EmployerIndex));
+        }
+
+        // A page of "something else": where the employer's office is, and a button that puts the game's destination marker on it.
+        private static DialogEntry Office()
+        {
+            CareerDirector career = Career;
+            string address = career != null && CareerState.Employed ? career.OfficeAddress(CareerState.EmployerIndex) : null;
+            if (!CareerOfficeRules.Has(address))
+            {
+                return Other3();
+            }
+            return new DialogEntry
+            {
+                messageData = "reallife_career_office_page".Localize(new { employer = CareerState.Employer.NameKey.GetLocalization(), address }),
+                ConfirmTextOverride = "reallife_career_office_show".Localize(),
+                OnConfirm = G(() => ShowOffice(CareerState.EmployerIndex)),
+                SecondOptionTextOverride = "reallife_career_more",
+                OnSecondOption = G(() => Other3()),
+                OnCancel = PhoneContacts.HangUp
+            };
+        }
+
+        // Puts the game's destination marker on an employer's board, and says where it is.
+        private static DialogEntry ShowOffice(int employer)
+        {
+            CareerDirector career = Career;
+            string address = career != null && employer >= 0 ? career.OfficeAddress(employer) : null;
+            if (!CareerOfficeRules.Has(address))
+            {
+                return PhoneContacts.Closing("reallife_career_office_none");
+            }
+            string name = CareerCatalogue.All[employer].NameKey.GetLocalization();
+            return career.ShowOffice(employer)
+                ? PhoneContacts.Closing("reallife_career_office_shown", new { employer = name, address })
+                : PhoneContacts.Closing("reallife_career_office_busy", new { employer = name, address });
         }
 
         // Last page of "something else": a job with another employer, and leaving the one the player has.

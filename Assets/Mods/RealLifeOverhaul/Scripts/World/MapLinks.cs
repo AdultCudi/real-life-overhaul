@@ -414,6 +414,39 @@ namespace RealLifeOverhaul
                     }
                 }
             });
+            // Jobs and careers: each employer's office (its help-wanted board), by the employer's name; where reviews are held and shifts clocked on to.
+            _links.Add(new Link
+            {
+                Id = "job_offices", TitleKey = "reallife_map_row_job_offices", Colour = new Color(0.20f, 0.62f, 0.95f), Icon = MapIcon.Briefcase,
+                Enabled = () => Settings.Jobs && Settings.Careers,
+                Stamp = () =>
+                {
+                    JobDirector jobs = JobDirector.Instance;
+                    if (!CareerDirector.On || jobs == null || jobs.HelpBoards == null || jobs.Career == null)
+                    {
+                        return 0;
+                    }
+                    long stamp = 1 + jobs.HelpBoards.Count;
+                    for (int e = 0; e < CareerCatalogue.All.Length; e++)
+                    {
+                        stamp = stamp * 9 + jobs.Career.DepotOf(e) + 2;
+                    }
+                    return stamp;
+                },
+                Fill = places =>
+                {
+                    JobDirector jobs = JobDirector.Instance;
+                    JobBoards boards = jobs.HelpBoards;
+                    for (int e = 0; e < CareerCatalogue.All.Length; e++)
+                    {
+                        int board = jobs.Career.DepotOf(e);
+                        if (CareerOfficeRules.ShowMeOffered(board, boards.Count))
+                        {
+                            places.Add(new MapPlace(boards.Front(board), At(T(CareerCatalogue.All[e].NameKey), boards.Address(board))) { Lit = boards.Building(board) });
+                        }
+                    }
+                }
+            });
             // The City Ledger: the newspaper kiosks near the player's home; the building each stands in front of lights up.
             _links.Add(new Link
             {

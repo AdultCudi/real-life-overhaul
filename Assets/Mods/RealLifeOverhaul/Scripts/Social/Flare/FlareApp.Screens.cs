@@ -644,7 +644,8 @@ namespace RealLifeOverhaul.Flare
                     var reply = new FlarePost
                     {
                         Id = -1000 - p.Id * 32 - i, Author = FlareAuthor.Friend, Who = index, Source = FlareSource.Reply, ReplyTo = p.Id,
-                        Text = _director.FriendWords(p.Id, index) ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i
+                        Text = _director.FriendWords(p.Id, index) ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i,
+                        Liked = _director.IsReplyLiked(p.Id, i)
                     };
                     FlareLiveRules.SetAt(reply, p.At + r.Delay);
                     _synthetic.Add(reply);
@@ -1051,9 +1052,17 @@ namespace RealLifeOverhaul.Flare
 
         private void LikeClicked(FlareRow row)
         {
-            if (row?.Post != null && row.Post.Id >= 0)
+            if (row?.Post == null)
+            {
+                return;
+            }
+            if (row.Post.Id >= 0)
             {
                 _director.Like(row.Post.Id);
+            }
+            else if (row.Post.Slot >= 0)
+            {
+                _director.LikeReply(row.Post.ReplyTo, row.Post.Slot);   // a friend's reply, made for display: kept by its post and place
             }
         }
 

@@ -752,6 +752,59 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
+        /// <summary>The most friends' replies liked that are kept.</summary>
+        public const int ReplyLikesMost = 128;   // keys: more than any save has (forty own posts, a handful of friends each), and a bound for a damaged line
+
+        /// <summary>
+        /// The key of a friend's reply under a post of the player's: the post's number and the reply's place among its
+        /// reactions. Stable (the reactions are written once with the post), unlike the negative number the reply is shown with.
+        /// </summary>
+        public static int ReplyKey(int parentId, int slot)
+        {
+            return parentId * 32 + slot;
+        }
+
+        /// <summary>True if the player liked this friend's reply.</summary>
+        public static bool ReplyLiked(FlareFile f, int parentId, int slot)
+        {
+            return f != null && slot >= 0 && slot < 32 && f.ReplyLikes.Contains(ReplyKey(parentId, slot));
+        }
+
+        /// <summary>The player likes a friend's reply, or takes the like back. The new state. It changes nothing else: no affection, standing or followers, and nothing is sent.</summary>
+        public static bool ToggleReplyLike(FlareFile f, int parentId, int slot)
+        {
+            if (f == null || slot < 0 || slot >= 32 || f.Post(parentId) == null)
+            {
+                return false;
+            }
+            int key = ReplyKey(parentId, slot);
+            if (f.ReplyLikes.Remove(key))
+            {
+                return false;
+            }
+            if (f.ReplyLikes.Count >= ReplyLikesMost)
+            {
+                f.ReplyLikes.RemoveAt(0);
+            }
+            f.ReplyLikes.Add(key);
+            return true;
+        }
+
+        /// <summary>Lets go of the likes of replies whose post is gone. How many went.</summary>
+        public static int DropReplyLikes(FlareFile f)
+        {
+            int n = 0;
+            for (int i = f.ReplyLikes.Count - 1; i >= 0; i--)
+            {
+                if (f.Post(f.ReplyLikes[i] / 32) == null)
+                {
+                    f.ReplyLikes.RemoveAt(i);
+                    n++;
+                }
+            }
+            return n;
+        }
+
         /// <summary>
         /// Keeps the posts within their bounds: the city's posts older than a few days go first (and a reply goes with its
         /// post), then the oldest post that is not the player's, and the player's own beyond forty. A post of the player's
@@ -781,6 +834,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 f.Posts.RemoveAt(at);
             }
+            DropReplyLikes(f);
         }
 
         private static bool OwnAfter(List<FlarePost> posts, int at)

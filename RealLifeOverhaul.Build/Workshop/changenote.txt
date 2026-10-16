@@ -1,4 +1,5 @@
-0.28.1
+0.28.3
 
 Fixed
-- A brand with its shops spread over several districts can now offer franchises once the brand as a whole is well known, not only when one district reaches 40.
+- When the city's market held goods of a mod that is no longer loaded, the game stopped every night halfway, so staff wages grew day by day, staff's hours and days a week were counted wrong against what they ask for, and brand recognition never moved. Those goods are now taken out at night and the counts put right before the wages.
+- You can like your friends' replies under your posts on Flare.
