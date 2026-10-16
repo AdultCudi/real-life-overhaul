@@ -1,7 +1,4 @@
-0.29.2
-
-New
-- Flare: the city's posts carry photos more often, and the photos fit. While you are out, on foot or driving, Flare quietly photographs the streets, shop fronts, parks, sights and street events you pass in each district, by day, at dusk and at night, dry or in the rain, and a post shows one that fits its place, kind, hour and weather, or none. The photos option now starts at Some.
+0.29.3
 
 Fixed
-- Under the city's Flare posts every comment the count promises is now written out and shown, up to sixteen a post, each at its own time, and RLO Texts writes them ahead so a thread is usually full before you open it. A comment under a person's post now answers what the post says.
+- In a debt arrangement you can now pay the credit card off early, and the arrangement ends once everything in it is paid. A missed card payment now counts once per statement, and what is overdue stays in the next minimum.
