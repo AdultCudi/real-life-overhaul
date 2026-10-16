@@ -780,9 +780,15 @@ internal static partial class Program
               && phone.Contains("Flush = true") && director.Contains("int flushed = Hub.FlushForSave();"),
             "texts, the phone: a text is held for its words only through RLO Texts' bridge, and goes out with its written line when the game saves meanwhile");
         string server = File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.cs"));
-        Check(server.Contains("--host 127.0.0.1") && server.Contains("--api-key") && server.Contains("ProcessPriorityClass.BelowNormal") && server.Contains("--prio -1")
+        string onCpu = TextServer.Arguments(new TextServerStart { Model = "m.gguf", Threads = 4 }, 5000, "key");
+        string onGpu = TextServer.Arguments(new TextServerStart { Model = "m.gguf", Threads = 2, Device = "Vulkan0" }, 5001, "key");
+        Check(onCpu.Contains(" --host 127.0.0.1 --port 5000 --api-key key ") && onGpu.Contains(" --host 127.0.0.1 --port 5001 --api-key key ")
+              && onCpu.Contains(" --prio -1 ") && !onCpu.Contains("--prio 0") && onGpu.Contains(" --prio 0 ") && !onGpu.Contains("--prio -1")
+              && TextServer.LowPriority(null) && !TextServer.LowPriority("Vulkan0")
+              && server.Contains("_process.PriorityClass = low ? ProcessPriorityClass.BelowNormal : ProcessPriorityClass.Normal;")
+              && server.Contains("Priority = LowPriority(_start.Device) ? ThreadPriority.BelowNormal : ThreadPriority.Normal")
               && server.Contains("KillOnJobClose") && server.Contains("IsBackground = true"),
-            "texts, the runner: the server listens on 127.0.0.1 only, with a key of its own, below normal priority, tied to the game's process, its worker a background thread");
+            "texts, the runner: the server listens on 127.0.0.1 only, with a key of its own, below normal priority on the processor and normal on a GPU (llama.cpp's --prio, the process and the worker), tied to the game's process, its worker a background thread");
     }
 
     // ---------------------------------------------------------------- the review's findings (16 Oct 2026), each with its check
