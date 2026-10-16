@@ -3,7 +3,7 @@
 
 [b]Discord for help, bug reports and ideas: [url=https://discord.gg/tzCh2VXs9E]discord.gg/tzCh2VXs9E[/url][/b]
 [b]Languages: English, Brazilian Portuguese, Simplified Chinese, German, French, Spanish and Russian[/b]
-[b]Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820711613]RLO Texts[/url] or [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820712020]RLO Texts Lite[/url] lets a small model on your own PC write what the city's people say, offline.[/b]
+[b]Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820711613]RLO Texts[/url] or [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820712020]RLO Texts Lite[/url] lets a small model on your PC write what people say, offline.[/b]
 
 [h1]Real Life Overhaul[/h1]
 Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to others and to you, and you can join in. Work your way up a career, stand for mayor, list your company, found a bank or a cloud, or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
@@ -14,7 +14,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*][b]Getting around.[/b] The mod's own city buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
 [*][b]Driving.[/b] Cars that handle by their kind, chase and third person cameras, a garage for paint, parts and tuning, running costs and a driving school.
 [*][b]Police, courts and the council.[/b] Fines, arrests, bail, hearings and prison. A council and a mayor you vote for, or stand yourself: a campaign, a debate, the count by district and the city's policies if you win.
-[*][b]Street talk.[/b] Walk up to anybody on the pavement, standing about or on a bench, and talk to them: ask the way, swap numbers, invite them out, or type your own words.
+[*][b]Street talk.[/b] Talk to anybody on the pavement: ask the way, swap numbers, invite them out or type your own words.
 [*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, children, friends, outings, leisure, a roommate and selfies.
 [*][b]Education and careers.[/b] Courses at the school, and degrees and certificates at the university, with fees, loans and exams. 25 professions at the city's businesses and your rivals' companies, with ranks up to the top seat, freelance work and a firm of your own. Street jobs and gigs too.
 [*][b]Standing.[/b] The city knows how rich, how known and how well thought of you are: reporters, a night show, promises remembered, invitations, lobbying, and bribes that can come out.
