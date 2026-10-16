@@ -802,6 +802,8 @@ internal static partial class Program
               && TextPacks.WorkshopPacks(@"C:\ws", new[] { "111", "222" })[1] == System.IO.Path.Combine(@"C:\ws", "222") && TextPacks.WorkshopPacks(null, new[] { "1" }).Count == 0,
             "texts, safety: on the Workshop only RLO's own pack items by id are looked in (none while their ids are empty, never a path)");
         string game = TextsSource("Texts/TextsGame.cs");
+        Check(TextPacks.WorkshopItems.Length == 2 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020",
+            "texts, packs: the mod looks only in the two published pack items, RLO Texts (3820711613) and RLO Texts Lite (3820712020)");
         Check(game.Contains("TextPacks.WorkshopPacks(TextPacks.WorkshopOf(Application.dataPath, AppId), TextPacks.WorkshopItems)") && !game.Contains("places.Add(workshop)"),
             "texts, safety: the game's whole Workshop folder is never a place packs are looked for in");
         Check(TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLO\runtime\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLOX\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\a.exe"),

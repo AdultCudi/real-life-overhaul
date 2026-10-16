@@ -61,10 +61,10 @@ namespace RealLifeOverhaul.Texts
         public const int RankMost = 2;                  // the full pack; Lite is 1: no pack may claim more
 
         /// <summary>
-        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite), by their item ids: empty until they are published
-        /// (not-in-repo WORKSHOP.txt says to fill them in). Only these Workshop folders are ever looked in.
+        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite), by their item ids, published on 16 Oct 2026
+        /// (not-in-repo WORKSHOP.txt). Only these Workshop folders are ever looked in.
         /// </summary>
-        public static readonly string[] WorkshopItems = { "", "" };
+        public static readonly string[] WorkshopItems = { "3820711613", "3820712020" };   // RLO Texts, RLO Texts Lite (published 16 Oct 2026)
 
         /// <summary>The folders of RLO's own pack items under the game's Workshop content folder (none while their ids are empty).</summary>
         public static List<string> WorkshopPacks(string workshopContent, string[] items)
