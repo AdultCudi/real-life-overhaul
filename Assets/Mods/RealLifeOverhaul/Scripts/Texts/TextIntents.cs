@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Texts
     /// Proved byte-identical to the generator's own cards for the same values (EconomyCheck, TextsChecks.cs: every
     /// intent here against fixtures the training generator wrote). Game-free. COST: a few short strings a request.
     /// </summary>
-    public static class TextIntents
+    public static partial class TextIntents
     {
         public const int DataV2 = 2;   // the training data of the first packs (data/gen/v2): a pack.txt without a data line
         public const int DataV3 = 3;   // ...and of the retrained packs (data/gen/v3: v2's rows unchanged and 60 new intents)
@@ -507,6 +507,7 @@ namespace RealLifeOverhaul.Texts
             Ledger("storm", "a storm is expected tonight", None, null);
 
             V3();
+            V4();   // street talk (TextIntents.Street.cs)
         }
 
         // ---------------------------------------------------------------- data v3 (defs_v3.INTENTS): answers to what the player wrote, comments

@@ -91,15 +91,12 @@ namespace RealLifeOverhaul.Street
             _firstLine = chat.Approach.Brush != StreetBrush.None ? StreetRules.BrushLine(chat.Approach.Brush) : chat.Approach.Opening;
             _firstWords = null;
             _firstAsked = _firstCame = false;
-            if (chat.Approach.Brush == StreetBrush.None)
+            _firstWords = chat.Approach.Brush == StreetBrush.None && TakeGuess != null ? TakeGuess(chat) : null;   // (guessed while the player looked at them)
+            _firstCame = _firstWords != null;
+            chat.Said(true, StreetText.T(StreetLines.Opener));
+            if (!_firstCame && Words != null)
             {
-                _firstWords = TakeGuess != null ? TakeGuess(chat) : null;
-                _firstCame = _firstWords != null;
-                if (!_firstCame && Words != null)
-                {
-                    chat.Said(true, StreetText.T(StreetLines.Opener));
-                    _firstAsked = Words(chat, _firstLine, Data(chat), StreetText.T(StreetLines.Opener), _onFirst ?? (_onFirst = FirstCame));
-                }
+                _firstAsked = Words(chat, _firstLine, Data(chat), StreetText.T(StreetLines.Opener), _onFirst ?? (_onFirst = FirstCame));
             }
             _openAt = now + StreetRules.Beat;
             _openBy = now + (float)StreetRules.Hold;
@@ -508,6 +505,7 @@ namespace RealLifeOverhaul.Street
                 a.Off = true;
             }
             FlareInviteAnswer answer = FlareInviteRules.Decide(a, out FlareInviteWhy why);
+            data["t_outing"] = FlareInviteRules.CardOuting(a.Kind);   // (the card's words: RLO Texts)
             if (answer == FlareInviteAnswer.Yes)
             {
                 int cast = StreetBridges.InviteBook != null ? StreetBridges.InviteBook(a, Meeting()) : -1;
@@ -524,6 +522,7 @@ namespace RealLifeOverhaul.Street
                     _chat.Rapport += 1;
                     data["place"] = a.Place;
                     data["time"] = a.When;
+                    data["t_time"] = a.CardWhen;
                     StreetGame.Notice(NotificationType.Success, "reallife_street_note_booked", new Dictionary<string, string>(4)
                     {
                         { "outing", SocialLife.Capital(a.Outing ?? string.Empty) }, { "name", _chat.Who.First }, { "place", a.Place }, { "time", a.When }

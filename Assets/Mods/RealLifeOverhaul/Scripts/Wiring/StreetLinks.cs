@@ -25,6 +25,7 @@ namespace RealLifeOverhaul
         ///                 (SocialLife.MakePlan), meeting the stranger in the street first
         ///   Footfall      word of mouth for the player's business: its part added to BusinessGame.Ambient on top of the
         ///                 others' and written by business pressure's own writer (BusinessDirector.Footfall) when it changes
+        ///   Words, Guess  RLO Texts' words for what people say (Wiring/StreetTexts)
         ///
         /// Nothing of the other features is changed but through their own entries. COST: nothing per frame; each answer is
         /// asked on a press or a click.
@@ -46,10 +47,12 @@ namespace RealLifeOverhaul
                 StreetBridges.MouthChanged = MouthChanged;
                 _ambientBefore = BusinessGame.Ambient;
                 BusinessGame.Ambient = Ambient;
+                StreetTexts.Connect();
             }
 
             internal static void Disconnect()
             {
+                StreetTexts.Disconnect();
                 StreetBridges.Reset();
                 BusinessGame.Ambient = _ambientBefore;   // (the others' own pairings take theirs off in a moment)
                 _ambientBefore = null;

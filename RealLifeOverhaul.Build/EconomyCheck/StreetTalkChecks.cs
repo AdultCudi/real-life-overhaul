@@ -31,6 +31,7 @@ internal static partial class Program
         StreetWords();
         StreetTiming();
         StreetSources();
+        StreetCardsUsed();   // street talk worded by RLO Texts (StreetTextsChecks.cs)
         Console.WriteLine("  street talk: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
