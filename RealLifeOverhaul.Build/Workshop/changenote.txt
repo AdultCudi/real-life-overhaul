@@ -1,15 +1,7 @@
-0.29.0
+0.29.1
 
 New
-- RLO Texts: with the RLO Texts or RLO Texts Lite pack from the Workshop, a small model on your own PC writes the words of Flare replies and posts, messages from people, the city's answers, the rival tycoons and the City Ledger's briefs, offline. The game still decides everything, every line is checked first, and without the pack or when it is slow the written lines stay.
-- People answer what you write to them on Flare, in a message, a post or a reply, and the author of a post may answer your reply under it.
-- Every kind of post by the city's people, accounts, businesses and influencers has comments under it, written by RLO Texts, and the thread says how many more replied.
-- Invite somebody out in a Flare message, for a coffee, a meal, drinks, the cinema, a walk or a workout, and the game decides yes, maybe or no. A yes names a place and a time and books the outing as a call would.
-- Street talk: walk up to anybody on the pavement, standing about or on a bench, and talk to them in the game's own dialogue panel. Everybody has a name, a job, a mood and a memory of the day. Ask the way and the game sets your destination, swap numbers and they join People with the look you saw, invite them out, or type your own words. With RLO Texts the model words the whole conversation.
-- The choices in street talk follow the moment and what they just said, your own words are always one press away, Esc says goodbye, and people give you at least four turns.
-- Flare: every account has a picture beside its name, drawn by the game's own portrait camera, the game's logos for businesses and emblems for the city's offices, and some of the city's posts carry a photo of the place. Both are options.
-- While a save loads, Flare draws the faces you are likely to see first behind the loading screen.
+- RLO Texts: both packs have new models with better words. RLO Texts Lite now runs LFM2.5 by Liquid AI, smaller and faster for weaker PCs, and the mod also finds RLO Texts Medium, a pack between the two, once it is on the Workshop. In the street the model now words five more things people say: how their day is going, the street event, their work, their answer to thanks and hello again, and small talk knows the rain, the hour and the day's event. Report a bug now lists your staff with each wage next to the game's usual wage for the skill and their hours, and yesterday's and today's money in and out by kind, so a report on wages or a sudden loss shows where the money went.
 
 Fixed
-- You can like the comments under other people's posts on Flare.
-- RLO Texts on a graphics card keeps up while you play and is ready much sooner after the first session.
+- In street talk a stranger no longer calls you by a name you never told them, unless they know your face as somebody famous or infamous.
