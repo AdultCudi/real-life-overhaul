@@ -96,7 +96,7 @@ How to read the lines is in [the developer documentation](RealLifeOverhaul.Build
 
 ## Contributing
 
-Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Nothing is merged into `main` without the maintainer's review and approval.
+Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [the engineering standard](docs/standards/README.md) first. Nothing is merged into `main` without the maintainer's review and approval.
 
 ## Licence
 

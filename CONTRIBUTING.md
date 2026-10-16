@@ -24,6 +24,7 @@ The full rules are at the top of [RealLifeOverhaul.Build/README.md](RealLifeOver
 
 ## Code
 
+- Follow [the engineering standard](docs/standards/README.md): the numbered rules for code, architecture, performance, multiplayer, texts, comments, checks and review.
 - Match the code around you: its naming, its comment density and its structure. One folder per feature.
 - Features talk to each other through the small optional interfaces in each feature's bridge file, never by reaching into another feature's internals.
 - Each feature registers itself in `Scripts/Meta/FeatureList.cs` so it gets a guide page, presets and save clean-up.

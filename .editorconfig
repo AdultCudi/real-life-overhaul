@@ -1,0 +1,146 @@
+# Real Life Overhaul: editor settings, and the C# style of docs/standards/code-style.md as your editor can show it.
+#
+# Every C# rule below is a suggestion or silent. The build ends with 0 Warning(s) and 0 Error(s) with this file in
+# place, and no file in the repository has to change for it; the compiler's and the analysers' own defaults are left
+# as they are. StandardCheck (RealLifeOverhaul.Build/StandardCheck) is what fails a change that breaks the standard.
+
+root = true
+
+# Git keeps text files with LF and Git for Windows checks them out with CRLF (core.autocrlf true). The mod builds
+# only on Windows, so every text file in a working copy has CRLF.
+[*]
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# Files Unity writes: left as Unity writes them.
+[*.{meta,asset,prefab,unity,mat,controller,anim,overrideController,mask,physicMaterial,lighting,shadergraph}]
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_size = unset
+
+[*.cs]
+indent_size = 4
+charset = utf-8
+
+[*.{csproj,props,targets,xml,iss}]
+indent_size = 2
+
+[*.{py,ps1,pl}]
+indent_size = 4
+
+# Markdown keeps two trailing spaces where a writer wants a line break.
+[*.md]
+trim_trailing_whitespace = false
+
+# The locales: UTF-8 with a byte order mark, two spaces (docs/standards/texts.md, RLO-TXT-004).
+[Assets/Mods/RealLifeOverhaul/Locales/*.json]
+charset = utf-8-bom
+indent_size = 2
+
+[*.json]
+indent_size = 2
+
+# ---------------------------------------------------------------- C#: layout (RLO-STY-011 to RLO-STY-015)
+[*.cs]
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_around_binary_operators = before_and_after
+csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_blocks = true
+csharp_prefer_braces = true:suggestion
+
+# ---------------------------------------------------------------- C#: files and namespaces (RLO-STY-009, RLO-STY-010)
+# C# 9 (LangVersion in RealLifeOverhaul.csproj) has no file-scoped namespaces.
+csharp_style_namespace_declarations = block_scoped:silent
+csharp_using_directive_placement = outside_namespace:suggestion
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# ---------------------------------------------------------------- C#: language (RLO-STY-016, RLO-STY-018)
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+csharp_style_implicit_object_creation_when_type_is_apparent = false:silent
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
+dotnet_style_predefined_type_for_member_access = true:suggestion
+dotnet_style_require_accessibility_modifiers = always:suggestion
+dotnet_style_readonly_field = true:suggestion
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:silent
+csharp_style_expression_bodied_accessors = when_on_single_line:silent
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_prefer_simple_using_statement = true:silent
+csharp_style_prefer_switch_expression = false:silent
+csharp_style_prefer_primary_constructors = false:silent
+dotnet_style_prefer_collection_expression = never:silent
+csharp_style_prefer_top_level_statements = false:silent
+
+# ---------------------------------------------------------------- C#: names (RLO-STY-001 to RLO-STY-005)
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_style.camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.i_pascal.capitalization = pascal_case
+dotnet_naming_style.i_pascal.required_prefix = I
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+dotnet_naming_symbols.members.applicable_kinds = method, property, event, local_function
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_symbols.static_readonly.applicable_kinds = field
+dotnet_naming_symbols.static_readonly.required_modifiers = static, readonly
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.visible_fields.applicable_kinds = field
+dotnet_naming_symbols.visible_fields.applicable_accessibilities = public, internal, protected, protected_internal, private_protected
+dotnet_naming_symbols.locals.applicable_kinds = parameter, local
+
+dotnet_naming_rule.interfaces_are_i_pascal.symbols = interfaces
+dotnet_naming_rule.interfaces_are_i_pascal.style = i_pascal
+dotnet_naming_rule.interfaces_are_i_pascal.severity = suggestion
+dotnet_naming_rule.types_are_pascal.symbols = types
+dotnet_naming_rule.types_are_pascal.style = pascal
+dotnet_naming_rule.types_are_pascal.severity = suggestion
+dotnet_naming_rule.members_are_pascal.symbols = members
+dotnet_naming_rule.members_are_pascal.style = pascal
+dotnet_naming_rule.members_are_pascal.severity = suggestion
+dotnet_naming_rule.constants_are_pascal.symbols = constants
+dotnet_naming_rule.constants_are_pascal.style = pascal
+dotnet_naming_rule.constants_are_pascal.severity = suggestion
+dotnet_naming_rule.static_readonly_are_pascal.symbols = static_readonly
+dotnet_naming_rule.static_readonly_are_pascal.style = pascal
+dotnet_naming_rule.static_readonly_are_pascal.severity = suggestion
+dotnet_naming_rule.private_fields_are_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_are_underscore_camel.style = underscore_camel
+dotnet_naming_rule.private_fields_are_underscore_camel.severity = suggestion
+dotnet_naming_rule.visible_fields_are_pascal.symbols = visible_fields
+dotnet_naming_rule.visible_fields_are_pascal.style = pascal
+dotnet_naming_rule.visible_fields_are_pascal.severity = suggestion
+dotnet_naming_rule.locals_are_camel.symbols = locals
+dotnet_naming_rule.locals_are_camel.style = camel
+dotnet_naming_rule.locals_are_camel.severity = suggestion
+
+# The checkers (RealLifeOverhaul.Build) put a one-line check on one line (docs/standards/code-style.md, RLO-STY-013).
+[RealLifeOverhaul.Build/**.cs]
+csharp_prefer_braces = when_multiline:silent
