@@ -3,12 +3,27 @@ using RealLifeOverhaul.Texts;
 
 namespace RealLifeOverhaul.Flare
 {
+    /// <summary>The post a comment answers, as the comment's card needs it (FlareTextsMap.CommentCard).</summary>
+    public struct FlareCommentPost
+    {
+        public string First;         // the poster's first name (another player: their name)
+        public string Handle;        // ...and handle, as the thread's line names them
+        public string Words;         // the post's words as shown
+        public string District;      // the district the post is about, in words
+        public string Home;          // the commenter's own district, in words
+        public string Tycoon;        // a rival's post: the rival
+        public string Company;       // ...and their company
+        public string Reaction;      // another player's post: the reaction the city's rules chose
+    }
+
     /// <summary>
     /// Which trained intent each of Flare's worded posts is, for RLO Texts (Scripts/Texts): the game decides the post as
     /// before (its source, kind, author, reaction and time); this says which card the model is given for its words. A post
     /// with no intent here keeps its written line. Also the city's people as a card's speaker: their age and way of writing,
-    /// stable for each person from the city's seed and their persona. Game-free (EconomyCheck, TextsChecks.cs).
-    /// COST: a switch and a few strings a post, when it is made.
+    /// stable for each person from the city's seed and their persona. And the comments under posts that are not the
+    /// player's (FlareCommentRules): their intent and card; they have no written line, so a post with no intent for its
+    /// comments shows only their count. Game-free (EconomyCheck, TextsChecks.cs, FlareCommentChecks.cs).
+    /// COST: a switch and a few strings a post, when it is made, and a comment, when its words are asked.
     /// </summary>
     public static class FlareTextsMap
     {
@@ -193,6 +208,165 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        // ---------------------------------------------------------------- comments under posts that are not the player's
+
+        /// <summary>
+        /// The trained intent of a comment under a post that is not the player's (FlareCommentRules), by what the post is
+        /// about: a resident answering another resident's post on its topic (citizen.thread.*, defs_flare.make_cit_thread),
+        /// a resident reacting to an account's news (citizen.react.*, make_cit_react), a stranger answering another player's
+        /// post (citizen.reply.*, make_cit_reply). 'niche' is an influencer's (FlareNiche), -1 for anybody else. Null where
+        /// the training has nothing that fits: such a post shows only its count of replies.
+        /// </summary>
+        public static string Comment(FlarePost p, int niche)
+        {
+            if (p.Author == FlareAuthor.Network && PostKind(p.Source) != null)
+            {
+                return "citizen.reply." + PostKind(p.Source);
+            }
+            switch (p.Source)
+            {
+                case FlareSource.CityTalk: return Thread(Talk(p.Arg / 10));
+                case FlareSource.Report:
+                    switch ((FlareReport)p.Arg)
+                    {
+                        case FlareReport.Road: return "citizen.thread.roadworks";
+                        case FlareReport.Crime:
+                        case FlareReport.Unsafe: return "citizen.thread.crime";
+                        case FlareReport.Transit: return "citizen.thread.commute";
+                        case FlareReport.Lamp:
+                        case FlareReport.Litter:
+                        case FlareReport.Utilities: return "citizen.thread.everyday";
+                        default: return null;   // (a complaint about a business: nothing in the training fits)
+                    }
+                case FlareSource.Official:
+                    switch ((FlareOfficialPost)(p.Arg / 10))
+                    {
+                        case FlareOfficialPost.Patrols: return "citizen.react.patrols";
+                        case FlareOfficialPost.Outage: return "citizen.react.outage";
+                        case FlareOfficialPost.Rate: return p.Arg % 10 == 1 ? "citizen.react.rate_up" : "citizen.react.rate_down";
+                        case FlareOfficialPost.Clean: return "citizen.react.cleaning";
+                        case FlareOfficialPost.Election: return "citizen.react.election";
+                        default: return null;
+                    }
+                case FlareSource.BusinessPost:
+                    if (p.Author == FlareAuthor.Tycoon)
+                    {
+                        switch (p.Arg - FlareLiveRules.TycoonMoveArg)
+                        {
+                            case 0: return "citizen.react.tycoon_buys";
+                            case 1: return "citizen.react.tycoon_opens";
+                            case 2: return "citizen.react.tycoon_hiring";
+                            default: return null;
+                        }
+                    }
+                    return p.Author == FlareAuthor.Business && (p.Arg == 0 || p.Arg == 1) ? "citizen.thread.prices" : null;   // (a sale, new stock: talk of prices)
+                case FlareSource.Life:
+                    switch ((FlareRules.LifeTopic)(p.Arg / 10))
+                    {
+                        case FlareRules.LifeTopic.Sport: return "citizen.thread.sport";
+                        case FlareRules.LifeTopic.Food: return "citizen.thread.food";
+                        case FlareRules.LifeTopic.Night: return "citizen.thread.night_out";
+                        case FlareRules.LifeTopic.Shops: return "citizen.thread.prices";
+                        default: return "citizen.thread.everyday";
+                    }
+                case FlareSource.Election: return "citizen.thread.election";
+                case FlareSource.Niche:
+                case FlareSource.Visit:
+                case FlareSource.Hired:
+                case FlareSource.Rival:
+                    switch (niche)
+                    {
+                        case (int)FlareNiche.Food: return "citizen.thread.food";
+                        case (int)FlareNiche.Fitness: return "citizen.thread.sport";
+                        case (int)FlareNiche.Nightlife: return "citizen.thread.night_out";
+                        case (int)FlareNiche.LocalNews: return "citizen.thread.everyday";
+                        default: return null;   // (fashion, tech, business: no topic of the training's)
+                    }
+                default: return null;
+            }
+        }
+
+        // A resident's post's intent as the reply to such a post.
+        private static string Thread(string post)
+        {
+            return post != null ? "citizen.thread." + post.Substring("citizen.post.".Length) : null;
+        }
+
+        /// <summary>What a friend must care about to comment under a post of this intent (FlareTaste); None: no friend comments.</summary>
+        public static FlareTaste Taste(string intent)
+        {
+            switch (intent)
+            {
+                case "citizen.thread.food": return FlareTaste.Food;
+                case "citizen.thread.night_out": return FlareTaste.Night;
+                case "citizen.thread.sport": return FlareTaste.Sport;
+                case "citizen.thread.prices": return FlareTaste.Shops;
+                case "citizen.thread.everyday": return FlareTaste.Cheers;
+                default: return FlareTaste.None;
+            }
+        }
+
+        /// <summary>The reaction of a stranger's comment under another player's post: how the city answers such a post (FlareLiveRules.ReplyKindOf), where the training has it; null otherwise.</summary>
+        public static string CommentReaction(FlarePost p, int seed, int slot)
+        {
+            return Reaction(FlareLiveRules.ReplyKindOf(p, FlareRules.Roll(seed, slot, 847)), PostKind(p.Source));
+        }
+
+        /// <summary>
+        /// A comment's card: its intent, its use (Flare's comments and replies) and the values the intent's lines take from the
+        /// post it answers. The speaker (r.Who) is filled by the caller. False if a value the card needs is missing (nothing
+        /// is made up: that comment is not written).
+        /// </summary>
+        public static bool CommentCard(TextRequest r, string intent, FlareCommentPost post)
+        {
+            if (intent == null)
+            {
+                return false;
+            }
+            r.Intent = intent;
+            r.Use = TextUse.Replies;
+            r.Slots.Clear();
+            r.History.Clear();
+            if (intent.StartsWith("citizen.thread.", System.StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(post.First) || string.IsNullOrEmpty(post.Handle) || string.IsNullOrEmpty(post.Words))
+                {
+                    return false;
+                }
+                r.Slots.Set("other", post.First);
+                Optional(r, "district", post.District);
+                r.History.Add(new TextSaid(post.Handle, post.Words));
+                return true;
+            }
+            if (intent.StartsWith("citizen.react.", System.StringComparison.Ordinal))
+            {
+                Optional(r, "district", post.District);
+                Optional(r, "home", post.Home);
+                Optional(r, "tycoon", post.Tycoon);
+                Optional(r, "company", post.Company);
+                return true;
+            }
+            if (intent.StartsWith("citizen.reply.", System.StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(post.Reaction) || string.IsNullOrEmpty(post.First) || string.IsNullOrEmpty(post.Words))
+                {
+                    return false;
+                }
+                r.Slots.Set("reaction", post.Reaction);
+                r.History.Add(new TextSaid(post.First, post.Words));
+                return true;
+            }
+            return false;
+        }
+
+        private static void Optional(TextRequest r, string name, string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                r.Slots.Set(name, value);
+            }
+        }
+
         // ---------------------------------------------------------------- the city's people as speakers
 
         /// <summary>A city person's age: stable, in the range of their persona (students young, retirees old).</summary>
@@ -272,7 +446,31 @@ namespace RealLifeOverhaul.Flare
             Add(list, Dm("reallife_flare_dm_answer_chat"));
             Add(list, Dm("reallife_flare_dm_answer_collab"));
             list.Add("citizen.review");
+            CommentIntents(list);
             return list;
+        }
+
+        /// <summary>Every intent a comment can be asked with (every source, kind, author and niche swept), added to 'list' once each.</summary>
+        public static void CommentIntents(List<string> list)
+        {
+            FlareAuthor[] authors = { FlareAuthor.Citizen, FlareAuthor.Official, FlareAuthor.Business, FlareAuthor.Tycoon, FlareAuthor.Friend, FlareAuthor.Influencer, FlareAuthor.Network };
+            var p = new FlarePost();
+            for (int s = 1; s <= (int)FlareSource.Answer; s++)
+            {
+                for (int a = 0; a < authors.Length; a++)
+                {
+                    for (int arg = 0; arg < 100; arg++)
+                    {
+                        for (int niche = -1; niche <= (int)FlareNiche.Business; niche++)
+                        {
+                            p.Source = (FlareSource)s;
+                            p.Author = authors[a];
+                            p.Arg = arg;
+                            Add(list, Comment(p, niche));
+                        }
+                    }
+                }
+            }
         }
 
         private static void Add(List<string> list, string intent)

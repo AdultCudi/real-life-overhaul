@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Flare
     {
         private readonly List<FlareReaction> _reactions = new List<FlareReaction>(16);
         private readonly List<FlarePost> _synthetic = new List<FlarePost>(16);
+        private readonly List<FlareComment> _comments = new List<FlareComment>(FlareCommentRules.WrittenMost);
         private readonly List<FlarePerson> _persons = new List<FlarePerson>(8);
         private long _seenBefore;
 
@@ -64,6 +65,7 @@ namespace RealLifeOverhaul.Flare
             {
                 Note(FlareText.T(following ? "reallife_flare_empty_following" : "reallife_flare_empty_feed"));
             }
+            _director.CommentsAhead(null);   // (RLO Texts: the comments under the feed's posts, a few asked; once a game minute at most)
         }
 
         private static bool Followed(FlareFile file, FlarePost p)
@@ -547,30 +549,77 @@ namespace RealLifeOverhaul.Flare
             Section(FlareText.T("reallife_flare_replies_title"));
             int before = _rows.Count;
             _synthetic.Clear();
+            int more = 0;
             if (p.Author == FlareAuthor.Player)
             {
                 FriendReplies(p, now);
             }
+            else
+            {
+                more = Comments(p, now);
+            }
+            int next = 0;   // (the comments come in order of time: each goes in among the posted replies by its minute)
             for (int i = 0; i < file.Posts.Count; i++)
             {
                 FlarePost r = file.Posts[i];
                 if (r.ReplyTo == p.Id && r.At <= now && !Hidden(file, r))
                 {
+                    while (p.Author != FlareAuthor.Player && next < _synthetic.Count && _synthetic[next].At <= r.At)
+                    {
+                        Row(CellPost).Post = _synthetic[next++];
+                    }
                     Row(CellPost).Post = r;
                 }
             }
-            for (int i = 0; i < _synthetic.Count; i++)
+            for (int i = next; i < _synthetic.Count; i++)
             {
                 Row(CellPost).Post = _synthetic[i];
             }
-            if (_rows.Count == before)
+            if (more > 0)
+            {
+                Note(more == 1 && _rows.Count == before ? FlareText.T("reallife_flare_comments_count_one")
+                    : _rows.Count == before ? FlareText.Fill("reallife_flare_comments_count", "count", FlareText.N(more))
+                    : more == 1 ? FlareText.T("reallife_flare_comments_more_one") : FlareText.Fill("reallife_flare_comments_more", "count", FlareText.N(more)));
+            }
+            else if (_rows.Count == before)
             {
                 Note(FlareText.T("reallife_flare_no_replies"));
+            }
+            if (p.Author != FlareAuthor.Player)
+            {
+                _director.CommentsAhead(p);   // (RLO Texts: the words of this post's comments still to come, asked first)
             }
             FlareRow b = Row(CellButton);
             b.Key = "reply";
             b.Number = p.Id;
             b.Text = FlareText.T("reallife_flare_reply_button");
+        }
+
+        // The comments under a post that is not the player's (FlareCommentRules): those come in by now whose words RLO Texts
+        // wrote, as replies made for display; returns how many of the card's count are not written out (the "more" line).
+        private int Comments(FlarePost p, long now)
+        {
+            int shown = FlareLiveRules.Shown(p.Replies, p, now), written = 0;
+            _director.CommentsOf(p, _comments);
+            int due = FlareCommentRules.Due(_comments, now);
+            for (int i = 0; i < due; i++)
+            {
+                FlareComment c = _comments[i];
+                string words = _director.CommentWords(p, c);
+                if (words == null)
+                {
+                    continue;   // (no words: not shown; it counts among the more)
+                }
+                var comment = new FlarePost
+                {
+                    Id = FlareCommentRules.DisplayId(p.Id, c.Slot), Author = c.Kind == 'f' ? FlareAuthor.Friend : c.Kind == 'i' ? FlareAuthor.Influencer : FlareAuthor.Citizen,
+                    Who = c.Who, Source = FlareSource.Reply, ReplyTo = p.Id, Text = words, Likes = c.Likes, Reach = 30
+                };
+                FlareLiveRules.SetAt(comment, c.At);
+                _synthetic.Add(comment);
+                written++;
+            }
+            return FlareCommentRules.More(shown, written);
         }
 
         // The friends' replies to a post of the player's, as they come in over the hours (their words are the post's own rules').
@@ -790,28 +839,7 @@ namespace RealLifeOverhaul.Flare
 
         private string WordsOf(FlarePost p, string author)
         {
-            string model = _director.ModelWords(p);   // (RLO Texts: the model's words, when they were written in time)
-            if (model != null)
-            {
-                return model;
-            }
-            string built = FlareText.Built(p, author);
-            if (built != null)
-            {
-                return built;
-            }
-            if (p.Source == FlareSource.Reply)
-            {
-                return p.Text ?? string.Empty;
-            }
-            FlarePerson who = default(FlarePerson);
-            bool friend = p.Author == FlareAuthor.Friend && _director.Person(p.Who, out who);
-            FlareInfluencer inf = p.Author == FlareAuthor.Influencer && _director.File != null ? _director.File.Influencer(p.Who) : null;
-            if (inf != null)
-            {
-                return FlareText.Post(p, null, null, FlareGame.DistrictName(inf.District), (int)inf.Niche);
-            }
-            return FlareText.Post(p, _director.PersonName(p.Tag), friend ? who.Job : string.Empty, friend ? who.District : string.Empty);
+            return _director.WordsFor(p, author);   // (RLO Texts: the model's words when they were written in time; else the written line)
         }
 
         private string ContextOf(FlarePost p)

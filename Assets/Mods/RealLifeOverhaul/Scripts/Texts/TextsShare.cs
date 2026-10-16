@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Texts
     ///
     /// One line a text: "w|key|intent|words", the words escaped as the save's (TextsStore.Escape), at most
     /// <see cref="WordsMost"/> characters; the whole part at most <see cref="LinesMost"/> lines (the newest). The key is the
-    /// session's number of the item ("fn:45" a post by the host's number, "lp:day:n" a piece of the paper). Game-free
+    /// session's number of the item ("fn:45" a post by the host's number, "fn:45:3:c17" a comment under it, "lp:day:n" a piece of the paper). Game-free
     /// (EconomyCheck, TextsChecks.cs). COST: a line a text written on the host; nothing per frame.
     /// </summary>
     public static class TextsShare
@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Texts
             return b.Length > 0 ? b.ToString() : null;
         }
 
-        // A shared text this machine wrote itself as the host ("fp:", "lp:"), not one a host sent it.
+        // A shared text this machine wrote itself as the host ("fp:", "fc:", "lp:"), not one a host sent it.
         private static bool Own(TextKept k) => k.Shared && !k.Received;
 
         /// <summary>
@@ -117,10 +117,14 @@ namespace RealLifeOverhaul.Texts
             return key != null && (key.StartsWith("fn:", System.StringComparison.Ordinal) || key.StartsWith("lp:", System.StringComparison.Ordinal)) && key.Length <= 40;
         }
 
-        /// <summary>The key a host's text goes under to the guests: a post of the host's own ("fp:12") by the session's number, the host's own ("fn:12").</summary>
+        /// <summary>
+        /// The key a host's text goes under to the guests: a post of the host's own ("fp:12") by the session's number, the
+        /// host's own ("fn:12"); a comment under one ("fc:12:3:c17", Flare/FlareCommentRules.Key) likewise ("fn:12:3:c17").
+        /// An older RLO keeps such a comment's line under a key it never reads.
+        /// </summary>
         public static string NetKey(string key)
         {
-            return key != null && key.StartsWith("fp:", System.StringComparison.Ordinal) ? "fn:" + key.Substring(3) : key;
+            return key != null && (key.StartsWith("fp:", System.StringComparison.Ordinal) || key.StartsWith("fc:", System.StringComparison.Ordinal)) ? "fn:" + key.Substring(3) : key;
         }
 
         /// <summary>The key of a shared post by the session's number.</summary>

@@ -96,6 +96,7 @@ namespace RealLifeOverhaul.Flare
                     _textAsked.Add(p.Id);   // (asked: not again; one not asked is looked at again on the next event)
                 }
             }
+            CommentsAhead(null);   // (the comments under the posts not the player's: a few more asked, FlareDirector.Comments)
         }
 
         // The friends' replies of a post of the player's, as its reactors say (FlareLiveRules.Reactors): asked when it is posted.

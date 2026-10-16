@@ -566,9 +566,11 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>How much of a post's figures have come in by now, thousandths: on a curve, all of it a day after.</summary>
-        public static int Arrived(FlarePost p, long now)
+        public static int Arrived(FlarePost p, long now) => ArrivedAfter(now - p.At);
+
+        /// <summary>How much of a post's figures have come in so many game minutes after it went up, thousandths.</summary>
+        public static int ArrivedAfter(long since)
         {
-            long since = now - p.At;
             if (since <= 0)
             {
                 return 0;
