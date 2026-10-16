@@ -161,7 +161,9 @@ internal static partial class Program
     private static void BugBooksSource()
     {
         string game = BugSource("BugReportGame.cs");
-        Check(game.Contains("f.StaffNote = Part(() => Staff(f.Staff));") && game.Contains("f.BooksNote = Part(() => Books(f.Books, f.Day));"),
+        Check(game.Contains("f.StaffNote = StaffPart(f.Staff);") && game.Contains("f.BooksNote = BooksPart(f.Books, f.Day);")
+              && game.Contains("                Staff(into);\n                return null;".Replace("\n", game.Contains("\r\n") ? "\r\n" : "\n"))
+              && game.Contains("                Books(into, today);\n                return null;".Replace("\n", game.Contains("\r\n") ? "\r\n" : "\n")),
             "bug books: the staff and the books are read with the day and the money, each part on its own");
         Check(game.Contains("GoingPublic.Foreign(reg)") && game.Contains("e.IsCandidate") && game.Contains("Helpers.EmployeeHelper.CalculateHourlyWageForSkill(e.characterData.skills[0])"),
             "bug books: another player's staff and candidates are left out, and the game's own wage is the game's formula");

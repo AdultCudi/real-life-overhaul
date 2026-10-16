@@ -170,24 +170,43 @@ namespace RealLifeOverhaul.Meta
             f.Hour = TimeHelper.CurrentHour;
             f.Minute = Mathf.Clamp((int)TimeHelper.CurrentMinute, 0, 59);
             f.Money = SaveGameManager.Current.Money;
-            f.StaffNote = Part(() => Staff(f.Staff));
-            f.BooksNote = Part(() => Books(f.Books, f.Day));
+            f.StaffNote = StaffPart(f.Staff);
+            f.BooksNote = BooksPart(f.Books, f.Day);
             return true;
         }
 
-        // A part of report.txt read: null when it was, else why not (the rest of the report still comes).
-        private static string Part(Action read)
+        // A part of report.txt read: null when it was, else why not (the rest of the report still comes). Each calls its
+        // reader inside its own try, so a game without a member the reader names leaves only that part out.
+        private static string StaffPart(List<BugStaff> into)
         {
             try
             {
-                read();
+                Staff(into);
                 return null;
             }
             catch (Exception e)
             {
-                MetaLog.Error(e);
-                return "could not be read (" + e.GetType().Name + ")";
+                return Unread(e);
             }
+        }
+
+        private static string BooksPart(List<BugMoney> into, int today)
+        {
+            try
+            {
+                Books(into, today);
+                return null;
+            }
+            catch (Exception e)
+            {
+                return Unread(e);
+            }
+        }
+
+        private static string Unread(Exception e)
+        {
+            MetaLog.Error(e);
+            return "could not be read (" + e.GetType().Name + ")";
         }
 
         // Every employee of the player's (not a candidate, not another player's in Going Public): what their pay is made of,
