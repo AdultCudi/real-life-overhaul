@@ -43,6 +43,24 @@ internal static partial class Program
             "texts, the start's watch: each stage has its name for the log");
     }
 
+    // Windows' Application Control (Smart App Control) refuses to start an unsigned program with no reputation, such as a
+    // checker just built: error 4551. Only that is a skip; any other failure to start stays a failure of the check.
+    private static bool Blocked(string exe)
+    {
+        try
+        {
+            using (Process p = Process.Start(new ProcessStartInfo(exe, "--probe-start") { UseShellExecute = false, CreateNoWindow = true }))
+            {
+                p.WaitForExit(10000);
+            }
+            return false;
+        }
+        catch (System.ComponentModel.Win32Exception e) when (e.NativeErrorCode == 4551)
+        {
+            return true;
+        }
+    }
+
     // The runner started on a pretend server: it must fail by its limits with its line, and the pretend server must be ended.
     private static void TextsStartPretend(string mode, string what, string stage)
     {
@@ -50,6 +68,11 @@ internal static partial class Program
         Check(File.Exists(exe), "texts, the start: the checker can be started as a pretend server (" + exe + ")");
         if (!File.Exists(exe))
         {
+            return;
+        }
+        if (Blocked(exe))
+        {
+            Console.WriteLine("  SKIPPED texts, the start on a pretend server (" + mode + "): Windows' Application Control (Smart App Control) does not let the freshly built checker start as a program on this PC; the rest of the checks run");
             return;
         }
         string model = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rlo-pretend-" + mode + "-" + Process.GetCurrentProcess().Id + ".gguf");

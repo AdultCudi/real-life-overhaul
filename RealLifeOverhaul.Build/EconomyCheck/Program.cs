@@ -61,6 +61,10 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--probe-start")
+        {
+            return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
+        }
         if (args.Length > 1 && args[0] == "-m")
         {
             return PretendLlama(args);   // (started by TextServer as a pretend llama-server: TextsStartChecks.cs)
