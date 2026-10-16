@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Texts
         public string Exe;           // the pack's llama-server.exe
         public string Model;         // the pack's .gguf
         public string Log;           // where the server writes its own log (null: nowhere)
-        public int Threads = 2;      // 2 to 4
+        public int Threads = 2;      // 1 to 4 (at most 2 on a GPU: TextSpeed.Threads)
         public string Device;        // null for the processor; else a llama.cpp device name ("Vulkan0")
         public double LoadSeconds = 90.0;   // the most the model may take to load before the runner gives up
         public double WarmSeconds = 30.0;   // the most the first reply (a GPU's shaders built) or the head's read may take
@@ -133,15 +133,26 @@ namespace RealLifeOverhaul.Texts
 
     /// <summary>
     /// The runner: llama.cpp's own server (llama-server.exe, MIT) started by the mod as a child process, on 127.0.0.1 and a
-    /// free port of the moment, with a key of its own, at low priority, and one worker thread of the mod that takes the
-    /// queue's requests one at a time and asks the server for each over a local socket. Chosen over loading llama.cpp's
-    /// DLLs into the game (see TextsDirector's summary for the reasons): a native crash or a leak stays in the child.
+    /// free port of the moment, with a key of its own, and one worker thread of the mod that takes the queue's requests one
+    /// at a time and asks the server for each over a local socket. Chosen over loading llama.cpp's DLLs into the game (see
+    /// TextsDirector's summary for the reasons): a native crash or a leak stays in the child.
     ///
-    ///   start      a free port from the system, the exe started hidden (no window), BelowNormal, its own log; tied to a
+    ///   priority   on the processor below normal (the server's threads and the worker's), so the game's frame always comes
+    ///              first. On a GPU normal, with at most two threads (<see cref="LowPriority"/>, TextSpeed.GpuThreads): the
+    ///              model's work is the GPU's, but each step of it is handed over and waited for by a thread of the server,
+    ///              and below normal that thread waits behind every busy thread of the game. Measured (16 Oct 2026, the 2B on
+    ///              an RTX 5070 Ti, a Ryzen 7700X's sixteen threads busy at normal priority and the GPU busy): below normal the
+    ///              model took over 40 s to load, the first reply 5 s and words came at 3 to 6 a second; at normal priority
+    ///              3.5 s, 0.1 s and 110 to 200 a second, the server using half a thread of the processor for the 0.1 to 0.3 s
+    ///              a reply takes. In the game below normal: the first reply in 24 s, 39 words a second
+    ///   start      a free port from the system, the exe started hidden (no window), at its priority, its own log; tied to a
     ///              Windows job object that ends it when the game's process ends, even in a crash; then the worker waits
     ///              for /health (the model loading, within <see cref="TextServerStart.LoadSeconds"/>) and writes one short
     ///              reply to warm it (the first reply on a GPU builds its shaders). Each stage is logged with its time and
-    ///              has a limit of its own; a watchdog on a timer (<see cref="TextStartWatch"/>) ends a stage stuck past
+    ///              has a limit of its own; the first reply and the speed test also say what was sent, how long the model's
+    ///              own reading and writing took, the time around them and the processor time the server used, so that a
+    ///              slow start shows whether the server was working (building shaders) or waiting to run; a watchdog on a
+    ///              timer (<see cref="TextStartWatch"/>) ends a stage stuck past
     ///              it for certain (the line written, the socket closed, the server killed). Every wait on the server is
     ///              bounded by Socket.Poll, not the socket's time-outs, which Mono on Windows does not honour
     ///   the head   every prompt starts with the same system turn and "who: " (<see cref="Head"/>, 57 tokens of the 2B
@@ -182,6 +193,7 @@ namespace RealLifeOverhaul.Texts
         private int _written, _missed;
         private readonly Random _seeds = new Random(Guid.NewGuid().GetHashCode());   // (a fresh sampling seed each request: the same card never gives the same words by itself)
         private double _took, _headMs;
+        private string _detail;   // what the stage under way adds to its log line (the first reply's timings), or null
         private bool _headSaved;
         private string _headFile;
         private readonly TextStartWatch _watch = new TextStartWatch();
@@ -241,7 +253,7 @@ namespace RealLifeOverhaul.Texts
             }
             _state = TextServerState.Loading;
             _stop = false;
-            _thread = new Thread(Run) { IsBackground = true, Name = "RLO Texts", Priority = ThreadPriority.BelowNormal };
+            _thread = new Thread(Run) { IsBackground = true, Name = "RLO Texts", Priority = LowPriority(_start.Device) ? ThreadPriority.BelowNormal : ThreadPriority.Normal };   // (it mostly waits on the socket; on a GPU it must not read the answer late)
             _thread.Start();
         }
 
@@ -321,6 +333,7 @@ namespace RealLifeOverhaul.Texts
         private bool Stage(TextStartStage stage, double limit, Func<bool> step)
         {
             _watch.Enter(stage, limit, TextClock.Now);
+            _detail = null;
             bool ok = !_stop && step();
             double took = _watch.Leave(TextClock.Now);
             if (_watch.Over)
@@ -329,7 +342,7 @@ namespace RealLifeOverhaul.Texts
             }
             if (ok)
             {
-                _log?.Invoke("RLO Texts: start-up, " + TextStartWatch.Name(stage) + " in " + took.ToString("0.0") + " s.");
+                _log?.Invoke("RLO Texts: start-up, " + TextStartWatch.Name(stage) + " in " + took.ToString("0.0") + " s" + (_detail != null ? " (" + _detail + ")" : string.Empty) + ".");
             }
             return ok;
         }
@@ -405,30 +418,12 @@ namespace RealLifeOverhaul.Texts
             }
             _port = FreePort();
             _key = Guid.NewGuid().ToString("N");
-            var args = new StringBuilder(512);
-            args.Append("-m \"").Append(_start.Model).Append("\" --host 127.0.0.1 --port ").Append(_port)
-                .Append(" --api-key ").Append(_key)
-                .Append(" -t ").Append(_start.Threads).Append(" -tb ").Append(_start.Threads)
-                .Append(" -c 1024 -np 1 --no-webui --prio -1 --offline");   // (offline: llama.cpp never reaches the network, even to fetch a model)
             if (_start.Cache != null)
             {
                 Directory.CreateDirectory(_start.Cache);
                 Stale(_start.Cache);
-                args.Append(" --slot-save-path \"").Append(_start.Cache.TrimEnd('\\', '/')).Append('"');
             }
-            if (_start.Device != null)
-            {
-                args.Append(" -dev ").Append(_start.Device).Append(" -ngl 99");
-            }
-            else
-            {
-                args.Append(" -dev none -ngl 0");
-            }
-            if (_start.Log != null)
-            {
-                args.Append(" -lv 2 --log-file \"").Append(_start.Log).Append('"');   // (warnings and errors only: a long session's log stays small)
-            }
-            var info = new ProcessStartInfo(_start.Exe, args.ToString())
+            var info = new ProcessStartInfo(_start.Exe, Arguments(_start, _port, _key))
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -450,17 +445,63 @@ namespace RealLifeOverhaul.Texts
             {
                 return Fail("the server would not start");
             }
+            bool low = LowPriority(_start.Device);
             try
             {
-                _process.PriorityClass = ProcessPriorityClass.BelowNormal;
+                _process.PriorityClass = low ? ProcessPriorityClass.BelowNormal : ProcessPriorityClass.Normal;
             }
             catch (Exception)
             {
                 // (it may have ended already; the next look sees it)
             }
+            if (!low)
+            {
+                FullSpeed(_process);
+            }
             TieToGame(_process);
-            _log?.Invoke("RLO Texts: the server started on 127.0.0.1:" + _port + " (" + (_start.Device ?? "the processor") + ", " + _start.Threads + " threads, " + Path.GetFileName(_start.Model) + ").");
+            _log?.Invoke("RLO Texts: the server started on 127.0.0.1:" + _port + " (" + (_start.Device ?? "the processor") + ", " + _start.Threads + " threads, "
+                         + (low ? "below normal" : "normal") + " priority, " + Path.GetFileName(_start.Model) + ").");
             return true;
+        }
+
+        /// <summary>
+        /// True when the server runs below normal priority: on the processor, where its threads do the model's work and the
+        /// game's frame must come first. On a GPU (a device named) it runs at normal priority: its few threads only hand the
+        /// work to the GPU and wait for it, and below normal they wait behind every busy thread of the game (see the summary).
+        /// </summary>
+        public static bool LowPriority(string device) => device == null;
+
+        /// <summary>
+        /// llama-server's arguments, as the runner starts it: the model, 127.0.0.1 and the port, the key, the threads, one
+        /// slot of 1024 tokens, no web page, offline; its priority (--prio -1, below normal, on the processor; 0, normal, on
+        /// a GPU: <see cref="LowPriority"/>); the cache folder for the head's state; the device and its layers; its log of
+        /// warnings and errors. Game-free (EconomyCheck, TextsSpeedChecks.cs).
+        /// </summary>
+        public static string Arguments(TextServerStart start, int port, string key)
+        {
+            var args = new StringBuilder(512);
+            args.Append("-m \"").Append(start.Model).Append("\" --host 127.0.0.1 --port ").Append(port)
+                .Append(" --api-key ").Append(key)
+                .Append(" -t ").Append(start.Threads).Append(" -tb ").Append(start.Threads)
+                .Append(" -c 1024 -np 1 --no-webui --prio ").Append(LowPriority(start.Device) ? "-1" : "0")
+                .Append(" --offline");   // (offline: llama.cpp never reaches the network, even to fetch a model)
+            if (start.Cache != null)
+            {
+                args.Append(" --slot-save-path \"").Append(start.Cache.TrimEnd('\\', '/')).Append('"');
+            }
+            if (start.Device != null)
+            {
+                args.Append(" -dev ").Append(start.Device).Append(" -ngl 99");
+            }
+            else
+            {
+                args.Append(" -dev none -ngl 0");
+            }
+            if (start.Log != null)
+            {
+                args.Append(" -lv 2 --log-file \"").Append(start.Log).Append('"');   // (warnings and errors only: a long session's log stays small)
+            }
+            return args.ToString();
         }
 
         private bool WaitReady()
@@ -500,9 +541,11 @@ namespace RealLifeOverhaul.Texts
         {
             try
             {
-                double begun = TextClock.Now;
-                Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(_start.WarmSeconds));
-                LoadedIn += TextClock.Now - begun;
+                double begun = TextClock.Now, cpu = Cpu();
+                string answer = Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(_start.WarmSeconds));
+                double took = TextClock.Now - begun;
+                LoadedIn += took;
+                _detail = "sent the test card, 1 token to write: " + Timings(answer, took, Cpu() - cpu);
                 return true;
             }
             catch (Exception e)
@@ -564,11 +607,15 @@ namespace RealLifeOverhaul.Texts
                 return true;
             }
             var result = new TextSpeedResult { For = _start.SpeedFor, HeadMs = _headMs };
-            double begun = TextClock.Now;
+            double begun = TextClock.Now, cpu = Cpu(), restored = 0.0;
+            string detail;
             try
             {
                 string prompt = TextCard.ChatMl(TestCard());
                 Restore(prompt);
+                restored = TextClock.Now - begun;
+                double asked = TextClock.Now;
+                cpu = Cpu();
                 string answer = Post("/completion", TextJson.Request(prompt, 7, TextSpeed.ReplyTokens), (int)(TextSpeed.TestSeconds * 1000.0));
                 result.PromptMsPerToken = TextJson.Number(answer, "prompt_per_token_ms");
                 result.TokensPerSecond = TextJson.Number(answer, "predicted_per_second");
@@ -576,19 +623,63 @@ namespace RealLifeOverhaul.Texts
                 {
                     throw new IOException("no timings");
                 }
+                detail = Timings(answer, TextClock.Now - asked, Cpu() - cpu);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Past the cap: at least as slow as the cap says.
                 double spent = Math.Max(0.1, TextClock.Now - begun);
                 result.Capped = true;
                 result.PromptMsPerToken = spent * 1000.0 / TextSpeed.CardTokens;
                 result.TokensPerSecond = TextSpeed.ReplyTokens / spent;
+                detail = "no answer within " + TextSpeed.TestSeconds.ToString("0") + " s (" + e.Message + "); the server used " + Seconds(Cpu() - cpu) + " of processor time";
             }
             Speed = result;
             _log?.Invoke("RLO Texts: speed test: " + result.PromptMsPerToken.ToString("0.0") + " ms a token read, " + result.TokensPerSecond.ToString("0.0")
-                         + " tokens a second written: an ordinary reply in about " + result.Estimate.ToString("0.0") + " s" + (result.Capped ? " (past the test's cap)" : "") + ".");
+                         + " tokens a second written: an ordinary reply in about " + result.Estimate.ToString("0.0") + " s" + (result.Capped ? " (past the test's cap)" : "")
+                         + " (sent the test card, " + TextSpeed.ReplyTokens + " tokens to write, " + (_headSaved ? "the head put back first in " + (restored * 1000.0).ToString("0") + " ms" : "the head read with it")
+                         + ": " + detail + "; " + (LowPriority(_start.Device) ? "below normal" : "normal") + " priority, " + _start.Threads + " threads).");
             return true;
+        }
+
+        /// <summary>
+        /// What a reply of the start took, for its log line: the tokens the model read and wrote and its own time for each
+        /// (the server's "timings"), the rest of the request's time outside them, and the processor time the server used
+        /// meanwhile. A slow first reply then tells its cause: the model's own times long with the processor time close to
+        /// them is work (a GPU's shaders built); the model's times long with little processor time, or a long rest, is the
+        /// server waiting to run (its threads starved by busier ones, or the GPU busy). Game-free (EconomyCheck, TextsSpeedChecks.cs).
+        /// </summary>
+        public static string Timings(string answer, double seconds, double cpuSeconds)
+        {
+            double readN = TextJson.Number(answer, "prompt_n"), readMs = TextJson.Number(answer, "prompt_ms");
+            double wroteN = TextJson.Number(answer, "predicted_n"), wroteMs = TextJson.Number(answer, "predicted_ms");
+            if (double.IsNaN(readN) || double.IsNaN(readMs) || double.IsNaN(wroteN) || double.IsNaN(wroteMs))
+            {
+                return "no timings in the answer, " + Seconds(seconds) + " in all; the server used " + Seconds(cpuSeconds) + " of processor time";
+            }
+            double rest = Math.Max(0.0, seconds - (readMs + wroteMs) / 1000.0);
+            return readN.ToString("0") + " tokens read in " + readMs.ToString("0") + " ms and " + wroteN.ToString("0") + " written in " + wroteMs.ToString("0")
+                   + " ms by the model, " + Seconds(rest) + " outside them, " + Seconds(seconds) + " in all; the server used " + Seconds(cpuSeconds) + " of processor time";
+        }
+
+        // Seconds for a log line ("0.42 s"), or "unknown" where the system could not say.
+        private static string Seconds(double seconds)
+        {
+            return double.IsNaN(seconds) || double.IsInfinity(seconds) ? "unknown" : seconds.ToString("0.00") + " s";
+        }
+
+        // The processor time the server has used so far, in seconds (NaN where the system cannot say).
+        private double Cpu()
+        {
+            try
+            {
+                Process p = _process;
+                return p != null ? p.TotalProcessorTime.TotalSeconds : double.NaN;
+            }
+            catch (Exception)
+            {
+                return double.NaN;   // (ended, or the runtime cannot read it)
+            }
         }
 
         /// <summary>The fixed card of the warm-up and the speed test.</summary>
@@ -860,6 +951,42 @@ namespace RealLifeOverhaul.Texts
             catch (Exception e)
             {
                 _log?.Invoke("RLO Texts: no job object (" + e.GetType().Name + "); the server is ended when the game closes normally.");
+            }
+        }
+
+        // ---------------------------------------------------------------- on a GPU: no power throttling (Windows' EcoQoS)
+
+        private const int ProcessPowerThrottling = 4;
+        private const uint ThrottleExecutionSpeed = 0x1;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PowerThrottling
+        {
+            public uint Version;
+            public uint ControlMask;
+            public uint StateMask;
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern bool SetProcessInformation(IntPtr process, int infoClass, ref PowerThrottling info, int length);
+
+        // A server on a GPU is a windowless process in the background, which Windows may run slowly to save power (EcoQoS)
+        // while its thread hands each step to the GPU. llama.cpp keeps its own worker threads out of that at normal
+        // priority, but not the thread that drives the GPU: the whole process is kept out here. Windows 10 1709 and later;
+        // where the call is missing, nothing changes.
+        private void FullSpeed(Process p)
+        {
+            try
+            {
+                var state = new PowerThrottling { Version = 1, ControlMask = ThrottleExecutionSpeed, StateMask = 0 };
+                if (!SetProcessInformation(p.Handle, ProcessPowerThrottling, ref state, Marshal.SizeOf(typeof(PowerThrottling))))
+                {
+                    _log?.Invoke("RLO Texts: Windows would not keep the server out of power throttling; it runs as Windows decides.");
+                }
+            }
+            catch (Exception e)
+            {
+                _log?.Invoke("RLO Texts: no power throttling setting on this Windows (" + e.GetType().Name + "); the server runs as Windows decides.");
             }
         }
     }
