@@ -5,8 +5,9 @@ namespace RealLifeOverhaul.Street
 {
     /// <summary>
     /// Which card of RLO Texts words a line of street talk (Wiring/StreetTexts asks it): data v4's own (TextIntents.Street.cs,
-    /// a branch per outcome) and, until a v4 pack is trained, what of data v3 fits; the stranger's role, the mood leaned the
-    /// way the game decided, and the words never shown because they speak of chat rather than of speech. Game-free
+    /// a branch per outcome; data v5's for a data 5 pack, the lines written until then too) and, for a v3 pack, what of data
+    /// v3 fits; the stranger's role, the mood leaned the way the game decided, the card's moment, whether the stranger knows
+    /// the player's name, and the words never shown because they speak of chat rather than of speech. Game-free
     /// (EconomyCheck, StreetTalkChecks.cs: every line's card is registered and is the generator's). COST: a switch.
     /// </summary>
     public static class StreetCards
@@ -95,6 +96,71 @@ namespace RealLifeOverhaul.Street
             }
         }
 
+        /// <summary>
+        /// The card of data v5 for a line (a data 5 pack): v4's, and the lines v4 had no card for (TextIntents.Street.cs V5):
+        /// how their day is going (leaning with it), the street event, their work, thanks (warmly when the talk so far was
+        /// friendly enough: <paramref name="warmThanks"/>, StreetRules.WarmThanks), and hello again. Null: written.
+        /// </summary>
+        public static string V5(StreetLine line, bool warmThanks, out string branch, out int lean)
+        {
+            branch = null;
+            lean = 0;
+            switch (line)
+            {
+                case StreetLine.DayGood: branch = "good"; lean = 1; return "street.day";
+                case StreetLine.DayFine: branch = "fine"; return "street.day";
+                case StreetLine.DayLow: branch = "low"; lean = -1; return "street.day";
+                case StreetLine.EventGoing: branch = "going"; return "street.event";
+                case StreetLine.EventNot: branch = "not"; return "street.event";
+                case StreetLine.WorkLikes: branch = "likes"; return "street.work";
+                case StreetLine.WorkMixed: branch = "mixed"; return "street.work";
+                case StreetLine.WorkRetired: branch = "retired"; return "street.work";
+                case StreetLine.Welcome: branch = warmThanks ? "warm" : "cool"; return "street.thanks";
+                case StreetLine.GreetBack: branch = "again"; return "street.hello";
+                default: return V4(line, out branch, out lean);
+            }
+        }
+
+        /// <summary>The card of a line for a pack of this data version: data v5's for a data 5 pack, else v4's (a v3 pack is never asked either).</summary>
+        public static string ByData(StreetLine line, int data, bool warmThanks, out string branch, out int lean)
+        {
+            return data >= Texts.TextIntents.DataV5 ? V5(line, warmThanks, out branch, out lean) : V4(line, out branch, out lean);
+        }
+
+        /// <summary>
+        /// The card's moment (defs_v5.moment_of) from its weekday (0 Monday ... 6 Sunday) and hour: a weekday's rush hours,
+        /// then the night, a weekend's day, the morning and the evening; null for the rest of the day (the fact left out).
+        /// </summary>
+        public static string Moment(int weekday, int hour)
+        {
+            bool weekend = weekday >= 5;
+            if (!weekend && ((hour >= 7 && hour < 10) || (hour >= 17 && hour < 19)))
+            {
+                return "rush hour";
+            }
+            if (hour >= 20 || hour < 6)
+            {
+                return "night";
+            }
+            if (weekend && hour >= 10 && hour < 18)
+            {
+                return "the weekend";
+            }
+            if (hour >= 6 && hour < 11)
+            {
+                return "morning";
+            }
+            return hour >= 17 ? "evening" : null;
+        }
+
+        /// <summary>
+        /// Whether a stranger knows the player's name: only when the player told them (in this talk, or earlier today), or
+        /// they know the player's face as a well-known or a disliked business owner. Never because they gave their own name
+        /// or numbers were swapped. The card says so ("you know their name: yes"), and words that name the player otherwise
+        /// lose the name or are not shown (<see cref="Spoken"/>).
+        /// </summary>
+        public static bool KnowsName(bool famed, bool askedName, bool toldToday) => famed || askedName || toldToday;
+
         /// <summary>The card of data v3 that fits a line until a v4 pack is trained (its branch none), and the mood's lean; null for the written line.</summary>
         public static string V3(StreetLine line, out string reason, out int lean)
         {
@@ -135,13 +201,20 @@ namespace RealLifeOverhaul.Street
         public static bool Chatty(string words) => words != null && Chat.IsMatch(words);
 
         /// <summary>
-        /// The lines no card of data v4 words (always written): the "go on" between choices, the question of where to, and the
-        /// answers v4 was not trained for. Tried offline on the 2B v4 model, the nearest cards answered how their day is going
+        /// The lines no card of data v4 words (always written for a pack before data 5): the "go on" between choices, the
+        /// question of where to, and the answers v4 was not trained for (data v5 was: see <see cref="V5"/>). Tried offline on the 2B v4 model, the nearest cards answered how their day is going
         /// with small talk about the remark, whether they like their work with their job and district again, and thanks with
         /// "That's interesting" or a goodbye; written lines say them right until a pack is trained on them.
         /// </summary>
-        public static bool Written(StreetLine line)
+        public static bool Written(StreetLine line) => Written(line, Texts.TextIntents.DataV4);
+
+        /// <summary>The lines always written for a pack of this data version: for data 5 only the "go on" and the question of where to.</summary>
+        public static bool Written(StreetLine line, int data)
         {
+            if (data >= Texts.TextIntents.DataV5)
+            {
+                return line == StreetLine.Waiting || line == StreetLine.DirAsk;
+            }
             switch (line)
             {
                 case StreetLine.Waiting: case StreetLine.DirAsk:

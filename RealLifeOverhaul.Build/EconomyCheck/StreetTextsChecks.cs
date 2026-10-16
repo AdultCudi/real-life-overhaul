@@ -100,7 +100,7 @@ internal static partial class Program
         int street = 0;
         foreach (TextIntent t in TextIntents.All)
         {
-            street += t.Key.StartsWith("street.", StringComparison.Ordinal) ? 1 : 0;
+            street += t.Key.StartsWith("street.", StringComparison.Ordinal) && t.Data == TextIntents.DataV4 ? 1 : 0;   // (data v5's again beside them: StreetTextsV5Checks.cs)
         }
         Check(street == 70, "street talk, RLO Texts: data v4's 70 cards are registered, one per branch the game decides (" + street + ")");
 

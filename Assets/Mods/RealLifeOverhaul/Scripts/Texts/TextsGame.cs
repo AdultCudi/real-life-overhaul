@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>
         /// Every place a pack may be (TextPacks.Find): the fixed folder, the folders the packs' own small mod announced,
-        /// ModsLocal, and on the Workshop only RLO's own two pack items, by their ids (TextPacks.WorkshopItems), switched on
+        /// ModsLocal, and on the Workshop only RLO's own pack items, by their ids (TextPacks.WorkshopItems), switched on
         /// in the mod list or not. No other Workshop item is ever looked in.
         /// </summary>
         public static List<string> Places()
@@ -73,6 +73,20 @@ namespace RealLifeOverhaul.Texts
             }
             int weekday = (int)TimeHelper.GetDayOfWeek(Mathf.Max(1, save.Day)) - (int)DayOfWeekOrdered.Monday;
             return TextWords.When(weekday, save.Hour, Mathf.FloorToInt(save.Minute) % 60);
+        }
+
+        /// <summary>The weekday (0 Monday ... 6 Sunday) and hour of the card's when line (<see cref="When"/>); false without a save.</summary>
+        public static bool Clock(out int weekday, out int hour)
+        {
+            GameInstance save = SaveGameManager.Current;
+            weekday = hour = 0;
+            if (save == null)
+            {
+                return false;
+            }
+            weekday = (int)TimeHelper.GetDayOfWeek(Mathf.Max(1, save.Day)) - (int)DayOfWeekOrdered.Monday;
+            hour = save.Hour;
+            return true;
         }
 
         /// <summary>The game's day; 0 without a save.</summary>

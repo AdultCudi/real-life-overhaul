@@ -142,8 +142,8 @@ namespace RealLifeOverhaul.Texts
                 r.Why = "not asked: the model is still loading";
                 return false;   // (still loading: what is due soon takes its written line now rather than wait for nothing)
             }
-            TextIntent intent = TextIntents.Find(r.Intent, r.Branch);
-            if (intent == null || intent.Data > Data)
+            TextIntent intent = TextIntents.Find(r.Intent, r.Branch, Data);   // (the card of the pack's own data: v4's for a data 4 pack, v5's for a data 5 one)
+            if (intent == null)
             {
                 r.Why = "not asked: the pack (data v" + Data + ") has no card " + r.Intent + (r.Branch != null ? " " + r.Branch : string.Empty);
                 return false;   // (no such intent, or one the pack's model never learnt: a v2 pack is never asked a v3 intent)

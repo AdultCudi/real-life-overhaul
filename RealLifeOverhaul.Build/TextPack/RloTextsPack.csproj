@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The small mod at the root of an RLO Texts pack (the Workshop items "RLO Texts" and "RLO Texts Lite"). The game loads
+  <!-- The small mod at the root of an RLO Texts pack (the Workshop items "RLO Texts", "RLO Texts Medium" and "RLO Texts Lite"). The game loads
        a mod folder by the one DLL at its root, and its uploader asks for one: this is it. It does nothing but tell Real
        Life Overhaul where the pack is (RloTextsPack.cs); the model and llama.cpp's files sit in the pack's subfolders,
        which the game never loads. Built into a pack folder by the pack script (not by the mod's own build or the gate). -->

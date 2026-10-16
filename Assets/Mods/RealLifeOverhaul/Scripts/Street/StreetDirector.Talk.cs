@@ -402,12 +402,15 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        // The values every line may name.
+        // The values every line may name, and the card's words of the moment (RLO Texts: thanks taken warmly or coolly, decided
+        // before the turn as the rules decide it; the rain).
         private Dictionary<string, string> Data(StreetChat c)
         {
             StreetStranger s = c.Who;
-            return new Dictionary<string, string>(8)
+            return new Dictionary<string, string>(10)
             {
+                { "t_thanks", StreetRules.WarmThanks(c) ? "warm" : "cool" },
+                { "t_weather", _facts.Raining ? "raining" : string.Empty },
                 { "first", s.First },
                 { "player", _facts.Player ?? string.Empty },
                 { "job", SocialCatalogue.Jobs[Mathf.Clamp(s.Job, 0, SocialCatalogue.Jobs.Length - 1)].GetLocalization() },

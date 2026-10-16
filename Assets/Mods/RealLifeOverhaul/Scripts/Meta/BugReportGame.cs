@@ -170,7 +170,119 @@ namespace RealLifeOverhaul.Meta
             f.Hour = TimeHelper.CurrentHour;
             f.Minute = Mathf.Clamp((int)TimeHelper.CurrentMinute, 0, 59);
             f.Money = SaveGameManager.Current.Money;
+            f.StaffNote = StaffPart(f.Staff);
+            f.BooksNote = BooksPart(f.Books, f.Day);
             return true;
+        }
+
+        // A part of report.txt read: null when it was, else why not (the rest of the report still comes). Each calls its
+        // reader inside its own try, so a game without a member the reader names leaves only that part out.
+        private static string StaffPart(List<BugStaff> into)
+        {
+            try
+            {
+                Staff(into);
+                return null;
+            }
+            catch (Exception e)
+            {
+                return Unread(e);
+            }
+        }
+
+        private static string BooksPart(List<BugMoney> into, int today)
+        {
+            try
+            {
+                Books(into, today);
+                return null;
+            }
+            catch (Exception e)
+            {
+                return Unread(e);
+            }
+        }
+
+        private static string Unread(Exception e)
+        {
+            MetaLog.Error(e);
+            return "could not be read (" + e.GetType().Name + ")";
+        }
+
+        // Every employee of the player's (not a candidate, not another player's in Going Public): what their pay is made of,
+        // grouped by business, the businesses by name and each one's staff by skill and wage. One pass on the press.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Staff(List<BugStaff> into)
+        {
+            List<Entities.EmployeeInstance> all = SaveGameManager.Current.EmployeeInstances;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                Entities.EmployeeInstance e = all[i];
+                if (e == null || e.IsCandidate || e.characterData == null)
+                {
+                    continue;
+                }
+                BuildingRegistration reg = e.assignedAddress != null ? Helpers.BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
+                if (reg != null && GoingPublic.Foreign(reg))
+                {
+                    continue;
+                }
+                var s = new BugStaff
+                {
+                    Business = reg != null ? reg.BusinessName ?? string.Empty : string.Empty,
+                    Kind = reg != null ? reg.businessTypeName : null,
+                    WageCents = Mathf.RoundToInt(e.hourlyWage * 100f),
+                    HoursToday = e.workedHoursToday,
+                    HoursWeek = e.workedHoursThisWeek,
+                    RotaWeek = e.assignedWeeklyHours
+                };
+                if (e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null)
+                {
+                    s.Skill = e.characterData.skills[0].name;
+                    s.Level = Mathf.RoundToInt(e.characterData.skills[0].value);
+                    s.FormulaCents = Mathf.RoundToInt(Helpers.EmployeeHelper.CalculateHourlyWageForSkill(e.characterData.skills[0]) * 100f);
+                }
+                into.Add(s);
+            }
+            into.Sort((a, b) =>
+            {
+                int by = string.CompareOrdinal(a.Business, b.Business);
+                by = by != 0 ? by : string.CompareOrdinal(a.Skill, b.Skill);
+                return by != 0 ? by : b.WageCents.CompareTo(a.WageCents);
+            });
+        }
+
+        // The game's transactions of yesterday and today (GameBooks.Day: the history walked once), each with the business
+        // it was booked at: the registration at its address, else the business the game named on it, else the player's own.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Books(List<BugMoney> into, int today)
+        {
+            for (int day = today - 1; day <= today; day++)
+            {
+                List<Transaction> ofDay = Economy.GameBooks.Day(day);
+                for (int i = 0; ofDay != null && i < ofDay.Count; i++)
+                {
+                    Transaction t = ofDay[i];
+                    if (t == null)
+                    {
+                        continue;
+                    }
+                    BuildingRegistration reg = t.address != null ? Helpers.BuildingHelper.GetBuildingRegistration(t.address) : null;
+                    string where = reg != null && !string.IsNullOrEmpty(reg.BusinessName) ? reg.BusinessName : null;
+                    if (where == null && t.transactionData != null)
+                    {
+                        t.transactionData.TryGetValue("businessName", out where);
+                    }
+                    into.Add(new BugMoney
+                    {
+                        Day = day,
+                        Kind = t.transactionType,
+                        Where = where ?? string.Empty,
+                        Cents = (long)Math.Round(t.amount * 100d),
+                        BalanceCents = (long)Math.Round(t.balance * 100d)
+                    });
+                }
+            }
         }
 
         // The phone's full menu (an app, the Mod settings one too) is open: the screenshot shows it, and report.txt says so. Left open.

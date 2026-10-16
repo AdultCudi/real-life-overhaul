@@ -12,10 +12,10 @@ namespace RealLifeOverhaul.Texts
     public sealed class TextPack
     {
         public string Folder;
-        public string Name;          // "RLO Texts", "RLO Texts Lite"
+        public string Name;          // "RLO Texts", "RLO Texts Medium", "RLO Texts Lite"
         public string Model;         // the .gguf, full path
         public string Exe;           // llama-server.exe, full path
-        public int Rank;             // the better model the higher (the full pack 2, Lite 1)
+        public int Rank;             // the better model the higher: the pack's tier (Lite 1, Medium 2, the full pack 3)
         public int Version;
         public int Data = TextIntents.DataV2;   // the training data its model learnt ("data=3"); a pack.txt without the line is v2's
         public long ModelBytes;
@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt (name, model, exe, rank, version and
+    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt (name, model, exe, rank, tier, version and
     /// data, each "key=value" on a line; paths relative to the folder). Data is the version of the training data its model
     /// learnt: 2 for the first packs (no data line), 3 for the retrained ones; the mod asks a pack only the intents of its
     /// data version or older (TextIntent.Data, TextsHub.Data), so a v2 pack is never asked what it never learnt. The mod
@@ -38,17 +38,17 @@ namespace RealLifeOverhaul.Texts
     ///
     ///   the fixed folder   "RLO Texts" in the game's own data folder (LocalLow/Hovgaard Games/Big Ambitions), a pack
     ///                      in it or in any folder under it (a pack put there by hand)
-    ///   the Workshop       only the folders of RLO's own two pack items (<see cref="WorkshopItems"/>), switched on in the
+    ///   the Workshop       only the folders of RLO's own pack items (<see cref="WorkshopItems"/>), switched on in the
     ///                      game's mod list or not; never any other item's
     ///   announced          the folders the pack's own small mod told the game's process when the game loaded it
     ///   ModsLocal          a pack placed as a local mod
     ///
     /// SAFETY. A pack's exe and model must lie inside its own folder (a path that leaves it is refused), its rank is one
-    /// of the two known packs' (1 Lite, 2 the full one), and its runtime folder must hold exactly llama.cpp's files as
+    /// of the known packs' (see <see cref="TierMost"/>), and its runtime folder must hold exactly llama.cpp's files as
     /// pinned in <see cref="TextRuntime"/>, byte for byte (SHA-256), and no other .exe or .dll (<see cref="Verify"/>, off
     /// the game's thread, once a session, before anything of the pack is started). A pack that fails is not run.
     ///
-    /// The best is the highest rank, then the newest version. Device: Auto runs on the processor unless a GPU has ample
+    /// The best is the highest tier (<see cref="Tier"/>), then the newest version. Device: Auto runs on the processor unless a GPU has ample
     /// free memory (<see cref="Ample"/>), asked once of llama.cpp itself (--list-devices). Game-free (EconomyCheck,
     /// TextsChecks.cs). COST: a listing of a few folders once a session, off the game's thread.
     /// </summary>
@@ -58,13 +58,40 @@ namespace RealLifeOverhaul.Texts
         public const string Fixed = "RLO Texts";       // the folder under the game's data folder
         public const string Announced = "RealLifeOverhaul.TextPacks";   // the process's data slot the pack's mod writes its folder into ('|' between several)
         public const int SpareMiB = 1024;               // a GPU is ample with twice the model and this much more free
-        public const int RankMost = 2;                  // the full pack; Lite is 1: no pack may claim more
+        public const int RankMost = 2;                  // the "rank" line's most, as RLO before 0.29.1 reads it (Lite 1; Medium and the full pack 2): none may claim more
+        public const int TierMost = 3;                  // the "tier" line's most (Lite 1, Medium 2, the full pack 3): none may claim more
 
         /// <summary>
-        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite), by their item ids, published on 16 Oct 2026
-        /// (not-in-repo WORKSHOP.txt). Only these Workshop folders are ever looked in.
+        /// A pack's place among RLO's packs from its pack.txt: the "tier" line (1 Lite, 2 Medium, 3 the full pack) when
+        /// there is one, else the "rank" line as the first packs wrote it (1 Lite, 2 the full pack, so 3); 0 when neither
+        /// is one RLO knows (not a pack). The packs keep a "rank" of 1 or 2 beside their tier because RLO before 0.29.1
+        /// refuses a rank above 2: it orders them by rank then version, so the full pack (rank 2, the newer version) still
+        /// comes before Medium (rank 2) and Medium before Lite (rank 1).
         /// </summary>
-        public static readonly string[] WorkshopItems = { "3820711613", "3820712020" };   // RLO Texts, RLO Texts Lite (published 16 Oct 2026)
+        public static int Tier(int rank, int tier, bool hasRank, bool hasTier)
+        {
+            if (hasRank && (rank < 1 || rank > RankMost))
+            {
+                return 0;
+            }
+            if (hasTier)
+            {
+                return tier >= 1 && tier <= TierMost ? tier : 0;
+            }
+            return !hasRank ? 0 : rank == RankMost ? TierMost : rank;
+        }
+
+        /// <summary>
+        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite, RLO Texts Medium), by their item ids, all three
+        /// published on 16 Oct 2026 (not-in-repo WORKSHOP.txt). Only these Workshop folders are ever looked in; an empty
+        /// id is skipped (<see cref="WorkshopPacks"/>).
+        /// </summary>
+        public static readonly string[] WorkshopItems =
+        {
+            "3820711613",   // RLO Texts (published 16 Oct 2026)
+            "3820712020",   // RLO Texts Lite (published 16 Oct 2026)
+            "3820776564"    // RLO Texts Medium (published 16 Oct 2026)
+        };
 
         /// <summary>The folders of RLO's own pack items under the game's Workshop content folder (none while their ids are empty).</summary>
         public static List<string> WorkshopPacks(string workshopContent, string[] items)
@@ -166,6 +193,8 @@ namespace RealLifeOverhaul.Texts
                 return null;
             }
             var pack = new TextPack { Folder = folder };
+            int rank = 0, tier = 0;
+            bool hasRank = false, hasTier = false;
             foreach (string raw in System.IO.File.ReadAllLines(path))
             {
                 string line = raw.Trim();
@@ -180,12 +209,14 @@ namespace RealLifeOverhaul.Texts
                     case "name": pack.Name = value; break;
                     case "model": pack.Model = Path.GetFullPath(Path.Combine(folder, value)); break;
                     case "exe": pack.Exe = Path.GetFullPath(Path.Combine(folder, value)); break;
-                    case "rank": int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pack.Rank); break;
+                    case "rank": hasRank = true; int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out rank); break;
+                    case "tier": hasTier = true; int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out tier); break;
                     case "version": int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pack.Version); break;
                     case "data": pack.Data = int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int data) && data >= TextIntents.DataV2 ? data : TextIntents.DataV2; break;
                 }
             }
-            if (pack.Model == null || pack.Exe == null || !Inside(folder, pack.Model) || !Inside(folder, pack.Exe) || pack.Rank < 1 || pack.Rank > RankMost
+            pack.Rank = Tier(rank, tier, hasRank, hasTier);
+            if (pack.Model == null || pack.Exe == null || !Inside(folder, pack.Model) || !Inside(folder, pack.Exe) || pack.Rank < 1
                 || !System.IO.File.Exists(pack.Model) || !System.IO.File.Exists(pack.Exe))
             {
                 return null;   // (a path out of its own folder, a rank no pack of RLO's has, or files missing: not a pack)

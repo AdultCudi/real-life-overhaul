@@ -71,13 +71,14 @@ internal static partial class Program
             }
             rows++;
             string branch = r.GetProperty("branch").ValueKind == JsonValueKind.Null ? null : r.GetProperty("branch").GetString();
-            TextIntent intent = TextIntents.Find(intentKey, branch);
-            if (intent == null)
+            int data = r.TryGetProperty("data", out JsonElement d) && d.ValueKind == JsonValueKind.Number ? d.GetInt32() : 0;   // (a row of data v5 says so: its card is v5's)
+            TextIntent intent = data > 0 ? TextIntents.Find(intentKey, branch, data) : TextIntents.Find(intentKey, branch);
+            if (intent == null || (data > 0 && intent.Data != data))
             {
-                wrong.Add(intentKey + (branch != null ? "#" + branch : "") + ": no such intent in the mod");
+                wrong.Add(intentKey + (branch != null ? "#" + branch : "") + (data > 0 ? " of data " + data : "") + ": no such intent in the mod");
                 continue;
             }
-            covered.Add(intent.Key + "#" + intent.Branch);
+            covered.Add(intent.Key + "#" + intent.Branch + "@" + intent.Data);
             var who = new TextWho();
             JsonElement w = r.GetProperty("who");
             who.Name = Str(w, "Name");
@@ -131,9 +132,9 @@ internal static partial class Program
         {
             voices.Add(i.Voice);
             channels.Add(i.Channel);
-            if (!covered.Contains(i.Key + "#" + i.Branch))
+            if (!covered.Contains(i.Key + "#" + i.Branch + "@" + i.Data))
             {
-                missing.Add(i.Key + (i.Branch != null ? "#" + i.Branch : ""));
+                missing.Add(i.Key + (i.Branch != null ? "#" + i.Branch : "") + " (data " + i.Data + ")");
             }
         }
         Check(missing.Count == 0, "texts: every intent the mod uses has the generator's own cards to be checked against (" + TextIntents.All.Count + " intents; without: "
@@ -802,8 +803,9 @@ internal static partial class Program
               && TextPacks.WorkshopPacks(@"C:\ws", new[] { "111", "222" })[1] == System.IO.Path.Combine(@"C:\ws", "222") && TextPacks.WorkshopPacks(null, new[] { "1" }).Count == 0,
             "texts, safety: on the Workshop only RLO's own pack items by id are looked in (none while their ids are empty, never a path)");
         string game = TextsSource("Texts/TextsGame.cs");
-        Check(TextPacks.WorkshopItems.Length == 2 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020",
-            "texts, packs: the mod looks only in the two published pack items, RLO Texts (3820711613) and RLO Texts Lite (3820712020)");
+        Check(TextPacks.WorkshopItems.Length == 3 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020" && TextPacks.WorkshopItems[2] == "3820776564"
+              && TextPacks.WorkshopPacks(@"C:\ws", TextPacks.WorkshopItems).Count == 3 && TextPacks.WorkshopPacks(@"C:\ws", new[] { "3820711613", "" }).Count == 1,
+            "texts, packs: the mod looks only in the three published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020) and RLO Texts Medium (3820776564), and an empty id is never looked in");
         Check(game.Contains("TextPacks.WorkshopPacks(TextPacks.WorkshopOf(Application.dataPath, AppId), TextPacks.WorkshopItems)") && !game.Contains("places.Add(workshop)"),
             "texts, safety: the game's whole Workshop folder is never a place packs are looked for in");
         Check(TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLO\runtime\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLOX\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\a.exe"),
@@ -827,7 +829,7 @@ internal static partial class Program
             bool rank = TextPacks.Read(pack) == null;
             PackTxt("name=x\nmodel=model/m.gguf\nexe=runtime/llama-server.exe\nrank=2\n");
             TextPack ok = TextPacks.Read(pack);
-            Check(escapes && rank && ok != null, "texts, safety: a pack whose exe or model leaves its folder, or that claims a rank above the two packs, is no pack");
+            Check(escapes && rank && ok != null, "texts, safety: a pack whose exe or model leaves its folder, or that claims a rank above the known packs', is no pack");
             string[] pinned = { "llama-server.exe", Sha("server"), "ggml.dll", Sha("ggml") };
             string same = TextPacks.Verify(ok, pinned);
             File.WriteAllText(System.IO.Path.Combine(runtime, "ggml.dll"), "ggml, changed");
