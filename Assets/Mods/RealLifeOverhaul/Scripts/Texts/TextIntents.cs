@@ -71,21 +71,24 @@ namespace RealLifeOverhaul.Texts
     /// game. A branch tells apart the cards one intent makes for different outcomes the game decided (a yes or a no, on
     /// time or late). Its data version is the training data that has it (2: data/gen/v2; 3: data/gen/v3, the answers to
     /// what the player wrote and the comments under every kind of post): a pack is asked only the intents of its own
-    /// data version or older (TextPack.Data, TextsHub.Data). Game-free.
+    /// data version or older (TextPack.Data, TextsHub.Data). Optional facts (data v5's weather, moment, today's event and
+    /// whether the speaker knows the player's name) follow the facts, each left out when its slot has no value, as the
+    /// generator leaves them out. Game-free.
     /// </summary>
     public sealed class TextIntent
     {
         public readonly string Key, Branch, Voice, Channel, News, Write;
-        public readonly string[] Facts, Must;
+        public readonly string[] Facts, Must, Optional;
         public readonly TextFace Face;
         public readonly TextUse Use;
         public readonly int MaxLen;
         public readonly int Data;
 
         public TextIntent(string key, string branch, string voice, string channel, int maxLen, TextFace face, TextUse use, string news,
-            string[] facts, string write, string[] must, int data = TextIntents.DataV2)
+            string[] facts, string write, string[] must, int data = TextIntents.DataV2, string[] optional = null)
         {
             Data = data;
+            Optional = optional ?? Array.Empty<string>();
             Key = key;
             Branch = branch;
             Voice = voice;
@@ -154,6 +157,25 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
+        /// The card of this key and branch a pack of this data version was trained on: of the intents registered for it, the
+        /// one of the highest data version not above the pack's (data v5's street cards beside v4's, so a data 4 pack keeps
+        /// v4's exact cards); null if the pack has none. COST: a pass over the table.
+        /// </summary>
+        public static TextIntent Find(string key, string branch, int data)
+        {
+            TextIntent best = null;
+            for (int i = 0; i < List.Count; i++)
+            {
+                TextIntent t = List[i];
+                if (t.Key == key && t.Branch == branch && t.Data <= data && (best == null || t.Data > best.Data))
+                {
+                    best = t;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
         /// Fills the sheet for this intent: the speaker's lines, the intent's lines with the slots put in, the thread (oldest
         /// first) and lang. False if a slot a line needs has no value (nothing is invented: the written line is used).
         /// </summary>
@@ -175,6 +197,14 @@ namespace RealLifeOverhaul.Texts
                     return false;
                 }
                 sheet.Facts.Add(f);
+            }
+            for (int i = 0; i < intent.Optional.Length; i++)
+            {
+                string f = Put(intent.Optional[i], who, slots);
+                if (f != null)
+                {
+                    sheet.Facts.Add(f);   // (an optional fact whose slot has no value is left out)
+                }
             }
             if (history != null)
             {
@@ -508,6 +538,7 @@ namespace RealLifeOverhaul.Texts
 
             V3();
             V4();   // street talk (TextIntents.Street.cs)
+            V5();   // ...and its answers to what was said, with the moment and the name (TextIntents.Street.cs)
         }
 
         // ---------------------------------------------------------------- data v3 (defs_v3.INTENTS): answers to what the player wrote, comments

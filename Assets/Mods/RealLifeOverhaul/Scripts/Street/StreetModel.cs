@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Street
     {
         public StreetBrush Brush;
         public bool Recognised;
+        public bool Famed;               // they know the player's face as a well-known or a disliked business owner (and so their name)
         public int Warmth;               // -3 to 3: today's mood with what they make of the player
         public int Patience;             // turns they give the player
         public StreetLine Opening;

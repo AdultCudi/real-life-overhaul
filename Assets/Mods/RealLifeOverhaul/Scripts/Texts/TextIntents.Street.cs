@@ -7,7 +7,8 @@ namespace RealLifeOverhaul.Texts
     /// facts. Registered with data version 4: a pack of an older data version is never asked them (TextsHub.Data), so until
     /// a v4 pack is trained street talk words what fits with data v3's intents and the rest with its written lines. Written
     /// from the generator's own table (one row per branch) and proved byte-identical to its cards (EconomyCheck,
-    /// TextsChecks.cs, fixtures_cs.py --v4). Game-free. COST: none until asked.
+    /// TextsChecks.cs, fixtures_cs.py --v4). Data v5's (below) are v4's again with optional facts, and eleven new branches.
+    /// Game-free. COST: none until asked.
     /// </summary>
     public static partial class TextIntents
     {
@@ -93,6 +94,64 @@ namespace RealLifeOverhaul.Texts
         private static void S4(string key, string branch, string news, string[] facts, string[] must)
         {
             List.Add(new TextIntent(key, branch, "stranger", "spoken", 140, TextFace.Friend, TextUse.People, news, facts, StreetWrite, must, DataV4));
+        }
+
+        // ---------------------------------------------------------------- data v5
+
+        public const int DataV5 = 5;   // ...and of street talk answering what was said (data/gen/v5: v4's rows unchanged, v4's cards with optional facts, 11 new branches)
+
+        // The optional facts of data v5 (defs_v5.EXTRA_MOMENT, EXTRA_KNOWN), after the branch's own, each left out when its slot is empty.
+        private static readonly string[] MomentFacts = { "weather: {weather}", "moment: {moment}", "today: {event}", "you know their name: {known}" };
+        private static readonly string[] KnownFact = { "you know their name: {known}" };
+
+        /// <summary>The branches whose cards carry the moment (defs_v5.MOMENT): the greeting, small talk, the day and the goodbye.</summary>
+        public static bool MomentBranch(string key, string branch)
+        {
+            switch (key)
+            {
+                case "street.greet": return branch == "stranger";
+                case "street.smalltalk": return branch == "well" || branch == "badly";
+                case "street.day": return branch == "good" || branch == "fine" || branch == "low";
+                case "street.bye": return branch == "warm" || branch == "cool";
+                default: return false;
+            }
+        }
+
+        /// <summary>
+        /// Data v5 (data/gen/v5/defs_v5.py, SPEC_v5.txt): every v4 card again at data 5 with the optional facts (weather,
+        /// moment, today's event on the moment branches; whether they know the player's name on every branch), so a data 4
+        /// pack keeps v4's exact cards (TextIntents.Find by the pack's data), and the eleven branches of the lines worded
+        /// until now with written lines only: how their day is going, the street event, their work, thanks, hello again.
+        /// </summary>
+        private static void V5()
+        {
+            int v4 = List.Count;
+            for (int i = 0; i < v4; i++)
+            {
+                TextIntent t = List[i];
+                if (t.Data == DataV4)
+                {
+                    S5(t.Key, t.Branch, t.News, t.Facts, t.Must);
+                }
+            }
+            S5("street.day", "good", "{player} asks how your day is going", L("your day: going well"), null);
+            S5("street.day", "fine", "{player} asks how your day is going", L("your day: fine"), null);
+            S5("street.day", "low", "{player} asks how your day is going", L("your day: not going well"), null);
+            S5("street.event", "going", "{player} asks about the street event today", L("today: {event}", "you will go: yes"), null);
+            S5("street.event", "not", "{player} asks about the street event today", L("today: {event}", "you will go: no"), null);
+            S5("street.work", "likes", "{player} asks about your work", L("job: {job}", "you like it: yes"), null);
+            S5("street.work", "mixed", "{player} asks about your work", L("job: {job}", "you like it: some days"), null);
+            S5("street.work", "retired", "{player} asks whether you miss working", L("job: retired"), null);
+            S5("street.thanks", "warm", "{player} thanks you for your help", L("the talk so far: friendly"), null);
+            S5("street.thanks", "cool", "{player} thanks you for your help", L("the talk so far: cool"), null);
+            S5("street.hello", "again", "{player} says hello again in the middle of your talk", None, null);
+        }
+
+        // A card of street talk of data v5: v4's face, voice, length and write line, with the optional facts its branch carries.
+        private static void S5(string key, string branch, string news, string[] facts, string[] must)
+        {
+            List.Add(new TextIntent(key, branch, "stranger", "spoken", 140, TextFace.Friend, TextUse.People, news, facts, StreetWrite, must, DataV5,
+                MomentBranch(key, branch) ? MomentFacts : KnownFact));
         }
     }
 }

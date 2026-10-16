@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Street
             int talks = memo != null ? memo.Talks : 0;
             int roll = Seed(s.Seed, f.Hour, talks);
             a.Recognised = f.Recognition > 0 && Roll(roll, 20, 100) < Math.Min(RecogniseMost, f.Recognition);
+            a.Famed = a.Recognised && (f.Standing >= Reputation55 || f.Standing < InfamousBelow);   // (the famous and the infamous greeting's: they know the name too)
             a.Warmth = Warmth(s, memo, f, a.Recognised);
             a.Brush = Brush(s, memo, f, a.Recognised, a.Warmth, roll, option, phone);
             int patience = PatienceLeast + Math.Max(0, a.Warmth) + (a.Warmth >= 2 ? 1 : 0) + (s.Chatty ? 2 : 0) - (s.Commuter && RushHour(f.Hour, f.Weekend) ? 1 : 0);
@@ -479,6 +480,11 @@ namespace RealLifeOverhaul.Street
         /// <summary>All that counts for how a thing said lands: this talk, today's memory and their warmth.</summary>
         public static int Score(StreetChat c) => c.Rapport + (c.Memo != null ? c.Memo.Rapport : 0) + c.Approach.Warmth;
 
+        public const int WarmThanksLeast = -1;   // the talk's score: at or above it thanks are taken warmly (and earn a point), below it coolly
+
+        /// <summary>Whether thanks now are taken warmly: the talk so far friendly enough (the card's "the talk so far").</summary>
+        public static bool WarmThanks(StreetChat c) => Score(c) >= WarmThanksLeast;
+
         /// <summary>
         /// What a choice comes to that needs nothing more of the game (the place, the number, the invitation and the area are
         /// worked out with it: <see cref="Directions"/>, <see cref="Number"/>, <see cref="Invite"/>, <see cref="Area"/>).
@@ -541,7 +547,7 @@ namespace RealLifeOverhaul.Street
                     break;
                 case StreetAsk.Thanks:
                     o.Line = StreetLine.Welcome;
-                    o.Rapport = score >= -1 ? 1 : 0;
+                    o.Rapport = score >= WarmThanksLeast ? 1 : 0;
                     break;
                 case StreetAsk.Bye:
                     o.Line = score >= 0 ? StreetLine.Bye : StreetLine.ByeCool;

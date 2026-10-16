@@ -15,7 +15,10 @@ namespace RealLifeOverhaul
         /// deadline of <see cref="Street.StreetRules.Hold"/> seconds. Two cards are tried in turn:
         ///
         ///   data v4   street talk's own intents (TextIntents.Street.cs: street.greet, .brush, .directions and the rest, a branch
-        ///             per outcome), asked only of a pack trained on them (TextsHub.Data)
+        ///             per outcome), asked only of a pack trained on them (TextsHub.Data); for a data 5 pack v5's cards: v4's
+        ///             with the moment (rain, rush hour, night, the weekend, morning, evening, today's event) and whether
+        ///             the stranger knows the player's name, and the lines written until then (their day, the street event,
+        ///             their work, thanks, hello again)
         ///   data v3   what fits until then: a city person answering what was said (citizen.dm.answer, the mood steering the
         ///             tone) for a greeting, small talk, a compliment, a joke, a flirt, the player's own words and a goodbye; the
         ///             invitation's answer (citizen.dm.invite_yes, _maybe, _no, with v3's reasons)
@@ -117,8 +120,7 @@ namespace RealLifeOverhaul
                     why = "the words speak of chat: \"" + words + "\"";
                     return null;
                 }
-                bool known = c.Approach.Recognised || c.Done[(int)StreetAsk.Name] || (c.Memo != null && (c.Memo.Told || c.Memo.Named));
-                string said = StreetCards.Spoken(words, known ? null : TextsGame.PlayerName);
+                string said = StreetCards.Spoken(words, KnowsName(c) ? null : TextsGame.PlayerName);
                 if (said == null)
                 {
                     why = "the words call the player by a name they were not told: \"" + words + "\"";
@@ -132,6 +134,9 @@ namespace RealLifeOverhaul
                 Lately.Add(said);
                 return said;
             }
+
+            // Whether the stranger knows the player's name: told in this talk or earlier today, or a face they know as famous or infamous.
+            private static bool KnowsName(StreetChat c) => StreetCards.KnowsName(c.Approach.Famed, c.Done[(int)StreetAsk.Name], c.Memo != null && c.Memo.Told);
 
             private static string Card(TextRequest r) => r == null ? "the model" : r.Intent + (r.Branch != null ? " " + r.Branch : string.Empty);
 
@@ -236,10 +241,12 @@ namespace RealLifeOverhaul
                 };
             }
 
-            // The v4 card: the friend face with a stranger's role, the values of the line, the player's last words.
+            // The v4 card (v5's for a data 5 pack): the friend face with a stranger's role, the values of the line, the moment and
+            // whether they know the player's name (data v5's optional facts, left out of a data 4 pack's cards), the player's last words.
             private static TextRequest RequestV4(StreetChat c, StreetLine line, Dictionary<string, string> data, Action<string> done, bool guess, string next = null)
             {
-                string intent = StreetCards.V4(line, out string branch, out int lean);
+                bool warm = data == null || !data.TryGetValue("t_thanks", out string thanks) || thanks != "cool";
+                string intent = StreetCards.ByData(line, TextsDirector.Words.Data, warm, out string branch, out int lean);
                 if (intent == null || TextIntents.Find(intent, branch) == null)
                 {
                     return null;
@@ -274,6 +281,19 @@ namespace RealLifeOverhaul
                 if (line == StreetLine.AreaNews)
                 {
                     Copy(data, r.Slots, "district", "district");   // (the day's trouble: where it was)
+                }
+                Copy(data, r.Slots, "t_weather", "weather");
+                if (TextsGame.Clock(out int weekday, out int hour))
+                {
+                    string moment = StreetCards.Moment(weekday, hour);
+                    if (moment != null)
+                    {
+                        r.Slots.Set("moment", moment);
+                    }
+                }
+                if (KnowsName(c))
+                {
+                    r.Slots.Set("known", "yes");
                 }
                 History(c, r, HistoryMost, next);
                 return r;
