@@ -87,7 +87,7 @@ internal static partial class Program
         string click = FlareMethod(screens, "private void LikeClicked");
         Check(click.Contains("LikeReply") && click.Contains("Slot >= 0"), "Flare reply likes: pressing the heart of a friend's reply reaches the director");
         Check(screens.Contains("Liked = _director.IsReplyLiked(p.Id, i)") && screens.Contains("Slot = i"), "Flare reply likes: a friend's reply is shown liked when it is");
-        Check(cells.Contains("FlareKit.Show(_replyHit, !friendReply)") && cells.Contains("FlareKit.Show(_repostHit, !friendReply)") && cells.Contains("bool friendReply = p.Id < 0 && p.Slot >= 0"),
+        Check(cells.Contains("FlareKit.Show(_replyHit, !display)") && cells.Contains("FlareKit.Show(_repostHit, !display)") && cells.Contains("bool display = p.Id < 0;"),
             "Flare reply likes: a friend's reply shows no answer or share button that does nothing");
     }
 }

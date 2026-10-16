@@ -171,6 +171,8 @@ namespace RealLifeOverhaul
         private bool _wasOnShift;
         private int _favourTurn;
         private SocialPerson _thanks;
+        private string _thanksPlace;           // where the outing was, and what (RLO Texts' card of the thanks)
+        private PlanKind _thanksKind;
         private float _thanksAt;
         private float _nextPendingTry;
         private SceneBreak _held;              // what is holding the scene up, if anything: it waits, and is not ticked
@@ -373,7 +375,10 @@ namespace RealLifeOverhaul
 
             if (_thanks != null && real >= _thanksAt && _scene == null)
             {
-                SocialLife.SendText(_thanks, SocialLines.Pick(SocialCatalogue.TextThanks), SocialLife.Data(_thanks));
+                Dictionary<string, string> data = SocialLife.Data(_thanks);
+                data["t_place"] = _thanksPlace ?? string.Empty;   // (where it was, for RLO Texts' card)
+                data["t_kind"] = _thanksKind.ToString();
+                SocialLife.SendText(_thanks, SocialLines.Pick(SocialCatalogue.TextThanks), data);
                 _thanks = null;
             }
 
@@ -750,6 +755,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>True for somebody already on their way to be met (a friend brings them, or they are walking up now): not to be met another way meanwhile (a yes on Flare, Wiring/FlareInviteLinks).</summary>
+        public static bool Expected(SocialPerson person)
+        {
+            return Instance != null && person != null && (person == Instance._pendingMeet || person == Instance._introStranger);
+        }
+
         /// <summary>The first person of the cast the player has still to meet, or null.</summary>
         public static SocialPerson NextStranger()
         {
@@ -1043,8 +1054,9 @@ namespace RealLifeOverhaul
         {
             PlanKind kind = plan.Kind;
             bool rain = RainHelper.isRaining && kind == PlanKind.Walk;
-            SocialLife.SendText(person, SocialLines.Pick(rain ? SocialCatalogue.TextCancelRain : SocialCatalogue.TextCancel),
-                SocialLife.Data(person, "outing", SocialLife.T(SocialCatalogue.Outing(kind).Name)), true);
+            Dictionary<string, string> data = SocialLife.PlanData(person, plan, 0f);   // (the plan's place and time: RLO Texts' card)
+            data["outing"] = SocialLife.T(SocialCatalogue.Outing(kind).Name);
+            SocialLife.SendText(person, SocialLines.Pick(rain ? SocialCatalogue.TextCancelRain : SocialCatalogue.TextCancel), data, true);
             Logger?.Info("Social: " + person.Name + " called off " + kind + ".");
             plan.Clear();
             // They would still like to: the next call to them picks it up again.
@@ -1429,10 +1441,12 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Some minutes after a good outing they may send a word of thanks (a text like any other: the cap and the switch hold).</summary>
-        public void ThankLater(SocialPerson person)
+        public void ThankLater(SocialPerson person, string place, PlanKind kind)
         {
             if (Random.value < 0.45f)
             {
+                _thanksPlace = place;
+                _thanksKind = kind;
                 _thanks = person;
                 _thanksAt = Time.unscaledTime + Random.Range(90f, 240f);
             }

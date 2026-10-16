@@ -549,7 +549,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_flare_header")
                 .About("reallife_guide_flare_about").Help("reallife_guide_flare")
                 .Owns(Settings.SocialMediaId, Settings.SocialMediaNoticesId, Settings.FlareBusyId, Settings.FlareCityOfficeId, Settings.FlareSharePostsId, Settings.FlareSharePicturesId,
-                    Settings.FlareFilterId, Settings.FlareThemeId)
+                    Settings.FlareFilterId, Settings.FlareThemeId, Settings.FlarePicturesId, Settings.FlareCityPhotosId)
                 .Preset(Settings.FlareBusyId, 0, 2, 2)
                 .Data(Flare.FlareStore.Keys)
                 .Fact("flare_local", () => Whole(Flare.FlareRules.TierFrom[1]))
@@ -1344,6 +1344,8 @@ namespace RealLifeOverhaul.Meta
             Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
             Permadeath.PermadeathGuide.Register();   // an ending the player chooses: the feature, its switch, its save lines, its tests and its Guide figures (Scripts/Permadeath)
             Faults.FaultGuide.Register();   // real faults in the city: the feature, its three options and their preset, its save line, its tests and its Guide figures (Scripts/Faults)
+            Texts.TextsGuide.Register();   // RLO Texts: the feature, its nine options, its save line, its tests and its Guide figures (Scripts/Texts)
+            Street.StreetGuide.Register();   // street talk: the feature, its two options, its save line, its tests and its Guide figures (Scripts/Street)
             Districts.DistrictGuide.Register();   // the district view on the city map: the feature, its switch, its save line, its tests and its Guide figures (Scripts/Districts)
             Economy.OwnBankGuide.Register();   // the player's own bank: the feature, its option, its save lines, its tests and its Guide figures (Scripts/Economy/OwnBank)
             EndScaleGuide.Register();   // the end game at scale: the feature, its option and preset, its tests and its Guide figures (Scripts/EndScale)

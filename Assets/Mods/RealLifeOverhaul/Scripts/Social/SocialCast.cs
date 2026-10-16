@@ -17,8 +17,8 @@ namespace RealLifeOverhaul
     /// The people of the player's life when they are on the street: two characters at most, the
     /// social life's own (never the accident pool's, the living city's or the jobs'), made the
     /// first time somebody is needed and reused after that. A character wears the look of the
-    /// person it stands for: built by the game's own appearance system from that person's seed,
-    /// so Dana looks like Dana every time, and rebuilt only when the body is needed for somebody
+    /// person it stands for: built by the game's own appearance system from that person's seed (or
+    /// the look they had in the street, People/PersonLook), so Dana looks like Dana every time, and rebuilt only when the body is needed for somebody
     /// else. One costs what one of the game's pedestrians costs while drawn and nothing on the
     /// shelf. Nothing here runs by itself: the director calls <see cref="Cull"/> on its tick
     /// while somebody is out.
@@ -414,24 +414,28 @@ namespace RealLifeOverhaul
             return new CityPerson(character);
         }
 
-        // The look is the game's own, from the person's seed: the same face, hair and clothes every time. One mesh merge.
+        // The look is the game's own, from the person's seed: the same face, hair and clothes every time; somebody met in the
+        // street is the look they had there (People/PersonLook, kept with them). One mesh merge.
         private static void Dress(CityPerson person, SocialPerson who)
         {
             person.Look = CityLook.Civilian;
             AppearanceSetter appearance = person.Character.appearanceSetter;
             CityOutfits.Restore(person.Dyes);
             appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 85) * SocialPlaces.DaysPerYear;
-            // The game colours a beard to match the hair by a roll of the engine's own dice: the same roll every time for the
-            // same seed (as on their contact's picture, Phone/Contacts/ContactPainter), and the dice put back.
-            UnityEngine.Random.State dice = UnityEngine.Random.state;
-            UnityEngine.Random.InitState(who.Seed);
-            try
+            if (!PersonLookGame.Dress(appearance, who.Seed))
             {
-                appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(who.Seed), CasualWear, who.Seed);
-            }
-            finally
-            {
-                UnityEngine.Random.state = dice;
+                // The game colours a beard to match the hair by a roll of the engine's own dice: the same roll every time for
+                // the same seed (as on their contact's picture, Phone/Contacts/ContactPainter), and the dice put back.
+                UnityEngine.Random.State dice = UnityEngine.Random.state;
+                UnityEngine.Random.InitState(who.Seed);
+                try
+                {
+                    appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(who.Seed), CasualWear, who.Seed);
+                }
+                finally
+                {
+                    UnityEngine.Random.state = dice;
+                }
             }
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
             Looks.Count("social: a friend's look being built (a mesh merge)");

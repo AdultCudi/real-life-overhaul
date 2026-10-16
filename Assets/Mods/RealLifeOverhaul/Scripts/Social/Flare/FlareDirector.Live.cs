@@ -180,6 +180,7 @@ namespace RealLifeOverhaul.Flare
                 Shared_Changed(null);
             }
             Recount();
+            TextsAhead();   // (the day's posts: their words asked now, each by its own minute, RLO Texts)
         }
 
         // What the city is like today, for its posts.
@@ -322,6 +323,7 @@ namespace RealLifeOverhaul.Flare
             Invitations(day, hour);
             Watched(day);
             Recount();
+            TextsAhead();   // (the hour's answers and replies: their words asked now, RLO Texts)
         }
 
         // The police and the cleaners where the player stands, for the hour.
@@ -1043,6 +1045,8 @@ namespace RealLifeOverhaul.Flare
             }
             FlareRules.Prune(_file);
             Shared_Own(p);
+            TextsFriends(p);   // (the friends' replies and the city's: their words asked now, RLO Texts)
+            TextsAhead();
         }
 
         /// <summary>The player likes a post, or takes the like back.</summary>
@@ -1075,6 +1079,24 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>True if the player liked this friend's reply.</summary>
         public bool IsReplyLiked(int parentId, int slot) => Running && FlareRules.ReplyLiked(_file, parentId, slot);
+
+        /// <summary>
+        /// The player likes a comment under a post that is not theirs, or takes the like back. Those comments are made for
+        /// display, so the like is kept in the file by the post, the comment's slot and who wrote it. Nothing else changes and
+        /// nothing is sent (in a session the like on a shared post's comment is this player's own).
+        /// </summary>
+        public void LikeComment(int postId, int slot, char kind, int who)
+        {
+            if (!Running)
+            {
+                return;
+            }
+            FlareCommentRules.ToggleLike(_file, postId, slot, kind, who);
+            Changed();
+        }
+
+        /// <summary>True if the player liked this comment.</summary>
+        public bool IsCommentLiked(int postId, int slot, char kind, int who) => Running && FlareCommentRules.Liked(_file, postId, slot, kind, who);
 
         /// <summary>The player shares a post with their followers (once).</summary>
         public void Repost(int postId)
@@ -1115,8 +1137,9 @@ namespace RealLifeOverhaul.Flare
         public bool IsGoing(int postId) => Running && _file.Net.Going.Contains(postId);
 
         /// <summary>
-        /// The player writes a message. One of the city's people answers within the hour or two in character (what they say
-        /// never depends on what was typed); a player of a session gets it as written, through the host.
+        /// The player writes a message. One of the city's people answers within the hour or two in character; an invitation
+        /// in it (coffee, a meal, drinks...) is answered yes, maybe or no by the game's own rules, and a yes books the plan
+        /// (FlareDirector.Invites.cs). A player of a session gets it as written, through the host.
         /// </summary>
         public bool SendDm(string with, string text)
         {
@@ -1134,7 +1157,9 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 string what = with.StartsWith("i:", StringComparison.Ordinal) ? "collab" : with.StartsWith("o:", StringComparison.Ordinal) ? "office" : "chat";
-                FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
+                FlareDm answer = Invite(with, text, now)   // (an invitation: the game decides, FlareDirector.Invites.cs)
+                                 ?? FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
+                TextsDm(answer, text);   // (its words asked now, RLO Texts)
             }
             Changed();
             return true;

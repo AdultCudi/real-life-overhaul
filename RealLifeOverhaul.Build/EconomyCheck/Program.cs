@@ -59,8 +59,16 @@ internal static partial class Program
         return CreditLedger.Score.Value;
     }
 
-    private static int Main()
+    private static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--probe-start")
+        {
+            return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
+        }
+        if (args.Length > 1 && args[0] == "-m")
+        {
+            return PretendLlama(args);   // (started by TextServer as a pretend llama-server: TextsStartChecks.cs)
+        }
         Catalogue();
         Start();
         CleanHistory();
@@ -125,8 +133,20 @@ internal static partial class Program
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         FlareReview();   // the review round of Flare as a living network (FlareReviewChecks.cs)
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
+        Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
+        FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
+        TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
+        TextsSpeedFix();   // RLO Texts on a GPU at normal priority with two threads, on the processor below normal; the start's lines say what each reply took (TextsSpeedChecks.cs)
+        TextsCacheFix();   // RLO Texts' server without Steam's shader cache variables, so the GPU driver keeps its shaders; the first reply's limit and the cache's state (TextsCacheChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
+        FlareInvites();   // invitations in Flare messages: reading, the decision, timing, booked once, the answer's words and card, three languages, sources (FlareInviteChecks.cs)
+        StreetTalk();   // talking to anybody in the street: who, whether they stop, the choices, numbers and invitations, word of mouth, the words read, the lines, timing, sources (StreetTalkChecks.cs)
+        StreetOffers();   // who in the street is offered a talk: reach, angle, the nearest in front, the time in front without reset, the grace, the kinds of people, give-back, the check lines (StreetOfferChecks.cs)
+        StreetConversation();   // street talk that feels alive: the order by the moment and the person, no repeats, follow-ups, patience, warmth, the panel and Esc, the turn's log line, the card's three lines, written lines once a day (StreetChatChecks.cs)
+        FlareComments();   // the comments under posts that are not the player's: never more than the count, in time, the same after a save and on a guest, the cards, the texts, the cost (FlareCommentChecks.cs)
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
+        StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)
+        FlareFaceLoad();   // Flare's faces drawn ahead: the likely ones behind the loading screen within its budget, once per look, the textures and the folder bounded, each face the person's own (FlareFaceLoadChecks.cs)
         Shared();
         Fame();
         Endings();

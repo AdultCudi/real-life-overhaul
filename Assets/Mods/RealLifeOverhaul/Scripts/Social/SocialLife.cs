@@ -45,6 +45,18 @@ namespace RealLifeOverhaul
         public static Action PartnerChanged;
         /// <summary>An outing went to its end with somebody (who, and what it was): whoever keeps Flare is told. Set by Wiring.</summary>
         public static Action<SocialPerson, PlanKind> OutingDone;
+        /// <summary>
+        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who, the written line's key, its values, how to send a line):
+        /// true when it is held a moment for the model's words and sent through the last argument then (with the words, or
+        /// the written line). Null or false: sent now, as written.
+        /// </summary>
+        public static Func<SocialPerson, string, Dictionary<string, string>, Action<string, Dictionary<string, string>>, bool> HoldText;
+        /// <summary>RLO Texts: the player walks up to somebody they are meeting (who, the outing's kind, the place, minutes late): their greeting is guessed now.</summary>
+        public static Action<SocialPerson, PlanKind, string, int> GuessGreeting;
+        /// <summary>RLO Texts: the greeting guessed, taken at the click: the words, or null for the written line.</summary>
+        public static Func<SocialPerson, string> TakeGreeting;
+        /// <summary>The key a model's words are shown through ("{text}", RLO Texts' own).</summary>
+        public const string WordsKey = "reallife_texts_line";
     }
 
     /// <summary>
@@ -124,6 +136,24 @@ namespace RealLifeOverhaul
                 { "job", SocialCatalogue.Jobs[Mathf.Clamp(person.Job, 0, SocialCatalogue.Jobs.Length - 1)].GetLocalization() },
                 { "district", SocialPlaces.District(person.District) }
             };
+        }
+
+        /// <summary>
+        /// A person's values with a plan's own for RLO Texts' card (the place, the time and the outing as the cards say them,
+        /// "t_" before each so no written line uses them), and how long they waited when they were stood up.
+        /// </summary>
+        public static Dictionary<string, string> PlanData(SocialPerson person, SocialPlan plan, float waited)
+        {
+            Dictionary<string, string> data = Data(person);
+            int minute = Mathf.FloorToInt(plan.Time) % 1440;
+            data["t_place"] = plan.Place ?? string.Empty;
+            data["t_time"] = (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
+            data["t_kind"] = plan.Kind.ToString();
+            if (waited > 0f)
+            {
+                data["t_waited"] = (Mathf.RoundToInt(waited / 5f) * 5).ToString();
+            }
+            return data;
         }
 
         public static Dictionary<string, string> Data(SocialPerson person, string name, string value)
@@ -409,7 +439,10 @@ namespace RealLifeOverhaul
                 {
                     return false;
                 }
-                contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: must);
+                if (SocialLinks.HoldText == null || !SocialLinks.HoldText(person, key, data, (k, d) => Deliver(person, contact, k, d, must)))
+                {
+                    contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: must);
+                }
                 if (SocialState.TextsDay != Day)
                 {
                     SocialState.TextsDay = Day;
@@ -424,6 +457,20 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
                 return false;
+            }
+        }
+
+        // A text held for its words (RLO Texts), sent now: the words through their own key, or the written line.
+        private static void Deliver(SocialPerson person, Contact contact, string key, Dictionary<string, string> data, bool must)
+        {
+            try
+            {
+                contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: must);
+                Said(person, key, data);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
             }
         }
 
@@ -493,6 +540,7 @@ namespace RealLifeOverhaul
         {
             SocialPlan plan = SocialState.Plan;
             SocialPerson person = SocialState.Get(plan.Person);
+            Dictionary<string, string> data = person != null ? PlanData(person, plan, Mathf.Max(0f, Now - plan.Time)) : null;   // (read before the plan is let go: RLO Texts' card)
             plan.Clear();
             if (person == null)
             {
@@ -501,7 +549,7 @@ namespace RealLifeOverhaul
             float weight = person.Has(SocialTrait.Punctual) ? 1.4f : person.Has(SocialTrait.Late) ? 0.7f : 1f;
             Change(person, 0f, SocialRules.StoodUpAffection * weight, SocialRules.StoodUpTrust * weight);
             Remember(person, MemoryCode.StoodUp);
-            SendText(person, SocialLines.Pick(SocialCatalogue.TextStoodUp), Data(person), true);
+            SendText(person, SocialLines.Pick(SocialCatalogue.TextStoodUp), data, true);
             ModState.AddModifier(ModState.MoodDown);
             Logger?.Info("Social: the player stood " + person.Name + " up.");
         }

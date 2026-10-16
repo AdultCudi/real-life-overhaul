@@ -153,7 +153,7 @@ namespace RealLifeOverhaul
         /// <summary>A drawn face's file name in the portrait cache: what it is drawn from, so a different look is a different file. The first part is the version of how faces are drawn.</summary>
         public static string CacheName(bool female, int age, int seed)
         {
-            return "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + ".jpg";
+            return "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + PersonLooks.Mark(seed) + ".jpg";   // (a kept look's apart from a rolled one of the same number: People/PersonLook)
         }
 
         /// <summary>The words a contact list row is found by: whether every word of the query is in the name or the description, ignoring case and accents.</summary>

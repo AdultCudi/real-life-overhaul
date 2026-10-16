@@ -8,6 +8,8 @@ using RealLifeOverhaul.Faults;
 using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Permadeath;
 using RealLifeOverhaul.Photos;
+using RealLifeOverhaul.Street;
+using RealLifeOverhaul.Texts;
 using UnityEngine;
 
 [assembly: RegisterModClass(typeof(RealLifeOverhaulInit))]
@@ -568,6 +570,11 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FlareThemeId, "reallife_flare_opt_theme",
                     new[] { "reallife_flare_theme_0", "reallife_flare_theme_1", "reallife_flare_theme_2" }, Settings.FlareTheme,
                     v => Settings.FlareTheme = v)
+                .AddToggle(Settings.FlarePicturesId, "reallife_flare_opt_pictures", Settings.FlarePictures,
+                    v => Settings.FlarePictures = v)
+                .AddDropdown(Settings.FlareCityPhotosId, "reallife_flare_opt_city_photos",
+                    new[] { "reallife_flare_city_photos_0", "reallife_flare_city_photos_1", "reallife_flare_city_photos_2", "reallife_flare_city_photos_3" }, Settings.FlareCityPhotos,
+                    v => Settings.FlareCityPhotos = v)
                 .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
                 .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
                 .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())
@@ -577,11 +584,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_inf_scandal", () => Flare.FlareDirector.Instance?.TestInfluencerScandal())
                 .AddButton("reallife_flare_test_online", () => Flare.FlareDirector.Instance?.TestOnline())
                 .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
+                .AddButton("reallife_flare_test_pictures", () => Flare.FlareDirector.Instance?.TestPictures())
                 .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
                 .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
                 .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
                 .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())
+                .AddButton("reallife_flare_test_invitee", () => Flare.FlareDirector.Instance?.TestInvitee())
                 .AddButton("reallife_flare_test_invite", () => Flare.FlareDirector.Instance?.TestInvite())
                 .AddButton("reallife_flare_test_escalate", () => Flare.FlareDirector.Instance?.TestEscalate())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
@@ -971,6 +980,8 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddDistrictView())   // the district view on the city map (Scripts/Districts)
                 .Guarded(o => o.AddCityFaults())   // real faults in the city, and Flare's reports checked against them (Scripts/Faults)
+                .Guarded(o => o.AddTexts())   // RLO Texts: a small text model on the player's PC words the city's messages (Scripts/Texts)
+                .Guarded(o => o.AddStreetTalk())   // talking to anybody in the street, in the game's own dialogue panel (Scripts/Street)
                 .Guarded(o => o.AddPhotos())   // the Camera and Gallery apps on the phone (Scripts/Photos)
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
@@ -1186,6 +1197,7 @@ namespace RealLifeOverhaul
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
+            Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // work that needs frames of its own done behind the loading screen, two seconds at most (Core/LoadHold): disabled unless a piece is waiting
             Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));   // (pieces run last added first: this one after the road data below is found)
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
@@ -1311,7 +1323,11 @@ namespace RealLifeOverhaul
             Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
             Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             Guard.Step("Faults.FaultDirector", () => Faults.FaultDirector.Logger = context.Logger);
-            Guard.Step("Faults.FaultDirector", () => Guard.Add<Faults.FaultDirector>(_root));   // real faults in the city: dark lamps, potholes, litter, crime hot spots, unsafe places, rolled at random (Scripts/Faults): once a second a look, nothing per frame
+            Guard.Step("Faults.FaultDirector", () => Guard.Add<Faults.FaultDirector>(_root));
+            Guard.Step("Texts.TextsDirector", () => Texts.TextsDirector.Logger = context.Logger);
+            Guard.Step("Texts.TextsDirector", () => Guard.Add<Texts.TextsDirector>(_root));   // RLO Texts: the model's words for the city's messages, when a pack is installed (Scripts/Texts): twice a second a look, nothing per frame   // real faults in the city: dark lamps, potholes, litter, crime hot spots, unsafe places, rolled at random (Scripts/Faults): once a second a look, nothing per frame
+            Guard.Step("Street.StreetDirector", () => Street.StreetDirector.Logger = context.Logger);
+            Guard.Step("Street.StreetDirector", () => Guard.Add<Street.StreetDirector>(_root));   // street talk: the game's panel over a passer-by offers Talk, a conversation in the game's dialogue panel (Scripts/Street): four looks a second on foot, nothing per frame
             Guard.Step("Utilities.UtilitiesDirector", () => Utilities.UtilitiesDirector.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesApp", () => Utilities.UtilitiesApp.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
@@ -1363,7 +1379,9 @@ namespace RealLifeOverhaul
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
             context.Logger.Info("City features started.");
-            return Task.CompletedTask;
+            // The loading screen stays up while the pieces that need frames of their own are done (Flare's faces likely to be
+            // seen first), two seconds at most; with none it goes as before.
+            return LoadHold.Wait();
         }
 
         // The game's font is found by a search of the scene for any text of the interface (Core/GameUi/GameFont) and kept

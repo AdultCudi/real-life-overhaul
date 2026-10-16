@@ -464,7 +464,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                if (walker != null ? !Usable(walker) || Reacting(walker, null) : figure == null || !figure.gameObject.activeInHierarchy || Reacting(null, figure))
+                if (walker != null ? !Usable(walker) || Reacting(walker, null) : figure == null || !figure.gameObject.activeInHierarchy || Reacting(null, figure) || Street.StreetDirector.Holds(figure))
                 {
                     return false;
                 }
@@ -568,7 +568,8 @@ namespace RealLifeOverhaul
             for (int i = standing.Count - 1; i >= 0; i--)
             {
                 BaseHuman figure = standing[i];
-                if (figure == null || !figure.gameObject.activeInHierarchy || figure.isSittingOn != null || RagdollSystem.Holds(figure) || Reacting(null, figure))
+                if (figure == null || !figure.gameObject.activeInHierarchy || figure.isSittingOn != null || RagdollSystem.Holds(figure) || Reacting(null, figure)
+                    || Street.StreetDirector.Holds(figure))
                 {
                     continue;
                 }
@@ -627,6 +628,12 @@ namespace RealLifeOverhaul
             return RoadMap.Usable && RoadMap.NearestLane(at, out float off, out _, out _) && off < OnRoadWithin
                 ? StreetRules.Place.Road
                 : StreetRules.Place.Pavement;
+        }
+
+        /// <summary>True while one of the game's standing figures is turned by a reaction (street talk never offers them meanwhile).</summary>
+        public static bool Reacts(BaseHuman figure)
+        {
+            return Instance != null && figure != null && Instance.Reacting(null, figure);
         }
 
         private bool Reacting(Pedestrian walker, BaseHuman figure)

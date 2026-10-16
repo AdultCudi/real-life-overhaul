@@ -409,7 +409,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static bool Make(CityBuildingController building, out Venue venue)
+        internal static bool Make(CityBuildingController building, out Venue venue)
         {
             venue = default;
             Transform door = DoorOf(building);

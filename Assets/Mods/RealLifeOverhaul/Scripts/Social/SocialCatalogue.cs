@@ -44,17 +44,17 @@ namespace RealLifeOverhaul
     {
         // ------------------------------------------------------------------ the cast
 
-        private static readonly string[] Women =
+        internal static readonly string[] Women =
         {
             "Dana", "Priya", "Marisol", "Keisha", "Hannah", "Mei", "Sofia", "Nadia", "Ruth", "Imani", "Greta", "Yuki", "Carmen", "Leila", "Bridget", "Tasha",
             "Ines", "Chloe", "Farah", "Odette", "Rosa", "Anika", "Joan", "Zoe"
         };
-        private static readonly string[] Men =
+        internal static readonly string[] Men =
         {
             "Marcus", "Theo", "Luis", "Dev", "Sam", "Kofi", "Anton", "Ray", "Jun", "Malik", "Pete", "Emil", "Hugo", "Omar", "Declan", "Victor",
             "Andre", "Nico", "Tariq", "Walt", "Bao", "Felix", "Isaac", "Ronan"
         };
-        private static readonly string[] Surnames =
+        internal static readonly string[] Surnames =
         {
             "Whitlock", "Okafor", "Reyes", "Castellano", "Brennan", "Nakamura", "Petrov", "Delgado", "Abara", "Lindqvist", "Morrow", "Shah", "Oyelaran", "Fitzgerald",
             "Kowalski", "Tran", "Haddad", "Mercer", "Vasquez", "Blum", "Achebe", "Sorensen", "Quinn", "Batista", "Ferrante", "Novak", "Idowu", "Halloran",
@@ -95,14 +95,14 @@ namespace RealLifeOverhaul
         public static readonly string[] OriginDesc =
         {
             "reallife_contact_mom_desc", "reallife_contact_friend_desc", "reallife_social_desc_gym", "reallife_social_desc_work", "reallife_social_desc_cart",
-            "reallife_social_desc_neighbour", "reallife_social_desc_helped", "reallife_social_desc_customer", "reallife_social_desc_online", "reallife_social_desc_event"
+            "reallife_social_desc_neighbour", "reallife_social_desc_helped", "reallife_social_desc_customer", "reallife_social_desc_online", "reallife_social_desc_event", "reallife_social_desc_street"
         };
 
         /// <summary>The first text in a new contact's thread.</summary>
         public static readonly string[] OriginWelcome =
         {
             "reallife_text_mom_welcome", "reallife_text_friend_welcome", "reallife_social_welcome_gym", "reallife_social_welcome_work", "reallife_social_welcome_cart",
-            "reallife_social_welcome_neighbour", "reallife_social_welcome_helped", "reallife_social_welcome_customer", "reallife_social_welcome_online", "reallife_social_welcome_event"
+            "reallife_social_welcome_neighbour", "reallife_social_welcome_helped", "reallife_social_welcome_customer", "reallife_social_welcome_online", "reallife_social_welcome_event", "reallife_social_welcome_street"
         };
 
         /// <summary>What they say when they walk up, two ways each, by origin (from Gym on).</summary>
@@ -116,11 +116,12 @@ namespace RealLifeOverhaul
             new[] { "reallife_social_meet_helped_1", "reallife_social_meet_helped_2" },
             new[] { "reallife_social_meet_customer_1", "reallife_social_meet_customer_2" },
             new[] { "reallife_social_meet_online_1", "reallife_social_meet_online_2" },
-            new[] { "reallife_social_meet_event_1", "reallife_social_meet_event_2" }
+            new[] { "reallife_social_meet_event_1", "reallife_social_meet_event_2" },
+            new[] { "reallife_social_meet_street_1", "reallife_social_meet_street_2" }
         };
 
         // The pairs of traits a person can have: never two that contradict each other.
-        private static readonly SocialTrait[][] TraitPairs =
+        internal static readonly SocialTrait[][] TraitPairs =
         {
             new[] { SocialTrait.Punctual, SocialTrait.Sporty }, new[] { SocialTrait.Late, SocialTrait.Generous }, new[] { SocialTrait.Foodie, SocialTrait.Supportive },
             new[] { SocialTrait.NightOwl, SocialTrait.Flaky }, new[] { SocialTrait.Homebody, SocialTrait.Reliable }, new[] { SocialTrait.Careful, SocialTrait.Envious },
@@ -229,10 +230,11 @@ namespace RealLifeOverhaul
             bool female = mom ? FixedLooks.MomFemale : FixedLooks.AlexFemale;
             int age = mom ? FixedLooks.MomAge : FixedLooks.AlexAge;
             int seed = mom ? FixedLooks.MomSeed : FixedLooks.AlexSeed;
-            bool changed = p.Female != female || p.Age != age || p.Seed != seed;
+            bool changed = p.Female != female || p.Age != age || p.Seed != seed || p.Look != null;
             p.Female = female;
             p.Age = age;
             p.Seed = seed;
+            p.Look = null;   // (never anybody's look from the street)
             return changed;
         }
 

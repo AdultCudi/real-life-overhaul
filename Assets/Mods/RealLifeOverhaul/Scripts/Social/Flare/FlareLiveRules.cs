@@ -297,6 +297,12 @@ namespace RealLifeOverhaul.Flare
             return FlareRules.Roll(seed, a, salt) * 1000 + FlareRules.Roll(seed, a, salt + 50);
         }
 
+        /// <summary>Which of the city's people writes a day's k-th post of theirs (CityDay's own pick): their number, so that their face can be drawn ahead of the day.</summary>
+        public static int TalkCitizen(int seed, int day, int k)
+        {
+            return Wide(seed, day * 31 + k, 501) % Citizens;
+        }
+
         /// <summary>One of the city's people by a roll, evenly among all of them: their number, 0 to Citizens - 1.</summary>
         public static int PickCitizen(int seed, int a, int salt)
         {
@@ -728,9 +734,11 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>How much of a post's figures have come in by now, thousandths: on a curve, all of it a day after.</summary>
-        public static int Arrived(FlarePost p, long now)
+        public static int Arrived(FlarePost p, long now) => ArrivedAfter(now - p.At);
+
+        /// <summary>How much of a post's figures have come in so many game minutes after it went up, thousandths.</summary>
+        public static int ArrivedAfter(long since)
         {
-            long since = now - p.At;
             if (since <= 0)
             {
                 return 0;

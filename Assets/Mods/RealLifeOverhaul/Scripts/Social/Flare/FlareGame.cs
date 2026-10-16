@@ -20,6 +20,12 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The people the player has met in the social life, as Flare reads them, into the list given. Default: nobody.</summary>
         public static Action<List<FlarePerson>> People;
 
+        /// <summary>
+        /// The people met as a save holds them, read from its data while the loading screen is up, before the social life has
+        /// read them (only their number, look and whether they are the partner), into the list given. Default: nobody.
+        /// </summary>
+        public static Action<Dictionary<string, string>, List<FlarePerson>> SavedPeople;
+
         /// <summary>What the city thinks of the player, 0 to 100 (the law's public reputation). Default: 50.</summary>
         public static Func<int> PublicStanding;
 
@@ -131,6 +137,7 @@ namespace RealLifeOverhaul.Flare
         public static void Reset()
         {
             People = null;
+            SavedPeople = null;
             PublicStanding = null;
             Civic = null;
             Career = null;

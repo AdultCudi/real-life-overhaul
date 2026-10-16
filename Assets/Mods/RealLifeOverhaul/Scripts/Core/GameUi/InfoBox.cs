@@ -232,6 +232,7 @@ namespace RealLifeOverhaul.GameUi
         public void Clear()
         {
             Begin();
+            using var own = Timed();
             for (int i = 0; i < _live.Count; i++)
             {
                 GameObject part = _live[i];
@@ -286,6 +287,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text Title(string words, Transform parent)
         {
+            using var own = Timed();
             if (parent == null)
             {
                 return Header(words);
@@ -301,6 +303,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text Line(string words)
         {
+            using var own = Timed();
             string label, value;
             if (LookRules.SplitPair(words, out label, out value))
             {
@@ -312,6 +315,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A line of text in the box, or (with a parent) anywhere else: the copy of the box's own, in its font and colour.</summary>
         public TMP_Text Line(string words, Transform parent)
         {
+            using var own = Timed();
             if (parent == null)
             {
                 return Line(words);
@@ -327,6 +331,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public RawImage Picture(Texture texture, float width, float most)
         {
+            using var own = Timed();
             if (texture == null || texture.width <= 0)
             {
                 return null;
@@ -354,12 +359,14 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A headline with words already made (a name and a figure): the start of a section (SectionWords).</summary>
         public Transform HeadlineWords(string words)
         {
+            using var own = Timed();
             return SectionWords(words);
         }
 
         /// <summary>A headline: in the box the start of a section (Section), anywhere else the game's own over a grey rule. Returns what was made.</summary>
         public Transform Headline(string key, Transform parent)
         {
+            using var own = Timed();
             if (parent == null)
             {
                 return Section(key);
@@ -385,6 +392,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A switch with its label. False if the game's switch row could not be had: the caller leaves the choice out.</summary>
         public bool Switch(string labelKey, bool on, Action<bool> changed)
         {
+            using var own = Timed();
             if (_switch == null)
             {
                 return false;
@@ -411,6 +419,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The same in the box, or (with a parent) anywhere else.</summary>
         public bool Selector(int count, int index, Func<int, string> text, Action<int> changed, Transform parent)
         {
+            using var own = Timed();
             if (_selector == null || count < 1)
             {
                 return false;
@@ -478,6 +487,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public Transform ButtonRow(Transform parent = null)
         {
+            using var own = Timed();
             if (parent == null)
             {
                 EndSection();   // a row of buttons closes the section it follows: its buttons act on the page, not on its last rows
@@ -512,6 +522,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public static Button Button(Transform row, int kind, string key, Action click)
         {
+            using var own = TimedWriting();
             if (row == null || row.childCount == 0)
             {
                 return null;
@@ -553,7 +564,10 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The layout is worked out now, not next frame: a page is written in one go and shown at once.</summary>
         public void Done()
         {
-            LayoutRebuilder.MarkLayoutForRebuild((RectTransform)_box);
+            using (Timed())
+            {
+                LayoutRebuilder.MarkLayoutForRebuild((RectTransform)_box);
+            }
             Finish();
         }
     }

@@ -58,6 +58,48 @@ namespace RealLifeOverhaul.Ledger
         public bool Running => _state != null && !_broken;
         public LedgerState State => Running ? _state : null;
 
+        /// <summary>The day of the edition a piece is in (today's, or one kept to be read again); -1 if none holds it.</summary>
+        public int DayOf(LedgerPiece piece)
+        {
+            if (!Running || piece == null)
+            {
+                return -1;
+            }
+            if (_state.Edition != null && _state.Edition.Pieces.Contains(piece))
+            {
+                return _state.Edition.Day;
+            }
+            for (int i = 0; _online != null && i < _online.Earlier.Count; i++)
+            {
+                if (_online.Earlier[i].Pieces.Contains(piece))
+                {
+                    return _online.Earlier[i].Day;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>True if an edition of this day is still held (today's, or one kept to be read again).</summary>
+        public bool HasDay(int day)
+        {
+            if (!Running)
+            {
+                return false;
+            }
+            if (_state.Edition != null && _state.Edition.Day == day)
+            {
+                return true;
+            }
+            for (int i = 0; _online != null && i < _online.Earlier.Count; i++)
+            {
+                if (_online.Earlier[i].Day == day)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>The kiosks near the home, for the city map (World/MapLinks); null while the paper is not running.</summary>
         public LedgerKiosks Kiosks => Running ? _kiosks : null;
 
@@ -391,6 +433,7 @@ namespace RealLifeOverhaul.Ledger
             }
             KeepEarlier(_state.Edition, day);   // the edition it replaces, to be read again on the phone
             _state.Edition = e;
+            LedgerBridges.TextsEdition?.Invoke(e);   // (RLO Texts: the briefs' words asked now, ahead of the reading)
             _page?.Changed();
             _stand?.Changed();
             SharedCity.Changed(LedgerShare.Part);   // (to the guests of a session with the next update)

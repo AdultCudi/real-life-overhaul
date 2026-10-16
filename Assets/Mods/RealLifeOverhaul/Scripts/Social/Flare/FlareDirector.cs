@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Flare
             _openMessages = () => Open(TabMessages);
             _openCompose = () => Open(TabPost);
             ShareRegister();
+            FlareFacePainter.HoldAtLoad();   // (made behind the loading screen: the faces likely to be seen first are drawn while it is up, Core/LoadHold)
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -140,6 +141,11 @@ namespace RealLifeOverhaul.Flare
                 Install();
             }
             ShareSecond();
+            InvitesTick();   // (a yes due is booked: one comparison otherwise, FlareDirector.Invites.cs)
+            if (Running)
+            {
+                PhotosSecond();
+            }
         }
 
         // ---------------------------------------------------------------- starting and stopping
@@ -170,6 +176,10 @@ namespace RealLifeOverhaul.Flare
             }
             Cast(file, day);
             LiveStart(file);
+            _textAsked.Clear();   // (RLO Texts: post numbers are this file's)
+            _textDms.Clear();
+            _textAnswers.Clear();
+            CommentsForget();
             _file = file;
             _running = true;
             if (FlareLiveRules.StartDay(file.Net, day, Following))
@@ -177,6 +187,7 @@ namespace RealLifeOverhaul.Flare
                 LiveDay(day);   // the city's posts of today now (an update to this version, a new account): not an empty feed until tomorrow
             }
             ShareStart();
+            PhotosStart();
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed " + file.Seed + ")"
                                             : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), " + file.Drafts.Count + " draft(s)") + ".");
             Badge();
@@ -190,9 +201,14 @@ namespace RealLifeOverhaul.Flare
                 FlareStore.Save(Save.modData, _file);
             }
             ShareStop();
+            PhotosStop();
             FlareBridges.Watched?.Invoke(false, false);   // no patrols or cleaners of Flare's once it stops (Crime/CityWatch back to 1)
             _running = false;
             _file = null;
+            _textAsked.Clear();
+            _textDms.Clear();
+            _textAnswers.Clear();
+            CommentsForget();
             if (_view != null)
             {
                 _view.Dispose();
@@ -227,6 +243,10 @@ namespace RealLifeOverhaul.Flare
         {
             _running = false;
             _file = null;
+            _textAsked.Clear();
+            _textDms.Clear();
+            _textAnswers.Clear();
+            CommentsForget();
             if (_view != null)
             {
                 _view.Changed();
@@ -355,6 +375,7 @@ namespace RealLifeOverhaul.Flare
 
         private void PlayDay(int day)
         {
+            PhotosLook();   // (the photos of posts gone since yesterday deleted, on a worker)
             ReadPeople();
             Talked(_talked);
             FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
@@ -362,6 +383,7 @@ namespace RealLifeOverhaul.Flare
             CastDay(day);
             CityDay(day);
             LiveDay(day);
+            FacesAhead(day);   // (the faces of the day's likely accounts, behind the next black screens)
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {

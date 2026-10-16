@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Meta
             { "reallife_meta_remove_button", "reallife_opt_caption_prepare" },
             { "reallife_meta_repair_button", "reallife_opt_caption_repair" },
             { "reallife_meta_check_button", "reallife_opt_caption_check" },
+            { "reallife_texts_status", "reallife_opt_caption_check" },
             { "reallife_car_measure", "reallife_opt_caption_measure" },
         };
 

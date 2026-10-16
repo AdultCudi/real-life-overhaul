@@ -17,6 +17,12 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The day the city's paper (Social/News) was last written for; 0 none.</summary>
         public static Func<int> PaperDay;
 
+        /// <summary>RLO Texts: an edition was written; the briefs it can word are asked for now. Null: nothing.</summary>
+        public static Action<LedgerEdition> TextsEdition;
+
+        /// <summary>RLO Texts: the model's words for a piece's story, or null for its written one.</summary>
+        public static Func<LedgerPiece, string> TextsBody;
+
         /// <summary>The city's paper as it stands, as pieces sorted into their sections (the old masthead left out).</summary>
         public static Action<List<LedgerPiece>> Paper;
 
