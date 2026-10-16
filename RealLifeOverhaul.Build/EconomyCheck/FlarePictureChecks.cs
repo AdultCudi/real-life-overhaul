@@ -63,14 +63,14 @@ internal static partial class Program
         FlareAvatarPlan c = FlareAvatarRules.Plan("c7", facts);
         var citizens = new List<FlareCitizen>();
         FlareLiveRules.CitizensOf(facts.CitySeed, null, citizens);
-        var women = new HashSet<string> { "Ada", "Bea", "Dina", "Fay", "Hana", "Juno", "Lena", "Nell", "Pia", "Rae", "Tess", "Uma", "Xena", "Yara", "Bree", "Elsa" };
         bool sexes = true;
         for (int i = 0; i < citizens.Count; i++)
         {
             FlareAvatarPlan pi = FlareAvatarRules.Plan("c" + i, facts);
-            sexes &= pi.Kind == FlareAvatarKind.Face && pi.Female == women.Contains(citizens[i].First) && pi.Age >= FlareAvatarRules.AgeLeast && pi.Age < FlareAvatarRules.AgeLeast + FlareAvatarRules.AgeSpan && pi.Seed >= 1;
+            sexes &= pi.Kind == FlareAvatarKind.Face && pi.Female == citizens[i].Female && pi.Age == citizens[i].Age && pi.Age >= 18 && pi.Seed >= 1;
         }
-        Check(c.Kind == FlareAvatarKind.Face && sexes, "Flare pictures: each of the city's people is a face of the sex their first name says, of an adult age, from a look's seed");
+        Check(c.Kind == FlareAvatarKind.Face && sexes && citizens.Count == FlareLiveRules.Citizens,
+            "Flare pictures: each of the city's " + FlareLiveRules.Citizens + " people is a face of their own sex and age, as the city has them, from a look's seed");
 
         FlareAvatarPlan friend = FlareAvatarRules.Plan("f6", facts), partner = FlareAvatarRules.Plan("p6", facts);
         Check(friend.Kind == FlareAvatarKind.Face && friend.Female && friend.Age == 31 && friend.Seed == 123457 && partner.Picture == friend.Picture,
@@ -236,8 +236,8 @@ internal static partial class Program
         {
             gone += big.Use("k" + (i % 200)) != null ? 1 : 0;
         }
-        Check(big.Count == FlareAvatarRules.Most && gone == 1000 - FlareAvatarRules.Most && FlareAvatarRules.Most * FlareAvatarRules.Size * FlareAvatarRules.Size * 4 <= 2500 * 1024,
-            "Flare pictures: never more than " + FlareAvatarRules.Most + " textures, 2.3 MB at most, however many accounts are scrolled past");
+        Check(big.Count == 200 && gone == 0 && FlareAvatarRules.Most * FlareAvatarRules.Size * FlareAvatarRules.Size * 4 <= 19 * 1024 * 1024,
+            "Flare pictures: " + FlareAvatarRules.Most + " textures at most, 18 MB, and 200 accounts scrolled past again and again keep all of theirs");
         Check(new FlareAvatarLru(0).Most == 1, "Flare pictures: a bound of none is one");
     }
 
@@ -404,7 +404,7 @@ internal static partial class Program
         Check(!avatars.Contains("void Update(") && !camera.Contains("void Update(") && !photos.Contains("void Update(") && !avatars.Contains("MonoBehaviour") && !camera.Contains("MonoBehaviour"),
             "Flare pictures: the avatars, the city camera and the photos' pacing have no Update (nothing per frame)");
         string update = FlareMethod(painter, "private void Update()"), on = FlareMethod(painter, "private void OnUpdate()");
-        int idle = on.IndexOf("Waiting.Count == 0", StringComparison.Ordinal), wait = on.IndexOf("!AppShowing", StringComparison.Ordinal), loop = on.IndexOf("for (", StringComparison.Ordinal);
+        int idle = on.IndexOf("Waiting.Count == 0", StringComparison.Ordinal), wait = on.IndexOf("Moment moment = Now()", StringComparison.Ordinal), loop = on.IndexOf("for (", StringComparison.Ordinal);
         Check(update.Contains("HotSpots.Time(HotUpdate)") && update.Contains("FrameGuard.Off") && on.Contains("enabled = false") && idle >= 0 && wait > idle && loop > wait,
             "Flare pictures: the face painter is timed and guarded, switches itself off with nothing to draw, and waits for its moment before any search");
         string show = cells.Substring(Math.Max(0, cells.IndexOf("public void Show(FlareApp app", StringComparison.Ordinal)));
