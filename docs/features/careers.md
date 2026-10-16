@@ -150,3 +150,11 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | clip `staff_struggle` | hands on hips, a shake of the head, looking down at something, 6 s loop | `LeadJob`'s "stuck" (today `arms_crossed`) |
 | prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | (needs placement code) stood by the board on a dispatcher shift |
 | prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | (needs placement code) above each office's board |
+
+## Classes at a desk and at home
+
+- **Attend in the Campus app** takes the player to the classroom (the right floor of Hudson City University, or the nearest desk at Manhattan Business School) and starts the game's own study activity at its desk: `SchoolDesk.Begin` presses the class for the player once the panel opens.
+- **Online and distance classes and homework** are done at a computer in the player's home. `ComputerButtons` adds **Attend {course}** and **Do {course} homework** beside the game's **Pass the time**; `ComputerClass` plays them as the game's `EntertainActivity` does. Which button shows is decided by `Study/ClassPlayRules.cs`, which the offline checks test.
+- **Minutes count once.** `ClassPlayRules.ClassTally` settles a sitting exactly once; a walk called off counts nothing, and a retake fee is charged only when the player sits down.
+- **After a game update:** the part `computer_class` (`CustomizableButtonsOverlay.buttonTemplate`) carries the computer's buttons. If it fails, the home computer loses the mod's Attend and homework buttons, and online classes and homework can still be started at home from the Campus app.
+- **Known limit:** on a work-from-home day the job's **Click to work** takes the computer's click, so the class buttons do not show that day.

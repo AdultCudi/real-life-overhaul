@@ -4,11 +4,17 @@
 
 ## Context
 
-The city's messages (Flare posts, texts, street talk) were written lines, and the same line came back for every inbox. A text model can word each message from the game's real state, but it needs memory and processor time, can fail, and can say something wrong. A model loaded inside the game's process shares its memory, its collector and its graphics device, and a native crash there takes the game down. A service on the internet would need an account, a connection and the players' data.
+The city's messages (Flare posts, texts, street talk) were written lines, and the same line came back for every inbox. A text model can word each message from the game's real state, but it needs memory and processor time, can fail, and can say something wrong.
+
+A model loaded inside the game's process shares its memory, its collector and its graphics device, and a native crash there takes the game down. A service on the internet would need an account, a connection and the players' data.
 
 ## Decision
 
-The game decides everything as before: who, when, what happens and every effect. RLO Texts only words the result. A pack, from RLO's own Workshop items, holds a small text model and llama.cpp's own server, which the mod starts as a child process of the game listening on `127.0.0.1` only (`Texts/TextServer`). Every word is checked before it is shown (`Texts/TextCheck`), and whenever the model is absent, off, loading, busy, slow or wrong, the written line is shown as before. The pack's runtime files are pinned by SHA-256 (`Texts/TextRuntime`). In a Going Public session the host writes shared text once and the guests check it again (`Texts/TextsShare`).
+The game decides everything as before: who, when, what happens and every effect. RLO Texts only words the result.
+
+A pack, from RLO's own Workshop items, holds a small text model and llama.cpp's own server, which the mod starts as a child process of the game listening on `127.0.0.1` only (`Texts/TextServer`).
+
+Every word is checked before it is shown (`Texts/TextCheck`), and whenever the model is absent, off, loading, busy, slow or wrong, the written line is shown as before. The pack's runtime files are pinned by SHA-256 (`Texts/TextRuntime`). In a Going Public session the host writes shared text once and the guests check it again (`Texts/TextsShare`).
 
 ## Consequences
 
