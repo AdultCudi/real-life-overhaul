@@ -19263,7 +19263,6 @@
   "reallife_guide_texts_about": "Avec un pack installé, un petit modèle sur votre PC écrit les mots des publications, réponses et messages de Flare. Hors ligne : rien n'est envoyé nulle part.",
   "reallife_opt_tip_texts": "Un petit modèle de texte sur votre PC écrit les mots des messages de la ville. Il faut le pack RLO Texts ou RLO Texts Lite. Désactivé, ou sans pack : les lignes écrites.",
   "reallife_opt_tip_texts_device": "Automatique tourne sur le processeur, sauf si votre carte graphique a beaucoup de mémoire libre. Le changer redémarre le modèle.",
-  "reallife_opt_tip_texts_threads": "Le nombre de threads du processeur que le modèle peut utiliser. Automatique en prend de 2 à 4 selon vos cœurs, et laisse toujours deux cœurs au jeu.",
   "reallife_opt_tip_texts_replies": "Réponses et commentaires sous les publications de Flare, des habitants de la ville et de vos amis.",
   "reallife_opt_tip_texts_posts": "Les publications sur Flare des habitants de la ville, leurs avis et les publications des boutiques.",
   "reallife_opt_tip_texts_people": "Les textos de vos amis, de votre partenaire, de maman, de la belle-famille, de votre colocataire, de votre patron et du prêteur, les messages Flare, et le bonjour d'un ami quand vous le croisez.",
