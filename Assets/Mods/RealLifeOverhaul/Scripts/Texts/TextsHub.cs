@@ -28,6 +28,8 @@ namespace RealLifeOverhaul.Texts
         public int Day;                     // the game day (for kept words)
         public Func<bool> Wanted;           // asked when the words come back: false if they are no longer wanted (the post went up meanwhile); null: always
         public Action<string> Done;         // on the game's thread: the words, or null for the written line
+        public string Why;                  // filled by the hub: why there are no words (not asked, refused by the checker, the time ran out), for the asker's log; null with words
+        public double Took;                 // filled by the hub: seconds the model took over it (0 when it never ran)
     }
 
     /// <summary>The runner as the hub sees it (TextServer; the checks put a pretend one in).</summary>
@@ -119,22 +121,37 @@ namespace RealLifeOverhaul.Texts
         /// </summary>
         public bool Ask(TextRequest r, double now)
         {
-            if (r == null || r.Done == null || !Wants(r.Use, r.Shared) || !TextSpeed.Allows(AheadOnly, r.Priority, r.Guess, r.Seconds))
+            if (r == null || r.Done == null)
             {
+                return false;
+            }
+            r.Why = null;
+            r.Took = 0;
+            if (!Wants(r.Use, r.Shared))
+            {
+                r.Why = "not asked: RLO Texts is off, has no pack or is not running";
+                return false;
+            }
+            if (!TextSpeed.Allows(AheadOnly, r.Priority, r.Guess, r.Seconds))
+            {
+                r.Why = "not asked: this machine's model writes only what is asked well ahead";
                 return false;
             }
             if (Runner.State == TextServerState.Loading && r.Seconds < TextSpeed.AheadSeconds)
             {
+                r.Why = "not asked: the model is still loading";
                 return false;   // (still loading: what is due soon takes its written line now rather than wait for nothing)
             }
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch);
             if (intent == null || intent.Data > Data)
             {
+                r.Why = "not asked: the pack (data v" + Data + ") has no card " + r.Intent + (r.Branch != null ? " " + r.Branch : string.Empty);
                 return false;   // (no such intent, or one the pack's model never learnt: a v2 pack is never asked a v3 intent)
             }
             var sheet = new TextSheet();
             if (!TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
+                r.Why = "not asked: a value the card " + r.Intent + " needs is missing";
                 return false;
             }
             var job = new TextJob { Key = r.Key ?? r.Intent, Prompt = TextCard.ChatMl(sheet), Priority = r.Priority, Deadline = now + r.Seconds, Guess = r.Guess };
@@ -147,6 +164,8 @@ namespace RealLifeOverhaul.Texts
             }
             if (!_queue.Add(job, now))
             {
+                r.Why = "not asked: " + job.Why + " (a reply is expected to take " + _queue.Expect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " s, the line waits "
+                        + r.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s)";
                 return false;
             }
             _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = TextCard.Card(sheet), Job = job });
@@ -180,6 +199,7 @@ namespace RealLifeOverhaul.Texts
                     }
                     if (now > w.Job.Deadline + 0.25)
                     {
+                        w.Request.Why = "the words came after the hold";
                         Over(i, true);
                     }
                     else
@@ -190,11 +210,14 @@ namespace RealLifeOverhaul.Texts
                 }
                 else if (state == TextJobState.Missed || state == TextJobState.Dropped)
                 {
+                    w.Request.Why = state == TextJobState.Missed ? "missed: " + (w.Job.Why ?? "the model gave nothing") : "asked again or dropped";
                     Over(i, state == TextJobState.Missed);
                     handed++;
                 }
                 else if (now > w.Job.Deadline)
                 {
+                    w.Request.Why = "the hold of " + w.Request.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s ran out while it was "
+                                    + (state == TextJobState.Running ? "being written" : "waiting in the queue");
                     _queue.Drop(w.Job);   // (a running one comes back later and is let go)
                     Over(i, true);
                     handed++;
@@ -225,6 +248,7 @@ namespace RealLifeOverhaul.Texts
                     Count(words != null);
                     return words;
                 }
+                w.Request.Why = "the guess was not written yet";
                 _queue.Drop(w.Job);
                 _waiting.RemoveAt(i);
                 Count(false);
@@ -315,9 +339,11 @@ namespace RealLifeOverhaul.Texts
             string words = TextCheck.Tidy(w.Job.Raw);
             TextVerdict verdict = TextCheck.Judge(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker));
             _verdicts[(int)verdict]++;
+            w.Request.Took = w.Job.Took;
             if (verdict != TextVerdict.Ok)
             {
                 Refused++;
+                w.Request.Why = "the checker refused \"" + words + "\" (" + verdict + ")";
                 return null;
             }
             return words;
@@ -331,7 +357,9 @@ namespace RealLifeOverhaul.Texts
             {
                 words = null;   // (too late for where it was going: the written line stays)
                 counted = true;
+                w.Request.Why = "no longer wanted when the words came";
             }
+            w.Request.Took = w.Job.Took;
             if (counted || words == null)
             {
                 Count(words != null);
