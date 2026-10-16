@@ -105,7 +105,7 @@ namespace RealLifeOverhaul
         private readonly Jaywalker _jay = new Jaywalker();
         private readonly Jaywalker[] _crowd = new Jaywalker[CrowdMost];   // a test's ten people crossing at once
         private int _crowdOut;
-        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark();
+        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark("the reckless drivers' tests");
         private RecklessCar _car;
         private ResponseUnit _patrol;
 
@@ -149,6 +149,7 @@ namespace RealLifeOverhaul
                 _crowd[i] = new Jaywalker();
             }
             _car = gameObject.AddComponent<RecklessCar>();
+            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _patrol = new ResponseUnit(gameObject);
             _nextCheck = Time.time + StreetRules.CheckSeconds * 2f;
         }

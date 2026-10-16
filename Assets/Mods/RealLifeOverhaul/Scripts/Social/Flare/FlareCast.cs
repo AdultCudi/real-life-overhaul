@@ -54,8 +54,16 @@ namespace RealLifeOverhaul.Flare
     public static class FlareCast
     {
         public const int FirstDealKind = 5;        // the company's campaign kind of FlareDeal.Post; the deals follow in their order (CampaignKind 5 to 10)
-        public const int Start = 6;                // influencers on the first day
-        public const int Most = 10;                // active at once, at most
+        public const int Start = 16;               // influencers on the first day: a little under the level, which the first months fill
+        public const int CitizensEach = 22;        // the city's people for each active influencer the city settles around
+        public const int Level = FlareLiveRules.Citizens / CitizensEach;   // ...18 for four hundred: no fixed most; newcomers and fades pull the cast towards it
+        public const int ArrivalTries = 3;         // newcomers of the city's own a month, at most (besides a busy niche's, a friend and one of the staff)
+        public const int ArrivalBase = 60;         // per mille each, at the level...
+        public const int ArrivalPull = 600;        // ...and so many more for a cast that has none (in proportion: half as many for one half the level)
+        public const int CrowdBp = 150;            // basis points of growth a month each active influencer loses for every one over the level: a crowded city's audience is shared
+        public const int PostsLevel = 12;          // active influencers whose posts fill the feed: more than this share it (each posts less often), so the feed's volume stays
+        public const int ActiveSoft = 60;          // a safety bound, three times the level and never reached in play: no newcomer while this many are active
+        public const int KeptMost = 240;           // records kept and read, active or not: one who stopped and is named by nothing (no post, deal, message or follow) goes first
         public const int MonthDays = 30;
         public const int StarFrom = 100000;        // followers
         public const int FadeUnder = 1500, QuitUnder = 600;
@@ -177,11 +185,17 @@ namespace RealLifeOverhaul.Flare
         /// The influencers' month: each grows or fades by their engagement, manner and name, some become stars, some quit,
         /// some are caught in a scandal; and newcomers come into a niche the city makes busy ('heat', thousandths by
         /// FlareNiche), the niche of a viral post of the player's, from among the player's friends, or from their staff.
-        /// Played once a month whatever the time skipped. What happened goes into the list given.
+        /// There is no fixed most: the city's own newcomers come more often while the cast is under <see cref="Level"/>, and
+        /// over it the audience is shared (<see cref="CrowdBp"/>), so more fade; the cast grows and shrinks round the level.
+        /// Those who stopped before this month and are named by nothing go (<see cref="Retire"/>). Played once a month
+        /// whatever the time skipped. What happened goes into the list given. COST: a few walks over the cast (some twenty
+        /// active, <see cref="KeptMost"/> records at most) and the posts, once a month.
         /// </summary>
         public static void Month(FlareFile f, int day, int[] heat, IReadOnlyList<FlarePerson> people, bool staff, IReadOnlyList<string> districts, List<FlareCastNews> into)
         {
             f.MonthDay = day;
+            Retire(f);
+            int crowd = CrowdBp * Math.Max(0, f.ActiveInfluencers - Level);   // basis points every active one loses this month
             for (int i = 0; i < f.Influencers.Count; i++)
             {
                 FlareInfluencer inf = f.Influencers[i];
@@ -193,6 +207,7 @@ namespace RealLifeOverhaul.Flare
                 int luck = FlareRules.Roll(inf.Seed, day, 21);
                 int growth = (inf.Engagement - 350) / 2 + (inf.Reputation - 50) * 4 + (luck - 430);   // basis points a month
                 growth += inf.Style == FlareStyle.Edgy ? (FlareRules.Roll(inf.Seed, day, 22) - 500) * 2 : inf.Style == FlareStyle.Wholesome ? 50 : 0;
+                growth -= crowd;
                 inf.Followers = Math.Max(0, (int)(inf.Followers + (long)inf.Followers * growth / 10000));
                 inf.Reputation = FlareRules.Clamp(inf.Reputation + Math.Sign(60 - inf.Reputation) * 5, 0, 100);
                 if (FlareRules.Roll(inf.Seed, day, 23) < ScandalChance[FlareRules.Clamp((int)inf.Style, 0, ScandalChance.Length - 1)])
@@ -226,12 +241,26 @@ namespace RealLifeOverhaul.Flare
             inf.Followers -= inf.Followers * ScandalLoss / 100;
         }
 
-        // Newcomers, while there is room: the busiest niche, a friend, one of the staff.
+        // Newcomers: the city's own (more while the cast is small), the busiest niche, a friend, one of the staff; none at the safety bound.
         private static void Arrivals(FlareFile f, int day, int[] heat, IReadOnlyList<FlarePerson> people, bool staff, IReadOnlyList<string> districts, List<FlareCastNews> into)
         {
-            if (f.ActiveInfluencers >= Most)
+            int active = f.ActiveInfluencers;
+            if (active >= ActiveSoft)
             {
                 return;
+            }
+            int chance = ArrivalChance(active);
+            for (int k = 0; k < ArrivalTries && active < ActiveSoft; k++)
+            {
+                int roll = day * ArrivalTries + k;
+                if (FlareRules.Roll(f.CastSeed, roll, 33) >= chance)
+                {
+                    continue;
+                }
+                var niche = (FlareNiche)(FlareRules.Roll(f.CastSeed, roll, 34) % 6);   // (any niche but business, as on the first day)
+                FlareInfluencer arrived = New(f, niche, District(districts, f.CastSeed, roll + 1000), day, 1000 + FlareRules.Roll(f.CastSeed, roll, 35) * 6, -1, false);
+                into.Add(new FlareCastNews { Kind = FlareCastNews.What.Arrived, Id = arrived.Id, After = arrived.Followers });
+                active++;
             }
             int best = -1, bestHeat = 0;
             for (int n = 0; heat != null && n < heat.Length && n <= (int)FlareNiche.Business; n++)
@@ -243,12 +272,12 @@ namespace RealLifeOverhaul.Flare
                     bestHeat = h;
                 }
             }
-            if (best >= 0 && FlareRules.Roll(f.CastSeed, day, 31) < bestHeat / 2)
+            if (best >= 0 && active < ActiveSoft && FlareRules.Roll(f.CastSeed, day, 31) < bestHeat / 2)
             {
                 FlareInfluencer inf = New(f, (FlareNiche)best, District(districts, f.CastSeed, day), day, 800 + FlareRules.Roll(f.CastSeed, day, 32) * 4, -1, false);
                 into.Add(new FlareCastNews { Kind = FlareCastNews.What.Arrived, Id = inf.Id, After = inf.Followers });
             }
-            for (int i = 0; people != null && i < people.Count && f.ActiveInfluencers < Most; i++)
+            for (int i = 0; people != null && i < people.Count && f.ActiveInfluencers < ActiveSoft; i++)
             {
                 FlarePerson p = people[i];
                 FlareNiche niche;
@@ -260,11 +289,81 @@ namespace RealLifeOverhaul.Flare
                 into.Add(new FlareCastNews { Kind = FlareCastNews.What.Arrived, Id = inf.Id, After = inf.Followers });
                 break;   // one friend a month at most
             }
-            if (staff && f.ActiveInfluencers < Most && FlareRules.Roll(f.CastSeed, day, 50) < StaffChance)
+            if (staff && f.ActiveInfluencers < ActiveSoft && FlareRules.Roll(f.CastSeed, day, 50) < StaffChance)
             {
                 FlareInfluencer inf = New(f, FlareNiche.Business, District(districts, f.CastSeed, day + 7), day, 400 + FlareRules.Roll(f.CastSeed, day, 51), -1, true);
                 into.Add(new FlareCastNews { Kind = FlareCastNews.What.Arrived, Id = inf.Id, After = inf.Followers });
             }
+        }
+
+        /// <summary>The chance each month of each of the city's own newcomers, per mille, by how many are active: more under the level, none well over it.</summary>
+        public static int ArrivalChance(int active)
+        {
+            return FlareRules.Clamp(ArrivalBase + ArrivalPull * (Level - active) / Level, 0, ArrivalBase + ArrivalPull);
+        }
+
+        /// <summary>
+        /// Those who stopped posting and are named by nothing go from the file: no post of theirs is kept, no deal names them,
+        /// no message is from them and the player does not follow them (a friend who took it up stays: they are the friend).
+        /// Past <see cref="KeptMost"/> records the oldest of those who stopped go whatever names them, so the save stays
+        /// small. Returns how many went.
+        /// </summary>
+        public static int Retire(FlareFile f)
+        {
+            int gone = 0;
+            for (int i = f.Influencers.Count - 1; i >= 0; i--)
+            {
+                FlareInfluencer inf = f.Influencers[i];
+                if (inf.Active || inf.Person >= 0 || Named(f, inf.Id))
+                {
+                    continue;
+                }
+                f.Influencers.RemoveAt(i);
+                gone++;
+            }
+            for (int i = 0; i < f.Influencers.Count && f.Influencers.Count > KeptMost;)
+            {
+                if (f.Influencers[i].Active)
+                {
+                    i++;
+                    continue;
+                }
+                f.Influencers.RemoveAt(i);
+                gone++;
+            }
+            return gone;
+        }
+
+        // Whether anything kept names an influencer: a post of theirs, a deal, a message, a follow.
+        private static bool Named(FlareFile f, int id)
+        {
+            for (int i = 0; i < f.Posts.Count; i++)
+            {
+                if (f.Posts[i].Author == FlareAuthor.Influencer && f.Posts[i].Who == id)
+                {
+                    return true;
+                }
+            }
+            for (int i = 0; i < f.Hires.Count; i++)
+            {
+                if (f.Hires[i].Who.Contains(id))
+                {
+                    return true;
+                }
+            }
+            string key = "i:" + id;
+            if (f.Follows.Contains(key))
+            {
+                return true;
+            }
+            for (int i = 0; i < f.Net.Dms.Count; i++)
+            {
+                if (string.Equals(f.Net.Dms[i].With, key, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static bool NicheOf(FlareTaste taste, out FlareNiche niche)
@@ -365,6 +464,7 @@ namespace RealLifeOverhaul.Flare
             {
                 f.NewsToday = 0;   // (yesterday's news is today's to talk about)
             }
+            int chance = PostChanceOf(f.ActiveInfluencers);
             for (int i = 0; i < f.Influencers.Count; i++)
             {
                 FlareInfluencer inf = f.Influencers[i];
@@ -390,7 +490,7 @@ namespace RealLifeOverhaul.Flare
                     continue;
                 }
                 int roll = FlareRules.Roll(inf.Seed, day, 70);
-                if (roll >= PostChance)
+                if (roll >= chance)
                 {
                     continue;
                 }
@@ -434,6 +534,16 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             FlareRules.Prune(f);
+        }
+
+        /// <summary>
+        /// The chance a day an influencer with nothing paid posts, per mille: <see cref="PostChance"/> up to
+        /// <see cref="PostsLevel"/> active, shared among more beyond it, so the feed has about as many of their posts a day
+        /// however many there are (some eight).
+        /// </summary>
+        public static int PostChanceOf(int active)
+        {
+            return active <= PostsLevel ? PostChance : PostChance * PostsLevel / active;
         }
 
         /// <summary>

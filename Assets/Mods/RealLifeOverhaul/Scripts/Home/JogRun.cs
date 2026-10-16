@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
         private readonly IModLogger _logger;
         private readonly Vector3[] _route = new Vector3[Checkpoints];
         private readonly string[] _lines = new string[Checkpoints];
-        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark();
+        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark("the run");
         private int _marked = -1;
         private Transform _ring;
         private int _next;
@@ -53,6 +53,12 @@ namespace RealLifeOverhaul
         public JogRun(IModLogger logger)
         {
             _logger = logger;
+        }
+
+        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        internal void KeptBy(Behaviour host)
+        {
+            _mark.Keep(host);
         }
 
         public static void ForgetCity()

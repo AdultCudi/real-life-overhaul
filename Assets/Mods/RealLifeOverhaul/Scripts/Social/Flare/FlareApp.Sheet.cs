@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Flare
         private readonly FlareCompose _compose = new FlareCompose();
         private string _hirePlace, _hireName;
         private int _hireDeal, _hireWho = -1;
-        private readonly List<FlareInfluencer> _active = new List<FlareInfluencer>(FlareCast.Most);
+        private readonly List<FlareInfluencer> _active = new List<FlareInfluencer>(FlareCast.Level);
         private readonly List<string> _suggest = new List<string>(8);
 
         private sealed class ChipPart

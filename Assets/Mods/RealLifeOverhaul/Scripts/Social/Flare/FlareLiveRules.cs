@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Flare
     /// A DAY OF THE FEED (the option at Normal): about 14 posts of the city's people (a fifth of them reports or reviews),
     /// 2 to 5 from official accounts, 4 from businesses, the paper's headlines, the market's results, the influencers' and
     /// the friends' own; each with its hour and minute, shown from then on. Quiet has about half, Busy nearly twice.
+    /// How much the city says is set by the day and by each post, never by how many people it has: the four hundred are
+    /// who says it (a few rolled for each post, reaction, reply and message), so nothing here walks all of them.
     /// </summary>
     public static class FlareLiveRules
     {
@@ -47,7 +49,8 @@ namespace RealLifeOverhaul.Flare
         public const int TagLength = 24;
         public const int ReportsWeighed = 3;           // the player's reports a day that add to an issue's weight in the council (any number may be made)
         public const int MovedMost = 200;              // what moved a business or the City Office today, kept (FlareNet.Moved): a day's worth
-        public const int Citizens = 40;                // the city's people on Flare
+        public const int Citizens = 400;               // the city's people on Flare (derived from the city's seed, never saved)
+        public const int FirstCitizens = 40;           // ...the first of them, made as they always were (every save's "c0" to "c39" stays who it was)
         public const int CityKeepDays = 3;             // the city's posts are kept this many days (the player's, the friends' longer)
         public const int NetworkKeepDays = 4;          // ...the players' of a session
 
@@ -100,6 +103,47 @@ namespace RealLifeOverhaul.Flare
             "Ashby", "Brook", "Corwin", "Darby", "Easton", "Frost", "Greer", "Hale"
         };
 
+        // Whether each of the first names above is a woman's.
+        private static readonly bool[] FemaleFirst =
+        {
+            true, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true,
+            false, true, false, true, true, false, false, true, true, false, false, true, false, false, true, false
+        };
+
+        // The names of the city's people after the first forty: the names above and more, a woman's or a man's.
+        private static readonly string[] Women =
+        {
+            "Ada", "Bea", "Dina", "Fay", "Hana", "Juno", "Lena", "Nell", "Pia", "Rae", "Tess", "Uma", "Xena", "Yara", "Bree", "Elsa",
+            "Alba", "Amara", "Asha", "Bella", "Clara", "Cleo", "Daisy", "Edie", "Esme", "Freya", "Greta", "Gwen", "Hazel", "Ines", "Iris", "Jade",
+            "Joy", "Kara", "Leah", "Liv", "Lucia", "Mae", "Maya", "Mei", "Mina", "Nina", "Nora", "Olive", "Orla", "Priya", "Rosa", "Ruby",
+            "Sadie", "Sian", "Sofia", "Tara", "Thea", "Vera", "Viola", "Willa", "Wren", "Yasmin", "Zara", "Zoe"
+        };
+
+        private static readonly string[] Men =
+        {
+            "Cal", "Eli", "Gus", "Ivo", "Kai", "Milo", "Otto", "Quin", "Seb", "Vic", "Wes", "Zeke", "Arlo", "Cyd", "Dex", "Finn",
+            "Abe", "Adam", "Ben", "Carl", "Cole", "Dan", "Diego", "Emil", "Ezra", "Felix", "Frank", "Gabe", "Hank", "Hugo", "Ian", "Isaac",
+            "Jack", "Jude", "Kenji", "Kofi", "Leo", "Luis", "Marco", "Max", "Ned", "Noah", "Omar", "Oscar", "Paul", "Pete", "Raj", "Ravi",
+            "Rex", "Simon", "Theo", "Tom", "Victor", "Vince", "Wade", "Will", "Yusuf", "Zane"
+        };
+
+        private static readonly string[] Surnames =
+        {
+            "Abbott", "Barlow", "Calder", "Dunmore", "Ellery", "Fenwick", "Garrow", "Hollis", "Imber", "Jarvis", "Kestrel", "Lowry",
+            "Maddox", "Norland", "Oakes", "Pemberly", "Quarry", "Ramsey", "Stroud", "Tilney", "Upton", "Varley", "Whitcombe", "Yardley",
+            "Ashby", "Brook", "Corwin", "Darby", "Easton", "Frost", "Greer", "Hale",
+            "Adler", "Archer", "Baines", "Bishop", "Blake", "Brennan", "Carver", "Castillo", "Chen", "Cross", "Dalton", "Doyle",
+            "Duarte", "Dunn", "Ellis", "Ennis", "Evans", "Fairfax", "Fischer", "Flynn", "Fox", "Garcia", "Gilmore", "Goldberg",
+            "Harlow", "Hart", "Hayes", "Hughes", "Iqbal", "Irving", "Ito", "Jensen", "Kaur", "Keane", "Kim", "Kowalski",
+            "Lambert", "Lane", "Lin", "Lyle", "Mendes", "Mercer", "Moreno", "Murphy", "Nash", "Nguyen", "Nolan", "Novak",
+            "Okafor", "Ortiz", "Osei", "Porter", "Price", "Quigley", "Reyes", "Romero", "Rowe", "Shah", "Silva", "Sutton",
+            "Tan", "Thorne", "Torres", "Underwood", "Vance", "Vega", "Walsh", "Ward", "Webb", "Xu", "Yates", "Young", "Zimmer"
+        };
+
+        private const int SaltFirst = 601, SaltLast = 602, SaltNumber = 603, SaltDistrict = 604, SaltPersona = 605;   // the first forty's rolls, as they always were
+        private const int SaltSex = 606, SaltAge = 607, SaltName = 608, SaltNameLow = 609;                            // the rest's, and everybody's age
+        private const int NameTries = 8;               // rolls for a name nobody in the city has yet, before the surnames are walked in order
+
         // ---------------------------------------------------------------- the clock
 
         /// <summary>Game minutes since day 0.</summary>
@@ -122,23 +166,141 @@ namespace RealLifeOverhaul.Flare
             return f.Net.CitySeed != 0 ? f.Net.CitySeed : f.CastSeed != 0 ? f.CastSeed : f.Seed;
         }
 
-        /// <summary>The city's people on Flare, made from the city's seed: the same names, handles and districts for the same seed.</summary>
+        /// <summary>
+        /// The city's people on Flare, made from the city's seed: the same names, handles, districts and natures for the same
+        /// seed, on every machine. The first <see cref="FirstCitizens"/> are made exactly as they always were, so that every
+        /// key a save keeps for one of them ("c12" in a message, a post, a reaction) is still the same person. Each after
+        /// them has a name nobody before them in the city has and goes to the district with the fewest people so far, so
+        /// every district has its share (44 or 45 of the 400 in nine). Allocates the list's people and a set of names, once for
+        /// a seed (Flare starting, or a guest taking the host's city): some 0.2 ms for the four hundred.
+        /// </summary>
         public static void CitizensOf(int seed, IReadOnlyList<string> districts, List<FlareCitizen> into)
         {
             into.Clear();
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            int n = districts != null ? districts.Count : 0;
+            var living = new int[n];   // the city's people in each district so far
             for (int i = 0; i < Citizens; i++)
             {
-                int first = FlareRules.Roll(seed, i, 601) % FirstNames.Length;
-                int last = (FlareRules.Roll(seed, i, 602) + i * 7) % LastNames.Length;
-                string f = FirstNames[first], l = LastNames[last];
-                into.Add(new FlareCitizen
+                FlareCitizen c = i < FirstCitizens ? First(seed, i, districts) : After(seed, i, districts, living, names);
+                names.Add(c.First + " " + c.Last);
+                for (int d = 0; d < n && c.District != null; d++)
                 {
-                    Index = i, First = f, Last = l,
-                    Handle = "@" + f.ToLowerInvariant() + "_" + l.ToLowerInvariant() + (10 + FlareRules.Roll(seed, i, 603) % 90),
-                    District = districts != null && districts.Count > 0 ? districts[FlareRules.Roll(seed, i, 604) % districts.Count] : null,
-                    Persona = (FlarePersona)(FlareRules.Roll(seed, i, 605) % 8)
-                });
+                    if (string.Equals(districts[d], c.District, StringComparison.Ordinal))
+                    {
+                        living[d]++;
+                        break;
+                    }
+                }
+                into.Add(c);
             }
+        }
+
+        // One of the first forty, as the city has always had them.
+        private static FlareCitizen First(int seed, int i, IReadOnlyList<string> districts)
+        {
+            int first = FlareRules.Roll(seed, i, SaltFirst) % FirstNames.Length;
+            int last = (FlareRules.Roll(seed, i, SaltLast) + i * 7) % LastNames.Length;
+            string f = FirstNames[first], l = LastNames[last];
+            var persona = (FlarePersona)(FlareRules.Roll(seed, i, SaltPersona) % 8);
+            return new FlareCitizen
+            {
+                Index = i, First = f, Last = l,
+                Handle = "@" + f.ToLowerInvariant() + "_" + l.ToLowerInvariant() + (10 + FlareRules.Roll(seed, i, SaltNumber) % 90),
+                District = districts != null && districts.Count > 0 ? districts[FlareRules.Roll(seed, i, SaltDistrict) % districts.Count] : null,
+                Persona = persona, Female = FemaleFirst[first], Age = AgeOf(persona, FlareRules.Roll(seed, i, SaltAge))
+            };
+        }
+
+        // One of the people after the first forty: a woman or a man by a roll, a name nobody before them has, a district in turn.
+        private static FlareCitizen After(int seed, int i, IReadOnlyList<string> districts, int[] living, HashSet<string> taken)
+        {
+            bool female = FemaleAfter(seed, i);
+            string[] firsts = female ? Women : Men;
+            string f = null, l = null;
+            for (int t = 0; t < NameTries && f == null; t++)
+            {
+                int roll = Wide(seed, i * NameTries + t, SaltName);
+                string a = firsts[roll % firsts.Length], b = Surnames[roll / firsts.Length % Surnames.Length];
+                if (!taken.Contains(a + " " + b))
+                {
+                    f = a;
+                    l = b;
+                }
+            }
+            if (f == null)
+            {
+                // Unlucky every time: the surnames in order from a rolled one, then the next first name (some 7,000 names for 400 people: found at once).
+                int start = Wide(seed, i, SaltNameLow);
+                for (int k = 0; k < firsts.Length * Surnames.Length && f == null; k++)
+                {
+                    string a = firsts[(start + k / Surnames.Length) % firsts.Length], b = Surnames[(start + k) % Surnames.Length];
+                    if (!taken.Contains(a + " " + b))
+                    {
+                        f = a;
+                        l = b;
+                    }
+                }
+                f = f ?? firsts[0];
+                l = l ?? Surnames[0];
+            }
+            var persona = (FlarePersona)(FlareRules.Roll(seed, i, SaltPersona) % 8);
+            // The district with the fewest people so far (the first forty's included), from a rolled one on: the city fills evenly.
+            int n = living.Length, home = -1;
+            for (int k = 0, from = n > 0 ? FlareRules.Roll(seed, i, SaltDistrict) % n : 0; k < n; k++)
+            {
+                int d = (from + k) % n;
+                home = home < 0 || living[d] < living[home] ? d : home;
+            }
+            return new FlareCitizen
+            {
+                Index = i, First = f, Last = l,
+                Handle = "@" + f.ToLowerInvariant() + "_" + l.ToLowerInvariant() + (10 + FlareRules.Roll(seed, i, SaltNumber) % 90),
+                District = home >= 0 ? districts[home] : null,
+                Persona = persona, Female = female, Age = AgeOf(persona, FlareRules.Roll(seed, i, SaltAge))
+            };
+        }
+
+        /// <summary>Whether one of the city's people is a woman (as CitizensOf makes them; each worked out on its own, without the list).</summary>
+        public static bool CitizenFemale(int seed, int index)
+        {
+            return index < FirstCitizens ? FemaleFirst[FlareRules.Roll(seed, index, SaltFirst) % FirstNames.Length] : FemaleAfter(seed, index);
+        }
+
+        /// <summary>One of the city's people's age in years (as CitizensOf makes them; worked out on its own, without the list).</summary>
+        public static int CitizenAge(int seed, int index)
+        {
+            return AgeOf((FlarePersona)(FlareRules.Roll(seed, index, SaltPersona) % 8), FlareRules.Roll(seed, index, SaltAge));
+        }
+
+        private static bool FemaleAfter(int seed, int index)
+        {
+            return FlareRules.Roll(seed, index, SaltSex) < 500;
+        }
+
+        /// <summary>An age that suits what somebody is like: a student 18 to 25, a parent 27 to 50, a retiree 65 to 82, anybody else 20 to 64.</summary>
+        public static int AgeOf(FlarePersona persona, int roll)
+        {
+            roll = FlareRules.Clamp(roll, 0, 999);
+            switch (persona)
+            {
+                case FlarePersona.Student: return 18 + roll % 8;
+                case FlarePersona.Parent: return 27 + roll % 24;
+                case FlarePersona.Retiree: return 65 + roll % 18;
+                default: return 20 + roll % 45;
+            }
+        }
+
+        // A roll of 0 to 999,999: picks among more than a thousand (Roll alone would favour the lower part of four hundred).
+        private static int Wide(int seed, int a, int salt)
+        {
+            return FlareRules.Roll(seed, a, salt) * 1000 + FlareRules.Roll(seed, a, salt + 50);
+        }
+
+        /// <summary>One of the city's people by a roll, evenly among all of them: their number, 0 to Citizens - 1.</summary>
+        public static int PickCitizen(int seed, int a, int salt)
+        {
+            return Wide(seed, a, salt) % Citizens;
         }
 
         // ---------------------------------------------------------------- the day's posts
@@ -212,7 +374,7 @@ namespace RealLifeOverhaul.Flare
         private static FlarePost Talk(FlareFile f, FlareCityFacts facts, IReadOnlyList<FlareCitizen> citizens, int seed, int k)
         {
             int day = facts.Day;
-            FlareCitizen c = citizens[FlareRules.Roll(seed, day * 31 + k, 501) % citizens.Count];
+            FlareCitizen c = citizens[Wide(seed, day * 31 + k, 501) % citizens.Count];
             int roll = FlareRules.Roll(seed, day * 37 + k, 502);
             // A fifth are reports or reviews: what the city's people tell the City Office, and what they think of a business.
             if (roll < 120)
@@ -503,7 +665,7 @@ namespace RealLifeOverhaul.Flare
             int citizens = FlareRules.Clamp(1 + p.Reach / 300, 1, CitizensReactMost);
             for (int i = 0; i < citizens; i++)
             {
-                int c = FlareRules.Roll(p.Seed, i, 806) % Citizens;
+                int c = PickCitizen(p.Seed, i, 806);
                 char kind = p.Reach > 1000 && FlareRules.Roll(p.Seed, i, 807) < 250 ? 'S' : 'L';
                 Add(b, kind, "c" + c, 2 + FlareRules.Roll(p.Seed, i, 808) % 420);
             }
@@ -600,7 +762,7 @@ namespace RealLifeOverhaul.Flare
                 long at = p.At + 4 + FlareRules.Roll(p.Seed, i, 820) % (p.Bad ? 180 : 360);
                 var r = new FlarePost
                 {
-                    Id = id, Author = FlareAuthor.Citizen, Who = FlareRules.Roll(p.Seed, i, 821) % Citizens, Source = FlareSource.Reply, ReplyTo = p.Id,
+                    Id = id, Author = FlareAuthor.Citizen, Who = PickCitizen(p.Seed, i, 821), Source = FlareSource.Reply, ReplyTo = p.Id,
                     Arg = (int)ReplyKindOf(p, FlareRules.Roll(p.Seed, i, 822)), Seed = FlareRules.Roll(p.Seed, id, 17) * 1000 + FlareRules.Roll(p.Seed, id, 29),
                     Likes = FlareRules.Roll(p.Seed, i, 823) % (p.Bad ? 40 : 12), Reach = 30
                 };
@@ -1428,14 +1590,15 @@ namespace RealLifeOverhaul.Flare
                 return false;
             }
             int roll = FlareRules.Roll(f.Seed, day, 841);
+            int who = PickCitizen(f.Seed, day, 845);   // (one of all of them, evenly)
             if (day - f.LastViralDay <= 2)
             {
-                with = "c" + roll % Citizens;
+                with = "c" + who;
                 what = "fan";
             }
             else if (hiring && roll < 500)
             {
-                with = "c" + roll % Citizens;
+                with = "c" + who;
                 what = "job";
             }
             else if (f.Tier >= FlareTier.Local && f.ActiveInfluencers > 0 && roll < 750)
@@ -1454,7 +1617,7 @@ namespace RealLifeOverhaul.Flare
             }
             else
             {
-                with = "c" + roll % Citizens;
+                with = "c" + who;
                 what = f.LastPostDay >= day - 3 ? "chat" : null;
             }
             if (with == null || what == null)

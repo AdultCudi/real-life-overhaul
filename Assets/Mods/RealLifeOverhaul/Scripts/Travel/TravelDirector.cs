@@ -85,7 +85,7 @@ namespace RealLifeOverhaul
             GameUi.TravelList.Logger = Logger;
             GameUi.GuideMark.Logger = Logger;
             _door = new DoorPanel(Logger, "Travel check (door panel)");
-            _mark = new GuideMark();
+            _mark = new GuideMark("travel").Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _onReception = _door.Press(ReceptionClicked);
             _onRoom = _door.Press(RoomClicked);
             _onAgent = _door.Press(AgentClicked);

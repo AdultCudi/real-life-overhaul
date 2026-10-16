@@ -78,7 +78,7 @@ namespace RealLifeOverhaul
         private DoorPanel _door;            // the game's own panel over the courthouse door or the lawyer's desk
         private Action _onUse;              // made once: the panel's button
         private Func<string> _doorWhat;     // made once: for the log
-        private GuideMark _courtMark = new GuideMark();
+        private GuideMark _courtMark = new GuideMark("the court date");
 
         /// <summary>False once the justice system has switched itself off after repeated errors.</summary>
         public bool Working => !_broken && isActiveAndEnabled;
@@ -98,6 +98,8 @@ namespace RealLifeOverhaul
             _prison = new PrisonStay(this, _hold, Logger);
             _court = new Courthouse(Logger);
             _community = new CommunityService(Logger);
+            _community.KeptBy(this);
+            _courtMark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _file = new LegalFile(this);
         }
 

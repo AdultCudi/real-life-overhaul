@@ -242,7 +242,7 @@ namespace RealLifeOverhaul
         private bool _fled;          // a driver ran for it; changes how the scene is reported
         private bool _single;        // one car on its own: worded as that, never as a collision between drivers
         private string _markerLabel;
-        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark();
+        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark("traffic accidents");
 
         // Staging, kept while a rolling car comes to rest.
         private Wreck _leadWreck;
@@ -296,6 +296,32 @@ namespace RealLifeOverhaul
             _suspect = new ResponseUnit(gameObject);
             _cordon = new SceneCordon(transform);
             TrafficWatch.Stuck = Unstick;
+            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
+        }
+
+        // Stopped (the guard after its faults, or the feature switched off): a scene running now would stand in the road for
+        // the rest of the session with nothing left to end it, so it is ended here, the way the component's end does it.
+        private void OnDisable()
+        {
+            if (_phase == Phase.None)
+            {
+                return;
+            }
+            bool closing = _closing;
+            try
+            {
+                _closing = true;   // nothing is sent off: everything is released at once
+                Clear(resumeTraffic: true, announce: false, why: "its updates stopped");
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                _mark.Hide();
+            }
+            finally
+            {
+                _closing = closing;
+            }
         }
 
         private void OnDestroy()
@@ -1995,6 +2021,7 @@ namespace RealLifeOverhaul
             {
                 _markerLabel = "reallife_accident_marker".GetLocalization();
             }
+            _mark.Until = _hardLimit + GameUi.GuideMarkRules.SceneGrace;   // the latest this scene can last: past it the watch takes the marker off even if this class has stopped
             _mark.Show(_scene, _markerLabel);   // the game's destination marker
         }
 
@@ -3117,7 +3144,9 @@ namespace RealLifeOverhaul
                     + "; ended by: " + why);
             }
 
-            // The road first: whatever else goes wrong below, it is open again, for traffic and for people on foot.
+            // The marker and the road first: whatever else goes wrong below, the scene's marker is off the screen, and the
+            // road is open again, for traffic and for people on foot.
+            _mark.Hide();
             _cordon.Open();
             SceneObstacles.Clear();
 
@@ -3192,7 +3221,6 @@ namespace RealLifeOverhaul
             _seatsEmptied = false;
             _conesIn = false;
             _exitWrecks.Clear();
-            _mark.Hide();
 
             // Units still out: one that is moving goes back to traffic or carries on leaving; one that is standing drives
             // off along its lane now that the road is open (or is taken off the road): never handed back standing
