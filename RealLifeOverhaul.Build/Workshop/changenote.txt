@@ -1,4 +1,4 @@
-0.28.1
+0.28.2
 
 Fixed
-- A brand with its shops spread over several districts can now offer franchises once the brand as a whole is well known, not only when one district reaches 40.
+- The office for your job's reviews and shifts was hard to find. Messages now name its address, the Work contact can show it on the map, and the city map has a Job offices row.
