@@ -56,10 +56,10 @@ namespace RealLifeOverhaul.Street
         public const int NightOdds = 450;         // a stranger in the small hours
         public const int RainOdds = 280;          // in the rain
         public const int MoodOdds = 450;          // on a rough day
-        public const int UnwashedOdds = 450;      // the player has not washed
+        public const int UnwashedOdds = 350;      // the player has not washed
         public const int RecordOdds = 500;        // they know the player's face and their record
-        public const int CallOdds = 750;          // on a call (the game's own figure has the phone at its ear)
-        public const int TextingOdds = 300;       // looking at their phone
+        public const int CallOdds = 400;          // on a call (the game's own figure has the phone at its ear)
+        public const int TextingOdds = 150;       // looking at their phone
         public const int OddsMost = 950;
         public static readonly float[] BrushFactor = { 0.5f, 1f, 1.7f };   // the option: rarely, sometimes, often
 
