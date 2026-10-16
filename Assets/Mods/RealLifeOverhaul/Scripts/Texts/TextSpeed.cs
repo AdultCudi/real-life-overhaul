@@ -39,7 +39,9 @@ namespace RealLifeOverhaul.Texts
     /// How fast this machine is, and what follows from it (the owner's words, 16 Oct 2026, for weaker processors):
     ///
     ///   threads    2 on four cores or fewer, 3 on six, 4 on eight or more (real cores: logical ones halved where a core
-    ///              runs two); the option overrides it; never so many that the game keeps fewer than <see cref="GameKeeps"/>
+    ///              runs two); the option overrides it; never so many that the game keeps fewer than <see cref="GameKeeps"/>.
+    ///              On a GPU at most <see cref="GpuThreads"/>: the model's work is the GPU's, the processor only hands it over
+    ///              and picks each word (measured on an RTX 5070 Ti beside sixteen busy threads: 1, 2 and 4 threads alike)
     ///   too slow   a reply estimated at more than <see cref="FullSlow"/> s on the full pack: a notice, once, suggesting
     ///              the Lite pack. Any pack past <see cref="AheadSlow"/> s writes only what is asked well ahead
     ///              (<see cref="AheadSeconds"/> or more), never a spoken line or what the player is waiting for
@@ -55,12 +57,29 @@ namespace RealLifeOverhaul.Texts
         public const int CardTokens = 90;        // tokens of an ordinary card after the cached head
         public const int ReplyTokens = 25;       // tokens of an ordinary reply
         public const double TestSeconds = 3.0;   // the speed test's time cap
+        public const int GpuThreads = 2;         // threads at most on a GPU: more only wait for it
 
         /// <summary>Threads to run on: the option (2 to 4) or, with the option at 0, by the real cores; capped to leave the game its cores; at least one.</summary>
         public static int Threads(int realCores, int option)
         {
             int wanted = option >= 2 ? Math.Min(option, 4) : realCores >= 8 ? 4 : realCores >= 6 ? 3 : 2;
             return Math.Max(1, Math.Min(wanted, realCores - GameKeeps));
+        }
+
+        /// <summary>Threads to run on for a device: as <see cref="Threads"/> on the processor, at most <see cref="GpuThreads"/> on a GPU.</summary>
+        public static int Threads(int realCores, int option, bool gpu)
+        {
+            int threads = Threads(realCores, option);
+            return gpu ? Math.Min(threads, GpuThreads) : threads;
+        }
+
+        /// <summary>
+        /// What a speed measured is for: the pack, the device and the threads, and on a GPU its priority (normal since the
+        /// speed fix: a speed measured below normal priority, while the game starved the server, is never used again).
+        /// </summary>
+        public static string For(string pack, string device, int threads)
+        {
+            return pack + ";" + (device ?? "cpu") + ";" + threads + (device != null ? ";normal" : string.Empty);
         }
 
         /// <summary>Real cores from the logical ones when the system cannot say: halved where a core runs two threads.</summary>

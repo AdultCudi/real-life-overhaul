@@ -40,6 +40,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\LookRules.cs" Link="Mod\LookRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\ButtonRules.cs" Link="Mod\ButtonRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PagerRules.cs" Link="Mod\PagerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\BoxClock.cs" Link="Mod\BoxClock.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
   </ItemGroup>
 

@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Texts
     /// Workshop item (Steam allows it; an antivirus may look at it, so it is llama.cpp's own release build, unchanged and
     /// named as it is, with its licence and a README), a second or two to start (behind the loading screen or the first minutes of
     /// play, never waited for), and a local socket per request (a few hundred microseconds). The server listens on
-    /// 127.0.0.1 only, on a free port of the moment, with a key of its own, below normal priority, tied to the game's
+    /// 127.0.0.1 only, on a free port of the moment, with a key of its own, below normal priority on the processor and at
+    /// normal priority on a GPU (TextServer.LowPriority: the GPU's work waits on a thread the game must not starve), tied to the game's
     /// process by a job object so it ends with the game even in a crash, and is killed when the game closes, the option is
     /// switched off or the pack changes.
     ///
@@ -349,8 +350,8 @@ namespace RealLifeOverhaul.Texts
             _runDevice = Settings.TextsDevice;
             _runThreads = Settings.TextsThreads;
             string device = TextPacks.Choose(Mathf.Clamp(Settings.TextsDevice, 0, 2), _devices, _pack.ModelBytes);
-            int threads = TextSpeed.Threads(_cores, Settings.TextsThreads <= 0 ? 0 : Settings.TextsThreads + 1);   // (the option: 0 Auto, then 2, 3, 4)
-            string wanted = _pack.Name + " " + _pack.Version + ";" + (device ?? "cpu") + ";" + threads;
+            int threads = TextSpeed.Threads(_cores, Settings.TextsThreads <= 0 ? 0 : Settings.TextsThreads + 1, device != null);   // (the option: 0 Auto, then 2, 3, 4; at most 2 on a GPU)
+            string wanted = TextSpeed.For(_pack.Name + " " + _pack.Version, device, threads);
             if (_server != null && _serverFor == wanted)
             {
                 return;

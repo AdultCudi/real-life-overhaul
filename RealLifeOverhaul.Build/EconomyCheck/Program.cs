@@ -132,6 +132,7 @@ internal static partial class Program
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
+        TextsSpeedFix();   // RLO Texts on a GPU at normal priority with two threads, on the processor below normal; the start's lines say what each reply took (TextsSpeedChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
         FlareInvites();   // invitations in Flare messages: reading, the decision, timing, booked once, the answer's words and card, three languages, sources (FlareInviteChecks.cs)
         StreetTalk();   // talking to anybody in the street: who, whether they stop, the choices, numbers and invitations, word of mouth, the words read, the lines, timing, sources (StreetTalkChecks.cs)
