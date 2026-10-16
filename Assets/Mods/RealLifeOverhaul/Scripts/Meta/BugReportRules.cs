@@ -106,6 +106,34 @@ namespace RealLifeOverhaul.Meta
         public string Contract;
         public readonly List<string> Files = new List<string>(6);   // what the report's folder holds, as said at its top
         public string Profile;              // the player's Windows user folder, written as %USERPROFILE%
+        public readonly List<BugStaff> Staff = new List<BugStaff>(32);    // every employee of the player's, by business: what wages and hours are, read on the press
+        public string StaffNote;            // why the staff could not be read, or null
+        public readonly List<BugMoney> Books = new List<BugMoney>(64);    // the game's transactions of yesterday and today, one entry each
+        public string BooksNote;            // why the books could not be read, or null
+    }
+
+    /// <summary>One employee of the player's as report.txt's "Staff and wages" gives them: no name, only what their pay is made of.</summary>
+    public struct BugStaff
+    {
+        public string Business;     // the business's name, "" for nobody's
+        public string Kind;         // its business type, the game's key
+        public string Skill;        // the main skill, the game's key
+        public int Level;           // its value, 0 to 100
+        public int WageCents;       // hundredths an hour, as the game pays it (EmployeeInstance.hourlyWage)
+        public int FormulaCents;    // the game's own wage for the skill at its level, hundredths an hour (0: not known)
+        public int HoursToday;      // counted so far today, paid tonight (EmployeeInstance.workedHoursToday)
+        public int HoursWeek;       // counted since Monday
+        public int RotaWeek;        // on the rota a week (EmployeeInstance.assignedWeeklyHours)
+    }
+
+    /// <summary>One of the game's transactions as report.txt's "Money in and out" adds it up: its day, kind, place and amount.</summary>
+    public struct BugMoney
+    {
+        public int Day;
+        public string Kind;         // the transaction's type, the game's or the mod's key
+        public string Where;        // the business it was booked at, "" for the player's own
+        public long Cents;          // in hundredths: positive in, negative out
+        public long BalanceCents;   // the cash just after it, in hundredths
     }
 
     /// <summary>
@@ -206,8 +234,10 @@ namespace RealLifeOverhaul.Meta
         /// <summary>
         /// report.txt, in this order: what is in the report and what was not read; then what went wrong in the player's words,
         /// the mod's version, the game's build, the platform, the language, Going Public, the preset and every option changed
-        /// from it, the day and time, the money (rounded), the mod's last warnings and errors, and the game contract. The
-        /// player's user folder is taken out of all of it.
+        /// from it, the day and time, the money (rounded), the mod's last warnings and errors, and the game contract; then, in
+        /// a city, the staff and their wages (<see cref="StaffText"/>) and yesterday's and today's money in and out
+        /// (<see cref="BooksText"/>), so a report on wages or a sudden loss shows where the money went. The player's user
+        /// folder is taken out of all of it.
         /// </summary>
         public static string Text(BugFacts f)
         {
@@ -250,7 +280,182 @@ namespace RealLifeOverhaul.Meta
                 text.Append("  ").Append(Line(line)).Append('\n');
             }
             text.Append("Game contract: ").Append(f.Contract).Append('\n');
+            if (f.InCity)
+            {
+                StaffText(f.Staff, f.StaffNote, text);
+                BooksText(f.Books, f.BooksNote, f.Day, text);
+            }
             return MaskUser(text.ToString(), f.Profile);
+        }
+
+        public const int MostStaff = 200;       // employees listed one by one: a large empire's payroll, not a page per person
+        public const int MostKinds = 15;        // kinds of money a day listed, the largest first: the rest are added up in one line
+        public const int StaffWeekDays = 7;     // days: a week on the rota, to say what a day of it costs
+
+        /// <summary>
+        /// "Staff and wages": each business with its staff, how many hours they have worked today and stand on the rota a week,
+        /// and what a day of that rota costs at their wages; then each employee, by their main skill, with their wage an hour
+        /// against the game's own for the skill at their level (and how many times it, where it is higher), their hours today
+        /// and this week, and their hours on the rota. The staff come grouped by business (BugReportGame sorts them).
+        /// </summary>
+        public static void StaffText(List<BugStaff> staff, string note, StringBuilder text)
+        {
+            text.Append("\nStaff and wages: ");
+            if (note != null)
+            {
+                text.Append(note).Append('\n');
+                return;
+            }
+            text.Append(staff.Count == 0 ? "no employees\n" : staff.Count.ToString(CultureInfo.InvariantCulture) + " employee(s)\n");
+            int listed = 0;
+            for (int i = 0; i < staff.Count;)
+            {
+                int end = i;
+                int today = 0, rota = 0;
+                long rotaCents = 0;
+                while (end < staff.Count && staff[end].Business == staff[i].Business)
+                {
+                    today += staff[end].HoursToday;
+                    rota += staff[end].RotaWeek;
+                    rotaCents += (long)staff[end].WageCents * staff[end].RotaWeek;
+                    end++;
+                }
+                text.Append("  ").Append(string.IsNullOrEmpty(staff[i].Business) ? "(no business)" : staff[i].Business);
+                if (!string.IsNullOrEmpty(staff[i].Kind))
+                {
+                    text.Append(" (").Append(Short(staff[i].Kind)).Append(')');
+                }
+                text.Append(": ").Append((end - i).ToString(CultureInfo.InvariantCulture)).Append(" staff, ").Append(today.ToString(CultureInfo.InvariantCulture))
+                    .Append(" h worked today, ").Append(rota.ToString(CultureInfo.InvariantCulture)).Append(" h a week on the rota, about ")
+                    .Append(Money(rotaCents / StaffWeekDays, false)).Append(" a day of it at their wages\n");
+                for (int s = i; s < end; s++)
+                {
+                    if (listed >= MostStaff)
+                    {
+                        continue;
+                    }
+                    listed++;
+                    BugStaff e = staff[s];
+                    text.Append("    ").Append(Short(e.Skill)).Append(' ').Append(e.Level.ToString(CultureInfo.InvariantCulture)).Append(": ")
+                        .Append(Money(e.WageCents, true)).Append(" an hour (the game's own for the skill ")
+                        .Append(e.FormulaCents > 0 ? Money(e.FormulaCents, true) : "not known");
+                    if (e.FormulaCents > 0 && e.WageCents > e.FormulaCents + e.FormulaCents / 20)
+                    {
+                        text.Append(", ").Append(((double)e.WageCents / e.FormulaCents).ToString("0.0", CultureInfo.InvariantCulture)).Append(" times it");
+                    }
+                    text.Append("), ").Append(e.HoursToday.ToString(CultureInfo.InvariantCulture)).Append(" h today, ").Append(e.HoursWeek.ToString(CultureInfo.InvariantCulture))
+                        .Append(" h this week, ").Append(e.RotaWeek.ToString(CultureInfo.InvariantCulture)).Append(" h a week on the rota\n");
+                }
+                i = end;
+            }
+            if (listed < staff.Count)
+            {
+                text.Append("    and ").Append((staff.Count - listed).ToString(CultureInfo.InvariantCulture)).Append(" more\n");
+            }
+        }
+
+        /// <summary>
+        /// "Money in and out": for yesterday (whose night paid the wages, dated on it) and today, the cash before the day's
+        /// first transaction and after its last, what came in and went out, then the kinds of money by where they were booked,
+        /// the largest first (at most <see cref="MostKinds"/>, the rest in one line). The moves come in the game's order.
+        /// </summary>
+        public static void BooksText(List<BugMoney> moves, string note, int today, StringBuilder text)
+        {
+            text.Append("\nMoney in and out (the game's books): ");
+            if (note != null)
+            {
+                text.Append(note).Append('\n');
+                return;
+            }
+            text.Append("yesterday and today\n");
+            var sums = new Dictionary<string, long>(32, StringComparer.Ordinal);
+            var counts = new Dictionary<string, int>(32, StringComparer.Ordinal);
+            var order = new List<string>(32);
+            for (int day = today - 1; day <= today; day++)
+            {
+                sums.Clear();
+                counts.Clear();
+                order.Clear();
+                long gotIn = 0, wentOut = 0, first = 0, last = 0;
+                int seen = 0;
+                for (int i = 0; i < moves.Count; i++)
+                {
+                    BugMoney m = moves[i];
+                    if (m.Day != day)
+                    {
+                        continue;
+                    }
+                    if (seen++ == 0)
+                    {
+                        first = m.BalanceCents - m.Cents;
+                    }
+                    last = m.BalanceCents;
+                    gotIn += Math.Max(0, m.Cents);
+                    wentOut += Math.Min(0, m.Cents);
+                    string key = Short(m.Kind) + (string.IsNullOrEmpty(m.Where) ? string.Empty : " at " + m.Where);
+                    if (sums.TryGetValue(key, out long sum))
+                    {
+                        sums[key] = sum + m.Cents;
+                        counts[key]++;
+                    }
+                    else
+                    {
+                        sums[key] = m.Cents;
+                        counts[key] = 1;
+                        order.Add(key);
+                    }
+                }
+                text.Append("  day ").Append(day.ToString(CultureInfo.InvariantCulture)).Append(day == today ? " (today, so far)" : string.Empty).Append(": ");
+                if (seen == 0)
+                {
+                    text.Append("nothing booked\n");
+                    continue;
+                }
+                text.Append(seen.ToString(CultureInfo.InvariantCulture)).Append(" transaction(s), cash ").Append(Money(first, false)).Append(" to ").Append(Money(last, false))
+                    .Append(", in ").Append(Money(gotIn, false)).Append(", out ").Append(Money(-wentOut, false)).Append('\n');
+                order.Sort((a, b) =>
+                {
+                    int by = Math.Abs(sums[b]).CompareTo(Math.Abs(sums[a]));
+                    return by != 0 ? by : string.CompareOrdinal(a, b);
+                });
+                long rest = 0;
+                int restKinds = 0;
+                for (int k = 0; k < order.Count; k++)
+                {
+                    if (k >= MostKinds)
+                    {
+                        rest += sums[order[k]];
+                        restKinds++;
+                        continue;
+                    }
+                    text.Append("    ").Append(order[k]).Append(": ").Append(Money(sums[order[k]], false)).Append(" (")
+                        .Append(counts[order[k]].ToString(CultureInfo.InvariantCulture)).Append(")\n");
+                }
+                if (restKinds > 0)
+                {
+                    text.Append("    ").Append(restKinds.ToString(CultureInfo.InvariantCulture)).Append(" other kind(s): ").Append(Money(rest, false)).Append('\n');
+                }
+            }
+        }
+
+        /// <summary>A game key without its mod's prefix and its kind ("ba:transaction_wage" is "wage", "ba:skill_hrmanager" is "hrmanager").</summary>
+        public static string Short(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return "?";
+            }
+            int colon = key.IndexOf(':');
+            string name = colon >= 0 ? key.Substring(colon + 1) : key;
+            int under = name.IndexOf('_');
+            bool kind = name.StartsWith("transaction_", StringComparison.Ordinal) || name.StartsWith("skill_", StringComparison.Ordinal) || name.StartsWith("businesstype_", StringComparison.Ordinal);
+            return kind && under < name.Length - 1 ? name.Substring(under + 1) : name;
+        }
+
+        /// <summary>Hundredths as money: with the cents (a wage an hour) or whole, in the invariant culture, a minus sign for money out.</summary>
+        public static string Money(long cents, bool withCents)
+        {
+            return withCents ? (cents / 100m).ToString("N2", CultureInfo.InvariantCulture) : Math.Round(cents / 100m, MidpointRounding.AwayFromZero).ToString("N0", CultureInfo.InvariantCulture);
         }
 
         /// <summary>Money as report.txt gives it: to the nearest 100 under 10,000, to the nearest 1,000 above. Enough to tell rich from poor, nothing more.</summary>
