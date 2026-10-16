@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Careers
         }
     }
 
+    /// <summary>Game-free rules for classes played as the game's own studying: which button a computer shows, and where a class is held.</summary>
     public static class ClassPlayRules
     {
         /// <summary>True for a course whose classes are held online, from home: an online course, or one followed at a distance.</summary>

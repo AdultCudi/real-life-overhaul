@@ -139,7 +139,8 @@ namespace RealLifeOverhaul.Careers
         // What the class panel is up for, for its log line (made only when it is written).
         private string ClassWhat()
         {
-            return (_classWhatExam ? "exam of " : "class of ") + _classWhatKey + (_classWhatSign ? " at the university's " + (_campus != null && _campus.HasSign ? "sign" : "door") : " where the player is");
+            return (_classWhatExam ? "exam of " : "class of ") + _classWhatKey
+                + (_classWhatSign ? " at the university's " + (_campus != null && _campus.HasSign ? "sign" : "door") : " where the player is");
         }
 
         // True if this course's class (or exam) is held at the game's school, where its desks offer it instead of a panel.
@@ -309,7 +310,8 @@ namespace RealLifeOverhaul.Careers
                         begin = offer != null && TakeBegin(offer.Course, offer);
                         Logger?.Info("Careers: a classroom door of the university, floor " + _interior.Floor + " room " + room + ": " + (offer == null ? "not one of the floor's five rooms"
                                      : (offer.Course >= 0 ? StudyCatalogue.Find(offer.Course).Key : "no course")
-                                       + (offer.Can ? ", " + Words(offer.Kind) + " can be begun" + (begin ? ", begun for the player (the Campus app)." : ".") : ", nothing to begin now (" + offer.Key + ").")));
+                                       + (offer.Can ? ", " + Words(offer.Kind) + " can be begun" + (begin ? ", begun for the player (the Campus app)." : ".")
+                                           : ", nothing to begin now (" + offer.Key + ").")));
                     }
                     else
                     {
@@ -511,7 +513,8 @@ namespace RealLifeOverhaul.Careers
                 {
                     Vector3 offset = _campus.Front - player.transform.position;
                     where = "the player is " + new Vector3(offset.x, 0f, offset.z).magnitude.ToString("0") + " m from the university's " + (_campus.HasSign ? "sign" : "door")
-                            + " at " + _campus.Name + (BuildingManager.IsInsideBuilding ? " (inside a building" + (CareersGame.InsideAt(_campus.Street, _campus.Number) ? ": the university's)" : ")") : "");
+                            + " at " + _campus.Name + (BuildingManager.IsInsideBuilding
+                                ? " (inside a building" + (CareersGame.InsideAt(_campus.Street, _campus.Number) ? ": the university's)" : ")") : "");
                 }
             }
             else
@@ -520,9 +523,13 @@ namespace RealLifeOverhaul.Careers
                         + (CareersGame.InSchool() ? "inside the school" : BuildingManager.IsInsideBuilding ? "inside a building" : "out of doors");
             }
             Logger?.Info("Careers: class due for " + c.Key + " at " + hour.ToString("00") + ":00 on day " + day + "; " + where + "; "
-                         + (InRooms(e) ? "held on floor " + CampusRules.FloorOf(c.Id) + ", room " + CampusRules.RoomOf(c.Id) + " (the player is " + (_interior.Floor > 0 ? "on floor " + _interior.Floor : "not on a floor")
+                         + (InRooms(e) ? "held on floor " + CampusRules.FloorOf(c.Id) + ", room " + CampusRules.RoomOf(c.Id)
+                             + " (the player is " + (_interior.Floor > 0 ? "on floor " + _interior.Floor : "not on a floor")
                             + ", the university " + (_interior.OpenNow() ? "open" : "closed") + "); " : string.Empty)
-                         + (why == null ? "it can be joined now (" + (AtTheSchool(e, false) ? "Study at a desk" : InRooms(e) ? "the classroom's door" : ClassPlayRules.HeldOnline(c, mode) ? "the computer at home" : "the panel where the player stands") + ")." : "it cannot be joined now: " + why + "."));
+                         + (why == null ? "it can be joined now ("
+                             + (AtTheSchool(e, false) ? "Study at a desk" : InRooms(e) ? "the classroom's door"
+                                 : ClassPlayRules.HeldOnline(c, mode) ? "the computer at home" : "the panel where the player stands")
+                             + ")." : "it cannot be joined now: " + why + "."));
             int notice = StudyRules.ClassNotice(why);
             if (notice == 0)
             {
@@ -537,7 +544,8 @@ namespace RealLifeOverhaul.Careers
                         TabStudying, CampusApp.CourseRow + c.Id);
                     return;
                 }
-                Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk" : ClassPlayRules.HeldOnline(c, mode) ? "reallife_study_note_class_computer" : "reallife_study_note_class_here",
+                Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk"
+                    : ClassPlayRules.HeldOnline(c, mode) ? "reallife_study_note_class_computer" : "reallife_study_note_class_here",
                     Data("course", course, "key", Keys.Label(KeyAction.Interact)), TabStudying, CampusApp.CourseRow + c.Id);
                 return;
             }

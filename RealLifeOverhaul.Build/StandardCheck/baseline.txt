@@ -150,7 +150,7 @@ RLO-MP-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/OtherMods.cs	1
 RLO-PERF-002	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-PERF-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Camera/ThirdPersonCamera.cs	1
-RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Prompt.cs	2
+RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Prompt.cs	3
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Core/LoadHold.cs	1
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	4
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
@@ -424,7 +424,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareerApp.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Desk.cs	7
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Floors.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Own.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Prompt.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Study.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Work.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersStore.cs	1

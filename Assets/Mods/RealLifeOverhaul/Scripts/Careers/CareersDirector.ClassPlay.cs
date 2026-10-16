@@ -213,7 +213,8 @@ namespace RealLifeOverhaul.Careers
             _computer = activity;
             _sitting = sitting;
             activity.Go();
-            Logger?.Info("Careers: " + Words(sitting.Kind) + " of " + what + " at the computer at home (" + computer.itemName + (computer.FindChair() != null ? ", with its chair" : ", no chair") + "), "
+            Logger?.Info("Careers: " + Words(sitting.Kind) + " of " + what + " at the computer at home ("
+                         + computer.itemName + (computer.FindChair() != null ? ", with its chair" : ", no chair") + "), "
                          + sitting.SkipMinutes + " minutes.");
             return null;
         }
