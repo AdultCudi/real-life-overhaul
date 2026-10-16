@@ -45,10 +45,15 @@ internal static partial class Program
             new FlareDm { Id = 5, With = "o:0", At = 180, Key = "reallife_flare_dm_answer_office" },
             new FlareDm { Id = 6, With = "c27", At = 200, Key = "reallife_flare_dm_answer_chat" }
         };
-        Check(FlareTextsMap.DmWants(dms[3], 111) && FlareTextsMap.DmWants(dms[3], 189) && !FlareTextsMap.DmWants(dms[3], 190),
+        const int v2 = TextIntents.DataV2, v3 = TextIntents.DataV3;
+        Check(FlareTextsMap.DmWants(dms[3], 111, v2) && FlareTextsMap.DmWants(dms[3], 189, v2) && !FlareTextsMap.DmWants(dms[3], 190, v2),
             "flare messages' words: an answer wants words until its minute, never once shown (a message never changes in front of the player)");
-        Check(!FlareTextsMap.DmWants(dms[1], 0) && !FlareTextsMap.DmWants(dms[0], 0) && !FlareTextsMap.DmWants(dms[5], 0) && !FlareTextsMap.DmWants(null, 0),
-            "flare messages' words: the player's own, a message the city starts and the City Office's answer have no card: the written line");
+        Check(!FlareTextsMap.DmWants(dms[1], 0, v2) && !FlareTextsMap.DmWants(dms[0], 0, v2) && !FlareTextsMap.DmWants(dms[5], 0, v2) && !FlareTextsMap.DmWants(null, 0, v2),
+            "flare messages' words: the player's own, a message the city starts and, with a v2 pack, the City Office's answer have no card: the written line");
+        Check(FlareTextsMap.DmWants(dms[5], 0, v3) && FlareTextsMap.DmWants(dms[3], 111, v3) && !FlareTextsMap.DmWants(dms[0], 0, v3) && !FlareTextsMap.DmWants(dms[1], 0, v3)
+              && FlareTextsMap.DmWants(new FlareDm { With = "f3", At = 200, Key = FlareTextsMap.DmChat }, 0, v3) && !FlareTextsMap.DmWants(new FlareDm { With = "f3", At = 200, Key = FlareTextsMap.DmChat }, 0, v2)
+              && !FlareTextsMap.DmWants(new FlareDm { With = "p:host", At = 200, Key = FlareTextsMap.DmChat }, 0, v3),
+            "flare messages' words: with a v3 pack the City Office's, a friend's and every city account's answer want the model's words; the city's own first messages and another player's never");
         Check(FlareTextsMap.DmAsked(dms, dms[3]) == dms[1] && FlareTextsMap.DmAsked(dms, dms[6]) == dms[2] && FlareTextsMap.DmAsked(dms, dms[0]) == null
               && FlareTextsMap.DmAsked(dms.GetRange(3, 4), dms[3]) == null,
             "flare messages' words: an answer answers the player's latest message to the same person before it (none once it has gone)");
@@ -69,7 +74,7 @@ internal static partial class Program
                 return false;
             }
             var c = new FlareCitizen { Index = 6, First = "Mia", Last = "Hale", Handle = "@mia_hale06", Persona = FlarePersona.Student };
-            var r = new TextRequest { Use = TextUse.People, Intent = FlareTextsMap.Dm(answer.Key), Key = key, Speaker = "c:6", Keep = true, Day = 6, Seconds = 90 };
+            var r = new TextRequest { Use = TextUse.People, Intent = FlareTextsMap.Dm(answer.Key, FlareDmSpeaker.Citizen, TextIntents.DataV2), Key = key, Speaker = "c:6", Keep = true, Day = 6, Seconds = 90 };
             FlareTextsMap.Fill(r.Who, c, "Midtown", 77, "Saturday 11:10");
             r.History.Add(new TextSaid("Alex", "you up for a coffee?"));
             r.Done = words => asked.Ended(key, words != null);
@@ -110,9 +115,9 @@ internal static partial class Program
     private static void FlareDmTextsSources()
     {
         string texts = TextsSource(@"Social\Flare\FlareDirector.Texts.cs");
-        Check(texts.Contains("FlareTextsMap.DmSpeaker(answer.With") && !texts.Contains("With.Substring(2)"),
-            "flare messages' words: the answer's speaker is read through FlareTextsMap.DmSpeaker, never by cutting two characters off the key");
-        Check(texts.Contains("FlareTextsMap.DmWants(m, now)") && texts.Contains("_textDms.Ended(key, words != null)") && texts.Contains("_textAsked.Ended(id, words != null)"),
+        Check(texts.Contains("FlareTextsMap.DmSpeakerOf(answer.With") && !texts.Contains("With.Substring(2)"),
+            "flare messages' words: the answer's speaker is read through FlareTextsMap.DmSpeakerOf, never by cutting two characters off the key");
+        Check(texts.Contains("FlareTextsMap.DmWants(m, now, data)") && texts.Contains("_textDms.Ended(key, words != null)") && texts.Contains("_textAsked.Ended(id, words != null)"),
             "flare messages' words: the hour's walk asks again every answer and post still to come that came back without words");
         Check(TextsSource(@"Social\Flare\FlareDirector.Live.cs").Contains("TextsAhead();   // (the hour's answers"),
             "flare messages' words: the walk runs on the hour");
