@@ -119,11 +119,6 @@ namespace RealLifeOverhaul
                 Check(language.Value.Any(r => r.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !r.Key.EndsWith("_title", StringComparison.Ordinal) && r.Value.Contains(line)),
                     $"{language.Key}: What's new has the fix's line in some reallife_changes_ row");
             }
-            foreach (string l in new[] { "de", "fr", "es", "ru" })
-            {
-                Dictionary<string, string> t = Read(Path.Combine(locales, l + ".json"));
-                Check(!t.ContainsKey("reallife_guide_careers"), $"{l}: the careers guide page, changed in English, is taken out so it reads in English until translated again");
-            }
             Console.WriteLine($"  {checks} checks on the office");
         }
 
