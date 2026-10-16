@@ -82,15 +82,15 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite, RLO Texts Medium), by their item ids, the first
-        /// two published on 16 Oct 2026 (not-in-repo WORKSHOP.txt). Only these Workshop folders are ever looked in; an empty
+        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite, RLO Texts Medium), by their item ids, all three
+        /// published on 16 Oct 2026 (not-in-repo WORKSHOP.txt). Only these Workshop folders are ever looked in; an empty
         /// id is skipped (<see cref="WorkshopPacks"/>).
         /// </summary>
         public static readonly string[] WorkshopItems =
         {
             "3820711613",   // RLO Texts (published 16 Oct 2026)
             "3820712020",   // RLO Texts Lite (published 16 Oct 2026)
-            ""              // RLO Texts Medium: not published yet; its id goes here once the owner publishes it (empty: never looked for)
+            "3820776564"    // RLO Texts Medium (published 16 Oct 2026)
         };
 
         /// <summary>The folders of RLO's own pack items under the game's Workshop content folder (none while their ids are empty).</summary>
