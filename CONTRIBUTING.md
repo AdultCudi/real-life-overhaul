@@ -27,6 +27,8 @@ Small pull requests that do one thing are reviewed fastest. To report a bug or a
 
 The full rules, each with why, are in [the rules for new code](docs/contributing/rules.md).
 
+Code follows [the engineering standard](docs/standards/README.md): the numbered rules for code, architecture, performance, multiplayer, texts, comments, checks and review.
+
 ## Models, animations and clothes
 
 The bundles in `Assets/Mods/RealLifeOverhaul/Bundles` are built by the scripts in `PropAssets`, `CityAssets` and `CharacterAssets`. If you change an asset, change its script and rebuild the bundle with that pipeline; each folder's README says how. Do not hand-edit a bundle.

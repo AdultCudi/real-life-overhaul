@@ -73,7 +73,7 @@ How to read the lines is in [the session record](docs/reference/logs-and-debuggi
 
 ## Contributing
 
-Pull requests are welcome. Talk to us first on the Discord's developer channel or in an issue, then read [CONTRIBUTING.md](CONTRIBUTING.md). Nothing is merged into `main` without the maintainer's review and approval.
+Pull requests are welcome. Talk to us first on the Discord's developer channel or in an issue, then read [CONTRIBUTING.md](CONTRIBUTING.md) and [the engineering standard](docs/standards/README.md). Nothing is merged into `main` without the maintainer's review and approval.
 
 ## Licence
 
