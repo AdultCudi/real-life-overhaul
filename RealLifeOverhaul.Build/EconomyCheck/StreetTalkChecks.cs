@@ -549,8 +549,7 @@ internal static partial class Program
             }
         }
         Check(marks, "street talk: no line has an exclamation mark or three dots, and each is short enough to be said (160 characters)");
-        string next = words[0].TryGetValue("reallife_changes_next", out string n) ? n : string.Empty;
-        Check(next.Contains("Street talk:") && words[1]["reallife_changes_next"].Contains("Conversa na rua") && words[2]["reallife_changes_next"].Contains("街头交谈"),
+        Check(AnyChangesRow(words[0], "Street talk:") && AnyChangesRow(words[1], "Conversa na rua") && AnyChangesRow(words[2], "街头交谈"),
             "street talk: What's new says it in three languages");
         bool picks = true;
         for (int i = 0; i < StreetLines.Lines.Length; i++)

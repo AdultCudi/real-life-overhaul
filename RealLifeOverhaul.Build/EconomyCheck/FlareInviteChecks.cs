@@ -440,7 +440,7 @@ internal static partial class Program
         }
         Check(plain, "flare invitations: the English lines have no exclamation mark and no dash");
         Check(langs[0]["reallife_flare_note_invite_booked"].Length + 90 <= 240, "flare invitations: the notice of a booking fits the game's toast with its names filled (240 characters)");
-        Check(langs[0]["reallife_changes_next"].Contains("Flare message") && langs[0]["reallife_guide_flare"].Contains("Invite somebody out in a message")
+        Check(AnyChangesRow(langs[0], "Flare message") && langs[0]["reallife_guide_flare"].Contains("Invite somebody out in a message")
               && langs[0]["reallife_guide_social"].Contains("An invitation in a Flare message books an outing"),
             "flare invitations: What's new and the Guide's Flare and Social pages say an invitation in a Flare message can book an outing");
     }

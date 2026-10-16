@@ -431,7 +431,7 @@ internal static partial class Program
         Check(all, "Flare comments: the \"more\" line and the count line are in en, pt and zh-cn");
         Check(names && style, "Flare comments: the count lines name {count} (the one-person lines do not), with no dashes or exclamation marks");
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
-        Check(en != null && en["reallife_changes_next"].Contains("comments under them, written by RLO Texts"), "Flare comments: What's new says so");
+        Check(AnyChangesRow(en, "comments under them, written by RLO Texts"), "Flare comments: What's new says so");
         Check(en != null && en["reallife_guide_flare"].Contains("comments come in over the hours") && en["reallife_guide_texts"].Contains("written only by the model"),
             "Flare comments: the Guide's Flare and RLO Texts pages say how comments come");
         bool none = true;
@@ -507,5 +507,22 @@ internal static partial class Program
         var watch = Stopwatch.StartNew();
         CommentsPlanMany(p, plan, n);
         return watch.Elapsed.TotalMilliseconds;
+    }
+
+    // Any What's new row has the words: the next row until a release numbers it into its own.
+    internal static bool AnyChangesRow(Dictionary<string, string> words, string part)
+    {
+        if (words == null)
+        {
+            return false;
+        }
+        foreach (var r in words)
+        {
+            if (r.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !r.Key.EndsWith("_title", StringComparison.Ordinal) && r.Value.Contains(part))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
