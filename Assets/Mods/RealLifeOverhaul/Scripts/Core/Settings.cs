@@ -236,6 +236,8 @@ namespace RealLifeOverhaul
         public const string FlareSharePicturesId = "flare_share_pictures";
         public const string FlareFilterId = "flare_filter";
         public const string FlareThemeId = "flare_theme";
+        public const string FlarePicturesId = "flare_pictures";
+        public const string FlareCityPhotosId = "flare_city_photos";
         public const string StandingId = "standing";
         public const string StandingStreetId = "standing_street";
         public const string StandingPressId = "standing_press";
@@ -533,6 +535,8 @@ namespace RealLifeOverhaul
         public static bool FlareSharePictures = true;    // ...and their pictures, as small copies
         public static int FlareFilter = 0;               // what other players type: 0 standard (Steam's filter, else the mod's list), 1 strict (both, and addresses starred)
         public static int FlareTheme = 0;                // Flare's look: 0 follows the phone (dark from 19:00 to 07:00), 1 light, 2 dark
+        public static bool FlarePictures = true;         // every account shows its picture: faces from the game's portrait camera, the game's logos, emblems (Social/Flare/FlareAvatars); off: the initials
+        public static int FlareCityPhotos = 1;           // how many of the city's posts carry a photo of the place: 0 none, 1 a few, 2 some, 3 many (Social/Flare/FlareCityPhotoRules)
         public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts (Scripts/Fame)
         public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
@@ -835,6 +839,8 @@ namespace RealLifeOverhaul
             FlareSharePictures = Bool(modId, FlareSharePicturesId, FlareSharePictures);
             FlareFilter = Int(modId, FlareFilterId, FlareFilter);
             FlareTheme = Int(modId, FlareThemeId, FlareTheme);
+            FlarePictures = Bool(modId, FlarePicturesId, FlarePictures);
+            FlareCityPhotos = Int(modId, FlareCityPhotosId, FlareCityPhotos);
             Standing = Bool(modId, StandingId, Standing);
             StandingStreet = Bool(modId, StandingStreetId, StandingStreet);
             StandingPress = Bool(modId, StandingPressId, StandingPress);

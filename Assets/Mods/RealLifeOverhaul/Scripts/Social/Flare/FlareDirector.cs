@@ -141,6 +141,10 @@ namespace RealLifeOverhaul.Flare
             }
             ShareSecond();
             InvitesTick();   // (a yes due is booked: one comparison otherwise, FlareDirector.Invites.cs)
+            if (Running)
+            {
+                PhotosSecond();
+            }
         }
 
         // ---------------------------------------------------------------- starting and stopping
@@ -181,6 +185,7 @@ namespace RealLifeOverhaul.Flare
                 LiveDay(day);   // the city's posts of today now (an update to this version, a new account): not an empty feed until tomorrow
             }
             ShareStart();
+            PhotosStart();
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed " + file.Seed + ")"
                                             : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), " + file.Drafts.Count + " draft(s)") + ".");
             Badge();
@@ -194,6 +199,7 @@ namespace RealLifeOverhaul.Flare
                 FlareStore.Save(Save.modData, _file);
             }
             ShareStop();
+            PhotosStop();
             FlareBridges.Watched?.Invoke(false, false);   // no patrols or cleaners of Flare's once it stops (Crime/CityWatch back to 1)
             _running = false;
             _file = null;
@@ -365,6 +371,7 @@ namespace RealLifeOverhaul.Flare
 
         private void PlayDay(int day)
         {
+            PhotosLook();   // (the photos of posts gone since yesterday deleted, on a worker)
             ReadPeople();
             Talked(_talked);
             FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);

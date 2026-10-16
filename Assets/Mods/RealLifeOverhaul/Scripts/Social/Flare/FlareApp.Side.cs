@@ -19,8 +19,10 @@ namespace RealLifeOverhaul.Flare
         private readonly Image[] _bars = new Image[FlareFile.HistoryDays];
         private readonly Image[] _trendHits = new Image[TrendRows];
         private readonly TextMeshProUGUI[] _trendTags = new TextMeshProUGUI[TrendRows], _trendCounts = new TextMeshProUGUI[TrendRows];
-        private readonly Image[] _followAvatars = new Image[FollowRows], _followButtons = new Image[FollowRows];
-        private readonly TextMeshProUGUI[] _followInitials = new TextMeshProUGUI[FollowRows], _followNames = new TextMeshProUGUI[FollowRows], _followHandles = new TextMeshProUGUI[FollowRows],
+        private readonly Image[] _followButtons = new Image[FollowRows];
+        private readonly Avatar[] _followAvatars = new Avatar[FollowRows];
+        private float _followAvatarX;
+        private readonly TextMeshProUGUI[] _followNames = new TextMeshProUGUI[FollowRows], _followHandles = new TextMeshProUGUI[FollowRows],
             _followLabels = new TextMeshProUGUI[FollowRows];
         private readonly Image[] _followHits = new Image[FollowRows];
         private readonly string[] _followKeys = new string[FollowRows];
@@ -60,9 +62,7 @@ namespace RealLifeOverhaul.Flare
                 int n = i;
                 _followHits[i] = FlareKit.Box(_followCard.transform, "Row" + i, new Color(1f, 1f, 1f, 0f), 14f, false, true);
                 FlareKit.Click(_followHits[i], () => FollowRowClicked(n));
-                _followAvatars[i] = FlareKit.Box(_followHits[i].transform, "Avatar", Color.white, 0f, true);
-                _followInitials[i] = FlareKit.Text(_followAvatars[i].transform, "Initials", 24f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-                FlareKit.Stretch(_followInitials[i].rectTransform, 0f, 0f, 0f, 0f);
+                _followAvatars[i] = new Avatar(_followHits[i].transform, 72f, null);
                 _followNames[i] = FlareKit.Text(_followHits[i].transform, "Name", 28f, Color.white, FontStyles.Bold);
                 _followHandles[i] = FlareKit.Text(_followHits[i].transform, "Handle", 22f, Color.white);
                 _followButtons[i] = FlareKit.Box(_followHits[i].transform, "Follow", Color.white, 0f, true, true);
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < FollowRows; i++)
             {
                 FlareKit.Place(_followHits[i].rectTransform, 12f, 86f + i * 100f, w - 24f, 96f);
-                FlareKit.Place(_followAvatars[i].rectTransform, p - 12f, 12f, 72f, 72f);
+                _followAvatarX = p - 12f;   // (placed when the row is written: Avatar.Show)
                 FlareKit.Place(_followNames[i].rectTransform, p + 76f, 14f, w - p * 2f - 260f, 38f);
                 FlareKit.Place(_followHandles[i].rectTransform, p + 76f, 52f, w - p * 2f - 260f, 30f);
                 FlareKit.Place(_followButtons[i].rectTransform, w - 24f - 190f - p + 12f, 22f, 190f, 56f);
@@ -150,7 +150,7 @@ namespace RealLifeOverhaul.Flare
             {
                 _followNames[i].color = l.Text;
                 _followHandles[i].color = l.Muted;
-                _followInitials[i].color = Color.white;
+                _followAvatars[i].Letters.color = Color.white;
             }
             for (int i = 0; i < PlayerRows; i++)
             {
@@ -213,8 +213,7 @@ namespace RealLifeOverhaul.Flare
                 string name = _director.AccountName(_followKeys[i]);
                 FlareKit.Set(_followNames[i], name);
                 FlareKit.Set(_followHandles[i], Handle(_followKeys[i], name));
-                _followAvatars[i].color = FlareLook.AvatarOf(_followKeys[i]);
-                FlareKit.Set(_followInitials[i], Initials(name));
+                _followAvatars[i].Show(this, _followKeys[i], name, _followAvatarX, 12f, 72f);
                 bool following = FlareCast.Followed(file, _followKeys[i]);
                 _followButtons[i].color = following ? _look.Chip : _look.Text;
                 _followLabels[i].color = following ? _look.ChipText : _look.Card;

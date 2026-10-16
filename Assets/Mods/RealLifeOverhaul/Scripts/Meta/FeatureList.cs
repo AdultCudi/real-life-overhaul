@@ -549,7 +549,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_flare_header")
                 .About("reallife_guide_flare_about").Help("reallife_guide_flare")
                 .Owns(Settings.SocialMediaId, Settings.SocialMediaNoticesId, Settings.FlareBusyId, Settings.FlareCityOfficeId, Settings.FlareSharePostsId, Settings.FlareSharePicturesId,
-                    Settings.FlareFilterId, Settings.FlareThemeId)
+                    Settings.FlareFilterId, Settings.FlareThemeId, Settings.FlarePicturesId, Settings.FlareCityPhotosId)
                 .Preset(Settings.FlareBusyId, 0, 2, 2)
                 .Data(Flare.FlareStore.Keys)
                 .Fact("flare_local", () => Whole(Flare.FlareRules.TierFrom[1]))

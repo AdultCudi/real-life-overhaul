@@ -613,7 +613,8 @@ namespace RealLifeOverhaul.Flare
                 var comment = new FlarePost
                 {
                     Id = FlareCommentRules.DisplayId(p.Id, c.Slot), Author = c.Kind == 'f' ? FlareAuthor.Friend : c.Kind == 'i' ? FlareAuthor.Influencer : FlareAuthor.Citizen,
-                    Who = c.Who, Source = FlareSource.Reply, ReplyTo = p.Id, Text = words, Likes = c.Likes, Reach = 30
+                    Who = c.Who, Source = FlareSource.Reply, ReplyTo = p.Id, Text = words, Likes = c.Likes, Reach = 30, Slot = c.Slot,
+                    Liked = _director.IsCommentLiked(p.Id, c.Slot, c.Kind, c.Who)
                 };
                 FlareLiveRules.SetAt(comment, c.At);
                 _synthetic.Add(comment);
@@ -900,7 +901,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return null;
             }
-            return _pictures.Of(FlarePictures.KeyOf(p));
+            return _pictures.Of(FlarePictures.KeyOf(p) ?? _director.CityPhotoKey(p));   // (the player's own picture, else a photo of the city's: FlareDirector.Photos.cs)
         }
 
         // A report's case as it stands, in a line: the answer due, the works and when they end, the patrols, the cleaning, an inspection.
@@ -1059,6 +1060,10 @@ namespace RealLifeOverhaul.Flare
             if (row.Post.Id >= 0)
             {
                 _director.Like(row.Post.Id);
+            }
+            else if (row.Post.Slot >= 0 && FlareCommentRules.IsDisplay(row.Post.Id))
+            {
+                _director.LikeComment(row.Post.ReplyTo, row.Post.Slot, FlareCommentRules.KindOf(row.Post.Author), row.Post.Who);   // a comment under another's post, made for display: kept by its post, slot and who
             }
             else if (row.Post.Slot >= 0)
             {

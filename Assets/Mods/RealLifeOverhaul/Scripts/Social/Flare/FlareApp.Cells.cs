@@ -111,11 +111,17 @@ namespace RealLifeOverhaul.Flare
             protected abstract void Colours();
         }
 
-        // An avatar: a circle of the account's colour with its initials, or an official account's glyph.
+        // An avatar: the account's picture (FlareAvatars: a face, the player's selfie or portrait, another player's selfie),
+        // the game's logo of a business in a white disc, an emblem on the account's colour, or its initials on that colour
+        // (the stand-in while a picture is on its way, and with the option off). The picture is round in itself: no mask.
         private sealed class Avatar
         {
+            private const float LogoInset = 0.17f;   // of the disc's size each side: the square logo inside the circle (a square in a circle is 0.71 of it across)
+            private static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
+
             public readonly Image Circle, Glyph;
             public readonly TextMeshProUGUI Letters;
+            public readonly RawImage Photo, Logo;
 
             public Avatar(Transform parent, float size, Action click)
             {
@@ -128,25 +134,65 @@ namespace RealLifeOverhaul.Flare
                 FlareKit.Stretch(Letters.rectTransform, 0f, 0f, 0f, 0f);
                 Glyph = FlareKit.Box(Circle.transform, "Glyph", Color.white);
                 FlareKit.Stretch(Glyph.rectTransform, size * 0.22f, size * 0.22f, size * 0.22f, size * 0.22f);
+                Photo = FlareKit.Picture(Circle.transform, "Photo");
+                FlareKit.Stretch(Photo.rectTransform, 0f, 0f, 0f, 0f);
+                Logo = FlareKit.Picture(Circle.transform, "Logo");
+                FlareKit.Show(Photo, false);
+                FlareKit.Show(Logo, false);
             }
 
-            public void Show(string key, string name, float x, float y, float size)
+            public void Show(FlareApp app, string key, string name, float x, float y, float size)
             {
                 FlareKit.Place(Circle.rectTransform, x, y, size, size);
-                Circle.color = FlareLook.AvatarOf(key);
-                bool official = key != null && key.StartsWith("o:", StringComparison.Ordinal);
-                FlareKit.Show(Glyph, official);
-                FlareKit.Show(Letters, !official);
-                if (official)
+                FlareAvatarShown shown = app._avatars.Of(key);
+                bool photo = shown.Picture != null, logo = !photo && shown.Logo != null;
+                int emblem = photo || logo ? -1 : shown.Emblem >= 0 ? shown.Emblem : OfficialOf(key);
+                Circle.color = photo ? Clear : logo ? Color.white : FlareLook.AvatarOf(key);
+                FlareKit.Show(Photo, photo);
+                FlareKit.Show(Logo, logo);
+                FlareKit.Show(Glyph, emblem >= 0);
+                FlareKit.Show(Letters, !photo && !logo && emblem < 0);
+                if (photo)
                 {
-                    int n;
-                    int.TryParse(key.Substring(2), out n);
-                    Glyph.sprite = FlareIcons.Get(n == (int)FlareOfficial.Police ? FlareGlyph.Flag : n == (int)FlareOfficial.Transit ? FlareGlyph.Pin : n == (int)FlareOfficial.Bank ? FlareGlyph.Store : FlareGlyph.City);
+                    Photo.texture = shown.Picture;
+                }
+                else if (logo)
+                {
+                    Logo.texture = shown.Logo;
+                    FlareKit.Place(Logo.rectTransform, size * LogoInset, size * LogoInset, size * (1f - LogoInset * 2f), size * (1f - LogoInset * 2f));
+                }
+                else if (emblem >= 0)
+                {
+                    Glyph.sprite = FlareIcons.Get(GlyphOfEmblem(emblem));
                 }
                 else
                 {
                     FlareKit.Set(Letters, Initials(name));
                 }
+            }
+
+            // An official account's emblem with the pictures off, as before them.
+            private static int OfficialOf(string key)
+            {
+                int n;
+                return key != null && key.StartsWith("o:", StringComparison.Ordinal) && int.TryParse(key.Substring(2), out n) ? FlareAvatarRules.Official(n) : -1;
+            }
+        }
+
+        // An emblem's glyph (FlareAvatarRules.Emblem*).
+        private static FlareGlyph GlyphOfEmblem(int emblem)
+        {
+            switch (emblem)
+            {
+                case FlareAvatarRules.EmblemPolice: return FlareGlyph.Flag;
+                case FlareAvatarRules.EmblemTransit: return FlareGlyph.Pin;
+                case FlareAvatarRules.EmblemBank:
+                case FlareAvatarRules.EmblemBusiness: return FlareGlyph.Store;
+                case FlareAvatarRules.EmblemLedger: return FlareGlyph.Mail;
+                case FlareAvatarRules.EmblemCompany: return FlareGlyph.Share;
+                case FlareAvatarRules.EmblemCandidate: return FlareGlyph.Check;
+                case FlareAvatarRules.EmblemTycoon: return FlareGlyph.StarFull;
+                default: return FlareGlyph.City;
             }
         }
 
@@ -265,7 +311,7 @@ namespace RealLifeOverhaul.Flare
                 App.AuthorOf(p, out name, out handle, out key);
                 float pad = FlareKit.Pad, av = big ? 100f : FlareKit.Avatar;
                 float x0 = pad + av + FlareKit.Gap, tw = width - x0 - pad;
-                _avatar.Show(key, name, pad, pad, av);
+                _avatar.Show(App, key, name, pad, pad, av);
                 float y = pad - 4f;
                 FlareKit.Set(_name, name);
                 float nameW = Mathf.Min(tw * 0.6f, _name.GetPreferredValues(name, 4000f, 0f).x + 4f);
@@ -338,12 +384,13 @@ namespace RealLifeOverhaul.Flare
                 }
                 int replies = App.RepliesOf(p, now), reposts = FlareLiveRules.Shown(p.Reposts, p, now), likes = FlareLiveRules.Shown(p.Likes, p, now) + p.PlayerLikes + (p.Liked ? 1 : 0);
                 float slot = Mathf.Min(260f, tw / 3f);
-                bool friendReply = p.Id < 0 && p.Slot >= 0;   // made for display: it can be liked, but not answered or shared
-                FlareKit.Show(_replyHit, !friendReply);
-                FlareKit.Show(_repostHit, !friendReply);
+                bool display = p.Id < 0;   // made for display (a friend's reply under the player's post, a comment under another's): it can be liked, but not answered or shared
+                FlareKit.Show(_replyHit, !display);
+                FlareKit.Show(_repostHit, !display);
+                FlareKit.Show(_likeHit, !display || p.Slot >= 0);
                 FlareKit.Place(_replyHit.rectTransform, x0 - 10f, y, slot, 56f);
                 FlareKit.Place(_repostHit.rectTransform, x0 - 10f + slot, y, slot, 56f);
-                FlareKit.Place(_likeHit.rectTransform, x0 - 10f + (friendReply ? 0f : slot * 2f), y, slot, 56f);
+                FlareKit.Place(_likeHit.rectTransform, x0 - 10f + (display ? 0f : slot * 2f), y, slot, 56f);
                 FlareKit.Set(_replies, replies > 0 ? FlareText.N(replies) : string.Empty);
                 FlareKit.Set(_reposts, reposts > 0 ? FlareText.N(reposts) : string.Empty);
                 FlareKit.Set(_likes, likes > 0 ? FlareText.N(likes) : string.Empty);
@@ -398,7 +445,7 @@ namespace RealLifeOverhaul.Flare
                 _icon.sprite = FlareIcons.Get(GlyphOf(n.Kind));
                 _icon.color = n.Kind == FlareNoticeKind.Like ? Look.Like : n.Kind == FlareNoticeKind.Repost ? Look.Share : Look.Accent;
                 FlareKit.Place(_icon.rectTransform, pad, pad + 6f, 44f, 44f);
-                _avatar.Show(n.Who, name, pad + 64f, pad, 60f);
+                _avatar.Show(App, n.Who, name, pad + 64f, pad, 60f);
                 float x0 = pad + 64f + 60f + FlareKit.Gap, tw = width - x0 - pad - 150f;
                 string line = FlareText.Notice(n.Kind, "<b>" + name + "</b>");
                 float lh = FlareKit.Height(_line, line, tw);
@@ -470,7 +517,7 @@ namespace RealLifeOverhaul.Flare
                 string key = row.Key;
                 string name = App._director.AccountName(key);
                 float pad = FlareKit.Pad;
-                _avatar.Show(key, name, pad, pad, 76f);
+                _avatar.Show(App, key, name, pad, pad, 76f);
                 float x0 = pad + 76f + FlareKit.Gap, tw = width - x0 - pad - 230f;
                 FlareKit.Set(_name, name);
                 FlareKit.Place(_name.rectTransform, x0, pad - 2f, tw, 40f);
@@ -531,7 +578,7 @@ namespace RealLifeOverhaul.Flare
                 FlareDm m = row.Dm;
                 float pad = FlareKit.Pad;
                 string name = m.Name ?? App._director.AccountName(m.With);
-                _avatar.Show(m.With, name, pad, pad, 76f);
+                _avatar.Show(App, m.With, name, pad, pad, 76f);
                 float x0 = pad + 76f + FlareKit.Gap;
                 FlareKit.Set(_name, name);
                 FlareKit.Place(_name.rectTransform, x0, pad - 2f, width - x0 - pad - 170f, 40f);
@@ -635,7 +682,7 @@ namespace RealLifeOverhaul.Flare
                 string name = key == "me" ? App._director.MyName : App._director.AccountName(key);
                 float pad = FlareKit.Pad;
                 FlareKit.Place(_cover.rectTransform, 0f, 0f, width, 170f);
-                _avatar.Show(key == "me" ? "me" : key, name, pad, 95f, 150f);
+                _avatar.Show(App, key == "me" ? "me" : key, name, pad, 95f, 150f);
                 float y = 95f + 150f + 16f;
                 FlareKit.Set(_name, name);
                 FlareKit.Place(_name.rectTransform, pad, y, width - pad * 2f, 58f);
@@ -876,7 +923,7 @@ namespace RealLifeOverhaul.Flare
             public override float Bind(FlareRow row, float width)
             {
                 float pad = FlareKit.Pad;
-                _avatar.Show("me", App._director.MyName, pad, pad, FlareKit.Avatar);
+                _avatar.Show(App, "me", App._director.MyName, pad, pad, FlareKit.Avatar);
                 float x0 = pad + FlareKit.Avatar + FlareKit.Gap;
                 FlareKit.Place(_field.rectTransform, x0, pad + 4f, width - x0 - pad - 90f, 76f);
                 FlareKit.Set(_placeholder, FlareText.T("reallife_flare_whats_happening"));

@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Flare
     ///     B|place|percent|until                               talk about a business, in its customers
     ///     V|stock|name|day                                    a viral post about a company the player holds
     ///     R|key                                               a friend's reply the player liked (key: post number * 32 + the reply's place); an older version skips the line
+    ///     C|post|slot|kind|who                                a comment under another's post the player liked (kind 0 the city's, 1 a friend, 2 an influencer); an older version skips it
     ///   reallife:flare_posts
     ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags|
     ///         minute|reply to|text|picture|net id|token|author id|author name|district|topic|reactors|mention|reposts|player likes|
@@ -256,6 +257,16 @@ namespace RealLifeOverhaul.Flare
                     Join(b, f.ReplyLikes[i]);
                 }
             }
+            for (int i = 0; i < f.CommentLikes.Count; i++)
+            {
+                int post, slot, kind, who;
+                FlareCommentRules.Parts(f.CommentLikes[i], out post, out slot, out kind, out who);
+                if (f.Post(post) != null)   // (one whose post is gone is not kept)
+                {
+                    b.Append("\nC");
+                    Join(b, post, slot, kind, who);
+                }
+            }
             return b.ToString();
         }
 
@@ -344,8 +355,13 @@ namespace RealLifeOverhaul.Flare
                     {
                         f.ReplyLikes.Add(key);
                     }
+                    long like = c.Length >= 5 && c[0] == "C" ? FlareCommentRules.FromParts(I(c, 1, -1), I(c, 2, -1), I(c, 3, -1), I(c, 4, -1)) : -1;
+                    if (like >= 0 && f.CommentLikes.Count < FlareCommentRules.LikesKept && !f.CommentLikes.Contains(like))
+                    {
+                        f.CommentLikes.Add(like);
+                    }
                 }
-                FlareRules.DropReplyLikes(f);   // (the posts are read now: a like of a reply whose post is gone is let go)
+                FlareRules.DropLikesOfGone(f);   // (the posts are read now: a like of a reply or a comment whose post is gone is let go)
                 return f;
             }
             catch (Exception)

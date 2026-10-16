@@ -139,6 +139,9 @@ namespace RealLifeOverhaul.Flare
         public string District;
         public bool Compatible;      // a romance with them is possible
         public bool Unanswered;      // they texted lately and the player has not answered
+        public bool Female;          // their look, as the social life builds them in the street (Flare's picture of them: FlareAvatarRules)
+        public int Age;              // ...years
+        public int LookSeed;         // ...the look's seed; 0 when not told
 
         /// <summary>Acquaintances and closer follow the player.</summary>
         public bool Follows => Stage >= FlareRules.FollowFromStage;
@@ -200,7 +203,7 @@ namespace RealLifeOverhaul.Flare
         public int Reposts;          // shares, the city's and the players'
         public int PlayerLikes;      // likes from other players of the session
         public int Case = -1;        // the City Office's case it opened (FlareCase.Id); -1 for none
-        public int Slot = -1;        // a friend's reply made for display under a post of the player's: its place among that post's reactions (never saved); -1 for any other
+        public int Slot = -1;        // made for display (never saved): a friend's reply under a post of the player's, its place among that post's reactions; a comment under another's post, its slot (FlareComment.Slot); -1 for any other
         public bool Liked;           // the player liked it
         public bool Reposted;        // the player shared it
         public bool Shared;          // it came from the session's shared feed (a guest's copy of the host's)
@@ -274,6 +277,7 @@ namespace RealLifeOverhaul.Flare
         public int IssueDay = -1;        // the last day an issue was drafted
         public readonly List<FlareViralShares> ViralShares = new List<FlareViralShares>(4);   // viral posts about companies the player holds: selling soon after is market abuse
         public readonly List<int> ReplyLikes = new List<int>(4);   // the friends' replies the player liked, each as FlareRules.ReplyKey (post and place): those replies are made for display and have no post of their own
+        public readonly List<long> CommentLikes = new List<long>(4);   // the comments under others' posts the player liked, each as FlareCommentRules.LikeKey (post, slot and who): made for display too
         public readonly FlareNet Net = new FlareNet();   // the living network: the City Office's cases, the messages, the watches (FlareLiveModel)
 
         public FlareInfluencer Influencer(int id)

@@ -1079,6 +1079,24 @@ namespace RealLifeOverhaul.Flare
         /// <summary>True if the player liked this friend's reply.</summary>
         public bool IsReplyLiked(int parentId, int slot) => Running && FlareRules.ReplyLiked(_file, parentId, slot);
 
+        /// <summary>
+        /// The player likes a comment under a post that is not theirs, or takes the like back. Those comments are made for
+        /// display, so the like is kept in the file by the post, the comment's slot and who wrote it. Nothing else changes and
+        /// nothing is sent (in a session the like on a shared post's comment is this player's own).
+        /// </summary>
+        public void LikeComment(int postId, int slot, char kind, int who)
+        {
+            if (!Running)
+            {
+                return;
+            }
+            FlareCommentRules.ToggleLike(_file, postId, slot, kind, who);
+            Changed();
+        }
+
+        /// <summary>True if the player liked this comment.</summary>
+        public bool IsCommentLiked(int postId, int slot, char kind, int who) => Running && FlareCommentRules.Liked(_file, postId, slot, kind, who);
+
         /// <summary>The player shares a post with their followers (once).</summary>
         public void Repost(int postId)
         {

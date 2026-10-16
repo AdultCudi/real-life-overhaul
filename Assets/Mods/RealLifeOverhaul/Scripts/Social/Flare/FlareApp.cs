@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Flare
 
         private readonly FlareDirector _director;
         private readonly FlarePictures _pictures;
+        private readonly FlareAvatars _avatars;
         private readonly List<FlareRow> _rows = new List<FlareRow>(128);
         private readonly List<FlareRow> _rowPool = new List<FlareRow>(128);
         private readonly List<State> _back = new List<State>(8);
@@ -65,12 +66,15 @@ namespace RealLifeOverhaul.Flare
         {
             _director = director;
             _pictures = new FlarePictures(director, PictureCame);
+            _avatars = new FlareAvatars(director, PictureCame);
         }
 
         /// <summary>The city is unloading or Flare stops: every picture's texture goes.</summary>
         public void Dispose()
         {
             _pictures.Clear();
+            _avatars.Clear();
+            FlareFacePainter.AppShowing = false;
         }
 
         // ---------------------------------------------------------------- building it
@@ -118,12 +122,15 @@ namespace RealLifeOverhaul.Flare
                 _wanted = null;
             }
             _director.AppOpened();
+            FlareFacePainter.AppShowing = true;   // (faces in view are drawn while the app is open: FlareFacePainter)
             Refresh(true);
         }
 
         public void Closed()
         {
+            FlareFacePainter.AppShowing = false;
             _pictures.Closed();   // (the pictures are kept for the next opening: FlarePictures)
+            _avatars.Closed();
             CloseSheet();
         }
 
@@ -273,6 +280,7 @@ namespace RealLifeOverhaul.Flare
                     Paint();
                 }
                 Lay();
+                _avatars.Refresh(all);
                 WriteRail(file);
                 WriteSide(file);
                 WriteHeader(file);

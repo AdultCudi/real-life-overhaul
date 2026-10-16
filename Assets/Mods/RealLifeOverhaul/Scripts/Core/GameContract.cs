@@ -107,7 +107,7 @@ namespace RealLifeOverhaul
         // Camera/ThirdPersonCamera: without it the game's own right click also fires when a look behind ends
         public static readonly GameMember RightButtonHeld = Optional(StaticField(LookBehind, Game, "MouseController", "RightButtonHeld", "Boolean"));
 
-        // Character/CharacterTools (one of three places a detailed character is copied from), Phone/Contacts/ContactPainter (the game's public call otherwise)
+        // Character/CharacterTools (one of three places a detailed character is copied from), Phone/Contacts/PortraitTurn (the faces of the contacts and Flare; the game's public call otherwise)
         public static readonly GameMember PortraitInstance = Optional(StaticField(On(CharacterDetail, ContactPictures), Game, "Character.Customization.PortraitGenerator", "_instance", "PortraitGenerator"));
         public static readonly GameMember PortraitCharacter = Optional(Field(On(CharacterDetail, ContactPictures), Game, "Character.Customization.PortraitGenerator", "portraitAppearanceSetter", "AppearanceSetter"));
 

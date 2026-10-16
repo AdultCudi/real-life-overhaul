@@ -50,13 +50,9 @@ namespace RealLifeOverhaul
         private const int TriesMost = 3;
         private const float GlyphShare = 0.62f;     // of the square's height the shape takes, as the game's own logos leave a margin
         private const float WideShare = 0.8f;       // of its width, for a shape wider than it is high
-        private const float BuildMost = 0.55f;      // the build cap the mod's people are made with (Social/SocialCast.MaxBuild)
-        private static readonly AppearanceTag[] Casual = { AppearanceTag.Casual };
 
         private static ContactPainter _instance;
         private static readonly Queue<ContactPictures.Picture> Wanted = new Queue<ContactPictures.Picture>(32);
-        private static FieldInfo _generator, _setter;
-        private static bool _reflected, _toldFallback;
 
         private static byte[] _logoBuffer;          // one for the session, made the first time a logo is read or kept: what a kept logo passes through
 
@@ -116,6 +112,7 @@ namespace RealLifeOverhaul
                     ContactPictures.Logger?.Warn("Contacts: the game's portrait camera did not answer for '" + _drawing.Id + "' in " + FaceTimeout + " s; it is asked again later.");
                     Requeue(_drawing);
                     _drawing = null;
+                    PortraitTurn.Give(this, Time.realtimeSinceStartup, false);
                 }
                 return;
             }
@@ -429,46 +426,23 @@ namespace RealLifeOverhaul
                 Done(p, "the portrait cache");
                 return;
             }
-            PortraitGenerator generator = Generator();
-            if (generator == null && _generator != null)
+            float now = Time.realtimeSinceStartup;
+            if (!PortraitTurn.Ready || !PortraitTurn.Take(this, now))
             {
-                Requeue(p);   // the city's portrait camera is not there yet (the main menu, a load): asked again in a moment
+                Requeue(p);   // the city's portrait camera is not there yet (the main menu, a load), or Flare's painter has it: asked again in a moment
                 p.Tries--;    // (not a failure)
                 return;
             }
             _drawing = p;
-            _drawingSince = Time.realtimeSinceStartup;
+            _drawingSince = now;
             using var piece = SessionWatch.Piece("contacts: a face drawn by the game's portrait camera");   // once per look, ever: a render and a read-back
             Action<Sprite> back = sprite => UiClone.Safe(() => Drawn(p, sprite, file));
-            int days = p.Look.Age * GameCalendar.DaysPerYear;
-            BigAmbitions.Characters.Gender gender = p.Look.Female ? BigAmbitions.Characters.Gender.Female : BigAmbitions.Characters.Gender.Male;
-            AppearanceSetter setter = generator != null ? Setter(generator) : null;
-            if (setter == null)
+            if (!PortraitTurn.Face(p.Look.Female, p.Look.Age, p.Seed, back))
             {
-                // Without the camera's own appearance the game's public way is used: the same person each time, though not
-                // dressed as the mod dresses them in the city.
-                if (!_toldFallback)
-                {
-                    _toldFallback = true;
-                    ContactPictures.Logger?.Warn("Contacts: the portrait camera is built another way in this version of the game: faces are drawn with the game's own random look for each person.");
-                }
-                PortraitGenerator.Create(gender, days, p.Seed.ToString(), p.Seed, null, null, back);
-                return;
-            }
-            // The game colours a beard to match the hair by a roll of the engine's own dice: rolled from the same seed, as the
-            // mod's own people are (Social/SocialCast, Family/FamilyCast, Home/Roommates/RoommateCast), and the dice put back.
-            UnityEngine.Random.State dice = UnityEngine.Random.state;
-            UnityEngine.Random.InitState(p.Seed);
-            try
-            {
-                setter.data.ageInDays = days;
-                setter.RandomizeElements(gender, SkinColorHelper.GetRandom(p.Seed), Casual, p.Seed);
-                setter.data.fatness = Mathf.Min(setter.data.fatness, BuildMost);
-                PortraitGenerator.Create(setter.data, null, null, back);
-            }
-            finally
-            {
-                UnityEngine.Random.state = dice;
+                _drawing = null;
+                PortraitTurn.Give(this, now, false);
+                Requeue(p);
+                p.Tries--;
             }
         }
 
@@ -479,6 +453,7 @@ namespace RealLifeOverhaul
                 _drawing = null;
             }
             _next = Time.realtimeSinceStartup + FacePaceSeconds;
+            PortraitTurn.Give(this, Time.realtimeSinceStartup, SceneFinds.Hidden);
             Texture2D source = sprite != null ? sprite.texture : null;
             if (source == null || !source.isReadable)
             {
@@ -572,34 +547,6 @@ namespace RealLifeOverhaul
             {
                 ContactPictures.Logger?.Info("Contacts check (picture): '" + p.Id + "' is a " + (p.Look.Kind == PictureKind.Person ? (p.Look.Female ? "woman" : "man") + " of " + p.Look.Age + ", seed " + p.Seed : "logo")
                                              + ", from " + from + "; " + ContactPictures.Report() + ": PASS");
-            }
-        }
-
-        // The game's portrait camera of this scene, and the appearance it draws (both private: read once).
-        private static PortraitGenerator Generator()
-        {
-            Reflect();
-            return _generator != null ? _generator.GetValue(null) as PortraitGenerator : null;   // (not known: the game's public call is used, and the time-out covers a scene without the camera)
-        }
-
-        private static AppearanceSetter Setter(PortraitGenerator generator)
-        {
-            Reflect();
-            return _setter != null ? _setter.GetValue(generator) as AppearanceSetter : null;
-        }
-
-        private static void Reflect()
-        {
-            if (_reflected)
-            {
-                return;
-            }
-            _reflected = true;
-            _generator = GameContract.PortraitInstance.Field;   // (resolved once: Core/GameContract)
-            _setter = GameContract.PortraitCharacter.Field;
-            if (_setter != null && _setter.FieldType != typeof(AppearanceSetter))
-            {
-                _setter = null;
             }
         }
     }

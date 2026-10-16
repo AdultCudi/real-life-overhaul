@@ -32,6 +32,8 @@ namespace RealLifeOverhaul
                 PhotosBridges.Wallpaper = picture => PhoneSkin.Instance != null && PhoneSkin.Instance.Wallpaper(picture);
                 PhotosBridges.HasWallpaper = () => PhoneSkin.Instance != null && PhoneSkin.Instance.Applied;
                 FlareBridges.OpenCamera = () => PhotosDirector.Instance != null && PhotosDirector.Instance.OpenCamera(false, true);
+                FlareBridges.PictureFolder = () => PhotoStore.Folder(System.IO.Path.GetFullPath(PhotosGame.Root), PhotosGame.SaveId);
+                FlareBridges.MarkPictureFolder = () => PhotoStore.MarkSave(PhotoStore.Folder(System.IO.Path.GetFullPath(PhotosGame.Root), PhotosGame.SaveId), PhotosGame.SaveId);
                 _selfieBefore = FlareBridges.TakeSelfie;
                 Action before = _selfieBefore;
                 FlareBridges.TakeSelfie = () =>
@@ -47,6 +49,8 @@ namespace RealLifeOverhaul
             {
                 PhotosBridges.Reset();
                 FlareBridges.OpenCamera = null;
+                FlareBridges.PictureFolder = null;
+                FlareBridges.MarkPictureFolder = null;
                 FlareBridges.TakeSelfie = _selfieBefore;
                 _selfieBefore = null;
             }
