@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Texts
 {
@@ -320,8 +321,29 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
+        /// True for graphics built into the processor, by the name llama.cpp gives it (its list does not say). Such a chip
+        /// counts the PC's own memory as its free memory, so it can look roomier than a real graphics card: AMD's
+        /// "Radeon(TM) Graphics", "Radeon 780M Graphics" and Vega, Intel's UHD, Iris and HD Graphics and its Arc chips
+        /// named by a number with a letter after it ("Arc 140V"), not its cards ("Arc A770", "Arc B580").
+        /// </summary>
+        public static bool BuiltIn(string label)
+        {
+            string s = (label ?? string.Empty).ToLowerInvariant();
+            if (s.Contains("intel"))
+            {
+                return !s.Contains("arc") || Regex.IsMatch(s, @"arc(\(tm\))?\s+\d{3}[a-z]\b");
+            }
+            if (s.Contains("radeon"))
+            {
+                return Regex.IsMatch(s, @"radeon(\(tm\))?\s+(graphics|vega\b|\d{3}m\b)");
+            }
+            return false;
+        }
+
+        /// <summary>
         /// The device to run on: null for the processor. <paramref name="choice"/>: 0 Auto (a GPU only if ample), 1 the
-        /// processor, 2 the GPU (the one with the most free memory, ample or not).
+        /// processor, 2 the GPU, ample or not. Of several, a graphics card before graphics built into the processor
+        /// (<see cref="BuiltIn"/>), then the one with the most free memory.
         /// </summary>
         public static string Choose(int choice, List<TextDevice> devices, long modelBytes)
         {
@@ -332,7 +354,8 @@ namespace RealLifeOverhaul.Texts
             TextDevice best = devices[0];
             for (int i = 1; i < devices.Count; i++)
             {
-                if (devices[i].FreeMiB > best.FreeMiB)
+                bool card = !BuiltIn(devices[i].Label), bestCard = !BuiltIn(best.Label);
+                if (card != bestCard ? card : devices[i].FreeMiB > best.FreeMiB)
                 {
                     best = devices[i];
                 }

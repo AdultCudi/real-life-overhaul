@@ -640,6 +640,19 @@ internal static partial class Program
               && TextPacks.Choose(0, TextPacks.Devices("  Vulkan0: Small (4096 MiB, 3000 MiB free)"), model) == null
               && TextPacks.Choose(2, TextPacks.Devices("  Vulkan0: Small (4096 MiB, 3000 MiB free)"), model) == "Vulkan0" && TextPacks.Choose(0, new List<TextDevice>(), model) == null,
             "texts, devices: Auto takes a GPU only with ample free memory (twice the model and " + TextPacks.SpareMiB + " MiB), CPU never, GPU always when there is one");
+        // the owner's PC: the processor's Radeon counts the PC's memory as free and shows more than the RTX card
+        List<TextDevice> both = TextPacks.Devices("Available devices:\n  Vulkan0: NVIDIA GeForce RTX 5070 Ti (15995 MiB, 15227 MiB free)\n  Vulkan1: AMD Radeon(TM) Graphics (16223 MiB, 15411 MiB free)\n");
+        List<TextDevice> swapped = TextPacks.Devices("  Vulkan0: AMD Radeon(TM) Graphics (16223 MiB, 15411 MiB free)\n  Vulkan1: NVIDIA GeForce RTX 5070 Ti (15995 MiB, 15227 MiB free)\n");
+        Check(TextPacks.Choose(0, both, model) == "Vulkan0" && TextPacks.Choose(2, both, model) == "Vulkan0" && TextPacks.Choose(2, swapped, model) == "Vulkan1",
+            "texts, devices: a graphics card is taken before the processor's own graphics, even when those show more free memory, in either order");
+        Check(TextPacks.Choose(2, TextPacks.Devices("  Vulkan0: AMD Radeon(TM) Graphics (16223 MiB, 15411 MiB free)"), model) == "Vulkan0",
+            "texts, devices: the processor's own graphics are still used when they are the only GPU and the player asks for the GPU");
+        var wrong = new List<string>();
+        foreach (string l in new[] { "AMD Radeon(TM) Graphics", "AMD Radeon 780M Graphics", "AMD Radeon(TM) Vega 8 Graphics", "Intel(R) UHD Graphics 770", "Intel(R) Iris(R) Xe Graphics", "Intel(R) Arc(TM) 140V GPU (16GB)" })
+            if (!TextPacks.BuiltIn(l)) wrong.Add(l);
+        foreach (string l in new[] { "NVIDIA GeForce RTX 5070 Ti", "AMD Radeon RX 7800 XT", "AMD Radeon(TM) RX 6600", "Intel(R) Arc(TM) A770 Graphics", "Intel(R) Arc(TM) B580 Graphics", "AMD Radeon Pro W7600" })
+            if (TextPacks.BuiltIn(l)) wrong.Add(l);
+        Check(wrong.Count == 0, "texts, devices: graphics built into the processor are told from graphics cards by name; wrong: " + string.Join(", ", wrong));
     }
 
     // ---------------------------------------------------------------- the sources: nothing per frame, the layering
