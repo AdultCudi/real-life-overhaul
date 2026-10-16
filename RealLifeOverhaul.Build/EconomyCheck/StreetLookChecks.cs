@@ -198,7 +198,7 @@ internal static partial class Program
         string links = Read("Wiring", "StreetLinks.cs"), talk = Read("Street", "StreetDirector.Talk.cs"), game = Read("Street", "StreetGame.cs");
         Check(links.Contains("int seed = PersonLooks.Remember(m.Look);") && links.Contains("p.Look = m.Look;") && links.Contains("p.Seed = seed;")
               && links.IndexOf("p.Seed = seed;", StringComparison.Ordinal) < links.IndexOf("ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);", StringComparison.Ordinal)
-              && talk.Contains("Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Walker) : null") && game.Contains("PersonLookGame.Of(p.tpc.appearanceSetter.data)"),
+              && talk.Contains("Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Body) : null") && game.Contains("PersonLookGame.Of(p.appearanceSetter.data)"),
             "street look: the number swapped takes the figure's own look as the game made it, before the contact's picture is asked for (Street, Wiring/StreetLinks)");
         bool dressers = Read("Social", "SocialCast.cs").Contains("if (!PersonLookGame.Dress(appearance, who.Seed))")
                         && Read("Family", "FamilyCast.cs").Contains("if (!PersonLookGame.Dress(appearance, seed))")

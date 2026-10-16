@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.Characters;
 using BigAmbitions.DayNightCycle;
 using Dialogs;
+using Entities;
 using Extensions;
 using Helpers;
 using Streets;
@@ -21,8 +23,9 @@ namespace RealLifeOverhaul.Street
     /// age, a phone at the ear), the game's dialogue panel over a person (DialogUI.ShowDialog, as its counters open one), its
     /// text box (TextInputUI), its destination (as BizManBusiness.SetDestination does), its notifications, the city's
     /// businesses by kind and by name, and the day's time and weather.
-    /// COST: <see cref="Facing"/> is a pass over the walkers that are out (a few dozen distance tests) four times a second
-    /// while the player is on foot out of doors; everything else runs on a press or a click.
+    /// COST: <see cref="Facing"/> is a pass over the walkers and the standing and sitting people that are out (a few dozen
+    /// distance tests; a figure's kind told apart once) five times a second while the player is on foot out of doors;
+    /// everything else runs on a press or a click. Nothing allocated per pass.
     /// </summary>
     public static class StreetGame
     {
@@ -38,54 +41,143 @@ namespace RealLifeOverhaul.Street
 
         // ---------------------------------------------------------------- the crowd
 
+        private const float NearAny = 12f;   // metres: the nearest person within this is named in the offer's check line, whatever their angle
+        private static readonly Dictionary<int, StreetFigure> Kinds = new Dictionary<int, StreetFigure>(128);   // a standing or sitting figure's kind, by its instance (told apart once)
+        private const int KindsMost = 512;    // figures told apart at most before the list starts again (the game's pools hold far fewer)
+
+        /// <summary>For the offer's check line: the walkers and the standing and sitting people looked at in the last pass.</summary>
+        public static int LastWalkers, LastFigures;
+
+        /// <summary>For the offer's check line: the nearest person of the last pass within 12 m (any angle): found, metres squared, the cosine off the facing, usable, kind.</summary>
+        public static bool NearFound, NearUsable;
+        public static float NearSqr, NearCos;
+        public static StreetFigure NearKind;
+
         /// <summary>
-        /// The walker of the game's own in front of the player within reach, nearest first; the one already offered keeps the
-        /// offer until it is <paramref name="letGo"/> away. Never one another feature holds (the ragdolls, a borrowed walker:
-        /// its own behaviour switched off), never one hidden, never another player's figure in a Going Public session.
+        /// The person in front of the player within reach (StreetOffer.Score: the nearest roughly in front), of the game's own
+        /// walkers and of its people standing about and sitting (StreetPeople); the one already offered keeps the offer out to
+        /// the wider reach and angle. Never one another feature holds (the ragdolls, a horn's turn, a borrowed walker: its own
+        /// behaviour switched off), never one hidden, never one busy at something (StreetFigure.Busy), never another player's
+        /// figure in a Going Public session. <paramref name="walker"/> is their walker (null for somebody standing or sitting).
         /// </summary>
-        public static Pedestrian Facing(Vector3 player, Vector3 forward, Pedestrian current, float now)
+        public static BaseHuman Facing(Vector3 player, Vector3 forward, BaseHuman current, float now, out Pedestrian walker, out StreetFigure kind)
         {
-            List<Pedestrian> walkers = PerfGame.Pedestrians;
-            if (walkers == null)
-            {
-                return null;
-            }
+            walker = null;
+            kind = StreetFigure.Busy;
+            NearFound = NearUsable = false;
+            NearSqr = NearAny * NearAny;
             if (GoingPublic.InSession && now - _remoteAt > RemoteEvery)
             {
                 _remoteAt = now;
                 Remote.Clear();
                 GoingPublic.RemotePlayers(Remote);
             }
-            forward.y = 0f;
-            Pedestrian best = null;
-            float bestSqr = StreetRules.Reach * StreetRules.Reach;
-            for (int i = 0; i < walkers.Count; i++)
+            BaseHuman best = null;
+            Pedestrian bestWalker = null;
+            StreetFigure bestKind = StreetFigure.Busy;
+            float bestScore = float.MaxValue;
+            List<Pedestrian> walkers = PerfGame.Pedestrians;
+            LastWalkers = walkers != null ? walkers.Count : 0;
+            for (int i = 0; walkers != null && i < walkers.Count; i++)
             {
                 Pedestrian p = walkers[i];
-                if (p == null || !Usable(p))
+                ThirdPersonCharacter body = p != null ? p.tpc : null;
+                if (body == null)
                 {
                     continue;
                 }
-                Vector3 offset = p.transform.position - player;
-                if (Mathf.Abs(offset.y) > 1.5f)
+                Vector3 offset = body.transform.position - player;
+                bool usable = Usable(p) && !Theirs(body.transform);
+                Note(offset, forward, usable, StreetFigure.Walker);
+                bool isCurrent = ReferenceEquals(body, current);
+                float score = usable ? StreetOffer.Score(offset.x, offset.y, offset.z, forward.x, forward.z, isCurrent) : -1f;
+                if (score < 0f)
                 {
                     continue;
                 }
-                offset.y = 0f;
-                float sqr = offset.sqrMagnitude;
-                float most = ReferenceEquals(p, current) ? StreetRules.LetGo * StreetRules.LetGo : bestSqr;
-                if (sqr > most || sqr < 0.01f || Vector3.Dot(offset.normalized, forward.normalized) < StreetRules.Facing || Theirs(p))
+                if (isCurrent)
                 {
-                    continue;
+                    walker = p;
+                    kind = StreetFigure.Walker;
+                    return body;   // (who was offered keeps the offer while near)
                 }
-                if (ReferenceEquals(p, current))
+                if (score < bestScore)
                 {
-                    return p;   // (who was offered keeps the offer while near)
+                    bestScore = score;
+                    best = body;
+                    bestWalker = p;
+                    bestKind = StreetFigure.Walker;
                 }
-                best = p;
-                bestSqr = sqr;
             }
+            List<BaseHuman> standing = StreetPeople.Standing(Logger);
+            LastFigures = standing.Count;
+            for (int i = 0; i < standing.Count; i++)
+            {
+                BaseHuman h = standing[i];
+                if (h == null)
+                {
+                    continue;
+                }
+                StreetFigure k = FigureOf(h);
+                if (!StreetOffer.Offered(k))
+                {
+                    continue;
+                }
+                Vector3 offset = h.transform.position - player;
+                bool usable = Usable(h) && !Theirs(h.transform);
+                Note(offset, forward, usable, k);
+                bool isCurrent = ReferenceEquals(h, current);
+                float score = usable ? StreetOffer.Score(offset.x, offset.y, offset.z, forward.x, forward.z, isCurrent) : -1f;
+                if (score < 0f)
+                {
+                    continue;
+                }
+                if (isCurrent)
+                {
+                    kind = k;
+                    return h;
+                }
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = h;
+                    bestWalker = null;
+                    bestKind = k;
+                }
+            }
+            walker = bestWalker;
+            kind = bestKind;
             return best;
+        }
+
+        // The nearest person of the pass, for the check line: a few multiplications, nothing kept but numbers.
+        private static void Note(Vector3 offset, Vector3 forward, bool usable, StreetFigure kind)
+        {
+            if (offset.y > StreetRules.Height || offset.y < -StreetRules.Height)
+            {
+                return;
+            }
+            float sqr = offset.x * offset.x + offset.z * offset.z;
+            if (sqr < NearSqr)
+            {
+                NearFound = true;
+                NearSqr = sqr;
+                NearCos = StreetOffer.Cos(offset.x, offset.z, forward.x, forward.z);
+                NearUsable = usable;
+                NearKind = kind;
+            }
+        }
+
+        /// <summary>True while the one offered is still out, usable and within <see cref="StreetRules.GraceMetres"/> (their offer may outlast a step out of the front).</summary>
+        public static bool Near(BaseHuman body, Pedestrian walker, Vector3 player)
+        {
+            if (body == null || !(walker != null ? Usable(walker) : Usable(body)))
+            {
+                return false;
+            }
+            Vector3 offset = body.transform.position - player;
+            return offset.y <= StreetRules.Height && offset.y >= -StreetRules.Height
+                   && offset.x * offset.x + offset.z * offset.z <= StreetRules.GraceMetres * StreetRules.GraceMetres;
         }
 
         /// <summary>True for a walker the game runs as it should, out and seen: not held by the ragdolls or borrowed by another feature.</summary>
@@ -94,12 +186,53 @@ namespace RealLifeOverhaul.Street
             return p.isActiveAndEnabled && p.tpc != null && p.tpc.visible && p.gameObject.activeInHierarchy && !RagdollSystem.Holds(p.tpc);
         }
 
-        private static bool Theirs(Pedestrian p)
+        /// <summary>True for a standing or sitting figure that is out and drawn, and not held by the ragdolls (a casualty) or turned by a horn.</summary>
+        public static bool Usable(BaseHuman h)
+        {
+            return h.isActiveAndEnabled && h.gameObject.activeInHierarchy && h.animator != null && h.appearanceSetter != null && !RagdollSystem.Holds(h)
+                   && !HornReactions.Reacts(h);
+        }
+
+        /// <summary>
+        /// The kind of one of the game's standing or sitting figures: a hangout spot's figure (StationaryAiBehavior) stands or
+        /// sits, the plain figure of the bench pool sits; a performer, somebody homeless (the game's own box over their bucket)
+        /// and the pools of the swimming pool, the golf course and the exercise machines are busy. Told apart once a figure.
+        /// </summary>
+        public static StreetFigure FigureOf(BaseHuman h)
+        {
+            int id = h.GetInstanceID();
+            if (!Kinds.TryGetValue(id, out StreetFigure kind))
+            {
+                if (Kinds.Count >= KindsMost)
+                {
+                    Kinds.Clear();
+                }
+                kind = KindOf(h);
+                Kinds[id] = kind;
+            }
+            return kind != StreetFigure.Busy && h.isSittingOn != null ? StreetFigure.Seated : kind;
+        }
+
+        private static StreetFigure KindOf(BaseHuman h)
+        {
+            if (h is ThirdPersonCharacter || h.GetComponent<Homeless>() != null || h.GetComponent<StreetPerformer>() != null)
+            {
+                return StreetFigure.Busy;
+            }
+            if (h.GetComponent<StationaryAiBehavior>() != null)
+            {
+                return StreetFigure.Standing;
+            }
+            Transform pool = h.transform.parent;
+            return pool != null && pool.name.IndexOf("Bench", StringComparison.OrdinalIgnoreCase) >= 0 ? StreetFigure.Seated : StreetFigure.Busy;
+        }
+
+        private static bool Theirs(Transform body)
         {
             for (int i = 0; i < Remote.Count; i++)
             {
                 Transform t = Remote[i];
-                if (t != null && (p.transform.IsChildOf(t) || (t.position - p.transform.position).sqrMagnitude < RemoteClear * RemoteClear))
+                if (t != null && (body.IsChildOf(t) || (t.position - body.position).sqrMagnitude < RemoteClear * RemoteClear))
                 {
                     return true;
                 }
@@ -108,30 +241,30 @@ namespace RealLifeOverhaul.Street
         }
 
         /// <summary>The game's own figure for a person: its instance stands for one look, so one person, for the session.</summary>
-        public static int Key(Pedestrian p) => p.GetInstanceID();
+        public static int Key(BaseHuman b) => b.GetInstanceID();
 
-        public static bool Female(Pedestrian p)
+        public static bool Female(BaseHuman p)
         {
-            return p.tpc != null && p.tpc.appearanceSetter != null && p.tpc.appearanceSetter.data != null && p.tpc.appearanceSetter.data.gender == Gender.Female;
+            return p.appearanceSetter != null && p.appearanceSetter.data != null && p.appearanceSetter.data.gender == Gender.Female;
         }
 
         /// <summary>Their age in years, as the game made their look (AppearanceAgeHelper: days of the game's year).</summary>
-        public static int Age(Pedestrian p)
+        public static int Age(BaseHuman p)
         {
-            int days = p.tpc != null && p.tpc.appearanceSetter != null && p.tpc.appearanceSetter.data != null ? p.tpc.appearanceSetter.data.ageInDays : 0;
+            int days = p.appearanceSetter != null && p.appearanceSetter.data != null ? p.appearanceSetter.data.ageInDays : 0;
             return days > 0 ? days / Math.Max(1, SocialPlaces.DaysPerYear) : 35;
         }
 
         /// <summary>Their look as the game made it (its appearance data), as a kept look's text (People/PersonLook); null if it has none.</summary>
-        public static string Look(Pedestrian p)
+        public static string Look(BaseHuman p)
         {
-            return p != null && p.tpc != null && p.tpc.appearanceSetter != null ? PersonLookGame.Of(p.tpc.appearanceSetter.data) : null;
+            return p != null && p.appearanceSetter != null ? PersonLookGame.Of(p.appearanceSetter.data) : null;
         }
 
         /// <summary>0 nothing, 1 looking at their phone, 2 on a call: the game's own animation on the figure.</summary>
-        public static int Phone(Pedestrian p)
+        public static int Phone(BaseHuman p)
         {
-            Animator animator = p.tpc != null ? p.tpc.animator : null;
+            Animator animator = p != null ? p.animator : null;
             if (animator == null || animator.runtimeAnimatorController == null)
             {
                 return 0;
@@ -160,9 +293,31 @@ namespace RealLifeOverhaul.Street
         public static PlayerController Player => PlayerHelper.PlayerController;
 
         /// <summary>True out of doors, on foot, with nothing of the game's or the mod's holding the player.</summary>
-        public static bool OnFootOutside()
+        public static bool OnFootOutside() => NotOnFoot() == null;
+
+        /// <summary>True out of doors and not in a vehicle (the offer's check line is written only then).</summary>
+        public static bool OutOfDoorsOnFoot => !BuildingManager.IsInsideBuilding && !PlayerHelper.IsUsingVehicle;
+
+        /// <summary>Why the player is not free on foot out of doors (for the offer's check line), or null when they are.</summary>
+        public static string NotOnFoot()
         {
-            return !BuildingManager.IsInsideBuilding && !PlayerHelper.IsUsingVehicle && LifeEvents.IsSafeForEvent() && !Wiring.Scenes.PlayerHeld;
+            if (BuildingManager.IsInsideBuilding)
+            {
+                return "indoors";
+            }
+            if (PlayerHelper.IsUsingVehicle)
+            {
+                return "in a vehicle";
+            }
+            if (!LifeEvents.IsSafeForEvent())
+            {
+                return "the game is busy (a pause, the time machine, a question, the activity panel, the hospital, the subway or the casino boat)";
+            }
+            if (Wiring.Scenes.PlayerHeld)
+            {
+                return "the mod holds the player (custody, the court, a licence test, the options page or a window over the world)";
+            }
+            return null;
         }
 
         /// <summary>The player turns on the spot to face a point (the game's own turn).</summary>
@@ -397,37 +552,85 @@ namespace RealLifeOverhaul.Street
     }
 
     /// <summary>
-    /// One of the game's walkers held still for a conversation: its own walking, standing and range behaviours paused (their
-    /// components switched off, as nothing else of theirs runs meanwhile), its navigation agent stopped where it stands and
-    /// its turning left to the game's own turn towards the player; everything given back exactly as found when it ends, so
-    /// it walks on to where it was going. If the game takes it meanwhile (the pool puts it away, a car hits it) it is let go.
-    /// COST: <see cref="Keep"/> is a few field reads on the conversation's tick.
+    /// Somebody of the street held for a conversation (StreetOffer says what is changed for each kind). A walker: its own
+    /// walking, standing and range behaviours paused (their components switched off, as nothing else of theirs runs
+    /// meanwhile), its navigation agent stopped where it stands and its turning left to the game's own turn towards the
+    /// player. Somebody standing about: turned to the player on the spot (the game's standing figures have no turn of their
+    /// own: a short turn over <see cref="StreetRules.TurnSeconds"/>, as a horn's look round turns them), their idling left
+    /// to the game. Somebody seated: nothing changed, they stay seated as posed. Everything is given back exactly as found
+    /// when it ends: the walker walks on to where it was going, the standing figure turns back to the way it stood. If the
+    /// game takes them meanwhile (the pool puts them away, a car hits them) they are let go.
+    /// COST: <see cref="Keep"/> is a few field reads on the conversation's tick; a turn is a coroutine of a few frames.
     /// </summary>
     public sealed class StreetHold
     {
-        private Pedestrian _p;
-        private bool _ped, _walk, _stay;     // which of its behaviours were on
+        private BaseHuman _body;             // who is held (a walker's own figure, or a standing or sitting figure)
+        private Pedestrian _p;               // their walker, or null
+        private StreetFigure _kind;
+        private bool _ped, _walk, _stay;     // which of the walker's behaviours were on
         private bool _agent;                 // its agent was on the navigation mesh, and is stopped by us
         private bool _stopped, _turning;     // the agent's own stop and turning, as found
         private Vector3 _look;               // the figure's look target, as found
+        private bool _turned;                // a standing figure was turned by us
+        private Quaternion _stood;           // ...and the way it stood
+        private Coroutine _turn;             // the turn towards the player under way
+        private MonoBehaviour _host;         // what runs the turns (the director)
+        private BaseHuman _back;             // a standing figure turning back after its talk, the way it stood, and that turn
+        private Quaternion _backTo;
+        private Coroutine _backTurn;
 
-        public bool Held => _p != null;
+        public bool Held => _body != null;
 
-        public Pedestrian Walker => _p;
+        /// <summary>Their figure (a walker's or a standing or sitting one's).</summary>
+        public BaseHuman Body => _body;
 
+        public StreetFigure Kind => _kind;
+
+        /// <summary>The game's character with its own turn (a walker's), for the dialogue panel; null for a standing or sitting figure.</summary>
         public ThirdPersonCharacter Character => _p != null ? _p.tpc : null;
 
-        /// <summary>True if the game took the walker back while it was held (put away, hit, borrowed by the ragdolls).</summary>
-        public bool Gone => (object)_p != null && (_p == null || !_p.gameObject.activeInHierarchy || _p.tpc == null || RagdollSystem.Holds(_p.tpc));
+        /// <summary>True if the game took them back while held (put away, hit, borrowed by the ragdolls).</summary>
+        public bool Gone => (object)_body != null && (_body == null || !_body.gameObject.activeInHierarchy || RagdollSystem.Holds(_body)
+                                                     || ((object)_p != null && (_p == null || _p.tpc == null)));
 
-        /// <summary>Stops a walker where it stands and turns it to the player. False if it cannot be held.</summary>
-        public bool Take(Pedestrian p, Vector3 player)
+        /// <summary>True while this figure is held (another feature's reactions leave them alone meanwhile).</summary>
+        public bool Holds(BaseHuman figure) => _body != null && ReferenceEquals(_body, figure);
+
+        /// <summary>Stops somebody where they are and turns them to the player as their kind allows. False if they cannot be held.</summary>
+        public bool Take(BaseHuman body, Pedestrian p, StreetFigure kind, Vector3 player, MonoBehaviour host)
         {
-            if (_p != null || p == null || p.tpc == null || !StreetGame.Usable(p))
+            if (_body != null || body == null || !StreetOffer.Offered(kind) || (p != null ? !StreetGame.Usable(p) : !StreetGame.Usable(body)))
             {
                 return false;
             }
-            _p = p;
+            HornReactions.LetGo(body);   // (a horn's look round put back first: the reaction is over)
+            _body = body;
+            _p = kind == StreetFigure.Walker ? p : null;
+            _kind = _p != null ? StreetFigure.Walker : kind == StreetFigure.Walker ? StreetFigure.Seated : kind;
+            _host = host;
+            _turned = false;
+            _agent = false;
+            if (_p != null)
+            {
+                HornReactions.LetGo(_p);
+                TakeWalker(_p);
+            }
+            else if (StreetOffer.TurnsBody(_kind))
+            {
+                _stood = body.transform.rotation;
+                if (ReferenceEquals(_back, body))
+                {
+                    _stood = _backTo;   // (still turning back from an earlier talk: the way it stood is the one kept then)
+                    StopBack(false);
+                }
+                _turned = true;
+            }
+            Face(player);
+            return true;
+        }
+
+        private void TakeWalker(Pedestrian p)
+        {
             _ped = p.enabled;
             _walk = p.pedestrianWalkingAiBehavior != null && p.pedestrianWalkingAiBehavior.enabled;
             _stay = p.pedestrianStationaryBehavior != null && p.pedestrianStationaryBehavior.enabled;
@@ -450,27 +653,40 @@ namespace RealLifeOverhaul.Street
                 agent.updateRotation = false;
             }
             _look = p.tpc.LookTarget;
-            Face(player);
-            return true;
         }
 
-        /// <summary>Turns them to face a point: the game's own turn, and the look target that keeps a standing figure facing it.</summary>
+        /// <summary>Turns them to face a point: the game's own turn and look target for a walker, a short turn for somebody standing, nothing for somebody seated.</summary>
         public void Face(Vector3 point)
         {
-            ThirdPersonCharacter c = Character;
-            if (c == null || !c.isActiveAndEnabled)
+            if (_p != null)
             {
+                ThirdPersonCharacter c = _p.tpc;
+                if (c == null || !c.isActiveAndEnabled)
+                {
+                    return;
+                }
+                Vector3 to = point - c.transform.position;
+                to.y = 0f;
+                if (to.sqrMagnitude > 0.04f)
+                {
+                    c.StartCoroutine(Guard.Routine(c.RotateTowards(Quaternion.LookRotation(to), StreetRules.TurnSeconds)));
+                }
+                if (!_agent)
+                {
+                    c.LookTarget = new Vector3(point.x, c.transform.position.y, point.z);   // (a figure off the mesh, standing at a spot, turns to its look target each frame: the game's own)
+                }
                 return;
             }
-            Vector3 to = point - c.transform.position;
-            to.y = 0f;
-            if (to.sqrMagnitude > 0.04f)
+            if (!_turned || _body == null)
             {
-                c.StartCoroutine(Guard.Routine(c.RotateTowards(Quaternion.LookRotation(to), StreetRules.TurnSeconds)));
+                return;   // (seated: stays as posed)
             }
-            if (!_agent)
+            Vector3 flat = point - _body.transform.position;
+            flat.y = 0f;
+            if (flat.sqrMagnitude > 0.04f)
             {
-                c.LookTarget = new Vector3(point.x, c.transform.position.y, point.z);   // (a figure off the mesh, standing at a spot, turns to its look target each frame: the game's own)
+                StopTurn();
+                Turn(_body, Quaternion.LookRotation(flat, Vector3.up));
             }
         }
 
@@ -488,11 +704,47 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>Everything given back as found: they walk on. Safe at any time, and after the game took them.</summary>
+        /// <summary>Everything given back as found: a walker walks on, somebody standing turns back. Safe at any time, and after the game took them.</summary>
         public void Release()
         {
+            BaseHuman body = _body;
             Pedestrian p = _p;
+            bool turned = _turned;
+            _body = null;
             _p = null;
+            _turned = false;
+            StopTurn();
+            if (p != null)
+            {
+                ReleaseWalker(p);
+                return;
+            }
+            if (!turned || body == null)
+            {
+                return;
+            }
+            try
+            {
+                StopBack(true);   // (another figure still turning back: set as it stood at once)
+                if (body.gameObject.activeInHierarchy && _host != null && _host.isActiveAndEnabled)
+                {
+                    _back = body;
+                    _backTo = _stood;
+                    _backTurn = _host.StartCoroutine(Guard.Routine(Turning(body.transform, _stood)));   // (turned back as they stood: the last frame sets it exactly)
+                }
+                else
+                {
+                    body.transform.rotation = _stood;   // (unloading, or put away by the pool: at once)
+                }
+            }
+            catch (Exception e)
+            {
+                StreetGame.Logger?.Error(e);
+            }
+        }
+
+        private void ReleaseWalker(Pedestrian p)
+        {
             if (p == null || p.tpc == null)
             {
                 return;
@@ -519,6 +771,57 @@ namespace RealLifeOverhaul.Street
             catch (Exception e)
             {
                 StreetGame.Logger?.Error(e);
+            }
+        }
+
+        private void Turn(BaseHuman body, Quaternion to)
+        {
+            if (_host != null && _host.isActiveAndEnabled)
+            {
+                _turn = _host.StartCoroutine(Guard.Routine(Turning(body.transform, to)));
+            }
+            else
+            {
+                body.transform.rotation = to;
+            }
+        }
+
+        private void StopTurn()
+        {
+            if (_turn != null && _host != null)
+            {
+                _host.StopCoroutine(_turn);
+            }
+            _turn = null;
+        }
+
+        // A turn back under way is stopped; finish: the figure is set as it stood at once (else whoever takes it next keeps the way it stood).
+        private void StopBack(bool finish)
+        {
+            if (_backTurn != null && _host != null)
+            {
+                _host.StopCoroutine(_backTurn);
+            }
+            if (finish && _back != null && _back.gameObject.activeInHierarchy)
+            {
+                _back.transform.rotation = _backTo;
+            }
+            _backTurn = null;
+            _back = null;
+        }
+
+        // A standing figure turned on the spot at the speed of the walkers' own turn; the last frame sets the rotation exactly.
+        private static IEnumerator Turning(Transform body, Quaternion to)
+        {
+            float rate = 180f / Mathf.Max(0.1f, StreetRules.TurnSeconds);   // degrees a second: half a turn in the turn's time
+            while (body != null && body.gameObject.activeInHierarchy && Quaternion.Angle(body.rotation, to) > 0.5f)
+            {
+                body.rotation = Quaternion.RotateTowards(body.rotation, to, rate * Time.deltaTime);
+                yield return null;
+            }
+            if (body != null && body.gameObject.activeInHierarchy)
+            {
+                body.rotation = to;
             }
         }
     }

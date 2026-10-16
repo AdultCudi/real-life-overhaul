@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Street
     public sealed partial class StreetDirector
     {
         private const string TestName = "Street talk";
-        private const float TestReach = 8f;   // metres: the test talks to the nearest walker this near, whichever way the player faces
+        private const float TestReach = 8f;   // metres: the test talks to the nearest person this near (walking, standing or seated), whichever way the player faces
 
         private bool TestReady()
         {
@@ -41,7 +41,9 @@ namespace RealLifeOverhaul.Street
             }
             PlayerController player = StreetGame.Player;
             List<Pedestrian> walkers = PerfGame.Pedestrians;
-            Pedestrian best = null;
+            BaseHuman best = null;
+            Pedestrian bestWalker = null;
+            StreetFigure bestKind = StreetFigure.Busy;
             float bestSqr = TestReach * TestReach;
             for (int i = 0; player != null && walkers != null && i < walkers.Count; i++)
             {
@@ -50,14 +52,34 @@ namespace RealLifeOverhaul.Street
                 {
                     continue;
                 }
-                float sqr = (p.transform.position - player.transform.position).sqrMagnitude;
+                float sqr = (p.tpc.transform.position - player.transform.position).sqrMagnitude;
                 if (sqr < bestSqr)
                 {
                     bestSqr = sqr;
-                    best = p;
+                    best = p.tpc;
+                    bestWalker = p;
+                    bestKind = StreetFigure.Walker;
                 }
             }
-            if (best == null || !Begin(best, Time.unscaledTime))
+            List<BaseHuman> standing = StreetPeople.Standing(Logger);
+            for (int i = 0; player != null && i < standing.Count; i++)
+            {
+                BaseHuman h = standing[i];
+                StreetFigure kind = h != null ? StreetGame.FigureOf(h) : StreetFigure.Busy;
+                if (!StreetOffer.Offered(kind) || !StreetGame.Usable(h))
+                {
+                    continue;
+                }
+                float sqr = (h.transform.position - player.transform.position).sqrMagnitude;
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = h;
+                    bestWalker = null;
+                    bestKind = kind;
+                }
+            }
+            if (best == null || !Begin(best, bestWalker, bestKind, Time.unscaledTime))
             {
                 StreetGame.Notice(NotificationType.Warning, "reallife_street_test_nobody", null, 8f);
                 Logger?.Info("Street talk: test, nobody within " + TestReach + " m to talk to.");

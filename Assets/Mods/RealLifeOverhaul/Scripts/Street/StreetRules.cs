@@ -15,11 +15,15 @@ namespace RealLifeOverhaul.Street
     public static class StreetRules
     {
         // ---------------------------------------------------------------- the street
-        public const float Reach = 2.2f;          // metres: somebody this near and in front of the player can be talked to
-        public const float LetGo = 3.0f;          // metres: the offer to talk goes once they are this far (a step of give, so it does not flicker)
-        public const float Facing = 0.55f;        // the cosine of the widest angle off the player's facing they may stand at (about 57 degrees)
-        public const float Dwell = 0.4f;          // real seconds the same person must stay in reach before Talk is offered (people walking past are not)
-        public const float Tick = 0.25f;          // real seconds between two looks for somebody to talk to, on foot out of doors
+        public const float Reach = 3.2f;          // metres: somebody this near and in front of the player can be talked to (a step and a half: talking distance)
+        public const float LetGo = 4.0f;          // metres: the one offered keeps the offer until this far (a step of give, so it does not flicker)
+        public const float Facing = 0.5f;         // the cosine of the widest angle off the player's facing a new person may stand at (60 degrees)
+        public const float KeepFacing = 0.17f;    // ...and the one offered keeps it out to about 80 degrees (a passer-by drifting to the side)
+        public const float Dwell = 0.3f;          // real seconds the same person must have been in front before Talk is offered (not everybody brushed past)
+        public const float Grace = 1.5f;          // real seconds the offer stays on somebody who has just left the reach or the angle (a passer-by can be caught)
+        public const float GraceMetres = 4.2f;    // ...as long as they are no further than this (under WalkAway: a press then still holds them)
+        public const float Tick = 0.2f;           // real seconds between two looks for somebody to talk to, on foot out of doors
+        public const float Height = 1.5f;         // metres up or down somebody may stand from the player (not on a balcony, not under a bridge)
         public const float WalkAway = 4.5f;       // metres: the player this far from them ends the conversation
         public const float PoliceMetres = 35f;    // an officer this near hears a threat
 

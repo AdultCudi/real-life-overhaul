@@ -567,7 +567,7 @@ internal static partial class Program
         Check(StreetRules.Hold <= 1.5 && StreetRules.Hold > StreetRules.Beat && StreetRules.Beat >= StreetRules.TurnSeconds * 0.5f, "street talk: a line waits at most 1.5 s for its words, after a beat for the turn ("
                                                                                                                     + StreetRules.Hold + " s, " + StreetRules.Beat + " s)");
         Check(StreetRules.Tick >= 0.2f && StreetRules.Dwell >= StreetRules.Tick && StreetRules.LetGo > StreetRules.Reach && StreetRules.WalkAway > StreetRules.LetGo,
-            "street talk: four looks a second at most, an offer only after the player stood there a moment, and a step of give before it goes");
+            "street talk: five looks a second at most, an offer only after the player stood there a moment, and a step of give before it goes");
         TimeStreetRules(out double perChoice, out long allocated);
         Check(perChoice < 0.05, "street talk: working out who somebody is, their approach and the choices takes " + perChoice.ToString("0.0000") + " ms (under 0.05 ms)");
     }
@@ -605,7 +605,7 @@ internal static partial class Program
         Check(director.Contains("using var hotSpot = HotSpots.Time(HotUpdate);") && director.Contains("HotSpots.Time(HotLook)"), "street talk: its Update and its look are timed (HotSpots)");
         Check(!all.Contains("FindObjectsOfType") && !all.Contains("FindObjectsByType") && !all.Contains("GameObject.Find") && !all.Contains("Physics.") && !all.Contains("System.Linq"),
             "street talk: no scene search, no physics query and no LINQ anywhere in it");
-        Check(game.Contains("PerfGame.Pedestrians") && game.Contains("GoingPublic.RemotePlayers(Remote)") && game.Contains("Theirs(p)"),
+        Check(game.Contains("PerfGame.Pedestrians") && game.Contains("GoingPublic.RemotePlayers(Remote)") && game.Contains("Theirs(body.transform)") && game.Contains("Theirs(h.transform)"),
             "street talk: the people are the game's own walkers; another player's figure in a Going Public session is never one");
         Check(!all.Contains("SharedCity") && !all.Contains("TextsShare") && !all.Contains("Shared = true") && !all.Contains("Changes(") && !all.Contains("Network"),
             "street talk: nothing is sent to a Going Public session: the conversations are the player's own");
