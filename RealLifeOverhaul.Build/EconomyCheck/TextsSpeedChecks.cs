@@ -92,7 +92,7 @@ internal static partial class Program
         Check(director.Contains("TextSpeed.Threads(_cores, Settings.TextsThreads <= 0 ? 0 : Settings.TextsThreads + 1, device != null)")
               && director.Contains("string wanted = TextSpeed.For(_pack.Name + \" \" + _pack.Version, device, threads);"),
             "texts, the director: the threads for the device chosen, and the speed's key with its priority");
-        Check(Regex.IsMatch(server, @"_detail = ""sent the test card, 1 token to write: "" \+ Timings\(answer, took, Cpu\(\) - cpu\);")
+        Check(Regex.IsMatch(server, @"_detail = ""sent the test card, 1 token to write: "" \+ Timings\(answer, took, used\) \+ ShaderCacheName\(KeepShaderMark\(used\)\);")
               && server.Contains("(_detail != null ? \" (\" + _detail + \")\" : string.Empty)") && server.Contains("detail = Timings(answer, TextClock.Now - asked, Cpu() - cpu);")
               && server.Contains("\" priority, \" + _start.Threads + \" threads).\""),
             "texts, the start's lines: the first reply and the speed test say what was sent, the model's times, the rest, the processor time, the priority and threads");

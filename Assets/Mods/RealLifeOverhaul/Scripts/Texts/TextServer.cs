@@ -116,6 +116,16 @@ namespace RealLifeOverhaul.Texts
         Failed       // it would not start, or stopped: the written lines are used until the pack is switched off and on
     }
 
+    /// <summary>The GPU driver's shader cache at the first reply, as the start's line names it.</summary>
+    public enum TextShaderCache
+    {
+        None,        // on the processor: no shaders
+        Unknown,     // the system could not give the server's processor time
+        Used,        // the driver had the shaders kept: nothing built
+        Created,     // built for the first time (this pack, device and runtime), kept by the driver for the next start
+        Missing      // built again although built before: the driver did not keep them (its cache cleared, or a new driver)
+    }
+
     /// <summary>What the runner is started with.</summary>
     public sealed class TextServerStart
     {
@@ -125,7 +135,8 @@ namespace RealLifeOverhaul.Texts
         public int Threads = 2;      // 1 to 4 (at most 2 on a GPU: TextSpeed.Threads)
         public string Device;        // null for the processor; else a llama.cpp device name ("Vulkan0")
         public double LoadSeconds = 90.0;   // the most the model may take to load before the runner gives up
-        public double WarmSeconds = 30.0;   // the most the first reply (a GPU's shaders built) or the head's read may take
+        public double WarmSeconds = 30.0;   // the most the first reply on the processor, or the head's read, may take
+        public double BuildSeconds = 90.0;  // the most the first reply may take on a GPU, where it builds the shaders when the driver has none kept (measured 10 s idle, 22 s in the game's load on a Ryzen 7700X, on one thread: a slower processor takes longer)
         public string Cache;         // a folder for the cached head's state (the server's slot file); null: no prompt cache
         public string SpeedFor;      // what a speed test is for (pack, device, threads)
         public TextSpeedResult Known; // a speed measured before for the same: no test this time
@@ -145,6 +156,14 @@ namespace RealLifeOverhaul.Texts
     ///              model took over 40 s to load, the first reply 5 s and words came at 3 to 6 a second; at normal priority
     ///              3.5 s, 0.1 s and 110 to 200 a second, the server using half a thread of the processor for the 0.1 to 0.3 s
     ///              a reply takes. In the game below normal: the first reply in 24 s, 39 words a second
+    ///   shaders    a GPU's first reply builds llama.cpp's shaders, unless the driver kept them from an earlier start in its
+    ///              own cache (llama.cpp keeps none of its own). Steam starts the game with variables that point the driver's
+    ///              cache at the game's folder of Steam's shader pre-caching, and a child inherits them: there the NVIDIA
+    ///              driver kept nothing for llama.cpp, and every start in the game built every shader again (16 Oct 2026,
+    ///              the 2B on an RTX 5070 Ti: 22 s each session, 21 s of it processor time; outside the game 0.05 s). They are
+    ///              not passed on (<see cref="OwnShaderCache"/>), so the driver keeps the shaders in its own cache: built once,
+    ///              behind the written lines, within <see cref="TextServerStart.BuildSeconds"/>; the start's line says whether
+    ///              the cache was used, created or missing (<see cref="ShaderCache"/>)
     ///   start      a free port from the system, the exe started hidden (no window), at its priority, its own log; tied to a
     ///              Windows job object that ends it when the game's process ends, even in a crash; then the worker waits
     ///              for /health (the model loading, within <see cref="TextServerStart.LoadSeconds"/>) and writes one short
@@ -290,7 +309,7 @@ namespace RealLifeOverhaul.Texts
             {
                 _dog = new Timer(Watchdog, null, DogMs, DogMs);
                 bool ready = Stage(TextStartStage.Launch, LaunchSeconds, Launch) && Stage(TextStartStage.Load, _start.LoadSeconds, WaitReady)
-                             && Stage(TextStartStage.WarmUp, _start.WarmSeconds, WarmUp) && Stage(TextStartStage.Head, _start.WarmSeconds + SaveSeconds, KeepHead)
+                             && Stage(TextStartStage.WarmUp, WarmLimit(_start), WarmUp) && Stage(TextStartStage.Head, _start.WarmSeconds + SaveSeconds, KeepHead)
                              && Stage(TextStartStage.Speed, TextSpeed.TestSeconds + RestoreSeconds, SpeedTest);
                 Interlocked.Exchange(ref _dog, null)?.Dispose();
                 if (!ready)
@@ -433,6 +452,7 @@ namespace RealLifeOverhaul.Texts
                 RedirectStandardError = false
             };
             Offline(info);
+            string steam = OwnShaderCache(info);
             try
             {
                 _process = Process.Start(info);
@@ -460,8 +480,82 @@ namespace RealLifeOverhaul.Texts
             }
             TieToGame(_process);
             _log?.Invoke("RLO Texts: the server started on 127.0.0.1:" + _port + " (" + (_start.Device ?? "the processor") + ", " + _start.Threads + " threads, "
-                         + (low ? "below normal" : "normal") + " priority, " + Path.GetFileName(_start.Model) + ").");
+                         + (low ? "below normal" : "normal") + " priority, " + Path.GetFileName(_start.Model) + ")"
+                         + (steam.Length > 0 ? "; the GPU driver's shader cache is its own (" + steam + " from Steam not passed on)." : "."));
             return true;
+        }
+
+        /// <summary>The first reply's limit: on a GPU long enough to build the shaders the driver has not kept.</summary>
+        public static double WarmLimit(TextServerStart start) => start.Device != null ? Math.Max(start.WarmSeconds, start.BuildSeconds) : start.WarmSeconds;
+
+        public const double BuiltCpuSeconds = 2.0;   // processor seconds of the first reply on a GPU from which its shaders were built (measured: 0.03 to 0.05 s with the driver's cache, 10 to 21 s without)
+        public const string ShaderMark = "gpu-shaders.txt";   // in the cache folder: the pack, device and runtime whose shaders were last built (whether a build is the first)
+
+        /// <summary>
+        /// The driver's shader cache at the first reply, from the processor time the server used for it: building a GPU's
+        /// shaders is the processor's work (seconds), a reply from kept shaders is not (hundredths). Built with the same
+        /// pack, device and runtime built before (<paramref name="builtBefore"/>): the driver did not keep them. Game-free
+        /// (EconomyCheck, TextsCacheChecks.cs).
+        /// </summary>
+        public static TextShaderCache ShaderCache(string device, double cpuSeconds, bool builtBefore)
+        {
+            if (device == null)
+            {
+                return TextShaderCache.None;
+            }
+            if (double.IsNaN(cpuSeconds) || double.IsInfinity(cpuSeconds))
+            {
+                return TextShaderCache.Unknown;
+            }
+            if (cpuSeconds < BuiltCpuSeconds)
+            {
+                return TextShaderCache.Used;
+            }
+            return builtBefore ? TextShaderCache.Missing : TextShaderCache.Created;
+        }
+
+        /// <summary>The cache's state as the start's line says it (empty on the processor).</summary>
+        public static string ShaderCacheName(TextShaderCache state)
+        {
+            switch (state)
+            {
+                case TextShaderCache.Used: return "; the GPU's shaders: the driver's cache used";
+                case TextShaderCache.Created: return "; the GPU's shaders: built, the driver's cache created for the next start";
+                case TextShaderCache.Missing: return "; the GPU's shaders: built again, the driver's cache missing (cleared, or a new driver)";
+                case TextShaderCache.Unknown: return "; the GPU's shaders: the driver's cache unknown";
+                default: return string.Empty;
+            }
+        }
+
+        /// <summary>What the shader mark holds for a start: the pack's model, the device and the runtime's release.</summary>
+        public static string ShaderKey(TextServerStart start) => Path.GetFileName(start.Model) + ";" + start.Device + ";" + TextRuntime.Release;
+
+        // Whether this pack, device and runtime built their shaders before, and the mark kept when they are built now.
+        private TextShaderCache KeepShaderMark(double cpuSeconds)
+        {
+            string mark = _start.Cache != null && _start.Device != null ? Path.Combine(_start.Cache, ShaderMark) : null;
+            bool before = false;
+            try
+            {
+                before = mark != null && File.Exists(mark) && File.ReadAllText(mark).Trim() == ShaderKey(_start);
+            }
+            catch (Exception)
+            {
+                // (unreadable: taken as never built)
+            }
+            TextShaderCache state = ShaderCache(_start.Device, cpuSeconds, before);
+            if (mark != null && (state == TextShaderCache.Created || state == TextShaderCache.Missing))
+            {
+                try
+                {
+                    File.WriteAllText(mark, ShaderKey(_start));
+                }
+                catch (Exception)
+                {
+                    // (a read-only folder: the next build says created again)
+                }
+            }
+            return state;
         }
 
         /// <summary>
@@ -542,10 +636,10 @@ namespace RealLifeOverhaul.Texts
             try
             {
                 double begun = TextClock.Now, cpu = Cpu();
-                string answer = Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(_start.WarmSeconds));
-                double took = TextClock.Now - begun;
+                string answer = Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(WarmLimit(_start)));
+                double took = TextClock.Now - begun, used = Cpu() - cpu;
                 LoadedIn += took;
-                _detail = "sent the test card, 1 token to write: " + Timings(answer, took, Cpu() - cpu);
+                _detail = "sent the test card, 1 token to write: " + Timings(answer, took, used) + ShaderCacheName(KeepShaderMark(used));
                 return true;
             }
             catch (Exception e)
@@ -881,6 +975,44 @@ namespace RealLifeOverhaul.Texts
             {
                 info.EnvironmentVariables.Remove(drop[i]);
             }
+        }
+
+        /// <summary>
+        /// True for a variable that points a GPU driver's shader cache somewhere of its own: the ones Steam sets for a game
+        /// it starts, for its shader pre-caching (NVIDIA's __GL_SHADER_DISK_CACHE_PATH, _APP_NAME, _READ_ONLY_APP_NAME and
+        /// _SKIP_CLEANUP; Mesa's and DXVK's caches), and any other __GL_SHADER_DISK_CACHE one. Game-free (EconomyCheck, TextsCacheChecks.cs).
+        /// </summary>
+        public static bool ShaderCacheVariable(string name)
+        {
+            return name != null && (name.StartsWith("__GL_SHADER_DISK_CACHE", StringComparison.OrdinalIgnoreCase) || name.StartsWith("MESA_SHADER_CACHE", StringComparison.OrdinalIgnoreCase)
+                                    || name.StartsWith("MESA_GLSL_CACHE", StringComparison.OrdinalIgnoreCase) || name.StartsWith("MESA_DISK_CACHE", StringComparison.OrdinalIgnoreCase)
+                                    || name.StartsWith("DXVK_STATE_CACHE", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// A child process of llama.cpp's given the GPU driver's own shader cache: no <see cref="ShaderCacheVariable"/> reaches
+        /// it (see the summary: under Steam's, the driver kept no shader for llama.cpp, and every start built them all again).
+        /// Returns the names taken out, for the log (empty: none). Measured outside the game (16 Oct 2026, the 2B on an RTX
+        /// 5070 Ti, the server started as the runner starts it): with Steam's variables every start's first reply 9.9 s, the
+        /// processor busy throughout, and nothing kept; without them 10.1 s once, then 0.05 s each start, killed or not.
+        /// </summary>
+        public static string OwnShaderCache(ProcessStartInfo info)
+        {
+            var drop = new List<string>(4);
+            foreach (System.Collections.DictionaryEntry e in info.EnvironmentVariables)
+            {
+                string name = e.Key as string;
+                if (ShaderCacheVariable(name))
+                {
+                    drop.Add(name);
+                }
+            }
+            drop.Sort(StringComparer.OrdinalIgnoreCase);   // (the log's order the same each start)
+            for (int i = 0; i < drop.Count; i++)
+            {
+                info.EnvironmentVariables.Remove(drop[i]);
+            }
+            return string.Join(", ", drop.ToArray());
         }
 
         // ---------------------------------------------------------------- a job object: the server ends with the game, even in a crash
