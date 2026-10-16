@@ -25,55 +25,32 @@ Windows only. English, Brazilian Portuguese, Simplified Chinese, German, French,
 | `Assets/Mods/RealLifeOverhaul/Locales/en.json` | Every text the player reads |
 | `Assets/Mods/RealLifeOverhaul/Bundles` | The built models, animations and clothes the game loads |
 | `PropAssets`, `CityAssets`, `CharacterAssets` | The scripts that build those bundles with Blender and Unity |
-| `RealLifeOverhaul.Build` | The command-line build, the text checker and the developer documentation |
+| `RealLifeOverhaul.Build` | The command-line build, the checkers, the installer and the developer guide's front door |
+| `docs` | The developer documentation: contributing, reference and one page per feature |
 | `RealLifeOverhaul.Build/Workshop` | The Workshop page texts, the writing rules and the upload steps |
 | `docs/SDK.md` and the other folders under `Assets/Mods` | Hovgaard Games' mod SDK template and its example mods, which this repository started from |
 
-The developer documentation is [RealLifeOverhaul.Build/README.md](RealLifeOverhaul.Build/README.md). It is long. It describes how each feature works, the rules the code follows, and what has and has not been checked in the game.
+The developer documentation starts at [the developer guide](RealLifeOverhaul.Build/README.md), which has the folder map and gets you building in fifteen minutes. [The documentation index](docs/README.md) lists every page: how to contribute, the rules the code follows, how each feature works, and what has and has not been checked in the game.
 
 ## Building
 
-You need:
-
-- Big Ambitions installed through Steam. The build compiles against the game's own DLLs, which are not in this repository and must not be added to it.
-- The [.NET SDK](https://dotnet.microsoft.com/download), version 10 or later.
-
-Build:
+You need Big Ambitions installed through Steam and the [.NET SDK](https://dotnet.microsoft.com/download), version 10 or later. The build compiles against the game's own DLLs, which are not in this repository and must not be added to it. You do not need Unity or Blender unless you change a model, an animation or a piece of clothing: the built bundles are in the repository.
 
 ```
 dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release "-p:GameManaged=<Steam>\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed"
 ```
 
-The build must end with `0 Warning(s)` and `0 Error(s)`. It puts the built mod in `RealLifeOverhaul.Build/out/RealLifeOverhaul`. To install it into the game's local mods folder (`%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul`) add `-p:InstallToGame=true`, and only while the game is closed: the game watches that folder, and files changed under a running game lose their textures and texts until it is restarted. To build into any other folder, add `"-p:ModsLocal=<some other folder>"`.
-
-If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. With both switched on the game starts the mod twice. From 0.1.1 the second copy to start writes a warning to `Player.log` and does nothing, so nothing runs twice, but which of the two copies is the one running is then up to the game: keep only one switched on.
-
-Check the texts:
-
-```
-dotnet build RealLifeOverhaul.Build/CatalogueCheck -c Release
-dotnet RealLifeOverhaul.Build/CatalogueCheck/bin/Release/net10.0/CatalogueCheck.dll
-```
-
-It must end with `ALL CHECKS PASSED`.
-
-You do not need Unity or Blender unless you change a model, an animation or a piece of clothing. The built bundles are in the repository.
-
-The installer for players without the Workshop (`RealLifeOverhaul-<version>-setup.exe`) and the zip beside it are made by one script, which builds the mod into a clean folder first. It needs [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`):
-
-```
-powershell -File RealLifeOverhaul.Build/Installer/build-installer.ps1 -OutDir <folder>
-```
-
-It prints the SHA-256 of both files for the release notes. The installer script is `RealLifeOverhaul.Build/Installer/RealLifeOverhaul.iss`.
+The build must end with `0 Warning(s)` and `0 Error(s)`, and puts the built mod in `RealLifeOverhaul.Build/out/RealLifeOverhaul`. [Getting started](docs/contributing/getting-started.md) has the checks, how to try a build in the game, and what to do when a step fails.
 
 ## Reporting a problem
 
-Open an issue. What helps most:
+The quickest way is the **Report a bug** button under **Start here** on the mod's options page: it gathers your log, settings and a screenshot into one zip for you to post on the Discord or attach to [a bug report](https://github.com/AdultCudi/real-life-overhaul/issues/new?template=bug_report.md). It sends nothing itself. By hand:
 
 1. On the mod's options page, under Troubleshooting, Diagnostics, switch on "Developer diagnostics" and make the problem happen again.
 2. Attach `Player.log` from that session. It is in `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions` and is overwritten when the game starts again.
-3. Add a screenshot, what you were doing, what you expected, the mod version and which other mods are on.
+3. Add a screenshot, what you were doing, what you expected, the game's build, the mod version and which other mods are on.
+
+[Logs and debugging](docs/reference/logs-and-debugging.md) says what the mod writes to the log.
 
 ### Stutter, or a frame rate that gets worse the longer you play
 
@@ -92,11 +69,11 @@ Please send:
 4. Which other mods were on.
 5. If you can: whether the same save stutters after the same time with this mod switched off.
 
-How to read the lines is in [the developer documentation](RealLifeOverhaul.Build/README.md), under "The session record".
+How to read the lines is in [the session record](docs/reference/logs-and-debugging.md#the-session-record).
 
 ## Contributing
 
-Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Nothing is merged into `main` without the maintainer's review and approval.
+Pull requests are welcome. Talk to us first on the Discord's developer channel or in an issue, then read [CONTRIBUTING.md](CONTRIBUTING.md). Nothing is merged into `main` without the maintainer's review and approval.
 
 ## Licence
 

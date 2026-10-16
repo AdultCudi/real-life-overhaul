@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
     /// <summary>
     /// The city's economy as investors and the market feel it. The default says "steady"; the city's own economy
-    /// (Scripts/Economy/City) is joined on in Scripts/Wiring with one line (see the README).
+    /// (Scripts/Economy/City) is joined on in Scripts/Wiring with one line (see docs/reference/wiring.md).
     /// </summary>
     public interface IVenturesClimate
     {

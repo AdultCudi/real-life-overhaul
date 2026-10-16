@@ -1068,7 +1068,7 @@ namespace RealLifeOverhaul.Meta
                 }
 
                 // Mood types this version does not register: in the list the save was loaded with they would be unknown
-                // to the game (the README: an unknown type breaks the load without the mod, and shows as nothing with it).
+                // to the game (docs/features/meta.md: an unknown type breaks the load without the mod, and shows as nothing with it).
                 if (save.happinessModifiers != null)
                 {
                     for (int i = save.happinessModifiers.Count - 1; i >= 0; i--)

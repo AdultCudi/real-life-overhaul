@@ -553,7 +553,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A modelled part from the prop bundle, when it has one (see the wish-list in the README).
+        // A modelled part from the prop bundle, when it has one (see the wish-list in docs/features/garage.md).
         private static bool Modelled(string id, Transform root, Vector3 at, Vector3 scale)
         {
             if (!PropLibrary.TryGet(id, out Mesh mesh, out Material material) || mesh == null || material == null)

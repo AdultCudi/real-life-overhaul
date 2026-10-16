@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Economy
     /// are can keep, and one rung for each further person worth hiring. Every rung is a set of opening hours and a
     /// rota (made by <see cref="RotaSolver"/>), valued the same way (<see cref="Evaluate"/>).
     ///
-    /// WHAT A WEEK IS VALUED AT, each line the game's own arithmetic as read from its code (the README lists where):
+    /// WHAT A WEEK IS VALUED AT, each line the game's own arithmetic as read from its code (docs/features/economy-rota.md lists where):
     ///   sales       only customers who find the smallest crew buy: an hour open with nobody at a till sells nothing
     ///               (RetailBusinessSimulator.ProcessCustomer leaves the order unpaid). The stations manned serve
     ///               their customers an hour and no more; whoever comes beyond that is lost. Skill does not change

@@ -551,7 +551,7 @@ Not asked for by code (made for an earlier wish-list; kept because they are done
 
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
-| `tower_crane` | 6.0 x 47.75 x 40.06 | 1 468 | lit | ground centre of its pad; jib along +Z | Static tower crane: lattice mast to the slewing ring 40 m up, cab at +X, 30 m jib, 10 m counter-jib with its weights, trolley 18 m out, hook block 26 m up. Civic's README says no site can use one (no empty lot) |
+| `tower_crane` | 6.0 x 47.75 x 40.06 | 1 468 | lit | ground centre of its pad; jib along +Z | Static tower crane: lattice mast to the slewing ring 40 m up, cab at +X, 30 m jib, 10 m counter-jib with its weights, trolley 18 m out, hook block 26 m up. the Civic page (docs/features/civic.md) says no site can use one (no empty lot) |
 | `campaign_lawn_sign` | 0.60 x 1.07 x 0.026 | 312 | lit | ground centre; both faces alike | `campaign_poster_1`'s print on both faces of a board from 0.22 to 1.07 up, on a wire stake |
 | `gavel` | 0.10 x 0.07 x 0.28 | 320 | lit | ground centre; lying on its side, head across X at the +Z end | Judge's gavel; the handle is 0.022 thick. Justice wants only its sound |
 | `gavel_block` | 0.12 x 0.03 x 0.12 | 130 | lit | ground centre; round | Sound block |

@@ -6,7 +6,7 @@ using RealLifeOverhaul;
 // The game's build (Core/GameBuild.cs as it ships): which build is older or newer, the line Player.log gets, the member
 // named in Mono's own messages of a missing member (the very lines a player's Build 3675 wrote), and the build of the
 // installed game the mod is built against, which must be GameBuild.MadeFor: after a game update this fails until the
-// mod has been checked against the new game and MadeFor raised (README, "After a game update").
+// mod has been checked against the new game and MadeFor raised (docs/contributing/after-a-game-update.md).
 internal static partial class Program
 {
     private static void BuildRules()

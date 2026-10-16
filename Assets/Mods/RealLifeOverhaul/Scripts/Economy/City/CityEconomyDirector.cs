@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// The city's economy: a central bank, prices, a cycle, districts with an income, supply that moves, and what each
-    /// does to the player. See the README ("Economy: the city").
+    /// does to the player. See docs/features/economy-city.md.
     ///
     /// This class keeps it going and applies it. It has no Update, no timer and no place of its own in the game's
     /// events: once a second the credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the

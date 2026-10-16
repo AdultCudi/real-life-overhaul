@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
     /// <summary>
     /// Every figure of investors and the market, in one place. Game-free: the offline checks compile this file, the
-    /// Guide prints from it (Meta/FeatureList) and the README lists it ("Economy: investors and the market").
+    /// Guide prints from it (Meta/FeatureList) and docs/features/economy-investors.md lists it.
     /// Shares are in basis points (2,500 is 25%); prices in cents; money in whole units of the game's currency.
     /// </summary>
     public static class VenturesCatalogue

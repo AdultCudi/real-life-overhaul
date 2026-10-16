@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// The property business: buying, letting, improving and selling buildings, an estate agency, owning a hotel
-    /// and hiring out cars. See the README ("Economy: property").
+    /// and hiring out cars. See Scripts/Economy/Estate/README.md.
     ///
     /// This class keeps it going. It has no Update, no timer and no place of its own in the game's events: once a
     /// second the credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the options are looked

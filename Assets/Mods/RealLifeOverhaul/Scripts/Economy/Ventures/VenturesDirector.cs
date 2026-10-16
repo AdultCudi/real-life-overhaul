@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 {
     /// <summary>
     /// Investors: investors who put money into the player's businesses for a share of the profit, a pitch that wins or
-    /// loses that money, and a page on what the game's own lettings bring in. See the README ("Economy: investors").
+    /// loses that money, and a page on what the game's own lettings bring in. See docs/features/economy-investors.md.
     /// The stock market that used to be here is the city's own now (Scripts/Markets): the shares a save held in it go
     /// over to that market once, and this file keeps none.
     ///

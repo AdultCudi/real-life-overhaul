@@ -17,7 +17,7 @@ using UnityEngine;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The minimap and the GPS. See the README ("Minimap and GPS").
+    /// The minimap and the GPS. See docs/features/navigation.md.
     ///
     /// The minimap is a panel of the game's HUD (<see cref="NavHud"/>) that shows a picture of the city's roads made
     /// once per city (<see cref="NavGraph"/>), the player, the places that matter (<see cref="NavMarks"/>) and the

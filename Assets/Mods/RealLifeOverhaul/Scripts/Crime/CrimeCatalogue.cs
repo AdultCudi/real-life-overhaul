@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Every crime the mod can stage. Adding one is: an entry here (with its lines in
     /// Locales\en.json), and a scene for it in CrimeScenes (a new class, or one more instance of
-    /// an existing one). See the README.
+    /// an existing one). See docs/contributing/adding-things.md.
     /// </summary>
     internal static class CrimeCatalogue
     {

@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The build the mod is compiled against and checked in, the one build number of the mod. ContractCheck reads the
         /// build of the installed game the mod is built against and fails while it is another one: after a game update,
-        /// build and check the mod against it (README, "After a game update"), then change this number.
+        /// build and check the mod against it (docs/contributing/after-a-game-update.md), then change this number.
         /// </summary>
         public const int MadeFor = 3682;
 

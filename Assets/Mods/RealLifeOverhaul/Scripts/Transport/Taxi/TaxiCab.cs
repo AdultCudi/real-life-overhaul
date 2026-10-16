@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
     ///
     /// HOW IT COMES. Not by the traffic system's scripted route (<c>VehicleComponent.presetPath</c>, which the
     /// game's private driver uses): a vehicle on one drives through its first red light and stalls behind the first
-    /// queue (the README, "Buses", has the reading). It is held the way a bus is (ignored by the traffic AI, an
+    /// queue (docs/features/transport.md, "Buses", has the reading). It is held the way a bus is (ignored by the traffic AI, an
     /// empty scripted route as the mark that keeps the game from taking it off the road, the game's check that
     /// removes a standing car switched off) and driven by <see cref="EmergencyDriver"/> along the lane points of
     /// its route, in its lane, behind whatever is ahead of it; <see cref="RouteGates"/> makes it pull up at red

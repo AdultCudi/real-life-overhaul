@@ -1,4 +1,4 @@
-"""Clips for the player's jobs (Scripts/Jobs: the wish-list in RealLifeOverhaul.Build/README.md, "Job clips") and
+"""Clips for the player's jobs (Scripts/Jobs: the wish-list in docs/features/jobs.md, "Job clips") and
 for the jobs to come (mopping, stocking shelves, a counter, a till, carrying a box, a guitar). Same rules as clips.py.
 
 The short gestures start and end in the standing idle and are made for the upper body (mask "upper"): play them

@@ -75,7 +75,7 @@ Words that never reach a player: modData, navmesh, prefab, bridge (in the code's
 ## The changelog and the Workshop page
 
 - One row per released version, newest first: what a player will notice, in one or two sentences. No file names, no class names.
-- The Workshop description uses Steam's BBCode (`[h1]`, `[list]`, `[b]`). Performance figures are only those measured and recorded in the build README, with the machine they were measured on.
+- The Workshop description uses Steam's BBCode (`[h1]`, `[list]`, `[b]`). Performance figures are only those measured and recorded in the developer documentation (docs/reference/performance.md), with the machine they were measured on.
 
 ## What a text must not break
 

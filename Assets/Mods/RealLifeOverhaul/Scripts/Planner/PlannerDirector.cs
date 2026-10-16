@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Planner
 {
     /// <summary>
     /// The Planner: an app on the game's phone that gathers what the player has to do, from this mod's features and
-    /// from the game, into one agenda, with reminders and the player's own notes. See the README ("The Planner").
+    /// from the game, into one agenda, with reminders and the player's own notes. See docs/features/planner.md.
     ///
     /// This class keeps it going and nothing more: it puts the app on the phone once the game's phone is there, reads
     /// and writes the save's three lines, asks the sources when someone looks, and sends reminders. Its Update is a

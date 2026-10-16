@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Markets
 {
     /// <summary>
     /// The city's stock market in the game: it keeps the market (Markets/MarketEngine, game-free) on the game's clock,
-    /// in the save and on its tape, and is what the Stocks app and the paper talk to. See the README ("The stock market").
+    /// in the save and on its tape, and is what the Stocks app and the paper talk to. See docs/features/economy-markets.md.
     ///
     /// A one-second timer on the real clock waits for the save, opens the market (from the save, or a new one with the
     /// old market's shares brought over once) and keeps the save's handler in place. Each frame the market is played up

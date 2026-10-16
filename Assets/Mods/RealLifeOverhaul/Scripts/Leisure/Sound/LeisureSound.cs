@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Leisure
     /// game does not have is a bed under the city: birds by day, crickets at night, a low hum of
     /// far traffic, a murmur where many people are on foot. The game ships no clips for those
     /// (none are in its code), so the four loops are made here, once, from arithmetic; the
-    /// README lists them as sounds an asset pass can replace by name.
+    /// docs/features/leisure.md lists them as sounds an asset pass can replace by name.
     ///
     /// Four looping 2D sources and one for cues, all made once. Their volumes are moved towards
     /// what the place and hour ask for on a quarter-second timer (never per frame); a layer at

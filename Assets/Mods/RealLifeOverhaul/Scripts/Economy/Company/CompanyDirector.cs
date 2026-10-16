@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// Running a business: staff as an economy, insurance, marketing that is measured, a quarterly return with an
-    /// accountant and cash off the books, and licences. See the README ("Economy: running a business").
+    /// accountant and cash off the books, and licences. See docs/features/economy-company.md.
     ///
     /// This class keeps it going. It has no Update, no timer and no place of its own in the game's events: once a
     /// second the credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the options are looked

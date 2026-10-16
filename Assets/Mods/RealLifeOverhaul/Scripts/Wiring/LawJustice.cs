@@ -9,7 +9,7 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// One arrest, one path (the table is in the README, "Who does what at an arrest"):
+        /// One arrest, one path (the table is in docs/reference/wiring.md, "Who does what at an arrest"):
         ///
         ///   the police code (Crime/PoliceAttention, Traffic/PolicePursuit) catches the player and
         ///       charges the roadside fines once;
