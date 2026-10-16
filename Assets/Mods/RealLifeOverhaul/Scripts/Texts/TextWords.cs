@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Texts
         public static readonly string[] Origins =
         {
             "family", "an old friend", "met at the gym", "met at work", "met at the coffee cart", "lives next door", "you helped them once",
-            "a customer at your shop", "met on Flare", "met at work"
+            "a customer at your shop", "met on Flare", "met at work", "met in the street"
         };
 
         /// <summary>A friend's stage (SocialStage Acquaintance to CloseFriend) as the card's role starts.</summary>

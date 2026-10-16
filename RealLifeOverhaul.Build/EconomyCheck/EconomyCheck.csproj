@@ -228,6 +228,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.cs" Link="Mod\FlareTextsMap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCommentRules.cs" Link="Mod\FlareCommentRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareInviteRules.cs" Link="Mod\FlareInviteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetModel.cs" Link="Mod\StreetModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetRules.cs" Link="Mod\StreetRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetSay.cs" Link="Mod\StreetSay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetLines.cs" Link="Mod\StreetLines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetStore.cs" Link="Mod\StreetStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareAvatarRules.cs" Link="Mod\FlareAvatarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCityPhotoRules.cs" Link="Mod\FlareCityPhotoRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityShare.cs" Link="Mod\CityShare.cs" />

@@ -227,6 +227,8 @@ namespace RealLifeOverhaul
         public const string SocialContactId = "social_contact";
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
+        public const string StreetTalkId = "street_talk";
+        public const string StreetBrushId = "street_brush";
         public const string SocialNewspaperId = "social_newspaper";
         public const string SocialMediaId = "social_media";
         public const string SocialMediaNoticesId = "social_media_notices";
@@ -527,6 +529,8 @@ namespace RealLifeOverhaul
         public static bool SocialContact = true;         // they get in touch themselves: invitations, favours, news, a visit at the shop
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
+        public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk (Scripts/Street)
+        public static int StreetBrush = 1;               // how often people in the street have no time: 0 rarely, 1 sometimes, 2 often (StreetRules.BrushFactor)
         public static bool SocialMedia = true;           // Flare, the city's social media app: an account, posts about what really happened, friends who follow (Scripts/Social/Flare)
         public static bool SocialMediaNotices = true;    // Flare's few notifications (off: none at all; the app's badge still counts)
         public static int FlareBusy = 1;                 // how busy the city's feed is: 0 quiet, 1 normal, 2 busy (Social/Flare/FlareLiveRules)
@@ -830,6 +834,8 @@ namespace RealLifeOverhaul
             SocialContact = Bool(modId, SocialContactId, SocialContact);
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
+            StreetTalk = Bool(modId, StreetTalkId, StreetTalk);
+            StreetBrush = Int(modId, StreetBrushId, StreetBrush);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
             SocialMedia = Bool(modId, SocialMediaId, SocialMedia);
             SocialMediaNotices = Bool(modId, SocialMediaNoticesId, SocialMediaNotices);

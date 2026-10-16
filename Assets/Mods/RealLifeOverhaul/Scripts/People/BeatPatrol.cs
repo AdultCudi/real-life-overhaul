@@ -51,6 +51,13 @@ namespace RealLifeOverhaul
             _nextCheck = Time.time + CheckInterval;
         }
 
+        /// <summary>True while an officer of the beat is out within so many metres of a place: they hear what is said there (Street talk asks on a threat).</summary>
+        public bool OfficerWithin(Vector3 place, float metres)
+        {
+            float most = metres * metres;
+            return (_lead.Present && (_lead.Position - place).sqrMagnitude < most) || (_partner.Present && (_partner.Position - place).sqrMagnitude < most);
+        }
+
         private void OnDestroy()
         {
             End();

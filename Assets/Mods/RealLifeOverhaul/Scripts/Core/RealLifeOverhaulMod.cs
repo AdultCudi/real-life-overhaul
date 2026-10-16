@@ -8,6 +8,7 @@ using RealLifeOverhaul.Faults;
 using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Permadeath;
 using RealLifeOverhaul.Photos;
+using RealLifeOverhaul.Street;
 using RealLifeOverhaul.Texts;
 using UnityEngine;
 
@@ -980,6 +981,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddDistrictView())   // the district view on the city map (Scripts/Districts)
                 .Guarded(o => o.AddCityFaults())   // real faults in the city, and Flare's reports checked against them (Scripts/Faults)
                 .Guarded(o => o.AddTexts())   // RLO Texts: a small text model on the player's PC words the city's messages (Scripts/Texts)
+                .Guarded(o => o.AddStreetTalk())   // talking to anybody in the street, in the game's own dialogue panel (Scripts/Street)
                 .Guarded(o => o.AddPhotos())   // the Camera and Gallery apps on the phone (Scripts/Photos)
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
@@ -1321,6 +1323,8 @@ namespace RealLifeOverhaul
             Guard.Step("Faults.FaultDirector", () => Guard.Add<Faults.FaultDirector>(_root));
             Guard.Step("Texts.TextsDirector", () => Texts.TextsDirector.Logger = context.Logger);
             Guard.Step("Texts.TextsDirector", () => Guard.Add<Texts.TextsDirector>(_root));   // RLO Texts: the model's words for the city's messages, when a pack is installed (Scripts/Texts): twice a second a look, nothing per frame   // real faults in the city: dark lamps, potholes, litter, crime hot spots, unsafe places, rolled at random (Scripts/Faults): once a second a look, nothing per frame
+            Guard.Step("Street.StreetDirector", () => Street.StreetDirector.Logger = context.Logger);
+            Guard.Step("Street.StreetDirector", () => Guard.Add<Street.StreetDirector>(_root));   // street talk: the game's panel over a passer-by offers Talk, a conversation in the game's dialogue panel (Scripts/Street): four looks a second on foot, nothing per frame
             Guard.Step("Utilities.UtilitiesDirector", () => Utilities.UtilitiesDirector.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesApp", () => Utilities.UtilitiesApp.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)

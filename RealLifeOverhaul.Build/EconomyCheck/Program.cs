@@ -134,6 +134,7 @@ internal static partial class Program
         TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
         FlareInvites();   // invitations in Flare messages: reading, the decision, timing, booked once, the answer's words and card, three languages, sources (FlareInviteChecks.cs)
+        StreetTalk();   // talking to anybody in the street: who, whether they stop, the choices, numbers and invitations, word of mouth, the words read, the lines, timing, sources (StreetTalkChecks.cs)
         FlareComments();   // the comments under posts that are not the player's: never more than the count, in time, the same after a save and on a guest, the cards, the texts, the cost (FlareCommentChecks.cs)
         Shared();
         Fame();
