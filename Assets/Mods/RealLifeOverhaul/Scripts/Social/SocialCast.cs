@@ -421,7 +421,18 @@ namespace RealLifeOverhaul
             AppearanceSetter appearance = person.Character.appearanceSetter;
             CityOutfits.Restore(person.Dyes);
             appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 85) * SocialPlaces.DaysPerYear;
-            appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(who.Seed), CasualWear, who.Seed);
+            // The game colours a beard to match the hair by a roll of the engine's own dice: the same roll every time for the
+            // same seed (as on their contact's picture, Phone/Contacts/ContactPainter), and the dice put back.
+            UnityEngine.Random.State dice = UnityEngine.Random.state;
+            UnityEngine.Random.InitState(who.Seed);
+            try
+            {
+                appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(who.Seed), CasualWear, who.Seed);
+            }
+            finally
+            {
+                UnityEngine.Random.state = dice;
+            }
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
             Looks.Count("social: a friend's look being built (a mesh merge)");
             appearance.UpdateVisuals();

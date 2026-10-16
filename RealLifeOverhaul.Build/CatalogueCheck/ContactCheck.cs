@@ -76,8 +76,8 @@ namespace RealLifeOverhaul
             // The seed: the same on every run, never negative, a different face for another save and for another contact.
             int mom = ContactCatalogue.Seed("reallife-mom", "character-1");
             if (mom != ContactCatalogue.Seed("reallife-mom", "character-1") || mom < 0) Fail("contact seed: not the same twice, or negative");
-            if (mom == ContactCatalogue.Seed("reallife-mom", "character-2")) Fail("contact seed: two saves give Mom one face");
-            if (mom == ContactCatalogue.Seed("reallife-friend", "character-1")) Fail("contact seed: Mom and Alex have one face");
+            if (mom == ContactCatalogue.Seed("reallife-mom", "character-2")) Fail("contact seed: two saves give a contact one face");
+            if (mom == ContactCatalogue.Seed("reallife-friend", "character-1")) Fail("contact seed: two contacts have one face");
             if (ContactCatalogue.Seed("reallife-mom", "character-1") != 858867700) Fail("contact seed: FNV-1a has changed (" + mom + "): every drawn face would be drawn again");
             if (ContactCatalogue.Seed(null, null) < 0) Fail("contact seed: nothing gives a negative seed");
             if (ContactCatalogue.CacheName(true, 58, 12) != "v1_f58_12.jpg" || ContactCatalogue.CacheName(false, -1, -5) != "v1_m0_0.jpg") Fail("contact cache name: not as expected");

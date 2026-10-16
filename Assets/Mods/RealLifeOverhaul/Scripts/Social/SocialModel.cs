@@ -637,6 +637,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
+                SocialCatalogue.FixLook(p);   // Mom and Alex: the one look of every game, a save from before's own given up (before a later version's origin is read as an old friend below)
                 if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Event)
                 {
                     p.Origin = SocialOrigin.OldFriend;   // a place of meeting of a later version's: read as an old friend, never as a number past the tables
