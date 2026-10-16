@@ -16,7 +16,7 @@ The mod's own words, as the code and these pages use them.
 | feature guard | The part of the guard that counts one feature's faults and switches it off for the session after five in thirty seconds (`Core/FeatureGuard.cs`). |
 | feature registry | `Meta/Features` and `Meta/FeatureList.cs`: every feature, one statement each, read by the Guide, the presets, the options page and the save tools. |
 | game-free | Code with no Unity or game types, so a checker can compile and run it offline: the `*Rules.cs`, `*Catalogue.cs` and `*Model.cs` files. |
-| gate | The full set of checks a change must pass before it is merged: the build with no warnings, the five checkers and the locale check. See [Checks](../contributing/checks.md). |
+| gate | The full set of checks a change must pass before it is merged: the build with no warnings, the checkers and the locale check. See [Checks](../contributing/checks.md). |
 | Going Public | Another author's mod that lets several players share one city. Every change must stay safe in one of its sessions. |
 | guard | `Core/Guard.cs`: every entry point the game calls runs inside it, so a fault stops one part of the mod and never the game's frame. |
 | host, guest | In a Going Public session, the host runs the shared city (`Core/SharedCity`); a guest takes the host's parts whole. |

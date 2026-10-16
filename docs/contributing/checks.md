@@ -1,6 +1,6 @@
 # Checks
 
-The mod has five checker programs and a locale check. Together with a build that has no warnings they are the gate: a change is merged only when all of them pass. None of them starts the game. Four need nothing but .NET; ContractCheck reads the game's files on disk.
+The mod has six checker programs and a locale check. Together with a build that has no warnings they are the gate: a change is merged only when all of them pass. None of them starts the game. Four need nothing but .NET; ContractCheck reads the game's files on disk.
 
 ## Run them
 
@@ -11,7 +11,7 @@ dotnet build RealLifeOverhaul.Build/<Checker> -c Release
 dotnet RealLifeOverhaul.Build/<Checker>/bin/Release/net10.0/<Checker>.dll
 ```
 
-`<Checker>` is `CatalogueCheck`, `NavCheck`, `EconomyCheck`, `PlannerCheck` or `ContractCheck`. Build the mod first for ContractCheck (see [Getting started](getting-started.md#2-build)), and give it the game's `Managed` folder as its first argument or in the `BA_MANAGED` environment variable. The locale check is `python RealLifeOverhaul.Build/Workshop/locales.py`.
+`<Checker>` is `CatalogueCheck`, `NavCheck`, `EconomyCheck`, `PlannerCheck`, `ContractCheck` or `StandardCheck`. Build the mod first for ContractCheck (see [Getting started](getting-started.md#2-build)), and give it the game's `Managed` folder as its first argument or in the `BA_MANAGED` environment variable. The locale check is `python RealLifeOverhaul.Build/Workshop/locales.py`.
 
 ## What each one proves
 
@@ -22,9 +22,12 @@ dotnet RealLifeOverhaul.Build/<Checker>/bin/Release/net10.0/<Checker>.dll
 | `EconomyCheck` | Every other feature's game-free rules, some thousands of checks: the economy, the company and the rota, careers and study, the tech sector, interiors, Flare, Standing, saves and their round trips, and timings | `ALL CHECKS PASSED (n)` |
 | `PlannerCheck` | The Planner's game-free parts: the calendar, order, clashes, reminders across a save and a time skip, repeats and its texts in every language | `ALL CHECKS PASSED (n)` |
 | `ContractCheck` | The built mod against the game on disk: the game's build against `GameBuild.MadeFor`, every piece of the game contract, every game type and member the compiled mod names, that every entry point, coroutine and delegate handed to the game is behind the guard, and the game's text keys the code names | `ALL CHECKS PASSED (n)` |
+| `StandardCheck` | The rules of [the engineering standard](../standards/README.md) that a program can check, read from the repository's files as text. Each finding counts against its rule and its subject (a file, a key, a commit), up to what `RealLifeOverhaul.Build/StandardCheck/baseline.txt` allows, so the code as it stood when the standard was set passes and anything new fails. `-write-baseline` writes the baseline anew; [the testing standard](../standards/testing.md) says when that may be done | `ALL CHECKS PASSED (n)` |
 | `locales.py` | Every language beside `en.json`: the same keys in the same order (en, pt and zh-cn in full), the BOM, placeholders, tags and line breaks kept, no dashes, notifications at most 240 characters, and each text in its own language | `LOCALES OK` |
 
 Each checker's `Program.cs` says what it calls, and its `.csproj` which of the mod's game-free files it compiles. `RealLifeOverhaul.Build/Workshop/check.pl` is a style aid, not a pass or fail: `perl RealLifeOverhaul.Build/Workshop/check.pl -v Assets/Mods/RealLifeOverhaul/Locales/en.json` lists dashes, stock phrases, jargon and American spellings for you to look over, as [the style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md) says.
+
+What each check must cover, and when a check is owed, is in [the testing standard](../standards/testing.md).
 
 ## How to read a failure
 

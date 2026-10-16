@@ -23,10 +23,10 @@ People at work and about their day on the pavements near the player: sweepers, w
 | `CityProps` | the prop objects, made once and reused |
 | `ClipLibrary` | the mod's animation clips by name, from Bundles/reallife_anim |
 | `Animation/` | the clip player any feature can use (no game types in here: the asset pipeline tests these very files) |
-| `ActivityAnimator` | plays a clip on one character over the game's controller: cross-fade in, hold, hand back; a masked layer (arms, one arm, upper body) over walking; speed matched to the ground |
-| `ActivityAnimators` | steps the players that are fading and the hands on tools; switched off when there are none |
-| `HeldTool` | a tool on a hand bone at the grip its clip was made with |
-| `TwoBoneReach` | puts the second hand on the tool after the animation |
+| `Animation/ActivityAnimator` | plays a clip on one character over the game's controller: cross-fade in, hold, hand back; a masked layer (arms, one arm, upper body) over walking; speed matched to the ground |
+| `Animation/ActivityAnimators` | steps the players that are fading and the hands on tools; switched off when there are none |
+| `Animation/HeldTool` | a tool on a hand bone at the grip its clip was made with |
+| `Animation/TwoBoneReach` | puts the second hand on the tool after the animation |
 
 ## How it talks to other features
 

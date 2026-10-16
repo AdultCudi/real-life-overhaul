@@ -8,7 +8,7 @@
 
 ## Checklist
 
-See [the rules for new code](../docs/contributing/rules.md) for why each of these matters.
+See [the rules for new code](https://github.com/AdultCudi/real-life-overhaul/blob/main/docs/contributing/rules.md) for why each of these matters, and [the review checklist](https://github.com/AdultCudi/real-life-overhaul/blob/main/docs/standards/git-and-review.md#rlo-git-007-the-review-checklist) and [the definition of done](https://github.com/AdultCudi/real-life-overhaul/blob/main/docs/standards/git-and-review.md#rlo-git-008-the-definition-of-done) for what the review looks at.
 
 - [ ] The build ends with `0 Warning(s)` and `0 Error(s)`
 - [ ] Every checker ends with `ALL CHECKS PASSED`, and `locales.py` with `LOCALES OK`

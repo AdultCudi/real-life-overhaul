@@ -246,6 +246,7 @@ DebtClaims.File / Open / Withdraw              // (Justice) a civil claim from o
 ```
 
 A new product is a value at the END of `ProductKind` (before `Count`), a name and a source in `ProductCatalogue`, its terms in `ProductTerms`, and a case in `AccountRules.RunDay`; the model, the save, the steps, the app's list and the ways out take it as it is.
+
 The city's economy moves the rates through this hook: its central bank's points (`LendingTerms.BasePoints`) go in through `LendingTerms.For` and `ProductTerms.WithBase` (see [the city](economy-city.md)), and an account keeps the rate it was agreed at (`RateBp`).
 
 ## Cost

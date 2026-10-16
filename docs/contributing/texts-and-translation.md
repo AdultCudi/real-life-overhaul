@@ -28,7 +28,7 @@ Every word the player reads is a locale key. This page says where the texts live
 
 ## How texts are written
 
-[The style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md) is the rule for every text a player can read. In short:
+[The style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md) is the rule for every text a player can read, and [the texts standard](../standards/texts.md) holds the rules a change is reviewed against. In short:
 
 - Plain British English, short sentences, no jargon, nothing that describes how the code works.
 - No em or en dashes and no spaced hyphen as punctuation. No exclamation marks.

@@ -108,4 +108,4 @@ You need Big Ambitions from Steam, the [.NET SDK](https://dotnet.microsoft.com/d
 - [After a game update](../docs/contributing/after-a-game-update.md).
 - [How to contribute](../CONTRIBUTING.md): talk to us first, then open a pull request.
 
-This folder holds the command-line build (`RealLifeOverhaul.csproj`), the five checkers, the installer, the Workshop texts and notes beside the build (`docs/`). It is kept by the Real Life Overhaul maintainer.
+This folder holds the command-line build (`RealLifeOverhaul.csproj`), the checkers, the installer, the Workshop texts and notes beside the build (`docs/`). It is kept by the Real Life Overhaul maintainer.

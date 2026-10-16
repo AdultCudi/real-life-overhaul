@@ -28,10 +28,17 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 | `PursuitBackup` | the second patrol car that joins a pursuit of the player after 45 s, if traffic has a car to give |
 | `TrafficTools` | what all of these need from the traffic system; a vehicle's real footprint from its colliders |
 | `Tow/` | the tow truck that takes a cleared scene's wrecks away (TrafficAccidents hands them over in Clear) |
-| `TowService` | one truck at a time: held out of sight, sent, the operator's work, the wreck winched up and carried, taken off the road unseen; the wreck goes as before wherever this cannot be done; the test button |
-| `TowTruck` | the mod's own rollback (props tow_truck, tow_truck_tilt, tow_truck_bed, the bus's wheels): solid, driven by BusDriver, its bed posed, its light bar and lamps, the winch's cable |
-| `TowRoads` | where it stands (ahead of the wreck in its lane, come by the lane beside) and where it starts (out of sight, 70 to 280 m back): once per truck sent |
-| `TowRules` | game-free (NavCheck/TowCheck): the bed's motion, a car drawn along the road and up the bed, the stretch it takes, the time it is said to take, when it may come and go |
+| `Tow/TowService` | one truck at a time: held out of sight, sent, the operator's work, the wreck winched up and carried, taken off the road unseen; the wreck goes as before wherever this cannot be done; the test button |
+| `Tow/TowTruck` | the mod's own rollback (props tow_truck, tow_truck_tilt, tow_truck_bed, the bus's wheels): solid, driven by BusDriver, its bed posed, its light bar and lamps, the winch's cable |
+| `Tow/TowRoads` | where it stands (ahead of the wreck in its lane, come by the lane beside) and where it starts (out of sight, 70 to 280 m back): once per truck sent |
+| `Tow/TowRules` | game-free (NavCheck/TowCheck): the bed's motion, a car drawn along the road and up the bed, the stretch it takes, the time it is said to take, when it may come and go |
+| `CrashConsequences` | crashing the player's car matters beyond bodywork: liability when hitting another car (settled on the spot if the player stops, otherwise a matter for `PolicePursuit`), injuries at speed, and an ambulance to hospital after a severe crash |
+| `PolicePursuit` | what happens after the player's car hits a traffic car: a few seconds to stop and settle it, or a hit-and-run with a patrol car on the trail |
+| `RoadChase` | one car running from one patrol car, from the moment it bolts until it is stopped or lost: the hit-and-run's and the reckless driver's chase |
+| `CordonRules` | who is inside a cordon, and where they are put outside it, as plain geometry (game-free: NavCheck's `CordonCheck.cs`) |
+| `Crossings` | the city's marked pedestrian crossings, and whose turn it is there, for a few subtractions and no physics query |
+| `Reckless/` | accidents that happen for a reason, where the player can see them: a reckless driver (`RecklessDrivers`, `RecklessCar`), a jaywalker (`Jaywalker`), and the rules of the live street (`StreetRules`: the horn, the officer) |
+| `Solid/` | traffic sees people in the road: somebody in the road is a real obstacle to every traffic car near the player (`SolidStreets`, `SolidBrakes`, `SolidRules`, its tests) |
 
 ### `Scripts/People`
 
