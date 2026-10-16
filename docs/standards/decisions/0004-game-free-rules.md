@@ -14,7 +14,7 @@ Each feature keeps its arithmetic and its decisions in `*Rules.cs` files that na
 
 ## Consequences
 
-- Every edge of a rule is checked in seconds, on every change, without the game. EconomyCheck alone runs about 10,000 checks.
+- Every edge of a rule is checked in seconds, on every change, without the game. EconomyCheck alone runs 12,318 checks.
 - What ships is what was checked, because the checker compiles the same file.
 - A rules file cannot reach the game, so the director passes it what it needs; that adds a little code.
 - StandardCheck fails a rules file that names the game, and a rules or store file that no checker compiles.

@@ -1,6 +1,6 @@
 # The Real Life Overhaul engineering standard
 
-This standard is the set of numbered rules that every change to Real Life Overhaul (RLO) follows: the code, the texts, the checks, the commits and the review. It describes the house style the code already has. Each rule was measured against the code before it was written down, and the counts are on its page.
+This standard is the set of numbered rules that every change to Real Life Overhaul (RLO) follows: the code, the texts, the checks, the commits and the review. It describes the house style the code already has, in 101 rules on eight pages. Each rule was measured against the code before it was written down, and the counts are on its page.
 
 ## The pages
 
@@ -55,7 +55,7 @@ The rules apply to new and changed code. Code written before 17 October 2026 tha
 
 ## Where RLO differs from Microsoft and Google
 
-The standard starts from Microsoft's [C# coding conventions](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/coding-conventions) and [identifier names](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/identifier-names), Google's [C# style guide](https://google.github.io/styleguide/csharpguide.html) and Unity's guidance on scripting performance. These are the places where RLO deliberately does otherwise.
+The standard starts from Microsoft's [C# coding conventions](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/coding-conventions) and [identifier names](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/identifier-names), Google's [C# style guide](https://google.github.io/styleguide/csharpguide.html) and Unity's guidance on [garbage collection](https://docs.unity3d.com/2022.3/Documentation/Manual/performance-garbage-collection-best-practices.html) and scripting performance. These are the places where RLO deliberately does otherwise.
 
 | Topic | Microsoft | Google | RLO | Why |
 | --- | --- | --- | --- | --- |
@@ -72,7 +72,7 @@ The standard starts from Microsoft's [C# coding conventions](https://learn.micro
 | One class per file | Implied | Prefer one core class | One main type, small companions allowed ([RLO-STY-006](code-style.md#rlo-sty-006-a-file-is-named-after-its-main-type)) | 410 files keep a small struct or enum beside the type that uses it. |
 | User interface | Not covered | Not covered | The game's own interface only ([RLO-ARC-013](architecture.md#rlo-arc-013-the-games-own-interface-only)) | Players should not be able to tell the mod's screens from the game's. |
 | Patching the host | Not covered | Not covered | No Harmony ([RLO-ARC-011](architecture.md#rlo-arc-011-no-harmony-patches)) | See [ADR-0001](decisions/0001-no-harmony.md). |
-| Text | US English | US English | British English, no dashes, no exclamation marks ([texts.md](texts.md)) | The mod's style sheet, `RealLifeOverhaul.Build/Workshop/STYLE.md`. |
+| Player texts | Not covered | Not covered | British English, no dashes, no exclamation marks ([texts.md](texts.md)) | The mod's style sheet, `RealLifeOverhaul.Build/Workshop/STYLE.md`. |
 | Determinism | Not covered | Not covered | Shared results identical on every machine ([multiplayer.md](multiplayer.md)) | Going Public runs one city on several machines. |
 
 ## How the standard changes
