@@ -34,8 +34,19 @@ internal static partial class Program
     private sealed class RollPerson
     {
         public readonly int[] Shift = new int[7];   // hours on each day of the week, Monday first
-        public int Worked, Week;
+        public int Worked, Week, Days;
         public int WeekShifts => SinceMonday(6);
+
+        // Days with a shift from Monday to a day of the week (0 Monday), as DayRollGuard.Shifts counts them.
+        public int DaysSinceMonday(int weekday)
+        {
+            int sum = 0;
+            for (int d = 0; d <= weekday; d++)
+            {
+                sum += Shift[d] > 0 ? 1 : 0;
+            }
+            return sum;
+        }
 
         // Shifts from Monday to a day of the week (0 Monday), as DayRollGuard.Shifts reads them from the schedule.
         public int SinceMonday(int weekday)
@@ -54,7 +65,7 @@ internal static partial class Program
         public readonly List<RollPerson> Staff = new List<RollPerson>();
         public readonly List<string> Market = new List<string> { "ba:itemname_gymentrance", "ba:itemname_coffee", RollBadGood };
         public readonly List<long> Payroll = new List<long>();   // cents paid on each night
-        public int DayEvents, MostWeek, RollDay, DoneDay;
+        public int DayEvents, MostWeek, MostDays, RollDay, DoneDay;
         public BrandsState Brands;
         public Brand Brand;
     }
@@ -106,7 +117,9 @@ internal static partial class Program
                 int hours = p.Shift[Weekday(day)];
                 p.Worked += hours;   // (EmployeeInstance.RunHourly: one an hour on shift)
                 p.Week += hours;
+                p.Days += hours > 0 ? 1 : 0;   // (EmployeeInstance.AddWorkedDay: one a day worked)
                 run.MostWeek = Math.Max(run.MostWeek, p.Week);
+                run.MostDays = Math.Max(run.MostDays, p.Days);
             }
             RollNight(run, day + 1, guard, otherFault);
         }
@@ -123,10 +136,11 @@ internal static partial class Program
             run.Market.RemoveAll(g => !RollKnown(g));
             foreach (RollPerson p in run.Staff)
             {
-                if (missed || p.Worked > DayRollRules.DayHours)
+                if (DayRollRules.Suspect(p.Worked, missed))
                 {
                     p.Worked = DayRollRules.Mend(p.Worked, p.Shift[Weekday(night - 1)], true);
                     p.Week = DayRollRules.Week(p.Week, p.SinceMonday(Weekday(night - 1)));
+                    p.Days = DayRollRules.Days(p.Days, p.DaysSinceMonday(Weekday(night - 1)));
                 }
             }
         }
@@ -148,6 +162,7 @@ internal static partial class Program
                 {
                     p.Worked = DayRollRules.Cleared(p.Worked);
                     p.Week = DayRollRules.ClearedWeek(p.Week, Weekday(night) == 0);
+                    p.Days = DayRollRules.ClearedWeek(p.Days, Weekday(night) == 0);
                 }
             }
             return;
@@ -166,6 +181,7 @@ internal static partial class Program
             if (Weekday(night) == 0)
             {
                 p.Week = 0;
+                p.Days = 0;
             }
         }
     }
@@ -188,8 +204,9 @@ internal static partial class Program
         Check(grows && third > 800000 && last > 6 * cleanMost && before.DayEvents == 0,
             "day roll: the report reproduced: with the unknown good in the market every night stops at the rivals' step, the hours are never cleared and the payroll grows every night: "
             + first / 100 + ", then " + third / 100 + " on the third night (past 8,000), " + last / 100 + " on the fourteenth; a city without the good pays at most " + cleanMost / 100 + " a night; day events " + before.DayEvents);
-        Check(before.MostWeek > 48 && clean.MostWeek <= 32,
-            "day roll: and the week's hours are never cleared either: " + before.MostWeek + " counted in a week against shifts of 32 (an hours-a-week demand of up to 48 shows unmet), " + clean.MostWeek + " without the good");
+        Check(before.MostWeek > 48 && clean.MostWeek <= 32 && before.MostDays > 7 && clean.MostDays <= 4,
+            "day roll: and the week's hours and days are never cleared either: " + before.MostWeek + " hours and " + before.MostDays + " days counted in a week against shifts of 32 hours on 4 days (the hours-a-week and days-a-week demands, HoursWorkingPerWeek and DaysWorkingPerWeek, show broken), "
+            + clean.MostWeek + " and " + clean.MostDays + " without the good");
     }
 
     private static void DayRollGoods()
@@ -216,7 +233,7 @@ internal static partial class Program
         {
             same &= guarded.Payroll[i] == clean.Payroll[i];
         }
-        Check(same && guarded.MostWeek <= 32 && bare.Payroll[29] > 10 * clean.Payroll[29] / 4,
+        Check(same && guarded.MostWeek <= 32 && guarded.MostDays <= 4 && bare.Payroll[29] > 10 * clean.Payroll[29] / 4,
             "day roll: a night that stops for another mod's fault (nothing in the market to take out): the hour after it clears the hours as the game's employees' day would, so the payroll is the clean city's every night and the week's hours stay within the shifts ("
             + guarded.MostWeek + "); without the guard the thirtieth night pays " + bare.Payroll[29] / 100);
     }
@@ -229,6 +246,7 @@ internal static partial class Program
         {
             p.Worked = 40 * 5;
             p.Week = 120;
+            p.Days = 25;
         }
         int day = 61;   // the player's day 61 to 62
         RollNight(run, day + 1, true, false);
@@ -245,11 +263,11 @@ internal static partial class Program
         bool weeks = true;
         foreach (RollPerson p in run.Staff)
         {
-            weeks &= p.Week <= p.SinceMonday(Weekday(day)) && p.Week <= 32;   // (the night is not a Monday's: the week runs on from the shifts so far)
+            weeks &= p.Week <= p.SinceMonday(Weekday(day)) && p.Week <= 32 && p.Days <= p.DaysSinceMonday(Weekday(day)) && p.Days <= 4;   // (the night is not a Monday's: the week runs on from the shifts so far)
         }
         Check(run.Payroll[0] == expected && weeks && run.DayEvents == 1,
             "day roll: the first night after the update, in a save whose staff carry 200 hours each: they are paid for their shifts on the day that ended (" + expected / 100
-            + " in all, not " + (long)RollStaff * 200 * RollWage / 100 + "), their week is brought to their shifts since Monday, and the night runs to its end");
+            + " in all, not " + (long)RollStaff * 200 * RollWage / 100 + "), their week's hours and days are brought to their shifts since Monday, and the night runs to its end");
     }
 
     private static void DayRollBrand()
@@ -285,8 +303,21 @@ internal static partial class Program
         Check(DayRollRules.Stopped(62, 61, 62) && !DayRollRules.Stopped(62, 62, 62) && !DayRollRules.Stopped(0, 0, 62) && !DayRollRules.Stopped(61, 60, 62)
               && DayRollRules.Cleared(17) == 0 && DayRollRules.ClearedWeek(40, true) == 0 && DayRollRules.ClearedWeek(40, false) == 40 && DayRollRules.ClearedWeek(-2, false) == 0,
             "day roll: the hour after a night counts it stopped only when that night's first hour was seen and its day event was not; then the day's hours are cleared, and the week's on a Monday only");
-        Check(!DayRollRules.Needs(8, 8, true) && DayRollRules.Needs(30, 8, false) && !DayRollRules.Needs(20, 8, false) && DayRollRules.Needs(16, 8, true),
-            "day roll: something needs mending only where the hours would change");
+        Check(DayRollRules.Days(25, 4) == 4 && DayRollRules.Days(2, 4) == 2 && DayRollRules.Days(-1, 4) == 0 && DayRollRules.Days(9, -2) == 0 && DayRollRules.Days(0, 0) == 0,
+            "day roll: the week's days of somebody mended: no more than their days with a shift from Monday to the day that ended, never below nothing");
+        Check(!DayRollRules.Suspect(0, false) && !DayRollRules.Suspect(24, false) && DayRollRules.Suspect(25, false) && DayRollRules.Suspect(8, true) && DayRollRules.Suspect(0, true),
+            "day roll: an employee is looked at only on a stopped night or with more counted than a day has; a full day of 24 hours as the game counted it is left alone");
+        RollRun healthy = RollDays(21, true, false, false, false), plain = RollDays(21, false, false, false, false);
+        bool untouched = true;
+        for (int i = 0; i < plain.Payroll.Count; i++)
+        {
+            untouched &= healthy.Payroll[i] == plain.Payroll[i];
+        }
+        for (int i = 0; i < plain.Staff.Count; i++)
+        {
+            untouched &= healthy.Staff[i].Worked == plain.Staff[i].Worked && healthy.Staff[i].Week == plain.Staff[i].Week && healthy.Staff[i].Days == plain.Staff[i].Days;
+        }
+        Check(untouched && healthy.DayEvents == 21, "day roll: in a city whose nights all run to their end the guard changes nothing: the same pay every night and the same hours and days counted");
         RollRun a = RollDays(21, true, true, true, true), b = RollDays(21, true, true, true, true);
         bool same = a.Payroll.Count == b.Payroll.Count && a.Brand.City == b.Brand.City;
         for (int i = 0; same && i < a.Payroll.Count; i++)
@@ -304,8 +335,9 @@ internal static partial class Program
         Check(guard.Contains("save.Hour == 1") && guard.Contains("AfterNight(save)") && guard.Contains("DayRollRules.Stopped(") && guard.Contains("EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen)") && guard.Contains("EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen)"),
             "day roll: the guard works in the hour event with the hour at nothing, the one GameManager.NewDay calls before the wages and the rivals' step, and watches the day event to know a night that stopped");
         Check(guard.Contains("ItemsGetter.GetByName(entry.itemName, true)") && guard.Contains("market.RemoveAt(i)") && guard.Contains("DayRollRules.Missed(") && guard.Contains("DayRollRules.Mend(")
-              && guard.Contains("DayRollRules.Week(") && guard.Contains("GoingPublic.Foreign(reg)"),
-            "day roll: the guard asks the game for each good quietly, takes out only the ones it cannot find, mends hours by the rules, and leaves another player's employees alone");
+              && guard.Contains("DayRollRules.Week(") && guard.Contains("DayRollRules.Days(") && guard.Contains("DayRollRules.Suspect(") && guard.Contains("GoingPublic.Foreign(reg)")
+              && guard.Contains("GoingPublic.IsGuest ? 0 : Market(") && guard.Contains("e.workedDays = DayRollRules.ClearedWeek(e.workedDays, monday)"),
+            "day roll: the guard asks the game for each good quietly, takes out only the ones it cannot find, mends hours and days by the rules, leaves another player's employees alone, and leaves a Going Public guest's market to the host");
         Check(start.Contains("Guard.Add<DayRollGuard>(_root)") && start.Contains("DayRollGuard.Logger = context.Logger"), "day roll: the guard is started with the city, with its logger");
     }
 

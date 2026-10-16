@@ -24,14 +24,16 @@ namespace RealLifeOverhaul
     ///                puts its goods back (ProductMarketHelper.UpdateMarketDemands makes an entry for every item it has).
     ///   the hours    where the night before stopped short of the employees' day (its day event never came), or an
     ///                employee is counted more hours than a day has, the hours about to be paid are brought back to
-    ///                their shifts on the day that ended, and the week's to their shifts from its Monday to that day.
-    ///                And at the hour after a night that stopped before its day event, what its employees' day would have
-    ///                done is done: each one's hours of the day cleared, and of the week on a Monday. A night that ran
-    ///                as the game meant is never touched.
+    ///                their shifts on the day that ended, and the week's hours and days to their shifts from its Monday
+    ///                to that day. And at the hour after a night that stopped before its day event, the counts its
+    ///                employees' day would have cleared are cleared: each one's hours of the day, and the week's hours
+    ///                and days on a Monday. A night that ran as the game meant is never touched.
     ///
     /// Whatever the cause, it is said once a session in a notice and every time in one line of Player.log. Only the
-    /// player's own employees are mended in a Going Public session (Core/GoingPublic.Foreign); taking goods nobody can
-    /// sell out of the market is the same on every machine with the same mods.
+    /// player's own employees are mended in a Going Public session (Core/GoingPublic.Foreign). The market is left alone on
+    /// a Going Public guest: the rivals' step runs on the host only (Going Public skips it on a guest), and the host's
+    /// market reaches the guest again with its next update; on the host, taking goods nobody can sell out of the market
+    /// is the same on every machine with the same mods.
     ///
     /// Cost: no Update. A one-second timer on the real clock keeps the two handlers on the game's events (one reference
     /// comparison each); the hour handler is one comparison every game hour, and once a game day (twice after a stopped night) a pass over the market's
@@ -44,7 +46,6 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
 
         private const int NamesShown = 3;   // goods named in the log line: the rest are counted
-        private const string DeliveryDriver = "ba:skill_deliverydriver";
 
         private Action _onHour, _onDay, _hourSeen, _daySeen;
         private GameInstance _of;           // the save the days below belong to
@@ -122,7 +123,9 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotRoll);
             bool missed = DayRollRules.Missed(_rollDay, _doneDay, day);
             _rollDay = day;
-            int goods = Market(save, _gone, out int entries);
+            _gone.Clear();
+            int entries = 0;
+            int goods = GoingPublic.IsGuest ? 0 : Market(save, _gone, out entries);
             int people = Hours(save, day, missed, out int mended, out int hoursBefore, out int hoursAfter);
             if (goods > 0 || mended > 0)
             {
@@ -138,9 +141,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The hour after the night: if the night stopped before its day event, the employees' day it never reached is done
-        // here as the game does it (EmployeeHelper.RunDaily: the day's hours cleared, the week's on a Monday). The stopped
-        // night took the game's first hour with it, so nothing has been counted since the wages were paid.
+        // The hour after the night: if the night stopped before its day event, the counts the employees' day it never reached
+        // would have cleared are cleared here as the game does it (EmployeeHelper.RunDaily: the day's hours, and the week's
+        // hours and days on a Monday). The stopped night took the game's first hour with it, so nothing has been counted
+        // since the wages were paid.
         private void AfterNight(GameInstance save)
         {
             int day = save.Day;
@@ -148,6 +152,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            using var hotSpot = HotSpots.Time(HotRoll);
             _clearedDay = day;
             bool monday = TimeHelper.GetDayOfWeek(day) == DayOfWeekOrdered.Monday;
             List<EmployeeInstance> all = save.EmployeeInstances;
@@ -161,10 +166,11 @@ namespace RealLifeOverhaul
                 }
                 e.workedHoursToday = DayRollRules.Cleared(e.workedHoursToday);
                 e.workedHoursThisWeek = DayRollRules.ClearedWeek(e.workedHoursThisWeek, monday);
+                e.workedDays = DayRollRules.ClearedWeek(e.workedDays, monday);
                 cleared++;
             }
-            Logger?.Warn("Day roll: the game's night of day " + day + " stopped before its day event (another mod's error just before this in Player.log); the hours of " + cleared
-                         + " employee(s) cleared as its employees' day would have" + (monday ? ", and the week's, it being a Monday" : string.Empty) + ".");
+            Logger?.Warn("Day roll: the game's night of day " + day + " stopped before its day event (the error just before this in Player.log); the hours of " + cleared
+                         + " employee(s) cleared as its employees' day would have" + (monday ? ", and the week's hours and days, it being a Monday" : string.Empty) + ".");
             Tell(false);
         }
 
@@ -177,7 +183,6 @@ namespace RealLifeOverhaul
         // Goods of the market the game cannot find, taken out; how many. (ItemsGetter.GetByName with its error kept quiet.)
         private static int Market(GameInstance save, List<string> gone, out int entries)
         {
-            gone.Clear();
             List<ProductMarketEntry> market = save.productMarketEntries;
             entries = market != null ? market.Count : 0;
             int removed = 0;
@@ -207,13 +212,13 @@ namespace RealLifeOverhaul
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance e = all[i];
-                if (e == null || e.IsCandidate || e.HasSkill(DeliveryDriver))
+                if (e == null || e.IsCandidate)
                 {
-                    continue;   // (a delivery driver is paid a fixed day whatever the count: EmployeeInstance.PayWage)
+                    continue;
                 }
                 people++;
                 int worked = e.workedHoursToday;
-                if (!missed && worked <= DayRollRules.DayHours)
+                if (!DayRollRules.Suspect(worked, missed))
                 {
                     continue;   // (a day the game counted as it meant: one comparison)
                 }
@@ -222,26 +227,29 @@ namespace RealLifeOverhaul
                 {
                     continue;   // another player's employee: theirs to keep
                 }
-                int shifts = Shifts(e, reg, day - 1, out int sinceMonday);
+                int shifts = Shifts(e, reg, day - 1, out int sinceMonday, out int daysOn);
                 int kept = DayRollRules.Mend(worked, shifts, true);
                 int week = DayRollRules.Week(e.workedHoursThisWeek, sinceMonday);
-                if (kept == worked && week == e.workedHoursThisWeek)
+                int days = DayRollRules.Days(e.workedDays, daysOn);
+                if (kept == worked && week == e.workedHoursThisWeek && days == e.workedDays)
                 {
                     continue;
                 }
                 before += Math.Max(0, worked);
                 after += kept;
-                e.workedHoursToday = kept;
+                e.workedHoursToday = kept;   // (a delivery driver's pay is a fixed day whatever this count: EmployeeInstance.PayWage)
                 e.workedHoursThisWeek = week;
+                e.workedDays = days;
                 mended++;
             }
             return people;
         }
 
-        // An employee's shifts on a day, in hours, and from that week's Monday to the day; nothing with no business or schedule.
-        private static int Shifts(EmployeeInstance e, BuildingRegistration reg, int day, out int sinceMonday)
+        // An employee's shifts on a day, in hours, and from that week's Monday to the day, in hours and in days with a shift;
+        // nothing with no business or schedule.
+        private static int Shifts(EmployeeInstance e, BuildingRegistration reg, int day, out int sinceMonday, out int daysOn)
         {
-            sinceMonday = 0;
+            sinceMonday = daysOn = 0;
             if (reg == null || reg.scheduleDays == null)
             {
                 return 0;
@@ -257,6 +265,7 @@ namespace RealLifeOverhaul
                 }
                 int hours = e.GetWorkingHoursOnDay(d);
                 sinceMonday += hours;
+                daysOn += hours > 0 ? 1 : 0;
                 on += d.day == weekday ? hours : 0;
             }
             return on;

@@ -73,16 +73,25 @@ namespace RealLifeOverhaul
             return 0;
         }
 
-        /// <summary>An employee's hours of the week as the employees' day leaves them: cleared on a Monday, otherwise as they are.</summary>
+        /// <summary>An employee's hours (or days) of the week as the employees' day leaves them: cleared on a Monday, otherwise as they are.</summary>
         public static int ClearedWeek(int week, bool monday)
         {
             return monday ? 0 : Math.Max(0, week);
         }
 
-        /// <summary>True if anything of an employee needs mending tonight.</summary>
-        public static bool Needs(int worked, int shifts, bool missed)
+        /// <summary>The days of the week an employee whose day was mended is counted at work (EmployeeInstance.workedDays, which the days a week they ask for are measured against): no more than their days with a shift from the week's Monday to the day that ended.</summary>
+        public static int Days(int days, int shiftDays)
         {
-            return Mend(worked, shifts, missed) != Math.Max(0, worked);
+            return Math.Min(Math.Max(0, days), Math.Max(0, shiftDays));
+        }
+
+        /// <summary>
+        /// True if an employee's counts are to be looked at tonight: the clearing was missed, or more is counted than a day
+        /// has (it can only be from nights before). A day the game counted as it meant is not looked at: one comparison.
+        /// </summary>
+        public static bool Suspect(int worked, bool missed)
+        {
+            return missed || worked > DayHours;
         }
 
         private static int Clamp(int value, int least, int most)
