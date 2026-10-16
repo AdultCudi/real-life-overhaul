@@ -114,6 +114,7 @@ namespace RealLifeOverhaul.Leisure
         {
             Instance = this;
             _screen = new LeisureScreen(Logger, PressInteract, PressChoose, PressAccept);
+            _screen.KeptBy(this);
             LeisureSound.Logger = Logger;
             PhotoMode.Logger = Logger;
             ClothesScreen.Logger = Logger;

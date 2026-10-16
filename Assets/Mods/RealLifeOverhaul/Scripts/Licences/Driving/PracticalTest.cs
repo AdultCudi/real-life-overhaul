@@ -107,7 +107,7 @@ namespace RealLifeOverhaul
         private readonly int[] _faults = new int[(int)TestFault.Count];
         private readonly StringBuilder _text = new StringBuilder(512);
         private readonly SchoolScreens _screens;
-        private readonly GuideMark _mark = new GuideMark();
+        private readonly GuideMark _mark = new GuideMark("the driving test");
         private readonly DoorPanel _park;
         private readonly Action _onParked;
         private readonly Action _onSheetClosed;
@@ -194,6 +194,12 @@ namespace RealLifeOverhaul
             _cast = cast;
             _parent = parent;
             _logger = logger;
+        }
+
+        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        internal void KeptBy(Behaviour host)
+        {
+            _mark.Keep(host);
         }
 
         public bool Active => _step != Step.None;

@@ -55,7 +55,7 @@ namespace RealLifeOverhaul
         private ActivityAnimator _animator;
         private string _label;
         private readonly DoorPanel _door;          // the game's own panel over the litter, with one button
-        private readonly GuideMark _mark = new GuideMark();
+        private readonly GuideMark _mark = new GuideMark("community service");
         private readonly Action _onPick;           // made once: the panel's button
         private readonly Func<string> _doorWhat;
         private ShiftCard _card;                   // a copy of the game's job panel: the pieces picked and the hours owed
@@ -69,6 +69,12 @@ namespace RealLifeOverhaul
             _door = new DoorPanel(logger, "Justice check (litter panel)");
             _onPick = _door.Press(PickPressed);
             _doorWhat = () => "litter";
+        }
+
+        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        internal void KeptBy(Behaviour host)
+        {
+            _mark.Keep(host);
         }
 
         public bool Active { get; private set; }

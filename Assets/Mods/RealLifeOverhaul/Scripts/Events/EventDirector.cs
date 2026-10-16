@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Events
         private StreetEventScene _street;
         private IEventScene _scene;
         private string _label;
-        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark();
+        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark("city events");
         private string _prompt;
         private float _markerUntil;
         private float _nextTick, _nextSecond, _nextRoll, _nextFlicker, _nextWarm, _nextHook;
@@ -106,6 +106,7 @@ namespace RealLifeOverhaul.Events
         private void Awake()
         {
             Instance = this;
+            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             Props = new EventProps(transform);
             People = new EventPeople(gameObject, Props);
             Cordon = new SceneCordon(transform);
@@ -214,6 +215,7 @@ namespace RealLifeOverhaul.Events
         {
             if (now < _markerUntil)
             {
+                _mark.Until = _markerUntil;   // the marker's own end: past it the watch takes it off even if this scene has stopped
                 _mark.Show(_scene.Focus, _label);
             }
             if (Effects.Burning && now >= _nextFlicker)

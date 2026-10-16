@@ -66,7 +66,7 @@ namespace RealLifeOverhaul
         private readonly TaxiPlan _quote = new TaxiPlan();
         private readonly TaxiPlan _plan = new TaxiPlan();
         private readonly TaxiRoads _roads = new TaxiRoads();
-        private readonly GuideMark _mark = new GuideMark();
+        private readonly GuideMark _mark = new GuideMark("the taxi");
         private TaxiCab _cab;
         private Action<bool> _onMap, _mapSeen;
         private Step _step;
@@ -90,6 +90,7 @@ namespace RealLifeOverhaul
             var host = new GameObject("RealLifeOverhaul Taxi");
             host.transform.SetParent(transform, false);
             _cab = new TaxiCab(host);
+            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _onMap = Guard.Wrap<bool>(OnMap);
         }
 

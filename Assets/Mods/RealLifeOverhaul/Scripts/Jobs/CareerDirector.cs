@@ -44,7 +44,7 @@ namespace RealLifeOverhaul
         private readonly int[] _depot = new int[CareerCatalogue.All.Length];   // the board each employer is at, or -1
         private readonly CareerShift _shift = new CareerShift();
         private readonly StringBuilder _text = new StringBuilder(256);
-        private readonly GuideMark _officeMark = new GuideMark();   // the game's destination marker, when the player asked to be shown the office
+        private readonly GuideMark _officeMark = new GuideMark("the career's office");   // the game's destination marker, when the player asked to be shown the office
         private float _officeUntil;       // unscaled time the office's mark comes off; 0 while it is not up
         private int _officeBoard = -1;
         private bool _mapped;
@@ -72,6 +72,7 @@ namespace RealLifeOverhaul
         {
             _director = director;
             _logger = logger;
+            _officeMark.Keep(director);   // the marker goes with the job director, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _cast = new JobCast(director, logger);
             for (int i = 0; i < _depot.Length; i++)
             {
