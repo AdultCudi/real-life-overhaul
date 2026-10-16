@@ -35,8 +35,11 @@ namespace RealLifeOverhaul.Street
 
         // ---------------------------------------------------------------- people
         public const int MemoryMost = 48;         // people remembered today at most (the oldest go first)
-        public const int PatienceLeast = 2;       // turns
-        public const int PatienceMost = 8;
+        public const int PatienceLeast = 4;       // turns anybody who stops gives the player (the owner, 16 Oct 2026: three was the same three questions and gone)
+        public const int PatienceMost = 10;       // ...at most, earned turns included: somebody warm and chatty
+        public const int EarnedMost = 3;          // turns a conversation earns back at most, one for each good exchange
+        public const int CoolestStranger = -1;    // warmth: how cool a stranger is at worst, unless the player was rude, they know a bad name or record, or it is night
+        public const int InfamousBelow = 40;      // public standing: below this, somebody who knows the player's face has heard bad things
         public const int RapportMost = 10;
         public const int NumberAt = 3;            // rapport (today's and this talk's, with their warmth) at which a number is given
         public const int NumberLiked = 1;         // ...enough when the city thinks well of the player
@@ -157,11 +160,11 @@ namespace RealLifeOverhaul.Street
             a.Recognised = f.Recognition > 0 && Roll(roll, 20, 100) < Math.Min(RecogniseMost, f.Recognition);
             a.Warmth = Warmth(s, memo, f, a.Recognised);
             a.Brush = Brush(s, memo, f, a.Recognised, a.Warmth, roll, option, phone);
-            int patience = 3 + Math.Max(0, a.Warmth) + (s.Chatty ? 2 : 0) - (s.Commuter && RushHour(f.Hour, f.Weekend) ? 1 : 0);
+            int patience = PatienceLeast + Math.Max(0, a.Warmth) + (a.Warmth >= 2 ? 1 : 0) + (s.Chatty ? 2 : 0) - (s.Commuter && RushHour(f.Hour, f.Weekend) ? 1 : 0);
             a.Patience = Math.Max(PatienceLeast, Math.Min(PatienceMost, patience));
             a.Opening = memo != null && memo.Talks > 0 && memo.Rapport >= 0 ? StreetLine.OpenAgain
                 : a.Recognised && f.Standing >= Reputation55 ? StreetLine.OpenFamous
-                : a.Recognised && f.Standing < 40 ? StreetLine.OpenInfamous
+                : a.Recognised && f.Standing < InfamousBelow ? StreetLine.OpenInfamous
                 : a.Warmth >= 1 ? StreetLine.OpenWarm
                 : a.Warmth <= -1 ? StreetLine.OpenCool
                 : StreetLine.OpenFine;
@@ -170,7 +173,12 @@ namespace RealLifeOverhaul.Street
 
         private const int Reputation55 = 55;   // the newcomer's public standing (Reputation.Start)
 
-        /// <summary>-3 to 3: their mood today with what they make of the player.</summary>
+        /// <summary>
+        /// -3 to 3: their mood today with what they make of the player. However the rest adds up (a rough day, a player who
+        /// has not washed, one the city thinks badly of), a stranger is at worst <see cref="CoolestStranger"/>: cooler only
+        /// when the player was rude to them or the talk went badly today, they know the player's face and its bad name or
+        /// record, or it is night.
+        /// </summary>
         public static int Warmth(StreetStranger s, StreetMemo memo, StreetFacts f, bool recognised)
         {
             int w = s.Mood;
@@ -186,7 +194,8 @@ namespace RealLifeOverhaul.Street
             {
                 w += memo.Rapport >= 2 ? 1 : memo.Rapport <= -2 ? -1 : 0;
             }
-            return Math.Max(-3, Math.Min(3, w));
+            bool reason = Night(f.Hour) || (recognised && (f.Record || f.Standing < InfamousBelow)) || (memo != null && (memo.Rude || memo.Rapport <= -2));
+            return Math.Max(reason ? -3 : CoolestStranger, Math.Min(3, w));
         }
 
         private static StreetBrush Brush(StreetStranger s, StreetMemo memo, StreetFacts f, bool recognised, int warmth, int roll, int option, int phone)
@@ -261,42 +270,181 @@ namespace RealLifeOverhaul.Street
 
         // ---------------------------------------------------------------- what is offered
 
+        // Where a choice stands in the round, before the person's own turn of the order: what follows from their last line,
+        // the number and the invitation once they are warm, what suits the moment, the rest, goodbye, and rudeness last.
+        private const int TierFollow = 0, TierWarm = 1, TierMoment = 2, TierRest = 3, TierBye = 4, TierRude = 5;
+        private const int TierSize = 10000;       // a tier's span of ranks
+        private const int FitSize = 1000;         // ...and how well a choice suits the moment, within it (0 best)
+
         /// <summary>
-        /// The things the player can say now, in the order "Something else" goes through them: what is already done this
-        /// conversation (or today, for a compliment, a joke, a flirt, an invitation and the business) is left out, a number and
-        /// an invitation only after a first exchange and with the social life running, the election only while one is fought,
-        /// the business only when the player has one, the player's own words only where the game has its text box. Once they
-        /// warm to the player, the number and the invitation come first.
+        /// The things the player can say now, in the order "Something else" goes through them (the first is the panel's blue
+        /// button). Nothing already done this conversation (or today, for their name, a compliment, a joke, a flirt, their
+        /// number, an invitation and the business) is offered again. The order comes from the moment and the person, never
+        /// from a fixed list:
+        ///   follow-ups   what follows from what they just said, in its own order (<see cref="FollowUp"/>): after what they
+        ///                do, whether they like it; after the way somewhere, thanks; after a compliment that landed, their
+        ///                name and their number
+        ///   warm         their number and a coffee, once they warm to the player
+        ///   the moment   how their day is going (first when their mood shows), the weather or the hour (first in the rain,
+        ///                at night and at the rush hours), the street event of the day; on the first turn also what they do,
+        ///                the way somewhere, what is good around here or a compliment
+        ///   the rest     their name (after a first exchange), the area, the way somewhere, a compliment, a joke, a flirt, the
+        ///                election while one is fought, prices, the player's business when they have one
+        ///   then         goodbye, and rudeness last
+        /// Within each, the person's seed sets the order, so two people do not open the same way. The player's own words are
+        /// not a choice of the round: they are the panel's grey button (StreetDirector.Talk.cs).
+        /// COST: a pass over the choices and an insertion into a list of at most twenty, on a click; nothing allocated.
         /// </summary>
-        public static void Choices(StreetChat c, StreetFacts f, bool canType, List<StreetAsk> into)
+        public static void Choices(StreetChat c, StreetFacts f, List<StreetAsk> into)
         {
             into.Clear();
-            bool warm = c.Rapport + (c.Memo != null ? c.Memo.Rapport : 0) + c.Approach.Warmth >= 2;
-            if (warm)
-            {
-                Offer(c, f, canType, StreetAsk.Number, into);
-                Offer(c, f, canType, StreetAsk.Invite, into);
-            }
             for (int i = 0; i < (int)StreetAsk.Count; i++)
             {
                 var ask = (StreetAsk)i;
-                if (!(warm && (ask == StreetAsk.Number || ask == StreetAsk.Invite)))
+                if (ask == StreetAsk.Say || !Offered(c, f, ask))
                 {
-                    Offer(c, f, canType, ask, into);
+                    continue;
                 }
+                int rank = Rank(c, f, ask);
+                c.Ranks[i] = rank;
+                int at = into.Count;
+                while (at > 0 && c.Ranks[(int)into[at - 1]] > rank)
+                {
+                    at--;
+                }
+                into.Insert(at, ask);
             }
         }
 
-        private static void Offer(StreetChat c, StreetFacts f, bool canType, StreetAsk ask, List<StreetAsk> into)
+        /// <summary>A choice's place in the round: its tier, how well it suits the moment, the person's own order (lower first).</summary>
+        public static int Rank(StreetChat c, StreetFacts f, StreetAsk ask)
         {
-            if (Offered(c, f, canType, ask))
+            int follow = FollowUp(c.Last, ask, c.Who.Seed);
+            int turn = Roll(c.Who.Seed, 300 + (int)ask, FitSize);   // (the person's own order: the same all day for them, different from the next person's)
+            if (follow >= 0)
             {
-                into.Add(ask);
+                return TierFollow * TierSize + follow * FitSize + turn;
+            }
+            bool warm = Score(c) >= 2;
+            switch (ask)
+            {
+                case StreetAsk.Number:
+                case StreetAsk.Invite:
+                    return (warm ? TierWarm : TierRest) * TierSize + turn;
+                case StreetAsk.Day:
+                    return TierMoment * TierSize + (c.Who.Mood == 2 || c.Who.Mood == -2 ? 0 : 1) * FitSize + turn;   // (first when their mood shows: a great day or a rough one)
+                case StreetAsk.SmallTalk:
+                    return TierMoment * TierSize + (f.Raining || Night(f.Hour) || RushHour(f.Hour, f.Weekend) ? 0 : 1) * FitSize + turn;
+                case StreetAsk.Event:
+                    return TierMoment * TierSize + turn;
+                case StreetAsk.AboutThem:
+                case StreetAsk.Directions:
+                case StreetAsk.Area:
+                case StreetAsk.Compliment:
+                    return (c.Turns == 0 ? TierMoment : TierRest) * TierSize + FitSize + turn;   // (an opening a stranger is often met with; later, one of the rest)
+                case StreetAsk.Name:
+                    return TierRest * TierSize + (c.Turns >= 1 ? 0 : 1) * FitSize + turn;
+                case StreetAsk.Bye:
+                    return TierBye * TierSize;
+                case StreetAsk.Rude:
+                    return TierRude * TierSize;
+                default:
+                    return TierRest * TierSize + FitSize + turn;
             }
         }
 
-        /// <summary>True when this can be said now.</summary>
-        public static bool Offered(StreetChat c, StreetFacts f, bool canType, StreetAsk ask)
+        /// <summary>
+        /// What follows from the line they said last: the choice's place among its follow-ups (0 first), or -1 when it is
+        /// none of them. Where one follow-up plainly comes first (whether they like their work after what they do, thanks
+        /// after the way, their name after a compliment that landed, a coffee after their number) the order is fixed; where
+        /// several would do, the person's seed turns it (<paramref name="seed"/>), so two talks do not run the same way. A
+        /// follow-up is offered first only if it can be said (<see cref="Offered"/>).
+        /// </summary>
+        public static int FollowUp(StreetLine last, StreetAsk ask, int seed)
+        {
+            int turn = Roll(seed, 400 + (int)last, 12);   // (a turn of the order where several follow-ups would do)
+            switch (last)
+            {
+                case StreetLine.AboutJob:
+                case StreetLine.AboutRetired:
+                    return At(ask, 0, StreetAsk.Work, StreetAsk.Name);
+                case StreetLine.DirFound:
+                case StreetLine.DirFar:
+                case StreetLine.DirNone:
+                    return At(ask, 0, StreetAsk.Thanks, StreetAsk.Area);
+                case StreetLine.AreaPlaces:
+                case StreetLine.AreaEvent:
+                case StreetLine.AreaNews:
+                case StreetLine.AreaNothing:
+                    return At(ask, 0, StreetAsk.Directions, StreetAsk.Thanks);
+                case StreetLine.ComplimentYes:
+                case StreetLine.JokeYes:
+                case StreetLine.FlirtYes:
+                    return At(ask, 0, StreetAsk.Name, StreetAsk.Number, StreetAsk.Invite);
+                case StreetLine.NameGive:
+                    return At(ask, turn, StreetAsk.AboutThem, StreetAsk.Number, StreetAsk.Day);
+                case StreetLine.SmallWarm:
+                case StreetLine.DayGood:
+                case StreetLine.DayFine:
+                case StreetLine.SaidWarm:
+                case StreetLine.GreetBack:
+                    return At(ask, turn, StreetAsk.AboutThem, StreetAsk.Name, StreetAsk.Compliment, StreetAsk.Joke);
+                case StreetLine.SmallCool:
+                case StreetLine.DayLow:
+                case StreetLine.AboutCool:
+                case StreetLine.NameWithhold:
+                case StreetLine.SaidCool:
+                case StreetLine.ComplimentNo:
+                case StreetLine.JokeNo:
+                case StreetLine.FlirtNo:
+                    return At(ask, turn, StreetAsk.Area, StreetAsk.Directions, StreetAsk.Day);
+                case StreetLine.FlirtTaken:
+                    return At(ask, turn, StreetAsk.AboutThem, StreetAsk.Area);
+                case StreetLine.WorkLikes:
+                case StreetLine.WorkMixed:
+                case StreetLine.WorkRetired:
+                    return At(ask, turn, StreetAsk.Name, StreetAsk.Area, StreetAsk.Compliment);
+                case StreetLine.EventGoing:
+                    return At(ask, 0, StreetAsk.Invite, StreetAsk.Name);
+                case StreetLine.EventNot:
+                    return At(ask, turn, StreetAsk.Area, StreetAsk.AboutThem);
+                case StreetLine.NumberYes:
+                    return At(ask, 0, StreetAsk.Invite, StreetAsk.Bye);
+                case StreetLine.InviteYes:
+                    return At(ask, 0, StreetAsk.Bye);
+                case StreetLine.BusinessHeard:
+                case StreetLine.BusinessWill:
+                    return At(ask, 0, StreetAsk.Number, StreetAsk.Invite);
+                case StreetLine.Welcome:
+                    return At(ask, turn, StreetAsk.Name, StreetAsk.Day, StreetAsk.AboutThem);
+                case StreetLine.ElectionFor:
+                case StreetLine.ElectionUnsure:
+                case StreetLine.EconomyUp:
+                case StreetLine.EconomyDown:
+                case StreetLine.EconomyFlat:
+                    return At(ask, turn, StreetAsk.Day, StreetAsk.AboutThem, StreetAsk.SmallTalk);
+                default:
+                    return -1;
+            }
+        }
+
+        // The place of a choice among the follow-ups a, b, c, d (as many as are given), the order turned by `turn` places.
+        private static int At(StreetAsk ask, int turn, StreetAsk a, StreetAsk b = StreetAsk.Count, StreetAsk c = StreetAsk.Count, StreetAsk d = StreetAsk.Count)
+        {
+            int n = b == StreetAsk.Count ? 1 : c == StreetAsk.Count ? 2 : d == StreetAsk.Count ? 3 : 4;
+            int at = ask == a ? 0 : ask == b ? 1 : ask == c ? 2 : ask == d ? 3 : -1;
+            return at < 0 ? -1 : (at + turn) % n;
+        }
+
+        /// <summary>True for the lines after which the player can say thanks (the way somewhere, what is around).</summary>
+        public static bool Helped(StreetLine line)
+        {
+            return line == StreetLine.DirFound || line == StreetLine.DirFar || line == StreetLine.DirNone || line == StreetLine.AreaPlaces || line == StreetLine.AreaEvent
+                   || line == StreetLine.AreaNews || line == StreetLine.AreaNothing;
+        }
+
+        /// <summary>True when this can be said now (the player's own words: the panel's grey button, wherever the game has its text box).</summary>
+        public static bool Offered(StreetChat c, StreetFacts f, StreetAsk ask)
         {
             StreetMemo m = c.Memo;
             bool done = c.Done[(int)ask];
@@ -306,7 +454,12 @@ namespace RealLifeOverhaul.Street
                 case StreetAsk.AboutThem:
                 case StreetAsk.Area:
                 case StreetAsk.Economy:
+                case StreetAsk.Day:
                     return !done;
+                case StreetAsk.Event: return !done && !string.IsNullOrEmpty(f.EventToday);
+                case StreetAsk.Work: return !done && c.Shared;
+                case StreetAsk.Thanks: return Helped(c.Last);
+                case StreetAsk.Bye: return true;
                 case StreetAsk.Name: return !done && (m == null || !m.Named);
                 case StreetAsk.Directions: return true;
                 case StreetAsk.Compliment: return !done && (m == null || !m.Complimented);
@@ -316,7 +469,6 @@ namespace RealLifeOverhaul.Street
                 case StreetAsk.Invite: return !done && c.Turns >= 1 && f.SocialOn && (m == null || !m.Invited);
                 case StreetAsk.Election: return !done && f.Election;
                 case StreetAsk.Business: return !done && f.Shops.Count > 0 && (m == null || !m.Mentioned);
-                case StreetAsk.Say: return canType;
                 case StreetAsk.Rude: return !done;
                 default: return false;
             }
@@ -375,6 +527,26 @@ namespace RealLifeOverhaul.Street
                     o.Ends = score - 3 <= -2 || (c.Memo != null && c.Memo.Rude);
                     o.Line = o.Ends ? StreetLine.WalkOff : StreetLine.RudeCold;
                     break;
+                case StreetAsk.Day:
+                    o.Line = s.Mood >= 1 ? StreetLine.DayGood : s.Mood <= -1 || score < -1 ? StreetLine.DayLow : StreetLine.DayFine;
+                    o.Rapport = score >= -1 ? 1 : 0;   // (asked how they are: most people like that)
+                    break;
+                case StreetAsk.Event:
+                    o.Line = score + luck >= 0 ? StreetLine.EventGoing : StreetLine.EventNot;
+                    o.Rapport = o.Line == StreetLine.EventGoing ? 1 : 0;
+                    break;
+                case StreetAsk.Work:
+                    o.Line = s.Job == SocialCatalogue.Jobs.Length - 1 ? StreetLine.WorkRetired : Roll(s.Seed, 35, 100) < LikesWorkPercent + s.Mood * 10 ? StreetLine.WorkLikes : StreetLine.WorkMixed;
+                    o.Rapport = 1;
+                    break;
+                case StreetAsk.Thanks:
+                    o.Line = StreetLine.Welcome;
+                    o.Rapport = score >= -1 ? 1 : 0;
+                    break;
+                case StreetAsk.Bye:
+                    o.Line = score >= 0 ? StreetLine.Bye : StreetLine.ByeCool;
+                    o.Ends = true;
+                    break;
                 default:
                     o.Line = score >= 0 ? StreetLine.SaidWarm : StreetLine.SaidCool;
                     break;
@@ -406,8 +578,7 @@ namespace RealLifeOverhaul.Street
                     o.Ends = true;
                     break;
                 case StreetSayKind.Greeting:
-                case StreetSayKind.Thanks:
-                    o.Line = score >= -1 ? StreetLine.SaidWarm : StreetLine.SaidCool;
+                    o.Line = score >= -1 ? StreetLine.GreetBack : StreetLine.SaidCool;
                     o.Rapport = score >= -1 ? 1 : 0;
                     break;
                 default:
@@ -566,8 +737,37 @@ namespace RealLifeOverhaul.Street
             m.Rapport = Math.Max(-RapportMost, Math.Min(RapportMost, m.Rapport + c.Rapport));
         }
 
+        /// <summary>The turns they give the player in all: their patience and what good exchanges earned back, <see cref="PatienceMost"/> at most.</summary>
+        public static int Turns(StreetChat c) => Math.Min(PatienceMost, c.Approach.Patience + c.Earned);
+
         /// <summary>True once they have given the player all the turns they will.</summary>
-        public static bool Spent(StreetChat c) => c.Turns >= c.Approach.Patience;
+        public static bool Spent(StreetChat c) => c.Turns >= Turns(c);
+
+        // ---------------------------------------------------------------- what the player says
+
+        /// <summary>
+        /// Which remark of small talk suits the moment (the button's words, StreetLines.Small): the rain, the night, or one of
+        /// those that fit the hour (a morning, an evening, the weekend, the rush hour, any day) by the person's seed.
+        /// </summary>
+        public static int SmallTopic(StreetStranger s, StreetFacts f)
+        {
+            if (f.Raining)
+            {
+                return SmallRain;
+            }
+            if (Night(f.Hour) || f.Hour >= 20)
+            {
+                return SmallNight;
+            }
+            int hour = f.Hour >= 6 && f.Hour < 11 ? SmallMorning : f.Hour >= 17 ? SmallEvening : SmallAny;
+            int day = f.Weekend && f.Hour >= 10 && f.Hour < 18 ? SmallWeekend : RushHour(f.Hour, f.Weekend) ? SmallBusy : SmallAny;
+            int n = 1 + (hour != SmallAny ? 1 : 0) + (day != SmallAny ? 1 : 0);   // (any day's remark is always one of them)
+            int pick = Roll(s.Seed, 41, n);
+            return pick == 0 ? SmallAny : pick == 1 ? (hour != SmallAny ? hour : day) : day;
+        }
+
+        public const int SmallAny = 0, SmallRain = 1, SmallNight = 2, SmallMorning = 3, SmallEvening = 4, SmallWeekend = 5, SmallBusy = 6;   // by StreetLines.Small
+        public const int LikesWorkPercent = 55;   // of people asked, who like what they do (on a fine day; ten more or less a step of mood)
     }
 
     /// <summary>

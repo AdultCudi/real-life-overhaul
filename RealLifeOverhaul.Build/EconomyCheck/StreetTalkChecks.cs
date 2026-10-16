@@ -174,31 +174,33 @@ internal static partial class Program
         StreetStranger s = StreetRules.Identity(55, 12, 5003, true, 30, 6, -1);
         StreetChat c = StreetChatWith(s, f);
         var list = new List<StreetAsk>();
-        StreetRules.Choices(c, f, true, list);
-        Check(list.Count > 0 && list[0] == StreetAsk.SmallTalk && !list.Contains(StreetAsk.Number) && !list.Contains(StreetAsk.Invite) && list.Contains(StreetAsk.Say)
-              && list.Contains(StreetAsk.Directions) && !list.Contains(StreetAsk.Election) && !list.Contains(StreetAsk.Business),
-            "street talk: at first, small talk is offered first; no number or invitation before a first exchange, no election without one, no business without one");
+        StreetRules.Choices(c, f, list);
+        Check(list.Count > 0 && !list.Contains(StreetAsk.Number) && !list.Contains(StreetAsk.Invite) && !list.Contains(StreetAsk.Say)
+              && list.Contains(StreetAsk.Directions) && !list.Contains(StreetAsk.Election) && !list.Contains(StreetAsk.Business) && list[list.Count - 1] == StreetAsk.Rude
+              && list[list.Count - 2] == StreetAsk.Bye,
+            "street talk: at first, no number or invitation before a first exchange, no election without one, no business without one; the player's own words are the grey button, not a choice; goodbye and then rudeness last");
         c.Turns = 1;
-        StreetRules.Choices(c, f, false, list);
-        Check(list.Contains(StreetAsk.Number) && list.Contains(StreetAsk.Invite) && !list.Contains(StreetAsk.Say), "street talk: after a first exchange the number and a coffee are offered; without the game's text box, no words of the player's own");
+        StreetRules.Choices(c, f, list);
+        Check(list.Contains(StreetAsk.Number) && list.Contains(StreetAsk.Invite), "street talk: after a first exchange the number and a coffee are offered");
         f.SocialOn = false;
-        StreetRules.Choices(c, f, true, list);
+        StreetRules.Choices(c, f, list);
         Check(!list.Contains(StreetAsk.Number) && !list.Contains(StreetAsk.Invite), "street talk: without the social life no number and no invitation is offered");
         f.SocialOn = true;
         f.Election = true;
         f.Shops.Add("Sam's Deli");
-        StreetRules.Choices(c, f, true, list);
+        StreetRules.Choices(c, f, list);
         Check(list.Contains(StreetAsk.Election) && list.Contains(StreetAsk.Business), "street talk: the election while one is fought, the player's business when they have one");
         c.Done[(int)StreetAsk.SmallTalk] = true;
         c.Memo.Flirted = c.Memo.Joked = c.Memo.Complimented = c.Memo.Mentioned = c.Memo.Invited = c.Memo.Named = true;
-        StreetRules.Choices(c, f, true, list);
+        StreetRules.Choices(c, f, list);
         Check(!list.Contains(StreetAsk.SmallTalk) && !list.Contains(StreetAsk.Flirt) && !list.Contains(StreetAsk.Joke) && !list.Contains(StreetAsk.Compliment)
               && !list.Contains(StreetAsk.Business) && !list.Contains(StreetAsk.Invite) && !list.Contains(StreetAsk.Name) && list.Contains(StreetAsk.Directions),
             "street talk: what was done is not offered again (a flirt, a joke, a compliment, the business, an invitation, the name once a day); the way somewhere always is");
         StreetChat warm = StreetChatWith(s, f, new StreetMemo { Rapport = 5 });
         warm.Turns = 1;
-        StreetRules.Choices(warm, f, true, list);
-        Check(list.Count > 1 && list[0] == StreetAsk.Number && list[1] == StreetAsk.Invite, "street talk: once they warm to the player, the number and the invitation come first");
+        StreetRules.Choices(warm, f, list);
+        Check(list.Count > 1 && ((list[0] == StreetAsk.Number && list[1] == StreetAsk.Invite) || (list[0] == StreetAsk.Invite && list[1] == StreetAsk.Number)),
+            "street talk: once they warm to the player, the number and the invitation come first");
         int distinct = new HashSet<StreetAsk>(list).Count;
         Check(distinct == list.Count, "street talk: nothing is offered twice in one round");
     }
@@ -411,7 +413,7 @@ internal static partial class Program
             ("you're cute", StreetSayKind.Flirt), ("are you single", StreetSayKind.Flirt), ("you have beautiful eyes", StreetSayKind.Flirt),
             ("nice jacket", StreetSayKind.Compliment), ("i like your style", StreetSayKind.Compliment),
             ("knock knock", StreetSayKind.Joke), ("haha", StreetSayKind.Joke),
-            ("what do you do for work", StreetSayKind.AboutThem), ("how are you", StreetSayKind.AboutThem), ("how's it going", StreetSayKind.AboutThem),
+            ("what do you do for work", StreetSayKind.AboutThem), ("how are you", StreetSayKind.Day), ("how's it going", StreetSayKind.Day),
             ("bye", StreetSayKind.Goodbye), ("see you later", StreetSayKind.Goodbye), ("take care", StreetSayKind.Goodbye),
             ("thanks", StreetSayKind.Thanks), ("thank you so much", StreetSayKind.Thanks),
             ("hello", StreetSayKind.Greeting), ("hi there", StreetSayKind.Greeting), ("good morning", StreetSayKind.Greeting),
@@ -471,7 +473,7 @@ internal static partial class Program
         }
         Check(StreetLines.Lines.Length == (int)StreetLine.Count && StreetLines.Asks.Length == (int)StreetAsk.Count, "street talk: every kind of line and every choice has its words");
         // The values each kind's lines may name: what the conversation fills for it (StreetDirector.Talk.cs).
-        var always = new HashSet<string> { "first", "player", "job", "district", "shop" };
+        var always = new HashSet<string> { "first", "player", "job", "district", "shop", "event" };
         var extra = new Dictionary<StreetLine, string[]>
         {
             { StreetLine.AreaPlaces, new[] { "place", "place_two" } }, { StreetLine.AreaEvent, new[] { "event" } },
@@ -511,6 +513,10 @@ internal static partial class Program
         other.AddRange(StreetLines.Places);
         other.AddRange(StreetLines.Whats);
         other.AddRange(StreetLines.Ways);
+        other.AddRange(StreetLines.Small);
+        other.AddRange(StreetLines.DayAsks);
+        other.AddRange(StreetLines.WorkAsks);
+        other.AddRange(new[] { StreetLines.AskWorkRetired, StreetLines.AskThanksAnyway });
         other.AddRange(new[]
         {
             StreetLines.AskRain, StreetLines.AskNight, StreetLines.AskDinner, StreetLines.Opener, "reallife_street_btn_goodbye", "reallife_street_btn_leave", "reallife_street_btn_somewhere_else",
@@ -552,8 +558,8 @@ internal static partial class Program
             string last = null;
             for (int t = 0; t < 20; t++)
             {
-                string k = StreetLines.Pick((StreetLine)i, 1234, t, last);
-                picks &= Array.IndexOf(StreetLines.Lines[i], k) >= 0 && (StreetLines.Lines[i].Length == 1 || k != last) && k == StreetLines.Pick((StreetLine)i, 1234, t, last);
+                string k = StreetLines.Pick((StreetLine)i, 1234, t, last, null);
+                picks &= Array.IndexOf(StreetLines.Lines[i], k) >= 0 && (StreetLines.Lines[i].Length == 1 || k != last) && k == StreetLines.Pick((StreetLine)i, 1234, t, last, null);
                 last = k;
             }
         }
@@ -584,7 +590,7 @@ internal static partial class Program
         {
             StreetStranger s = StreetRules.Identity(9, 9, i, i % 2 == 0, 40, 6, -1);
             var c = new StreetChat { Who = s, Memo = null, Approach = StreetRules.Approach(s, null, f, 1, 0) };
-            StreetRules.Choices(c, f, true, list);
+            StreetRules.Choices(c, f, list);
         }
         allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         ms = watch.Elapsed.TotalMilliseconds / n;

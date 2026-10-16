@@ -49,18 +49,23 @@ internal static partial class Program
     {
         StreetCardsByPack();
         var missing = new List<string>();
-        int v4 = 0, v3 = 0;
+        int v4 = 0, v3 = 0, written = 0;
         for (int i = 0; i < (int)StreetLine.Count; i++)
         {
             var line = (StreetLine)i;
             string intent = StreetCards.V4(line, out string branch, out int lean);
+            written += StreetCards.Written(line) ? 1 : 0;
             if (intent == null)
             {
-                if (line != StreetLine.Waiting && line != StreetLine.DirAsk)
+                if (!StreetCards.Written(line))
                 {
                     missing.Add(line + " has no card");
                 }
                 continue;
+            }
+            if (StreetCards.Written(line))
+            {
+                missing.Add(line + " is written only, yet has a card");
             }
             TextIntent t = TextIntents.Find(intent, branch);
             if (t == null || t.Data != TextIntents.DataV4 || t.Voice != "stranger" || t.Channel != "spoken" || t.Face != TextFace.Friend || t.Write != TextIntents.StreetWrite)
@@ -90,8 +95,8 @@ internal static partial class Program
                 }
             }
         }
-        Check(missing.Count == 0 && v4 == (int)StreetLine.Count - 2, "street talk, RLO Texts: every line the game decides has its registered data v4 card (" + v4 + "), and v3's where one fits ("
-                                                                    + v3 + "; " + string.Join("; ", missing) + ")");
+        Check(missing.Count == 0 && v4 == (int)StreetLine.Count - written && written == 12, "street talk, RLO Texts: every line the game decides has its registered data v4 card (" + v4
+                                                                    + "), but for the " + written + " always written, and v3's where one fits (" + v3 + "; " + string.Join("; ", missing) + ")");
         int street = 0;
         foreach (TextIntent t in TextIntents.All)
         {

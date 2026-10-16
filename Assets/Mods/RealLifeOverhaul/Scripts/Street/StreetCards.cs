@@ -133,5 +133,95 @@ namespace RealLifeOverhaul.Street
 
         /// <summary>Words that speak of chat rather than of speech (the v3 cards are a Flare message's): never shown.</summary>
         public static bool Chatty(string words) => words != null && Chat.IsMatch(words);
+
+        /// <summary>
+        /// The lines no card of data v4 words (always written): the "go on" between choices, the question of where to, and the
+        /// answers v4 was not trained for. Tried offline on the 2B v4 model, the nearest cards answered how their day is going
+        /// with small talk about the remark, whether they like their work with their job and district again, and thanks with
+        /// "That's interesting" or a goodbye; written lines say them right until a pack is trained on them.
+        /// </summary>
+        public static bool Written(StreetLine line)
+        {
+            switch (line)
+            {
+                case StreetLine.Waiting: case StreetLine.DirAsk:
+                case StreetLine.DayGood: case StreetLine.DayFine: case StreetLine.DayLow: case StreetLine.EventGoing: case StreetLine.EventNot:
+                case StreetLine.WorkLikes: case StreetLine.WorkMixed: case StreetLine.WorkRetired: case StreetLine.Welcome: case StreetLine.GreetBack:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static readonly Regex Starts = new Regex(@"([.?]\s+)([a-z])", RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// The model's words made fit to be said by a stranger: a sentence that starts in lower case gets its capital (the 2B
+        /// v4 model puts a slot's words after a full stop as they are: "on 5th Avenue. off to your right"), and when the
+        /// player's name was not told to them (<paramref name="untold"/>, else null) the name said in passing goes ("What do
+        /// you want, Sam?" to "What do you want?"; "Sam, hello." to "Hello."). Null when the name is still in them otherwise:
+        /// then the written line. COST: a few short regular expressions on a line, when its words come.
+        /// </summary>
+        public static string Spoken(string words, string untold)
+        {
+            if (string.IsNullOrEmpty(words))
+            {
+                return words;
+            }
+            string w = words;
+            if (!string.IsNullOrEmpty(untold) && Regex.IsMatch(w, @"\b" + Regex.Escape(untold) + @"\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            {
+                string name = Regex.Escape(untold);
+                w = Regex.Replace(w, @",\s*" + name + @"\b(?=\s*[.,?;:]|\s*$)", string.Empty, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                w = Regex.Replace(w, @"^\s*" + name + @"\s*,\s*", string.Empty, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                if (Regex.IsMatch(w, @"\b" + name + @"\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) || w.Trim().Length == 0)
+                {
+                    return null;
+                }
+                w = w.Trim();
+            }
+            w = Starts.Replace(w, m => m.Groups[1].Value + char.ToUpperInvariant(m.Groups[2].Value[0]));
+            return w.Length > 0 && char.IsLower(w[0]) ? char.ToUpperInvariant(w[0]) + w.Substring(1) : w;
+        }
+
+        /// <summary>
+        /// The model's last lines across all strangers (<see cref="Most"/>): the 2B v4 model greets most warm strangers with
+        /// the same line, so one another stranger said lately is not said again (the written line instead). Game-free; kept
+        /// for the session. COST: a pass over a few short strings, when words come.
+        /// </summary>
+        public sealed class Echoes
+        {
+            public const int Most = 8;   // lines remembered: about two conversations' worth
+
+            private readonly string[] _said = new string[Most];
+            private int _next;
+
+            /// <summary>True if one of the last lines is these words (letters and spaces alike, case aside).</summary>
+            public bool Heard(string words)
+            {
+                for (int i = 0; i < Most; i++)
+                {
+                    if (_said[i] != null && string.Equals(_said[i], Plain(words), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public void Add(string words)
+            {
+                _said[_next] = Plain(words);
+                _next = (_next + 1) % Most;
+            }
+
+            public void Clear()
+            {
+                Array.Clear(_said, 0, Most);
+                _next = 0;
+            }
+
+            private static string Plain(string words) => words == null ? string.Empty : words.Trim().TrimEnd('.', '?', ',');
+        }
     }
 }

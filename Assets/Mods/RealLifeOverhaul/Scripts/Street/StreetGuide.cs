@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Street
                 .Fact("street_mouth_most", () => StreetRules.MouthMost.ToString(Inv))
                 .Fact("street_mouth_day", () => StreetRules.MouthPerDay.ToString(Inv))
                 .Fact("street_hold", () => StreetRules.Hold.ToString("0.#", Inv))
+                .Fact("street_turns", () => StreetRules.PatienceLeast.ToString(Inv))
+                .Fact("street_turns_most", () => StreetRules.PatienceMost.ToString(Inv))
                 .Cleanup(() => StreetDirector.Instance?.StopAll())
                 .ResetData(() => StreetDirector.Instance?.Forget());
         }

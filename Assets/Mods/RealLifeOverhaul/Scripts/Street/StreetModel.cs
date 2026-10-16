@@ -18,8 +18,13 @@ namespace RealLifeOverhaul.Street
         Election,     // only while a city election is being fought
         Economy,      // prices and the bank rate
         Business,     // the player's own business: word of mouth, a small part of its customers for a few days
-        Say,          // the player's own words, in the game's text box, read with fixed rules
+        Say,          // the player's own words, in the game's text box, read with fixed rules (the panel's grey button, not a choice of the round)
         Rude,
+        Day,          // how their day is going: answered by today's mood
+        Event,        // the street event of the day, while there is one
+        Work,         // after they said what they do: whether they like it (or, retired, whether they miss it)
+        Thanks,       // after they showed the way or said what is good around here
+        Bye,          // goodbye, as a choice of the round (the game's cancel key says it too)
         Count
     }
 
@@ -46,6 +51,10 @@ namespace RealLifeOverhaul.Street
         SaidWarm, SaidCool, SaidOdd,
         RudeCold, WalkOff, ThreatLeave,
         Tired, Bye, ByeCool,
+        DayGood, DayFine, DayLow,
+        EventGoing, EventNot,
+        WorkLikes, WorkMixed, WorkRetired,
+        Welcome, GreetBack,
         Count
     }
 
@@ -96,6 +105,18 @@ namespace RealLifeOverhaul.Street
         public bool Mentioned;     // the player's business was talked about (once a day)
         public bool Flirted, Joked, Complimented;
         public int Cast = -1;      // their place in the social life once met
+        public bool Told;          // the player told them their name today (they may use it)
+        public readonly List<string> Lines = new List<string>(StreetLines.SaidMost);   // the written lines they said today, newest last: none is said twice
+
+        /// <summary>A written line they said: remembered for the day (the oldest let go past <see cref="StreetLines.SaidMost"/>).</summary>
+        public void Said(string key)
+        {
+            if (Lines.Count >= StreetLines.SaidMost)
+            {
+                Lines.RemoveAt(0);
+            }
+            Lines.Add(key);
+        }
     }
 
     /// <summary>
@@ -164,8 +185,23 @@ namespace RealLifeOverhaul.Street
         public int Rapport;              // this conversation's
         public readonly bool[] Done = new bool[(int)StreetAsk.Count];
         public readonly List<string> History = new List<string>(6);   // "P:words" and "S:words": the last few lines, for the card
-        public int Menu;                 // where "Something else" has got to
+        public int Menu;                 // where "Something else" has got to (back to the first after every answer)
         public int PlaceAt;              // where "Somewhere else" has got to
+        public int Earned;               // turns earned back by good exchanges (StreetRules.EarnedMost at most)
+        public StreetLine Last = StreetLine.Count;   // the line they said last (the next round's follow-ups come from it); Count before any
+        public string Heard;             // how their last line's words came (RLO Texts' words or the written line, and why), for the turn's log line
+        public bool Shared;              // they said what they do (asking whether they like it follows)
+        internal readonly int[] Ranks = new int[(int)StreetAsk.Count];   // each choice's place in the round being built (StreetRules.Choices)
+
+        /// <summary>What a turn did to the rapport; a good exchange earns a turn back (StreetRules.EarnedMost at most).</summary>
+        public void Gain(int rapport)
+        {
+            Rapport += rapport;
+            if (rapport > 0 && Earned < StreetRules.EarnedMost)
+            {
+                Earned++;
+            }
+        }
 
         public void Said(bool player, string words)
         {

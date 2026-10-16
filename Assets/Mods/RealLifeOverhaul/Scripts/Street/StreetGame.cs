@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.Characters;
+using BigAmbitions.InputSystem;
 using BigAmbitions.DayNightCycle;
 using Dialogs;
 using Entities;
@@ -348,6 +349,12 @@ namespace RealLifeOverhaul.Street
 
         /// <summary>True while the game's dialogue panel is open (anybody's).</summary>
         public static bool DialogOpen => SocialPhone.DialogOpen;
+
+        /// <summary>
+        /// True in the frame the game's cancel key (Esc) was pressed: the dialogue panel's grey button and the key share one
+        /// action (DialogUI.OnCancel, from CancelButtonHandler on PlayerAction.Cancel), and this tells the key from a click.
+        /// </summary>
+        public static bool CancelKey => PlayerAction.Cancel.Pressed();
 
         /// <summary>True when the game has its text box to ask for a line in.</summary>
         public static bool CanType

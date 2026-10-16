@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Street
     public enum StreetSayKind
     {
         Other, Nonsense, Greeting, Goodbye, Thanks, SmallTalk, AboutThem, Name, Area, Directions, Compliment, Joke, Flirt, Number, Invite,
-        Election, Economy, Business, Rude, Threat
+        Election, Economy, Business, Rude, Threat, Day
     }
 
     /// <summary>The reading of what the player typed: its kind, and for a question of the way the kind of place or the name asked for.</summary>
@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Street
     /// invitation: FlareInviteRules.Read, which this uses for invitations): a threat or an insult (the mod's word list
     /// besides a few of its own), an invitation, a number asked for, the way to a kind of place or to a business by name,
     /// the election, prices, the player's own business by its name, the area, their name, a flirt, a compliment, a joke,
-    /// a question about them, goodbye, thanks, a greeting, the weather. Anything else is just talk: answered in character,
+    /// a question about them, how their day is going, goodbye, thanks, a greeting, the weather. Anything else is just talk: answered in character,
     /// it changes nothing. The words never change the game but through what they are read as. Game-free.
     /// COST: one pass over a line of at most <see cref="Most"/> characters, when the player sends it.
     /// </summary>
@@ -59,7 +59,8 @@ namespace RealLifeOverhaul.Street
         private static readonly string[] FlirtWords = { "cute", "gorgeous", "beautiful", "handsome", "single", "sexy", "pretty", "your smile", "your eyes", "a date", "go out with me", "attractive", "fancy you" };
         private static readonly string[] ComplimentWords = { "nice", "love your", "like your", "great", "cool", "you look", "lovely", "smart", "good taste", "well dressed", "style" };
         private static readonly string[] JokeWords = { "joke", "knock knock", "why did", "haha", "lol", "funny" };
-        private static readonly string[] AboutWords = { "what do you do", "your job", "do you work", "work as", "where do you live", "how are you", "how's it going", "hows it going", "how are things", "you from", "about you", "your day" };
+        private static readonly string[] AboutWords = { "what do you do", "your job", "do you work", "work as", "where do you live", "you from", "about you" };
+        private static readonly string[] DayWords = { "how are you", "how's it going", "hows it going", "how are things", "your day", "how's life", "hows life", "how have you been" };
         private static readonly string[] ByeWords = { "bye", "see you", "see ya", "take care", "later", "have a good", "gotta go", "got to go", "i'm off", "im off", "farewell" };
         private static readonly string[] ThanksWords = { "thanks", "thank you", "cheers", "appreciate" };
         private static readonly string[] HelloWords = { "hi", "hello", "hey", "good morning", "good afternoon", "good evening", "howdy", "yo", "hiya", "excuse me" };
@@ -148,6 +149,7 @@ namespace RealLifeOverhaul.Street
                 : Any(t, FlirtWords) ? StreetSayKind.Flirt
                 : Any(t, JokeWords) ? StreetSayKind.Joke
                 : Any(t, AboutWords) ? StreetSayKind.AboutThem
+                : Any(t, DayWords) ? StreetSayKind.Day
                 : Any(t, SmallWords) ? StreetSayKind.SmallTalk
                 : Any(t, ComplimentWords) ? StreetSayKind.Compliment
                 : Any(t, ByeWords) ? StreetSayKind.Goodbye
@@ -176,6 +178,8 @@ namespace RealLifeOverhaul.Street
                 case StreetSayKind.Economy: return StreetAsk.Economy;
                 case StreetSayKind.Business: return StreetAsk.Business;
                 case StreetSayKind.Rude: return StreetAsk.Rude;
+                case StreetSayKind.Day: return StreetAsk.Day;
+                case StreetSayKind.Thanks: return StreetAsk.Thanks;
                 default: return StreetAsk.Count;
             }
         }
