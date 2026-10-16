@@ -55,7 +55,7 @@ Apart from the cameras, buses in view and hair in motion, the mod does its work 
 In each save you want to keep, press "Prepare this save for removing the mod" under Save tools on the options page. Then unsubscribe and restart the game.
 
 [h1]Known limits[/h1]
-Some journeys, hotels, outings indoors, court and prison pass under a fade or as text with choices, and children are never seen as characters. The Guide's "Known limits" page has the full list.
+Some journeys, hotels, indoor outings, court and prison pass under a fade or as text, and children are never seen. The Guide's "Known limits" page has the full list.
 
 [h1]Reporting a problem[/h1]
 Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.29.0) and your other mods.
