@@ -834,7 +834,13 @@ namespace RealLifeOverhaul.Flare
                 }
                 f.Posts.RemoveAt(at);
             }
-            DropReplyLikes(f);
+            DropLikesOfGone(f);
+        }
+
+        /// <summary>Lets go of the likes kept for replies and comments made for display whose post is gone (after any post is taken out). How many went.</summary>
+        public static int DropLikesOfGone(FlareFile f)
+        {
+            return DropReplyLikes(f) + FlareCommentRules.DropLikes(f);
         }
 
         private static bool OwnAfter(List<FlarePost> posts, int at)

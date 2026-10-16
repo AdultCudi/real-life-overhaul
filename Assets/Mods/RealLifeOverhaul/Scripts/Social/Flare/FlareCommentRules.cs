@@ -186,6 +186,98 @@ namespace RealLifeOverhaul.Flare
 
         private const int DisplayBase = -(1 << 30);   // (the friends' replies made for display go from -1000 down: these stay clear of them)
 
+        /// <summary>True for a number a comment is shown under (<see cref="DisplayId"/>), never a post's or a friend's reply's (those stay above half of it).</summary>
+        public static bool IsDisplay(int id) => id < DisplayBase / 2;
+
+        /// <summary>The comment kind of the author a comment is shown as ('f' a friend, 'i' an influencer, 'c' one of the city's people), as <see cref="FlareComment.Kind"/>.</summary>
+        public static char KindOf(FlareAuthor author) => author == FlareAuthor.Friend ? 'f' : author == FlareAuthor.Influencer ? 'i' : 'c';
+
+        // ---------------------------------------------------------------- the player's likes of comments
+
+        /// <summary>The most comments liked that are kept.</summary>
+        public const int LikesKept = 256;   // keys: a heart on every written comment of thirty threads, and a bound for a damaged save
+
+        private const int WhoMost = 1 << 26;   // the largest who a key can hold (the city's cast, a social life's number and an influencer's id are far below it)
+
+        /// <summary>
+        /// The key of a comment the player liked: the post's number in this file, the comment's slot and who writes it (as
+        /// the words' <see cref="Key"/>: a like given to one person never shows under another). Stable, unlike the number the
+        /// comment is shown under; -1 when it cannot be kept (no slot or no who in range).
+        /// </summary>
+        public static long LikeKey(int postId, int slot, char kind, int who)
+        {
+            int code = kind == 'f' ? 1 : kind == 'i' ? 2 : kind == 'c' ? 0 : -1;
+            if (postId < 0 || slot < 0 || slot > 15 || code < 0 || who < 0 || who >= WhoMost)
+            {
+                return -1;
+            }
+            return (long)postId << 32 | (long)slot << 28 | (long)code << 26 | (uint)who;
+        }
+
+        /// <summary>The post a like's key belongs to.</summary>
+        public static int PostOf(long key) => (int)(key >> 32);
+
+        /// <summary>A key's parts, for the save line (C|post|slot|kind|who).</summary>
+        public static void Parts(long key, out int postId, out int slot, out int kind, out int who)
+        {
+            postId = PostOf(key);
+            slot = (int)(key >> 28) & 15;
+            kind = (int)(key >> 26) & 3;
+            who = (int)(key & (WhoMost - 1));
+        }
+
+        /// <summary>A key from the save line's parts (the kind as written: 0 the city's, 1 a friend, 2 an influencer); -1 when a part is out of range.</summary>
+        public static long FromParts(int postId, int slot, int kind, int who)
+        {
+            return kind >= 0 && kind <= 2 ? LikeKey(postId, slot, kind == 1 ? 'f' : kind == 2 ? 'i' : 'c', who) : -1;
+        }
+
+        /// <summary>True if the player liked this comment.</summary>
+        public static bool Liked(FlareFile f, int postId, int slot, char kind, int who)
+        {
+            long key = LikeKey(postId, slot, kind, who);
+            return f != null && key >= 0 && f.CommentLikes.Contains(key);
+        }
+
+        /// <summary>
+        /// The player likes a comment under a post that is not theirs, or takes the like back. The new state. It changes
+        /// nothing else (no affection, standing or followers) and nothing is sent: in a session a like on a shared post's
+        /// comment is this player's own. At <see cref="LikesKept"/> the oldest like goes.
+        /// </summary>
+        public static bool ToggleLike(FlareFile f, int postId, int slot, char kind, int who)
+        {
+            long key = LikeKey(postId, slot, kind, who);
+            if (f == null || key < 0 || f.Post(postId) == null)
+            {
+                return false;
+            }
+            if (f.CommentLikes.Remove(key))
+            {
+                return false;
+            }
+            if (f.CommentLikes.Count >= LikesKept)
+            {
+                f.CommentLikes.RemoveAt(0);
+            }
+            f.CommentLikes.Add(key);
+            return true;
+        }
+
+        /// <summary>Lets go of the likes of comments whose post is gone. How many went.</summary>
+        public static int DropLikes(FlareFile f)
+        {
+            int n = 0;
+            for (int i = f.CommentLikes.Count - 1; i >= 0; i--)
+            {
+                if (f.Post(PostOf(f.CommentLikes[i])) == null)
+                {
+                    f.CommentLikes.RemoveAt(i);
+                    n++;
+                }
+            }
+            return n;
+        }
+
         /// <summary>A number for what was asked already, by post and slot (this file's posts).</summary>
         public static long Asked(int postId, int slot) => (long)postId << 4 | (uint)(slot & 15);
 

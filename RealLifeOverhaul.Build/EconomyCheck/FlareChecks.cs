@@ -30,6 +30,7 @@ internal static partial class Program
         FlareCityChecks();
         FlareBusyChecks();
         FlareReplyLikeChecks();
+        FlareCommentLikeChecks();
     }
 
     private static List<FlarePerson> FlarePeople()

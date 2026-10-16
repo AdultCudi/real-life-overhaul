@@ -505,6 +505,7 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             f.Net.Applied.Clear();
+            FlareRules.DropLikesOfGone(f);
             return true;
         }
 
@@ -531,6 +532,7 @@ namespace RealLifeOverhaul.Flare
                 f.Posts.RemoveAt(i);
                 n++;
             }
+            FlareRules.DropLikesOfGone(f);
             return n;
         }
 

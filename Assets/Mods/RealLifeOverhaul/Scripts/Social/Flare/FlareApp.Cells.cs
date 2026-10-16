@@ -338,12 +338,13 @@ namespace RealLifeOverhaul.Flare
                 }
                 int replies = App.RepliesOf(p, now), reposts = FlareLiveRules.Shown(p.Reposts, p, now), likes = FlareLiveRules.Shown(p.Likes, p, now) + p.PlayerLikes + (p.Liked ? 1 : 0);
                 float slot = Mathf.Min(260f, tw / 3f);
-                bool friendReply = p.Id < 0 && p.Slot >= 0;   // made for display: it can be liked, but not answered or shared
-                FlareKit.Show(_replyHit, !friendReply);
-                FlareKit.Show(_repostHit, !friendReply);
+                bool display = p.Id < 0;   // made for display (a friend's reply under the player's post, a comment under another's): it can be liked, but not answered or shared
+                FlareKit.Show(_replyHit, !display);
+                FlareKit.Show(_repostHit, !display);
+                FlareKit.Show(_likeHit, !display || p.Slot >= 0);
                 FlareKit.Place(_replyHit.rectTransform, x0 - 10f, y, slot, 56f);
                 FlareKit.Place(_repostHit.rectTransform, x0 - 10f + slot, y, slot, 56f);
-                FlareKit.Place(_likeHit.rectTransform, x0 - 10f + (friendReply ? 0f : slot * 2f), y, slot, 56f);
+                FlareKit.Place(_likeHit.rectTransform, x0 - 10f + (display ? 0f : slot * 2f), y, slot, 56f);
                 FlareKit.Set(_replies, replies > 0 ? FlareText.N(replies) : string.Empty);
                 FlareKit.Set(_reposts, reposts > 0 ? FlareText.N(reposts) : string.Empty);
                 FlareKit.Set(_likes, likes > 0 ? FlareText.N(likes) : string.Empty);
