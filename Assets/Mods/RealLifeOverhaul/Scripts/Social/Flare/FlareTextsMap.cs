@@ -15,7 +15,17 @@ namespace RealLifeOverhaul.Flare
         public string Tycoon;        // a rival's post: the rival
         public string Company;       // ...and their company
         public string Reaction;      // another player's post: the reaction the city's rules chose
+        public string Shop;          // data v3's news kinds: the business or chain that posted, or the one reviewed
+        public string Stars;         // ...a review's stars
+        public string Target;        // ...the listed company (its results; a rival's stake or bid: the player's own)
+        public string Player;        // ...the player's name (a rival's suit)
+        public string EarlierFirst;  // an earlier comment the comment answers (data v3): its writer's first name,
+        public string EarlierHandle; // ...handle,
+        public string EarlierWords;  // ...and words
     }
+
+    /// <summary>Who answers a message of the player's on Flare, by the account (FlareTextsMap.DmSpeakerOf).</summary>
+    public enum FlareDmSpeaker { None, Citizen, Influencer, Friend, Partner, Official, Business, Tycoon }
 
     /// <summary>
     /// Which trained intent each of Flare's worded posts is, for RLO Texts (Scripts/Texts): the game decides the post as
@@ -23,7 +33,10 @@ namespace RealLifeOverhaul.Flare
     /// with no intent here keeps its written line. Also the city's people as a card's speaker: their age and way of writing,
     /// stable for each person from the city's seed and their persona. And the comments under posts that are not the
     /// player's (FlareCommentRules): their intent and card; they have no written line, so a post with no intent for its
-    /// comments shows only their count. Game-free (EconomyCheck, TextsChecks.cs, FlareCommentChecks.cs).
+    /// comments shows only their count. Every map takes the running pack's data version (TextsHub.Data): a v2 pack is
+    /// given only v2's intents; a v3 pack also the answers to what the player typed (a message, a post, a reply), the
+    /// decided invitations, the rivals' stake, bid and suit, and comments under every kind of post.
+    /// Game-free (EconomyCheck, TextsChecks.cs, FlareCommentChecks.cs, FlareDmTextsChecks.cs, FlareInviteChecks.cs).
     /// COST: a switch and a few strings a post, when it is made, and a comment, when its words are asked.
     /// </summary>
     public static class FlareTextsMap
@@ -169,8 +182,37 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A rival tycoon's post: their move (Rivals.RivalMoveKind) or, with none, a boast; null for a move the training has no posts on.</summary>
-        public static string Tycoon(int move)
+        /// <summary>
+        /// An account's answer to what the player typed (data v3: official.answer.said, business.answer.said,
+        /// tycoon.answer.said; a city person's citizen.answer.reply) by who gives it: an answer to being called on in a post
+        /// (FlareAnswer.Mention, Brand, Tycoon) or to the player's reply under the account's own post. Null for any other
+        /// author, or a pack trained before data v3.
+        /// </summary>
+        public static string Said(FlareAuthor author, int data)
+        {
+            if (data < TextIntents.DataV3)
+            {
+                return null;
+            }
+            switch (author)
+            {
+                case FlareAuthor.Official: return "official.answer.said";
+                case FlareAuthor.Business:
+                case FlareAuthor.Brand: return "business.answer.said";
+                case FlareAuthor.Tycoon: return "tycoon.answer.said";
+                case FlareAuthor.Citizen: return "citizen.answer.reply";
+                default: return null;
+            }
+        }
+
+        /// <summary>True for the answers that answer what the player wrote in a post that called on the account (a mention, a brand, a rival on an announcement).</summary>
+        public static bool AnswersMention(FlareAnswer answer) => answer == FlareAnswer.Mention || answer == FlareAnswer.Brand || answer == FlareAnswer.Tycoon;
+
+        /// <summary>
+        /// A rival tycoon's post: their move (Rivals.RivalMoveKind) or, with none, a boast; null for a move the training has no
+        /// posts on. Data v3 adds the stake, the bid and the suit (RivalMoveKind 3, 4 and 6).
+        /// </summary>
+        public static string Tycoon(int move, int data = TextIntents.DataV2)
         {
             switch (move)
             {
@@ -178,7 +220,10 @@ namespace RealLifeOverhaul.Flare
                 case 0: return "tycoon.property";
                 case 1: return "tycoon.outlet";
                 case 2: return "tycoon.poach";
+                case 3: return data >= TextIntents.DataV3 ? "tycoon.stake" : null;
+                case 4: return data >= TextIntents.DataV3 ? "tycoon.bid" : null;
                 case 5: return "tycoon.lobby";
+                case 6: return data >= TextIntents.DataV3 ? "tycoon.suit" : null;
                 case 7: return "tycoon.press";
                 default: return null;
             }
@@ -198,21 +243,51 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>An answer of the city's to the player's message, by its line's key; null for the City Office's (no such card).</summary>
-        public static string Dm(string key)
+        // ---------------------------------------------------------------- the answers to the player's messages
+
+        /// <summary>
+        /// The intent of an answer to a message of the player's, by who answers (FlareDmSpeaker) and its line's key, for a
+        /// pack of this data version. Data v3: every account the city answers for answers what was typed (citizen.dm.answer,
+        /// citizen.dm.influencer, friend.dm.answer, partner.dm.answer, official.dm.answer, business.dm.answer,
+        /// tycoon.dm.answer), and an invitation the game decided has its own (FlareInviteRules.TrainedIntent). Before v3 only
+        /// a city person's chat and an influencer's (citizen.dm.chat, citizen.dm.collab). Null: the written line.
+        /// </summary>
+        public static string Dm(string key, FlareDmSpeaker speaker, int data)
         {
-            switch (key)
+            if (key == null || speaker == FlareDmSpeaker.None)
             {
-                case "reallife_flare_dm_answer_chat": return "citizen.dm.chat";
-                case "reallife_flare_dm_answer_collab": return "citizen.dm.collab";
-                default: return FlareInviteRules.TrainedIntent(key, false);   // (an invitation's answer, once the model in use is trained on it)
+                return null;
+            }
+            if (FlareInviteRules.AnswerOf(key, out _))
+            {
+                return speaker == FlareDmSpeaker.Citizen || speaker == FlareDmSpeaker.Influencer ? FlareInviteRules.TrainedIntent(key, data) : null;
+            }
+            if (key != DmChat && key != DmCollab && key != DmOffice)
+            {
+                return null;   // (the city's own first messages, a fan's or a job's, are not answers: their written lines)
+            }
+            if (data < TextIntents.DataV3)
+            {
+                return speaker == FlareDmSpeaker.Citizen && key == DmChat ? "citizen.dm.chat" : speaker == FlareDmSpeaker.Influencer && key == DmCollab ? "citizen.dm.collab" : null;
+            }
+            switch (speaker)
+            {
+                case FlareDmSpeaker.Citizen: return "citizen.dm.answer";
+                case FlareDmSpeaker.Influencer: return "citizen.dm.influencer";
+                case FlareDmSpeaker.Friend: return "friend.dm.answer";
+                case FlareDmSpeaker.Partner: return "partner.dm.answer";
+                case FlareDmSpeaker.Official: return "official.dm.answer";
+                case FlareDmSpeaker.Business: return "business.dm.answer";
+                default: return "tycoon.dm.answer";
             }
         }
+
+        public const string DmChat = "reallife_flare_dm_answer_chat", DmCollab = "reallife_flare_dm_answer_collab", DmOffice = "reallife_flare_dm_answer_office";
 
         /// <summary>
         /// Who answers a message, by its account (FlareDm.With): one of the city's people as Flare keys them ("c12", no colon:
         /// FlareLiveRules.CityDm, the profiles, the conversations) or an influencer ("i:3"). False for any other (the City
-        /// Office, a candidate "c:name", a player of the session): their answers keep the written line.
+        /// Office, a candidate "c:name", a player of the session): see <see cref="DmSpeakerOf"/> for every account.
         /// </summary>
         public static bool DmSpeaker(string with, out bool influencer, out int number)
         {
@@ -234,16 +309,59 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
+        /// <summary>
+        /// Who answers a message, for every account Flare keys (FlareDirector.AccountName): a city person "c12", an
+        /// influencer "i:3", a friend "f3", the partner "p3", an official account "o:1", a brand "b:name" or a city business
+        /// "k:name", a rival "t:name". None for the rest: a player of the session "p:id" (another human), the boss "b", a
+        /// colleague "s:name", a candidate "c:name", the paper "l". 'number' is the citizen's, influencer's, person's or
+        /// account's number, -1 for a named account.
+        /// </summary>
+        public static FlareDmSpeaker DmSpeakerOf(string with, out int number)
+        {
+            if (DmSpeaker(with, out bool influencer, out number))
+            {
+                return influencer ? FlareDmSpeaker.Influencer : FlareDmSpeaker.Citizen;
+            }
+            number = -1;
+            if (with == null || with.Length < 2)
+            {
+                return FlareDmSpeaker.None;
+            }
+            switch (with[0])
+            {
+                case 'f':
+                    return int.TryParse(with.Substring(1), NumberStyles.None, CultureInfo.InvariantCulture, out number) ? FlareDmSpeaker.Friend : FlareDmSpeaker.None;
+                case 'p':
+                    return with[1] != ':' && int.TryParse(with.Substring(1), NumberStyles.None, CultureInfo.InvariantCulture, out number) ? FlareDmSpeaker.Partner : FlareDmSpeaker.None;
+                case 'o':
+                    return with.Length > 2 && with[1] == ':' && int.TryParse(with.Substring(2), NumberStyles.None, CultureInfo.InvariantCulture, out number)
+                        ? FlareDmSpeaker.Official : FlareDmSpeaker.None;
+                case 'b':
+                case 'k':
+                    return with.Length > 2 && with[1] == ':' ? FlareDmSpeaker.Business : FlareDmSpeaker.None;
+                case 't':
+                    return with.Length > 2 && with[1] == ':' ? FlareDmSpeaker.Tycoon : FlareDmSpeaker.None;
+                default:
+                    return FlareDmSpeaker.None;
+            }
+        }
+
+        /// <summary>The name of a named account ("b:Daily Brew", "k:Sam's Deli", "t:Space Karen"); null for any other.</summary>
+        public static string DmName(string with)
+        {
+            return with != null && with.Length > 2 && with[1] == ':' && (with[0] == 'b' || with[0] == 'k' || with[0] == 't') ? with.Substring(2) : null;
+        }
+
         /// <summary>The key an answer's words are kept under: asked and drawn by the same.</summary>
         public static string DmKey(FlareDm m) => "fd:" + m.With + ":" + m.At;
 
         /// <summary>
         /// Whether an answer to the player's message may have its words asked now: the city's (not the player's, not typed),
-        /// not yet shown, with an intent and a speaker the model has a card for.
+        /// not yet shown, with an intent for this pack's data version and an account the model has a card for.
         /// </summary>
-        public static bool DmWants(FlareDm m, long now)
+        public static bool DmWants(FlareDm m, long now, int data)
         {
-            return m != null && !m.Mine && m.Text == null && m.At > now && Dm(m.Key) != null && DmSpeaker(m.With, out _, out _);
+            return m != null && !m.Mine && m.Text == null && m.At > now && Dm(m.Key, DmSpeakerOf(m.With, out _), data) != null;
         }
 
         /// <summary>The player's message an answer answers: the player's latest to the same account before it; null if it has gone (the oldest messages go).</summary>
@@ -265,16 +383,138 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
+        /// <summary>
+        /// A city person's mood today, as a card says it (TextWords.Moods): stable for the day from the city's seed and their
+        /// number; the grumpy are never better than fine.
+        /// </summary>
+        public static string Mood(int citySeed, int number, int day, bool grumpy)
+        {
+            int roll = FlareRules.Roll(citySeed * 31 + number, day, 1207);
+            return TextWords.Moods[grumpy ? roll % 3 : roll % TextWords.Moods.Length];
+        }
+
+        // ---------------------------------------------------------------- the city's replies under the player's own posts
+
+        /// <summary>
+        /// The intent of a city person's reply under a post of the player's (FlareLiveRules.CityReplies), by the reply's kind
+        /// the game chose: an angry pile-on keeps its written lines; with data v3 a post with typed words is answered on its
+        /// words (citizen.reply.words), a built post of a kind with reactions by its kind (citizen.reply.*), and one of the
+        /// other kinds (an arrest, a report, a review...) as a comment on it (citizen.comment.mine_*, <see cref="Mine"/>).
+        /// Before v3: the kinds with reactions only. Null: the written line.
+        /// </summary>
+        public static string Reply(FlarePost parent, FlareReplyKind kind, int data)
+        {
+            if (parent == null || parent.Author != FlareAuthor.Player || kind == FlareReplyKind.Angry)
+            {
+                return null;
+            }
+            bool v3 = data >= TextIntents.DataV3;
+            if (v3 && !string.IsNullOrEmpty(parent.Text))
+            {
+                return "citizen.reply.words";
+            }
+            string postKind = PostKind(parent.Source);
+            if (postKind != null)
+            {
+                return Reaction(kind, postKind) != null ? "citizen.reply." + postKind : null;
+            }
+            string mine = v3 ? Mine(parent) : null;
+            return mine != null ? "citizen.comment." + mine : null;
+        }
+
+        /// <summary>The comment kind of a post of the player's with no reactions of its own (data v3 mine_*); null for none.</summary>
+        public static string Mine(FlarePost p)
+        {
+            switch (p.Source)
+            {
+                case FlareSource.Endorsed: return "mine_endorsed";
+                case FlareSource.GoodDeed: return "mine_good_deed";
+                case FlareSource.Arrested: return "mine_arrested";
+                case FlareSource.Sponsored: return "mine_sponsored";
+                case FlareSource.Shares: return "mine_shares";
+                case FlareSource.Issue: return "mine_issue";
+                case FlareSource.Campaign: return "mine_campaign";
+                case FlareSource.Graduated: return "mine_graduated";
+                case FlareSource.Report: return "mine_report";
+                case FlareSource.Review: return p.Arg >= 4 ? "mine_review_good" : "mine_review_bad";
+                case FlareSource.Announce: return "mine_announce";
+                default: return null;
+            }
+        }
+
+        // What the player reported and announced, and the issue they posted about, as the training's cards say them (defs_v3).
+        private static readonly string[] Reported = { "a pothole", "a street light out", "crime", "litter", "an unsafe building site", "a business", "trouble with the buses", "a power or water cut" };
+        private static readonly string[] Announced = { "a sale", "new opening hours", "an event", "that it is hiring", "new stock" };
+        private static readonly string[] Issues = { "safety after a crime", "the roads after a crash" };
+
+        /// <summary>
+        /// The values of a comment on a post of the player's (citizen.comment.mine_*): the player, and by the post's kind its
+        /// business, stars, company, issue, problem or announcement, and its district in words. A value the post lacks is
+        /// left out (the card is then not built).
+        /// </summary>
+        public static void MineSlots(TextSlots slots, FlarePost p, string player, string district)
+        {
+            slots.Set("player", player);
+            Optional(slots, "district", district);
+            switch (p.Source)
+            {
+                case FlareSource.Sponsored:
+                case FlareSource.Announce:
+                case FlareSource.Review:
+                    Optional(slots, "shop", p.Name);
+                    break;
+                case FlareSource.Shares:
+                    Optional(slots, "target", p.Name);
+                    break;
+            }
+            if (p.Source == FlareSource.Review)
+            {
+                slots.Set("stars", FlareRules.Clamp(p.Arg, 1, 5).ToString(CultureInfo.InvariantCulture));
+            }
+            else if (p.Source == FlareSource.Report)
+            {
+                slots.Set("problem", Reported[FlareRules.Clamp(p.Arg, 0, Reported.Length - 1)]);
+            }
+            else if (p.Source == FlareSource.Announce)
+            {
+                slots.Set("what", Announced[FlareRules.Clamp(p.Arg, 0, Announced.Length - 1)]);
+            }
+            else if (p.Source == FlareSource.Issue)
+            {
+                slots.Set("issue", Issues[FlareRules.Clamp(p.Arg, 0, Issues.Length - 1)]);
+            }
+        }
+
+        /// <summary>The topic of a city person's post as the answer's card names it ("commute", "night out"); null for a post whose topic the training's answers lack.</summary>
+        public static string AnswerTopic(FlarePost p)
+        {
+            string post = p != null && p.Author == FlareAuthor.Citizen && p.Source == FlareSource.CityTalk ? Talk(p.Arg / 10) : null;
+            return post != null ? post.Substring("citizen.post.".Length).Replace('_', ' ') : null;
+        }
+
         // ---------------------------------------------------------------- comments under posts that are not the player's
 
         /// <summary>
         /// The trained intent of a comment under a post that is not the player's (FlareCommentRules), by what the post is
         /// about: a resident answering another resident's post on its topic (citizen.thread.*, defs_flare.make_cit_thread),
         /// a resident reacting to an account's news (citizen.react.*, make_cit_react), a stranger answering another player's
-        /// post (citizen.reply.*, make_cit_reply). 'niche' is an influencer's (FlareNiche), -1 for anybody else. Null where
-        /// the training has nothing that fits: such a post shows only its count of replies.
+        /// post (citizen.reply.*, make_cit_reply). 'niche' is an influencer's (FlareNiche), -1 for anybody else. With data v3
+        /// every other kind of post has its own comments (citizen.comment.*, <see cref="CommentKind"/>), and a post of no
+        /// kind is commented on its words (citizen.comment.words). Null where the training has nothing that fits: such a post
+        /// shows only its count of replies.
         /// </summary>
-        public static string Comment(FlarePost p, int niche)
+        public static string Comment(FlarePost p, int niche, int data = TextIntents.DataV2)
+        {
+            string v2 = CommentV2(p, niche);
+            if (v2 != null || data < TextIntents.DataV3)
+            {
+                return v2;
+            }
+            string kind = CommentKind(p, niche);
+            return kind != null ? "citizen.comment." + kind : p.Author != FlareAuthor.Player ? "citizen.comment.words" : null;
+        }
+
+        private static string CommentV2(FlarePost p, int niche)
         {
             if (p.Author == FlareAuthor.Network && PostKind(p.Source) != null)
             {
@@ -337,7 +577,83 @@ namespace RealLifeOverhaul.Flare
                         case (int)FlareNiche.Fitness: return "citizen.thread.sport";
                         case (int)FlareNiche.Nightlife: return "citizen.thread.night_out";
                         case (int)FlareNiche.LocalNews: return "citizen.thread.everyday";
-                        default: return null;   // (fashion, tech, business: no topic of the training's)
+                        default: return null;   // (fashion, tech, business: data v3's niche_*)
+                    }
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// The data v3 comment kind of a post the v2 training has no comments for (defs_v3.COMMENT_KINDS): a city person's
+        /// accident, fire, market or policy; an influencer's fashion, tech or business; the City Ledger's headline; a city
+        /// business's thanks, late opening or hiring (a rainy day's and a closed day's posts are not made by the game); a
+        /// chain's news; a resident's review; a listed company's results; the City Office's notice and policy, the police's
+        /// advice and transit's service post; a rival's boast, stake, bid, lobbying, suit and piece in the paper. Null otherwise.
+        /// </summary>
+        public static string CommentKind(FlarePost p, int niche)
+        {
+            switch (p.Source)
+            {
+                case FlareSource.CityTalk:
+                    switch ((FlareTalk)(p.Arg / 10))
+                    {
+                        case FlareTalk.Accident: return "accident";
+                        case FlareTalk.Fire: return "fire";
+                        case FlareTalk.Market: return "market";
+                        case FlareTalk.Policy: return "policy";
+                        default: return null;
+                    }
+                case FlareSource.Niche:
+                case FlareSource.Visit:
+                case FlareSource.Hired:
+                case FlareSource.Rival:
+                    switch (niche)
+                    {
+                        case (int)FlareNiche.Fashion: return "niche_fashion";
+                        case (int)FlareNiche.Tech: return "niche_tech";
+                        case (int)FlareNiche.Business: return "niche_business";
+                        default: return null;
+                    }
+                case FlareSource.Headline: return "ledger_headline";
+                case FlareSource.BusinessPost:
+                    if (p.Author == FlareAuthor.Tycoon)
+                    {
+                        if (p.Arg < FlareLiveRules.TycoonMoveArg)
+                        {
+                            return "tycoon_boast";
+                        }
+                        switch (p.Arg - FlareLiveRules.TycoonMoveArg)
+                        {
+                            case 3: return "tycoon_stake";
+                            case 4: return "tycoon_bid";
+                            case 5: return "tycoon_lobby";
+                            case 6: return "tycoon_suit";
+                            case 7: return "tycoon_press";
+                            default: return null;
+                        }
+                    }
+                    if (p.Author != FlareAuthor.Business)
+                    {
+                        return null;
+                    }
+                    switch (p.Arg)
+                    {
+                        case 2: return "biz_thanks";
+                        case 3: return "biz_late";
+                        case 4: return "biz_hiring";
+                        default: return null;
+                    }
+                case FlareSource.BrandNews: return p.Author == FlareAuthor.Brand ? "brand_news" : null;
+                case FlareSource.Review: return p.Author == FlareAuthor.Citizen ? (p.Arg >= 4 ? "review_good" : "review_bad") : null;
+                case FlareSource.Results: return p.Arg == 1 ? "results_up" : "results_down";
+                case FlareSource.Official:
+                    switch ((FlareOfficialPost)(p.Arg / 10))
+                    {
+                        case FlareOfficialPost.Notice: return "official_notice";
+                        case FlareOfficialPost.Advice: return "official_advice";
+                        case FlareOfficialPost.Service: return "official_service";
+                        case FlareOfficialPost.Policy: return "official_policy";
+                        default: return null;
                     }
                 default: return null;
             }
@@ -369,10 +685,15 @@ namespace RealLifeOverhaul.Flare
             return Reaction(FlareLiveRules.ReplyKindOf(p, FlareRules.Roll(seed, slot, 847)), PostKind(p.Source));
         }
 
+        /// <summary>True for a comment intent that can answer an earlier comment under its post (data v3's citizen.comment.*; v2's comments only answer the post).</summary>
+        public static bool AnswersComments(string intent) => intent != null && intent.StartsWith("citizen.comment.", System.StringComparison.Ordinal);
+
         /// <summary>
         /// A comment's card: its intent, its use (Flare's comments and replies) and the values the intent's lines take from the
         /// post it answers. The speaker (r.Who) is filled by the caller. False if a value the card needs is missing (nothing
-        /// is made up: that comment is not written).
+        /// is made up: that comment is not written). A data v3 comment with an earlier comment on the post (post.Earlier*)
+        /// answers it: the earlier comment is history's last line, and a comment on a post's words becomes
+        /// citizen.comment.reply.
         /// </summary>
         public static bool CommentCard(TextRequest r, string intent, FlareCommentPost post)
         {
@@ -384,6 +705,10 @@ namespace RealLifeOverhaul.Flare
             r.Use = TextUse.Replies;
             r.Slots.Clear();
             r.History.Clear();
+            if (AnswersComments(intent))
+            {
+                return CommentCardV3(r, intent.Substring("citizen.comment.".Length), post);
+            }
             if (intent.StartsWith("citizen.thread.", System.StringComparison.Ordinal))
             {
                 if (string.IsNullOrEmpty(post.First) || string.IsNullOrEmpty(post.Handle) || string.IsNullOrEmpty(post.Words))
@@ -391,16 +716,16 @@ namespace RealLifeOverhaul.Flare
                     return false;
                 }
                 r.Slots.Set("other", post.First);
-                Optional(r, "district", post.District);
+                Optional(r.Slots, "district", post.District);
                 r.History.Add(new TextSaid(post.Handle, post.Words));
                 return true;
             }
             if (intent.StartsWith("citizen.react.", System.StringComparison.Ordinal))
             {
-                Optional(r, "district", post.District);
-                Optional(r, "home", post.Home);
-                Optional(r, "tycoon", post.Tycoon);
-                Optional(r, "company", post.Company);
+                Optional(r.Slots, "district", post.District);
+                Optional(r.Slots, "home", post.Home);
+                Optional(r.Slots, "tycoon", post.Tycoon);
+                Optional(r.Slots, "company", post.Company);
                 return true;
             }
             if (intent.StartsWith("citizen.reply.", System.StringComparison.Ordinal))
@@ -416,11 +741,61 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        private static void Optional(TextRequest r, string name, string value)
+        // A data v3 comment (defs_v3.make_comment, make_comment_pair): a thread kind and a post's words with the post in
+        // history, the paper's headline under "the City Ledger", a news kind told in news and facts; an earlier comment last.
+        private static bool CommentCardV3(TextRequest r, string kind, FlareCommentPost post)
+        {
+            bool earlier = !string.IsNullOrEmpty(post.EarlierHandle) && !string.IsNullOrEmpty(post.EarlierWords);
+            bool words = kind == "words" || kind == "reply";
+            if (words || System.Array.IndexOf(TextIntents.ThreadKinds, kind) >= 0)
+            {
+                if (string.IsNullOrEmpty(post.First) || string.IsNullOrEmpty(post.Handle) || string.IsNullOrEmpty(post.Words))
+                {
+                    return false;
+                }
+                if (words)
+                {
+                    if (earlier && string.IsNullOrEmpty(post.EarlierFirst))
+                    {
+                        return false;
+                    }
+                    r.Intent = earlier ? "citizen.comment.reply" : "citizen.comment.words";
+                    Optional(r.Slots, "other2", earlier ? post.EarlierFirst : null);
+                }
+                r.Slots.Set("other", post.First);
+                r.History.Add(new TextSaid(post.Handle, post.Words));
+            }
+            else if (kind == "ledger_headline")
+            {
+                if (string.IsNullOrEmpty(post.Words))
+                {
+                    return false;
+                }
+                r.History.Add(new TextSaid("the City Ledger", post.Words));
+            }
+            else
+            {
+                Optional(r.Slots, "shop", post.Shop);
+                Optional(r.Slots, "other", post.First);
+                Optional(r.Slots, "stars", post.Stars);
+                Optional(r.Slots, "target", post.Target);
+                Optional(r.Slots, "tycoon", post.Tycoon);
+                Optional(r.Slots, "company", post.Company);
+                Optional(r.Slots, "player", post.Player);
+                Optional(r.Slots, "district", post.District);
+            }
+            if (earlier)
+            {
+                r.History.Add(new TextSaid(post.EarlierHandle, post.EarlierWords));
+            }
+            return true;
+        }
+
+        private static void Optional(TextSlots slots, string name, string value)
         {
             if (!string.IsNullOrEmpty(value))
             {
-                r.Slots.Set(name, value);
+                slots.Set(name, value);
             }
         }
 
@@ -469,10 +844,10 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- for the checks
 
-        /// <summary>Every intent Flare's map can give.</summary>
-        public static List<string> Mapped()
+        /// <summary>Every intent Flare's map can give, for a pack of this data version.</summary>
+        public static List<string> Mapped(int data = TextIntents.DataV2)
         {
-            var list = new List<string>(48);
+            var list = new List<string>(140);
             foreach (KeyValuePair<string, string[]> pair in Reactions)
             {
                 list.Add("citizen.reply." + pair.Key);
@@ -492,41 +867,74 @@ namespace RealLifeOverhaul.Flare
                 Add(list, Answer((FlareAnswer)a, FlareAuthor.Business));
                 Add(list, Answer((FlareAnswer)a, FlareAuthor.Tycoon));
             }
+            for (int au = 0; au <= (int)FlareAuthor.Tycoon; au++)
+            {
+                Add(list, Said((FlareAuthor)au, data));
+            }
             for (int m = -1; m < 8; m++)
             {
-                Add(list, Tycoon(m));
+                Add(list, Tycoon(m, data));
             }
             for (int b = 0; b < 7; b++)
             {
                 Add(list, Business(b));
             }
-            Add(list, Dm("reallife_flare_dm_answer_chat"));
-            Add(list, Dm("reallife_flare_dm_answer_collab"));
+            string[] keys = { DmChat, DmCollab, DmOffice };
+            List<string> invites = FlareInviteRules.Keys();
+            for (int s = 1; s <= (int)FlareDmSpeaker.Tycoon; s++)
+            {
+                for (int k = 0; k < keys.Length; k++)
+                {
+                    Add(list, Dm(keys[k], (FlareDmSpeaker)s, data));
+                }
+                for (int k = 0; k < invites.Count; k++)
+                {
+                    Add(list, Dm(invites[k], (FlareDmSpeaker)s, data));
+                }
+            }
+            var mine = new FlarePost { Author = FlareAuthor.Player };
+            for (int s = 1; s <= (int)FlareSource.Answer; s++)
+            {
+                for (int arg = 1; arg <= 5; arg++)
+                {
+                    mine.Source = (FlareSource)s;
+                    mine.Arg = arg;
+                    mine.Text = null;
+                    Add(list, Reply(mine, FlareReplyKind.Agree, data));
+                    mine.Text = "typed";
+                    Add(list, Reply(mine, FlareReplyKind.Agree, data));
+                }
+            }
             list.Add("citizen.review");
-            CommentIntents(list);
+            CommentIntents(list, data);
             return list;
         }
 
-        /// <summary>Every intent a comment can be asked with (every source, kind, author and niche swept), added to 'list' once each.</summary>
-        public static void CommentIntents(List<string> list)
+        /// <summary>Every intent a comment can be asked with (every source, kind, author and niche swept), added to 'list' once each; with data v3 the answer to an earlier comment too.</summary>
+        public static void CommentIntents(List<string> list, int data = TextIntents.DataV2)
         {
-            FlareAuthor[] authors = { FlareAuthor.Citizen, FlareAuthor.Official, FlareAuthor.Business, FlareAuthor.Tycoon, FlareAuthor.Friend, FlareAuthor.Influencer, FlareAuthor.Network };
+            FlareAuthor[] authors = { FlareAuthor.Citizen, FlareAuthor.Official, FlareAuthor.Business, FlareAuthor.Tycoon, FlareAuthor.Friend, FlareAuthor.Influencer, FlareAuthor.Network,
+                FlareAuthor.Brand, FlareAuthor.Company, FlareAuthor.Ledger };
             var p = new FlarePost();
             for (int s = 1; s <= (int)FlareSource.Answer; s++)
             {
                 for (int a = 0; a < authors.Length; a++)
                 {
-                    for (int arg = 0; arg < 100; arg++)
+                    for (int arg = 0; arg < 200; arg++)   // (a city post's Arg is its topic times ten: FlareTalk runs to 15)
                     {
                         for (int niche = -1; niche <= (int)FlareNiche.Business; niche++)
                         {
                             p.Source = (FlareSource)s;
                             p.Author = authors[a];
                             p.Arg = arg;
-                            Add(list, Comment(p, niche));
+                            Add(list, Comment(p, niche, data));
                         }
                     }
                 }
+            }
+            if (list.Contains("citizen.comment.words"))
+            {
+                Add(list, "citizen.comment.reply");   // (a comment on a post's words that answers an earlier comment: CommentCard)
             }
         }
 
@@ -549,6 +957,7 @@ namespace RealLifeOverhaul.Flare
                     p.Add(what);
                 }
             }
+            const int v2 = TextIntents.DataV2, v3 = TextIntents.DataV3;
             Want(PostKind(FlareSource.Opened) == "opened" && PostKind(FlareSource.RecordDay) == "record" && PostKind(FlareSource.Arrested) == null && PostKind(FlareSource.Report) == null,
                 "the player's posts map to the training's kinds; an arrest or a report has no replies of its own");
             Want(Reaction(FlareReplyKind.Agree, "opened") == "cheer" && Reaction(FlareReplyKind.Angry, "opened") == null && Reaction(FlareReplyKind.Kind, "selfie") == "kind"
@@ -563,18 +972,80 @@ namespace RealLifeOverhaul.Flare
             Want(Answer(FlareAnswer.Works, FlareAuthor.Official) == "official.answer.crew" && Answer(FlareAnswer.Transit, FlareAuthor.Official) == "official.answer.sorry_wait"
                  && Answer(FlareAnswer.Thanks, FlareAuthor.Business) == "business.reply.good" && Answer(FlareAnswer.Tycoon, FlareAuthor.Tycoon) == "tycoon.answer"
                  && Answer(FlareAnswer.Nothing, FlareAuthor.Official) == null, "an answer maps by what it says and who says it; the faults' verdicts keep their written lines");
-            Want(Tycoon(-1) == "tycoon.boast" && Tycoon(0) == "tycoon.property" && Tycoon(3) == null && Business(0) == "business.post.sale" && Business(5) == null,
-                "a tycoon's and a business's posts map by their kind");
-            Want(Dm("reallife_flare_dm_answer_chat") == "citizen.dm.chat" && Dm("reallife_flare_dm_answer_office") == null, "a message's answer maps by its line");
+            Want(Said(FlareAuthor.Official, v3) == "official.answer.said" && Said(FlareAuthor.Brand, v3) == "business.answer.said" && Said(FlareAuthor.Tycoon, v3) == "tycoon.answer.said"
+                 && Said(FlareAuthor.Citizen, v3) == "citizen.answer.reply" && Said(FlareAuthor.Official, v2) == null && Said(FlareAuthor.Friend, v3) == null
+                 && AnswersMention(FlareAnswer.Mention) && AnswersMention(FlareAnswer.Brand) && !AnswersMention(FlareAnswer.Thanks),
+                "an answer to what the player typed is the account's own (data v3), never asked of a v2 pack");
+            Want(Tycoon(-1) == "tycoon.boast" && Tycoon(0) == "tycoon.property" && Tycoon(3) == null && Tycoon(3, v3) == "tycoon.stake" && Tycoon(4, v3) == "tycoon.bid"
+                 && Tycoon(6, v3) == "tycoon.suit" && Tycoon(6, v2) == null && Business(0) == "business.post.sale" && Business(5) == null,
+                "a tycoon's and a business's posts map by their kind; the stake, the bid and the suit only for a v3 pack");
+            Want(Dm(DmChat, FlareDmSpeaker.Citizen, v2) == "citizen.dm.chat" && Dm(DmCollab, FlareDmSpeaker.Influencer, v2) == "citizen.dm.collab"
+                 && Dm(DmOffice, FlareDmSpeaker.Official, v2) == null && Dm(DmChat, FlareDmSpeaker.Friend, v2) == null
+                 && Dm(DmChat, FlareDmSpeaker.Citizen, v3) == "citizen.dm.answer" && Dm(DmCollab, FlareDmSpeaker.Influencer, v3) == "citizen.dm.influencer"
+                 && Dm(DmChat, FlareDmSpeaker.Friend, v3) == "friend.dm.answer" && Dm(DmChat, FlareDmSpeaker.Partner, v3) == "partner.dm.answer"
+                 && Dm(DmOffice, FlareDmSpeaker.Official, v3) == "official.dm.answer" && Dm(DmChat, FlareDmSpeaker.Business, v3) == "business.dm.answer"
+                 && Dm(DmChat, FlareDmSpeaker.Tycoon, v3) == "tycoon.dm.answer" && Dm("reallife_flare_dm_fan", FlareDmSpeaker.Citizen, v3) == null
+                 && Dm(DmChat, FlareDmSpeaker.None, v3) == null,
+                "a message's answer maps by who answers and the pack's data version (v2: a city person's chat and an influencer's; v3: every account, answering what was typed)");
+            Want(Dm(FlareInviteRules.KeyStart + "yes_coffee", FlareDmSpeaker.Citizen, v3) == "citizen.dm.invite_yes" && Dm(FlareInviteRules.KeyStart + "yes_coffee", FlareDmSpeaker.Citizen, v2) == null
+                 && Dm(FlareInviteRules.KeyStart + "maybe_influencer", FlareDmSpeaker.Influencer, v3) == "citizen.dm.invite_maybe"
+                 && Dm(FlareInviteRules.KeyStart + "maybe_plan", FlareDmSpeaker.Citizen, v3) == null,
+                "an invitation's answer is the decided intent for a v3 pack (an influencer as a city person; the plan on already keeps its line), the written line for a v2 pack");
             Want(DmSpeaker("c6", out bool inf, out int n) && !inf && n == 6 && DmSpeaker("c27", out inf, out n) && !inf && n == 27
                  && DmSpeaker("i:3", out inf, out n) && inf && n == 3 && !DmSpeaker("c:Ashby", out _, out _) && !DmSpeaker("o:0", out _, out _)
                  && !DmSpeaker("p:host", out _, out _) && !DmSpeaker("c", out _, out _) && !DmSpeaker("c-1", out _, out _) && !DmSpeaker(null, out _, out _),
                 "a message's answerer is read from its account as Flare keys it (a city person 'c6', an influencer 'i:3'); the rest keep the written line");
+            Want(DmSpeakerOf("f4", out n) == FlareDmSpeaker.Friend && n == 4 && DmSpeakerOf("p2", out n) == FlareDmSpeaker.Partner && n == 2
+                 && DmSpeakerOf("o:1", out n) == FlareDmSpeaker.Official && n == 1 && DmSpeakerOf("b:Daily Brew", out _) == FlareDmSpeaker.Business
+                 && DmSpeakerOf("k:Sam's Deli", out _) == FlareDmSpeaker.Business && DmSpeakerOf("t:Space Karen", out _) == FlareDmSpeaker.Tycoon
+                 && DmSpeakerOf("p:host", out _) == FlareDmSpeaker.None && DmSpeakerOf("b", out _) == FlareDmSpeaker.None && DmSpeakerOf("s:Ana", out _) == FlareDmSpeaker.None
+                 && DmSpeakerOf("c:Ashby", out _) == FlareDmSpeaker.None && DmSpeakerOf("l", out _) == FlareDmSpeaker.None && DmSpeakerOf("c6", out n) == FlareDmSpeaker.Citizen && n == 6,
+                "every account is read: a friend 'f4', the partner 'p2', an official 'o:1', a brand or a business, a rival; another player, the boss, a colleague, a candidate and the paper are not answered by the model");
+            var post = new FlarePost { Author = FlareAuthor.Player, Source = FlareSource.Opened };
+            Want(Reply(post, FlareReplyKind.Agree, v3) == "citizen.reply.opened" && Reply(post, FlareReplyKind.Angry, v3) == null && Reply(post, FlareReplyKind.Doubt, v2) == "citizen.reply.opened",
+                "a city reply under a built post of the player's is by its kind and reaction; an angry pile-on keeps its written lines");
+            post.Text = "Doors open at nine.";
+            Want(Reply(post, FlareReplyKind.Agree, v3) == "citizen.reply.words" && Reply(post, FlareReplyKind.Agree, v2) == "citizen.reply.opened",
+                "a post with typed words is answered on its words by a v3 pack, by its kind by a v2 pack");
+            var report = new FlarePost { Author = FlareAuthor.Player, Source = FlareSource.Report, Arg = (int)FlareReport.Lamp };
+            var slots = new TextSlots();
+            MineSlots(slots, report, "Alex", "Midtown");
+            Want(Reply(report, FlareReplyKind.Kind, v3) == "citizen.comment.mine_report" && Reply(report, FlareReplyKind.Kind, v2) == null
+                 && slots.Get("problem") == "a street light out" && slots.Get("player") == "Alex" && slots.Get("district") == "Midtown"
+                 && Mine(new FlarePost { Source = FlareSource.Review, Arg = 2 }) == "mine_review_bad" && Mine(new FlarePost { Source = FlareSource.Selfie }) == null,
+                "a post of the player's with no reactions of its own is commented on as its kind (data v3 mine_*), with its values");
+            Want(AnswerTopic(new FlarePost { Author = FlareAuthor.Citizen, Source = FlareSource.CityTalk, Arg = (int)FlareTalk.Night * 10 }) == "night out"
+                 && AnswerTopic(new FlarePost { Author = FlareAuthor.Citizen, Source = FlareSource.CityTalk, Arg = (int)FlareTalk.Accident * 10 }) == null,
+                "a resident answering under their own post names its topic as the training does ('night out'); a topic it lacks has no answer");
+            FlarePost P(FlareAuthor a, FlareSource s, int arg) => new FlarePost { Author = a, Source = s, Arg = arg };
+            Want(Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Accident * 10), -1, v3) == "citizen.comment.accident"
+                 && Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Accident * 10), -1, v2) == null
+                 && Comment(P(FlareAuthor.Citizen, FlareSource.CityTalk, (int)FlareTalk.Weather * 10), -1, v3) == "citizen.thread.weather"
+                 && Comment(P(FlareAuthor.Influencer, FlareSource.Niche, 0), (int)FlareNiche.Tech, v3) == "citizen.comment.niche_tech"
+                 && Comment(P(FlareAuthor.Ledger, FlareSource.Headline, 0), -1, v3) == "citizen.comment.ledger_headline"
+                 && Comment(P(FlareAuthor.Business, FlareSource.BusinessPost, 3), -1, v3) == "citizen.comment.biz_late"
+                 && Comment(P(FlareAuthor.Tycoon, FlareSource.BusinessPost, 1), -1, v3) == "citizen.comment.tycoon_boast"
+                 && Comment(P(FlareAuthor.Tycoon, FlareSource.BusinessPost, FlareLiveRules.TycoonMoveArg + 6), -1, v3) == "citizen.comment.tycoon_suit"
+                 && Comment(P(FlareAuthor.Tycoon, FlareSource.BusinessPost, FlareLiveRules.TycoonMoveArg), -1, v3) == "citizen.react.tycoon_buys"
+                 && Comment(P(FlareAuthor.Citizen, FlareSource.Review, 5), -1, v3) == "citizen.comment.review_good"
+                 && Comment(P(FlareAuthor.Company, FlareSource.Results, 0), -1, v3) == "citizen.comment.results_down"
+                 && Comment(P(FlareAuthor.Official, FlareSource.Official, (int)FlareOfficialPost.Advice * 10), -1, v3) == "citizen.comment.official_advice"
+                 && Comment(P(FlareAuthor.Brand, FlareSource.BrandNews, 0), -1, v3) == "citizen.comment.brand_news"
+                 && Comment(P(FlareAuthor.Influencer, FlareSource.Apology, 0), -1, v3) == "citizen.comment.words"
+                 && Comment(P(FlareAuthor.Influencer, FlareSource.Apology, 0), -1, v2) == null,
+                "a v3 pack's comments: every kind of post has its own (an accident, a niche, the paper, a shop's, a rival's move, a review, results, an official notice), a post of no kind on its words; v2's maps stay");
             var c = new FlareCitizen { Index = 3, First = "Dana", Last = "Reyes", Handle = "@dana_reyes12", Persona = FlarePersona.Student };
             int age = Age(c, 77);
             Want(age >= 18 && age <= 24 && Age(c, 77) == age, "a student's age is young and the same every time");
             c.Persona = FlarePersona.Grumpy;
             Want(Style(c, 77).StartsWith("grumpy", System.StringComparison.Ordinal) && Style(c, 77) == Style(c, 77), "the grumpy write grumpily, the same every time");
+            bool moods = true, grumpyLow = true;
+            for (int d = 0; d < 40; d++)
+            {
+                moods &= Mood(77, 3, d, false) == Mood(77, 3, d, false) && System.Array.IndexOf(TextWords.Moods, Mood(77, 3, d, false)) >= 0;
+                grumpyLow &= System.Array.IndexOf(TextWords.Moods, Mood(77, 3, d, true)) <= 2;
+            }
+            Want(moods && grumpyLow && Mood(77, 3, 1, false) != null, "a city person's mood is one of the five, the same all day; the grumpy never better than fine");
             return p;
         }
     }

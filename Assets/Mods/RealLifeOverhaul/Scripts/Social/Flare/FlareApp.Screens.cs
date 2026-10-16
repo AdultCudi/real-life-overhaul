@@ -569,6 +569,11 @@ namespace RealLifeOverhaul.Flare
                         Row(CellPost).Post = _synthetic[next++];
                     }
                     Row(CellPost).Post = r;
+                    FlarePost answer = r.Author == FlareAuthor.Player ? _director.AnswerShown(r, now) : null;   // (RLO Texts: the author answering the player's reply, right under it)
+                    if (answer != null)
+                    {
+                        Row(CellPost).Post = answer;
+                    }
                 }
             }
             for (int i = next; i < _synthetic.Count; i++)

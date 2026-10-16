@@ -177,6 +177,7 @@ namespace RealLifeOverhaul.Flare
             LiveStart(file);
             _textAsked.Clear();   // (RLO Texts: post numbers are this file's)
             _textDms.Clear();
+            _textAnswers.Clear();
             CommentsForget();
             _file = file;
             _running = true;
@@ -205,6 +206,7 @@ namespace RealLifeOverhaul.Flare
             _file = null;
             _textAsked.Clear();
             _textDms.Clear();
+            _textAnswers.Clear();
             CommentsForget();
             if (_view != null)
             {
@@ -242,6 +244,7 @@ namespace RealLifeOverhaul.Flare
             _file = null;
             _textAsked.Clear();
             _textDms.Clear();
+            _textAnswers.Clear();
             CommentsForget();
             if (_view != null)
             {
