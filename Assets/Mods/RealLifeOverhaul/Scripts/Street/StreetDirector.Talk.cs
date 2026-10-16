@@ -51,11 +51,23 @@ namespace RealLifeOverhaul.Street
         {
             try
             {
-                if (_chat != null || _offered == null || !StreetGame.Usable(_offered) || StreetGame.DialogOpen)
+                PlayerController player = StreetGame.Player;
+                bool usable = _offered != null && (_offeredWalker != null ? StreetGame.Usable(_offeredWalker) : StreetGame.Usable(_offered));
+                string what = Meta.Dev.Verbose && player != null ? What(player.transform.position, player.transform.forward) : null;
+                if (_chat != null || !usable || StreetGame.DialogOpen)
                 {
+                    if (what != null)
+                    {
+                        Logger?.Info("Street talk check (offer): Talk pressed for " + what + ": nothing started ("
+                                     + (_chat != null ? "a talk is on already" : !usable ? "they are no longer there to talk to" : "the game's dialogue panel is open") + ").");
+                    }
                     return;
                 }
-                Begin(_offered, Time.unscaledTime);
+                bool began = Begin(_offered, _offeredWalker, _offeredKind, Time.unscaledTime);
+                if (what != null)
+                {
+                    Logger?.Info("Street talk check (offer): Talk pressed for " + what + ": " + (began ? "they stop for the player: PASS." : "FAIL (they could not be stopped)."));
+                }
             }
             catch (Exception e)
             {
@@ -64,7 +76,7 @@ namespace RealLifeOverhaul.Street
         }
 
         /// <summary>Stops somebody for the player: who they are, whether they have time, their first line. False if they cannot be stopped.</summary>
-        internal bool Begin(Pedestrian p, float now)
+        internal bool Begin(BaseHuman p, Pedestrian walker, StreetFigure kind, float now)
         {
             int day = TimeHelper.CurrentDay;
             StreetStranger who = Who(p, day);
@@ -76,12 +88,14 @@ namespace RealLifeOverhaul.Street
             StreetGame.Fill(_facts, _addresses);
             StreetMemo memo = _memory.Get(who.Key, day);
             var chat = new StreetChat { Who = who, Memo = memo, Approach = StreetRules.Approach(who, memo, _facts, Settings.StreetBrush, StreetGame.Phone(p)) };
-            if (!_hold.Take(p, player.transform.position))
+            if (!_hold.Take(p, walker, kind, player.transform.position, this))
             {
                 return false;
             }
             _door.Hide("talking");
             _offered = null;
+            _offeredWalker = null;
+            _aim.Clear();
             _chat = chat;
             _phase = 1;
             _pending = _typing = _flirted = false;
@@ -100,7 +114,7 @@ namespace RealLifeOverhaul.Street
             }
             _openAt = now + StreetRules.Beat;
             _openBy = now + (float)StreetRules.Hold;
-            Logger?.Info("Street talk: " + who.Name + ", " + who.Age + ", stopped" + (chat.Approach.Brush != StreetBrush.None ? " and has no time (" + chat.Approach.Brush + ")" : string.Empty)
+            Logger?.Info("Street talk: " + who.Name + ", " + who.Age + " (" + KindName(_hold.Kind) + "), stopped" + (chat.Approach.Brush != StreetBrush.None ? " and has no time (" + chat.Approach.Brush + ")" : string.Empty)
                          + "; warmth " + chat.Approach.Warmth + ", " + chat.Approach.Patience + " turns" + (chat.Approach.Recognised ? ", knows the player's face" : string.Empty)
                          + (memo.Talks > 0 ? ", talked " + memo.Talks + " time(s) today" : string.Empty)
                          + (_firstCame ? "; the first line was guessed ahead." : _firstAsked ? "; the first line is asked of RLO Texts." : "."));
@@ -122,7 +136,7 @@ namespace RealLifeOverhaul.Street
                 End("the game took them");
                 return;
             }
-            Vector3 at = _hold.Walker.transform.position;
+            Vector3 at = _hold.Body.transform.position;
             if (player == null || (player.transform.position - at).sqrMagnitude > StreetRules.WalkAway * StreetRules.WalkAway)
             {
                 End("the player walked away");
@@ -464,7 +478,7 @@ namespace RealLifeOverhaul.Street
             return new StreetMeet
             {
                 First = s.First, Last = s.Last, Female = s.Female, Age = s.Age, Job = s.Job, District = s.District, Traits = s.Traits, Warm = StreetRules.Score(_chat) >= StreetRules.NumberAt,
-                Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Walker) : null
+                Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Body) : null
             };
         }
 
@@ -702,7 +716,7 @@ namespace RealLifeOverhaul.Street
         // ---------------------------------------------------------------- RLO Texts: the first line, guessed ahead
 
         // While the player looks at somebody, the line they would open with is asked ahead (only when RLO Texts runs).
-        private void GuessFor(Pedestrian p)
+        private void GuessFor(BaseHuman p)
         {
             if (Guess == null || p == null)
             {
