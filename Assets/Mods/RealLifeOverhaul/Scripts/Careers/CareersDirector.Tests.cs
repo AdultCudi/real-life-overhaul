@@ -533,5 +533,47 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
+
+        /// <summary>
+        /// The test button: a class of the first online course under way (the coding bootcamp, enrolled on free, if there is
+        /// none) begun now at the computer at home, whatever the timetable says, as its button there begins it.
+        /// </summary>
+        public void TestComputer()
+        {
+            if (!TestReady(out _))
+            {
+                return;
+            }
+            try
+            {
+                string why = !CareersGame.AtHome() ? "reallife_study_why_not_home" : DeskGame.UsableComputer() == null ? "reallife_study_why_no_computer" : SeatBusy();
+                Enrolment e = null;
+                for (int i = 0; why == null && i < _study.Courses.Count && e == null; i++)
+                {
+                    Enrolment o = _study.Courses[i];
+                    e = o.Stage == (int)EnrolStage.Studying && o.Def != null && o.Def.Timetabled && ClassPlayRules.HeldOnline(o.Def, (StudyMode)o.Mode) ? o : null;
+                }
+                if (why == null && e == null)
+                {
+                    e = new Enrolment { Course = StudyCatalogue.CodingBootcamp, Start = Save.Day, Instalments = 1 };
+                    _study.Courses.Add(e);
+                }
+                if (why == null)
+                {
+                    e.SettledDay = Math.Min(e.SettledDay, Save.Day - 1);
+                    why = StartAtComputer(DeskGame.UsableComputer(), ClassSitting(e, e.Def.Hours * 60), e.Def.Key);
+                    Changed();
+                }
+                Logger?.Info("Careers test: a class at the computer at home " + (why == null ? "begun (" + e.Def.Key + ")." : "not begun (" + why + ")."));
+                if (why != null)
+                {
+                    UI.Notification.Notifications.Show(UI.Notification.NotificationType.Warning, why, null, 8f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Fault("a test", ex);
+            }
+        }
     }
 }

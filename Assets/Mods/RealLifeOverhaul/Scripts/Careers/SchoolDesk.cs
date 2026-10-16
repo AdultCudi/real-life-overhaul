@@ -34,6 +34,11 @@ namespace RealLifeOverhaul.Careers
     /// At Hudson City University (Careers/CampusInterior) the classrooms are the school's own, with one of the university's
     /// courses in each: there the panel is the class's alone (<see cref="DeskOffer.Only"/>): the room's course as its
     /// headline, where it is and when its class is, Cancel and the class's button, and none of the game's courses.
+    ///
+    /// From the Campus app (Attend, Sit, Homework while at the school or the university) the director opens the desk's
+    /// panel itself, as a click on the door does, and presses the button for the player (<see cref="Begin"/>): one press,
+    /// and the player walks to the desk and sits. A walk called off (a click elsewhere, no way there) counts nothing and
+    /// says nothing; once sat, the minutes are counted once whichever way it ends (<see cref="ClassTally"/>).
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
@@ -53,9 +58,10 @@ namespace RealLifeOverhaul.Careers
 
         private bool _mine;
         private Sitting _sitting;
+        private ClassTally _tally;
+        private LabelInfo[] _running;
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
-        private int _length, _done;
         private float _nextType;
         private ButtonInfo[] _stop;
 
@@ -63,7 +69,7 @@ namespace RealLifeOverhaul.Careers
         internal sealed class DeskOffer
         {
             public int Course;
-            public bool Exam;
+            public SittingKind Kind;   // a class, a piece of homework or an exam
             public bool Can;
             public string Key;
             public object Arguments;
@@ -165,13 +171,34 @@ namespace RealLifeOverhaul.Careers
 
         // ---------------------------------------------------------------- the mod's class
 
+        /// <summary>
+        /// The class's button pressed for the player: the Campus app's Attend (Sit, Homework) sent them to this desk, so
+        /// the one press goes the whole way, as a press of the button would, a frame after the game's panel has seen the
+        /// desk not started. The same checks as the button (busy, tired, the class's window) say why not, if not.
+        /// </summary>
+        public void Begin()
+        {
+            _director.StartCoroutine(Guard.Routine(BeginSoon()));
+        }
+
+        private IEnumerator BeginSoon()
+        {
+            yield return null;
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            bool shown = uis != null && uis.playerActivityUI != null && ReferenceEquals(uis.playerActivityUI.GetCurrentActivity, this);
+            if (shown && !_mine && _offer.Can && _inner.GetState() == PlayerActivityState.NotStarted)
+            {
+                Press();
+            }
+        }
+
         private void Press()
         {
             if (_mine || _inner.GetState() != PlayerActivityState.NotStarted)
             {
                 return;
             }
-            string why = _director.DeskSitting(_offer.Course, _offer.Exam, out Sitting sitting);
+            string why = _director.DeskSitting(_offer.Course, _offer.Kind, out Sitting sitting);
             if (why != null)
             {
                 Notifications.Show(NotificationType.Warning, why, null, 8f);
@@ -179,8 +206,7 @@ namespace RealLifeOverhaul.Careers
             }
             _mine = true;
             _sitting = sitting;
-            _length = Math.Max(1, sitting.SkipMinutes);
-            _done = 0;
+            _tally = new ClassTally(sitting.SkipMinutes);
             _state = PlayerActivityState.MovingTowardsActivity;
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
@@ -212,6 +238,7 @@ namespace RealLifeOverhaul.Careers
                     player.SetNavigationBlocker(NavigationBlocker.StudyActivity);
                     player.Character.SitOnChair(_place.chair);
                     _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
+                    _tally.Begin();
                     _sitting.SkipStarted();
                 }
                 catch (Exception e)
@@ -221,14 +248,16 @@ namespace RealLifeOverhaul.Careers
             }));
         }
 
-        // Called off before the class began: the sitting goes with nothing counted.
+        // Called off before the class began (no way to the desk, or the walk stopped by a click elsewhere): the sitting goes
+        // with nothing counted and nothing said.
         private void Off()
         {
             _before = _state;
             _state = PlayerActivityState.Finished;
             Sitting sitting = _sitting;
             _sitting = null;
-            sitting?.SkipEnded(0, false);
+            _tally?.Settle(out _, out _);
+            sitting?.CalledOff();
         }
 
         // ---------------------------------------------------------------- IPlayerActivity: the game's, until the button is pressed
@@ -276,7 +305,15 @@ namespace RealLifeOverhaul.Careers
             {
                 if (_mine)
                 {
-                    _state = state;
+                    if (_state == PlayerActivityState.MovingTowardsActivity && state == PlayerActivityState.NotStarted)
+                    {
+                        Off();   // the game's panel called the walk off for a click elsewhere and let it go: the player walks there
+                        return;
+                    }
+                    if (_state != PlayerActivityState.Finished)
+                    {
+                        _state = state;
+                    }
                 }
                 else
                 {
@@ -306,9 +343,9 @@ namespace RealLifeOverhaul.Careers
                 {
                     return;
                 }
-                _done += minutes;
-                _sitting?.SkipWorked(Math.Min(_done, _length));
-                if (_done >= _length)
+                bool over = _tally.Add(minutes);
+                _sitting?.SkipWorked(_tally.Done);
+                if (over)
                 {
                     Finish();
                 }
@@ -345,21 +382,31 @@ namespace RealLifeOverhaul.Careers
                     return;
                 }
                 PlayerActivityState was = _state;
+                if (was != PlayerActivityState.Started && was != PlayerActivityState.Running)
+                {
+                    // Not sat down yet: the walk stopped, nothing to stand up from, nothing counted.
+                    try
+                    {
+                        if (was == PlayerActivityState.MovingTowardsActivity)
+                        {
+                            InstanceBehavior<GameManager>.Instance.playerController.ResetNavigation();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        CareersDirector.Logger?.Error(e);
+                    }
+                    Off();
+                    return;
+                }
                 try
                 {
                     PlayerController player = InstanceBehavior<GameManager>.Instance.playerController;
-                    if (was == PlayerActivityState.MovingTowardsActivity)
-                    {
-                        player.ResetNavigation();
-                    }
-                    else
-                    {
-                        player.Character.Reset();
-                        player.Character.navmeshAgent.Warp(_place.exitPosition.position);
-                        player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
-                        PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
-                        _place.computer?.StopVideoOnScreen();
-                    }
+                    player.Character.Reset();
+                    player.Character.navmeshAgent.Warp(_place.exitPosition.position);
+                    player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
+                    PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
+                    _place.computer?.StopVideoOnScreen();
                 }
                 catch (Exception e)
                 {
@@ -369,13 +416,9 @@ namespace RealLifeOverhaul.Careers
                 _state = PlayerActivityState.Finished;
                 Sitting sitting = _sitting;
                 _sitting = null;
-                if (was == PlayerActivityState.MovingTowardsActivity)
+                if (_tally.Settle(out int minutes, out bool whole) == TallyEnd.Counted)
                 {
-                    sitting?.SkipEnded(0, false);
-                }
-                else
-                {
-                    sitting?.SkipEnded(Math.Min(_done, _length), _done >= _length);
+                    sitting?.SkipEnded(minutes, whole);   // (once: a second end finds the tally settled)
                 }
             }
             catch (Exception fault)
@@ -438,7 +481,11 @@ namespace RealLifeOverhaul.Careers
                 {
                     return _inner.GetLabels();
                 }
-                return _sitting != null && _state == PlayerActivityState.Running ? _sitting.SkipLabels() : null;
+                if (_sitting == null || _state != PlayerActivityState.Running)
+                {
+                    return null;
+                }
+                return _running ?? (_running = _sitting.SkipLabels());   // (made once)
             }
             catch (Exception fault)
             {
@@ -531,7 +578,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                return _mine ? Math.Max(0, _length - _done) : _inner.GetRemainingMinutesForTimeMachine();
+                return _mine ? (_tally != null ? _tally.Left : 0) : _inner.GetRemainingMinutesForTimeMachine();
             }
             catch (Exception fault)
             {
@@ -579,7 +626,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                return _mine ? 100f * _done / Math.Max(1, _length) : _inner.GetProgressBarPercentageValue();
+                return _mine ? (_tally != null ? 100f * _tally.Done / _tally.Length : 0f) : _inner.GetProgressBarPercentageValue();
             }
             catch (Exception fault)
             {
@@ -599,7 +646,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return _inner.GetProgressBarLabel();
                 }
-                int left = Math.Max(0, _length - _done);
+                int left = _tally != null ? _tally.Left : 0;
                 return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
             }
             catch (Exception fault)

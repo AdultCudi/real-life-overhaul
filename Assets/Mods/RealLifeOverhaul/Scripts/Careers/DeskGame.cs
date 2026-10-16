@@ -247,6 +247,71 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
+        /// <summary>
+        /// A computer of the player's home the game itself would pass the time at (its Pass the time button: the home the
+        /// player's, the computer with nothing it needs missing, as CustomizableButtonsOverlay.ShouldShow has it), one
+        /// with its chair first, in the order of the building's items. Null if the home has none. Looked for on a press.
+        /// </summary>
+        public static ComputerController UsableComputer()
+        {
+            if (!Inside(out BuildingManager manager, out BuildingRegistration reg) || !GoingPublic.Mine(reg))
+            {
+                return null;
+            }
+            ComputerController standing = null;
+            List<ItemController> items = manager.allItemControllers;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (items[i] is ComputerController computer && computer.gameObject.activeInHierarchy && Usable(computer))
+                {
+                    if (computer.FindChair() != null)
+                    {
+                        return computer;
+                    }
+                    standing = standing ?? computer;
+                }
+            }
+            return standing;
+        }
+
+        /// <summary>True if the game would let the player pass the time at this computer (not for sale, nothing it needs missing).</summary>
+        public static bool Usable(ComputerController computer)
+        {
+            return computer != null && !(computer.playerItemPurchaserSettings != null && computer.playerItemPurchaserSettings.enabled)
+                   && !ItemHelper.HasAnyMissingRequirements(computer.ItemInstance);
+        }
+
+        /// <summary>
+        /// The study desk of the game's school (Manhattan Business School) nearest the player, of those with their chair:
+        /// the classroom door whose panel the game opens for its desk (EducationDoorController.StartLearning). Null if
+        /// none. Looked for on a press.
+        /// </summary>
+        public static EducationDoorController NearestStudyDoor()
+        {
+            if (!Inside(out BuildingManager manager, out _))
+            {
+                return null;
+            }
+            PlayerController player = Player;
+            Vector3 at = player != null ? player.transform.position : Vector3.zero;
+            EducationDoorController best = null;
+            float near = float.MaxValue;
+            List<ItemController> items = manager.allItemControllers;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (items[i] is EducationDoorController door && door.gameObject.activeInHierarchy && door.StudyDiploma != null && door.StudyDiploma.chair != null)
+                {
+                    float d = (door.transform.position - at).sqrMagnitude;
+                    if (d < near)
+                    {
+                        near = d;
+                        best = door;
+                    }
+                }
+            }
+            return best;
+        }
+
         // ---------------------------------------------------------------- the click
 
         private sealed class Behaviour : ICtaBehavior

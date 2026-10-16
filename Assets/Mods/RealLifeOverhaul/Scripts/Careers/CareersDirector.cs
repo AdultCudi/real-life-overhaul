@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Careers
                 StopWork(true);
                 StopStudy(false, true);
                 CampusGone();
+                ComputerButtons.Remove();
             }
             catch (Exception e)
             {
@@ -145,6 +146,10 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             ClassPrompt();
+            if (!ComputerButtons.Installed)
+            {
+                ComputerButtons.Install();   // (once per city: the computer's own panel; a flag test once it is in)
+            }
             PersonaEducation.Keep();   // (the mod's courses in the Persona app's education box: a null test once it is there)
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
@@ -331,15 +336,41 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A sitting of a later part (contract work, tutoring, a ceremony): settled by that part.</summary>
         partial void OtherEnded(Sitting sitting, int minutes, bool whole);
 
+        /// <summary>The fee a sitting carries (a retake's, at a desk), charged as the player sits down for it: the cash was there when it was pressed.</summary>
+        internal void ChargeAtStart(Sitting sitting, int fee)
+        {
+            Enrolment e = _studyOn && ReferenceEquals(sitting, _sitting) ? _study.Live(sitting.Of) : null;
+            if (e == null || fee <= 0)
+            {
+                return;
+            }
+            CareersGame.Take(fee, CareersGame.FeeKey, CareersText.Course(sitting.Of));
+            e.Fee += fee;
+        }
+
+        /// <summary>A sitting called off before it began (the walk to its desk or computer stopped): let go, with nothing counted.</summary>
+        internal void Dropped(Sitting sitting)
+        {
+            if (!ReferenceEquals(sitting, _sitting))
+            {
+                return;
+            }
+            _sitting = null;
+            Logger?.Info("Careers: a " + sitting.Kind + " sitting of " + sitting.Of + " was called off on the way to its desk or computer; nothing is counted.");
+        }
+
         private void CloseSitting()
         {
             ShiftSkip skip = _skip;
             DeskWork desk = _deskWork;
+            ComputerClass computer = _computer;
             _skip = null;
             _sitting = null;
             _deskWork = null;
+            _computer = null;
             skip?.Close();
             desk?.Close();
+            computer?.Close();
             CareersGame.Tiring(false);
         }
 

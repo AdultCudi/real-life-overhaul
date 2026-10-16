@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The university's floors; null while the university is not there.</summary>
         internal CampusInterior Interior => _interior;
 
-        /// <summary>True while a class, homework or exam of the mod's is running (in place or at a desk).</summary>
+        /// <summary>True while a class, homework or exam of the mod's is running (in place, at a desk or at the computer at home).</summary>
         internal bool SittingNow => (_skip != null && _skip.Open) || DeskBusy;
 
         /// <summary>True for a course of the university followed in person while its floors are there: held in its classroom.</summary>
@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Careers
             string examWhy = CanSit(e);
             if (examWhy == null)
             {
-                offer.Exam = true;
+                offer.Kind = SittingKind.Exam;
                 offer.Can = true;
                 offer.Key = "reallife_study_prompt_exam";
                 offer.Arguments = CourseArgs(course);
@@ -321,15 +321,22 @@ namespace RealLifeOverhaul.Careers
             return CareersText.T("reallife_campus_hours_span", "from", CareersText.Hour(CampusRules.Opens(day)), "to", CareersText.Hour(CampusRules.Closes(day)));
         }
 
-        // A class or an exam of the university in person: to its floor and room (from inside, or from the door). Null if on
-        // the way; else the reason key.
-        private string ToRoom(Enrolment e, string why)
+        // A class, an exam or homework of the university in person: to its floor and room (from inside, or from the door),
+        // and begun at the room's desk for the player once there (WantBegin, then CampusInterior.GoToRoom). Null if on the
+        // way; else the reason key.
+        private string ToRoom(Enrolment e, string why, SittingKind kind)
         {
             if (why != null && why != "reallife_study_why_not_university")
             {
                 return why;
             }
-            string go = _interior.GoToRoom(e.Def.Id);
+            string busy = SeatBusy();
+            if (busy != null)
+            {
+                return busy;
+            }
+            WantBegin(e.Def.Id, kind);
+            string go = _interior.GoToRoom(e.Def.Id, true);
             if (go == null)
             {
                 CloseApps();

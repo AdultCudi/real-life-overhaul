@@ -191,6 +191,7 @@ government
 job_board
 menu_save
 notification_destination_set
+notification_need_empty_hands_to_interact
 persona_education_not_started
 playeractivityui_time_remaining
 playerhud_currentjob_day_off
