@@ -45,7 +45,8 @@ namespace RealLifeOverhaul.Texts
     /// (TextCheck) and handed to its asker, and what missed its deadline is handed over as null, the written line. A
     /// guess (face to face) waits until its asker takes it (<see cref="TakeGuess"/>). The adaptive budget (TextBudget)
     /// hears every end. Words that pass are remembered by speaker for the repeat check, and kept in the store
-    /// (TextsStore) when the asker wants them kept.
+    /// (TextsStore) when the asker wants them kept. Only the intents of the running pack's data version or older are
+    /// asked (<see cref="Data"/>).
     /// COST: a request is a card of a few hundred characters; a look is a pass over the waiting requests (a few).
     /// </summary>
     public sealed class TextsHub
@@ -81,6 +82,12 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>Which uses may ask now (the options, the game's language, Going Public's rule); set by the director.</summary>
         public Func<TextUse, bool, bool> Allowed;
+
+        /// <summary>
+        /// The data version of the running pack's model (TextPack.Data): an intent of a later data version is never asked of
+        /// it (the written line). Set by the director when it starts a pack.
+        /// </summary>
+        public int Data { get; set; } = TextIntents.DataV2;
 
         /// <summary>This machine writes only what is asked ahead (TextSpeed.AheadOnly).</summary>
         public bool AheadOnly { get; set; }
@@ -121,9 +128,9 @@ namespace RealLifeOverhaul.Texts
                 return false;   // (still loading: what is due soon takes its written line now rather than wait for nothing)
             }
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch);
-            if (intent == null)
+            if (intent == null || intent.Data > Data)
             {
-                return false;
+                return false;   // (no such intent, or one the pack's model never learnt: a v2 pack is never asked a v3 intent)
             }
             var sheet = new TextSheet();
             if (!TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))

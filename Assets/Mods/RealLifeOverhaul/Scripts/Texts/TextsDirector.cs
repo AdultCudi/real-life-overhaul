@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.Texts
             if (_pack == null && _verified != null)
             {
                 _pack = _verified;
-                Logger?.Info("RLO Texts: the pack " + _pack.Name + " (version " + _pack.Version + ", " + (_pack.ModelBytes / (1024 * 1024)) + " MB) in " + _pack.Folder
+                Logger?.Info("RLO Texts: the pack " + _pack.Name + " (version " + _pack.Version + ", data v" + _pack.Data + ", " + (_pack.ModelBytes / (1024 * 1024)) + " MB) in " + _pack.Folder
                              + ", llama.cpp's files checked" + (_packs.Count > 1 ? "; " + (_packs.Count - 1) + " other pack(s) found and not used" : "") + ".");
             }
             if (_refused != null && !_refusedTold)
@@ -378,6 +378,7 @@ namespace RealLifeOverhaul.Texts
                 Cache = Path.Combine(TextsGame.Home, "cache"), SpeedFor = wanted, Known = KnownSpeed(wanted)
             }, Log);
             Hub.Runner = _server;
+            Hub.Data = _pack.Data;   // (the intents its model learnt: a v2 pack is never asked v3's)
             _server.Start();
             Logger?.Info("RLO Texts: starting the model on " + (device != null ? "the GPU (" + _deviceLabel + ")" : "the processor") + " with " + threads + " thread(s) of "
                          + _cores + " core(s); the written lines are used until it is ready.");
