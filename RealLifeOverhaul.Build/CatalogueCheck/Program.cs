@@ -292,6 +292,7 @@ namespace RealLifeOverhaul
             CheckContacts(src);
             GigCheck.Run(Fail, locale);
             SavedShiftCheck.Run(Fail, locale, src);
+            JobOfficeCheck.Run(Fail, src);
             OptionsCheck.Run(Fail, locale, src);
             NoticeCheck.Run(Fail, locale, src);
             TypeNameCheck.Run(Fail, locale, src);
