@@ -19330,5 +19330,5 @@
   "reallife_flare_test_photo_taken": "Uma foto da rua foi tirada para uma publicação da cidade em {ms} ms. Os rostos da cidade são desenhados na próxima tela preta.",
   "reallife_flare_test_photo_not": "Não deu para tirar uma foto daqui. O Player.log diz por quê. Saia para a rua e tente de novo.",
   "reallife_flare_test_photo_busy": "Uma foto está sendo tirada, ou o Flare ainda não tem uma pasta para fotos. Tente de novo daqui a pouco.",
-  "reallife_flare_test_photo_none": "Ainda não há publicação das pessoas da cidade sobre a rua. Use primeiro o teste do dia."
+  "reallife_flare_test_photo_none": "Ainda não há post das pessoas da cidade sobre a rua. Use \"Flare: os posts da cidade de hoje agora\" primeiro."
 }

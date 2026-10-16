@@ -19330,5 +19330,5 @@
   "reallife_flare_test_photo_taken": "A photo of the street was taken for a post of the city's in {ms} ms. The city's faces are drawn at the next black screen.",
   "reallife_flare_test_photo_not": "No photo could be taken from here. Player.log says why. Step outdoors and try again.",
   "reallife_flare_test_photo_busy": "A photo is being taken, or Flare has no folder for photos yet. Try again in a moment.",
-  "reallife_flare_test_photo_none": "There is no post of the city's people about the street yet. Use the test of the day first."
+  "reallife_flare_test_photo_none": "There is no post of the city's people about the street yet. Use \"Flare: the city's posts of today now\" first."
 }

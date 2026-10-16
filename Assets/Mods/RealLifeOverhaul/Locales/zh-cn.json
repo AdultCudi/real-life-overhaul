@@ -19330,5 +19330,5 @@
   "reallife_flare_test_photo_taken": "已为一条城市帖子拍摄街道照片，用时{ms}毫秒。城市居民的脸会在下次黑屏时绘制。",
   "reallife_flare_test_photo_not": "无法在此处拍照，原因见Player.log。请到室外再试一次。",
   "reallife_flare_test_photo_busy": "正在拍照，或Flare还没有照片文件夹。请稍后再试。",
-  "reallife_flare_test_photo_none": "还没有城市居民关于街道的帖子。请先使用当天的测试。"
+  "reallife_flare_test_photo_none": "还没有城市居民关于街道的帖子。请先使用“Flare：立即生成今天城市的帖子”。"
 }
