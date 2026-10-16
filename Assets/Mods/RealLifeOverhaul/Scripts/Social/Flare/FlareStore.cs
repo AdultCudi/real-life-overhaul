@@ -67,13 +67,11 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The save's file, or null if it has none this version can read (a new account is opened then).</summary>
         public static FlareFile Load(Dictionary<string, string> data)
         {
-            string account, posts;
-            if (data == null || !data.TryGetValue(AccountKey, out account))
+            if (data == null || !data.ContainsKey(AccountKey))
             {
                 return null;
             }
-            data.TryGetValue(PostsKey, out posts);
-            FlareFile f = Read(account, posts);
+            FlareFile f = Peek(data);
             if (f == null)
             {
                 // An account that cannot be read (damaged, or of a later version) is kept as it is, with its posts and cast (Core/SaveLines).
@@ -85,6 +83,22 @@ namespace RealLifeOverhaul.Flare
                     SaveLines.Unreadable(data, FlareLiveStore.Key, "its account could not be read");
                 }
             }
+            return f;
+        }
+
+        /// <summary>
+        /// The save's file as <see cref="Load"/> reads it, the save's data left exactly as it is (an account that does not read
+        /// is not marked to be kept here: Load does that when Flare starts). For Flare's faces drawn behind the loading screen.
+        /// </summary>
+        public static FlareFile Peek(Dictionary<string, string> data)
+        {
+            string account, posts;
+            if (data == null || !data.TryGetValue(AccountKey, out account))
+            {
+                return null;
+            }
+            data.TryGetValue(PostsKey, out posts);
+            FlareFile f = Read(account, posts);
             string cast;
             if (f != null && data.TryGetValue(CastKey, out cast))
             {

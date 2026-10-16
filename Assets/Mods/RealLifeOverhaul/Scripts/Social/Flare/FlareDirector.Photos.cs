@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// The city's photos (FlareCityPhotoRules says which posts, when and where; FlareCityCamera takes them) and the faces
-    /// drawn ahead (FlareFacePainter):
+    /// drawn ahead (FlareFacePainter: the faces likely to be seen soon, FlareFaceAheadRules, when Flare starts and each day):
     ///
     ///   the folder     the save's photos' folder (FlareBridges.PictureFolder: Photos/(the save)), its "Flare" in it, marked
     ///                  as the save's with the first photo so a deleted save's go with its photos
@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Flare
         private float _photoNext, _photoPace = FlareCityPhotoRules.PaceLeast;
         private int _photoDay = -1, _photoToday, _photoGeneration;
         private bool _photoBusy, _photoMarked;
+        private readonly FlareAvatarFacts _aheadFacts = new FlareAvatarFacts { MyBusinesses = new List<string>(0) };
 
         /// <summary>The key of a post's photo of the city for the app (as the player's: "f:" and its path), or null for none.</summary>
         public string CityPhotoKey(FlarePost p)
@@ -58,10 +59,21 @@ namespace RealLifeOverhaul.Flare
             string root = FlareBridges.Ask(FlareBridges.PictureFolder, null);
             _photoFolder = root != null ? Path.Combine(root, FlareCityPhotoRules.Folder) : null;
             PhotosLook();
-            if (Settings.FlarePictures)
+            FacesAhead(Save != null ? Save.Day : 0);
+        }
+
+        // The faces likely to be seen soon (the people met, the influencers, the newest posts and their comments, the
+        // messages, tomorrow's posters) handed to the painter, drawn behind the black screens; none with the option off.
+        private void FacesAhead(int day)
+        {
+            if (!Settings.FlarePictures || _file == null)
             {
-                FlareFacePainter.Prewarm(FlareLiveRules.CitySeed(_file), _people);
+                return;
             }
+            _aheadFacts.File = _file;
+            _aheadFacts.People = _people;
+            _aheadFacts.CitySeed = FlareLiveRules.CitySeed(_file);
+            FlareFacePainter.Ahead(_aheadFacts, day);
         }
 
         private void PhotosStop()
@@ -254,8 +266,8 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// Test: a photo of the city now, of the newest post of the city's people about the street (its photo taken again,
-        /// whatever the option's share and the pace), and every face of the city's people drawn ahead at the next black
-        /// screen. A notice says what came of it; the log has the measured time.
+        /// whatever the option's share and the pace), and the faces likely to be seen soon drawn ahead at the next black
+        /// screens. A notice says what came of it; the log has the measured time.
         /// </summary>
         public void TestPictures()
         {
@@ -265,7 +277,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     return;
                 }
-                FlareFacePainter.Prewarm(FlareLiveRules.CitySeed(_file), _people);
+                FacesAhead(Save.Day);
                 Logger?.Info("Flare test (pictures): " + FlareFacePainter.Report() + "; " + _photoHave.Count + " city photo(s) on disk; the folder " + (_photoFolder ?? "(none)") + ".");
                 if (_photoBusy || _photoFolder == null)
                 {

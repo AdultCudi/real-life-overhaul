@@ -445,22 +445,25 @@ internal static partial class Program
             "flare invitations: What's new and the Guide's Flare and Social pages say an invitation in a Flare message can book an outing");
     }
 
-    // Every first name the city gives is sorted by sex (a city person who says yes is met as who they are).
+    // Every one of the city's people is met as who they are (a city person who says yes joins People of their own sex).
     private static void InvitesNames()
     {
         var people = new List<FlareCitizen>();
-        bool known = true;
+        bool own = true;
+        int women = 0, all = 0;
         for (int seed = 1; seed < 80; seed++)
         {
             FlareLiveRules.CitizensOf(seed * 7919, null, people);
-            foreach (FlareCitizen c in people)
+            for (int i = 0; i < people.Count; i++)
             {
-                known &= FlareInviteRules.NameKnown(c.First);
+                int sex = FlareInviteRules.SexOf(people[i]);
+                own &= sex == (FlareLiveRules.CitizenFemale(seed * 7919, i) ? 1 : 0) && sex == (FlareAvatarRules.Citizen(seed * 7919, i).Female ? 1 : 0);
+                women += sex;
+                all++;
             }
         }
-        Check(known, "flare invitations: every first name of the city's people is sorted (a woman's, a man's, or either)");
-        Check(FlareInviteRules.NameSex("Hana") == 1 && FlareInviteRules.NameSex("Finn") == 0 && FlareInviteRules.NameSex("Kai") == -1 && FlareInviteRules.NameSex("Zed") == -1,
-            "flare invitations: Hana is met as a woman, Finn as a man, Kai as either");
+        Check(own && women > all / 3 && women < all * 2 / 3, "flare invitations: each of the city's people is met with their own sex, the one their card and face have");
+        Check(TextsSource(@"Social\Flare\FlareDirector.Invites.cs").Contains("a.Sex = FlareInviteRules.SexOf(c);"), "flare invitations: the invitee's sex is the city person's own");
     }
 
     // ---------------------------------------------------------------- source guarantees

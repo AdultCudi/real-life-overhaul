@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Flare
             _openMessages = () => Open(TabMessages);
             _openCompose = () => Open(TabPost);
             ShareRegister();
+            FlareFacePainter.HoldAtLoad();   // (made behind the loading screen: the faces likely to be seen first are drawn while it is up, Core/LoadHold)
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -382,6 +383,7 @@ namespace RealLifeOverhaul.Flare
             CastDay(day);
             CityDay(day);
             LiveDay(day);
+            FacesAhead(day);   // (the faces of the day's likely accounts, behind the next black screens)
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {

@@ -77,9 +77,11 @@ namespace RealLifeOverhaul.Flare
     /// averaging, and a clear corner outside a circle with a soft edge of one pixel, so the app needs no mask (a mask a
     /// row would cost the canvas a draw call each). RGBA, rows from the bottom up, as the engine keeps them.
     ///
-    /// THE KEEPING. At most <see cref="Most"/> textures (36 KB each: 2.3 MB in all); the one used longest ago goes first
-    /// (<see cref="FlareAvatarLru"/>). A face is kept on disk as its round picture's colour rows (Core/PhotoThumbs' format,
-    /// 27 KB) under the game's data folder, by its look: drawn once per look, ever, and shared by every save that has it.
+    /// THE KEEPING. At most <see cref="Most"/> textures (36 KB each: 18 MB in all), enough for every face a city shows (its
+    /// 400 people, the influencers, the friends, the staff), so a face read once stays for the session; past the bound the
+    /// one used longest ago goes first (<see cref="FlareAvatarLru"/>). A face is kept on disk as its round picture's colour
+    /// rows (Core/PhotoThumbs' format, 27 KB) under the game's data folder, by its look: drawn once per look and shared by
+    /// every save that has it (the folder's bound and clean-up: FlareFaceAheadRules).
     ///
     /// Game-free (EconomyCheck, FlarePictureChecks.cs). COST: a plan is a few comparisons (a selfie's a look over the
     /// posts, two hundred at most), asked when a card is bound, never per frame; a round picture is some 40,000 sums, made
@@ -88,8 +90,8 @@ namespace RealLifeOverhaul.Flare
     public static class FlareAvatarRules
     {
         public const int Size = 96;                  // pixels of a round picture: a card's avatar is 60 to 150 of the canvas's 2160 lines, 30 to 75 pixels at 1080p
-        public const int Most = 64;                  // textures kept: a screen shows a dozen accounts, a scroll back finds them still there
-        public const int AgeLeast = 19;              // years: the city's people and influencers
+        public const int Most = 512;                 // textures kept: a city's 400 people, its influencers and the player's friends all fit (36 KB each: 18 MB)
+        public const int AgeLeast = 19;              // years: the influencers and a friend with no look told (the city's people have their own: FlareLiveRules.CitizenAge)
         public const int AgeSpan = 52;               // ...up to 70
         public const string FilePrefix = "flare96_"; // the round pictures' files among the portrait cache's (Phone/Contacts' faces are "v1_...jpg")
         public const string FileExtension = ".thumb";
@@ -191,10 +193,10 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>One of the city's people: a face from the city's seed (their sex as their first name says).</summary>
+        /// <summary>One of the city's people: a face from the city's seed, of the person's own sex and age (FlareLiveRules.CitizensOf: the name and the age shown with it).</summary>
         public static FlareAvatarPlan Citizen(int citySeed, int index)
         {
-            return FacePlan(FlareLiveRules.CitizenFemale(citySeed, index), AgeLeast + FlareRules.Roll(citySeed, index, SaltAge) % AgeSpan, Seed(citySeed, index, SaltSeed));
+            return FacePlan(FlareLiveRules.CitizenFemale(citySeed, index), FlareLiveRules.CitizenAge(citySeed, index), Seed(citySeed, index, SaltSeed));
         }
 
         // A friend, the partner or anybody of the social life: the look they are built in the street with; one of the
@@ -386,22 +388,26 @@ namespace RealLifeOverhaul.Flare
 
     /// <summary>
     /// The textures kept, by their key, the one used last at the end: at most a set number; the one used longest ago goes
-    /// first. Game-free. COST: a look along the list (64 at most) when a card is bound or a picture comes; nothing per frame.
+    /// first. A list linked both ways and a dictionary of its links, so a use is a look in the dictionary and a move of one
+    /// link, however many are kept; the links of the keys that go are used again. Game-free. COST: when a card is bound or
+    /// a picture comes, a look in a dictionary; nothing per frame, nothing allocated once the bound is reached.
     /// </summary>
     public sealed class FlareAvatarLru
     {
-        private readonly List<string> _used;
+        private readonly LinkedList<string> _used = new LinkedList<string>();
+        private readonly Dictionary<string, LinkedListNode<string>> _at;
+        private readonly Stack<LinkedListNode<string>> _spare = new Stack<LinkedListNode<string>>(4);
         public readonly int Most;
 
         public FlareAvatarLru(int most)
         {
             Most = Math.Max(1, most);
-            _used = new List<string>(Most + 1);
+            _at = new Dictionary<string, LinkedListNode<string>>(Math.Min(Most, 1024) + 1, StringComparer.Ordinal);
         }
 
         public int Count => _used.Count;
 
-        public bool Contains(string key) => _used.Contains(key);
+        public bool Contains(string key) => key != null && _at.ContainsKey(key);
 
         /// <summary>A key used now: to the end. Returns the key that has to go to keep within the bound, or null.</summary>
         public string Use(string key)
@@ -410,22 +416,52 @@ namespace RealLifeOverhaul.Flare
             {
                 return null;
             }
-            if (_used.Count == 0 || _used[_used.Count - 1] != key)
+            LinkedListNode<string> node;
+            if (_at.TryGetValue(key, out node))
             {
-                _used.Remove(key);
-                _used.Add(key);
+                if (node != _used.Last)
+                {
+                    _used.Remove(node);
+                    _used.AddLast(node);
+                }
+                return null;
             }
+            node = _spare.Count > 0 ? _spare.Pop() : new LinkedListNode<string>(key);
+            node.Value = key;
+            _used.AddLast(node);
+            _at[key] = node;
             if (_used.Count <= Most)
             {
                 return null;
             }
-            string oldest = _used[0];
-            _used.RemoveAt(0);
-            return oldest;
+            LinkedListNode<string> oldest = _used.First;
+            string gone = oldest.Value;
+            _used.RemoveFirst();
+            _at.Remove(gone);
+            _spare.Push(oldest);
+            return gone;
         }
 
-        public void Remove(string key) => _used.Remove(key);
+        public void Remove(string key)
+        {
+            LinkedListNode<string> node;
+            if (key != null && _at.TryGetValue(key, out node))
+            {
+                _used.Remove(node);
+                _at.Remove(key);
+                _spare.Push(node);
+            }
+        }
 
-        public void Clear() => _used.Clear();
+        public void Clear()
+        {
+            while (_used.First != null)
+            {
+                LinkedListNode<string> node = _used.First;
+                _used.RemoveFirst();
+                _spare.Push(node);
+            }
+            _at.Clear();
+        }
     }
 }
