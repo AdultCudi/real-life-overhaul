@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using RealLifeOverhaul.Texts;
 
 namespace RealLifeOverhaul.Flare
@@ -193,6 +194,62 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>
+        /// Who answers a message, by its account (FlareDm.With): one of the city's people as Flare keys them ("c12", no colon:
+        /// FlareLiveRules.CityDm, the profiles, the conversations) or an influencer ("i:3"). False for any other (the City
+        /// Office, a candidate "c:name", a player of the session): their answers keep the written line.
+        /// </summary>
+        public static bool DmSpeaker(string with, out bool influencer, out int number)
+        {
+            influencer = false;
+            number = -1;
+            if (with == null || with.Length < 2)
+            {
+                return false;
+            }
+            if (with[0] == 'c' && with[1] != ':')
+            {
+                return int.TryParse(with.Substring(1), NumberStyles.None, CultureInfo.InvariantCulture, out number);
+            }
+            if (with.Length > 2 && with[0] == 'i' && with[1] == ':')
+            {
+                influencer = true;
+                return int.TryParse(with.Substring(2), NumberStyles.None, CultureInfo.InvariantCulture, out number);
+            }
+            return false;
+        }
+
+        /// <summary>The key an answer's words are kept under: asked and drawn by the same.</summary>
+        public static string DmKey(FlareDm m) => "fd:" + m.With + ":" + m.At;
+
+        /// <summary>
+        /// Whether an answer to the player's message may have its words asked now: the city's (not the player's, not typed),
+        /// not yet shown, with an intent and a speaker the model has a card for.
+        /// </summary>
+        public static bool DmWants(FlareDm m, long now)
+        {
+            return m != null && !m.Mine && m.Text == null && m.At > now && Dm(m.Key) != null && DmSpeaker(m.With, out _, out _);
+        }
+
+        /// <summary>The player's message an answer answers: the player's latest to the same account before it; null if it has gone (the oldest messages go).</summary>
+        public static FlareDm DmAsked(List<FlareDm> dms, FlareDm answer)
+        {
+            FlareDm asked = null;
+            for (int i = 0; dms != null && answer != null && i < dms.Count; i++)
+            {
+                FlareDm m = dms[i];
+                if (m == answer)
+                {
+                    return asked;
+                }
+                if (m.Mine && m.With == answer.With)
+                {
+                    asked = m;
+                }
+            }
+            return null;
+        }
+
         // ---------------------------------------------------------------- the city's people as speakers
 
         /// <summary>A city person's age: stable, in the range of their persona (students young, retirees old).</summary>
@@ -311,12 +368,61 @@ namespace RealLifeOverhaul.Flare
             Want(Tycoon(-1) == "tycoon.boast" && Tycoon(0) == "tycoon.property" && Tycoon(3) == null && Business(0) == "business.post.sale" && Business(5) == null,
                 "a tycoon's and a business's posts map by their kind");
             Want(Dm("reallife_flare_dm_answer_chat") == "citizen.dm.chat" && Dm("reallife_flare_dm_answer_office") == null, "a message's answer maps by its line");
+            Want(DmSpeaker("c6", out bool inf, out int n) && !inf && n == 6 && DmSpeaker("c27", out inf, out n) && !inf && n == 27
+                 && DmSpeaker("i:3", out inf, out n) && inf && n == 3 && !DmSpeaker("c:Ashby", out _, out _) && !DmSpeaker("o:0", out _, out _)
+                 && !DmSpeaker("p:host", out _, out _) && !DmSpeaker("c", out _, out _) && !DmSpeaker("c-1", out _, out _) && !DmSpeaker(null, out _, out _),
+                "a message's answerer is read from its account as Flare keys it (a city person 'c6', an influencer 'i:3'); the rest keep the written line");
             var c = new FlareCitizen { Index = 3, First = "Dana", Last = "Reyes", Handle = "@dana_reyes12", Persona = FlarePersona.Student };
             int age = Age(c, 77);
             Want(age >= 18 && age <= 24 && Age(c, 77) == age, "a student's age is young and the same every time");
             c.Persona = FlarePersona.Grumpy;
             Want(Style(c, 77).StartsWith("grumpy", System.StringComparison.Ordinal) && Style(c, 77) == Style(c, 77), "the grumpy write grumpily, the same every time");
             return p;
+        }
+    }
+
+    /// <summary>
+    /// Which of Flare's items (a post by its number, an answer by its key) have their words asked, and how often. An item is
+    /// asked once and then left while its request waits or its words are kept; a request handed back with no words (the model
+    /// stopped or restarted on a change of device or threads, still loading past the deadline, the switch turned off, the
+    /// checker refusing the words) frees it, so it is asked again on Flare's next event (the hour) while it is still to come,
+    /// up to <see cref="Most"/> times in all. Game-free (EconomyCheck, FlareDmTextsChecks.cs).
+    /// COST: a set and a count per item asked; nothing per frame.
+    /// </summary>
+    public sealed class FlareTextsAsked<T>
+    {
+        public const int Most = 3;   // asks of one item at most: a restart or a miss is asked again, a third failure keeps the written line
+
+        private readonly HashSet<T> _waiting = new HashSet<T>();
+        private readonly Dictionary<T, int> _asks = new Dictionary<T, int>();
+
+        /// <summary>True if the item may be asked now: not waiting, not worded, and asked fewer than <see cref="Most"/> times.</summary>
+        public bool May(T item)
+        {
+            return !_waiting.Contains(item) && (!_asks.TryGetValue(item, out int n) || n < Most);
+        }
+
+        /// <summary>The item was asked (the hub took the request).</summary>
+        public void Asked(T item)
+        {
+            _waiting.Add(item);
+            _asks[item] = _asks.TryGetValue(item, out int n) ? n + 1 : 1;
+        }
+
+        /// <summary>Its request came back: with words it stays asked (kept, drawn from the store); without, it may be asked again.</summary>
+        public void Ended(T item, bool words)
+        {
+            if (!words)
+            {
+                _waiting.Remove(item);
+            }
+        }
+
+        /// <summary>A new account or a stop: nothing asked.</summary>
+        public void Clear()
+        {
+            _waiting.Clear();
+            _asks.Clear();
         }
     }
 }

@@ -836,8 +836,9 @@ internal static partial class Program
         }
         Check(longest <= 240 && director.Contains("private const int WhyMost = 60;"), "texts: the status notices stay within 240 characters filled (" + longest + ")");
         string flare = TextsSource("Social/Flare/FlareDirector.Texts.cs"), flareMain = TextsSource("Social/Flare/FlareDirector.cs");
-        Check(Regex.Matches(flareMain, @"_textAsked\.Clear\(\);").Count == 3 && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textAsked\.Add\(p\.Id\);"),
-            "texts, Flare: the posts asked for are forgotten with the file, and a post counts as asked only when it was");
+        Check(Regex.Matches(flareMain, @"_textAsked\.Clear\(\);").Count == 3 && Regex.Matches(flareMain, @"_textDms\.Clear\(\);").Count == 3
+              && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textAsked\.Asked\(id\);") && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textDms\.Asked\(key\);"),
+            "texts, Flare: the posts and answers asked for are forgotten with the file, and one counts as asked only when it was");
         string phone = TextsSource("Wiring/TextsPhone.cs");
         Check(phone.Contains("if (ReferenceEquals(save, SaveGameManager.Current))"), "texts, the phone: a text held for its words is never sent into another save");
         string packMod = File.ReadAllText(System.IO.Path.Combine(TextsBuildFolder(), "TextPack", "RloTextsPack.cs"));
