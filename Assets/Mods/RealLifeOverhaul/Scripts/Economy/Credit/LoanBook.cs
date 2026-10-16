@@ -230,7 +230,7 @@ namespace RealLifeOverhaul.Economy
             return new LoanMark
             {
                 Street = mark.Street, Number = mark.Number, Total = mark.Total, FirstDay = mark.FirstDay,
-                Remaining = mark.Remaining, Payment = mark.Payment, Interest = mark.Interest
+                Remaining = mark.Remaining, Payment = mark.Payment, Interest = mark.Interest, Held = mark.Held   // (Held: whether a debt arrangement held it)
             };
         }
     }

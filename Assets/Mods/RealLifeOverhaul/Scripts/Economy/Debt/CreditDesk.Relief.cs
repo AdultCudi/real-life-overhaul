@@ -473,16 +473,7 @@ namespace RealLifeOverhaul.Economy
         private void ArrangementDay(int day)
         {
             Relief r = _file.Relief;
-            int left = 0;
-            for (int i = 0; i < _file.Loans.Count; i++)
-            {
-                LoanMark m = _file.Loans[i];
-                left += (m.Held & LoanHold.Frozen) != 0 && m.Ref is Loan ? Mathf.CeilToInt(((Loan)m.Ref).remainingAmount) : 0;
-            }
-            for (int i = 0; i < _file.Accounts.Count; i++)
-            {
-                left += _file.Accounts[i].Frozen && !_file.Accounts[i].Closed ? _file.Accounts[i].Owed : 0;
-            }
+            int left = ArrangedLeft();
             int due = Mathf.Min(r.ArrangedPerDay, left);
             if (due > 0 && !_wallet.Take(due, Money.Arrangement, string.Empty))
             {
@@ -538,6 +529,44 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Economy check (debt arrangement, day " + day + "): " + due + " paid, " + (left - due) + " left of " + r.ArrangedTotal + ": " + (share == 0 ? "PASS" : "FAIL"));
             }
             if (left - due <= 0)
+            {
+                EndArrangement(day, true, 0);
+            }
+        }
+
+        // What everything an arrangement holds still owes: its frozen loans and its frozen accounts.
+        private int ArrangedLeft()
+        {
+            int left = 0;
+            for (int i = 0; i < _file.Loans.Count; i++)
+            {
+                LoanMark m = _file.Loans[i];
+                left += (m.Held & LoanHold.Frozen) != 0 && m.Ref is Loan ? Mathf.CeilToInt(Mathf.Max(0f, ((Loan)m.Ref).remainingAmount)) : 0;
+            }
+            return left + ReliefRules.FrozenOwed(_file.Accounts);
+        }
+
+        /// <summary>
+        /// Money paid by hand into a debt the arrangement holds: one of its accounts paid in the Finance app or a bank's
+        /// app (<see cref="Pay"/>), or one of its loans paid in the game's EconoView or a bank's app (the director reads
+        /// that from the game's loans). It counts as paid under the arrangement, and the arrangement ends, cleared, the
+        /// moment nothing is left in it, whichever way the last of it was paid: not a day later, and only once.
+        /// </summary>
+        public void PaidByHand(int amount, string how)
+        {
+            if (_file == null || !_file.Relief.Arranged)
+            {
+                return;
+            }
+            int left = ArrangedLeft(), day = Today;
+            bool ends = ReliefRules.PaidByHand(_file.Relief, amount, left);
+            if (Verbose)
+            {
+                Logger?.Info("Economy check (debt arrangement, day " + day + "): " + amount + " paid by hand (" + how + "), " + left + " left of " + _file.Relief.ArrangedTotal + ", "
+                             + _file.Relief.ArrangedPaid + " paid under it" + (ends ? ": everything in it is paid, it ends now" : string.Empty) + ": "
+                             + ((long)_file.Relief.ArrangedPaid + left <= _file.Relief.ArrangedTotal ? "PASS" : "FAIL"));   // (nothing in it grows: what was paid and what is left never pass what it began with)
+            }
+            if (ends)
             {
                 EndArrangement(day, true, 0);
             }

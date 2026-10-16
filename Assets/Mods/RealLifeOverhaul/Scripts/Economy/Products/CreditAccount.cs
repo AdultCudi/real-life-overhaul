@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Economy
         public bool Secured;            // false once the security is sold, lost or taken
         public string Street = string.Empty;        // the lending bank's address, as the credit file writes one
         public int Number;
-        public bool Frozen;             // in a debt arrangement: no interest, no payments, no steps
+        public bool Frozen;             // in a debt arrangement: no interest, no payment due, no steps; it can still be paid by hand
         public bool Closed;
         public bool Test;               // made by a test tool: "Test: put everything back" removes it
         public readonly LadderState Ladder = new LadderState();
@@ -315,22 +315,31 @@ namespace RealLifeOverhaul.Economy
             {
                 return 0;
             }
-            LadderState l = a.Ladder;
-            if (l.Overdue > 0 || l.Misses > 0)
-            {
-                l.Overdue = Math.Max(0, l.Overdue - used);
-                l.PlanLeft = Math.Min(l.PlanLeft, l.Overdue);
-                if (l.Overdue == 0 || a.Owed == 0)
-                {
-                    l.PlanLeft = 0;
-                    LadderRules.Paid(l);
-                }
-            }
+            Settled(a, used);
             if (a.Kind == ProductKind.CreditCard && a.MinimumLeft == 0 && a.Charged)
             {
                 a.DueDay = 0;   // a minimum that was overdue is paid: nothing is due until the next statement
             }
             return used;
+        }
+
+        // Money that has come off what is owed comes off what is overdue too; once nothing is overdue (or nothing is
+        // owed) the debt is in order again. True if the penalty rate ends with it.
+        private static bool Settled(CreditAccount a, int used)
+        {
+            LadderState l = a.Ladder;
+            if (l.Overdue <= 0 && l.Misses <= 0)
+            {
+                return false;
+            }
+            l.Overdue = Math.Max(0, l.Overdue - used);
+            l.PlanLeft = Math.Min(l.PlanLeft, l.Overdue);
+            if (l.Overdue > 0 && a.Owed > 0)
+            {
+                return false;
+            }
+            l.PlanLeft = 0;
+            return LadderRules.Paid(l);
         }
 
         /// <summary>
@@ -426,7 +435,9 @@ namespace RealLifeOverhaul.Economy
                 {
                     // (an instalment account's plan money is overdue already: only the instalment itself is new)
                     int planPart = onPlan && ProductCatalogue.Instalment(a.Kind) ? Math.Min(o.Missed, Math.Min(a.Ladder.PlanPerDay, a.Ladder.PlanLeft)) : 0;
-                    int overdue = ProductCatalogue.Instalment(a.Kind) ? a.Ladder.Overdue + o.Missed - planPart : o.Missed;
+                    // (a card's broken plan leaves all of the plan's money overdue, which its next statement carries)
+                    int overdue = ProductCatalogue.Instalment(a.Kind) ? a.Ladder.Overdue + o.Missed - planPart
+                        : onPlan && a.Kind == ProductKind.CreditCard ? Math.Max(o.Missed, a.Ladder.PlanLeft) : o.Missed;
                     o.Step = LadderRules.Missed(a.Ladder, level, a.Secured, overdue);
                     if (o.Step == LadderStep.LateFee)
                     {
@@ -493,22 +504,30 @@ namespace RealLifeOverhaul.Economy
         }
 
         // A statement every few days; its minimum is taken on the due day, and what is then still unpaid of it bears
-        // interest for the days of the statement. A minimum that could not be taken is tried again each day.
+        // interest for the days of the statement. A minimum that could not be taken is tried again each day, and is
+        // taken the day the cash is there, but only the statement's own due day counts: one missed payment for each
+        // statement, as a card counts it, so one late fee at most for each (a player, 16 Oct 2026, with no cash had
+        // a miss a day and was at collections within a week). The day is known by Charged: it is set on that day.
         private static void Card(CreditAccount a, int today, IWallet wallet, string name, ref DayOutcome o)
         {
             if (a.DueDay > 0 && today >= a.DueDay)
             {
-                o.WasDue = !a.Charged || a.MinimumLeft > 0;
+                bool first = !a.Charged;
                 int minimum = Math.Min(a.MinimumLeft, a.Owed);
                 if (minimum > 0 && wallet.Take(minimum, Money.Payment, name))
                 {
                     o.Paid = Reduce(a, minimum);
                     a.MinimumLeft = 0;
+                    if (!first)
+                    {
+                        o.PenaltyEnded = Settled(a, o.Paid);   // paid late, once the cash was there: as a payment by hand, not one on time
+                    }
                 }
-                else if (minimum > 0)
+                else if (minimum > 0 && first)
                 {
                     o.Missed = minimum;
                 }
+                o.WasDue = first;
                 if (!a.Charged)
                 {
                     a.Charged = true;
@@ -532,9 +551,12 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (a.Owed > 0 && a.Ladder.PlanLeft == 0)
                 {
+                    // What is still unpaid of the last minimum stays due, on its own day, on top of this statement's
+                    // minimum, as a card carries it (what is overdue after a broken plan is that minimum: the plan stood in for it).
                     bool overdue = a.DueDay > 0 && a.MinimumLeft > 0;
+                    int carried = Math.Max(overdue ? a.MinimumLeft : 0, a.Ladder.Overdue);
                     a.StatementLeft = a.Owed;
-                    a.MinimumLeft = Minimum(a.Owed);
+                    a.MinimumLeft = (int)Math.Min(a.Owed, (long)Minimum(a.Owed) + carried);
                     a.Charged = false;
                     if (!overdue)
                     {

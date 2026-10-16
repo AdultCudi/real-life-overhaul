@@ -132,13 +132,14 @@ namespace RealLifeOverhaul.Economy
         /// Money paid off one of the game's loans, exactly as the game's own loans page does it (LoanEntryUi.PayOffLoan):
         /// the game's pay-off transaction under the bank's name, the amount off what is left, and a loan with nothing left
         /// taken out of the game's list with the game's own event. The credit file then reads the change as it reads one
-        /// made in EconoView. Not while the loan is in a debt arrangement: that pays it.
+        /// made in EconoView. A loan in a debt arrangement can be paid sooner the same way, as EconoView allows: the
+        /// file's reading counts it under the arrangement (<see cref="PaidByHand"/>).
         /// </summary>
         public ProductAnswer PayLoan(LoanMark m, int amount, out int used)
         {
             used = 0;
             var loan = m != null ? m.Ref as Loan : null;
-            if (_file == null || loan == null || (m.Held & LoanHold.Frozen) != 0 || Save == null)
+            if (_file == null || loan == null || Save == null)
             {
                 return ProductAnswer.Off;
             }

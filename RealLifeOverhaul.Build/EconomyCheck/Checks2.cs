@@ -264,19 +264,20 @@ internal static partial class Program
         DayOutcome free = Day(full, 20, purse);
         Check(free.Interest == 0 && free.Paid == 0 && free.Missed == 0 && full.Owed == 0 && full.DueDay == 0, "bears no interest");
 
-        // The minimum missed: a miss each day until it is paid, interest once.
+        // The minimum missed: one missed payment for the statement, tried again each day until it is paid, interest once.
         var missed = AccountRules.Open(ProductKind.CreditCard, 1200, 2600, 10);
         AccountRules.Draw(missed, 1000, out fee);
         var empty = new Purse();
         Day(missed, 17, empty);
         DayOutcome a = Day(missed, 20, empty), b = Day(missed, 21, empty);
-        Check(a.Missed == 52 && a.Interest == 31 && a.Step == LadderStep.Reminder && b.Missed == 52 && b.Interest == 0 && b.Step == LadderStep.LateFee && missed.Owed == 1030 + 31 + 15,
-            "a missed minimum is a missed payment, tried again the next day; the interest is charged once");
+        Check(a.Missed == 52 && a.Interest == 31 && a.Step == LadderStep.Reminder && !b.WasDue && b.Missed == 0 && b.Interest == 0 && b.Step == LadderStep.None && missed.Owed == 1030 + 31
+              && missed.Ladder.Misses == 1 && missed.MinimumLeft == 52 && missed.DueDay == 20,
+            "a missed minimum is one missed payment, tried again the next day without counting again; the interest is charged once");
         empty.Money = 5000;
         DayOutcome c = Day(missed, 22, empty);
-        Check(c.Paid == 52 && missed.DueDay == 0 && missed.Ladder.Misses == 0 && missed.Owed == 1024, "paid, the card is in order");
+        Check(c.Paid == 52 && !c.WasDue && missed.DueDay == 0 && missed.Ladder.Misses == 0 && missed.Ladder.Overdue == 0 && missed.Owed == 1009, "paid the day the cash is there, the card is in order (late, so not counted as paid on time)");
         DayOutcome next = Day(missed, 24, empty);
-        Check(next.Statement && missed.MinimumLeft == 52 && missed.DueDay == 27, "and the next statement comes on its day");
+        Check(next.Statement && missed.MinimumLeft == 51 && missed.DueDay == 27, "and the next statement comes on its day, with nothing carried");
 
         // Paid by hand while overdue.
         var hand = AccountRules.Open(ProductKind.CreditCard, 1200, 2600, 10);
@@ -411,16 +412,21 @@ internal static partial class Program
         int fee;
         AccountRules.Draw(card, 1000, out fee);
         purse = new Purse();
-        for (int day = 17; day <= 24; day++)
+        int callDay = 0;
+        for (int day = 17; day <= 60 && callDay == 0; day++)
         {
             Day(card, day, purse);
+            callDay = card.Ladder.CallDue ? day : 0;
         }
-        Check(card.Ladder.Misses == 5 && card.Ladder.CallDue && card.Ladder.Overdue == 52 && AccountRules.AgreePlan(card) && card.MinimumLeft == 0 && card.DueDay == 0 && card.Ladder.PlanPerDay == 6,
-            "a card's plan stands in for the minimum that was overdue");
+        // One miss a statement: the first on its due day (20), each later one the day after its statement (24, 31, 38, 45), as what is overdue stays due.
+        int overdue = card.Ladder.Overdue;
+        Check(callDay == 46 && card.Ladder.Misses == 5 && overdue == card.MinimumLeft && overdue > 52 && AccountRules.AgreePlan(card) && card.MinimumLeft == 0 && card.DueDay == 0
+              && card.Ladder.PlanPerDay == LadderRules.PlanPerDay(overdue),
+            "a card reaches the collections call on its fifth missed statement, not its fifth day, and its plan stands in for every minimum that was overdue");
         purse.Money = 100000;
         int cardOwed = card.Owed;
-        DayOutcome planDay = Day(card, 25, purse);
-        Check(planDay.Paid == 6 && card.Owed == cardOwed - 6 && card.Ladder.PlanLeft == 46 && planDay.Missed == 0, "and takes its part each day");
+        DayOutcome planDay = Day(card, callDay + 1, purse);
+        Check(planDay.Paid == card.Ladder.PlanPerDay && card.Owed == cardOwed - planDay.Paid && card.Ladder.PlanLeft == overdue - planDay.Paid && planDay.Missed == 0, "and takes its part each day");
     }
 
     private static void Repossession()
