@@ -406,19 +406,21 @@ namespace RealLifeOverhaul.Economy
                 }
                 box.Row("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow));
                 box.Note(FinanceText.T("reallife_econ_account_overdraft", "free", FinanceText.Money(a.Free), "float", FinanceText.Money(ProductCatalogue.OverdraftFloat)));
-                if (!a.Frozen)
+                if (a.Frozen)
                 {
-                    Transform buttons = box.ButtonRow();
-                    CreditDesk desk = Desk;
-                    if (a.Owed > 0)
-                    {
-                        AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Owed, amount => Paid(desk, a, amount));
-                        InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
-                    }
-                    else
-                    {
-                        InfoBox.Button(buttons, InfoBox.Negative, "reallife_econ_account_close", () => Said(desk.CloseAccount(a)));
-                    }
+                    FinanceApp.InArrangement(box);
+                }
+                Transform buttons = box.ButtonRow();
+                CreditDesk desk = Desk;
+                if (a.Owed > 0)
+                {
+                    // (in a debt arrangement too: paid sooner by hand, it counts under the arrangement)
+                    AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Owed, amount => Paid(desk, a, amount));
+                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
+                }
+                else if (!a.Frozen)
+                {
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_econ_account_close", () => Said(desk.CloseAccount(a)));
                 }
                 return;
             }

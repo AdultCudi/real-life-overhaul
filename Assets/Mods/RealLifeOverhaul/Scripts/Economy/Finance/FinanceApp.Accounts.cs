@@ -939,27 +939,33 @@ namespace RealLifeOverhaul.Economy
                 box.Line(FinanceText.T("reallife_econ_account_plan", "left", FinanceText.Money(s.PlanLeft), "payment", FinanceText.Money(s.PlanPerDay)), CellTone.Yellow);
             }
             box.Note(FinanceText.T("reallife_tab_account_opened", "lender", CreditDesk.LenderName(a), "day", a.OpenedDay.ToString()));
-            if (!a.Frozen)   // (in a debt arrangement it is paid by the arrangement, not here)
+            if (a.Frozen)
             {
-                AccountButtons(box, desk, a, s, due);
+                InArrangement(box);
             }
+            AccountButtons(box, desk, a, s, due);
             AboutLines(box, AboutKind(a.Kind), a.RateBp > 0 && !a.Ladder.Penalty ? (revolving ? FinanceText.T("reallife_tab_account_rate_moves", "agreed", Rate(a.RateBp)) : FinanceText.T("reallife_tab_account_rate_fixed")) : null, GuideTitle);
         }
 
-        // The buttons of one of the mod's accounts: the collections call's answers when it is due, else paying, drawing and closing.
+        // The buttons of one of the mod's accounts: the collections call's answers when it is due, else paying, drawing and
+        // closing. In a debt arrangement only paying it, in part or in full: the arrangement counts it, and ends once all is paid.
         private void AccountButtons(InfoBox box, CreditDesk desk, CreditAccount a, LadderState s, int due)
         {
             Transform buttons = box.ButtonRow();
             var debt = new Debt(a);
-            if (s.CallDue)
+            if (s.CallDue && !a.Frozen)
             {
                 CallButtons(buttons, desk, debt);
                 return;
             }
             if (a.Owed > 0)
             {
-                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Min(a.Owed, Mathf.Max(s.Overdue, due)), amount => Paid(desk, a, amount));
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Frozen ? a.Owed : Mathf.Min(a.Owed, Mathf.Max(s.Overdue, due)), amount => Paid(desk, a, amount));
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
+            }
+            if (a.Frozen)
+            {
+                return;   // nothing is drawn on it and it is not closed while the arrangement holds it
             }
             if (a.Kind == ProductKind.CreditCard)
             {
@@ -989,6 +995,12 @@ namespace RealLifeOverhaul.Economy
             {
                 NextStepLine(box, s, secured);
             }
+        }
+
+        /// <summary>The line on a debt a debt arrangement holds, over its buttons: the arrangement pays it, and it can be paid sooner here.</summary>
+        internal static void InArrangement(InfoBox box)
+        {
+            box.Note(FinanceText.T("reallife_econ_account_arranged_pay"));
         }
 
         /// <summary>The rate a year, and under it the penalty in it while there is one.</summary>
@@ -1095,6 +1107,10 @@ namespace RealLifeOverhaul.Economy
             if (m.Ladder.RepoDay > 0)
             {
                 box.Line(FinanceText.T("reallife_econ_loan_takings", "share", Mathf.RoundToInt(ProductCatalogue.BusinessDivertShare * 100f) + "%", "amount", FinanceText.Money(m.Ladder.Overdue)), CellTone.Red);
+            }
+            if (frozen)
+            {
+                InArrangement(box);   // (EconoView pays it sooner, as a bank's app does)
             }
             Transform buttons = box.ButtonRow();
             if (m.Ladder.CallDue)

@@ -191,7 +191,10 @@ namespace RealLifeOverhaul.Economy
             return ProductAnswer.Yes;
         }
 
-        /// <summary>The borrower pays an amount into an account, at any time and with no fee. An account paid off this way is closed.</summary>
+        /// <summary>
+        /// The borrower pays an amount into an account, at any time and with no fee. An account paid off this way is
+        /// closed. An account in a debt arrangement can be paid too: what is paid counts under the arrangement.
+        /// </summary>
         public ProductAnswer Pay(CreditAccount a, int amount, out int used)
         {
             used = 0;
@@ -230,6 +233,10 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Info("Economy check (payment by hand): " + used + " paid into " + a.Kind + " #" + a.Id + ", " + a.Owed + " left" + (a.Closed ? ", paid off early with no fee" : string.Empty)
                              + (wasBehind && a.Ladder.Misses == 0 ? ", in order again" : string.Empty) + (wasPenalty && !a.Ladder.Penalty ? ", the penalty rate ended" : string.Empty) + ": " + (a.Owed >= 0 ? "PASS" : "FAIL"));
+            }
+            if (a.Frozen)
+            {
+                PaidByHand(used, a.Kind + " #" + a.Id);   // in a debt arrangement: paid under it, and it ends here if this was the last of it
             }
             _director.TermsChanged("a payment by hand");
             return ProductAnswer.Yes;

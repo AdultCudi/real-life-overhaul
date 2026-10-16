@@ -154,30 +154,35 @@ namespace RealLifeOverhaul.Economy
                 BuildingRegistration shop = Books.Business(m.Security);
                 box.Note(shop != null ? FinanceText.T("reallife_econ_account_secured", "thing", shop.BusinessName) : FinanceText.T("reallife_econ_loan_unsecured"));
             }
-            if (!frozen)   // (in a debt arrangement the arrangement pays it)
+            if (frozen)
             {
-                LoanButtons(box, desk, m, loan);
+                FinanceApp.InArrangement(box);
             }
+            LoanButtons(box, desk, m, loan, frozen);
             FinanceApp.AboutLines(box, FinanceText.T("reallife_tab_loan_about", "kind", kind, "day", m.FirstDay.ToString()), yearly > 0f ? FinanceText.T("reallife_tab_loan_rate_note") : null, GuideTitle);
         }
 
-        // A game loan's buttons: the collections call's answers when it is due, else paying part of it, paying it off and its daily payment.
-        private void LoanButtons(InfoBox box, CreditDesk desk, LoanMark m, Loan loan)
+        // A game loan's buttons: the collections call's answers when it is due, else paying part of it, paying it off and
+        // its daily payment. In a debt arrangement only paying it: its daily payment is the arrangement's.
+        private void LoanButtons(InfoBox box, CreditDesk desk, LoanMark m, Loan loan, bool frozen)
         {
             Transform buttons = box.ButtonRow();
             var debt = new Debt(m);
-            if (m.Ladder.CallDue)
+            if (m.Ladder.CallDue && !frozen)
             {
                 CallButtons(buttons, desk, debt);
                 return;
             }
             int whole = Mathf.CeilToInt(loan.remainingAmount);
-            AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Min(whole, loan.dailyPayment), amount => PaidLoan(desk, m, amount));
+            AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", frozen ? whole : Mathf.Min(whole, loan.dailyPayment), amount => PaidLoan(desk, m, amount));
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () =>
                 GameConfirm.Show("reallife_bank_confirm_payoff_title".Localize(new { bank = Bank.Name }),
                     "reallife_bank_confirm_payoff".Localize(new { amount = FinanceText.Money(whole), bank = Bank.Name }),
                     () => UiClone.Safe(() => PaidLoan(desk, m, whole)), null, "reallife_econ_account_pay_off", "common_cancel", false, false));
-            InfoBox.Button(buttons, InfoBox.Additional, "reallife_bank_daily_payment", OpenEconoView);
+            if (!frozen)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_bank_daily_payment", OpenEconoView);
+            }
         }
 
         // The game's own loans page, where the daily payment of one of its loans is changed.
@@ -239,18 +244,20 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.T("reallife_econ_account_plan", "left", FinanceText.Money(a.Ladder.PlanLeft), "payment", FinanceText.Money(a.Ladder.PlanPerDay)), CellTone.Yellow);
             }
-            if (!a.Frozen)
+            if (a.Frozen)
             {
-                Transform buttons = box.ButtonRow();
-                if (a.Ladder.CallDue)
-                {
-                    CallButtons(buttons, desk, new Debt(a));
-                }
-                else if (a.Owed > 0)
-                {
-                    AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Min(a.Owed, Mathf.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, today))), amount => Paid(desk, a, amount));
-                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
-                }
+                FinanceApp.InArrangement(box);
+            }
+            Transform buttons = box.ButtonRow();
+            if (a.Ladder.CallDue && !a.Frozen)
+            {
+                CallButtons(buttons, desk, new Debt(a));
+            }
+            else if (a.Owed > 0)
+            {
+                // (in a debt arrangement it can be paid sooner by hand: the arrangement counts it, and ends once all of it is paid)
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Frozen ? a.Owed : Mathf.Min(a.Owed, Mathf.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, today))), amount => Paid(desk, a, amount));
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
             }
             FinanceApp.AboutLines(box, FinanceApp.AboutKind(a.Kind), a.RateBp > 0 && !a.Ladder.Penalty ? FinanceText.T("reallife_tab_account_rate_fixed") : null, GuideTitle);
         }
@@ -340,30 +347,37 @@ namespace RealLifeOverhaul.Economy
             box.Line(card.DueDay > 0
                 ? FinanceText.T("reallife_econ_account_card_due", "minimum", FinanceText.Money(card.MinimumLeft), "day", card.DueDay.ToString(), "statement", FinanceText.Money(card.StatementLeft))
                 : FinanceText.T("reallife_econ_account_card_next", "day", card.NextDay.ToString()));
-            if (!card.Frozen)
+            if (card.Frozen)
             {
-                CardButtons(box, desk, card);
+                FinanceApp.InArrangement(box);
             }
+            CardButtons(box, desk, card);
             FinanceApp.AboutLines(box, null, card.Ladder.Penalty ? null : FinanceText.T("reallife_tab_account_rate_moves", "agreed", FinanceApp.Rate(card.RateBp)), GuideTitle);
         }
 
         // The card's buttons: the collections call's answers when it is due, else paying it, drawing on it and closing it.
+        // In a debt arrangement only paying it, in part or in full: nothing is drawn, and there is no minimum to pay.
         private void CardButtons(InfoBox box, CreditDesk desk, CreditAccount card)
         {
             Transform buttons = box.ButtonRow();
-            if (card.Ladder.CallDue)
+            if (card.Ladder.CallDue && !card.Frozen)
             {
                 CallButtons(buttons, desk, new Debt(card));
                 return;
             }
             if (card.Owed > 0)
             {
-                if (card.DueDay > 0 && card.MinimumLeft > 0)
+                bool minimum = !card.Frozen && card.DueDay > 0 && card.MinimumLeft > 0;
+                if (minimum)
                 {
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_bank_card_pay_minimum", () => Paid(desk, card, card.MinimumLeft));
                 }
-                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Max(card.MinimumLeft, Mathf.Min(card.Owed, card.StatementLeft)), amount => Paid(desk, card, amount));
-                InfoBox.Button(buttons, card.DueDay > 0 && card.MinimumLeft > 0 ? InfoBox.Additional : InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, card, card.Owed));
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", card.Frozen ? card.Owed : Mathf.Max(card.MinimumLeft, Mathf.Min(card.Owed, card.StatementLeft)), amount => Paid(desk, card, amount));
+                InfoBox.Button(buttons, minimum ? InfoBox.Additional : InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, card, card.Owed));
+            }
+            if (card.Frozen)
+            {
+                return;
             }
             Transform second = card.Owed > 0 ? box.ButtonRow() : buttons;
             AskAmount(second, "reallife_econ_account_draw", "reallife_econ_account_draw_how_much", AccountRules.MostDraw(card), amount => Drew(desk, card, amount));

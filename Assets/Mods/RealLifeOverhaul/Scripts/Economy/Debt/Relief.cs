@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -13,7 +14,7 @@ namespace RealLifeOverhaul.Economy
         public int ArrangedDay;
         public int ArrangedPerDay;
         public int ArrangedTotal;       // what was owed when it began
-        public int ArrangedPaid;
+        public int ArrangedPaid;        // paid under it: the daily payments, and what was paid by hand into its debts
         public int ArrangedMisses;      // of its payments, missed in all
         public int ArrangedEndDay;      // the day the last one ended; 0 for never
 
@@ -105,6 +106,35 @@ namespace RealLifeOverhaul.Economy
         {
             r.Arranged = false;
             r.ArrangedEndDay = today;
+        }
+
+        /// <summary>What is still owed on the mod's own accounts that an arrangement holds: the frozen ones.</summary>
+        public static int FrozenOwed(List<CreditAccount> accounts)
+        {
+            long owed = 0;
+            for (int i = 0; accounts != null && i < accounts.Count; i++)
+            {
+                CreditAccount a = accounts[i];
+                owed += a.Frozen && !a.Closed ? Math.Max(0, a.Owed) : 0;
+            }
+            return (int)Math.Min(int.MaxValue, owed);
+        }
+
+        /// <summary>
+        /// Money paid by hand into a debt an arrangement holds (an account paid in the Finance or a bank app, one of the
+        /// game's loans paid in EconoView or a bank app): it is paid under the arrangement as the daily payment is, so
+        /// Finance's "paid of" stays true. <paramref name="left"/> is what the arrangement still holds after it. True
+        /// when the arrangement is to end now, cleared: it is running and nothing is left in it. Once ended it is not
+        /// running, so it is never ended twice, and the day's payment is not asked for again.
+        /// </summary>
+        public static bool PaidByHand(Relief r, int amount, int left)
+        {
+            if (r == null || !r.Arranged)
+            {
+                return false;
+            }
+            r.ArrangedPaid = (int)Math.Min(int.MaxValue, (long)r.ArrangedPaid + Math.Max(0, amount));
+            return left <= 0;
         }
 
         public static bool CanBankrupt(Relief r, int today)

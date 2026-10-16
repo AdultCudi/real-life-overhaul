@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.Economy
         private int _preRunDay;        // the day whose daily run the hour event has read the loans for
         private object _toldDialogue;  // the bank dialogue that has already been told why nobody lends
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
+        private Action<string> _onGameEvent, _gameEventSeen;   // the game's own events: a loan paid off in EconoView is read at once
         private Action _deskSlow, _deskKeep, _deskSave, _deskRefused;   // kept, so that calling the desk each second allocates nothing
         private bool _deskBroken;      // a fault in the credit desk: it is off for the session, the rating and the banks' terms go on
         private Action<CreditGrade, CreditGrade> _onGrade;
@@ -142,6 +143,7 @@ namespace RealLifeOverhaul.Economy
             _onSave = OnSave;
             _onHour = Guard.Wrap(Ticks, OnHour);   // (the economy's hour and day are every economic feature's: a guard of their own, not the credit file's)
             _onDay = Guard.Wrap(Ticks, OnDay);
+            _onGameEvent = Guard.Wrap<string>(OnGameEvent);
             _onGrade = OnGrade;
             _onPosted = OnPosted;
             StartCoroutine(Guard.Routine(Tick()));
@@ -152,6 +154,7 @@ namespace RealLifeOverhaul.Economy
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onHour;
             GlobalEvents.onNewDay -= _onDay;
+            GameEvent.onGameEventTriggered -= _onGameEvent;   // (the handler that was put on: Guard.Wrap's, not the method itself)
             if (Instance != this)
             {
                 // Another city's director has started since: the file, the banks and the ledger are its, and are left alone.
@@ -275,6 +278,7 @@ namespace RealLifeOverhaul.Economy
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
             EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen);
+            EventHold.Keep(ref GameEvent.onGameEventTriggered, _onGameEvent, ref _gameEventSeen);
             if (_app == null && !_gaveUp)
             {
                 Install();
@@ -587,9 +591,16 @@ namespace RealLifeOverhaul.Economy
             GameLoans.Read(_live);
             _findings.Clear();
             LoanBook.Sync(file.Loans, _live, day, _findings);
+            int arranged = 0;
+            bool frozenPaid = false;
             for (int i = 0; i < _findings.Count; i++)
             {
                 LoanFinding f = _findings[i];
+                if ((f.Note == LoanNote.Gone || f.Note == LoanNote.ExtraPaid) && (f.Mark.Held & LoanHold.Frozen) != 0)
+                {
+                    arranged += Math.Max(0, f.Amount);   // paid by hand while a debt arrangement held it (EconoView, or a bank's app)
+                    frozenPaid = true;
+                }
                 switch (f.Note)
                 {
                     case LoanNote.New:
@@ -607,6 +618,33 @@ namespace RealLifeOverhaul.Economy
                         CreditLedger.Post(CreditKind.PaymentChanged, f.Amount, day, GameLoans.AccountKey);
                         break;
                 }
+            }
+            if (frozenPaid)
+            {
+                DeskDo("a loan paid in an arrangement", () => _desk.PaidByHand(arranged, "one of the game's loans, read from the game"));   // it ends here if that was the last of it
+            }
+        }
+
+        private const string LoanPaidEvent = "ba:gameevent_loanpaid";   // the game's own, as EconoView pays a loan off (LoanEntryUi.PayOffLoan)
+        private static readonly int HotOnGameEvent = HotSpots.Slot("Economy: EconomyDirector.OnGameEvent");
+
+        // GameEvent.onGameEventTriggered: one comparison for any other event. A loan paid off in EconoView is read at
+        // once, not at the next hour, so a debt arrangement it clears ends the moment it is paid.
+        private void OnGameEvent(string gameEvent)
+        {
+            using var hotSpot = HotSpots.Time(HotOnGameEvent);
+            if (gameEvent != LoanPaidEvent || !_running || _broken || Save == null)
+            {
+                return;
+            }
+            try
+            {
+                SyncLoans(Save.Day);
+                CreditLedger.Touch();
+            }
+            catch (Exception e)
+            {
+                Fault("a loan paid off", e);
             }
         }
 
