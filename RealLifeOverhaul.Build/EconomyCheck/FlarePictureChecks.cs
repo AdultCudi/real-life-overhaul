@@ -24,10 +24,6 @@ internal static partial class Program
         AvatarSame();
         AvatarDisc();
         AvatarLru();
-        PhotoSubjects();
-        PhotoShare();
-        PhotoTiming();
-        PhotoFiles();
         PicturesShared();
         PicturesSources();
         PicturesTexts();
@@ -248,143 +244,9 @@ internal static partial class Program
         return new FlarePost { Id = id, Author = FlareAuthor.Citizen, Who = 2, Source = FlareSource.CityTalk, Arg = (int)topic * 10, Day = 3, Hour = 10, District = district, Place = place, Seed = id * 7919 + 13 };
     }
 
-    private static void PhotoSubjects()
-    {
-        Check(FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Weather)) == FlarePhotoSubject.Sky && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Accident)) == FlarePhotoSubject.Street
-              && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Fire)) == FlarePhotoSubject.Street && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Event)) == FlarePhotoSubject.Street
-              && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Food, place: "Main~3")) == FlarePhotoSubject.Front && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Night)) == FlarePhotoSubject.Street,
-            "Flare city photos: the weather is the street and the sky, an accident, a fire or an event the street, food where it is eaten");
-        Check(FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Prices)) == FlarePhotoSubject.None && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Market)) == FlarePhotoSubject.None
-              && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Policy)) == FlarePhotoSubject.None && FlareCityPhotoRules.Subject(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Election)) == FlarePhotoSubject.None,
-            "Flare city photos: prices, the market, a policy or the election have nothing to see");
-        var shop = new FlarePost { Id = 2, Author = FlareAuthor.Business, Source = FlareSource.BusinessPost, Place = "Main~3", Name = "Nook" };
-        var niche = new FlarePost { Id = 3, Author = FlareAuthor.Influencer, Source = FlareSource.Niche };
-        var tycoon = new FlarePost { Id = 4, Author = FlareAuthor.Tycoon, Source = FlareSource.CityNews, Place = "High~9" };
-        Check(FlareCityPhotoRules.Subject(shop) == FlarePhotoSubject.Front && FlareCityPhotoRules.Subject(niche) == FlarePhotoSubject.Street && FlareCityPhotoRules.Subject(tycoon) == FlarePhotoSubject.Front,
-            "Flare city photos: a business's shop front, an influencer's niche, a tycoon's new building");
-        var own = new FlarePost { Id = 5, Author = FlareAuthor.Player, Source = FlareSource.Photo };
-        var reply = TalkPost(6, RealLifeOverhaul.Flare.FlareTalk.Weather);
-        reply.ReplyTo = 1;
-        var report = new FlarePost { Id = 7, Author = FlareAuthor.Citizen, Source = FlareSource.Report };
-        var official = new FlarePost { Id = 8, Author = FlareAuthor.Official, Source = FlareSource.Official };
-        var shopNoPlace = new FlarePost { Id = 9, Author = FlareAuthor.Business, Source = FlareSource.BusinessPost };
-        Check(FlareCityPhotoRules.Subject(own) == FlarePhotoSubject.None && FlareCityPhotoRules.Subject(reply) == FlarePhotoSubject.None && FlareCityPhotoRules.Subject(report) == FlarePhotoSubject.None
-              && FlareCityPhotoRules.Subject(official) == FlarePhotoSubject.None && FlareCityPhotoRules.Subject(shopNoPlace) == FlarePhotoSubject.None && FlareCityPhotoRules.Subject(null) == FlarePhotoSubject.None,
-            "Flare city photos: never the player's own post, a reply, a report, an official notice or a business with no place");
-    }
-
-    private static void PhotoShare()
-    {
-        int seed = 4242;
-        int[] got = new int[FlareCityPhotoRules.Options];
-        const int Posts = 20000;
-        for (int option = 0; option < FlareCityPhotoRules.Options; option++)
-        {
-            for (int i = 0; i < Posts; i++)
-            {
-                got[option] += FlareCityPhotoRules.Wants(TalkPost(i + 1, RealLifeOverhaul.Flare.FlareTalk.Weather), seed, option) ? 1 : 0;
-            }
-        }
-        bool near = true;
-        for (int option = 0; option < FlareCityPhotoRules.Options; option++)
-        {
-            int want = FlareCityPhotoRules.Share(option) * Posts / 1000;
-            near &= Math.Abs(got[option] - want) <= Posts / 50;
-        }
-        Check(got[0] == 0 && near && got[1] < got[2] && got[2] < got[3], "Flare city photos: the option's share of the posts carry a photo (none " + got[0] + ", a few " + got[1] + ", some " + got[2] + ", many " + got[3] + " of " + Posts + ")");
-        Check(FlareCityPhotoRules.Share(-5) == 0 && FlareCityPhotoRules.Share(99) == FlareCityPhotoRules.Share(FlareCityPhotoRules.Options - 1) && FlareCityPhotoRules.OptionDefault == 1
-              && FlareCityPhotoRules.Share(FlareCityPhotoRules.OptionDefault) <= 200,
-            "Flare city photos: a damaged option is read within range, and the default is a modest share");
-        bool same = true;
-        for (int i = 0; i < 500; i++)
-        {
-            same &= FlareCityPhotoRules.Wants(TalkPost(i, RealLifeOverhaul.Flare.FlareTalk.Event), seed, 2) == FlareCityPhotoRules.Wants(TalkPost(i, RealLifeOverhaul.Flare.FlareTalk.Event), seed, 2);
-        }
-        Check(same && !FlareCityPhotoRules.Wants(TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Prices), seed, 3), "Flare city photos: the same post always carries a photo or never; a post with nothing to see never");
-    }
-
-    private static void PhotoTiming()
-    {
-        FlarePost p = TalkPost(1, RealLifeOverhaul.Flare.FlareTalk.Weather);
-        long at = p.At;
-        Check(!FlareCityPhotoRules.Due(p, at - 1) && FlareCityPhotoRules.Due(p, at) && FlareCityPhotoRules.Due(p, at + FlareCityPhotoRules.WindowMinutes) && !FlareCityPhotoRules.Due(p, at + FlareCityPhotoRules.WindowMinutes + 1) && !FlareCityPhotoRules.Due(null, at),
-            "Flare city photos: a photo is taken at the time of its post, within its window, never before and never long after");
-        Check(FlareCityPhotoRules.InRange(0f, 0f) && FlareCityPhotoRules.InRange(FlareCityPhotoRules.FrontRange, 0f) && !FlareCityPhotoRules.InRange(FlareCityPhotoRules.FrontRange + 1f, 0f)
-              && !FlareCityPhotoRules.InRange(200f, 200f), "Flare city photos: a business's front only within reach of the player");
-        Check(FlareCityPhotoRules.SameDistrict(p, "ba:district_a") && !FlareCityPhotoRules.SameDistrict(p, "ba:district_b") && !FlareCityPhotoRules.SameDistrict(p, null)
-              && FlareCityPhotoRules.SameDistrict(TalkPost(2, RealLifeOverhaul.Flare.FlareTalk.Weather, null), null), "Flare city photos: a street only in the district the player is in");
-        float pace = FlareCityPhotoRules.PaceLeast;
-        pace = FlareCityPhotoRules.NextPace(pace, FlareCityPhotoRules.SlowMs + 1);
-        float slower = pace;
-        for (int i = 0; i < 10; i++)
-        {
-            pace = FlareCityPhotoRules.NextPace(pace, 80.0);
-        }
-        Check(slower == FlareCityPhotoRules.PaceLeast * 2f && pace == FlareCityPhotoRules.PaceMost && FlareCityPhotoRules.NextPace(pace, 3.0) == FlareCityPhotoRules.PaceLeast && FlareCityPhotoRules.PaceLeast >= 10f,
-            "Flare city photos: the pace doubles after a slow photo, up to " + FlareCityPhotoRules.PaceMost + " s, and is back to " + FlareCityPhotoRules.PaceLeast + " s after a quick one");
-        FlareFile f = FlareRules.Open(5, 1, 0, 50);
-        f.Net.CitySeed = 4242;
-        int seed = FlareLiveRules.CitySeed(f);
-        int wanted = -1;
-        for (int i = 1; i < 400 && wanted < 0; i++)
-        {
-            wanted = FlareCityPhotoRules.Wants(TalkPost(i, RealLifeOverhaul.Flare.FlareTalk.Weather), seed, 3) ? i : -1;
-        }
-        f.Posts.Add(TalkPost(wanted, RealLifeOverhaul.Flare.FlareTalk.Weather));
-        f.Posts.Add(TalkPost(1000, RealLifeOverhaul.Flare.FlareTalk.Prices));
-        var tried = new HashSet<int>();
-        long now = f.Posts[0].At + 10;
-        FlarePost next = FlareCityPhotoRules.Next(f, seed, 3, now, tried);
-        tried.Add(wanted);
-        Check(next != null && next.Id == wanted && FlareCityPhotoRules.Next(f, seed, 3, now, tried) == null && FlareCityPhotoRules.Next(f, seed, 0, now, new HashSet<int>()) == null
-              && FlareCityPhotoRules.Next(f, seed, 3, now + 500, new HashSet<int>()) == null, "Flare city photos: the next photo is a post due, wanted and not tried; none with the option off or past its window");
-        Check(FlareCityPhotoRules.DayMost <= 12 && FlareCityPhotoRules.Width * FlareCityPhotoRules.Height * 3 <= 200 * 1024, "Flare city photos: a dozen a game day at most, each small copy under 200 KB");
-    }
-
-    private static void PhotoFiles()
-    {
-        Check(FlareCityPhotoRules.IdOf(FlareCityPhotoRules.FileName(42) + ".thumb") == 42 && FlareCityPhotoRules.IdOf("City_.png.thumb") == -1 && FlareCityPhotoRules.IdOf("City_x.png.thumb") == -1
-              && FlareCityPhotoRules.IdOf("City_-3.png.thumb") == -1 && FlareCityPhotoRules.IdOf("Photo_1.png.thumb") == -1 && FlareCityPhotoRules.IdOf(null) == -1 && FlareCityPhotoRules.IdOf("City_5.png") == -1,
-            "Flare city photos: a photo's file names its post, and nothing else is read as one");
-        FlareFile f = FlareRules.Open(5, 1, 0, 50);
-        f.Posts.Add(new FlarePost { Id = 3 });
-        f.Posts.Add(new FlarePost { Id = 8 });
-        var gone = new List<int>();
-        Check(FlareCityPhotoRules.Stale(new List<int> { 3, 5, 8, 11 }, f, gone) == 2 && gone.Contains(5) && gone.Contains(11) && !gone.Contains(3), "Flare city photos: a photo goes with its post");
-        FlareFile many = FlareRules.Open(5, 1, 0, 50);
-        var files = new List<int>();
-        for (int i = 0; i < FlareCityPhotoRules.FilesMost + 30; i++)
-        {
-            many.Posts.Add(new FlarePost { Id = 1000 - i });
-            files.Add(1000 - i);
-        }
-        FlareCityPhotoRules.Stale(files, many, gone);
-        bool oldest = gone.Count == 30;
-        for (int i = 0; i < gone.Count; i++)
-        {
-            oldest &= gone[i] <= 1000 - FlareCityPhotoRules.FilesMost;
-        }
-        Check(oldest && FlareCityPhotoRules.Stale(new List<int>(), many, gone) == 0, "Flare city photos: never more than " + FlareCityPhotoRules.FilesMost + " kept for a save; the oldest go first");
-        string photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), director = ReviewSource("Social/Flare/FlareDirector.cs");
-        Check(FlareMethod(director, "private void PlayDay").Contains("            PhotosLook();   // (the photos of posts gone") && FlareMethod(director, "private void StandDown").Contains("PhotosStop()") && FlareMethod(director, "private void StartUp").Contains("PhotosStart()")
-              && FlareMethod(photos, "private void PhotosStart").Contains("PhotosLook()"), "Flare city photos: the photos of gone posts are deleted when Flare starts and each game day");
-        Check(!photos.Contains(".Pic =") && !photos.Contains("FlareStore"), "Flare city photos: nothing is written into a post or the save (which post has one is worked out again)");
-        string links = ReviewSource("Wiring/PhotosLinks.cs");
-        Check(links.Contains("FlareBridges.PictureFolder = () => PhotoStore.Folder(") && links.Contains("PhotoStore.MarkSave(") && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("MarkPictureFolder"),
-            "Flare city photos: they are kept in the save's photos' folder, marked as the save's, so a deleted save's go with its photos");
-    }
-
     private static void PicturesShared()
     {
         // A post of the city's on the host (its own number) and the guest's copy of it (another number of the guest's, the host's as its session number).
-        bool same = true;
-        for (int i = 1; i < 400; i++)
-        {
-            var host = new FlarePost { Id = i, Author = FlareAuthor.Citizen, Source = FlareSource.CityTalk, Arg = (int)RealLifeOverhaul.Flare.FlareTalk.Weather * 10, Seed = 11 * i };
-            var guest = new FlarePost { Id = 5000 + i, NetId = i, Shared = true, Author = FlareAuthor.Citizen, Source = FlareSource.CityTalk, Arg = (int)RealLifeOverhaul.Flare.FlareTalk.Weather * 10, Seed = 987 * i };
-            same &= FlareCityPhotoRules.Wants(host, 4242, 2) == FlareCityPhotoRules.Wants(guest, 4242, 2);
-        }
-        Check(same, "Flare city photos: a host and a guest agree which shared posts carry a photo (the city's seed and the post's session number)");
         string net = ReviewSource("Social/Flare/FlareNetShare.cs"), share = ReviewSource("Social/Flare/FlareDirector.Share.cs");
         Check(!net.Contains("CityPhoto") && !net.Contains("Avatar") && !share.Contains("CityPhoto") && !share.Contains("Avatar") && !net.Contains("City_"),
             "Flare pictures: nothing about faces or city photos is sent in a session (each machine makes its own)");
@@ -420,7 +282,7 @@ internal static partial class Program
         Check(renders == 1 && render.Contains("_camera.Render()") && render.Contains("AsyncGPUReadback.Request(") && !camera.Contains("ReadPixels") && take.Contains("Render(from, at, target") && take.Contains("yield return null"),
             "Flare city photos: the city is rendered in one place, read back without waiting for the graphics card, the pose a frame before");
         string second = FlareMethod(photos, "private void PhotosSecond()");
-        int paced = second.IndexOf("now < _photoNext", StringComparison.Ordinal), started = second.IndexOf("PhotoTake(", StringComparison.Ordinal);
+        int paced = second.IndexOf("t < _photoNext", StringComparison.Ordinal), started = second.IndexOf("PhotoTake(", StringComparison.Ordinal);
         Check(paced >= 0 && started > paced && second.Contains("_photoToday >= FlareCityPhotoRules.DayMost") && second.Contains("_photoBusy") && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(")
               && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityCamera.Take("),
             "Flare city photos: a photo is taken only after its pace and under the day's most, one at a time, and the pace follows its measured cost");
@@ -460,7 +322,7 @@ internal static partial class Program
         {
             "reallife_flare_opt_pictures", "reallife_opt_tip_flare_pictures", "reallife_flare_opt_city_photos", "reallife_flare_city_photos_0", "reallife_flare_city_photos_1",
             "reallife_flare_city_photos_2", "reallife_flare_city_photos_3", "reallife_opt_tip_flare_city_photos", "reallife_flare_test_pictures", "reallife_flare_test_photo_taken",
-            "reallife_flare_test_photo_not", "reallife_flare_test_photo_busy", "reallife_flare_test_photo_none"
+            "reallife_flare_test_photo_not", "reallife_flare_test_photo_busy"
         };
         string lacking = string.Empty;
         for (int k = 0; k < keys.Length; k++)
@@ -475,12 +337,13 @@ internal static partial class Program
         }
         Check(lacking.Length == 0, "Flare pictures: every text is in en, pt and zh-cn with the same names in curly brackets" + lacking);
         Check(words[0]["reallife_guide_flare"].Contains("# Pictures") && words[1]["reallife_guide_flare"].Contains("# Fotos") && words[2]["reallife_guide_flare"].Contains("# 头像与照片")
-              && words[0]["reallife_guide_flare"].Contains("never indoors"), "Flare pictures: the Guide's Flare page says what the pictures are, in three languages");
+              && words[0]["reallife_guide_flare"].Contains("never indoors") && words[0]["reallife_guide_flare"].Contains("streets, shop fronts, parks, sights and street events"),
+            "Flare pictures: the Guide's Flare page says what the pictures are and how the city's photos are taken, in three languages");
         string mod = ReviewSource("Core/RealLifeOverhaulMod.cs"), features = ReviewSource("Meta/FeatureList.cs"), tree = ReviewSource("Meta/OptionsTree.cs"), settings = ReviewSource("Core/Settings.cs");
         Check(mod.Contains("Settings.FlarePicturesId, \"reallife_flare_opt_pictures\"") && mod.Contains("Settings.FlareCityPhotosId, \"reallife_flare_opt_city_photos\"")
               && features.Contains("Settings.FlarePicturesId, Settings.FlareCityPhotosId") && tree.Contains("\"flare_pictures\", \"flare_city_photos\"")
-              && settings.Contains("public static bool FlarePictures = true;") && settings.Contains("public static int FlareCityPhotos = 1;"),
-            "Flare pictures: both options are on the options page, Flare's, on by default with a modest share of photos");
+              && settings.Contains("public static bool FlarePictures = true;") && settings.Contains("public static int FlareCityPhotos = 2;"),
+            "Flare pictures: both options are on the options page, Flare's, on by default, the city's photos at \"some\"");
         Check(ReviewSource("Social/Flare/FlareAvatars.cs").Contains("!Settings.FlarePictures") && ReviewSource("Social/Flare/FlareDirector.Photos.cs").Contains("Settings.FlareCityPhotos <= 0"),
             "Flare pictures: with the options off, the initials as before and no photo taken or shown");
     }

@@ -11,12 +11,13 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// The camera of the city's photos (FlareCityPhotoRules): a camera of the mod's, off screen, set where a phone would be
-    /// held for the post (FlareDirector.Photos.cs chooses the post and says what it shows), rendering the city as the
-    /// player's own camera does (its settings copied: the same lighting, the same sky, the same hour), at 320 by 180.
+    /// held for the bank's photo (FlareDirector.Photos.cs chooses what it shows), rendering the city as the player's own
+    /// camera does (its settings copied: the same lighting, the same sky, the same hour), at 320 by 180.
     ///
     /// ONE PHOTO, OVER A FEW FRAMES. The first frame works out where the camera stands: a business's front from across the
-    /// street (its door and the way out of it), or the street where the player is, looking down the most open of four ways
-    /// from the post's seed (one ray each, once) and up at the sky for the weather. The next frame renders it twice (the
+    /// street (its door and the way out of it), a park, a sight or the street event from where the player is, looking at
+    /// it, or the street where the player is, looking down the most open of four ways from the seed (one ray each, once),
+    /// a little of the sky in it. The next frame renders it twice (the
     /// game's automatic exposure settles in the second, through a volume that exists only for those two renders, as the
     /// showroom's car photos do) and asks the graphics card for the pixels without waiting for them. A frame or two later
     /// they are copied once into a buffer kept for the session, and a worker thread writes the photo's small copy.
@@ -38,8 +39,9 @@ namespace RealLifeOverhaul.Flare
         private const float AcrossStreet = 11f;       // metres from a business's door to where the photo of its front is taken
         private const float AheadOfPlayer = 2.5f;     // metres in front of the player a street photo is taken from (they are not in it)
         private const float LookFar = 40f;            // metres a way down the street is looked along for the most open one
-        private const float SkyPitch = 14f;           // degrees up for the weather's sky
-        private const float StreetPitch = 2f;         // degrees down for a street
+        private const float StreetPitch = 4f;         // degrees up for a street: a strip of sky shows the weather
+        private const float FocusRise = 3f;           // metres above a sight's or an event's middle the camera looks at
+        private const float FocusLeast = 4f;          // metres: a sight's middle closer than this is looked past, down the street
 
         private static readonly FrameSettingsField[] Off =
         {
@@ -62,13 +64,14 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// One photo of a post, written as the small copy at 'thumb'. Started by the director through Guard.Routine; the
-        /// result is filled in before it ends. 'seed' turns the camera a little, the same way each time for the same post.
+        /// One photo of the bank, written as the small copy at 'thumb'. Started by the director through Guard.Routine; the
+        /// result is filled in before it ends. 'focus' is a park's, a sight's or an event's middle (null for a front or a
+        /// street); 'seed' turns the camera a little.
         /// </summary>
-        public static IEnumerator Take(FlarePhotoSubject subject, string place, int seed, string thumb, Result result)
+        public static IEnumerator Take(FlarePhotoKind kind, string place, Vector3? focus, int seed, string thumb, Result result)
         {
             Vector3 from, at;
-            if (!Pose(subject, place, seed, out from, out at, out result.Why))
+            if (!Pose(kind, place, focus, seed, out from, out at, out result.Why))
             {
                 yield break;
             }
@@ -80,7 +83,7 @@ namespace RealLifeOverhaul.Flare
             {
                 target = RenderTexture.GetTemporary(FlareCityPhotoRules.Width, FlareCityPhotoRules.Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
                 var watch = Stopwatch.StartNew();
-                using (SessionWatch.Piece("flare: a photo of the city for a post"))   // a few a game day at most: two small renders
+                using (SessionWatch.Piece("flare: a photo of the city for the bank"))   // two dozen a game day at most, one in twenty real seconds at most: two small renders
                 {
                     asked = Render(from, at, target, out request);
                 }
@@ -139,7 +142,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         // Where the camera stands and what it looks at; false (with why) for a place that cannot be seen from here now.
-        private static bool Pose(FlarePhotoSubject subject, string place, int seed, out Vector3 from, out Vector3 at, out string why)
+        private static bool Pose(FlarePhotoKind kind, string place, Vector3? focus, int seed, out Vector3 from, out Vector3 at, out string why)
         {
             from = at = Vector3.zero;
             why = null;
@@ -149,7 +152,7 @@ namespace RealLifeOverhaul.Flare
                 why = "the player is indoors";
                 return false;
             }
-            if (subject == FlarePhotoSubject.Front)
+            if (kind == FlarePhotoKind.Front)
             {
                 Vector3 door, outward;
                 if (!FlarePictureGame.Front(place, out door, out outward))
@@ -168,6 +171,17 @@ namespace RealLifeOverhaul.Flare
                 return true;
             }
             Vector3 eye = player + Vector3.up * EyeHeight;
+            if (focus.HasValue)
+            {
+                Vector3 to = focus.Value - player;
+                to.y = 0f;
+                if (to.sqrMagnitude >= FocusLeast * FocusLeast)
+                {
+                    from = eye;
+                    at = new Vector3(focus.Value.x, player.y + FocusRise, focus.Value.z);   // (the player's own ground: a sight's middle may sit high or low)
+                    return true;
+                }
+            }
             float start = seed % 360, best = -1f, heading = start;
             for (int k = 0; k < 4; k++)
             {
@@ -183,8 +197,7 @@ namespace RealLifeOverhaul.Flare
             }
             Vector3 ahead = Quaternion.Euler(0f, heading, 0f) * Vector3.forward;
             from = eye + ahead * Mathf.Min(AheadOfPlayer, Mathf.Max(0f, best - 1f));
-            float pitch = subject == FlarePhotoSubject.Sky ? SkyPitch : -StreetPitch;
-            at = from + Quaternion.AngleAxis(-pitch, Vector3.Cross(Vector3.up, ahead)) * ahead * 10f;
+            at = from + Quaternion.AngleAxis(-StreetPitch, Vector3.Cross(Vector3.up, ahead)) * ahead * 10f;
             return true;
         }
 

@@ -376,7 +376,6 @@ namespace RealLifeOverhaul.Flare
 
         private void PlayDay(int day)
         {
-            PhotosLook();   // (the photos of posts gone since yesterday deleted, on a worker)
             ReadPeople();
             Talked(_talked);
             FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);

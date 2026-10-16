@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using BigAmbitions.DayNightCycle;
 using Character.Customization;
 using Entities;
 using Extensions;
@@ -10,14 +11,25 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Flare
 {
+    /// <summary>A business's front as the bank of city photos knows it: its place, district, kind and where its door is on the ground.</summary>
+    public struct FlareFrontSpot
+    {
+        public string Place;
+        public string District;
+        public int Niche;
+        public float X, Z;
+    }
+
     /// <summary>
-    /// Flare's pictures' one door to the game (FlareAvatars, FlareFacePainter, FlareCityCamera): the game's own logos of
-    /// its businesses, the game's portrait of the player's character, one of the player's staff as the game has them, where
-    /// the player stands and whether outdoors, and a business's front door. Each is asked when a picture is made, never per
-    /// frame, and each says "none" rather than throw: a picture that cannot be had leaves its stand-in.
+    /// Flare's pictures' one door to the game (FlareAvatars, FlareFacePainter, FlareCityCamera, the bank of city photos):
+    /// the game's own logos of its businesses, the game's portrait of the player's character, one of the player's staff as
+    /// the game has them, where the player stands and whether outdoors, whether it rains, a business's front door, and the
+    /// fronts of the city's businesses read a slice at a time. Each is asked when a picture is made or on the director's
+    /// second, never per frame, and each says "none" rather than throw: a picture that cannot be had leaves its stand-in.
     /// </summary>
     public static class FlarePictureGame
     {
+        private const string EmptyBusiness = "ba:businesstype_empty";
         private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(16);
         private static readonly string Square = LogoSize.SquareSign.ToStringFast();
 
@@ -139,6 +151,65 @@ namespace RealLifeOverhaul.Flare
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        /// <summary>True while it rains as the game shows it (wet streets, the rain falling or the mist after it).</summary>
+        public static bool Raining()
+        {
+            try
+            {
+                return RainHelper.isRaining;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The next slice of the city's businesses' fronts, from 'cursor' on, into 'into', until 'budgetTicks' of the
+        /// Stopwatch have passed (the director gives a millisecond a second): each business of the game's register with a
+        /// name and a door (the city's, the player's and another player's alike: a photo is only looked at). True once the
+        /// register is done.
+        /// </summary>
+        public static bool FrontSlice(ref int cursor, List<FlareFrontSpot> into, long budgetTicks)
+        {
+            try
+            {
+                List<BuildingRegistration> all = SaveGameManager.Current != null ? SaveGameManager.Current.BuildingRegistrations : null;
+                CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
+                if (all == null || city == null)
+                {
+                    return false;
+                }
+                long until = System.Diagnostics.Stopwatch.GetTimestamp() + budgetTicks;
+                for (; cursor < all.Count; cursor++)
+                {
+                    if ((cursor & 7) == 0 && System.Diagnostics.Stopwatch.GetTimestamp() > until)
+                    {
+                        return false;
+                    }
+                    BuildingRegistration reg = all[cursor];
+                    if (reg == null || !reg.HasValidAddress || string.IsNullOrEmpty(reg.BusinessName) || reg.businessTypeName == EmptyBusiness || reg.Address == null)
+                    {
+                        continue;
+                    }
+                    CityBuildingController controller = city.FindCityBuildingController(reg.Address);
+                    if (controller == null || controller.entranceDoors == null || controller.entranceDoors.Length == 0 || controller.entranceDoors[0] == null
+                        || controller.entranceDoors[0].doorTransform == null)
+                    {
+                        continue;
+                    }
+                    Vector3 door = controller.entranceDoors[0].doorTransform.position;
+                    into.Add(new FlareFrontSpot { Place = FlareGame.Place(reg), District = reg.Neighborhood, Niche = (int)FlareCast.NicheOf(reg.businessTypeName), X = door.x, Z = door.z });
+                }
+                return true;
+            }
+            catch (Exception)
+            {
+                cursor = int.MaxValue;   // (the register could not be read: no fronts this day, the streets still)
+                return true;
             }
         }
 
