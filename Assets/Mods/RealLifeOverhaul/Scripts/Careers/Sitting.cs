@@ -20,9 +20,11 @@ namespace RealLifeOverhaul.Careers
 
     /// <summary>
     /// A class, a piece of homework, an exam or a day at work, left to the game's own clock as the game's own job and study
-    /// are (<see cref="ShiftSkip"/>: the game's activity panel with its progress bar, fast-forward and time skip). The player
-    /// is where it is done already, so nothing walks. Energy is spent as the game's own studying spends it while it runs;
-    /// whichever way it ends, the director is told the minutes that passed.
+    /// are: on the game's activity panel with its progress bar, fast-forward and time skip, either where the player stands
+    /// (<see cref="ShiftSkip"/>, where nothing in the world fits) or at the desk or computer it is done at, walked to first
+    /// (Careers/SchoolDesk, Careers/ComputerClass, Careers/DeskWork). Energy is spent as the game's own studying spends it
+    /// while it runs; whichever way it ends, the director is told the minutes that passed (or, called off before it
+    /// began, that it was: <see cref="CalledOff"/>).
     /// </summary>
     public sealed class Sitting : ISkippableShift
     {
@@ -64,12 +66,21 @@ namespace RealLifeOverhaul.Careers
             return labels;
         }
 
+        /// <summary>Whole money charged as it begins (a retake's fee at a desk), so that a walk called off costs nothing; 0 for none.</summary>
+        public int Fee;
+
         public void SkipStarted()
         {
             _running = true;
             if (_tiring)
             {
                 CareersGame.Tiring(true);
+            }
+            if (Fee > 0)
+            {
+                int fee = Fee;
+                Fee = 0;   // (once)
+                _director.ChargeAtStart(this, fee);
             }
         }
 
@@ -86,6 +97,18 @@ namespace RealLifeOverhaul.Careers
             _running = false;
             _minutes = 0;
             _director.Ended(this, minutes, whole);
+        }
+
+        /// <summary>Called off before it began (the walk to the desk or the computer stopped): nothing is counted and nothing is said.</summary>
+        public void CalledOff()
+        {
+            if (_running && _tiring)
+            {
+                CareersGame.Tiring(false);
+            }
+            _running = false;
+            _minutes = 0;
+            _director.Dropped(this);
         }
     }
 }

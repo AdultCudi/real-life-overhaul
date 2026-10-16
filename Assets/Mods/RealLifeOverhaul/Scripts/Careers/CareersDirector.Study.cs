@@ -12,7 +12,9 @@ namespace RealLifeOverhaul.Careers
     /// a class that has gone by unattended is counted as missed, and a class about to start is reminded of; on the day,
     /// classes missed while the game was elsewhere are counted, a lapsed exam is a fail, a fee instalment falls due, the
     /// student loan's interest is added and unused skills fade a little. A class, homework or an exam is one of the game's
-    /// activities, offered from the Campus app where it can be done.
+    /// activities, done where it is done (CareersDirector.ClassPlay): at a desk of the school or a classroom of the
+    /// university, at the computer at home, or, where nothing in the world fits (a hospital's ward, the university while
+    /// its floors are not there), on the game's panel where the player stands.
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -84,6 +86,10 @@ namespace RealLifeOverhaul.Careers
                 _campusApp.Remove();
                 _campusApp = null;
                 _campusView = null;
+            }
+            if (!unloading)
+            {
+                ComputerButtons.Remove();   // (switched off: the game's computer as it was)
             }
         }
 
@@ -429,16 +435,47 @@ namespace RealLifeOverhaul.Careers
             string why = CanAttend(e, out minutes);
             if (InRooms(e))
             {
-                return ToRoom(e, why);   // (attended in its classroom: the way there)
+                return ToRoom(e, why, SittingKind.Class);   // (attended in its classroom: there, and sat down at its desk)
             }
             if (why != null)
             {
                 return why;
             }
+            if (ClassPlayRules.HeldOnline(e.Def, (StudyMode)e.Mode))
+            {
+                return AtComputer(course, SittingKind.Class, null);   // (online, from home: at the computer)
+            }
+            if (AtTheSchool(e, false) && SchoolDesk.Works)
+            {
+                return ToSchoolDesk(e, SittingKind.Class);   // (at the school: at one of its desks)
+            }
+            return Offer(ClassSitting(e, minutes));   // (a ward, or the university without its floors: where the player stands)
+        }
+
+        /// <summary>A class as one of the game's activities: its course, which class of how many, and until when.</summary>
+        private Sitting ClassSitting(Enrolment e, int minutes)
+        {
             CourseDef c = e.Def;
-            return Offer(new Sitting(this, SittingKind.Class, c.Id, minutes, CareersText.Course(c.Id), true,
+            return new Sitting(this, SittingKind.Class, c.Id, minutes, CareersText.Course(c.Id), true,
                 CareersText.T("reallife_study_skip_class", "number", (e.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes))));
+                CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes)));
+        }
+
+        /// <summary>A piece of homework (or revision, once the set homework is done) as one of the game's activities.</summary>
+        private Sitting HomeworkSitting(Enrolment e)
+        {
+            CourseDef c = e.Def;
+            bool revision = e.Homework >= StudyRules.HomeworkSet(e) || e.Homework >= c.Homework;
+            return new Sitting(this, SittingKind.Homework, c.Id, StudyCatalogue.HomeworkHours * 60, CareersText.Course(c.Id), true,
+                CareersText.T(revision ? "reallife_study_skip_revision" : "reallife_study_skip_homework", "number", (e.Homework + 1).ToString(), "of", c.Homework.ToString()));
+        }
+
+        /// <summary>An exam (or its retake) as one of the game's activities; its fee is the caller's to charge.</summary>
+        private Sitting ExamSitting(Enrolment e)
+        {
+            CourseDef c = e.Def;
+            return new Sitting(this, SittingKind.Exam, c.Id, StudyCatalogue.ExamHours * 60, CareersText.Course(c.Id), true,
+                CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString()));
         }
 
         public string CanHomework(Enrolment e)
@@ -459,10 +496,19 @@ namespace RealLifeOverhaul.Careers
             {
                 return why;
             }
-            CourseDef c = e.Def;
-            bool revision = e.Homework >= StudyRules.HomeworkSet(e) || e.Homework >= c.Homework;
-            return Offer(new Sitting(this, SittingKind.Homework, c.Id, StudyCatalogue.HomeworkHours * 60, CareersText.Course(c.Id), true,
-                CareersText.T(revision ? "reallife_study_skip_revision" : "reallife_study_skip_homework", "number", (e.Homework + 1).ToString(), "of", c.Homework.ToString())));
+            if (CareersGame.AtHome())
+            {
+                return AtComputer(course, SittingKind.Homework, null);   // (at home: at the computer)
+            }
+            if (InRooms(e))
+            {
+                return ToRoom(e, null, SittingKind.Homework);   // (at the university: at its classroom's desk)
+            }
+            if (e.Def.Campus == Campus.School && CareersGame.InSchool() && SchoolDesk.Works)
+            {
+                return ToSchoolDesk(e, SittingKind.Homework);   // (at the school: at one of its desks)
+            }
+            return Offer(HomeworkSitting(e));   // (on a ward, or at the university without its floors: where the player stands)
         }
 
         public string CanSit(Enrolment e)
@@ -490,11 +536,15 @@ namespace RealLifeOverhaul.Careers
             string why = CanSit(e);
             if (InRooms(e))
             {
-                return ToRoom(e, why);   // (sat in its classroom: the way there)
+                return ToRoom(e, why, SittingKind.Exam);   // (sat in its classroom: there, and sat down at its desk)
             }
             if (why != null)
             {
                 return why;
+            }
+            if (CareersGame.InSchool() && SchoolDesk.Works)
+            {
+                return ToSchoolDesk(e, SittingKind.Exam);   // (at the school: at one of its desks; the retake's fee is charged as it is begun)
             }
             CourseDef c = e.Def;
             if (e.Stage == (int)EnrolStage.Retake)
@@ -506,8 +556,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 e.Fee += fee;
             }
-            return Offer(new Sitting(this, SittingKind.Exam, c.Id, StudyCatalogue.ExamHours * 60, CareersText.Course(c.Id), true,
-                CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString())));
+            return Offer(ExamSitting(e));
         }
 
         private void StudyEnded(Sitting s, int minutes, bool whole)

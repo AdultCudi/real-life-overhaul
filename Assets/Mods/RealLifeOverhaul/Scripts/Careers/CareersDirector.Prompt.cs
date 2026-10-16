@@ -15,12 +15,16 @@ namespace RealLifeOverhaul.Careers
     ///   the school      Manhattan Business School's own study desks: press Study at a desk, as for the game's courses,
     ///                   and the game's panel for that desk has one more button, "Attend {course}" or "Sit the {course}
     ///                   exam" (Careers/SchoolDesk). The game's own courses at the desk are as they were.
-    ///   elsewhere       at the university's sign or door, on a ward of a hospital or clinic, at home for an online class:
+    ///   the university the classrooms of its floors, at their doors, with the same panel (Careers/CampusInterior)
+    ///   at home         an online or distance class, and homework, at the player's own computer: its buttons beside the
+    ///                   game's Pass the time (Careers/ComputerButtons, Careers/ComputerClass)
+    ///   elsewhere       at the university's sign or door while its floors are not there, on a ward of a hospital or clinic:
     ///                   the game's own panel (<see cref="DoorPanel"/>) over the place with one button, "Attend {course}"
     ///                   or "Sit the {course} exam", on the game's interact key. While it is up the key is the class's
     ///                   (<see cref="TakesInteractKey"/>, read by World/NearbyInteraction and the utilities desk), so it
     ///                   neither enters the building nor opens another desk.
-    ///   the Campus app  its Attend and Sit buttons do the same from the phone, as before.
+    ///   the Campus app  its Attend, Sit and Homework buttons go the same way from the phone, in one press: to the desk of
+    ///                   the school or the classroom, or to the computer at home, and sat down there (CareersDirector.ClassPlay).
     ///
     /// When a class's hour comes, a notice: where the player is right, how to join it (press the key; at the school,
     /// press Study at a desk); where not, why, where it is held and how long it runs. One line goes to the log with how far
@@ -53,7 +57,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True while the class panel is up, and in the frame its button ran.</summary>
         public static bool TakesInteractKey => Instance != null && (Instance._classDoor != null && Instance._classDoor.TakesKey || Instance._interior != null && Instance._interior.TakesKey);
 
-        private bool DeskBusy => _desk != null && _desk.Open;
+        private bool DeskBusy => (_desk != null && _desk.Open) || (_computer != null && _computer.Open);
 
         // ---------------------------------------------------------------- the panel in place (not the school)
 
@@ -73,11 +77,12 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; !busy && i < _study.Courses.Count && offer < 0; i++)
             {
                 Enrolment e = _study.Courses[i];
-                if (e == null || e.Def == null || AtTheSchool(e, false) && AtTheSchool(e, true) || InRooms(e))
+                bool online = e != null && ClassPlayRules.HeldOnline(e.Def, (StudyMode)e.Mode);
+                if (e == null || e.Def == null || (AtTheSchool(e, false) || online) && AtTheSchool(e, true) || InRooms(e))
                 {
-                    continue;   // (at the school's desks, or in the university's classrooms: no panel in place)
+                    continue;   // (at the school's desks, at the computer at home, or in the university's classrooms: no panel in place)
                 }
-                string classWhy = AtTheSchool(e, false) ? "reallife_study_why_not_school" : CanAttend(e, out _);
+                string classWhy = AtTheSchool(e, false) ? "reallife_study_why_not_school" : online ? "reallife_study_why_no_computer" : CanAttend(e, out _);
                 string examWhy = AtTheSchool(e, true) ? "reallife_study_why_exam_school" : CanSit(e);
                 StudyPrompt prompt = StudyRules.Prompt(classWhy, examWhy, false);
                 if (prompt != StudyPrompt.None)
@@ -189,6 +194,11 @@ namespace RealLifeOverhaul.Careers
                 _desk.Finish();
             }
             _desk = null;
+            if (_computer != null && _computer.Open)
+            {
+                _computer.Finish();
+            }
+            _computer = null;
         }
 
         // ---------------------------------------------------------------- the school's desks
@@ -219,6 +229,14 @@ namespace RealLifeOverhaul.Careers
             if (_desk != null && !_desk.Open)
             {
                 _desk = null;
+            }
+            if (_computer != null && _computer.Open && !DeskGame.Shows(_computer))
+            {
+                _computer.Finish();   // the same at the computer at home
+            }
+            if (_computer != null && !_computer.Open)
+            {
+                _computer = null;
             }
         }
 
@@ -283,23 +301,30 @@ namespace RealLifeOverhaul.Careers
                 {
                     SchoolDesk.DeskOffer offer;
                     int room = 0;
+                    bool begin;
                     if (onFloor)
                     {
                         room = _interior.RoomOf(SchoolDesk.DoorOf(game));
                         offer = room > 0 && !_roomDesksOff ? RoomOffer(room) : null;
+                        begin = offer != null && TakeBegin(offer.Course, offer);
                         Logger?.Info("Careers: a classroom door of the university, floor " + _interior.Floor + " room " + room + ": " + (offer == null ? "not one of the floor's five rooms"
                                      : (offer.Course >= 0 ? StudyCatalogue.Find(offer.Course).Key : "no course")
-                                       + (offer.Can ? ", " + (offer.Exam ? "the exam" : "the class") + " can be begun." : ", nothing to begin now (" + offer.Key + ").")));
+                                       + (offer.Can ? ", " + Words(offer.Kind) + " can be begun" + (begin ? ", begun for the player (the Campus app)." : ".") : ", nothing to begin now (" + offer.Key + ").")));
                     }
                     else
                     {
                         offer = DeskOfferNow();
+                        begin = TakeBegin(-1, offer);
                     }
                     SchoolDesk desk = offer != null ? SchoolDesk.Take(_activityUi, game, this, offer) : null;
                     if (desk != null)
                     {
                         _deskSeen = desk;
                         _desk = desk;
+                        if (begin)
+                        {
+                            desk.Begin();
+                        }
                     }
                     else if (onFloor)
                     {
@@ -358,7 +383,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (AtTheSchool(e, true) && CanSit(e) == null)
                 {
-                    return new SchoolDesk.DeskOffer { Course = c.Id, Exam = true, Can = true, Key = "reallife_study_prompt_exam", Arguments = CourseArgs(c.Id) };
+                    return new SchoolDesk.DeskOffer { Course = c.Id, Kind = SittingKind.Exam, Can = true, Key = "reallife_study_prompt_exam", Arguments = CourseArgs(c.Id) };
                 }
                 if (AtTheSchool(e, false) && e.Stage == (int)EnrolStage.Studying && c.Timetabled)
                 {
@@ -378,10 +403,11 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// A class or an exam begun at one of the school's desks (Careers/SchoolDesk): the same checks as the Campus app's
-        /// buttons, the sitting made for the desk's own activity. Null and the sitting, or the reason key.
+        /// A class, an exam or a piece of homework begun at one of the school's or the university's desks
+        /// (Careers/SchoolDesk): the same checks as the Campus app's buttons, the sitting made for the desk's own activity.
+        /// Null and the sitting, or the reason key.
         /// </summary>
-        internal string DeskSitting(int course, bool exam, out Sitting sitting)
+        internal string DeskSitting(int course, SittingKind kind, out Sitting sitting)
         {
             sitting = null;
             Enrolment e = _studyOn ? _study.Live(course) : null;
@@ -398,16 +424,23 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_study_why_tired";
             }
-            if (!exam)
+            if (kind == SittingKind.Class)
             {
                 string why = CanAttend(e, out int minutes);
                 if (why != null)
                 {
                     return why;
                 }
-                sitting = new Sitting(this, SittingKind.Class, c.Id, minutes, CareersText.Course(c.Id), true,
-                    CareersText.T("reallife_study_skip_class", "number", (e.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                    CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes)));
+                sitting = ClassSitting(e, minutes);
+            }
+            else if (kind == SittingKind.Homework)
+            {
+                string why = CanHomework(e);
+                if (why != null)
+                {
+                    return why;
+                }
+                sitting = HomeworkSitting(e);
             }
             else
             {
@@ -416,21 +449,22 @@ namespace RealLifeOverhaul.Careers
                 {
                     return why;
                 }
-                if (e.Stage == (int)EnrolStage.Retake)
+                int fee = e.Stage == (int)EnrolStage.Retake ? Prices.At(StudyRules.RetakeFee(c)) : 0;
+                if (fee > 0 && CareersGame.Cash < fee)
                 {
-                    int fee = Prices.At(StudyRules.RetakeFee(c));
-                    if (!CareersGame.Charge(fee, CareersGame.FeeKey, CareersText.Course(c.Id)))
-                    {
-                        return "reallife_study_why_money";
-                    }
-                    e.Fee += fee;
+                    return "reallife_study_why_money";
                 }
-                sitting = new Sitting(this, SittingKind.Exam, c.Id, StudyCatalogue.ExamHours * 60, CareersText.Course(c.Id), true,
-                    CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString()));
+                sitting = ExamSitting(e);
+                sitting.Fee = fee;   // (charged as the player sits down: a walk called off costs nothing)
             }
             _sitting = sitting;
-            Logger?.Info("Careers: " + (exam ? "the exam of " : "a class of ") + c.Key + " begun at a desk of the school (the game's study panel).");
+            Logger?.Info("Careers: " + Words(kind) + " of " + c.Key + " begun at a desk of the " + (_interior != null && _interior.Floor > 0 ? "university" : "school") + " (the game's study panel).");
             return null;
+        }
+
+        private static string Words(SittingKind kind)
+        {
+            return kind == SittingKind.Exam ? "the exam" : kind == SittingKind.Homework ? "a piece of homework" : "a class";
         }
 
         // ---------------------------------------------------------------- the hour a class begins
@@ -488,7 +522,7 @@ namespace RealLifeOverhaul.Careers
             Logger?.Info("Careers: class due for " + c.Key + " at " + hour.ToString("00") + ":00 on day " + day + "; " + where + "; "
                          + (InRooms(e) ? "held on floor " + CampusRules.FloorOf(c.Id) + ", room " + CampusRules.RoomOf(c.Id) + " (the player is " + (_interior.Floor > 0 ? "on floor " + _interior.Floor : "not on a floor")
                             + ", the university " + (_interior.OpenNow() ? "open" : "closed") + "); " : string.Empty)
-                         + (why == null ? "it can be joined now (" + (AtTheSchool(e, false) ? "Study at a desk" : InRooms(e) ? "the classroom's door" : "the panel where the player stands") + ")." : "it cannot be joined now: " + why + "."));
+                         + (why == null ? "it can be joined now (" + (AtTheSchool(e, false) ? "Study at a desk" : InRooms(e) ? "the classroom's door" : ClassPlayRules.HeldOnline(c, mode) ? "the computer at home" : "the panel where the player stands") + ")." : "it cannot be joined now: " + why + "."));
             int notice = StudyRules.ClassNotice(why);
             if (notice == 0)
             {
@@ -503,7 +537,7 @@ namespace RealLifeOverhaul.Careers
                         TabStudying, CampusApp.CourseRow + c.Id);
                     return;
                 }
-                Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk" : "reallife_study_note_class_here",
+                Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk" : ClassPlayRules.HeldOnline(c, mode) ? "reallife_study_note_class_computer" : "reallife_study_note_class_here",
                     Data("course", course, "key", Keys.Label(KeyAction.Interact)), TabStudying, CampusApp.CourseRow + c.Id);
                 return;
             }

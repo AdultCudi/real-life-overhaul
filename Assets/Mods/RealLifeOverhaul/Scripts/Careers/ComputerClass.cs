@@ -1,0 +1,447 @@
+using System;
+using System.Collections;
+using BigAmbitions.Characters;
+using BigAmbitions.DayNightCycle;
+using BigAmbitions.Items;
+using BigAmbitions.SoundSystem;
+using Helpers;
+using PlayerActivity;
+using UI.Elements;
+using UnityEngine;
+
+namespace RealLifeOverhaul.Careers
+{
+    /// <summary>
+    /// An online class or a piece of homework at the player's computer at home, done the way the game's own computer
+    /// passes the time (PlayerActivity.EntertainActivity, opened by ComputerController.PerformActivity): the player walks
+    /// to the computer's chair, sits at it with their hands on it, its screen shows the game's work video, they type now
+    /// and then; the game's panel shows the progress, the time left, fast forward, "skip time" and Stop. Pressed once
+    /// (the computer's own button, Careers/ComputerButtons, or the Campus app's Attend at home), it goes the whole way
+    /// without a second press: the panel sees it for one frame not started, then on its way, as the game's own activities
+    /// are after their Start, and the walk order is given a frame later, as theirs is.
+    ///
+    /// Whichever way it ends (the end of the time, Stop, fast forward or skip time to the end, energy running out, the
+    /// game's panel letting it go, the walk called off by a click elsewhere) the minutes are counted to the enrolment
+    /// once (<see cref="ClassTally"/>, then CareersDirector.Ended), as a class or homework is from anywhere else; a walk
+    /// called off counts nothing and says nothing. The player stands up as the game's computer stands them up.
+    ///
+    /// One object per press. Its cost: a few integer sums when the game's clock moves a minute while it runs; the
+    /// director looks once a second whether the game's panel still has it. Nothing per frame of its own.
+    /// </summary>
+    internal sealed class ComputerClass : IPlayerActivity
+    {
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "ComputerClass", typeof(ComputerClass));   // the game's calls of it (Core/Guard)
+
+        private readonly CareersDirector _director;
+        private readonly ComputerController _computer;
+        private readonly ItemController _chair;
+        private readonly ClassTally _tally;
+        private readonly LabelInfo _title;
+        private readonly string _typing;          // the computer's own using animation, as the game's computer has its user type
+        private Sitting _sitting;
+        private LabelInfo[] _labels;
+        private ButtonInfo[] _stop;
+        private PlayerActivityState _state = PlayerActivityState.NotStarted;
+        private PlayerActivityState _before = PlayerActivityState.NotStarted;
+        private float _nextType;
+
+        public ComputerClass(CareersDirector director, ComputerController computer, Sitting sitting)
+        {
+            _director = director;
+            _computer = computer;
+            _sitting = sitting;
+            _tally = new ClassTally(sitting.SkipMinutes);
+            _title = DeskGame.Label(sitting.SkipTitle, 0);
+            _chair = computer.FindChair();
+            AnimationType typing = AnimationType.UsingDesktopComputer;
+            try
+            {
+                Item item = ItemsGetter.GetByName(computer.itemName);
+                if (item != null && item.usingAnimation != AnimationType.None)
+                {
+                    typing = item.usingAnimation;
+                }
+            }
+            catch (Exception)
+            {
+                // the computer's own animation is a nicety: the desk computer's typing otherwise
+            }
+            _typing = typing.ToStringFast();
+        }
+
+        /// <summary>True from the press until it is over, whichever way.</summary>
+        public bool Open => _state != PlayerActivityState.Finished;
+
+        /// <summary>The computer it is at.</summary>
+        public ComputerController Computer => _computer;
+
+        /// <summary>On the game's panel now: a frame later on its way, a frame after that the walk.</summary>
+        public void Go()
+        {
+            _director.StartCoroutine(Guard.Routine(Walk()));
+        }
+
+        private IEnumerator Walk()
+        {
+            yield return null;   // the game's panel has seen it not started
+            if (_state != PlayerActivityState.NotStarted)
+            {
+                yield break;
+            }
+            _state = PlayerActivityState.MovingTowardsActivity;
+            yield return null;   // as the game's computer gives its walk order: a frame after its Start
+            if (_state != PlayerActivityState.MovingTowardsActivity)
+            {
+                yield break;
+            }
+            PlayerController player = InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
+            EntityController to = _chair != null ? _chair : (EntityController)_computer;
+            if (player == null || _computer == null || !player.ExistsRoute(to, showErrorNotification: true))
+            {
+                End(true, false);   // (the game has said it cannot be reached)
+                yield break;
+            }
+            Vector3 target = to.GetClosestNavMeshTargetPosition(PlayerHelper.GetPosition());
+            if (target == Vector3.zero)
+            {
+                player.ResetWalkingAnimation();
+                Arrived();
+            }
+            else
+            {
+                player.SetGoal(target, Guard.Listener(Arrived));
+            }
+        }
+
+        // There, as the game's computer seats its user: the chair, the hands on the computer, the screen, the energy.
+        private void Arrived()
+        {
+            if (_state != PlayerActivityState.MovingTowardsActivity)
+            {
+                return;
+            }
+            try
+            {
+                PlayerController player = InstanceBehavior<GameManager>.Instance.playerController;
+                ThirdPersonCharacter character = player.Character;
+                _state = PlayerActivityState.Started;   // the game's panel makes it Running on its next frame
+                player.SetNavigationBlocker(NavigationBlocker.StudyActivity);
+                if (_chair != null)
+                {
+                    character.SitOnChair(_chair.transform);
+                    _chair.Occupied = true;
+                }
+                _computer.Occupied = true;
+                character.SetItemIKTargets(_computer);
+                _computer.PlayVideoOnScreen(VideoClipData.VideoType.Work);
+                _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
+                _tally.Begin();
+                _sitting?.SkipStarted();
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+        }
+
+        /// <summary>The careers are stopping for a reason of their own (switched off, a fault): over, and nothing more is said.</summary>
+        public void Close()
+        {
+            try
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+                if (_state == PlayerActivityState.Running && uis != null && uis.timeMachine != null && uis.timeMachine.isRunning)
+                {
+                    uis.timeMachine.CancelTimeMachine();   // (the game's panel then finishes the activity itself)
+                }
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            End(false, true);
+        }
+
+        // Every way out. settle: the minutes are told to the director (else it has let the sitting go itself); walking:
+        // the walk is called off here (else the game has given the player another walk order already).
+        private void End(bool settle, bool walking)
+        {
+            if (_state == PlayerActivityState.Finished)
+            {
+                return;
+            }
+            PlayerActivityState was = _state;
+            try
+            {
+                PlayerController player = InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
+                if (player != null && was == PlayerActivityState.MovingTowardsActivity && walking)
+                {
+                    player.ResetNavigation();
+                }
+                else if (player != null && (was == PlayerActivityState.Started || was == PlayerActivityState.Running))
+                {
+                    ThirdPersonCharacter character = player.Character;
+                    if (_chair != null)
+                    {
+                        character.Reset();
+                        InstanceBehavior<SfxManager>.Instance?.PlayAudio(SoundType.ChairStandUp, player.transform.position, 1f, isPlayerCreatedSound: true);
+                        _chair.Occupied = false;
+                    }
+                    if (_computer != null)
+                    {
+                        _computer.Occupied = false;
+                        _computer.StopVideoOnScreen();
+                    }
+                    character.SetItemIKTargets(null);
+                    player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
+                    PlayerHelper.GetAnimator().ResetTrigger(_typing);
+                }
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            _before = was;
+            _state = PlayerActivityState.Finished;
+            Sitting sitting = _sitting;
+            _sitting = null;
+            TallyEnd end = _tally.Settle(out int minutes, out bool whole);
+            if (sitting == null || !settle)
+            {
+                return;
+            }
+            if (end == TallyEnd.Counted)
+            {
+                sitting.SkipEnded(minutes, whole);
+            }
+            else if (end == TallyEnd.CalledOff)
+            {
+                sitting.CalledOff();
+            }
+        }
+
+        // ---------------------------------------------------------------- the game's contract
+
+        public bool RequiresEnergy() => true;
+
+        public bool BlocksAutoSave() => true;
+
+        public PlayerActivityState GetState()
+        {
+            if (FrameGuard.Off)
+            {
+                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+            }
+            try
+            {
+                return _state;
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+                return Guard.Ended(this);
+            }
+        }
+
+        public PlayerActivityState GetStateBeforeFinishing() => _before;
+
+        public void ChangeState(PlayerActivityState state)
+        {
+            try
+            {
+                if (_state == PlayerActivityState.MovingTowardsActivity && state == PlayerActivityState.NotStarted)
+                {
+                    End(true, false);   // the game's panel called the walk off for a click elsewhere, and let it go
+                    return;
+                }
+                if (_state != PlayerActivityState.Finished)
+                {
+                    _state = state;
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
+
+        public void Perform(int minutes)
+        {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                if (_state != PlayerActivityState.Running)
+                {
+                    return;
+                }
+                bool over = _tally.Add(minutes);
+                _sitting?.SkipWorked(_tally.Done);
+                if (over)
+                {
+                    Finish();
+                }
+                else if (Time.time >= _nextType)
+                {
+                    try
+                    {
+                        PlayerHelper.GetAnimator().SetTrigger(_typing);
+                    }
+                    catch (Exception)
+                    {
+                        // the animation is a nicety
+                    }
+                    _nextType = Time.time + UnityEngine.Random.Range(5f, 10f);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
+
+        /// <summary>Over: by the end of the time, Stop, the game calling it off. The minutes sat are settled, once.</summary>
+        public void Finish()
+        {
+            try
+            {
+                End(true, true);
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
+
+        public LabelInfo GetHeadlineLabel() => _title;
+
+        public LabelInfo[] GetLabels()
+        {
+            if (FrameGuard.Off)
+            {
+                return (LabelInfo[])null;
+            }
+            try
+            {
+                if (_state != PlayerActivityState.Running)
+                {
+                    return null;
+                }
+                if (_labels == null && _sitting != null)
+                {
+                    _labels = _sitting.SkipLabels();   // (made once)
+                }
+                return _labels;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (LabelInfo[])null);
+            }
+        }
+
+        public ButtonInfo[] GetButtons()
+        {
+            if (FrameGuard.Off)
+            {
+                return (ButtonInfo[])null;
+            }
+            try
+            {
+                return _state == PlayerActivityState.Running
+                    ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                    : null;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (ButtonInfo[])null);
+            }
+        }
+
+        public bool HasFastForward() => _state == PlayerActivityState.Running;
+
+        public bool HasTimeMachine() => _state == PlayerActivityState.Running;
+
+        public int GetRemainingMinutesForTimeMachine()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0;
+            }
+            try
+            {
+                return _tally.Left;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
+
+        public Timestamp GetTimeMachineGoal()
+        {
+            if (FrameGuard.Off)
+            {
+                return TimeHelper.Now();
+            }
+            try
+            {
+                return TimeHelper.Now().AddMinutes(_tally.Left);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, TimeHelper.Now());
+            }
+        }
+
+        public bool HasProgressBar() => _state == PlayerActivityState.Running;
+
+        public float GetProgressBarPercentageValue()
+        {
+            if (FrameGuard.Off)
+            {
+                return 0f;
+            }
+            try
+            {
+                return 100f * _tally.Done / _tally.Length;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
+
+        public (string key, object arguments) GetProgressBarLabel()
+        {
+            if (FrameGuard.Off)
+            {
+                return (string.Empty, (object)null);
+            }
+            try
+            {
+                int left = _tally.Left;
+                return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
+
+        public bool HasSlider() => false;
+
+        public int GetMinSliderValue() => 0;
+
+        public int GetMaxSliderValue() => 0;
+
+        public float GetCurrentSliderValue() => 0f;
+
+        public void OnSliderValueChanged(int value)
+        {
+        }
+
+        public (string key, object arguments) GetSliderInfo() => (null, null);
+    }
+}

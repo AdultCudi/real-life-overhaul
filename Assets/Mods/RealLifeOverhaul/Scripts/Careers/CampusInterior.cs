@@ -115,6 +115,7 @@ namespace RealLifeOverhaul.Careers
         private int _wasVersion;
         private bool _mutated;
         private int _pending = 1, _goCourse = -1;
+        private bool _goBegin;         // ...and, once there, its class (or exam, or homework) begun at its desk for the player
         private int _built;            // generation of the floor being laid
         private bool _watching;
         private CityBuildingController _doorsOf;
@@ -447,10 +448,11 @@ namespace RealLifeOverhaul.Careers
         // ---------------------------------------------------------------- going in
 
         /// <summary>
-        /// Goes in to a floor (and on to a course's classroom, or -1). Null if the game was asked to go in; else a reason key,
-        /// which is written to the log with why.
+        /// Goes in to a floor (and on to a course's classroom, or -1; begin: its desk's class begun there for the player, as
+        /// the Campus app's Attend asks). Null if the game was asked to go in; else a reason key, which is written to the log
+        /// with why.
         /// </summary>
-        public string Enter(int floor, int course, string how)
+        public string Enter(int floor, int course, string how, bool begin = false)
         {
             CampusBuilding campus = Campus;
             BuildingManager manager = Manager;
@@ -478,11 +480,12 @@ namespace RealLifeOverhaul.Careers
             }
             if (insideOurs && Floor > 0)
             {
-                ChangeFloor(floor, course);
+                ChangeFloor(floor, course, begin);
                 return null;
             }
             _pending = Mathf.Clamp(floor, 1, CampusRules.Floors);
             _goCourse = course;
+            _goBegin = begin && course >= 0;
             int doorId = NearestDoor(campus.Building);
             Mutate("asked by " + how);
             _logger?.Info("Careers: going into the university, floor " + _pending + (course >= 0 ? " for " + CareersText.Course(course) : string.Empty) + " (" + how + ", door " + doorId + ", at " + Clock() + ").");
@@ -596,6 +599,7 @@ namespace RealLifeOverhaul.Careers
                 if (manager != null && manager.enteringBuilding && !_mutated && !BuildingManager.IsInsideBuilding)
                 {
                     _pending = Mathf.Clamp(DefaultFloor(out _goCourse), 1, CampusRules.Floors);
+                    _goBegin = false;   // (the game's own way in: to the classroom's door, its panel up, nothing begun)
                     Mutate("the game's own way in (a click on the building, or its door)");
                     _logger?.Info("Careers: the player is going into the university by the game's own door, to floor " + _pending + " (at " + Clock() + ").");
                     _watching = false;
@@ -644,8 +648,9 @@ namespace RealLifeOverhaul.Careers
                 _shadow = Shadow(manager.buildingRegistration, campus);
                 manager.buildingRegistration = _shadow;
                 manager.isOpen = OpenNow();
-                _director.StartCoroutine(Guard.Routine(Lay(++_built, _goCourse)));
+                _director.StartCoroutine(Guard.Routine(Lay(++_built, _goCourse, _goBegin)));
                 _goCourse = -1;
+                _goBegin = false;
             }
             catch (Exception e)
             {
@@ -740,7 +745,7 @@ namespace RealLifeOverhaul.Careers
         // ---------------------------------------------------------------- the floor's furniture
 
         // The school's layout laid in over the frames the game keeps the screen dark; the classroom doors last.
-        private IEnumerator Lay(int built, int goCourse)
+        private IEnumerator Lay(int built, int goCourse, bool begin)
         {
             var watch = Stopwatch.StartNew();
             BuildingManager manager = Manager;
@@ -833,7 +838,7 @@ namespace RealLifeOverhaul.Careers
             if (goCourse >= 0)
             {
                 yield return null;   // (the doors have found their chairs: their Start has run)
-                GoToRoom(goCourse);
+                GoToRoom(goCourse, begin);
             }
         }
 
@@ -1051,7 +1056,7 @@ namespace RealLifeOverhaul.Careers
         // ---------------------------------------------------------------- floors and rooms from inside
 
         /// <summary>To another floor from inside: the screen dark, the rooms given that floor's courses, the player at the entrance.</summary>
-        public void ChangeFloor(int floor, int course)
+        public void ChangeFloor(int floor, int course, bool begin = false)
         {
             if (Floor == 0 || floor < 1 || floor > CampusRules.Floors)
             {
@@ -1061,7 +1066,7 @@ namespace RealLifeOverhaul.Careers
             {
                 if (course >= 0)
                 {
-                    GoToRoom(course);
+                    GoToRoom(course, begin);
                 }
                 return;
             }
@@ -1070,10 +1075,10 @@ namespace RealLifeOverhaul.Careers
                 Tell("reallife_study_why_busy");
                 return;
             }
-            _director.StartCoroutine(Guard.Routine(Lift(floor, course)));
+            _director.StartCoroutine(Guard.Routine(Lift(floor, course, begin)));
         }
 
-        private IEnumerator Lift(int floor, int course)
+        private IEnumerator Lift(int floor, int course, bool begin)
         {
             _lift.Hide("going to another floor");
             yield return UiFader.Fade(0.25f);
@@ -1096,16 +1101,20 @@ namespace RealLifeOverhaul.Careers
                 Tell(NotificationType.Info, "reallife_campus_note_floor", "floor", Floor.ToString(), "courses", RoomsList());
                 if (course >= 0)
                 {
-                    GoToRoom(course);
+                    GoToRoom(course, begin);
                 }
             }
         }
 
         /// <summary>
-        /// To a course's classroom from wherever the player is: the floor first if need be, then a walk to the classroom door,
-        /// which opens the game's study panel with the class (Careers/SchoolDesk). Null if under way; else a reason key.
+        /// To a course's classroom from wherever the player is: the floor first if need be, then the room. With begin (the
+        /// Campus app's Attend, Sit or Homework), the classroom door's own study panel is opened at once, as a click on the
+        /// door opens it, and its class begun for the player (Careers/SchoolDesk.Begin): the player walks to the room's desk
+        /// with the game's own routing and sits, the way the game's studying goes, the door's refusals (closed, something
+        /// in hand) the game's own. Without (a floor button), a walk to the classroom door, which opens the panel with the
+        /// class to begin. Null if under way; else a reason key.
         /// </summary>
-        public string GoToRoom(int course)
+        public string GoToRoom(int course, bool begin = false)
         {
             int floor = CampusRules.FloorOf(course), room = CampusRules.RoomOf(course);
             if (floor == 0)
@@ -1115,11 +1124,11 @@ namespace RealLifeOverhaul.Careers
             CampusBuilding campus = Campus;
             if (Floor == 0 || campus == null || !CareersGame.InsideAt(campus.Street, campus.Number))
             {
-                return Enter(floor, course, "a class of " + StudyCatalogue.Find(course).Key);
+                return Enter(floor, course, "a class of " + StudyCatalogue.Find(course).Key, begin);
             }
             if (floor != Floor)
             {
-                ChangeFloor(floor, course);
+                ChangeFloor(floor, course, begin);
                 return null;
             }
             EducationDoorController door = _rooms[room - 1];
@@ -1128,6 +1137,16 @@ namespace RealLifeOverhaul.Careers
             {
                 _logger?.Info("Careers: the classroom of " + StudyCatalogue.Find(course).Key + " (floor " + floor + ", room " + room + ") has no door to walk to.");
                 return "reallife_study_why_game_busy";
+            }
+            if (begin && _director.BeginHere(course))
+            {
+                if (PlayerActivityUI.IsPanelOpen)
+                {
+                    return "reallife_study_why_game_busy";
+                }
+                _logger?.Info("Careers: the class of " + StudyCatalogue.Find(course).Key + " (floor " + floor + ", room " + room + ") is begun at its desk from the Campus app.");
+                door.StartLearning();   // the game's study panel (its own refusals: closed, something in hand), the class pressed for the player
+                return null;
             }
             if (!player.ExistsRoute(door, true))
             {

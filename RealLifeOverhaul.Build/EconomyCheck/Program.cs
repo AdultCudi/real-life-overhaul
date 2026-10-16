@@ -116,6 +116,7 @@ internal static partial class Program
         Helpers();
         CampusRulesChecks();
         ClassDoors();
+        ClassPlay();    // classes as the game's own studying: the computer's buttons at home, the minutes counted once (ClassPlayChecks.cs)
         CampusHome();
         CityReserveChecks();   // the two largest offices kept for the player, the courthouse at the moving company, the moves told once (CityReserveChecks.cs)   // the university's permanent building, its reservation, the older game's rule and the fallback (CampusHomeChecks.cs)
         Internet();
