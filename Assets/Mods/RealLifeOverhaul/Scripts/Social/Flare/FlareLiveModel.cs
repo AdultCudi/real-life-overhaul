@@ -174,6 +174,8 @@ namespace RealLifeOverhaul.Flare
         public string Handle;        // "@first_last" and a number
         public string District;      // the game's own id of their district, or null
         public FlarePersona Persona;
+        public bool Female;          // as their first name says
+        public int Age;              // years, as suits their persona (FlareLiveRules.AgeOf)
     }
 
     /// <summary>A business of the city as the day's posts see it: handed over by the director when the day is played, never kept.</summary>

@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Leisure
 
         private readonly IModLogger _logger;
         private readonly DoorPanel _door;
-        private readonly GuideMark _mark = new GuideMark();
+        private readonly GuideMark _mark = new GuideMark("outings");
         private readonly DeskList _list = new DeskList("RealLifeOverhaul Clothes", 1000f, 110f);
         private readonly Action _interact;
         private readonly Action[] _choose = new Action[3];
@@ -72,6 +72,12 @@ namespace RealLifeOverhaul.Leisure
                 _choose[i] = _door.Press(() => choose(index));
             }
             TravelList.Logger = logger;
+        }
+
+        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        internal void KeptBy(Behaviour host)
+        {
+            _mark.Keep(host);
         }
 
         /// <summary>True while one of the panel's buttons is the one the game is reading the key for (the mod's own interact key stands aside).</summary>

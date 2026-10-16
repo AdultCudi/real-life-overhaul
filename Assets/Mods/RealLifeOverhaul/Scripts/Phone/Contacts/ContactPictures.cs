@@ -74,7 +74,7 @@ namespace RealLifeOverhaul
                     Ensure(p);   // a person a feature has described in this save (Mom and Alex of the social life): their own look stands
                     return;
                 }
-                Set(id, look, look.Kind == PictureKind.Person ? ContactCatalogue.Seed(id, save) : 0, null);
+                Set(id, look, look.Kind != PictureKind.Person ? 0 : look.Seed != 0 ? look.Seed : ContactCatalogue.Seed(id, save), null);   // (Mom and Alex: one face in every game)
             }
             catch (Exception e)
             {

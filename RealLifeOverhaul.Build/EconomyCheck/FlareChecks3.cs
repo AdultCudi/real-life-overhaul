@@ -191,7 +191,7 @@ internal static partial class Program
             {
                 arrived += n.Kind == FlareCastNews.What.Arrived && g2.Influencer(n.Id).Niche == FlareNiche.Fitness ? 1 : 0;
             }
-            Check(g2.ActiveInfluencers <= FlareCast.Most, "Flare: never more than ten active (month " + m + ")");
+            Check(g2.ActiveInfluencers < FlareCast.ActiveSoft, "Flare: never at the safety bound, with no fixed most (month " + m + ")");
         }
         Check(arrived > 0, "Flare: a busy niche draws newcomers (" + arrived + " into fitness)");
         // A friend who likes sport, close enough, may take it up; once.
@@ -336,6 +336,6 @@ internal static partial class Program
         }
         FlareStore.ReadCast(FlareRules.Open(1, 1, 0, 50), FlareStore.WriteCast(f));
         clock.Stop();
-        Check(clock.ElapsedMilliseconds < 2000 && f.ActiveInfluencers <= FlareCast.Most, "Flare: three thousand days of the city's influencers in under 2 s (" + clock.ElapsedMilliseconds + " ms)");
+        Check(clock.ElapsedMilliseconds < 2000 && f.ActiveInfluencers < FlareCast.ActiveSoft, "Flare: three thousand days of the city's influencers in under 2 s (" + clock.ElapsedMilliseconds + " ms)");
     }
 }

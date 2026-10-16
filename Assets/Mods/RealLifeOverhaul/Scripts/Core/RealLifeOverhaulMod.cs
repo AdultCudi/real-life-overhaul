@@ -1207,6 +1207,8 @@ namespace RealLifeOverhaul
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            Guard.Step("GameUi.GuideMark", () => GameUi.GuideMark.Logger = context.Logger);
+            Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // the mod's marks on the game's destination guider taken off once their owner is gone, stopped or past its time (Core/GameUi/GuideMarkWatch): one time comparison a frame
             Guard.Step("DayRollGuard", () => DayRollGuard.Logger = context.Logger);
             Guard.Step("DayRollGuard", () => Guard.Add<DayRollGuard>(_root));   // the game's night kept whole: goods of a mod that is not loaded taken out of the market before its rivals' step throws on them, and hours a stopped night left uncleared put right before the wages (Core/DayRollRules): no Update, one comparison a game hour
             Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
@@ -1393,6 +1395,7 @@ namespace RealLifeOverhaul
             _running = null;
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
             Guard.Step("the wiring", () => Wiring.Disconnect());   // every bridge back to its stand-alone default
+            Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // off the game's destination guider while it is still there
             if (_root != null)
             {
                 _root.name = RootName + " (closing)";   // it is gone at the end of the frame: a city loaded before then must not take it for a second copy

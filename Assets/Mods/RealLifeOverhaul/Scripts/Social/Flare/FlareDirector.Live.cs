@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Flare
     /// announcements that move a business's customers, invitations, the city's people's messages, the stories for the
     /// paper and the badge. Going Public is FlareDirector.Share.cs.
     ///
-    /// COST: nothing per frame. The day: the city's posts (a few dozen), one pass over the buildings for a sample of the
+    /// COST: nothing per frame. The city's four hundred people: made once for a seed (some 0.2 ms), never walked by the
+    /// day's round, which rolls who speaks. The day: the city's posts (a few dozen), one pass over the buildings for a sample of the
     /// city's businesses, the watches. The hour: the cases due (a few), the invitations due, the badge (one walk over some
     /// two hundred posts). A post: its reactions and the city's replies (a dozen posts at most), a case.
     /// </summary>
@@ -560,7 +561,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return false;
             }
-            int start = FlareRules.Roll(_file.Seed, _file.NextId, 880) % _citizens.Count;
+            int start = FlareLiveRules.PickCitizen(_file.Seed, _file.NextId, 880) % _citizens.Count;
             FlareCitizen who = _citizens[start];
             for (int i = 0; i < _citizens.Count; i++)
             {

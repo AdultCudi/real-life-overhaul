@@ -142,7 +142,7 @@ namespace RealLifeOverhaul
         private int _lastHour = -1;
         private int _phoneState = -1;
         private Vector3 _guidedAt;
-        private readonly GuideMark _mark = new GuideMark();   // the game's destination marker for the scene's place or person
+        private readonly GuideMark _mark = new GuideMark("social scenes");   // the game's destination marker for the scene's place or person
         private DoorPanel _door;                              // the game's own panel over the person, or the player, with one button
         private ShiftCard _plan;                              // a copy of the game's job panel for the plan ("Coffee with Mom, 15:00 at ...")
         private bool _planTried;
@@ -183,6 +183,7 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             Instance = this;
+            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
             _door = new DoorPanel(Logger, "Social check (prompt panel)");
             _onPrompt = _door.Press(PromptPressed);
             _doorWhat = DoorWhat;
