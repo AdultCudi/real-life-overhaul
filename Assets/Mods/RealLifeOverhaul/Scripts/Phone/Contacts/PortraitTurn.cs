@@ -16,7 +16,8 @@ namespace RealLifeOverhaul
     /// two at once would spoil each other. A painter takes the turn (<see cref="Take"/>), asks for the face, and gives the
     /// turn back when the face comes (<see cref="Give"/>); a turn not given back in <see cref="Timeout"/> seconds lapses.
     /// After each face the camera rests <see cref="PaceSeconds"/> in play, <see cref="HiddenPaceSeconds"/> behind the game's
-    /// black screen.
+    /// black screen, and not at all behind the loading screen while it is held for the faces (Core/LoadHold: the next face
+    /// at once, the load's time being the only cost).
     ///
     /// A FACE OF A LOOK (<see cref="Face"/>): built exactly as the mod builds the person in the city, AppearanceSetter.
     /// RandomizeElements with the person's sex, the skin of their seed, casual clothes and their seed, their age, and the
@@ -31,6 +32,7 @@ namespace RealLifeOverhaul
     {
         public const float PaceSeconds = 2f;          // real seconds after a face in play
         public const float HiddenPaceSeconds = 0.25f; // ...and behind the game's black screen
+        public const float LoadPaceSeconds = 0f;      // ...and behind the loading screen held for the faces (Core/LoadHold): no frame of play to spare
         public const float Timeout = 15f;             // seconds to wait for the camera's read-back before the turn lapses
         private const float BuildMost = 0.55f;        // the build cap the mod's people are made with (Social/SocialCast.MaxBuild)
         private static readonly AppearanceTag[] Casual = { AppearanceTag.Casual };
@@ -61,12 +63,18 @@ namespace RealLifeOverhaul
         /// <summary>The turn given back: the camera rests before the next face.</summary>
         public static void Give(object who, float now, bool hidden)
         {
+            Give(who, now, hidden ? HiddenPaceSeconds : PaceSeconds);
+        }
+
+        /// <summary>The turn given back with a rest of its own (one of the paces above).</summary>
+        public static void Give(object who, float now, float rest)
+        {
             if (_holder != who)
             {
                 return;
             }
             _holder = null;
-            _next = now + (hidden ? HiddenPaceSeconds : PaceSeconds);
+            _next = now + Math.Max(0f, rest);
         }
 
         /// <summary>The city's portrait camera is there (not on the main menu or during a load).</summary>

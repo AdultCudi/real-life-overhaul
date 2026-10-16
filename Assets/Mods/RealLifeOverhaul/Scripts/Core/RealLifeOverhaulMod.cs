@@ -1195,6 +1195,7 @@ namespace RealLifeOverhaul
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
+            Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // work that needs frames of its own done behind the loading screen, two seconds at most (Core/LoadHold): disabled unless a piece is waiting
             Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));   // (pieces run last added first: this one after the road data below is found)
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
@@ -1374,7 +1375,9 @@ namespace RealLifeOverhaul
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
             context.Logger.Info("City features started.");
-            return Task.CompletedTask;
+            // The loading screen stays up while the pieces that need frames of their own are done (Flare's faces likely to be
+            // seen first), two seconds at most; with none it goes as before.
+            return LoadHold.Wait();
         }
 
         // The game's font is found by a search of the scene for any text of the interface (Core/GameUi/GameFont) and kept

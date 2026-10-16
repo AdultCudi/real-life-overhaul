@@ -88,6 +88,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 FlareBridges.People = People;
+                FlareBridges.SavedPeople = SavedPeople;
                 FlareBridges.PublicStanding = () => LawState.Loaded ? Standing.Public : FlareRules.ReputationStart;
                 FlareBridges.Civic = Civic;
                 FlareBridges.Career = Career;
@@ -587,6 +588,22 @@ namespace RealLifeOverhaul
                         Job = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))].GetLocalization(), District = SocialPlaces.District(p.District),
                         Female = p.Female, Age = p.Age, LookSeed = p.Seed
                     });
+                }
+            }
+
+            // The people met as the save holds them, while the loading screen is up (Social/SocialState.PeekMet): their looks for Flare's faces.
+            private static void SavedPeople(Dictionary<string, string> data, List<FlarePerson> into)
+            {
+                if (!Settings.Social)
+                {
+                    return;
+                }
+                var met = new List<SocialPerson>(SocialRules.CastSize);
+                SocialState.PeekMet(data, met);
+                for (int i = 0; i < met.Count; i++)
+                {
+                    SocialPerson p = met[i];
+                    into.Add(new FlarePerson { Index = p.Index, Stage = (int)p.Stage, Partner = p.Together, Female = p.Female, Age = p.Age, LookSeed = p.Seed });
                 }
             }
 

@@ -27,13 +27,15 @@ namespace RealLifeOverhaul.Flare
     ///   a logo      the game's own texture of it, shown as it is in a white disc (the game keeps it; never ours to destroy)
     ///   an emblem   one of Flare's glyphs on the account's colour; the initials for any other
     ///
-    /// At most <see cref="FlareAvatarRules.Most"/> round textures are kept (96 pixels, 36 KB each: 2.3 MB at most), the one
-    /// used longest ago destroyed first; all of them when the city unloads or Flare stops. One that could not be had is
-    /// looked for again the next time the app opens. In Going Public nothing is sent for a picture: each machine makes them
+    /// At most <see cref="FlareAvatarRules.Most"/> round textures are kept (96 pixels, 36 KB each: 18 MB at most, every face
+    /// a city shows), each read from its file the first time its card is shown and kept for the session; past the bound the
+    /// one used longest ago is destroyed first; all of them when the city unloads or Flare stops. One that could not be had
+    /// is looked for again the next time the app opens. A face read more than a day after its file was last written has its
+    /// file's time brought forward (FlareFaceAheadRules.Stale), so the folder's clean-up takes the old cities' faces first. In Going Public nothing is sent for a picture: each machine makes them
     /// from the seeds and looks it shares already, and another player's from the selfie the session already shared.
     ///
     /// COST: nothing per frame, nothing while the app is closed. Binding a card: a plan (a few comparisons) and a look in a
-    /// dictionary. A picture not made yet: one read of 27 KB off the main thread and one upload of 36 KB on it.
+    /// dictionary. A picture not read yet: one read of 27 KB off the main thread and one upload of 36 KB on it.
     /// </summary>
     internal sealed class FlareAvatars
     {
@@ -117,8 +119,7 @@ namespace RealLifeOverhaul.Flare
             {
                 case FlareAvatarKind.Face:
                 case FlareAvatarKind.Staff:
-                    string file = Path.Combine(FlarePictureGame.FaceFolder, plan.Kind == FlareAvatarKind.Face
-                        ? FlareAvatarRules.FaceName(plan.Female, plan.Age, plan.Seed) : FlareAvatarRules.StaffName(FlarePictureGame.SaveId, plan.Name));
+                    string file = FlareFacePainter.FileOf(plan);
                     _director.StartCoroutine(Guard.Routine(Read(plan, picture, file, _opening)));
                     break;
                 case FlareAvatarKind.Player:
@@ -156,7 +157,12 @@ namespace RealLifeOverhaul.Flare
             {
                 int w, h;
                 byte[] rows = PhotoThumbs.Read(file, out w, out h);
-                return rows != null && FlareAvatarRules.FromColour(rows, w, h, into);
+                bool whole = rows != null && FlareAvatarRules.FromColour(rows, w, h, into);
+                if (whole)
+                {
+                    Touch(file);
+                }
+                return whole;
             });
             while (!read.IsCompleted)
             {
@@ -171,6 +177,26 @@ namespace RealLifeOverhaul.Flare
                 FlareFacePainter.Want(plan, picture, file, true);   // drawn by the game's portrait camera while the app is open
             }
             _buffers.Push(into);
+        }
+
+        // On the worker: a face read later than a day after its file was last written has the file's time brought forward.
+        private static void Touch(string file)
+        {
+            try
+            {
+                long now = DateTime.UtcNow.Ticks;
+                if (FlareFaceAheadRules.Stale(File.GetLastWriteTimeUtc(file).Ticks, now))
+                {
+                    File.SetLastWriteTimeUtc(file, new DateTime(now, DateTimeKind.Utc));
+                }
+            }
+            catch (IOException)
+            {
+                // (in use: its time stays, and it is read again another day)
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         // The player's latest selfie (its small copy) or another player's (the session's small copy), made round.

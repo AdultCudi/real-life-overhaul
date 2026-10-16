@@ -586,6 +586,58 @@ namespace RealLifeOverhaul
                 : string.Join(Field.ToString(), offer.Person.ToString(inv), offer.Kind.ToString(inv), offer.Amount.ToString(inv), offer.Expires.ToString("F0", inv));
         }
 
+        /// <summary>
+        /// The people met, as the save holds them, read without touching the social life's own state (that is read a second
+        /// after the loading screen goes): each one's number, look and stage, Mom and Alex with their one look of every game
+        /// (SocialCatalogue.FixLook), into 'into' (emptied first). Nothing for a save whose cast this version would not read
+        /// (it makes a new one then). For Flare's faces drawn behind the loading screen. Allocates a record's fields, once a load.
+        /// </summary>
+        public static void PeekMet(Dictionary<string, string> data, List<SocialPerson> into)
+        {
+            into.Clear();
+            if (data == null || !data.TryGetValue(KeyMain, out string main) || string.IsNullOrEmpty(main)
+                || !data.TryGetValue(KeyPeople, out string people) || string.IsNullOrEmpty(people))
+            {
+                return;
+            }
+            string[] m = main.Split(Field);
+            if (m.Length < 12 || Int(m[0]) != Version)
+            {
+                return;
+            }
+            var found = new bool[People.Length];
+            int count = 0;
+            foreach (string record in people.Split(Record))
+            {
+                string[] f = record.Split(Field);
+                if (f.Length < 41)
+                {
+                    continue;
+                }
+                int index = Int(f[0]);
+                if (index < 0 || index >= People.Length || found[index] || string.IsNullOrEmpty(f[1]))
+                {
+                    continue;
+                }
+                var p = new SocialPerson { Index = index, Name = f[1], Female = f[2] == "1", Age = Int(f[3]), Seed = Int(f[4]), Origin = (SocialOrigin)Int(f[5]), Met = f[13] == "1", Stage = (SocialStage)Int(f[18]), Wants = (PlanKind)Int(f[29]) };
+                if (p.Stage < SocialStage.Stranger || p.Stage > SocialStage.Partner || p.Wants < PlanKind.Coffee || p.Wants > PlanKind.Business)
+                {
+                    continue;   // (as Read: a record it would not take)
+                }
+                SocialCatalogue.FixLook(p);
+                found[index] = true;
+                count++;
+                if (p.Met)
+                {
+                    into.Add(p);
+                }
+            }
+            if (count != People.Length)
+            {
+                into.Clear();   // (as Read: a cast that is not whole is made anew, and nobody of it is met yet)
+            }
+        }
+
         private static bool Read(Dictionary<string, string> data)
         {
             if (data == null || !data.TryGetValue(KeyMain, out string main) || string.IsNullOrEmpty(main)
