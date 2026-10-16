@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
         ///   TravelBridges.Social       the player's partner and close friends come along; souvenirs are for friends
         ///   GarageBridges.RoadIsWet    wet in the rain of Events/Weather as well as the game's
         ///
-        /// Left at their defaults, each because the other side has nothing to answer with (see the README's list):
+        /// Left at their defaults, each because the other side has nothing to answer with (see the list in docs/reference/wiring.md):
         /// CareerLinks.Social, TravelBridges.Transport and Leisure, Justice.Bridges.Transport,
         /// GarageBridges.PoliceNotice and RiderFalls, Events.Weather.Wardrobe.
         /// </summary>

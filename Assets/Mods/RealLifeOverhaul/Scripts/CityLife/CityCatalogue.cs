@@ -27,8 +27,8 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// THE CATALOGUE of the living city: every activity, one entry each. This is the one place
-    /// to look for what exists and the one place to add to: see "Adding an activity" in the
-    /// README. Somebody working alone is a <see cref="SoloSpec"/> and needs no class of its own.
+    /// to look for what exists and the one place to add to: see "Adding an activity" in
+    /// docs/contributing/adding-things.md. Somebody working alone is a <see cref="SoloSpec"/> and needs no class of its own.
     ///
     /// Hours follow the day: sweepers and window cleaners early, the road crew in working
     /// hours, leaflets and the coffee cart while shops are busy, joggers at both ends of the

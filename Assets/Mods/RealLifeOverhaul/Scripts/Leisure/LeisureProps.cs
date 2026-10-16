@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Leisure
     /// The props leisure puts out, pooled: made the first time they are asked for, switched off
     /// and reused after. Each comes from <see cref="PropLibrary"/> by id when the bundle has it
     /// and is otherwise a clean stand-in of plain shapes (<see cref="Shapes"/>) with the size and
-    /// pivot the wish-list in the README gives, so the modelled prop drops in by id with no
+    /// pivot the wish-list in docs/features/leisure.md gives, so the modelled prop drops in by id with no
     /// change here. No colliders, nothing per instance.
     /// </summary>
     public sealed class LeisureProps
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // Sizes and pivots as in the README's wish-list.
+        // Sizes and pivots as in the wish-list in docs/features/leisure.md.
         private static bool Build(string id, Transform prop)
         {
             switch (id)

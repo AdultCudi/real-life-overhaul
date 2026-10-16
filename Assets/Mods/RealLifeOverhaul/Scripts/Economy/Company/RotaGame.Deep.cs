@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
     /// cleaning service looks after the floor. Each figure says in RotaShop what it is; where the game gives none it
     /// stays at nothing and the ladder counts nothing for it.
     ///
-    /// The game's arithmetic these follow (decompiled, file and line in the README's rota section):
+    /// The game's arithmetic these follow (decompiled, file and line in docs/features/economy-rota.md):
     ///   theft       BusinessSecurityHelper.SimulateTheft: thieves a shelf = customers of the last hour x 0.04 x
     ///               (1 - security); under one, that is the chance one unit goes from a stocked shelf; a shelf under
     ///               a camera is passed over with the security level's chance, any other one time in twenty where a

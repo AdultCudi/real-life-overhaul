@@ -1286,7 +1286,7 @@ internal static partial class Program
             Check(edge < 0.01, "no money printer: '" + names[rule] + "' beats holding by " + (edge * 100).ToString("0.00") + "% a year: under 1%");
         }
         Check(tradesAll > 5000, "no money printer: the rules did trade (" + tradesAll + " trades)");
-        // The figures the README quotes, written out on every run.
+        // The figures docs/features/economy-investors.md quotes, written out on every run.
         var line = new System.Text.StringBuilder("Market over " + MarketYears + " years of " + MarketYear + " days, " + MarketSeeds + " seeds: holding returns " + (yearly * 100).ToString("0.00")
                                                  + "% a year (" + (worst / MarketCash).ToString("0.00") + " to " + (best / MarketCash).ToString("0.00") + " times the money after ten years)");
         for (int rule = 1; rule < names.Length; rule++)

@@ -1,4 +1,4 @@
-"""Clips for fires and street events (Scripts/Events: the wish-list in RealLifeOverhaul.Build/README.md, "City events").
+"""Clips for fires and street events (Scripts/Events: the wish-list in docs/features/city-events.md).
 Same rules as clips.py.
 
 Where things are, for whoever places the character (x right, y ahead, z up, from the character's feet):

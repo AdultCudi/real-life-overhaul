@@ -7,7 +7,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The motions a job asks of a person, named for what they are and not for the animation
     /// that plays them. The wish-list of clips, with length, hand and prop socket for each, is
-    /// in RealLifeOverhaul.Build/README.md ("Job clips").
+    /// in docs/features/jobs.md ("Job clips").
     /// </summary>
     public enum JobClip
     {

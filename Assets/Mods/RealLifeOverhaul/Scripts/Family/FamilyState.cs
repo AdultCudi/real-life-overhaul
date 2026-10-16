@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Family
 
     public enum ProcessKind { None = 0, Pregnancy = 1, Adoption = 2 }
 
-    /// <summary>One child. Shown as state, props and events, never as a walking character (see the README).</summary>
+    /// <summary>One child. Shown as state, props and events, never as a walking character (see docs/features/family.md).</summary>
     public sealed class ChildRecord
     {
         public string Name;

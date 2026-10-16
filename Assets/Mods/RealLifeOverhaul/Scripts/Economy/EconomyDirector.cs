@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// The economy core: the credit rating, the banks' terms by that rating, loans from the phone and the Finance app.
-    /// See the README ("Economy: credit rating, lending and the Finance app").
+    /// See docs/features/economy-credit.md.
     ///
     /// This class keeps it going and nothing more. It has no Update. A one-second timer on the real clock waits for
     /// the save, puts the app on the phone, keeps the three event handlers in place (the game empties its events on

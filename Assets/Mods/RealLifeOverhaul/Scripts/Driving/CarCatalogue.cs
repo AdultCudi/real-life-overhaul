@@ -50,7 +50,7 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The targets for every vehicle type the game has (one row each; README lists them), and a rule for
+    /// The targets for every vehicle type the game has (one row each; docs/features/driving.md lists them), and a rule for
     /// types it does not know (vehicles added by other mods). Game-free: the command-line check of the
     /// car model compiles this file too.
     /// </summary>

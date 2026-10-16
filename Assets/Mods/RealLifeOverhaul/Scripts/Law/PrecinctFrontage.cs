@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Law
         private const int Bollards = 6;
         private const float RayOut = 1.4f;           // wall rays start this far out from the door's plane
         private const float FlatWithin = 0.06f;      // the rays of one patch agree to within this
-        private const string GuardClip = "officer_guard_idle";   // wished for (README); guard_stand until then
+        private const string GuardClip = "officer_guard_idle";   // wished for (docs/features/law.md); guard_stand until then
 
         private static readonly float[] SignAside = { 2.3f, 3.3f, 1.7f, 4.2f };   // metres along the wall from the door, tried in turn on either side
         private static readonly float[] KerbOffsets = { 3.0f, 3.3f, 3.6f };

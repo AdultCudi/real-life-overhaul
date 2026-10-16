@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The bank apps: one app on the game's phone for each of the city's three largest banks (BankTerms.Banks, ranked by
     /// BankRules), each that bank's slice of the player's money (BankApp). A city with fewer banks has fewer apps, and one
-    /// line in Player.log says so. See the README ("Economy: bank apps").
+    /// line in Player.log says so. See docs/features/economy-banks.md.
     ///
     /// This class only keeps the apps on the phone. It has no Update and no save data: once a second the credit side's
     /// timer calls <see cref="EachSecond"/>, which compares the banks wanted with the apps there (a few comparisons while

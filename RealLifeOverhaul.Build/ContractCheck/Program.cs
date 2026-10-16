@@ -11,7 +11,7 @@ using RealLifeOverhaul;
 //
 //   dotnet ContractCheck.dll [Managed folder] [--mod path\RealLifeOverhaul.dll] [--locale path\en.json]
 //
-// After a game update: run it against the new game (README, "After a game update"). The game's build fails until
+// After a game update: run it against the new game (docs/contributing/after-a-game-update.md). The game's build fails until
 // GameBuild.MadeFor is the new build; every line under "the game contract" names a piece that is missing or changed and
 // the parts it switches off; every line under "the mod's code against this game" a type or member the mod's code names
 // that the game no longer has, who uses it and the features the running mod switches off for it; every line under "the

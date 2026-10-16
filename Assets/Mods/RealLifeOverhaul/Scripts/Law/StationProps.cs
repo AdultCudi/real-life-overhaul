@@ -28,8 +28,8 @@ namespace RealLifeOverhaul.Law
         public const string Emblem = "police_shield_emblem";
         public const string Awning = "station_awning";
         public const string Bollard = "bollard";
-        public const string OfficeDesk = "office_desk";          // wished for (README)
-        public const string EvidenceDoor = "evidence_door";      // wished for (README)
+        public const string OfficeDesk = "office_desk";          // wished for (docs/features/law.md)
+        public const string EvidenceDoor = "evidence_door";      // wished for (docs/features/law.md)
 
         public static readonly Color PoliceBlue = new Color(0.06f, 0.17f, 0.45f);
         public static readonly Color Steel = new Color(0.16f, 0.17f, 0.19f);

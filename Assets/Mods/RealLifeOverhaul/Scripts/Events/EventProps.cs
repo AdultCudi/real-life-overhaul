@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Events
     /// <summary>
     /// The props of fires and street events, by id. A prop is the modelled one from the prop
     /// bundle when the bundle has it; until then a clean stand-in built here from the shared
-    /// plain shapes (Core/Shapes), to the same size and pivot the wish-list in the README asks
+    /// plain shapes (Core/Shapes), to the same size and pivot the wish-list in docs/features/city-events.md asks
     /// for, so that the modelled prop drops in by id with no change here. Objects are made the
     /// first time they are wanted, kept on a shelf (CityLife/CityProps: one of its own, not the
     /// living city's) and handed out again; nothing is built or destroyed per scene.
