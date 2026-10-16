@@ -704,8 +704,14 @@ internal static partial class Program
         Check(facts && !old && list.Contains(".Fact(\"flare_cast_level\", () => Whole(Flare.FlareCast.Level))") && list.Contains(".Fact(\"flare_cast_start\", () => Whole(Flare.FlareCast.Start))")
               && list.Contains(".Fact(\"flare_citizens\", () => Whole(Flare.FlareLiveRules.Citizens))") && !list.Contains("flare_cast_most"),
             "Flare crowd: the Guide's Flare page gives the city's people, the influencers' start and level from the code, in en, pt and zh-cn, and no longer a most");
-        bool next = words[0]["reallife_changes_next"].Contains("400 people") && words[0]["reallife_changes_next"].Contains("Mom and Alex look the same in every game.")
-                    && words[1]["reallife_changes_next"].Contains("400 pessoas") && words[2]["reallife_changes_next"].Contains("400");
+        // any reallife_changes_ row: the line is in the next row until a release numbers it
+        bool Row(Dictionary<string, string> t, string part)
+        {
+            foreach (var r in t)
+                if (r.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !r.Key.EndsWith("_title", StringComparison.Ordinal) && r.Value.Contains(part)) return true;
+            return false;
+        }
+        bool next = Row(words[0], "400 people") && Row(words[0], "Mom and Alex look the same in every game.") && Row(words[1], "400 pessoas") && Row(words[2], "400");
         Check(next, "Flare crowd: What's new has the four hundred, the influencers and Mom's and Alex's faces in en, pt and zh-cn");
     }
 }
