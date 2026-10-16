@@ -801,17 +801,10 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- the city's people as speakers
 
-        /// <summary>A city person's age: stable, in the range of their persona (students young, retirees old).</summary>
+        /// <summary>A city person's age: their own (FlareLiveRules.CitizenAge), the one their face is drawn at and an invitation meets them with.</summary>
         public static int Age(FlareCitizen c, int citySeed)
         {
-            int seed = citySeed * 31 + c.Index;
-            switch (c.Persona)
-            {
-                case FlarePersona.Student: return TextWords.Age(seed, 18, 24);
-                case FlarePersona.Retiree: return TextWords.Age(seed, 62, 75);
-                case FlarePersona.Parent: return TextWords.Age(seed, 29, 48);
-                default: return TextWords.Age(seed, 21, 60);
-            }
+            return FlareLiveRules.CitizenAge(citySeed, c.Index);
         }
 
         /// <summary>A city person's way of writing: the grumpy write grumpily; the rest by their own seed (world.citizen).</summary>
@@ -1036,7 +1029,7 @@ namespace RealLifeOverhaul.Flare
                 "a v3 pack's comments: every kind of post has its own (an accident, a niche, the paper, a shop's, a rival's move, a review, results, an official notice), a post of no kind on its words; v2's maps stay");
             var c = new FlareCitizen { Index = 3, First = "Dana", Last = "Reyes", Handle = "@dana_reyes12", Persona = FlarePersona.Student };
             int age = Age(c, 77);
-            Want(age >= 18 && age <= 24 && Age(c, 77) == age, "a student's age is young and the same every time");
+            Want(age == FlareLiveRules.CitizenAge(77, 3) && Age(c, 77) == age, "a city person's card says their own age, the one their face has, the same every time");
             c.Persona = FlarePersona.Grumpy;
             Want(Style(c, 77).StartsWith("grumpy", System.StringComparison.Ordinal) && Style(c, 77) == Style(c, 77), "the grumpy write grumpily, the same every time");
             bool moods = true, grumpyLow = true;
