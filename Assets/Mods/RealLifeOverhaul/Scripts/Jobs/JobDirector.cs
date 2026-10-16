@@ -1268,8 +1268,8 @@ namespace RealLifeOverhaul
             }
             CareerState.ForceReview();
             Employer employer = CareerState.Employer;
-            var data = new Dictionary<string, string>(2) { { "boss", JobText.T(employer.BossKey) }, { "employer", JobText.T(employer.NameKey) } };
-            Notifications.Show(NotificationType.Info, "reallife_career_review_due", data, 10f);
+            var data = new Dictionary<string, string>(3) { { "boss", JobText.T(employer.BossKey) }, { "employer", JobText.T(employer.NameKey) } };
+            Notifications.Show(NotificationType.Info, _career.OfficeKey("reallife_career_review_due", CareerState.EmployerIndex, data), data, 10f);
             if (!BuildingManager.IsInsideBuilding && !UiOpen() && Free(out _))
             {
                 CareerPhone.OpenInPerson(CareerState.EmployerIndex);   // the tester need not walk to the office

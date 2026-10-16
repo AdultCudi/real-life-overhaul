@@ -4,6 +4,7 @@ using System.Text;
 using BAModAPI;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Guiders;
 using UI.Notification;
 using Vehicles.VehicleTypes;
@@ -31,6 +32,8 @@ namespace RealLifeOverhaul
         private const float BossReach = 2.4f;
         private const float DeskReach = 45f;        // desk and lead shifts are clocked on to this near the depot
         private const float GigReach = 14f;
+        private const float OfficeNear = 25f;       // metres: the office's mark comes off once the player is this near the board
+        private const float OfficeSeconds = 900f;   // real seconds the office's mark stays up if the player never gets there
         private const string WageKey = "reallife_transaction_career_wage";
         private const string SalaryCategory = "ba:transactioncategory_salaryincome";
         private static readonly Color GuideColour = new Color(0.20f, 0.62f, 0.95f, 1f);
@@ -41,6 +44,9 @@ namespace RealLifeOverhaul
         private readonly int[] _depot = new int[CareerCatalogue.All.Length];   // the board each employer is at, or -1
         private readonly CareerShift _shift = new CareerShift();
         private readonly StringBuilder _text = new StringBuilder(256);
+        private readonly GuideMark _officeMark = new GuideMark();   // the game's destination marker, when the player asked to be shown the office
+        private float _officeUntil;       // unscaled time the office's mark comes off; 0 while it is not up
+        private int _officeBoard = -1;
         private bool _mapped;
         private bool _failed;
 
@@ -89,6 +95,7 @@ namespace RealLifeOverhaul
         public void Dispose()
         {
             Unguide();
+            HideOffice();
             _boss = null;
             _cast.Dispose();
         }
@@ -127,6 +134,72 @@ namespace RealLifeOverhaul
             place = boards.Front(board);
             address = boards.Address(board);
             return true;
+        }
+
+        /// <summary>The address of the employer's office as the game writes it, or null if the employer has no board in this city.</summary>
+        public string OfficeAddress(int employer)
+        {
+            return DepotPlace(employer, out _, out string address) && CareerOfficeRules.Has(address) ? address : null;
+        }
+
+        /// <summary>The text key for a message that sends the player to the office, with the address put in the data when the employer has a board.</summary>
+        public string OfficeKey(string key, int employer, Dictionary<string, string> data)
+        {
+            string address = OfficeAddress(employer);
+            if (address != null && data != null)
+            {
+                data[CareerOfficeRules.AddressField] = address;
+            }
+            return CareerOfficeRules.Key(key, address);
+        }
+
+        /// <summary>
+        /// "Show me the office": the game's own destination marker (the one jobs and outings use) is put on the employer's
+        /// board, and comes off when the player is near it, after a quarter of an hour, or when the career is put away.
+        /// False if the employer has no board, or the game's marker is on a job or an outing (it can be asked again).
+        /// </summary>
+        public bool ShowOffice(int employer)
+        {
+            if (!DepotPlace(employer, out Vector3 place, out string address))
+            {
+                return false;
+            }
+            string name = JobText.T(CareerCatalogue.All[employer].NameKey) + (CareerOfficeRules.Has(address) ? ", " + address : string.Empty);
+            bool shown = _officeMark.Show(place + Vector3.up * 1.4f, name);
+            if (shown)
+            {
+                _officeBoard = DepotOf(employer);
+                _officeUntil = Time.unscaledTime + OfficeSeconds;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1") + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
+            }
+            return shown;
+        }
+
+        // Once a second, and only while the mark is up: comes off when the player is near the board or the time is up.
+        private void OfficeMark(Vector3 player, JobBoards boards)
+        {
+            if (_officeUntil <= 0f)
+            {
+                return;
+            }
+            if (Time.unscaledTime >= _officeUntil || _officeBoard < 0 || _officeBoard >= boards.Count || FlatSqr(boards.Front(_officeBoard) - player) < OfficeNear * OfficeNear)
+            {
+                HideOffice();
+            }
+        }
+
+        private void HideOffice()
+        {
+            if (_officeUntil <= 0f)
+            {
+                return;
+            }
+            _officeUntil = 0f;
+            _officeBoard = -1;
+            _officeMark.Hide();
         }
 
         // Each employer takes the board at the kind of building it would have its office in, best match first; the rest
@@ -209,11 +282,13 @@ namespace RealLifeOverhaul
                 }
                 if (!On || !_mapped)
                 {
+                    HideOffice();
                     PutAway();
                     Near = -1;
                     return;
                 }
                 Presence(player, onFoot, boards);
+                OfficeMark(player, boards);
                 if (_gig != null)
                 {
                     Gig(player, onFoot && !jobOn);
@@ -418,12 +493,12 @@ namespace RealLifeOverhaul
                 if (hour >= start - CareerCatalogue.ReminderHours && hour < start + CareerCatalogue.OnTimeHours && CareerState.RemindedDay != day)
                 {
                     CareerState.RemindedDay = day;
-                    var data = new Dictionary<string, string>(3)
+                    var data = new Dictionary<string, string>(4)
                     {
                         { "employer", JobText.T(employer.NameKey) }, { "time", CareerClock.Span(start) }, { "title", JobText.T(CareerState.CurrentRank.TitleKey) }
                     };
-                    Notifications.Show(NotificationType.Info, "reallife_career_reminder", data, 12f);
-                    CareerPhone.Text("reallife_career_text_reminder", data);
+                    Notifications.Show(NotificationType.Info, OfficeKey("reallife_career_reminder", CareerState.EmployerIndex, data), data, 12f);
+                    CareerPhone.Text(OfficeKey("reallife_career_text_reminder", CareerState.EmployerIndex, data), data);
                 }
                 else if (hour >= start + CareerCatalogue.LateHours)
                 {
@@ -672,10 +747,10 @@ namespace RealLifeOverhaul
                 _director.Quit();   // a test: whatever was on ends first, on its own terms
             }
             int index = CareerCatalogue.IndexOf(employer.Id);
-            bool hasDepot = DepotPlace(index, out Vector3 depot, out _);
+            bool hasDepot = DepotPlace(index, out Vector3 depot, out string depotAddress);
             if (rank.Work != CareerWork.Gig && hasDepot && counts && FlatSqr(depot - PlayerPosition()) > DeskReach * DeskReach)
             {
-                reasonKey = "reallife_career_at_depot";
+                reasonKey = CareerOfficeRules.Key("reallife_career_at_depot", depotAddress);
                 return false;
             }
             int day = TimeHelper.CurrentDay;
@@ -768,9 +843,9 @@ namespace RealLifeOverhaul
                 else if (CareerState.ReviewDue)
                 {
                     Employer employer = CareerState.Employer;
-                    var data = new Dictionary<string, string>(2) { { "boss", JobText.T(employer.BossKey) }, { "employer", JobText.T(employer.NameKey) } };
-                    Notifications.Show(NotificationType.Info, "reallife_career_review_due", data, 12f);
-                    CareerPhone.Text("reallife_career_text_review_due", data);
+                    var data = new Dictionary<string, string>(3) { { "boss", JobText.T(employer.BossKey) }, { "employer", JobText.T(employer.NameKey) } };
+                    Notifications.Show(NotificationType.Info, OfficeKey("reallife_career_review_due", CareerState.EmployerIndex, data), data, 12f);
+                    CareerPhone.Text(OfficeKey("reallife_career_text_review_due", CareerState.EmployerIndex, data), data);
                 }
             }
             catch (Exception e)
