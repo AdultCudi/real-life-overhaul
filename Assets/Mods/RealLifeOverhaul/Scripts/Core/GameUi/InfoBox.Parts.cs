@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Text;
 using Localizor;
@@ -12,11 +13,13 @@ namespace RealLifeOverhaul.GameUi
     /// Row, RowPair, Meter and Check; Line in a tone, Note and GuideLink. A part is one copy of its template
     /// (InfoBox.Look.cs) and its words, written in order into the box; what follows a section's heading stands in from it
     /// until the next heading, a row of buttons, the foot or EndSection. Written on a click; nothing runs per frame. With
-    /// Developer diagnostics on, each page says in Player.log how many parts it was and how long it took to write.
+    /// Developer diagnostics on, each page says in Player.log how many parts it was and how long the box took to write
+    /// them: only the time inside the box's own calls (<see cref="BoxClock"/>), each of which opens <see cref="Timed"/>, and
+    /// beside it the page's whole time from Clear to Done, the app's own work between the calls included.
     /// </summary>
     public sealed partial class InfoBox
     {
-        /// <summary>Over this long to write a page is said as slow in the self-check (milliseconds).</summary>
+        /// <summary>Over this long of the box's own work on a page is said as slow in the self-check (milliseconds).</summary>
         public const double FillBudgetMs = 3.0;   // a page of forty parts; a row is one text as the old line was, a heading two objects where the game's headline was seven
 
         private TMP_Text _headerText;     // the page's header, while it is the last thing written
@@ -26,8 +29,38 @@ namespace RealLifeOverhaul.GameUi
         private bool _footMade;
         private int _capacity;            // letters a row of the box holds (LookRules.Capacity)
         private int _parts;
-        private long _began;
+        private bool _begun;
+        private readonly BoxClock _clock = new BoxClock();
+        private static InfoBox _writing;   // the box whose page is being written (Clear to Done): a row's buttons count to it
         private readonly StringBuilder _words = new StringBuilder(160);
+
+        /// <summary>One of the box's own calls, timed while it runs (a struct: nothing allocated). Opened as <c>using var own = Timed();</c>.</summary>
+        private struct Own : IDisposable
+        {
+            private readonly BoxClock _clock;
+
+            public Own(BoxClock clock)
+            {
+                _clock = clock;
+                clock?.Enter(Stopwatch.GetTimestamp());
+            }
+
+            public void Dispose()
+            {
+                _clock?.Leave(Stopwatch.GetTimestamp());
+            }
+        }
+
+        private Own Timed()
+        {
+            return new Own(_clock);
+        }
+
+        // The page's box, for a call that has no box of its own (InfoBox.Button, on a row): nothing timed when no page is being written.
+        private static Own TimedWriting()
+        {
+            return new Own(_writing != null ? _writing._clock : null);
+        }
 
         private void Begin()
         {
@@ -37,19 +70,27 @@ namespace RealLifeOverhaul.GameUi
             _inSection = false;
             _footMade = false;
             _parts = 0;
-            _began = Stopwatch.GetTimestamp();
+            _begun = true;
+            _writing = this;
+            _clock.Begin(Stopwatch.GetTimestamp());
         }
 
         private void Finish()
         {
-            if (!Meta.Dev.Verbose || _began == 0)
+            if (_writing == this)
+            {
+                _writing = null;
+            }
+            if (!Meta.Dev.Verbose || !_begun)
             {
                 return;
             }
-            double ms = (Stopwatch.GetTimestamp() - _began) * 1000.0 / Stopwatch.Frequency;
-            Logger?.Info("Info box check (" + _box.name + "): a page of " + _parts + " parts written in " + ms.ToString("0.00") + " ms, wanted under "
-                         + FillBudgetMs.ToString("0.#") + " ms: " + (ms < FillBudgetMs ? "PASS" : "SLOW") + ".");
-            _began = 0;
+            long now = Stopwatch.GetTimestamp();
+            double ms = _clock.Own(now) * 1000.0 / Stopwatch.Frequency, page = _clock.Page(now) * 1000.0 / Stopwatch.Frequency;
+            Logger?.Info("Info box check (" + _box.name + "): a page of " + _parts + " parts written in " + ms.ToString("0.00") + " ms of the box's own work ("
+                         + page.ToString("0.00") + " ms from Clear to Done with the app's own work between), wanted under " + FillBudgetMs.ToString("0.#") + " ms: "
+                         + (ms < FillBudgetMs ? "PASS" : "SLOW") + ".");
+            _begun = false;
         }
 
         // How far what is written now stands in: a section's indent, or nothing.
@@ -63,6 +104,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text Header(string words)
         {
+            using var own = Timed();
             EndSection();
             GameObject header = Add(_headerT);
             header.transform.Find("Accent").GetComponent<Image>().color = _accent;   // (by name: a text grows children of its own when it draws)
@@ -77,6 +119,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A line under the title, muted: who and where ("BlueStone Imports, at 4 Pier").</summary>
         public TMP_Text Subtitle(string words)
         {
+            using var own = Timed();
             TMP_Text text = Text(_subT, words, false);
             text.margin = new Vector4(Indent, 0f, 0f, 6f);
             return text;
@@ -88,6 +131,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text Chip(string words, CellTone tone = CellTone.Plain)
         {
+            using var own = Timed();
             words = words ?? string.Empty;
             if (_chips == null)
             {
@@ -131,6 +175,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public Transform Section(string key)
         {
+            using var own = Timed();
             GameObject heading = OpenSection();
             UiClone.Key(heading.transform, key);
             return heading.transform;
@@ -139,6 +184,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The same with the heading in final words (a name and a figure).</summary>
         public Transform SectionWords(string words)
         {
+            using var own = Timed();
             GameObject heading = OpenSection();
             UiClone.Words(heading.transform, words);
             return heading.transform;
@@ -168,18 +214,21 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text Row(string labelKey, string value, CellTone tone = CellTone.Plain)
         {
+            using var own = Timed();
             return RowWords(labelKey.GetLocalization(), value, tone);
         }
 
         /// <summary>The same with the label in final words.</summary>
         public TMP_Text RowWords(string label, string value)
         {
+            using var own = Timed();
             return RowWords(label, value, CellTone.Plain);
         }
 
         /// <summary>The same with the label in final words, in a tone.</summary>
         public TMP_Text RowWords(string label, string value, CellTone tone)
         {
+            using var own = Timed();
             label = LookRules.Label(label);
             value = value ?? string.Empty;
             TMP_Text text = Text(_bodyT, RowMarkup(label, value, tone, LookRules.Stack(label, value, _capacity)));
@@ -208,6 +257,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public void RowPair(string labelKey, string value, string labelKey2, string value2)
         {
+            using var own = Timed();
             string label = LookRules.Label(labelKey.GetLocalization()), label2 = LookRules.Label(labelKey2.GetLocalization());
             value = value ?? string.Empty;
             value2 = value2 ?? string.Empty;
@@ -232,12 +282,14 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text Meter(string labelKey, float share, string figure, CellTone tone)
         {
+            using var own = Timed();
             return MeterWords(labelKey.GetLocalization(), share, figure, tone);
         }
 
         /// <summary>The same with the label in final words.</summary>
         public TMP_Text MeterWords(string label, float share, string figure, CellTone tone)
         {
+            using var own = Timed();
             TMP_Text text = Text(_meterT, RowMarkup(LookRules.Label(label), figure ?? string.Empty, tone, false));
             Vector4 margin = text.margin;
             margin.x = Indent;
@@ -255,6 +307,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A need and whether it is met: the game's tick in green before it, or a red dot and the words in red.</summary>
         public TMP_Text Check(string words, bool met)
         {
+            using var own = Timed();
             TMP_Text text = Text(_checkT, words);
             float indent = Indent;
             Vector4 margin = text.margin;
@@ -285,6 +338,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A sentence in a tone: green for good news, orange for a warning, red for what is wrong or refused.</summary>
         public TMP_Text Line(string words, CellTone tone)
         {
+            using var own = Timed();
             TMP_Text text = Text(_bodyT, words);
             text.margin = new Vector4(Indent, 0f, 0f, 0f);
             if (tone != CellTone.Plain)
@@ -297,6 +351,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A note: a smaller, muted sentence (what a figure means, what to do next).</summary>
         public TMP_Text Note(string words)
         {
+            using var own = Timed();
             TMP_Text text = Text(_noteT, words);
             text.margin = new Vector4(Indent, 0f, 0f, 0f);
             return text;
@@ -308,6 +363,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public TMP_Text GuideLink(string pageWords)
         {
+            using var own = Timed();
             EndSection();
             string label = "reallife_guide_app".GetLocalization();
             if (_footMade)
