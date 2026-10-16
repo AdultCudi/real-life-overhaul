@@ -569,6 +569,11 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FlareThemeId, "reallife_flare_opt_theme",
                     new[] { "reallife_flare_theme_0", "reallife_flare_theme_1", "reallife_flare_theme_2" }, Settings.FlareTheme,
                     v => Settings.FlareTheme = v)
+                .AddToggle(Settings.FlarePicturesId, "reallife_flare_opt_pictures", Settings.FlarePictures,
+                    v => Settings.FlarePictures = v)
+                .AddDropdown(Settings.FlareCityPhotosId, "reallife_flare_opt_city_photos",
+                    new[] { "reallife_flare_city_photos_0", "reallife_flare_city_photos_1", "reallife_flare_city_photos_2", "reallife_flare_city_photos_3" }, Settings.FlareCityPhotos,
+                    v => Settings.FlareCityPhotos = v)
                 .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
                 .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
                 .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())
@@ -578,6 +583,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_inf_scandal", () => Flare.FlareDirector.Instance?.TestInfluencerScandal())
                 .AddButton("reallife_flare_test_online", () => Flare.FlareDirector.Instance?.TestOnline())
                 .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
+                .AddButton("reallife_flare_test_pictures", () => Flare.FlareDirector.Instance?.TestPictures())
                 .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
                 .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())

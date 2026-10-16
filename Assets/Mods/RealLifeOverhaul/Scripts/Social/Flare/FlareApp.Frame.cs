@@ -26,8 +26,10 @@ namespace RealLifeOverhaul.Flare
         private Image _backdrop;
         private RectTransform _rail, _column, _side, _header;
         private TextMeshProUGUI _logo, _title, _railName, _railHandle, _railTier;
-        private Image _logoMark, _postButton, _railAvatar, _headerLine, _backButton;
-        private TextMeshProUGUI _postLabel, _railInitials;
+        private Image _logoMark, _postButton, _headerLine, _backButton;
+        private TextMeshProUGUI _postLabel;
+        private Avatar _railAvatar;
+        private float _railAvatarY;
         private readonly Image[] _navIcons = new Image[6];
         private readonly TextMeshProUGUI[] _navLabels = new TextMeshProUGUI[6];
         private readonly Image[] _navBadges = new Image[6];
@@ -70,10 +72,7 @@ namespace RealLifeOverhaul.Flare
             _postLabel = FlareKit.Text(_postButton.transform, "Label", 36f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             FlareKit.Stretch(_postLabel.rectTransform, 0f, 0f, 0f, 0f);
             _postLabel.text = FlareText.T("reallife_flare_post_button");
-            _railAvatar = FlareKit.Box(_rail, "Avatar", Color.white, 0f, true, true);
-            FlareKit.Click(_railAvatar, () => Open(FlareScreen.Profile, 0, -1, "me", true));
-            _railInitials = FlareKit.Text(_railAvatar.transform, "Initials", 30f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-            FlareKit.Stretch(_railInitials.rectTransform, 0f, 0f, 0f, 0f);
+            _railAvatar = new Avatar(_rail, 84f, () => Open(FlareScreen.Profile, 0, -1, "me", true));
             _railName = FlareKit.Text(_rail, "Name", FlareKit.Name, Color.white, FontStyles.Bold);
             _railHandle = FlareKit.Text(_rail, "Handle", FlareKit.Small, Color.white);
             _railTier = FlareKit.Text(_rail, "Tier", FlareKit.Small, Color.white);
@@ -145,7 +144,7 @@ namespace RealLifeOverhaul.Flare
             float postY = 130f + NavKeys.Length * (NavHeight + 8f) + 24f;
             FlareKit.Place(_postButton.rectTransform, 0f, postY, rw - 20f, 96f);
             float h2 = h - Margin * 2f;
-            FlareKit.Place(_railAvatar.rectTransform, 6f, h2 - 120f, 84f, 84f);
+            _railAvatarY = h2 - 120f;   // (placed when the rail is written: Avatar.Show)
             FlareKit.Place(_railName.rectTransform, 108f, h2 - 126f, rw - 120f, 42f);
             FlareKit.Place(_railHandle.rectTransform, 108f, h2 - 84f, rw - 120f, 34f);
             FlareKit.Place(_railTier.rectTransform, 108f, h2 - 48f, rw - 120f, 34f);
@@ -174,7 +173,7 @@ namespace RealLifeOverhaul.Flare
             _railName.color = l.Text;
             _railHandle.color = l.Muted;
             _railTier.color = l.Accent;
-            _railInitials.color = Color.white;
+            _railAvatar.Letters.color = Color.white;
             _title.color = l.Text;
             _backButton.color = l.Text;
             _headerLine.color = l.Line;
@@ -234,8 +233,7 @@ namespace RealLifeOverhaul.Flare
             FlareKit.Set(_railName, name);
             FlareKit.Set(_railHandle, _director.MyHandle);
             FlareKit.Set(_railTier, file != null ? FlareText.Fill("reallife_flare_rail_followers", "followers", FlareText.N(file.Followers), "tier", FlareText.Tier(file.Tier)) : string.Empty);
-            _railAvatar.color = FlareLook.AvatarOf("me");
-            FlareKit.Set(_railInitials, Initials(name));
+            _railAvatar.Show(this, "me", name, 6f, _railAvatarY, 84f);
         }
 
         // ---------------------------------------------------------------- the header

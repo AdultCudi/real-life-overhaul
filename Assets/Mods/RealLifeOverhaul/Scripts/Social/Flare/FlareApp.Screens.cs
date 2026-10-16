@@ -901,7 +901,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return null;
             }
-            return _pictures.Of(FlarePictures.KeyOf(p));
+            return _pictures.Of(FlarePictures.KeyOf(p) ?? _director.CityPhotoKey(p));   // (the player's own picture, else a photo of the city's: FlareDirector.Photos.cs)
         }
 
         // A report's case as it stands, in a line: the answer due, the works and when they end, the patrols, the cleaning, an inspection.

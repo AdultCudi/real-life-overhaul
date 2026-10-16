@@ -93,6 +93,19 @@ namespace RealLifeOverhaul.Flare
             "Quin", "Rae", "Seb", "Tess", "Uma", "Vic", "Wes", "Xena", "Yara", "Zeke", "Arlo", "Bree", "Cyd", "Dex", "Elsa", "Finn"
         };
 
+        // Whether each of the first names above is a woman's (the face drawn for one of the city's people: FlareAvatarRules.Citizen).
+        private static readonly bool[] FemaleFirst =
+        {
+            true, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true,
+            false, true, false, true, true, false, false, true, true, false, false, true, false, false, true, false
+        };
+
+        /// <summary>Whether one of the city's people is a woman, as their first name says (the same name as CitizensOf gives them).</summary>
+        public static bool CitizenFemale(int seed, int index)
+        {
+            return FemaleFirst[FlareRules.Roll(seed, index, 601) % FirstNames.Length];
+        }
+
         private static readonly string[] LastNames =
         {
             "Abbott", "Barlow", "Calder", "Dunmore", "Ellery", "Fenwick", "Garrow", "Hollis", "Imber", "Jarvis", "Kestrel", "Lowry",

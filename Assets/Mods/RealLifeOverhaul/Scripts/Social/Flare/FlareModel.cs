@@ -139,6 +139,9 @@ namespace RealLifeOverhaul.Flare
         public string District;
         public bool Compatible;      // a romance with them is possible
         public bool Unanswered;      // they texted lately and the player has not answered
+        public bool Female;          // their look, as the social life builds them in the street (Flare's picture of them: FlareAvatarRules)
+        public int Age;              // ...years
+        public int LookSeed;         // ...the look's seed; 0 when not told
 
         /// <summary>Acquaintances and closer follow the player.</summary>
         public bool Follows => Stage >= FlareRules.FollowFromStage;

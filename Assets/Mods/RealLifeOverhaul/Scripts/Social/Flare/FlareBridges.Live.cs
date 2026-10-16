@@ -41,6 +41,12 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The names of the staff of the player's businesses, a few of them, into the list given. Default: none.</summary>
         public static Action<List<string>> Staff;
 
+        /// <summary>The save's own photos' folder (Photos: persistentDataPath/RealLifeOverhaul/Photos/(the save)), where the city's photos are kept beside them. Default: none (no city photos).</summary>
+        public static Func<string> PictureFolder;
+
+        /// <summary>The save's id written beside its photos (so a deleted save's go with them: Photos/PhotoStore.MarkSave); called on a worker thread. Default: nothing.</summary>
+        public static Action MarkPictureFolder;
+
         /// <summary>The rival tycoons of the end game who are in play (Rivals), into the list given, each with their latest move announced. Default: none.</summary>
         public static Action<List<FlareTycoon>> Tycoons;
 
@@ -99,6 +105,8 @@ namespace RealLifeOverhaul.Flare
             Watched = null;
             PlayerDistrict = null;
             Staff = null;
+            PictureFolder = null;
+            MarkPictureFolder = null;
             Tycoons = null;
             PlayerName = null;
             Destination = null;
