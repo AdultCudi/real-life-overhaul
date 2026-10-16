@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Flare
                 int citySeed = FlareLiveRules.CitySeed(_file);
                 a.First = c.First;
                 a.Last = c.Last;
-                a.Sex = FlareInviteRules.NameSex(c.First);
+                a.Sex = FlareInviteRules.SexOf(c);
                 a.Age = FlareTextsMap.Age(c, citySeed);
                 a.NightOwl = c.Persona == FlarePersona.NightOwl;
                 a.Grumpy = c.Persona == FlarePersona.Grumpy;

@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Flare
         public PlanKind Kind;            // the outing read (FlareInviteRules.Read)
         public bool Influencer;          // "i:3"
         public string First, Last;       // a city person's name (the stranger as the social life would meet them)
-        public int Sex = -1;             // 1 a woman's name, 0 a man's, -1 either (FlareInviteRules.NameSex)
+        public int Sex = -1;             // 1 a woman, 0 a man, -1 not known (FlareInviteRules.SexOf: the person's own, as their card and face have it)
         public int Age;                  // as their cards say it
         public int Hour;                 // of the message
         public bool NightOwl, Grumpy, Taken;   // a city person's persona and their own life (FlareInviteRules.Citizen)
@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Flare
         public int Number;
         public string Place;
         public int Cast = -1;            // a person of the social life; -1 somebody new, met online now
-        public string First, Last;       // ...their name, sex and age (FlareInviteRules.NameSex, FlareTextsMap.Age)
+        public string First, Last;       // ...their name, sex and age (FlareInviteRules.SexOf, FlareTextsMap.Age)
         public int Sex = -1;
         public int Age;
     }
@@ -546,19 +546,8 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- the city's people as invitees
 
-        // Flare's first names (FlareLiveRules.FirstNames) by the sex they are given to: 1 women's, 0 men's; the rest either.
-        private static readonly string[] Women = { "Ada", "Bea", "Dina", "Fay", "Hana", "Juno", "Lena", "Nell", "Pia", "Rae", "Tess", "Uma", "Xena", "Yara", "Bree", "Elsa" };
-        private static readonly string[] Men = { "Cal", "Eli", "Gus", "Ivo", "Milo", "Otto", "Seb", "Wes", "Zeke", "Arlo", "Dex", "Finn" };
-        private static readonly string[] Either = { "Kai", "Quin", "Vic", "Cyd" };
-
-        /// <summary>1 for a woman's name, 0 for a man's, -1 for a name either is given (Kai, Quin, Vic, Cyd) or one not known.</summary>
-        public static int NameSex(string first)
-        {
-            return Array.IndexOf(Women, first) >= 0 ? 1 : Array.IndexOf(Men, first) >= 0 ? 0 : -1;
-        }
-
-        /// <summary>True if a first name is one of the three lists above (the checks: every name the city gives is sorted).</summary>
-        public static bool NameKnown(string first) => NameSex(first) >= 0 || Array.IndexOf(Either, first) >= 0;
+        /// <summary>A city person's sex as an invitation meets them: their own, as the city made them (FlareLiveRules.CitizensOf), the one their card and their face have: 1 a woman, 0 a man.</summary>
+        public static int SexOf(FlareCitizen c) => c.Female ? 1 : 0;
 
         /// <summary>A city person's own life as an invitation reads it: in a relationship with somebody else (a quarter of them), stable for the city's seed.</summary>
         public static bool Taken(int citySeed, int index) => FlareRules.Roll(citySeed, index, 1203) % 100 < TakenPercent;
