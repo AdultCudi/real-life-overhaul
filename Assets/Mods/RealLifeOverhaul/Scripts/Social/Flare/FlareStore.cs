@@ -158,7 +158,7 @@ namespace RealLifeOverhaul.Flare
                 for (int i = 1; i < lines.Length; i++)
                 {
                     string[] c = lines[i].TrimEnd('\r').Split('|');
-                    if (c[0] == "I" && c.Length >= 17 && f.Influencers.Count < FlareCast.Most * 4)
+                    if (c[0] == "I" && c.Length >= 17 && f.Influencers.Count < FlareCast.KeptMost)
                     {
                         int niche = I(c, 3, -1), style = I(c, 8, -1);
                         if (niche < 0 || niche >= Niches || style < 0 || style >= Styles)

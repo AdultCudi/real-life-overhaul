@@ -254,7 +254,7 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlarePost> Posts = new List<FlarePost>(FlareRules.PostsMost);
         public readonly List<FlareShopSeen> Shops = new List<FlareShopSeen>(8);
         public readonly List<FlareBuzz> Buzz = new List<FlareBuzz>(8);
-        public readonly List<FlareInfluencer> Influencers = new List<FlareInfluencer>(FlareCast.Most);
+        public readonly List<FlareInfluencer> Influencers = new List<FlareInfluencer>(FlareCast.Level);
         public readonly List<FlareHire> Hires = new List<FlareHire>(8);
         public readonly List<string> Follows = new List<string>(8);   // the accounts the player follows ("i:3", "b:Copper Kettle", "c:Name"); a new game follows nobody
         public int CastSeed;             // the cast's own seed: the same cast for the same seed
