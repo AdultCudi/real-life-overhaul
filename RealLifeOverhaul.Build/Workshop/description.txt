@@ -65,7 +65,7 @@ To play without the Workshop, download a zip from the Releases page there and fo
 
 [h1]AI DISCLOSURE[/h1]
 The 3D models were made by hand in Blender, the assets and scenes were built by hand in Unity, and much of the code was written by me. The design and the direction of every feature are mine.
-AI was used for: parts of the code, under my direction and review; the translations; drafting the in-game texts and the Guide; and RLO Texts, an optional small AI model that runs offline on your PC to word messages.
+AI was used for: decompiling the game and understanding its inner workings and intricacies; parts of the code, under my direction and review; the translations; drafting the in-game texts and the Guide; and RLO Texts, an optional small AI model that runs offline on your PC to word messages.
 
 [h1]Credits[/h1]
 The models, clothes and animations were made for this mod; nothing of the game's own files is included. Big Ambitions is made by Hovgaard Games; this mod is not made or endorsed by them.
