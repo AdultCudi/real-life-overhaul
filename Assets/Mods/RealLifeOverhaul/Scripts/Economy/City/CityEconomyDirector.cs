@@ -88,7 +88,6 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
-            CityGame.Logger = Logger;
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;

@@ -13,26 +13,19 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What the city's economy asks of the rest of the mod. Each is optional and has a default, so Economy/City works
-    /// alone; Scripts/Wiring/CityLinks.cs fills them in. The city's economy never calls another feature directly.
-    /// </summary>
+    /// <summary>What the city's economy asks of other features, filled in by Wiring/CityLinks; each may be left null.</summary>
     public static class CityBridges
     {
-        /// <summary>The season, the weather and the city's event of a game day. Default: spring, fair, nothing on.</summary>
+        /// <summary>The season, the weather and the city's event of a game day; null means spring, fair, nothing on.</summary>
         public static Func<int, CityDay> Day;
 
-        /// <summary>
-        /// Has a business's promotion figure written again as it should stand now (its own, anything the business
-        /// feature has running there, and the city's economy on top), the customers still to come drawn again if
-        /// asked. False where the game keeps no such figure. Default: nothing is written, so footfall is not changed.
-        /// </summary>
+        /// <summary>Writes a business's promotion figure as it should stand now, redrawing its customers if asked; false where the game keeps none.</summary>
         public static FootfallWriter Footfall;
 
-        /// <summary>A rival opens near a business and undercuts it, as the business feature's own story. False if that feature will not start one there today. Default: never.</summary>
+        /// <summary>Starts the business feature's "a rival undercuts you" at a business; false if it will not today.</summary>
         public static Func<BuildingRegistration, bool> Copycat;
 
-        /// <summary>Thousandths more (or less) of the price a district bears at one business for its interior (Scripts/Interiors). Default: nothing.</summary>
+        /// <summary>Thousandths more (or less) of the price a district bears at one business, for its interior.</summary>
         public static Func<BuildingRegistration, int> Bears;
 
         public delegate bool FootfallWriter(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written);
@@ -52,14 +45,14 @@ namespace RealLifeOverhaul.Economy
         public BuildingRegistration Reg;
         public CityDistrict District;
         public int Cycle, Area, Price;  // the three parts of its footfall, per cent of customers
-        public int Wanted;              // the three together, as asked for
+        public int Wanted;              // the three together
         public int Against;             // its prices against what the district bears, thousandths; 0 with no price to judge by
         public bool Over;
         public bool HasFigure;          // the game keeps a promotion figure for it, so its footfall can be changed
         public int Own, Written;        // that figure: the game's own and what stands now
         public bool Applied;            // something of the mod's is in the figure
 
-        /// <summary>The change in customers the figure written gives, per cent, by the game's own formula.</summary>
+        /// <summary>The change in customers the figure written gives, per cent, by the game's formula (CustomerEntriesCalculator).</summary>
         public int Achieved(float baseMultiplier)
         {
             float own = baseMultiplier + 0.75f * Own / 100f;
@@ -67,37 +60,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// Everything the city's economy reads from or does to the game, in one place.
-    ///
-    /// WHOLESALE PRICES. The game works a wholesale or import price out afresh each time it is asked for
-    /// (ItemHelper.GetWholesalePrice: the item's own <c>wholesalePrice</c>, the market's import index and the game's
-    /// price multiplier), at the wholesaler's shelf, on a delivery contract and at the importer alike. The item is an
-    /// asset in memory (a ScriptableObject), not part of a save. So writing <c>wholesalePrice</c> moves every one of
-    /// those prices at once and nothing of it reaches a save. The first value seen on an item is its own and is kept
-    /// for as long as the game runs (never taken from an item this class has already written to), so
-    /// <see cref="RestoreWholesale"/> is exact however often it and <see cref="ApplyWholesale"/> run. What a purchase
-    /// cost is the player's own business afterwards, as any price paid is.
-    ///
-    /// Only goods with a wholesale price are touched: an item of the game's that is a retail product. Each is of one
-    /// kind (<see cref="MacroCatalogue.KindOfType"/>), told from the business types that sell it.
-    ///
-    /// RENTS, WAGES, TAKINGS, SHOPS AND SERVICES are not changed anywhere: the game's own transactions of the day that
-    /// has ended are added up (<see cref="DayFigures"/>) and the difference is dated transactions of the mod's own
-    /// (<see cref="Book"/>), which EconoView and the Finance app list under their own name: one for each business,
-    /// home and category the game booked the day's own under, shared out by those figures, so that each business's
-    /// statement, the game's taxes and its bank see them (GameBooks.Refresh). Shops and services are
-    /// the game's charges at prices of its own (<see cref="LivingTypes"/>), less what the mod paid back of them
-    /// (EconomyBridges.GivenBack) and less what was bought at a wholesaler's, at today's prices already.
-    ///
-    /// Nothing here runs on a timer: once when the economy starts, once a game day, and when the app is opened.
-    /// </summary>
-    /// <summary>
-    /// One of the city's lines for a day: the game's own figure, and where the game booked it, by address, the category
-    /// the day's statement keeps it under and whether the game's tax deducts it, so that the line can be booked where
-    /// its parts were and be deducted where they were. Each part is found by a dictionary (Core/LookupRules KeyedSums):
-    /// the day's wages alone are one transaction an employee, thousands, which used to be compared with every part so far.
-    /// </summary>
+    /// <summary>One of the city's lines for a day: the game's figure, split by address, statement category and deduction as it was booked.</summary>
     internal sealed class DayLine
     {
         public float Total;
@@ -117,11 +80,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// A part of a day's line: the address (none for the player's own), the category and whether it is deducted. The same
-    /// part as the game's own address test makes one (Address.Equals: the street and the number; no address is only no
-    /// address), the same category text, the same deduction.
-    /// </summary>
+    /// <summary>A part of a day's line. Addresses match as the game's Address.Equals does, except that null matches only null.</summary>
     internal struct DayKey
     {
         public Address Address;
@@ -142,7 +101,8 @@ namespace RealLifeOverhaul.Economy
             {
                 unchecked
                 {
-                    return ((ReferenceEquals(k.Address, null) ? 0 : k.Address.GetHashCode()) * 397 ^ (k.Category != null ? k.Category.GetHashCode() : 0)) * 2 + (k.Deductible ? 1 : 0);
+                    int address = ReferenceEquals(k.Address, null) ? 0 : k.Address.GetHashCode();
+                    return (address * 397 ^ (k.Category != null ? k.Category.GetHashCode() : 0)) * 2 + (k.Deductible ? 1 : 0);
                 }
             }
         }
@@ -154,6 +114,11 @@ namespace RealLifeOverhaul.Economy
         public readonly DayLine Rent = new DayLine(), Wages = new DayLine(), Takings = new DayLine(), Living = new DayLine();
     }
 
+    /// <summary>
+    /// Everything the city's economy reads from or does to the game: wholesale prices written on the items in memory
+    /// (never saved; each item's own price kept, so a restore is exact), and transactions of the mod's own adjusting the
+    /// day's rent, wages, takings and the game's shops and services. Runs on events, nothing per frame.
+    /// </summary>
     internal static class CityGame
     {
         public const string RentKey = "reallife_transaction_macro_rent";
@@ -161,10 +126,8 @@ namespace RealLifeOverhaul.Economy
         public const string TakingsKey = "reallife_transaction_macro_takings";
         public const string LivingKey = "reallife_transaction_macro_living";
 
-        // The game's own charges at prices of its own that never move: tickets, rides, the hospital, the doctor, gyms and
-        // entrance fees, shopping, fuel and stalls, fit-outs, training and hiring. (Not one under rent or salaries, adjusted
-        // on their own lines; not goods bought at a wholesaler's or delivered, whose prices the city writes at today's; not
-        // a building, vehicle or boat bought, nor loans, taxes, deposits or the casino.)
+        // The game's charges at fixed prices of its own, adjusted as the cost of living. Rent and wages have lines of their
+        // own; wholesale goods are at today's prices already.
         private static readonly HashSet<string> LivingTypes = new HashSet<string>
         {
             "ba:transaction_parkingticket", "ba:transaction_subwayride", "ba:transaction_taxiride", "ba:transaction_hospitalbill",
@@ -190,26 +153,17 @@ namespace RealLifeOverhaul.Economy
             public float Market;    // the game's default market price
         }
 
-        public static IModLogger Logger;
-
-        // Kept across city loads on purpose: an item written to in one city is the same object in the next.
+        // Each item's own wholesale price, kept across city loads: an item written to in one city is the same object in the next.
         private static readonly Dictionary<Item, float> Own = new Dictionary<Item, float>(512);
         private static readonly Dictionary<string, Good> Goods = new Dictionary<string, Good>(512);
         private static readonly List<Item> Priced = new List<Item>(512);
         private static readonly List<int> PricedKind = new List<int>(512);
         private static readonly List<float> PricedOwn = new List<float>(512);
-        private static readonly HashSet<string> Monopolies = new HashSet<string>();   // as texts, only while a name holds '@' (ReadMonopolies)
+        private static readonly HashSet<string> Monopolies = new HashSet<string>();   // as texts, only while a name holds '@'
         private static readonly HashSet<(string, string)> MonopolyPairs = new HashSet<(string, string)>();
         private static bool _monopolyTexts;
         private static readonly int[] KindCount = new int[MacroCatalogue.SupplyKinds];
         private static readonly int[] Factors = new int[MacroCatalogue.SupplyKinds];   // today's factor of each kind, while the prices are written
-
-        /// <summary>True while any wholesale price in memory is this class's and not the game's own.</summary>
-        public static bool WholesaleApplied { get; private set; }
-
-        public static int GoodsCount => Priced.Count;
-
-        // ---------------------------------------------------------------- districts
 
         /// <summary>Every neighbourhood of the game becomes a district, started from the game's own class shares. Returns how many.</summary>
         public static int Districts(CityState state)
@@ -223,7 +177,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                CityModel.Know(state, data.neighbourhood, CityModel.StartIncome(data.workingClassPercentage, data.middleClassPercentage, data.upperClassClassPercentage));
+                CityModel.Know(state, data.neighbourhood,
+                    CityModel.StartIncome(data.workingClassPercentage, data.middleClassPercentage, data.upperClassClassPercentage));
                 known++;
             }
             return known;
@@ -235,12 +190,7 @@ namespace RealLifeOverhaul.Economy
             return string.IsNullOrEmpty(district) ? string.Empty : LocalizorManager.IsLocalizedKey(district) ? district.GetLocalization() : district;
         }
 
-        // ---------------------------------------------------------------- goods
-
-        /// <summary>
-        /// One look through the game's business types and items: which kind each product is, and which have a
-        /// wholesale price. Each one's own price is noted the first time it is ever seen. Returns how many have one.
-        /// </summary>
+        /// <summary>Finds each product's kind and the goods with a wholesale price, noting each one's own price once. Returns how many.</summary>
         public static int FindGoods()
         {
             Goods.Clear();
@@ -248,7 +198,7 @@ namespace RealLifeOverhaul.Economy
             PricedKind.Clear();
             PricedOwn.Clear();
             Array.Clear(KindCount, 0, KindCount.Length);
-            var rank = new Dictionary<string, int>(512);   // the best (lowest) place in the catalogue's list of a type that sells the item
+            var rank = new Dictionary<string, int>(512);   // the lowest place in the catalogue's list of a type that sells the item
             foreach (string typeName in BusinessTypeHelper.BusinessTypeNames)
             {
                 BusinessType type = BusinessTypeHelper.GetData(typeName);
@@ -299,32 +249,25 @@ namespace RealLifeOverhaul.Economy
             return Priced.Count;
         }
 
-        /// <summary>How many of the game's goods are of a kind.</summary>
         public static int CountOf(int kind)
         {
             return kind >= 0 && kind < KindCount.Length ? KindCount[kind] : 0;
         }
 
-        /// <summary>
-        /// Writes today's wholesale prices: each good's own price times its kind's factor and the price index. Every
-        /// good is looked at (one comparison each) and only a price that is not what it should be is written, so a
-        /// price the game has put back by itself is found the same day. Returns how many prices were written.
-        /// </summary>
+        /// <summary>Writes today's wholesale prices where they differ, so one the game has put back is found the same day. Returns how many.</summary>
         public static int ApplyWholesale(CityState state)
         {
             int written = 0;
-            bool applied = false;
             for (int k = 0; k < Factors.Length; k++)
             {
                 Factors[k] = CityModel.Wholesale(state, k);
-                applied |= Factors[k] != 1000;
             }
             for (int i = 0; i < Priced.Count; i++)
             {
                 Item item = Priced[i];
                 if (item == null)
                 {
-                    continue;   // (an item the game has unloaded has nothing to write to)
+                    continue;   // unloaded by the game
                 }
                 int factor = Factors[PricedKind[i]];
                 float want = factor == 1000 ? PricedOwn[i] : PricedOwn[i] * (factor / 1000f);
@@ -334,14 +277,10 @@ namespace RealLifeOverhaul.Economy
                     written++;
                 }
             }
-            WholesaleApplied = applied;
             return written;
         }
 
-        /// <summary>
-        /// Puts every good's own wholesale price back, exactly: those of this city and any other item this class ever
-        /// wrote to. Safe to call at any time and any number of times. Returns how many were put back.
-        /// </summary>
+        /// <summary>Puts the own wholesale price back on every item ever seen, of any city. Safe at any time. Returns how many.</summary>
         public static int RestoreWholesale()
         {
             int restored = 0;
@@ -362,13 +301,12 @@ namespace RealLifeOverhaul.Economy
             }
             for (int i = 0; dead != null && i < dead.Count; i++)
             {
-                Own.Remove(dead[i]);   // an item the game has unloaded: when it is loaded again it has its own price
+                Own.Remove(dead[i]);   // unloaded by the game: loaded again, it has its own price
             }
-            WholesaleApplied = false;
             return restored;
         }
 
-        /// <summary>Every good's wholesale price in memory is what the state says (or, with no state, the game's own). The detail names the first few that are not.</summary>
+        /// <summary>True if every good's wholesale price is what the state says (with no state, the game's own); the detail names the first few that are not.</summary>
         public static bool CheckWholesale(CityState state, out string detail)
         {
             int wrong = 0;
@@ -386,7 +324,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (wrong++ < 3)
                     {
-                        text.Append(wrong > 1 ? "; " : string.Empty).Append(item.itemName).Append(" is ").Append(item.wholesalePrice.ToString("0.###", CultureInfo.InvariantCulture)).Append(", expected ").Append(want.ToString("0.###", CultureInfo.InvariantCulture));
+                        text.Append(wrong > 1 ? "; " : string.Empty).Append(item.itemName).Append(" is ").Append(item.wholesalePrice.ToString("0.###", CultureInfo.InvariantCulture))
+                            .Append(", expected ").Append(want.ToString("0.###", CultureInfo.InvariantCulture));
                     }
                 }
             }
@@ -394,7 +333,7 @@ namespace RealLifeOverhaul.Economy
             return wrong == 0;
         }
 
-        /// <summary>The city has gone: the lists are forgotten (each good's own price is kept for the next city).</summary>
+        /// <summary>The city has gone: the lists are forgotten; each good's own price is kept for the next city.</summary>
         public static void Forget()
         {
             Goods.Clear();
@@ -405,14 +344,7 @@ namespace RealLifeOverhaul.Economy
             MonopolyPairs.Clear();
         }
 
-        // ---------------------------------------------------------------- the player's businesses
-
-        /// <summary>
-        /// The player's businesses as they stand today: each one's district, the three parts of its footfall, and its
-        /// prices against what the district bears. One pass over the save's buildings and each business's price list,
-        /// and one over the game's market entries for the monopolies. Also notes which kinds of goods the player's
-        /// businesses stock (their price lists and their delivery contracts) in <see cref="CityState.Buys"/>.
-        /// </summary>
+        /// <summary>The player's businesses as they stand today, noting in <see cref="CityState.Buys"/> the kinds of goods they stock.</summary>
         public static void ReadShops(CityState state, int level, List<CityShop> into, List<CityShop> pool)
         {
             for (int i = 0; i < into.Count; i++)
@@ -453,14 +385,16 @@ namespace RealLifeOverhaul.Economy
                 }
                 catch (Exception)
                 {
-                    district = null;   // a business whose building cannot be read is in no district: it gets the cycle's part alone
+                    district = null;   // its building cannot be read: no district, the cycle's part alone
                 }
                 shop.Reg = reg;
                 shop.District = state.District(district);
                 shop.Cycle = cycle;
                 shop.Area = CityModel.DistrictFootfall(shop.District);
                 int ratio = PriceRatio(reg, district, ref buys);
-                shop.Against = ratio > 0 ? CityModel.Against(ratio, CityModel.WithBears(CityModel.Tolerance(state, shop.District, level), BearsAt(reg))) : 0;
+                shop.Against = ratio > 0
+                    ? CityModel.Against(ratio, CityModel.WithBears(CityModel.Tolerance(state, shop.District, level), BearsAt(reg)))
+                    : 0;
                 shop.Over = shop.Against > 0 && CityModel.Over(shop.Against);
                 shop.Price = CityModel.PriceFootfall(shop.Against);
                 shop.Wanted = CityModel.Footfall(shop.Cycle, shop.Area, shop.Price);
@@ -485,7 +419,6 @@ namespace RealLifeOverhaul.Economy
             state.Buys = buys;
         }
 
-        // What the business's interior adds to what its district bears (CityModel.WithBears keeps it inside its bounds).
         private static int BearsAt(BuildingRegistration reg)
         {
             try
@@ -498,10 +431,8 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The game lets the one seller of a product in a neighbourhood charge more (ItemHelper.CalculateMaxAcceptablePrice): the
-        // same allowance is made here. Each monopoly is kept as its product and neighbourhood, so a price line is looked up
-        // with no text made for it (a business's ten price lines, every business, each time the figures are applied). The
-        // game's names hold no '@'; were one to, its monopolies are kept as the texts they used to be, which match the same.
+        // The one seller of a product in a neighbourhood may charge more (ItemHelper.CalculateMaxAcceptablePrice). Kept as
+        // pairs, so no text is made per price line; should a name hold '@', matched as "item@district" texts, as a text key is.
         private static void ReadMonopolies(GameInstance save)
         {
             Monopolies.Clear();
@@ -539,14 +470,14 @@ namespace RealLifeOverhaul.Economy
             return _monopolyTexts ? Monopolies.Contains(item + "@" + district) : MonopolyPairs.Contains((item, district));
         }
 
-        // A business's prices against the game's own price for its neighbourhood (the default market price times the
-        // neighbourhood's price index, with the monopoly allowance), as a mean over its price list, in thousandths.
-        // 0 if it has no price to judge by.
+        // A business's prices against the game's own for its neighbourhood (default market price times the neighbourhood's
+        // price index, with the monopoly allowance), the mean over its price list in thousandths; 0 with nothing to judge by.
         private static int PriceRatio(BuildingRegistration reg, string district, ref int buys)
         {
             List<RetailPrice> prices = reg.retailPrices;
             float index;
-            if (prices == null || string.IsNullOrEmpty(district) || !CitizenHelper.averagePriceIndicesInNeighborhoods.TryGetValue(district, out index) || index <= 0f)
+            if (prices == null || string.IsNullOrEmpty(district) || !CitizenHelper.averagePriceIndicesInNeighborhoods.TryGetValue(district, out index)
+                || index <= 0f)
             {
                 return 0;
             }
@@ -575,14 +506,7 @@ namespace RealLifeOverhaul.Economy
             return count == 0 ? 0 : (int)Math.Round(sum / count * 1000.0);
         }
 
-        // ---------------------------------------------------------------- the day's figures and the adjustments
-
-        /// <summary>
-        /// What the game's own run took in rent and wages and paid in takings for a day, from its transactions of that
-        /// day (BusinessHelper.RunDaily and EmployeeHelper.PayDailyWages date them on the day that has ended): the day's
-        /// transactions as GameBooks.Day keeps them (the morning's one walk of the history). The mod's own adjustments
-        /// have no category and another type, so they are never counted.
-        /// </summary>
+        /// <summary>The game's own rent, wages, takings and shops and services of a day (its daily run dates them on the day that has ended).</summary>
         public static DayBooks DayFigures(int day)
         {
             var books = new DayBooks();
@@ -596,12 +520,12 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < ofDay.Count; i++)
             {
                 Transaction t = ofDay[i];
-                // (The mod's own costs under the game's categories, a raise say, are at today's prices already: the game's alone are adjusted.)
+                // The mod's own costs are at today's prices already.
                 if (GameBooks.Ours(t))
                 {
                     if (t.amount > 0f && givenBack != null && givenBack(t.transactionType))
                     {
-                        books.Living.Add(null, Kept(t), -t.amount);   // a game charge the mod paid back: not the player's to pay at all
+                        books.Living.Add(null, Kept(t), -t.amount);   // a game charge the mod paid back
                     }
                     continue;
                 }
@@ -621,17 +545,18 @@ namespace RealLifeOverhaul.Economy
                     }
                     else if (LivingTypes.Contains(t.transactionType) && !AtWholesale(t))
                     {
-                        // (A business's marketing and licences are in its statement, by its address; the day's own figures
-                        // of parking, health insurance and the headhunter by their category alone; the rest is the player's.)
+                        // A business's marketing and licences go in its statement by address; parking, health insurance and
+                        // the headhunter by their category alone; the rest is the player's.
                         string category = Kept(t);
-                        books.Living.Add(category == GameBooks.Marketing || category == GameBooks.Licensing ? t.address : null, category, -t.amount, t.isTaxDeductible);
+                        Address at = category == GameBooks.Marketing || category == GameBooks.Licensing ? t.address : null;
+                        books.Living.Add(at, category, -t.amount, t.isTaxDeductible);
                     }
                 }
             }
             return books;
         }
 
-        // The category of the game's a charge is kept under where the day's statement has a line for it.
+        // The category a charge is kept under where the day's statement has a line for it; null for none.
         private static string Kept(Transaction t)
         {
             List<string> categories = t.transactionCategories;
@@ -646,7 +571,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        // Bought at a wholesaler's: at today's prices already, as the city writes the goods' wholesale prices (above).
+        // Bought at a wholesaler's, so at today's prices already.
         private static bool AtWholesale(Transaction t)
         {
             if (t.transactionType != PurchaseType || t.address == null)
@@ -660,30 +585,24 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Cash in hand, whole and never under nothing.</summary>
         public static int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
 
-        /// <summary>
-        /// One adjustment, as a transaction of the mod's own dated on the day it is for. More than nothing is paid to
-        /// the player; less is taken, and only ever what the caller has found to be in hand (the game's own call refuses
-        /// a charge the cash does not cover: false, and nothing is taken).
-        /// </summary>
+        /// <summary>One adjustment, dated on the day it is for: positive is paid, negative taken. False, nothing taken, for a charge the cash does not cover.</summary>
         public static bool Book(int amount, string key, int day, string percent, Address address = null, string category = null, bool deductible = false)
         {
             if (amount == 0 || SaveGameManager.Current == null)
             {
                 return amount == 0;
             }
-            // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+            // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
             var data = new Dictionary<string, string>(2) { { "percent", percent } };
             var info = category != null ? new TransactionInfo(key, category, data) : new TransactionInfo(key, data);
             if (deductible && amount < 0)
             {
-                info.SetTaxDeductibleName(key);   // the game's tax deducts it as it does the charges it adjusts, under its own name
+                info.SetTaxDeductibleName(key);   // deducted as the charges it adjusts are
             }
             return GameManager.ChangeMoneySafe(amount, info, day, address, amount > 0);
         }
 
-        // ---------------------------------------------------------------- property
-
-        /// <summary>What the game says a building the player owns is worth: its market value (Building.GetMarketValue).</summary>
+        /// <summary>What the game says a building the player owns is worth (Building.GetMarketValue); 0 if it cannot be read.</summary>
         public static float MarketValue(RealEstate estate)
         {
             try
