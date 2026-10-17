@@ -86,8 +86,8 @@ internal static partial class Program
             "apps: a part is set back while it is still awake, then laid aside, and taken back as the last of the box's children");
 
         // Tables of thousands of rows written as they scroll.
-        string finance = Source(scripts, @"Economy\Finance\FinanceApp.cs");
-        Check(!Body(finance, "private void WriteCashFlow(").Contains("Row(\"cash:") && finance.Contains("_table.Show(_spec, _cash, selected)") && finance.Contains("Refresh(false)"),
+        string finance = Source(scripts, @"Economy\Finance\FinanceApp.cs"), cashFlow = Body(Source(scripts, @"Economy\Finance\FinanceApp.CashFlow.cs"), "private void WriteCashFlow(");
+        Check(cashFlow.Contains("_flow.Read(") && !cashFlow.Contains("Row(\"cash:") && finance.Contains("_table.Show(_spec, _cash, selected)") && finance.Contains("Refresh(false)"),
             "apps: the Cash flow tab is written as it scrolls, and a filter picked writes the box again, not the table");
         string bank = Source(scripts, @"Economy\Banks\BankApp.cs");
         Check(!Body(bank, "private void Statement(").Contains("Row(\"cash:") && bank.Contains("_table.Show(_spec, _cash, selected)") && Body(bank, "private void Statement(").Contains("_flow.Read(_period, today, IsHouse ? null : _mine)"),

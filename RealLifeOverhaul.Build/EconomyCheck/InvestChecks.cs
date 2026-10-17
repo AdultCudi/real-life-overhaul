@@ -1680,11 +1680,11 @@ internal static partial class Program
               && RealLifeOverhaul.Economy.CashCategory.For(MarketMoney.WorkedSold) == RealLifeOverhaul.Economy.CashCategory.Investments,
             "invest: the worked orders' transactions are filed under investments in the Finance app, with the other shares");
         string director = ModSource(@"Markets\MarketDirector.Invest.cs"), bridges = ModSource(@"Markets\MarketBridges.cs"), links = ModSource(@"Wiring\MarketLinks.cs");
-        string books = ModSource(@"Economy\Finance\Books.cs"), accounts = ModSource(@"Economy\Finance\FinanceApp.Accounts.cs"), overview = ModSource(@"Economy\Finance\FinanceApp.cs");
+        string books = ModSource(@"Economy\Finance\Books.cs"), overview = ModSource(@"Economy\Finance\FinanceApp.Overview.cs");
         Check(director.Contains("Func<long> net = MarketBridges.NetWorth;") && director.Contains("(net != null ? net() : MarketWallet.Wealth()) + InvestRules.MarketWorth(")
               && bridges.Contains("public static Func<long> NetWorth;") && bridges.Contains("NetWorth = null;") && links.Contains("MarketBridges.NetWorth = Books.NetWorth;")
               && books.Contains("public static long NetWorth()") && books.Contains("Owing(file.Accounts[i])") && books.Contains("EconomyBridges.OtherDebts?.Invoke(Debts);")
-              && books.Contains("file.Shark.Active") && accounts.Contains("if (!Books.Owing(a))") && overview.Contains("wealth.CurrentWealth - owedOther - owedAccounts")
+              && books.Contains("file.Shark.Active") && overview.Contains("if (!Books.Owing(a))") && overview.Contains("wealth.CurrentWealth - owedOther - owedAccounts")
               && !ModSource(@"Markets\MarketEngine.cs").Contains("RealLifeOverhaul.Economy"),
             "invest: the most of one bond purchase reads the Finance app's net worth through the wiring (the same accounts, the same debts), the market adding its own once, and no feature calls the other");
     }

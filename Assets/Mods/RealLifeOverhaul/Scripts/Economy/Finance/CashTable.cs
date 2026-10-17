@@ -3,7 +3,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>One movement of money in a period, for a table: what it was, when, how much and what for (CashCategory).</summary>
+    /// <summary>One movement of money in a period: what it was, when, how much and what for (CashCategory).</summary>
     public struct CashEntry
     {
         public string Type;
@@ -13,33 +13,17 @@ namespace RealLifeOverhaul.Economy
         public int Category;
     }
 
-    /// <summary>The words a table of movements of money is written in: the app's own (FinanceText, the game's words), or a check's.</summary>
+    /// <summary>The words a table of movements of money is written in: the game's (CashWords.Game) or a check's.</summary>
     public interface ICashWords
     {
-        /// <summary>"Day 12".</summary>
         string Day(int day);
-        /// <summary>One movement in the game's own words (its type's text, filled from its data).</summary>
+        /// <summary>One movement in the game's own words: its type's text, filled from its data.</summary>
         string Item(string type, Dictionary<string, string> data);
-        /// <summary>A category's name (CashCategory.Keys).</summary>
         string Category(int category);
-        /// <summary>An amount, as the app writes money.</summary>
         string Money(float amount);
     }
 
-    /// <summary>
-    /// The movements of money of a period as a table that is written only as it is shown (GameUi.ITableSource): the Finance
-    /// app's Cash flow tab and a bank's statement. A month of a late game is some 30,000 movements; each row's words (its day,
-    /// the game's text for it filled from its data, its category, its amount) took six strings, and the scroller shows some
-    /// fifteen. Now a row's words are made when it comes into view; the table is ordered, filtered and summed by the
-    /// figures and the category, and a column's words are made only when the table is ordered by them.
-    ///
-    /// Newest first, as the tab always listed them: row 0 is the last movement read. Columns: 0 day, 1 what, 2 category,
-    /// 3 in, 4 out (FinanceTables.Cash, BankTables.Statement). A row is written exactly as the tab wrote every row before:
-    /// id "cash:" and the movement's place in the list, kind its category, the day by its number, money in green under
-    /// "in" and out in red under "out".
-    ///
-    /// Game-free: the offline checks run it as it is (EconomyCheck, AppsChecks.cs).
-    /// </summary>
+    /// <summary>A period's movements of money as a table whose rows' words are made as they scroll into view, newest first.</summary>
     public sealed class CashTable : ITableSource
     {
         public const int ColumnDay = 0, ColumnWhat = 1, ColumnCategory = 2, ColumnIn = 3, ColumnOut = 4;
@@ -56,7 +40,6 @@ namespace RealLifeOverhaul.Economy
 
         public int Count => _lines.Count;
 
-        // Row 0 is the newest.
         private int Place(int row) => _lines.Count - 1 - row;
 
         public double Key(int row, int column)
