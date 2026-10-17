@@ -331,15 +331,21 @@ namespace RealLifeOverhaul.Economy.Dealership
                 y.Deals.Add(Offer(s.Next(), car, now, h.Skill, y.Warranty, financeLeastAtPrices, models, colours, level, mood, ref dice));
                 r.Offers++;
             }
-            if (y.Today.Day != day)
+            if (y.Today.Day < day)
             {
-                y.Today.Clear(day);
+                CloseDay(s, y, day);   // a day left open over a time off goes into the reports, not away
             }
             y.Today.Visitors += r.Visitors;
             y.Today.Served += r.Served;
             y.Today.Lost += r.Lost;
             y.Today.Offers += r.Offers;
             return r;
+        }
+
+        /// <summary>Whether it is time to tell of offers waiting again; <paramref name="told"/> is int.MinValue while never told.</summary>
+        public static bool TellDue(int now, int told)
+        {
+            return (long)now - told >= DealerCatalogue.TellEvery;   // as a long: an int would run over from int.MinValue
         }
 
         /// <summary>A text's number that is the same in every run (a string's own hash is not).</summary>

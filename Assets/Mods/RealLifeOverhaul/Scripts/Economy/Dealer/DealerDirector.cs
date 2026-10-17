@@ -198,13 +198,18 @@ namespace RealLifeOverhaul.Economy.Dealership
             DealerGame.Models(_models, _colours);
             int gone = ReadYards(), lost = Reconcile();
             int now = Now;
-            if (_state.LastHour < 0 || now - _state.LastHour > CatchUp || now < _state.LastHour)
+            bool gap = _state.LastHour < 0 || now - _state.LastHour > CatchUp || now < _state.LastHour;
+            if (gap)
             {
                 _state.LastHour = now;   // hours that went by without the feature are not worked through
             }
             if (_state.MarketDay != save.Day)
             {
                 DealerRules.Morning(_state, save.Day, _models, _colours, Prices.Level);
+                for (int y = 0; gap && y < _state.Yards.Count; y++)
+                {
+                    DealerRules.CloseDay(_state, _state.Yards[y], save.Day);   // the last day worked goes into the reports (hours worked through close their own)
+                }
             }
             RebuildIds();
             Logger?.Info("Dealership: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + save.Day + ". "
@@ -462,6 +467,19 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
             }
             int placed = DealerGame.Park(y, _lost, _bays);
+            DropLost(y);
+            if (Verbose)
+            {
+                Logger?.Info("Dealership check (entered '" + y.Name + "'): " + (laid ? "the lot laid out, " : string.Empty) + y.Spots.Count + " place(s), "
+                             + placed + " of " + y.Cars.Count + " car(s) held on their places"
+                             + (_lost.Count > 0 ? ", " + _lost.Count + " the save no longer has taken off" : string.Empty) + ": " + (placed == y.Cars.Count ? "PASS" : "FAIL") + ".");
+            }
+            Changed();
+        }
+
+        // The cars Park found the save no longer has, taken off the stock with their deals.
+        private void DropLost(DealerYard y)
+        {
             for (int i = 0; i < _lost.Count; i++)
             {
                 RemoveDeals(y, _lost[i].Id);
@@ -471,13 +489,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 RebuildIds();
             }
-            if (Verbose)
-            {
-                Logger?.Info("Dealership check (entered '" + y.Name + "'): " + (laid ? "the lot laid out, " : string.Empty) + y.Spots.Count + " place(s), "
-                             + placed + " of " + y.Cars.Count + " car(s) held on their places"
-                             + (_lost.Count > 0 ? ", " + _lost.Count + " the save no longer has taken off" : string.Empty) + ": " + (placed == y.Cars.Count ? "PASS" : "FAIL") + ".");
-            }
-            Changed();
         }
 
         internal static string LotRow(DealerYard y) => "lot:" + y.Place;
@@ -583,7 +594,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return;
             }
             int waiting = Waiting();
-            if (_waiting >= 0 && waiting > _waiting && Now - _toldHour >= DealerCatalogue.TellEvery)
+            if (_waiting >= 0 && waiting > _waiting && DealerRules.TellDue(Now, _toldHour))
             {
                 _toldHour = Now;
                 Tell(NotificationType.Info, "reallife_dealer_note_offers", new Dictionary<string, string>(1) { { "count", waiting.ToString() } }, TabOffers, null);

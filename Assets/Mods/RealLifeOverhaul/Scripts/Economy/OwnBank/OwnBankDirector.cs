@@ -379,7 +379,7 @@ namespace RealLifeOverhaul.Economy
                 Tell(NotificationType.Success, "reallife_ob_toast_cured", TabBank, "bank", name);
                 Print("reallife_ob_news_cured", "bank", name);
             }
-            if (_day.Watched && day - _watchTold >= city.MonthDays)
+            if (_day.Watched && OwnBankRules.WatchDue(day, _watchTold, city.MonthDays))
             {
                 _watchTold = day;
                 Tell(NotificationType.Warning, "reallife_ob_toast_watch", TabBank, "ratio", OwnBankText.Ratio(OwnBankRules.Ratio(_bank)));

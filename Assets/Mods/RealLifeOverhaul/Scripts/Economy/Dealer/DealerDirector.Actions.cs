@@ -291,7 +291,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     return false;
                 }
             }
-            int tier = y.Warranty ? d.Tier : -1;
+            int tier = DealerRules.Tier(y.Warranty, d.Tier, _state);   // none to sell when no more can be kept
             int premium = DealerRules.Premium(price, tier, Prices.At(DealerCatalogue.PremiumLeast));
             int allowance = d.TradeType != null ? d.TradeAllowance : 0;
             DealMoney m = DealerRules.Settle(price, allowance, finance, d.Deposit, d.Term, d.Score, premium, DealerGame.DaysPerYear);
@@ -306,16 +306,14 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (m.Premium > 0)
             {
                 DealerGame.Give(m.Premium, DealerLines.PremiumKey, DealerGame.Named(reg), reg);
-                if (_state.Covers.Count < DealerCatalogue.CoversMost)
+                _state.Covers.Add(new DealerCover   // a premium is taken only where the cover can be kept (DealerRules.Tier)
                 {
-                    _state.Covers.Add(new DealerCover
-                    {
-                        Id = _state.Next(), Place = y.Place, Customer = d.Customer, Type = car.Type, Tier = tier, Worth = worth, Condition = car.Condition,
-                        Until = Save.Day + DealerCatalogue.TierDays[tier]
-                    });
-                }
+                    Id = _state.Next(), Place = y.Place, Customer = d.Customer, Type = car.Type, Tier = tier, Worth = worth, Condition = car.Condition,
+                    Until = Save.Day + DealerCatalogue.TierDays[tier]
+                });
             }
-            if (m.OnFinance && _state.Plans.Count < DealerCatalogue.PlansMost)
+            bool planKept = m.OnFinance && _state.Plans.Count < DealerCatalogue.PlansMost;
+            if (planKept)
             {
                 _state.Plans.Add(new DealerPlan
                 {
@@ -370,7 +368,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 Day = Save.Day, Place = y.Place, Customer = d.Customer, Type = car.Type, Price = price, Cost = car.Cost, Financed = m.OnFinance, Tier = m.Premium > 0 ? tier : -1, Extras = extras
             });
-            Book(y, m.Deposit + m.Allowance + m.Premium + extrasIn, m.Allowance + extrasCost, 0, price - car.Cost + extrasIn - extrasCost);
+            Book(y, DealerRules.TakenIn(m, planKept, extrasIn), m.Allowance + extrasCost, 0, price - car.Cost + extrasIn - extrasCost);
             y.Today.Sold++;
             y.Today.Revenue += price;
             y.Today.Extras += extrasIn;
@@ -605,6 +603,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 y.Cars[c].Spot = c < y.Spots.Count ? c : -1;
             }
             DealerGame.Park(y, _lost, _bays);
+            DropLost(y);
             Logger?.Info("Dealership: the lot of '" + y.Name + "' laid out again: " + had + " place(s) before, " + y.Spots.Count + " now.");
             Changed();
             return true;

@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>The game's hour and day for the showrooms, called by the credit side's handlers; nothing per frame.</summary>
     public sealed partial class DealerDirector
     {
+        private int _working = -1;   // the day of the hour being worked through (a catch-up hour may be the day before's); -1 outside them
+
         private void OnHour()
         {
             if (!_running || _broken || Save == null)
@@ -29,9 +31,16 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
                 ReadYards();
                 int offers = 0, closed = 0, drives = 0;
-                for (int hour = _state.LastHour + 1; hour <= now; hour++)
+                try
                 {
-                    StepHour(hour, ref offers, ref closed, ref drives);
+                    for (int hour = _state.LastHour + 1; hour <= now; hour++)
+                    {
+                        StepHour(hour, ref offers, ref closed, ref drives);
+                    }
+                }
+                finally
+                {
+                    _working = -1;
                 }
                 _state.LastHour = now;
                 Changed();
@@ -51,6 +60,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         private void StepHour(int now, ref int offers, ref int closed, ref int drives)
         {
             int day = now / 24, level = Prices.Level;
+            _working = day;
             if (_state.MarketDay != day)
             {
                 DealerRules.Morning(_state, day, _models, _colours, level);
@@ -206,9 +216,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return;
             }
-            if (y.Today.Day != Save.Day)
+            int day = _working >= 0 ? _working : Save.Day;   // a catch-up hour of the day before books to that day
+            if (y.Today.Day < day)
             {
-                DealerRules.CloseDay(_state, y, Save.Day);
+                DealerRules.CloseDay(_state, y, day);
             }
             y.Today.Takings += takings;
             y.Today.Bought += bought;

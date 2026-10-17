@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(_running ? DealerRefusal.Gone : DealerRefusal.Off);
             }
+            EndEvents(Save.Day);   // one that ended while the feature was off is closed first, with its notice, and its kind rests
             EventRefusal no = DealerRules.CanBook(y, kind, Save.Day);
             if (no != EventRefusal.None)
             {

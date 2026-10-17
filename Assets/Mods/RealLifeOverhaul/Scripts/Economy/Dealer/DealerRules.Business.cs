@@ -47,9 +47,16 @@ namespace RealLifeOverhaul.Economy.Dealership
             return last < 0 ? -1 : last + DealerCatalogue.EventRest;
         }
 
-        /// <summary>An event booked today: it runs from today for its days. A featured kind is kept only for the event that features one.</summary>
+        /// <summary>
+        /// An event booked today: it runs from today for its days. A featured kind is kept only for the event that features one.
+        /// One that ended while nothing closed it is closed first, so its kind rests.
+        /// </summary>
         public static void Book(DealerYard y, int kind, int feature, int day)
         {
+            if (EventOver(y, day))
+            {
+                EndEvent(y);
+            }
             y.Event = kind;
             y.Feature = kind == DealerCatalogue.FeaturedKind ? Math.Max(0, feature) : 0;
             y.EventFrom = day;

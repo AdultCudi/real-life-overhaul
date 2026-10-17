@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (picked != null)
             {
-                WriteDeal(box, pickedYard, picked, now);
+                WriteDeal(box, state, pickedYard, picked, now);
                 return DealerColumns.Offers;
             }
             _picked = null;
@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return sell;
         }
 
-        private void WriteDeal(InfoBox box, DealerYard yard, DealerOffer d, int now)
+        private void WriteDeal(InfoBox box, DealerState state, DealerYard yard, DealerOffer d, int now)
         {
             StockCar car = yard.Car(d.Car);
             box.Title(d.Customer);
@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 box.Line(DealerText.Fill("reallife_dealer_deal_trade", "car", DealerGame.CarName(d.TradeType), "km", DealerText.Km(d.TradeKm), "allowance", DealerText.Money(d.TradeAllowance)));
             }
-            if (d.Tier >= 0 && yard.Warranty)
+            if (DealerRules.Tier(yard.Warranty, d.Tier, state) >= 0)   // the warranty the sale would take: none when no more can be kept
             {
                 int premium = DealerRules.Premium(d.Offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast));
                 box.Line(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium", DealerText.Money(premium)));

@@ -103,6 +103,21 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Named(DealerCatalogue.Share(worth, DealerCatalogue.RecoverShare));
         }
 
+        /// <summary>The warranty a buyer takes: the tier they want where the showroom offers one and a cover can still be kept; -1 for none.</summary>
+        public static int Tier(bool offered, int wanted, DealerState s)
+        {
+            return offered && s.Covers.Count < DealerCatalogue.CoversMost ? wanted : -1;
+        }
+
+        /// <summary>
+        /// What a sale brings in on the day: the deposit, the part exchange, a warranty, the extras, and the sum financed when it
+        /// is sold on at once because no plan can be kept (<paramref name="planKept"/> false).
+        /// </summary>
+        public static int TakenIn(in DealMoney m, bool planKept, int extras)
+        {
+            return m.Deposit + m.Allowance + m.Premium + extras + (m.OnFinance && !planKept ? m.Financed : 0);
+        }
+
         /// <summary>A warranty's premium on a car of this price, at least the least at today's prices.</summary>
         public static int Premium(int price, int tier, int leastAtPrices)
         {
