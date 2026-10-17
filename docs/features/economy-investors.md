@@ -24,18 +24,19 @@ No method of the game's is patched and nothing is ever written into the game's b
 | `VenturesCatalogue.cs` | every figure, the four levels, the names; `VenturesRandom` (seeded rolls that are a hash of what they are about) |
 | `VenturesModel.cs` | `Investor`, `Offer`, `Pledge`, `Deal`, `Company`, `Holding`, `BusinessFigures`, `VenturesFile`; `IVenturesClimate` with `SteadyClimate` and `ClimateFrom` |
 | `Cast.cs` | the save's investors and companies from its seed |
-| `Deals.cs` | `OfferRules` (an offer, a counter, taking it up, money promised), `DealRules` (a deal's day, the ladder, buy-out), the transaction keys |
+| `OfferRules.cs` | `OfferRules` (an offer, a counter, taking it up, money promised), the transaction keys |
+| `DealRules.cs` | `DealRules` (a deal's day, the ladder, buy-out) |
 | `Pitch.cs` | the bank of 41 questions, which are asked, what an answer is worth, the check of a figure, the decision |
 | `Market.cs` | a market day, the news tables, trading, dividends |
 | `VenturesStore.cs` | the save line |
-| `VenturesBridges.cs` | what Ventures asks of the rest of the mod; `VenturesPhone.Open(tab)`; `VenturesText` |
+| `VenturesBridges.cs` | what Ventures asks of the rest of the mod; `VenturesPhone` (the app's tabs); `VenturesText` |
 | `VenturesGame.cs` | what is read from the game (a business's figures, the true answers, rivals, kinds of business, rents) and `VenturesWallet` |
-| `VenturesDirector.cs`, `.Tests.cs` | the component: start, the day, the hour, the save, what the app asks for, the test tools, the save tools |
+| `VenturesDirector.cs`, `.Day.cs`, `.App.cs`, `.Tests.cs` | the component: start and the save; the day and the hour; what the app asks for; the test tools and the save tools |
 | `PitchMeeting.cs` | the meeting in the game's list window |
-| `VenturesApp.cs`, `.Investors.cs`, `.Market.cs`, `.Property.cs` | the app |
+| `VenturesApp.cs`, `.Investors.cs`, `.Property.cs`, `VenturesTables.cs` | the app and its tables |
 | `Wiring/VenturesLinks.cs` | the bridges filled in, and the Planner's rows |
 
-The first seven are game-free: the offline checks compile them as they are.
+The first eight are game-free: the offline checks compile them as they are.
 
 ## How it runs (no per-frame work)
 

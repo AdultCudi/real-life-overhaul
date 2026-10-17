@@ -166,7 +166,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityEconomyDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeFridgeButton.cs	1
@@ -216,7 +215,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.Tabl
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/Ladder.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesApp.Tables.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	1
@@ -467,10 +465,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankRules.cs
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Offers.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Tests.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.cs	11
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/PitchMeeting.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesApp.Investors.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesDirector.Tests.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesDirector.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventDirector.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireEffects.cs	1

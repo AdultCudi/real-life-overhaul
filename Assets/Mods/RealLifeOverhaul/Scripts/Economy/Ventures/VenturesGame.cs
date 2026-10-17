@@ -12,15 +12,10 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// Ventures' side of the player's cash: the game's own transaction call, so every sum an investor pays in or
-    /// takes and every trade is in the game's transaction history under its own name. No address goes with it: a
-    /// share paid to an investor must not show as a cost of the business it is a share of. During the day's run the
-    /// transactions are dated on the day that has ended (<see cref="BookDay"/>), as the game dates its own run.
-    /// </summary>
+    /// <summary>Ventures' side of the player's cash. No address goes with it: an investor's share must not show as a cost of the business.</summary>
     public sealed class VenturesWallet : IWallet
     {
-        /// <summary>The day transactions are dated on; null for now.</summary>
+        /// <summary>The day transactions are dated on (the day that ended, during the day's run, as the game dates its own); null for now.</summary>
         public int? BookDay;
 
         public int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
@@ -38,19 +33,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+        // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string why, string name)
         {
             return new TransactionInfo(why, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } });
         }
     }
 
-    /// <summary>
-    /// What Ventures reads from the game: a business's figures from the game's own daily statements, the true answers
-    /// to an investor's questions, the game's rivals by name, the kinds of business the player may start. Nothing is
-    /// kept and nothing of the game's is changed: every figure is read when it is asked for (when the app opens, at
-    /// the day's end, when a meeting starts), never per frame.
-    /// </summary>
+    /// <summary>What Ventures reads from the game, when asked and never per frame; nothing of the game's is changed.</summary>
     public static class VenturesGame
     {
         private static readonly List<BuildingRegistration> Scratch = new List<BuildingRegistration>(16);
@@ -59,11 +49,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        /// <summary>
-        /// True while the game itself has hold of the player: a conversation, a time skip, an activity's panel, the
-        /// subway, the casino boat, the way to hospital, the wheel of a vehicle. (The pause is not one of them: the
-        /// phone, where a meeting is asked for, pauses the game.)
-        /// </summary>
+        /// <summary>True while the game itself holds the player. Not the pause: the phone, where a meeting is asked for, pauses the game.</summary>
         public static bool Busy()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -73,7 +59,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                    || (game != null && game.selectedVehicle != null);
         }
 
-        /// <summary>A business of the player's by the key a deal keeps; null if they do not run it (any more).</summary>
+        /// <summary>A business of the player's by the key a deal keeps; null if they do not run it.</summary>
         public static BuildingRegistration Business(string place)
         {
             BuildingRegistration r = string.IsNullOrEmpty(place) ? null : Books.Business(place);
@@ -85,18 +71,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             return r == null ? string.Empty : r.GetDisplayName();
         }
 
-        /// <summary>How many days the player has had a business; a business older than the game remembers counts from day one.</summary>
-        public static int Age(BuildingRegistration r)
+        /// <summary>Days the player has had a business; one older than the game remembers counts from day one.</summary>
+        private static int Age(BuildingRegistration r)
         {
             GameInstance save = Save;
             return save == null || r == null ? 0 : Mathf.Max(0, save.Day - Mathf.Max(1, r.creationDay));
         }
 
-        /// <summary>
-        /// A business's last fourteen days from the game's daily statements (the figures EconoView's business page
-        /// shows): yesterday's profit and takings, the week's takings, the mean daily profit of the last seven and
-        /// fourteen days it has statements for, its mean daily costs, and on how many of those days it made a profit.
-        /// </summary>
+        /// <summary>A business's last fourteen days from its statements, means over the days on record; Exists false if the player does not run it.</summary>
         public static BusinessFigures Figures(BuildingRegistration r)
         {
             var b = new BusinessFigures();
@@ -152,7 +134,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return b;
         }
 
-        /// <summary>The true answers to anything an investor may ask: about a business the player runs (or none, for one not yet open) and about the player.</summary>
+        /// <summary>The true answers to anything an investor may ask about the business ('r' null for one not yet open) and the player.</summary>
         public static PitchFacts Facts(VenturesFile file, BuildingRegistration r, string typeName, int budget)
         {
             var f = new PitchFacts { Running = r != null, Budget = budget, Sector = VenturesCatalogue.SectorOf(r != null ? r.businessTypeName : typeName) };
@@ -216,8 +198,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return f;
         }
 
-        /// <summary>The employees assigned to a business, as the game counts them.</summary>
-        public static int StaffAt(BuildingRegistration r)
+        private static int StaffAt(BuildingRegistration r)
         {
             Staff.Clear();
             try
@@ -232,7 +213,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             catch (Exception)
             {
-                return 0;   // (the game's own list could not be read: nobody is asked about a figure that is not known)
+                return 0;   // the game's list could not be read
             }
             finally
             {
@@ -240,7 +221,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>The game's own named rivals, for the market's list of companies. None while the game's rivals are switched off or not loaded.</summary>
+        /// <summary>The game's named rivals, at most four; none while its rivals are off or not loaded.</summary>
         public static void RivalNames(List<string> into)
         {
             into.Clear();
@@ -266,11 +247,10 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             catch (Exception)
             {
-                into.Clear();   // (the game's rivals are not as expected: the market lists invented firms only)
+                into.Clear();   // the rivals are not as expected: invented firms only
             }
         }
 
-        /// <summary>The kinds of business the game lets the player start, by the game's ids.</summary>
         public static void StartableTypes(List<string> into)
         {
             into.Clear();
@@ -291,17 +271,12 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>A kind of business as the game names it.</summary>
         public static string TypeName(string businessType)
         {
             return string.IsNullOrEmpty(businessType) ? string.Empty : businessType.GetLocalization();
         }
 
-        /// <summary>
-        /// A business of this kind that a promise of money can start on, once the player runs more of the kind than
-        /// when the promise was made: of those with no deal yet, the one the game has the fewest daily statements for
-        /// (the one just opened), and of two alike the one whose building was taken last. Null until then.
-        /// </summary>
+        /// <summary>The business a promise starts on once the player runs more of its kind: the newest with no deal; null until then.</summary>
         public static BuildingRegistration Opened(VenturesFile file, Pledge pledge)
         {
             if (CountOf(pledge.TypeName) <= pledge.Had)
@@ -330,7 +305,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             return found;
         }
 
-        /// <summary>How many businesses of a kind the player runs now.</summary>
         public static int CountOf(string businessType)
         {
             Books.Businesses(Scratch);
@@ -343,7 +317,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return count;
         }
 
-        /// <summary>What a building the player owns has brought in over the last days, from the game's daily statements (they are kept for a year; the transaction list is not).</summary>
+        /// <summary>What a building has brought in over the last days, from the daily statements (kept for a year; the transactions are not).</summary>
         public static float Rent(Address address, int days)
         {
             GameInstance save = Save;
