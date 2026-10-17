@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Economy.Brands
         private void StandDown(string why, bool tell, bool keep, bool unloading)
         {
             bool was = _running;
-            if (keep && _running && Save != null && _state != null)
+            if (keep && _running && Save != null)
             {
                 Write(Save);
             }
@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             try
             {
-                if (!_running || Save == null || _state == null)
+                if (!_running || Save == null)
                 {
                     return;
                 }
@@ -572,7 +572,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>How many things wait for the player's answer: applicants, and what franchisees ask (a bid among them).</summary>
         public int Waiting()
         {
-            if (!_running || _state == null)
+            if (!_running)
             {
                 return 0;
             }

@@ -201,7 +201,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>A scandal at a business (Wiring/BrandLinks): if it is a member shop, the brand's recognition falls there and a little city-wide.</summary>
         public void Heard(string place, Scandal kind)
         {
-            if (!_running || _broken || _state == null)
+            if (!_running || _broken)
             {
                 return;
             }
@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>Recognition a scandal took is given back (an honest answer on Flare). Returns what came back, hundredths.</summary>
         public int Recover(string place, int points)
         {
-            if (!_running || _broken || _state == null)
+            if (!_running || _broken)
             {
                 return 0;
             }

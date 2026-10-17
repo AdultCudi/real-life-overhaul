@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public static PriceLook Look(KeptBook book, string item, float now, float want)
         {
             float written;
-            if (book == null || item == null || !book.Written.TryGetValue(item, out written))
+            if (!book.Written.TryGetValue(item, out written))
             {
                 return PriceLook.New;
             }
@@ -150,10 +150,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>A price has been written: it is what the next look compares with.</summary>
         public static void Wrote(KeptBook book, string item, float price)
         {
-            if (book != null && item != null)
-            {
-                book.Written[item] = price;
-            }
+            book.Written[item] = price;
         }
     }
 }

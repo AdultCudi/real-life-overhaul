@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Economy.Brands
     /// </summary>
     public sealed partial class BrandsDirector
     {
-        private bool Ready => _running && !_broken && _state != null && Save != null;
+        private bool Ready => _running && !_broken && Save != null;   // _state is set whenever _running is
 
         private void Act(string what, Action work)
         {

@@ -313,7 +313,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>An ask is over, answered or not: nothing of its kind comes again for a while, and a bid of this franchisee's is withdrawn.</summary>
         public static void Drop(Brand b, Franchise f, int day)
         {
-            if (f.Ask == Ask.BuyBrand && b != null && b.BidBy == f.Id)
+            if (f.Ask == Ask.BuyBrand && b.BidBy == f.Id)
             {
                 b.Bid = b.BidBy = b.BidUntil = 0;
             }
