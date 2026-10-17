@@ -12,24 +12,19 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Leisure
 {
-    /// <summary>One place worth seeing: found once per city load from the game's own scene objects.</summary>
+    /// <summary>One place worth seeing, found once per city load from the game's own objects.</summary>
     public sealed class Landmark
     {
         public string Id;
         public string NameKey;
         public Vector3 Position;
         public float Radius;
-        public bool Waterside;    // a harbour, a pier, the shore: a line can be cast near here
+        public bool Waterside;    // a line can be cast near here
     }
 
     /// <summary>
-    /// What the game's city has that leisure builds on, found once and kept: the things inside
-    /// the building the player is in (the cocktail bars and dance floors of a nightclub, a
-    /// clothing store's racks), the landmarks of the city, and whether
-    /// the player stands at the water's edge. Nothing here runs by itself: the director asks on
-    /// its one-second timer, and the costly parts (a pass over the building's items, the scene
-    /// searches for landmarks) happen once per building entered and once per city load, the
-    /// searches behind the loading screen (LeisureDirector hands them to ScenePrewarm).
+    /// What leisure builds on in the game's city: the bars, dance floors and racks of the building the player is in,
+    /// the landmarks and the water's edge. Items are sorted once per building, landmarks found once per city load.
     /// </summary>
     public static class LeisureVenues
     {
@@ -46,7 +41,7 @@ namespace RealLifeOverhaul.Leisure
         private static Building _scanned;
         private static int _scannedCount = -1;
         private static bool _landmarksTried;
-        private static bool _scenePartDone;   // the six searches of the scene are made (behind the loading screen, normally)
+        private static bool _scenePartDone;
         private static int _waterMask;
 
         public static void Reset()
@@ -61,18 +56,12 @@ namespace RealLifeOverhaul.Leisure
             _scenePartDone = false;
         }
 
-        // ---------------------------------------------------------------- indoors
-
-        /// <summary>The business type of the building the player is in, or null out of doors.</summary>
         public static string BusinessIn(BuildingManager manager)
         {
             return manager != null && manager.building != null && manager.buildingRegistration != null ? manager.buildingRegistration.businessTypeName : null;
         }
 
-        /// <summary>
-        /// Sorts the items of the building the player is in into the lists above. One pass, made again only when the
-        /// building or the number of its items changes (an interior fills in over the first moments inside).
-        /// </summary>
+        /// <summary>Sorts the building's items into the lists, again whenever its item count changes.</summary>
         public static void ScanIndoors(BuildingManager manager)
         {
             if (manager == null || manager.building == null)
@@ -121,7 +110,6 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>The nearest of a list to a point, within a distance on the flat. Null if none.</summary>
         public static ItemController Nearest(List<ItemController> items, Vector3 from, float within)
         {
             ItemController best = null;
@@ -144,17 +132,9 @@ namespace RealLifeOverhaul.Leisure
             return best;
         }
 
-        // ---------------------------------------------------------------- landmarks
-
-        /// <summary>
-        /// Finds the city's landmarks, once per city load (a second call does nothing); whatever the city does not have
-        /// is simply not on the list. Six of them are found by searches of the whole scene, which are made behind the
-        /// loading screen (<see cref="PrewarmLandmarks"/>: they were six frames' worth, 480 ms, in the first second on the
-        /// street after a load); the rest come from the game's own lists (its subway stations, the hospital's address).
-        /// </summary>
         private const string LandmarkSearch = "leisure: one of the city's landmarks being looked for (a search of the whole scene, six of them once a city)";
 
-        /// <summary>For ScenePrewarm, behind the loading screen: the six searches of the scene, their landmarks put on the list.</summary>
+        /// <summary>For ScenePrewarm: the six scene searches, behind the loading screen.</summary>
         public static bool PrewarmLandmarks()
         {
             if (!_landmarksTried)
@@ -164,7 +144,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        // The landmarks only a search of the scene finds (every one counted, inactive or not, so where the player is does not matter).
+        // Inactive objects count too, so what is found does not depend on where the player is.
         private static void SceneLandmarks()
         {
             if (_scenePartDone)
@@ -193,6 +173,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
+        /// <summary>Once per city load: the scene's landmarks, then those in the game's own lists.</summary>
         public static void FindLandmarks()
         {
             if (_landmarksTried)
@@ -200,7 +181,7 @@ namespace RealLifeOverhaul.Leisure
                 return;
             }
             _landmarksTried = true;
-            SceneLandmarks();   // done already behind the loading screen, unless that could not be
+            SceneLandmarks();
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -244,7 +225,7 @@ namespace RealLifeOverhaul.Leisure
         private static void Scene<T>(string id, string nameKey, float radius, bool waterside) where T : Component
         {
             T[] found = SceneFinds.All<T>(LandmarkSearch, FindObjectsInactive.Include);
-            // The same one every time, whatever order the engine hands them over in: the most westerly.
+            // The most westerly, so the pick does not depend on the engine's order.
             T pick = null;
             for (int i = 0; i < found.Length; i++)
             {
@@ -271,7 +252,6 @@ namespace RealLifeOverhaul.Leisure
             Landmarks.Add(new Landmark { Id = id, NameKey = nameKey, Position = position, Radius = radius, Waterside = waterside });
         }
 
-        /// <summary>The landmark whose ground the player stands on, or null.</summary>
         public static Landmark LandmarkAt(Vector3 position)
         {
             Landmark best = null;
@@ -290,9 +270,7 @@ namespace RealLifeOverhaul.Leisure
             return best;
         }
 
-        // ---------------------------------------------------------------- the water's edge
-
-        /// <summary>How far the nearest waterside landmark is, on the flat; a large number if there is none.</summary>
+        /// <summary>CitySpots.Flat (a squared distance) to the nearest waterside landmark.</summary>
         public static float WatersideDistance(Vector3 position)
         {
             float best = float.MaxValue;
@@ -307,14 +285,12 @@ namespace RealLifeOverhaul.Leisure
         }
 
         /// <summary>
-        /// Whether somebody standing here and facing this way has open water in front of them. The game has no
-        /// water object to ask, so this measures: the player stands within three metres of the edge of the
-        /// walkable ground, and 5.5 and 7.5 metres ahead there is either something called water, or nothing at
-        /// all under the sky, or a surface more than 0.8 m below their feet that nobody can walk or drive on.
-        /// Three rays; called only while the player stands still near a waterside landmark.
+        /// Whether somebody standing here, facing this way, has open water ahead. The game has no water to ask, so
+        /// three rays measure it: within 3 m of the walkable edge, and 5.75 and 7.5 m ahead something named water,
+        /// nothing at all, or a surface over 0.8 m down that cannot be walked or driven on.
         /// </summary>
-        /// <param name="water">Where a float would land, 6 m ahead.</param>
-        /// <param name="surfaceKnown">False if no surface was hit there (the float is then not shown).</param>
+        /// <param name="water">Where a float lands, 6 m ahead.</param>
+        /// <param name="surfaceKnown">False if nothing was hit there; no float is shown then.</param>
         public static bool WaterAhead(Vector3 position, Vector3 forward, out Vector3 water, out bool surfaceKnown)
         {
             water = position;
@@ -350,7 +326,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 else if (hit.point.y > position.y - 0.8f)
                 {
-                    open = false;   // ground, a quay wall, a boat: something at their own level
+                    open = false;   // ground, a quay wall or a boat at their own level
                 }
                 else
                 {
@@ -363,7 +339,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 if (!open && i > 0)
                 {
-                    return false;   // the first may still be quay; the two beyond it must be water
+                    return false;   // the first may be quay; the two beyond must be water
                 }
             }
             surfaceKnown = !float.IsNaN(surface);
@@ -372,12 +348,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        /// <summary>
-        /// A place to fish from at the waterside landmark nearest to <paramref name="from"/>, then the next nearest:
-        /// a spot a little in from the edge of the walkable ground, and the way to face there for open water
-        /// (<see cref="WaterAhead"/>). For the test button only: it looks at up to 33 spots a landmark and eight ways
-        /// to face at each, three rays a look, so it is never called on a timer.
-        /// </summary>
+        /// <summary>For the test button only, up to 792 rays a landmark: a spot at the edge facing water.</summary>
         public static bool WaterEdgeNear(Vector3 from, out Vector3 stand, out Vector3 facing, out float metres)
         {
             stand = from;
@@ -387,7 +358,7 @@ namespace RealLifeOverhaul.Leisure
             float beyond = -1f;
             for (int tried = 0; tried < Landmarks.Count; tried++)
             {
-                // The nearest waterside landmark not looked at yet.
+                // The nearest waterside landmark not tried yet.
                 Landmark next = null;
                 float nearest = float.MaxValue;
                 for (int i = 0; i < Landmarks.Count; i++)
@@ -430,7 +401,7 @@ namespace RealLifeOverhaul.Leisure
                         }
                         for (int f = 0; f < 8; f++)
                         {
-                            Vector3 way = Quaternion.Euler(0f, f * 45f, 0f) * -inward.normalized;   // straight out over the edge first
+                            Vector3 way = Quaternion.Euler(0f, f * 45f, 0f) * -inward.normalized;
                             if (WaterAhead(spot.position, way, out _, out _))
                             {
                                 stand = spot.position;

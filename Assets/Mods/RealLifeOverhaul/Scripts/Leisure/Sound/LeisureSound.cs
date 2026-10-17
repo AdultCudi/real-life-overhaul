@@ -10,29 +10,19 @@ using UnityEngine.Events;
 
 namespace RealLifeOverhaul.Leisure
 {
+    /// <summary>The short tones the activities and photo mode play.</summary>
     public enum LeisureCue { Tick, Good, Bad, Bite, Shutter }
 
     /// <summary>
-    /// The sound pass. What the game already has is left to the game: footsteps are its own and
-    /// already differ by surface (StepTrigger reads the ground's StepSound), rain has its own
-    /// loops indoors and out (RainAudio), the car has a radio with four stations, and the mod's
-    /// sirens are already positional with distance roll-off (Traffic/TrafficEffects). What the
-    /// game does not have is a bed under the city: birds by day, crickets at night, a low hum of
-    /// far traffic, a murmur where many people are on foot. The game ships no clips for those
-    /// (none are in its code), so the four loops are made here, once, from arithmetic; the
-    /// docs/features/leisure.md lists them as sounds an asset pass can replace by name.
-    ///
-    /// Four looping 2D sources and one for cues, all made once. Their volumes are moved towards
-    /// what the place and hour ask for on a quarter-second timer (never per frame); a layer at
-    /// nothing is stopped, so a silent layer costs nothing, and with the option off there are no
-    /// sources at all. Everything is routed to the game's own city mixer group and so follows
-    /// its master and effects volume; the game's pause stops the lot.
+    /// The sound bed the game lacks (birds, crickets, far traffic, a crowd's murmur), made from arithmetic once a city,
+    /// plus the activities' cues and the radio's song as a notification. Volumes move four times a second, never per
+    /// frame; a silent layer is stopped. Everything plays through the game's city mixer group.
     /// </summary>
     public sealed class LeisureSound : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "LeisureSound", typeof(LeisureSound));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "LeisureSound", typeof(LeisureSound));
 
-        private const int Rate = 22050;
+        private const int Rate = 22050;   // samples a second
         private const int Layers = 4;
         private const int Birds = 0, Crickets = 1, Hum = 2, Crowd = 3;
 
@@ -49,11 +39,12 @@ namespace RealLifeOverhaul.Leisure
         private float _nextTick;
         private float _nextCount;
         private int _crowdNear;
-        private int _built;            // how many of the loops exist yet: one is made per tick, never four in a frame
-        private readonly AudioClip[] _made = new AudioClip[Layers];   // loops made behind the loading screen, until their source takes them
+        private int _built;            // loops given a source so far: one a tick, never four in a frame
+        private readonly AudioClip[] _made = new AudioClip[Layers];   // made early, not yet given a source
         private bool _paused;
         private bool _failed;
         private bool _hooked;
+        private UnityAction<string> _onSong;
 
         private void Awake()
         {
@@ -61,15 +52,13 @@ namespace RealLifeOverhaul.Leisure
             ScenePrewarm.Add("leisure: the ambient sound's four loops being made (arithmetic, once a city)", PrewarmLoops);
         }
 
-        // The four loops' arithmetic (some 650,000 samples, about 5 ms a loop, which were four frames of the first second
-        // on the street after a load) done behind the loading screen while the ambient sound is on. The same numbers
-        // whenever they are made: every loop is seeded. Build then only gives each loop its source.
+        // The loops' arithmetic, about 5 ms each, behind the loading screen; seeded, so the same whenever made.
         private static bool PrewarmLoops()
         {
             LeisureSound sound = _instance;
             if (sound == null || sound._failed || !Settings.Leisure || !Settings.AmbientSound)
             {
-                return true;   // made on the timer if the sound is switched on later, as before
+                return true;   // made on the timer if the sound is switched on later
             }
             using var piece = SessionWatch.Piece("leisure: the ambient sound's four loops being made");
             for (int i = sound._built; i < Layers; i++)
@@ -97,7 +86,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 if (_made[i] != null)
                 {
-                    Destroy(_made[i]);   // made behind the loading screen, never given a source
+                    Destroy(_made[i]);
                 }
             }
             for (int i = 0; i < _cues.Length; i++)
@@ -109,9 +98,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // ---------------------------------------------------------------- cues
-
-        /// <summary>A short tone for something that happened in a game being played. Safe from anywhere; silent if sound is not up.</summary>
+        /// <summary>A short tone. Safe from anywhere; silent if the sound is not up.</summary>
         public static void Cue(LeisureCue cue)
         {
             LeisureSound sound = _instance;
@@ -150,22 +137,20 @@ namespace RealLifeOverhaul.Leisure
             _cueSource.PlayOneShot(_cues[index], 0.5f);
         }
 
-        // ---------------------------------------------------------------- the bed
-
         private static readonly int HotUpdate = HotSpots.Slot("Leisure: LeisureSound.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -197,7 +182,7 @@ namespace RealLifeOverhaul.Leisure
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             bool live = gm != null && gm.playerController != null && SaveGameManager.Current != null && !UI.Load.LoadScene.isLoading;
-            Radio(gm, live, now);
+            Radio(gm, live);
 
             bool on = live && Settings.Leisure && Settings.AmbientSound;
             bool paused = Time.timeScale == 0f;
@@ -238,7 +223,7 @@ namespace RealLifeOverhaul.Leisure
 
             if (_built < Layers)
             {
-                Build(_built++);   // one loop a tick: a few milliseconds each, once a session
+                Build(_built++);
                 return;
             }
 
@@ -285,7 +270,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // People on foot within a distance: the game's walking pedestrians, counted on a two-second timer.
+        // The game's walking pedestrians within a distance, counted every two seconds.
         private static int PeopleNear(Vector3 from, float within)
         {
             List<Pedestrian> walkers = PerfGame.Pedestrians;
@@ -306,7 +291,7 @@ namespace RealLifeOverhaul.Leisure
             return near;
         }
 
-        /// <summary>Options-page button: each layer in turn at full for a few seconds, wherever the player is.</summary>
+        /// <summary>Options-page button: each layer in turn for a few seconds, wherever the player is.</summary>
         public static void Test()
         {
             LeisureSound sound = _instance;
@@ -341,15 +326,12 @@ namespace RealLifeOverhaul.Leisure
                     source.Play();
                 }
                 yield return new WaitForSecondsRealtime(3.5f);
-                // Left where it is: the timer takes it back down (or keeps it, if it belongs here now).
+                // Left as it is: the timer brings it back to what the place asks for.
             }
         }
 
-        // ---------------------------------------------------------------- the radio's name on the HUD
-
-        // The game's own car radio says nothing on screen when the station or the song changes: a notification names both
-        // for a few seconds while driving. Its events are the game's; we only listen.
-        private void Radio(GameManager gm, bool live, float now)
+        // The game's car radio shows nothing when the song changes: a notification names the station and the song.
+        private void Radio(GameManager gm, bool live)
         {
             if (!live || !Settings.Leisure || !Settings.RadioHud || gm.radioPlayer == null)
             {
@@ -358,7 +340,7 @@ namespace RealLifeOverhaul.Leisure
             else if (!_hooked)
             {
                 _hooked = true;
-                _onSong = _onSong ?? Guard.Listener<string>(OnSong);   // (made once, through the guard: Core/Guard)
+                _onSong = _onSong ?? Guard.Listener<string>(OnSong);
                 gm.radioPlayer.onNewSong.AddListener(_onSong);
             }
         }
@@ -377,8 +359,6 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        private UnityAction<string> _onSong;
-
         private void OnSong(string song)
         {
             try
@@ -388,20 +368,13 @@ namespace RealLifeOverhaul.Leisure
                 {
                     return;
                 }
-                // The game's own car radio says nothing on screen when the song changes: one of the game's notifications does.
-                LeisureDirector director = LeisureDirector.Instance;
-                if (director != null && director.Screen != null)
-                {
-                    director.Screen.Say(JobText.T("reallife_leisure_radio_strip", "station", gm.radioPlayer.GetCurrentStation().ToString(), "song", song), 5f);
-                }
+                LeisureScreen.Say(JobText.T("reallife_leisure_radio_strip", "station", gm.radioPlayer.GetCurrentStation().ToString(), "song", song), 5f);
             }
             catch (Exception e)
             {
                 Fail(e);
             }
         }
-
-        // ---------------------------------------------------------------- sources
 
         private AudioSource Source(string label, bool loop)
         {
@@ -455,8 +428,6 @@ namespace RealLifeOverhaul.Leisure
             }
             Unhook();
         }
-
-        // ---------------------------------------------------------------- arithmetic
 
         private static AudioClip Loop(int layer)
         {
@@ -536,7 +507,7 @@ namespace RealLifeOverhaul.Leisure
             return Make("RealLifeOverhaul Ambience Birds", samples);
         }
 
-        // Four seconds of crickets: two carriers, each chirping in threes. Whole numbers of every period, so the loop has no seam.
+        // Four seconds of crickets: two carriers, each chirping in threes. Whole periods, so the loop has no seam.
         private static AudioClip CricketsLoop()
         {
             var samples = new float[4 * Rate];
@@ -561,8 +532,8 @@ namespace RealLifeOverhaul.Leisure
             return Mathf.Sin(2f * Mathf.PI * carrier * t) * pulse * pulse;
         }
 
-        // Filtered noise with a slow swell: a far rumble (low cut-off) or a murmur (a band, wobbling at the pace of speech).
-        // lowPass and highPass are one-pole coefficients (0 = off for the high pass); the ends are cross-faded so it loops.
+        // Filtered noise with a slow swell: a far rumble or a murmur. lowPass and highPass are one-pole coefficients
+        // (highPass 0 is off); the ends are cross-faded so it loops.
         private static AudioClip NoiseLoop(string clipName, float seconds, float lowPass, float highPass, float wobbleHz, float level, int seed)
         {
             int length = (int)(seconds * Rate);

@@ -1,36 +1,24 @@
-using BAModAPI;
-using BigAmbitions.Characters;
 using Buildings;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Leisure
 {
-    /// <summary>What an activity is handed: the player, their body, the props, who came along.</summary>
+    /// <summary>What an activity is handed: the player, their body, the props and who came along.</summary>
     public sealed class LeisureContext
     {
-        public LeisureDirector Director;
         public LeisureBody Body;
         public LeisureProps Props;
         public PlayerController Player;
-        public IModLogger Logger;
-        public ThirdPersonCharacter Companion;   // somebody who came along, or null; never moved or animated by leisure
-        public Vector3? Place;                   // where the caller wants it played, or null: where the player stands
-        public bool Test;                        // started by an options-page button
-        public Building Building;                // the building it is played in, or null out of doors
+        public ThirdPersonCharacter Companion;   // came along, or null; never moved or animated by leisure
+        public Building Building;                // where it is played, or null out of doors
 
         public Vector3 Position => Player.transform.position;
         public Vector3 Forward => Player.transform.forward;
     }
 
     /// <summary>
-    /// The base every leisure activity derives from. An activity is a switch over its own steps,
-    /// ticked five times a second by the director (and once a frame through <see cref="Frame"/>,
-    /// which must stay tiny and allocate nothing: a meter's cursor, a float on the water). It
-    /// says what to show by setting the fields below, and only when they change: they are
-    /// strings, and nothing may build one per tick. The player's body is moved only through
-    /// <see cref="LeisureContext.Body"/>; the director undoes all of it on every way out, then
-    /// calls <see cref="End"/> exactly once, where the activity gives back whatever else it put
-    /// out (a person, a prop).
+    /// The base of every activity: steps ticked five times a second, <see cref="Frame"/> each frame for what must move
+    /// smoothly (allocating nothing), and fields saying what to show, set only on change. <see cref="End"/> runs once.
     /// </summary>
     public abstract class LeisureActivity
     {
@@ -39,34 +27,30 @@ namespace RealLifeOverhaul.Leisure
         public abstract LeisureKind Kind { get; }
         public abstract string TitleKey { get; }
 
-        // ---- what is on screen (set only on change)
         public string Objective;
         public string Status;
-        public string Prompt;              // a prompt ("E: cast"): the game's panel carries it as a button on the interaction key
-        public string QuietPrompt;         // the button's words while the key is the activity's but nothing is announced (see OwnsInteractKey)
-        public string[] Choices;           // up to three labels: buttons of the game's panel on its second, third and fourth keys (null: none)
-        public bool OwnsInteractKey;       // the interaction key is the activity's even with no prompt up (it shows QuietPrompt)
+        public string Prompt;              // the panel's button on the interaction key ("E: cast")
+        public string QuietPrompt;         // the button's words while OwnsInteractKey and nothing is announced
+        public string[] Choices;           // up to three buttons on the panel's other keys, or null
+        public bool OwnsInteractKey;       // the key is the activity's even with no Prompt up
         public bool Meter;
         public float MeterCursor, ZoneCentre, ZoneWidth, SweetWidth;
         public string MeterLabel;
         public bool Marked;
         public Vector3 MarkAt;
         public string MarkLabel;
-        public bool ListDirty;             // the activity changed its list: the director calls DrawList once
 
-        // ---- where it is
-        public bool Indoors;               // set by the director at the start: played inside Ctx.Building, and ends on leaving it
-        public Vector3 Anchor;             // the middle of it
-        public float Leash = 6f;           // the player further than this from the anchor ends it (they walked away)
+        public bool Indoors;               // played inside Ctx.Building: leaving it ends the activity
+        public Vector3 Anchor;
+        public float Leash = 6f;           // past this CitySpots.Flat (a squared distance) from Anchor, it ends
 
-        // ---- how it ended
         public bool Finished { get; private set; }
-        public bool Played { get; private set; }    // to the end: counts as a game, sets records, gives its mood
+        public bool Played { get; private set; }    // to the end: it counts, sets records and gives its mood
         public int Score;
-        public string CardTitle, CardBody;          // shown for a few seconds after; null: no card
+        public string CardTitle, CardBody;          // the result notification; null for none
         public string Mood;                         // a ModState modifier, or null
 
-        /// <summary>Sets it up where the player stands. False with a reason (a locale key) if it cannot be played here; nothing may be left out then.</summary>
+        /// <summary>Sets it up where the player stands; false with a locale key, nothing left out, if not.</summary>
         public abstract bool Begin(float now, out string refusalKey);
 
         public abstract void Tick(float now);
@@ -83,12 +67,7 @@ namespace RealLifeOverhaul.Leisure
         {
         }
 
-        /// <summary>The list panel, when the activity has one: called by the director after <see cref="ListDirty"/>.</summary>
-        public virtual void DrawList(LeisureScreen screen)
-        {
-        }
-
-        /// <summary>Called exactly once on every way out, after the body was released. Gives back people and props; never throws for long.</summary>
+        /// <summary>Once on every way out, after the body was released: gives back people and props.</summary>
         public abstract void End();
 
         protected void Finish(bool played)
@@ -108,14 +87,11 @@ namespace RealLifeOverhaul.Leisure
         protected static string T(string key, string name, string value, string name2, string value2) => JobText.T(key, name, value, name2, value2);
     }
 
-    /// <summary>
-    /// A cursor that runs back and forth along the meter and is stopped with the interaction key:
-    /// the one timing interaction every activity shares. Game-free arithmetic; nothing allocated.
-    /// </summary>
+    /// <summary>A cursor running back and forth along the meter, stopped with the key: the shared timing.</summary>
     public struct Sweep
     {
-        public float Period;      // seconds for one pass, end to end
-        public float Start;       // when it was started
+        public float Period;      // seconds for one pass
+        public float Start;
         public float Centre;      // of the zone, 0..1
         public float Width;       // of the zone
         public float Sweet;       // of the better zone inside it
@@ -129,7 +105,6 @@ namespace RealLifeOverhaul.Leisure
             Sweet = sweet;
         }
 
-        /// <summary>Where the cursor is, 0..1: out and back, out and back.</summary>
         public float At(float now)
         {
             float phase = (now - Start) / Period;
