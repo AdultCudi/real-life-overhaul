@@ -25,6 +25,8 @@ namespace RealLifeOverhaul
         private static readonly Dictionary<int, ActivityAnimator> Players = new Dictionary<int, ActivityAnimator>(16);
         private static readonly List<ActivityAnimator> Stepping = new List<ActivityAnimator>(16);
         private static readonly List<HeldTool> Reaching = new List<HeldTool>(8);
+        private static readonly List<int> Dead = new List<int>(16);
+        private const int SweepFrom = 32;   // players kept before those of destroyed characters are looked for: the game's pools destroy the people they overflow with
         private static bool _failed;
 
         /// <summary>Told about the fault that switched the service off. Set by whoever owns the log.</summary>
@@ -44,10 +46,36 @@ namespace RealLifeOverhaul
             if (!Players.TryGetValue(id, out ActivityAnimator player) || player.Animator == null)
             {
                 player?.Dispose();   // its character was destroyed: the graph must not outlive it
+                if (player == null && Players.Count >= SweepFrom)
+                {
+                    SweepDead();
+                }
                 player = new ActivityAnimator(animator);
                 Players[id] = player;
             }
             return player;
+        }
+
+        // The players of characters destroyed without Forget (a passer-by a horn made gesture, taken by the game's own pool)
+        // let go with their graphs. Only as a new player is made past SweepFrom: a pass over the dictionary.
+        private static void SweepDead()
+        {
+            Dead.Clear();
+            foreach (KeyValuePair<int, ActivityAnimator> pair in Players)
+            {
+                if (pair.Value == null || pair.Value.Animator == null)
+                {
+                    Dead.Add(pair.Key);
+                }
+            }
+            for (int i = 0; i < Dead.Count; i++)
+            {
+                ActivityAnimator dead = Players[Dead[i]];
+                dead?.Dispose();
+                Stepping.Remove(dead);
+                Players.Remove(Dead[i]);
+            }
+            Dead.Clear();
         }
 
         /// <summary>Hands one character back to the game at once and forgets its player (the character is going away).</summary>
