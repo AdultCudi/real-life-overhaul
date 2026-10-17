@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using AI.Customers.CustomerEntries;
-using BAModAPI;
 using Data.VehicleColors;
 using Entities;
 using Extensions;
@@ -13,28 +12,8 @@ using Vehicles.VehicleTypes;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// Everything the dealership reads from or does to the game, in one place.
-    ///
-    /// READ: the player's dealerships (the business type's name on a building of the player's, Going Public's other
-    /// players' left out: GoingPublic.Mine); the cars the market can offer (the game's vehicle types with a price, a tank
-    /// and a body of their own, by the mod's car catalogue's kinds, trucks and the game's work vans left out, and other
-    /// mods' cars left out because the game spawns them again on entering a building without their shaders); the game's
-    /// car colours; for an hour, whether the business is open (BusinessHelper.IsBusinessOpen, a temporary closure, and the
-    /// business pressure's stopping its footfall: BusinessGame.HasFootfall), the customers the game's own count gives a
-    /// shop of the building (CustomerEntriesCalculator: its capacity) at its promotion (BuildingRegistration.promotion,
-    /// which the game, the company's campaigns, brands, the city, Flare and Standing write), the building's customer
-    /// satisfaction, and the salespeople on shift there now (EmployeeInstance.IsWorking, customer service as their main
-    /// skill, not off sick) with their skill.
-    ///
-    /// DONE: a car of the stock is a VehicleInstance of the game's, at the dealership's address and on a place of its lot
-    /// (SetStreetData and its position), so the game itself spawns it there whenever the player walks in
-    /// (GameManager.SpawnPlayerVehicles) and keeps it in the save. While the player is inside, the cars are held still on
-    /// their places (their rigid bodies frozen, their door closed to the player, their map pin hidden). A car sold is
-    /// deleted the game's own way (VehicleHelper.Delete). Money is the game's own transactions at the dealership's
-    /// address: a car sold as the game books a vehicle sold, a car bought as it books one bought, the rest under the
-    /// mod's own types (DealerLines); costs are marked deductible as the game marks a business's, so its tax deducts them.
-    ///
-    /// Nothing here runs per frame: on the game's hour, once a day, on entering the dealership, and on the player's word.
+    /// Everything the dealership reads from or does to the game. A car of the stock is a game vehicle at the showroom's address,
+    /// so the game spawns and saves it; money moves as the game's own transactions there. Nothing per frame.
     /// </summary>
     internal static class DealerGame
     {
@@ -42,11 +21,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         private const string DeductKey = "reallife_dealer_deduct";
         private const float FloorLift = 0.08f;   // metres over the floor a car is put down at
 
-        public static IModLogger Logger;
-
-        private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(8);
         private static readonly List<int> Offsets = new List<int>(2 * DealerCatalogue.SpotsMost);
-        private static int[] Current = new int[DealerCatalogue.CarsMost], Chosen = new int[DealerCatalogue.CarsMost], Into = new int[DealerCatalogue.CarsMost];   // Park's arrangement, made once
+        private static int[] _current = new int[DealerCatalogue.CarsMost], _chosen = new int[DealerCatalogue.CarsMost], _into = new int[DealerCatalogue.CarsMost];
 
         private static GameInstance Save => SaveGameManager.Current;
 
@@ -61,8 +37,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the dealerships
-
         /// <summary>A business by its address, written as the company writes a place.</summary>
         public static string Place(BuildingRegistration reg)
         {
@@ -74,8 +48,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             return address == null ? string.Empty : Uri.EscapeDataString(address.streetName ?? string.Empty) + "~" + address.streetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        /// <summary>True for a dealership of the player's own that is open for business (a name, an address).</summary>
-        public static bool Mine(BuildingRegistration reg)
+        // A showroom of the player's own (not another Going Public player's) that is open for business.
+        private static bool Mine(BuildingRegistration reg)
         {
             return DealerType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress;
         }
@@ -112,18 +86,15 @@ namespace RealLifeOverhaul.Economy.Dealership
             return reg != null ? reg.GetDisplayName() : string.Empty;
         }
 
-        /// <summary>The player stands inside this dealership now.</summary>
         public static bool Inside(BuildingRegistration reg)
         {
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             return reg != null && BuildingManager.IsInsideBuilding && manager != null && manager.building != null && manager.building.Address == reg.Address;
         }
 
-        // ---------------------------------------------------------------- what the market can offer
-
         /// <summary>
-        /// The cars a dealership deals in: the game's own vehicle types that are cars, vans or off-roaders to the mod's car
-        /// catalogue, with a list price, a fuel tank, a body of their own (not carried, not ridden on foot). Made once a city.
+        /// The cars a showroom deals in (the game's cars, vans and off-roaders with a price) and the game's colours. Other mods'
+        /// vehicles are left out: the game spawns them again without their shaders. Made once a city.
         /// </summary>
         public static void Models(List<MarketModel> into, List<string> colours)
         {
@@ -179,9 +150,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return t != null ? t.price : 0f;
         }
 
-        // ---------------------------------------------------------------- an hour of a dealership
-
-        /// <summary>What a dealership's hour has to go on, read from the game.</summary>
+        /// <summary>What a showroom's hour has to go on, read from the game: open, customer count, promotion, satisfaction and staff on shift.</summary>
         public static YardHour Hour(BuildingRegistration reg)
         {
             var h = new YardHour();
@@ -207,8 +176,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             return h;
         }
 
-        /// <summary>The salespeople on shift at a business now: customer service their main skill, at work this hour; and their average skill.</summary>
-        public static void Staff(BuildingRegistration reg, out int count, out int skill)
+        // The salespeople on shift at a business now (customer service their main skill, at work, not absent), and their average skill.
+        private static void Staff(BuildingRegistration reg, out int count, out int skill)
         {
             count = 0;
             skill = 0;
@@ -217,7 +186,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int i = 0; staff != null && i < staff.Count; i++)
             {
                 EmployeeInstance e = staff[i];
-                if (e == null || e.assignedAddress == null || e.assignedAddress != reg.Address || e.isAbsent || e.characterData == null || e.characterData.skills == null || e.characterData.skills.Count == 0)
+                if (e == null || e.assignedAddress == null || e.assignedAddress != reg.Address || e.isAbsent
+                    || e.characterData == null || e.characterData.skills == null || e.characterData.skills.Count == 0)
                 {
                     continue;
                 }
@@ -245,13 +215,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return n;
         }
 
-        // ---------------------------------------------------------------- the lot
-
-        /// <summary>
-        /// The places of the lot of the dealership the player stands in, from its floor as the game measured it when the
-        /// player came in (BuildingManager.interiorBounds): rows of cars inside its walls (DealerRules.Layout), in the
-        /// world's centimetres. False if the floor cannot be had.
-        /// </summary>
+        /// <summary>The lot of the showroom the player is in, laid out on its floor as the game measured it; false without a floor.</summary>
         public static bool Lay(DealerYard y)
         {
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
@@ -322,21 +286,18 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>
-        /// The cars of a lot on their places, as the player sees them inside: each moved to its bay, held still, its door
-        /// closed to the player and its map pin hidden. A car the player chose a bay for stands there, the way round they
-        /// chose (Floor/ShowroomBays); the others keep theirs while it is free, and one with none takes the first bay free
-        /// (Floor/ShowroomFloorRules.Arrange). A car of the stock with no game vehicle any more is reported back. Returns
-        /// the cars put in place.
+        /// The lot's cars held still on their bays (ShowroomFloorRules.Arrange); cars the save lost go into <paramref name="lost"/>.
+        /// Returns the cars placed.
         /// </summary>
         public static int Park(DealerYard y, List<StockCar> lost, ShowroomBays bays)
         {
             lost?.Clear();
             int n = y.Cars.Count;
-            if (Current.Length < n)
+            if (_current.Length < n)
             {
-                Current = new int[n];
-                Chosen = new int[n];
-                Into = new int[n];
+                _current = new int[n];
+                _chosen = new int[n];
+                _into = new int[n];
             }
             for (int c = 0; c < n; c++)
             {
@@ -344,23 +305,23 @@ namespace RealLifeOverhaul.Economy.Dealership
                 if (Vehicle(car.VehicleId) == null)
                 {
                     lost?.Add(car);
-                    Current[c] = ShowroomFloorRules.Absent;
-                    Chosen[c] = -1;
+                    _current[c] = ShowroomFloorRules.Absent;
+                    _chosen[c] = -1;
                     continue;
                 }
-                Current[c] = car.Spot;
-                Chosen[c] = bays != null ? bays.BayOf(y.Place, car.VehicleId) : -1;
+                _current[c] = car.Spot;
+                _chosen[c] = bays != null ? bays.BayOf(y.Place, car.VehicleId) : -1;
             }
-            ShowroomFloorRules.Arrange(y.Spots.Count, Current, Chosen, n, Into);
+            ShowroomFloorRules.Arrange(y.Spots.Count, _current, _chosen, n, _into);
             int placed = 0;
             for (int c = 0; c < n; c++)
             {
-                if (Current[c] == ShowroomFloorRules.Absent)
+                if (_current[c] == ShowroomFloorRules.Absent)
                 {
                     continue;
                 }
                 StockCar car = y.Cars[c];
-                car.Spot = Into[c];
+                car.Spot = _into[c];
                 if (car.Spot < 0)
                 {
                     continue;
@@ -398,11 +359,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>
-        /// A new car of the stock: a vehicle of the game's at the dealership, on the given place, of the kilometres and the
-        /// condition it came with (the game's damage is what it is short of perfect). Spawned at once if the player stands
-        /// inside, else made by the game when the player next walks in. Returns the vehicle's id; null if it could not be made.
-        /// </summary>
+        /// <summary>A new car of the stock on a place, damaged by what its condition lacks; spawned now if the player is inside. Its id, or null.</summary>
         public static string MakeCar(BuildingRegistration reg, DealerYard y, int spot, string type, string colour, int condition)
         {
             VehicleType t = VehicleTypeHelper.GetVehicleType(type);
@@ -425,7 +382,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             v.SetStreetData(reg.StreetName, reg.StreetNumber);
             if (Inside(reg))
             {
-                VehicleController made = VehicleHelper.CreateAndSpawnVehicle(v, At(s), Facing(s));   // (it adds the vehicle to the save)
+                VehicleController made = VehicleHelper.CreateAndSpawnVehicle(v, At(s), Facing(s));   // it adds the vehicle to the save
                 if (made != null)
                 {
                     Hold(made, At(s), Facing(s));
@@ -462,9 +419,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>Money in at a dealership, as a dated transaction of the game's own type or the mod's.</summary>
+        /// <summary>Money in at a showroom, as a transaction of the game's own type or the mod's.</summary>
         public static void Give(int amount, string type, Dictionary<string, string> data, BuildingRegistration reg)
         {
             if (amount > 0 && Save != null)
@@ -473,10 +428,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>
-        /// Money out at a dealership, marked deductible as the game marks a business's costs. Unless forced, the game's call
-        /// refuses a charge the cash does not cover: false, and nothing is taken.
-        /// </summary>
+        /// <summary>Money out at a showroom, deductible; unless forced, false and nothing taken when the cash does not cover it.</summary>
         public static bool Take(int amount, string type, Dictionary<string, string> data, BuildingRegistration reg, bool force)
         {
             if (amount <= 0)

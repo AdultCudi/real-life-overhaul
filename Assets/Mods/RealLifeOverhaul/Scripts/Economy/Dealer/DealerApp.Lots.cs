@@ -3,11 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Dealerships tab: each dealership with its lot, its salespeople and today's figures. One that is picked shows its
-    /// week, and its settings: the share of the asking price the staff close a deal at on their own, whether it offers its
-    /// own finance and warranties, and, while the player stands in it, laying its lot out again after the room has changed.
-    /// </summary>
+    /// <summary>The Dealerships tab: each showroom's lot, staff and figures, and a picked one's week and settings.</summary>
     public sealed partial class DealerApp
     {
         private const string LotRow = "lot:";
@@ -23,7 +19,9 @@ namespace RealLifeOverhaul.Economy.Dealership
                 BuildingRegistration reg = _director.RegOf(yard);
                 TableRow row = Row(LotRow + yard.Place);
                 row.Set(0, yard.Name);
-                row.Set(1, yard.Laid ? DealerText.T("reallife_dealer_lot_count", "cars", yard.Cars.Count.ToString(), "places", yard.Spots.Count.ToString()) : DealerText.T("reallife_dealer_lot_unlaid"),
+                row.Set(1, yard.Laid
+                        ? DealerText.T("reallife_dealer_lot_count", "cars", yard.Cars.Count.ToString(), "places", yard.Spots.Count.ToString())
+                        : DealerText.T("reallife_dealer_lot_unlaid"),
                     yard.Cars.Count, yard.Laid ? TableRow.Plain : TableRow.Yellow);
                 int staff = reg != null ? DealerGame.Salespeople(reg) : 0;
                 Count(row, 2, staff, staff == 0 ? TableRow.Red : TableRow.Plain);
@@ -87,15 +85,15 @@ namespace RealLifeOverhaul.Economy.Dealership
                 box.Line(DealerText.T("reallife_dealer_yard_no_staff"), CellTone.Red);
             }
             box.Section("reallife_ibox_sec_now");
-            box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", y.Rep.ToString(), "step", DealerText.Step(step),
-                "next", step + 1 < DealerCatalogue.RepSteps.Length ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString()) : DealerText.T("reallife_dealer_rep_top")));
+            box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", y.Rep.ToString(), "step", DealerText.Step(step), "next", NextStep(step)));
             if (y.EventOn(day))
             {
                 box.Line(DealerText.Fill("reallife_dealer_yard_event", "event", DealerText.Event(y.Event, y.Feature), "day", FinanceText.Day(y.EventUntil)));
             }
             if (y.Laid)
             {
-                box.Meter("reallife_ibox_lot", LookRules.Fill(y.Cars.Count, y.Spots.Count), DealerText.T("reallife_ibox_of", "value", y.Cars.Count.ToString(), "most", y.Spots.Count.ToString()), CellTone.Plain);
+                box.Meter("reallife_ibox_lot", LookRules.Fill(y.Cars.Count, y.Spots.Count),
+                    DealerText.T("reallife_ibox_of", "value", y.Cars.Count.ToString(), "most", y.Spots.Count.ToString()), CellTone.Plain);
             }
             else
             {
@@ -118,10 +116,18 @@ namespace RealLifeOverhaul.Economy.Dealership
             Transform more = box.ButtonRow();
             if (reg != null && DealerGame.Inside(reg))
             {
-                InfoBox.Button(more, InfoBox.Positive, "reallife_dealer_button_relay", () => Confirm("reallife_dealer_q_relay_title", DealerText.T("reallife_dealer_q_relay"), () => _director.Relay(y.Place), false));
+                InfoBox.Button(more, InfoBox.Positive, "reallife_dealer_button_relay",
+                    () => Confirm("reallife_dealer_q_relay_title", DealerText.T("reallife_dealer_q_relay"), () => _director.Relay(y.Place), false));
             }
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);
+        }
+
+        private static string NextStep(int step)
+        {
+            return step + 1 < DealerCatalogue.RepSteps.Length
+                ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString())
+                : DealerText.T("reallife_dealer_rep_top");
         }
     }
 }

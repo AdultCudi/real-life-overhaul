@@ -9,46 +9,17 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// The Car Showroom's own camera, and choosing the bay a car stands on, inside one of the player's showrooms.
-    ///
-    /// LOOKING ROUND A CAR ("Look round it" on the car's page of the app): the game's own camera for looking at a car
-    /// (the one its vehicle dealer films a car bought with) goes round the car, close: the game's own camera controls
-    /// turn it (the right button held and dragged, as the game's preview of a building turns; the rotate keys a quarter
-    /// turn at a time, as its placement camera turns) and the wheel brings it nearer or takes it back, between a car's
-    /// length and a few metres, tilted from a little over the bonnet to well above the roof, and always inside the
-    /// showroom's walls and under its ceiling (ShowroomFloorRules). The game's cancel key leaves, as it leaves the game's
-    /// own placement. The keys are in the game's panel of control hints (ShowroomHints). What another author's showroom
-    /// mod offered was a view from the driver's seat while driving; a car on show is not driven, so the showroom's camera
-    /// is one for looking a car over, and the driving one stays the chase camera's and that mod's (Camera/EmpireView).
-    ///
-    /// CHOOSING A BAY ("Choose its bay", or the interact key while looking round it): as the game places an item, the
-    /// game is paused and the car picked follows the pointer from bay to bay, the car standing on the bay pointed at
-    /// outlined as the one that will make way; a left click puts it there (the two change places), the game's key for
-    /// turning an item (or a short right click) turns it round, and the cancel key puts everything back. The floor is
-    /// seen from above for it, with the same controls. The choice is the player's for good: it is kept in the save
-    /// (Floor/ShowroomBays) and every later layout of the showroom keeps it (DealerGame.Park).
-    ///
-    /// Out of either, every time and by every way (the cancel key, the phone opened, leaving the showroom, the city
-    /// unloading, a fault): the game's camera, walk, pointer and clock are given back as they were (ShowroomGame).
-    ///
-    /// It never clashes with the mod's other cameras: the third-person camera and the chase camera do nothing while it is
-    /// up (ThirdPersonCamera.IsUiOpen counts it), it is never up while driving (when Empire Motors' view and the chase
-    /// camera are), and it is one of the game's own cameras at the game's own priority, so the mod's watch for another
-    /// author's camera (Camera/CameraYield) sees nothing foreign.
-    ///
-    /// COST: nothing at all while it is not up (the component is off). While it is up, in the frame: the controls read,
-    /// the camera's place worked out and written, and while a bay is chosen the pointer's ray onto the floor's plane (no
-    /// physics) and the nearest of at most twelve bays. It runs before the game's own key handling, so the cancel key it
-    /// takes does not also open the game's menu (as Core/GameUi/TravelList does).
-    ///
-    /// Going Public: local only. It works only in a showroom of the player's own, and moves only the player's own cars.
+    /// The showroom's own camera: looking round a car with the game's camera controls inside the walls, and choosing a car's bay
+    /// as the game places an item. Leaving either gives the game's camera, walk, pointer and clock back. Off when not up; while
+    /// up, the controls and the camera a frame, and choosing a bay, a ray onto the floor's plane. It runs before the game's key
+    /// handling, so the cancel key it takes does not also open the game's menu.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class ShowroomView : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomView", typeof(ShowroomView));   // its Update (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomView", typeof(ShowroomView));
 
-        private const float DragShare = 0.01f;   // of the screen's height: a right click that moved less than this is a click (as the game's placement tells them apart)
+        private const float DragShare = 0.01f;   // of the screen's height: a right click that moved less is a click, as in the game's placement
 
         public static IModLogger Logger;
         public static ShowroomView Instance { get; private set; }
@@ -104,8 +75,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Instance = null;
             }
         }
-
-        // ---------------------------------------------------------------- starting
 
         /// <summary>Looks round a car of the showroom the player stands in. False, with the game's notice saying why, if it cannot be.</summary>
         public bool Look(int carId)
@@ -284,8 +253,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             Notifications.Show(NotificationType.Info, "reallife_showroom_note_keys", null, 10f);
         }
 
-        // ---------------------------------------------------------------- stopping
-
         // Back to the game: the bay's car put back unless it was put down, the camera, the walk, the pointer and the clock.
         private void Stop(bool keepLook)
         {
@@ -294,7 +261,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 ShowroomGame.Outline(null);
                 ShowroomGame.Unpause();
-                DealerDirector.Instance?.ParkAgain(_yard);   // (after a bay was put down this is the layout it made)
+                DealerDirector.Instance?.ParkAgain(_yard);   // after a bay was put down, this lays out what it made
             }
             if (keepLook && _car != null && _controller != null && StartLook(false))
             {
@@ -311,15 +278,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             enabled = false;
         }
 
-        // ---------------------------------------------------------------- the frame
-
         private static readonly int HotUpdate = HotSpots.Slot("Economy: ShowroomView.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
@@ -464,8 +429,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             return new Vector3(px, py, pz);
         }
-
-        // ---------------------------------------------------------------- choosing the bay
 
         private void Choose()
         {

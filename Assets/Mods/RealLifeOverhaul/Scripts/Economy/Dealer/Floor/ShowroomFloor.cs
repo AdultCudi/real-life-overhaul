@@ -2,40 +2,18 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.Characters;
-using Characters.EmojiSystem;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// The Car Showroom's floor while the player stands in one of their showrooms: the hour's visitors walking round it,
-    /// stopping at cars to look them over, a salesperson going to one now and then, and leaving again.
-    ///
-    /// WHAT IS SHOWN, AND WHAT IS NOT DECIDED HERE: the showroom's hour is worked out by its rules (DealerRules.Hour:
-    /// visitors, served, lost, offers) whether anyone watches or not. The floor only shows that hour: as many visitors as
-    /// came, up to <see cref="FloorCatalogue.ShownMost"/> an hour and <see cref="FloorCatalogue.AtOnce"/> at a time; a
-    /// salesperson goes to as many of them as were served, in proportion; a visitor who made an offer looks first at the
-    /// car the offer is for and goes away pleased; one nobody saw to shows the game's own "cannot find an employee" face
-    /// (ShowroomFloorRules.Plan). Nothing drawn changes a sale, an offer or a figure. Before the first hour the showroom
-    /// works while the player is in it, what the hour should bring is read without working it (DealerDirector.Floor).
-    ///
-    /// WHO: the mod's own street people (People/ActorPool through People/ActorRole), in the civilian looks the pool
-    /// builds, as the indoor theft scene puts them in a shop: they come in at the shop's door (Crime/ShopFloor), walk on
-    /// the building's navigation mesh round the cars (a parked car cuts itself out of the mesh), and go out by the door
-    /// again. They are the pool's people "only there to be seen", so a street scene that needs somebody takes one back at
-    /// once. The salesperson stands by the showroom's cash register (the salespeople's desk) while one is on shift.
-    ///
-    /// COST: while the player is not in one of their showrooms nothing here runs (the component is off). While they are,
-    /// one time comparison a frame, and four times a second a pass over at most four people (a few comparisons each, a
-    /// look-up of a car's place when someone goes to one); the people themselves cost what the game's own customers in a
-    /// shop cost (a skinned mesh, an animator and a navigation agent each). Nothing is allocated in the frame.
-    ///
-    /// Going Public: everything here is local to this machine. Another player's showroom is never one of the player's own
-    /// (DealerGame.Mine), so nothing is shown or changed in it, and nothing is sent.
+    /// The showroom's floor while the player is in one of their showrooms: the hour's visitors come in, look the cars over, are
+    /// seen to and leave, showing what DealerRules.Hour worked out and changing nothing. Off elsewhere; inside, a time comparison
+    /// a frame and four times a second a pass over at most four people. Local only in Going Public.
     /// </summary>
     public sealed class ShowroomFloor : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomFloor", typeof(ShowroomFloor));   // its Update (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomFloor", typeof(ShowroomFloor));
 
         private const float Beat = 0.25f;          // seconds between two looks at the people on the floor
         private const float Side = 0.75f;          // metres from a car's side a visitor stands
@@ -99,12 +77,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the player comes and goes
-
-        /// <summary>
-        /// The showroom the player stands in now (null: none of theirs). Told by the showroom's director once a second and
-        /// on entering a building; nothing happens unless it changed.
-        /// </summary>
+        /// <summary>The showroom the player stands in (null: none of theirs), told once a second and on entering; nothing unless it changed.</summary>
         public void Stand(DealerYard y)
         {
             if (y == _yard || (y != null && y == _refused))
@@ -207,8 +180,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             enabled = false;
         }
 
-        // The lot's cars that are not on show at an hour, by their places in the lot's list: in the workshop or out on a test
-        // drive (as DealerRules.Customers leaves them out of the hour's buyers). Made into the kept list, nothing allocated.
+        // The lot's cars not on show at an hour (in the workshop or out on a test drive), by their places, into the kept list.
         private List<bool> Away(int hour)
         {
             _away.Clear();
@@ -278,15 +250,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the frame
-
         private static readonly int HotUpdate = HotSpots.Slot("Economy: ShowroomFloor.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
@@ -325,7 +295,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             if (_next >= _plan.Count || ShowroomGame.Hour != _hour)
             {
-                return;   // (the next hour's plan comes when the showroom's hour has been worked: NewHour)
+                return;   // the next hour's plan comes with NewHour, once the showroom's hour has been worked
             }
             int minute = ShowroomGame.Minute;
             FloorVisit v = _plan[_next];
@@ -446,7 +416,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 case Step.Talking:
                     if (_talking != v)
                     {
-                        Next(v, now);   // (the salesperson was taken away: they carry on)
+                        Next(v, now);   // the salesperson was taken away: they carry on
                     }
                     break;
             }
@@ -479,8 +449,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                 _talking = null;
             }
         }
-
-        // ---------------------------------------------------------------- the salesperson
 
         private void Call(Visitor v, float now)
         {
@@ -523,7 +491,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 _salesGoing = false;
                 if (!_sales.Settled)
                 {
-                    _sales.Stand(v.Role.Position);   // (as far as they got)
+                    _sales.Stand(v.Role.Position);   // as far as they got
                 }
                 _salesUntil = now + FloorCatalogue.TalkSeconds;
                 _sales.Face(v.Role.Position);
@@ -553,13 +521,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- for the test
-
-        /// <summary>
-        /// For Options > Tests: the visitors of a busy hour come in now, in the showroom the player stands in, with a
-        /// salesperson on the floor. Only the floor is shown: none of the showroom's figures is changed. A notice says why
-        /// if it cannot be.
-        /// </summary>
+        /// <summary>For Options > Tests: a busy hour's visitors come in now; only the floor is shown, no figure changes.</summary>
         public void TestFloor()
         {
             const string test = "Car Showroom floor";
@@ -602,7 +564,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return y == _refused ? "reallife_showroom_test_no_door" : "reallife_showroom_test_not_inside";
             }
             director.FloorOffers(_yard, _hour, _offerCars);
-            ShowroomFloorRules.Plan(director.State.Seed, _hour + 7919, _yard.Place, FloorCatalogue.ShownMost, FloorCatalogue.ShownMost / 2, _offerCars, _yard.Cars.Count, _plan, Away(ShowroomGame.Hour));
+            ShowroomFloorRules.Plan(director.State.Seed, _hour + 7919, _yard.Place, FloorCatalogue.ShownMost, FloorCatalogue.ShownMost / 2, _offerCars, _yard.Cars.Count,
+                _plan, Away(ShowroomGame.Hour));
             for (int i = 0; i < _plan.Count; i++)
             {
                 FloorVisit v = _plan[i];
@@ -613,7 +576,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             _shown = _skipped = 0;
             Staff(true);
             enabled = true;
-            Logger?.Info("Car Showroom: a test hour of " + _plan.Count + " visitor(s) on the floor of '" + _yard.Name + "' (" + _yard.Cars.Count + " car(s)); nothing of the showroom's figures is changed.");
+            Logger?.Info("Car Showroom: a test hour of " + _plan.Count + " visitor(s) on the floor of '" + _yard.Name + "' (" + _yard.Cars.Count
+                         + " car(s)); nothing of the showroom's figures is changed.");
             return null;
         }
     }

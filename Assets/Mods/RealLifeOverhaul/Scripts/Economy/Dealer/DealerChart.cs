@@ -7,14 +7,10 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The report chart's picture: boxes and lines in one mesh of the game's interface (a UI Graphic), as the Stocks app's
-    /// chart draws its candles (Markets/ChartMesh), so a whole chart is one draw. The chart asks for its shapes and then
-    /// for a new picture; nothing is drawn per frame.
-    /// </summary>
+    /// <summary>The report chart's boxes and lines in one UI mesh, one draw a chart; rebuilt only when asked, never per frame.</summary>
     internal sealed class DealerChartMesh : MaskableGraphic
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "DealerChartMesh", typeof(DealerChartMesh));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "DealerChartMesh", typeof(DealerChartMesh));
 
         private struct Shape
         {
@@ -67,7 +63,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             if (FrameGuard.Off)
             {
-                Guard.NoMesh(vh);   // (its feature is off: nothing drawn)
+                Guard.NoMesh(vh);   // its feature is off: nothing drawn
                 return;
             }
             try
@@ -93,20 +89,18 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             catch (Exception fault)
             {
-                Guard.FailMesh(FrameGuard, fault, vh);   // (half a mesh is not drawn)
+                Guard.FailMesh(FrameGuard, fault, vh);   // half a mesh is not drawn
             }
         }
     }
 
     /// <summary>
-    /// A showroom's report as a chart of the game's own interface parts: a bar for each day kept (red under nothing, for a
-    /// day's loss), the line of the last days' average over them, the scale on the right and the days below, and the
-    /// pointer showing the day under it. Everything is worked out when the chart is given its days or the pointer moves
-    /// over it, never per frame; while the app is closed it is not shown and nothing is drawn.
+    /// A showroom's report chart of the game's own parts: a bar a day, the average's line, the scale and the day under the
+    /// pointer. Drawn when given its days or when the pointer moves, never per frame.
     /// </summary>
     public sealed class DealerChart : MonoBehaviour, IPointerMoveHandler, IPointerExitHandler
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "DealerChart", typeof(DealerChart));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "DealerChart", typeof(DealerChart));
 
         private const float ScaleWidth = 110f, DateHeight = 30f, LegendHeight = 34f;
         private const int Grid = 4, Dates = 5;
@@ -121,8 +115,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         private readonly List<TMP_Text> _dates = new List<TMP_Text>(Dates);
         private TMP_Text _legend, _empty;
 
-        private long[] _values = new long[DealerCatalogue.ReportDays], _average = new long[DealerCatalogue.ReportDays];
-        private bool[] _have = new bool[DealerCatalogue.ReportDays];
+        private readonly long[] _values = new long[DealerCatalogue.ReportDays], _average = new long[DealerCatalogue.ReportDays];
+        private readonly bool[] _have = new bool[DealerCatalogue.ReportDays];
         private int _n, _first, _hover = -1;
         private ReportKind _kind;
         private string _emptyWords = string.Empty, _averageWords = string.Empty;
@@ -146,7 +140,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             meshRect.offsetMin = meshRect.offsetMax = Vector2.zero;
             meshRect.pivot = Vector2.zero;
             chart._mesh = meshGo.AddComponent<DealerChartMesh>();
-            chart._mesh.raycastTarget = true;   // (the pointer's events)
+            chart._mesh.raycastTarget = true;   // for the pointer's events
             for (int i = 0; i <= Grid; i++)
             {
                 chart._scale.Add(chart.Label(newText, 18f, TextAlignmentOptions.MidlineLeft));
@@ -196,8 +190,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             _hover = -1;
             Draw();
         }
-
-        // ---------------------------------------------------------------- the pointer
 
         public void OnPointerMove(PointerEventData e)
         {
@@ -267,8 +259,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return Math.Max(10f, _area.rect.width - ScaleWidth);
         }
 
-        // ---------------------------------------------------------------- drawing
-
         private void Draw()
         {
             Rect r = _area.rect;
@@ -300,7 +290,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 hi = lo + 1;
             }
             double span = hi - lo;
-            Func<double, float> Y = v => bottom + (float)((v - lo) / span) * (top - bottom);
+            float Y(double v) => bottom + (float)((v - lo) / span) * (top - bottom);
             float step = plotW / Math.Max(1, _n), body = Math.Max(1f, step * 0.7f);
 
             // The grid and the scale.

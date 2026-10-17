@@ -3,11 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// A draw of the dealership's: the same seed and the same salt give the same numbers, so that a day of the market, an
-    /// hour of customers or an answer to a counter comes out the same however often it is asked (a counter retried at the
-    /// same price is not a new throw of the dice). Game-free.
-    /// </summary>
+    /// <summary>A seeded draw (xorshift): the same seed and salts give the same numbers, however often asked.</summary>
     public struct DealerDice
     {
         private uint _s;
@@ -77,15 +73,9 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
     }
 
-    /// <summary>
-    /// The dealership's rules, game-free (checked by EconomyCheck, DealerChecks.cs): what a car is worth, how a lot is laid
-    /// out, the market, the customers and their offers, and the dealership's own finance and warranties. Every figure is in
-    /// whole money units or thousandths, so the same inputs give the same answer to the unit.
-    /// </summary>
+    /// <summary>The dealership's rules, game-free and checked offline; whole money units and thousandths only.</summary>
     public static partial class DealerRules
     {
-        // ---------------------------------------------------------------- what a car is worth
-
         /// <summary>A straight line through points (at, value), held at both ends.</summary>
         public static int Line(int[] at, int[] value, int x)
         {
@@ -111,10 +101,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return Math.Max(DealerCatalogue.WorthLeast, share);
         }
 
-        /// <summary>
-        /// What a car is worth: the game's list price of its type at the city's price level (tenths of a point, 1000 at the
-        /// start's prices), by its kilometres and its condition, in whole units.
-        /// </summary>
+        /// <summary>A car's worth: the game's list price at the price <paramref name="level"/> (1000 at the start's), by km and condition.</summary>
         public static int Worth(float listPrice, int level, int km, int condition)
         {
             if (listPrice <= 0f)
@@ -131,7 +118,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Named(DealerCatalogue.Share(worth, DealerCatalogue.MarkUp));
         }
 
-        /// <summary>The asking prices the player may choose from for a car of this worth, in the order they step.</summary>
+        /// <summary>How many asking prices the player may step through for a car.</summary>
         public static int AskSteps => (DealerCatalogue.AskMost - DealerCatalogue.AskLeast) / DealerCatalogue.AskStep + 1;
 
         public static int AskAt(int worth, int step)
@@ -183,12 +170,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return n;
         }
 
-        // ---------------------------------------------------------------- preparing a car
-
-        /// <summary>
-        /// What preparing a car costs: a valet and a check at the start's prices (read at today's by the caller), and a
-        /// share of what its missing condition takes off its worth new, and each fault the dealership knows of put right.
-        /// </summary>
+        /// <summary>Preparing a car: the base, a share of what its missing condition costs, and each known fault put right.</summary>
         public static int PrepareCost(int worthNew, int condition, int knownFaults, int baseAtPrices)
         {
             int missing = Math.Max(0, 1000 - condition);
@@ -209,13 +191,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Clamp(c + back, 0, 1000);
         }
 
-        // ---------------------------------------------------------------- the lot
-
         /// <summary>
-        /// The places of a lot on a floor of this size (centimetres across and along): rows of cars side by side, with a gap
-        /// along every wall, between <see cref="DealerCatalogue.SpotsLeast"/> and <see cref="DealerCatalogue.SpotsMost"/>.
-        /// The places are given as offsets from the floor's middle (x across, z along) and all face along the floor's
-        /// longer side, the way a car is driven in. Fills <paramref name="into"/> with x, z pairs.
+        /// The places of a lot on a floor of this size (centimetres), in rows inside a gap along every wall, facing along the longer
+        /// side. Fills <paramref name="into"/> with x, z offsets from the middle; returns how many.
         /// </summary>
         public static int Layout(int width, int depth, List<int> into, out bool across)
         {
@@ -243,14 +221,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             return count;
         }
 
-        // ---------------------------------------------------------------- names
-
         public static string CustomerName(ref DealerDice dice)
         {
             return DealerCatalogue.FirstNames[dice.Range(0, DealerCatalogue.FirstNames.Length - 1)] + " " + DealerCatalogue.LastNames[dice.Range(0, DealerCatalogue.LastNames.Length - 1)];
         }
 
-        /// <summary>A name as the store keeps it: within its length, with none of the store's own marks.</summary>
+        /// <summary>A name as the store keeps it: within its length, with the store's separators made spaces.</summary>
         public static string Clean(string name)
         {
             if (string.IsNullOrEmpty(name))

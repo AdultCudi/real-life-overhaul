@@ -11,25 +11,17 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// A picture of a car for the Stock tab's box. Where the game has one of the vehicle type (the icon its own vehicle
-    /// stores list a car with in BizMan: ItemIcons/&lt;type&gt;.png, loaded the game's way and kept by it), that is the
-    /// picture. Where it has none, a photo of the car itself is taken once, of its type and colour, while the car is on
-    /// the floor of the showroom the player stands in: a camera of the mod's renders it a few times at a small size
-    /// (the first frames let the game's automatic exposure settle, through a volume that exists only for those renders),
-    /// and the photo is kept for the session. Until then the box shows the game's own picture of a vehicle, as BizMan
-    /// does for a type it has no icon of.
-    ///
-    /// COST: nothing per frame. A photo is made at most once a type and colour, when the box asks for it, which is while
-    /// the phone is open and the game paused; a few renders at 384 by 216 pixels, then the box only shows it.
+    /// A car's picture for the Stock tab: the game's icon of its type, else a photo taken once a type and colour while such a car
+    /// is on the floor, else the game's vehicle picture. Nothing per frame: a photo is a few small renders.
     /// </summary>
     internal static class ShowroomPhotos
     {
-        private const int Wide = 384;            // pixels of a photo taken
-        private const int High = 216;
+        private const int Wide = 384;            // pixels of a photo taken, across
+        private const int High = 216;            // ...and up
         private const int Renders = 3;           // renders of one photo: the last is kept, once the exposure has settled
         private const float Lens = 30f;          // degrees of the camera's field of view
-        private const float BoxWide = 480f;      // units of the box a picture is shown at, at most
-        private const float BoxHigh = 250f;
+        private const float BoxWide = 480f;      // units of the box a picture is shown at, at most, across
+        private const float BoxHigh = 250f;      // ...and up
 
         private static readonly Dictionary<string, Sprite> Icons = new Dictionary<string, Sprite>(StringComparer.Ordinal);
         private static readonly Dictionary<string, Texture2D> Shots = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
