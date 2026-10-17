@@ -19,10 +19,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/Scenes/CarPursuitScene.cs
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/LoanBook.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	3
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Market.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Pitch.cs	5
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesModel.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
@@ -220,7 +216,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.Tabl
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/Ladder.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesApp.Tables.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameModel.cs	1
@@ -472,11 +467,8 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankRules.cs
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Offers.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Tests.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.cs	11
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Pitch.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/PitchMeeting.cs	6
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesApp.Investors.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesCatalogue.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesDirector.Tests.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesDirector.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventDirector.cs	2

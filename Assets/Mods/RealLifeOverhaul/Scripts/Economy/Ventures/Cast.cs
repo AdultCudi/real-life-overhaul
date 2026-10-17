@@ -2,16 +2,10 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// The save's investors and listed companies, made once from its seed. Game-free and the same on every machine
-    /// for the same seed and the same rival names. The investors: two or three tycoons (the first patient, the second
-    /// demanding), three angels (patient or even) and two funds (demanding). The companies: one invented firm in each
-    /// of the eight sectors, then the game's own rivals by their names (four at most), then a second invented firm in
-    /// as many sectors as it takes to make twelve.
-    /// </summary>
+    /// <summary>The save's investors and listed companies, made once from its seed: the same on every machine for the same seed and rivals.</summary>
     public static class Cast
     {
-        // The sectors a rival of the game's is listed in (they run shops, food and venues, and own buildings), in turn.
+        // A rival of the game's runs shops, food and venues and owns buildings: listed in these sectors in turn.
         private static readonly MarketSector[] RivalSectors = { MarketSector.Retail, MarketSector.Food, MarketSector.Entertainment, MarketSector.Property };
 
         public static void Make(VenturesFile file, int seed, IList<string> rivalNames)
@@ -98,7 +92,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return company;
         }
 
-        // One of 'count' things that has not been taken yet (a bit each in 'used'); any of them once all are.
+        // One of 'count' not yet taken (a bit each in 'used'); any of them once all are.
         private static int Unused(ref VenturesRandom random, int count, ref int used)
         {
             int pick = random.Below(count);
