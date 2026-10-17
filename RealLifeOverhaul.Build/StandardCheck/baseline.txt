@@ -29,8 +29,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesModel.
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameCity.cs	2
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FamePress.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyState.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
@@ -618,15 +616,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireEffects.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/StreetEventScene.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameDirector.City.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameDirector.Press.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameDirector.Tests.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameDirector.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameGame.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FamePage.Press.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FamePage.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameRules.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameStore.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Children.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Errands.cs	13
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1

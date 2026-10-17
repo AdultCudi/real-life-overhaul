@@ -7,13 +7,11 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Fame
 {
-    /// <summary>
-    /// The test tools of the options page: the daily round now, somebody in the street who knows the player now, the papers
-    /// at their most so that the player is well known, and the file started again (more in FameDirector.Press.cs and
-    /// FameDirector.City.cs). Each says in a notice why not when it cannot run.
-    /// </summary>
+    /// <summary>The options page's test tools for Standing. Each says in a notice why not when it cannot run.</summary>
     public sealed partial class FameDirector
     {
+        private int _testRequest;
+
         private bool TestReady(string test)
         {
             if (Save == null || !ModState.Loaded)
@@ -21,7 +19,7 @@ namespace RealLifeOverhaul.Fame
                 TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);
                 return false;
             }
-            if (!Running || _file == null)
+            if (!Running)
             {
                 TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
                 return false;
@@ -29,7 +27,7 @@ namespace RealLifeOverhaul.Fame
             return true;
         }
 
-        // A test tool runs here: a fault in one switches Standing off for the session like any other, and never reaches the options page.
+        // A fault in a test tool switches Standing off like any other and never reaches the options page.
         private void Guarded(Action test)
         {
             try
@@ -42,7 +40,6 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
-        /// <summary>Test: Standing's daily round now, as at the start of a new day.</summary>
         public void TestDay()
         {
             if (!TestReady("Standing day"))
@@ -57,7 +54,6 @@ namespace RealLifeOverhaul.Fame
             });
         }
 
-        /// <summary>Test: the nearest passer-by knows the player now, whatever the odds and the day's count.</summary>
         public void TestStreet()
         {
             if (!TestReady("Standing street"))
@@ -82,11 +78,11 @@ namespace RealLifeOverhaul.Fame
                 FameGame.Face(who, Emoji(reaction));
                 string line = FameRules.Speaks(reaction) ? FameText.StreetLine(reaction, _file.Wealth >= 50, Random.Range(0, 1000)) : "reallife_fame_test_street_look";
                 Notifications.Show(NotificationType.Info, line, null, 7f);
-                Logger?.Info("Standing: test, somebody in the street knew the player (" + reaction + ", overall " + _file.Overall + (d != null ? ", the district's opinion " + d.Opinion : string.Empty) + ").");
+                Logger?.Info("Standing: test, somebody in the street knew the player (" + reaction + ", overall " + _file.Overall
+                             + (d != null ? ", the district's opinion " + d.Opinion : string.Empty) + ").");
             });
         }
 
-        /// <summary>Test: the papers at their most, and the round played again: the player is well known for a while.</summary>
         public void TestKnown()
         {
             if (!TestReady("Standing known"))
@@ -102,7 +98,6 @@ namespace RealLifeOverhaul.Fame
             });
         }
 
-        /// <summary>Test: everything of Standing's for this save forgotten; a new file opens in a moment.</summary>
         public void TestBack()
         {
             if (!TestReady("Standing start again"))
@@ -112,15 +107,12 @@ namespace RealLifeOverhaul.Fame
             Guarded(() =>
             {
                 Save.modData.Remove(FameStore.FileKey);
-                TestBackMore();
+                Save.modData.Remove(FameStore.PressKey);
                 Forget();
                 Tell(NotificationType.Info, "reallife_fame_test_back_done", null);
             });
         }
 
-        partial void TestBackMore();
-
-        /// <summary>Test: a reporter of the City Ledger comes up to the player now, whatever the odds.</summary>
         public void TestReporter()
         {
             if (!TestReady("Standing reporter"))
@@ -134,8 +126,8 @@ namespace RealLifeOverhaul.Fame
             }
             Guarded(() =>
             {
-                Parts();
-                if (_reporter == null || _reporter.Active || !_reporter.Begin(false))
+                MakeParts();
+                if (_reporter.Active || !_reporter.Begin(false))
                 {
                     TestRefusals.Tell(Logger, "Standing reporter", TestRefusal.NoWayIn);
                     return;
@@ -144,7 +136,6 @@ namespace RealLifeOverhaul.Fame
             });
         }
 
-        /// <summary>Test: the night show now, as if the player had accepted an invitation for this hour.</summary>
         public void TestShow()
         {
             if (!TestReady("Standing night show"))
@@ -156,16 +147,9 @@ namespace RealLifeOverhaul.Fame
                 TestRefusals.Tell(Logger, "Standing night show", TestRefusal.ScreenBusy);
                 return;
             }
-            Guarded(() =>
-            {
-                Parts();
-                FameInvite invite = FamePress.Offer(_file, FameInviteKind.Show, Save.Day - FamePress.InviteAhead, Save.Hour);
-                invite.State = FameInviteState.Accepted;
-                StartScene(invite);
-            });
+            Guarded(() => StartTestScene(FameInviteKind.Show));
         }
 
-        /// <summary>Test: the city asks something of the player now: the next kind of request each time.</summary>
         public void TestRequest()
         {
             if (!TestReady("Standing request"))
@@ -180,17 +164,14 @@ namespace RealLifeOverhaul.Fame
                 {
                     if (_file.Requests[i].State == FameRequestState.Open)
                     {
-                        _file.Requests[i].State = FameRequestState.Lapsed;   // (a test's request takes the place of one open)
+                        _file.Requests[i].State = FameRequestState.Lapsed;   // the test's request takes its place
                     }
                 }
-                FameRequestKind kind = (FameRequestKind)(_testRequest++ % ((int)FameRequestKind.Partnership + (place != null ? 1 : 0)));
+                var kind = (FameRequestKind)(_testRequest++ % ((int)FameRequestKind.Partnership + (place != null ? 1 : 0)));
                 Requested(FameCity.Offer(_file, kind, Save.Day, Random.Range(0, 1000), FameGame.BusiestDistrict(), place));
             });
         }
 
-        private int _testRequest;
-
-        /// <summary>Test: an evening with investors now (every other time, a reception at City Hall), as if accepted for this hour.</summary>
         public void TestEvening()
         {
             if (!TestReady("Standing evening"))
@@ -202,16 +183,17 @@ namespace RealLifeOverhaul.Fame
                 TestRefusals.Tell(Logger, "Standing evening", TestRefusal.ScreenBusy);
                 return;
             }
-            Guarded(() =>
-            {
-                Parts();
-                FameInvite invite = FamePress.Offer(_file, _testRequest++ % 2 == 0 ? FameInviteKind.Investors : FameInviteKind.CityEvent, Save.Day - FamePress.InviteAhead, Save.Hour);
-                invite.State = FameInviteState.Accepted;
-                StartScene(invite);
-            });
+            Guarded(() => StartTestScene(_testRequest++ % 2 == 0 ? FameInviteKind.Investors : FameInviteKind.CityEvent));
         }
 
-        /// <summary>Test: a bribe comes out now (one is paid first if there is none), with its case and its scandal.</summary>
+        private void StartTestScene(FameInviteKind kind)
+        {
+            MakeParts();
+            FameInvite invite = FamePress.Offer(_file, kind, Save.Day - FamePress.InviteAhead, Save.Hour);
+            invite.State = FameInviteState.Accepted;
+            StartScene(invite);
+        }
+
         public void TestBribe()
         {
             if (!TestReady("Standing bribe"))
@@ -238,7 +220,6 @@ namespace RealLifeOverhaul.Fame
             });
         }
 
-        /// <summary>Test: a push on the council decided now (one is made for the first change on offer if none is pending).</summary>
         public void TestCouncil()
         {
             if (!TestReady("Standing council"))
@@ -265,7 +246,6 @@ namespace RealLifeOverhaul.Fame
             });
         }
 
-        /// <summary>Test: every open promise judged now, as if its day had come.</summary>
         public void TestPromises()
         {
             if (!TestReady("Standing promises"))
@@ -289,7 +269,7 @@ namespace RealLifeOverhaul.Fame
                 }
                 _file.NoticeDay = -1;
                 _file.StoryDay = -1;
-                DayMore(Save.Day);
+                PressDay(Save.Day);
                 Tell(NotificationType.Info, "reallife_fame_test_promises_done", _openPage, "count", FameText.N(Math.Max(1, judged)));
             });
         }

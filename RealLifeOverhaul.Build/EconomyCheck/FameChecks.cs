@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using RealLifeOverhaul.Fame;
 
-// Checks for Standing, a city that reacts to the player's success (Scripts/Fame): the worked example at the top of
-// FameRules, the bounds of wealth and recognition, where each reputation is heading, a day's step, the daily round, the
+// Checks for Standing, a city that reacts to the player's success (Scripts/Fame): a worked example of wealth and
+// recognition, the bounds of wealth and recognition, where each reputation is heading, a day's step, the daily round, the
 // day's most for what the player does, the districts, the street, the shops and the staff, what the page calls the
 // player, and the save's line.
 internal static partial class Program
@@ -35,7 +35,7 @@ internal static partial class Program
 
     private static void FameWorkedExample()
     {
-        // The table at the top of FameRules.cs, row by row: worth, a week's income, businesses, followers, wealth, recognition, tier.
+        // A worked example, row by row: worth, a week's income, businesses, followers, wealth, recognition, tier.
         long[,] rows =
         {
             { 5000, 0, 0, 40, 11, 8, 0 },

@@ -36,7 +36,7 @@ internal static partial class Program
         Check(asks.Count == 3 && asks[0].Question == FameQuestion.Rise && asks[1].Question == FameQuestion.Hard && asks[2].Question == FameQuestion.Promise && asks[2].Promise == FamePromiseKind.Wages,
             "Standing: the show asks the rise, a hard one and for a promise about the staff");
 
-        // ---- the table at the top of FamePress.cs
+        // ---- what each answer brings
         var rise = new FameAsk { Question = FameQuestion.Rise };
         Check(FamePress.Answer(rise, 0, FameVenue.Street).Press == 20 && FamePress.Answer(rise, 0, FameVenue.Magazine).Press == 30 && FamePress.Answer(rise, 0, FameVenue.Show).Press == 50
               && FamePress.Answer(rise, 1, FameVenue.Street).Press == 12, "Standing: an answer brings more in a magazine and most on the show");

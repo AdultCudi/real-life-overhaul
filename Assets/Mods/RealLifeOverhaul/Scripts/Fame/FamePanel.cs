@@ -8,18 +8,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Fame
 {
     /// <summary>
-    /// Standing's one screen for a scene the player is in (the night show, a magazine's interview, an evening with
-    /// investors, a reception at City Hall), told as the mod tells a court hearing: in the game's own list window
-    /// (<see cref="TravelList"/> through a <see cref="DeskList"/>), the place and who speaks under the headline, what is
-    /// said as a note, and an entry with a button for each answer, what it means under its name. The window cannot be put
-    /// away with the cancel key until the scene is over (<see cref="TravelList.Locked"/>) and the player stands still for
-    /// it. Nothing is drawn by the mod and nothing runs per frame: a page is written once when it is shown, and the
-    /// director looks once a second whether the window is still there.
+    /// The screen for a scene the player is in (the night show, a magazine, an evening), in the game's own list window
+    /// as a court hearing is. It stays until the scene is over, and the player stands still for it. Per frame: nothing.
     /// </summary>
     internal sealed class FamePanel
     {
-        public const int MostChoices = 3;
-
+        private const int MostChoices = 3;
         private const NavigationBlocker Blocker = (NavigationBlocker)7311;   // a value of our own, so nobody else's is ever lifted
         private const float InputDelay = 0.4f;                               // seconds after a page appears before an answer counts
         private const string ButtonChoose = "reallife_fame_list_choose";
@@ -41,7 +35,7 @@ namespace RealLifeOverhaul.Fame
 
         public bool Active { get; private set; }
 
-        /// <summary>The scene begins: the phone is put away and the player stands still. False if the game's window cannot be made.</summary>
+        /// <summary>The phone is put away and the player stands still. False if the game's window cannot be made.</summary>
         public bool Begin()
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -61,7 +55,7 @@ namespace RealLifeOverhaul.Fame
             return true;
         }
 
-        /// <summary>One page: up to three answers, each a name and what it means. False if the game's window cannot be made (the scene is ended).</summary>
+        /// <summary>One page of up to three answers, each a name and what it means. False, and the scene ended, if the window cannot be made.</summary>
         public bool Show(string title, string subtitle, string speaker, string body, string[] names, string[] hints, int count, Action<int> answer)
         {
             TravelList list = Active ? _window.Take(this) : null;
@@ -119,7 +113,7 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
-        /// <summary>Once a second while a scene is on: one whose window has gone with the game's interface is ended.</summary>
+        /// <summary>Once a second: a scene whose window went with the game's interface is ended.</summary>
         public void Watch()
         {
             if (Active && !_window.OpenFor(this))
@@ -137,12 +131,6 @@ namespace RealLifeOverhaul.Fame
             }
             _leaving = false;
             Free();
-        }
-
-        public void Destroy()
-        {
-            End();
-            _window.Destroy(e => FameDirector.Logger?.Error(e));
         }
 
         private void Free()

@@ -8,7 +8,7 @@ internal static partial class Program
 {
     private static void FameCityChecks()
     {
-        // ---- what a request costs: the table at the top of FameCity.cs
+        // ---- what a request costs
         Check(FameCity.Cost(FameRequestKind.Sponsor, 0) == 500 && FameCity.Cost(FameRequestKind.Sponsor, 100000) == 10000 && FameCity.Cost(FameRequestKind.Sponsor, 999999999) == 20000,
             "Standing: a sponsorship is 10% of a week's income, $500 to $20,000");
         Check(FameCity.Cost(FameRequestKind.Rescue, 50000) == 20000 && FameCity.Cost(FameRequestKind.Complaint, 10000) == 300 && FameCity.Cost(FameRequestKind.Partnership, 12345) == 600

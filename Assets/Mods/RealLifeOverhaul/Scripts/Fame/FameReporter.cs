@@ -11,14 +11,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Fame
 {
     /// <summary>
-    /// A reporter of the City Ledger who comes up to the player in the street: one of the mod's street people (People/
-    /// ActorPool), put on a pavement out of view 18 to 28 metres off, who walks up, stops in front of the player and asks
-    /// for a word in the game's own box over a person (GameUi.WorldPanel: the interact key to answer, the secondary key to
-    /// walk on). Answering opens the game's dialogue face to face (FameTalk): two or three questions, two answers each and
-    /// a way to end it. Whatever the answer, the reporter walks off out of view and is put back.
-    ///
-    /// Ticked once a second by the director while there is one; nothing at all otherwise. A reporter who cannot reach the
-    /// player in 45 seconds, or whom the player leaves behind, gives up.
+    /// A reporter (or a photographer) who walks up to the player from out of view and asks for a word in the game's box
+    /// over a person; answering opens <see cref="FameTalk"/>. Ticked once a second while out.
     /// </summary>
     internal sealed class FameReporter
     {
@@ -26,8 +20,8 @@ namespace RealLifeOverhaul.Fame
 
         private const float Near = 2.4f;           // metres: close enough to ask
         private const float LostAt = 45f;          // metres: the player has walked off
-        private const float WalkMost = 45f;        // real seconds to reach the player
-        private const float AskMost = 25f;         // ...and to be answered
+        private const float WalkMost = 45f;        // real seconds to reach the player...
+        private const float AskMost = 25f;         // ...to be answered...
         private const float LeaveMost = 15f;       // ...and to walk off out of view
 
         private readonly FameDirector _director;
@@ -47,7 +41,7 @@ namespace RealLifeOverhaul.Fame
 
         public bool Active => _stage != Stage.None;
 
-        /// <summary>A reporter (or, with photographer, somebody with a camera) walks up. False if nobody could be put out.</summary>
+        /// <summary>A reporter, or a photographer, walks up from 18 to 28 metres off. False if nobody could be put out.</summary>
         public bool Begin(bool photographer)
         {
             ActorPool pool = ActorPool.Instance;
@@ -78,7 +72,6 @@ namespace RealLifeOverhaul.Fame
             return true;
         }
 
-        /// <summary>Once a second while there is one.</summary>
         public void Tick()
         {
             if (!Active)
@@ -92,7 +85,7 @@ namespace RealLifeOverhaul.Fame
             }
             float waited = Time.realtimeSinceStartup - _since;
             Vector3 player = PlayerHelper.GetPosition();
-            float distance = Flat(player, _actor.Position);
+            float distance = FameGame.Flat(player, _actor.Position);
             bool away = BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || distance > LostAt;
             switch (_stage)
             {
@@ -108,7 +101,7 @@ namespace RealLifeOverhaul.Fame
                     }
                     else
                     {
-                        _actor.MoveTo(player, Pace.Walk);   // the player may have moved on
+                        _actor.MoveTo(player, Pace.Walk);   // the player may have moved
                     }
                     break;
                 case Stage.Asking:
@@ -119,13 +112,13 @@ namespace RealLifeOverhaul.Fame
                     }
                     else if (!_panel.Showing)
                     {
-                        _panel.Show();   // the game's box may have been taken a moment: asked again
+                        _panel.Show();   // the game's box may have been taken for a moment
                     }
                     break;
                 case Stage.Talking:
                     if (DialogController.current == null)
                     {
-                        Leave(true);   // (the dialogue's own closing does this; this is for one closed some other way)
+                        Leave(true);   // a dialogue closed some other way than its own end
                     }
                     break;
                 case Stage.Leaving:
@@ -182,7 +175,7 @@ namespace RealLifeOverhaul.Fame
             Leave(false);
         }
 
-        // Off out of view; put back when nobody can see, or when there.
+        // Off out of view; put back once unseen or there.
         private void Leave(bool talked)
         {
             if (_stage == Stage.Leaving || _stage == Stage.None)
@@ -204,7 +197,6 @@ namespace RealLifeOverhaul.Fame
             Clear();
         }
 
-        /// <summary>Everything put back now: the box down, the person back.</summary>
         public void Clear()
         {
             _panel.Hide();
@@ -215,23 +207,13 @@ namespace RealLifeOverhaul.Fame
             _actor = null;
             _stage = Stage.None;
         }
-
-        private static float Flat(Vector3 a, Vector3 b)
-        {
-            a.y = b.y = 0f;
-            return Vector3.Distance(a, b);
-        }
     }
 
-    /// <summary>
-    /// A street interview in the game's own dialogue panel, face to face with the reporter: one question at a time with two
-    /// answers and "That will do" to end it. Each answer is given at once (FamePress.Answer through the director); the last
-    /// line says how it went. The rules are FamePress's; this class only words them.
-    /// </summary>
+    /// <summary>A street interview in the game's own dialogue panel; each answer takes effect at once.</summary>
     internal static class FameTalk
     {
+        internal const string NpcKey = "reallife-fame-reporter";
         private const string InPersonType = "reallife_fametalk_calldialogtype";
-        private const string Npc = "reallife-fame-reporter";
 
         private static List<FameAsk> _asks;
         private static int _good, _hard;
@@ -252,12 +234,7 @@ namespace RealLifeOverhaul.Fame
             return true;
         }
 
-        internal static string NpcKey => Npc;
-
-        internal static DialogEntry First()
-        {
-            return Question(0);
-        }
+        internal static DialogEntry First() => Question(0);
 
         private static DialogEntry Question(int index)
         {
@@ -315,7 +292,7 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
-        // An answer runs from the game's button handler: a fault ends the interview politely, never escapes.
+        // An answer runs in the game's button handler: a fault ends the interview instead of escaping.
         private static Func<DialogEntry> Safe(Func<DialogEntry> action)
         {
             return () =>
