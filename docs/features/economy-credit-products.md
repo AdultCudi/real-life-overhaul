@@ -37,7 +37,8 @@ Economy/
     DebtPhone         three contacts and their conversations: Collections, Private lender, Debt advice
   Finance/
     Books             the game's figures the economy reads: what leaves tomorrow, businesses and their statements, sales
-    FinanceApp.Accounts  the Accounts tab and the product pages of Borrow
+    FinanceApp.Products  the product pages of Borrow
+    FinanceApp.Accounts  the Accounts tab
 Justice/DebtClaims  NEW FILE in Justice: file, ask about and withdraw a lender's civil claim (one of Justice's own suits)
 Wiring/DebtLinks    the bridges: courts, holds, the injury of a mugging, what the camera sees, a kerb for the test car, contact pictures
 ```
