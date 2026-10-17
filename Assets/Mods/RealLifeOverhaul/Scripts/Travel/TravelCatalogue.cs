@@ -2,23 +2,10 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    // Everything about travel that is a number or a name: hotel tiers and rooms, where the
-    // hotels are looked for, the trips, what happens on them, and the prices. Nothing in this
-    // file uses Unity or the game, like the life event and crime catalogues.
-    //
-    // PRICES are set against what the game itself charges and pays (read from its data files):
-    //   rent of the smallest apartment (54 m2), a day:  Industry City 31, Lower Manhattan 34-39,
-    //     Garment District 40-48, Murray Hill 55-63, Hell's Kitchen 79-95, Midtown 134-138;
-    //   96 m2: 54-261; 204 m2: 115-529; 589 m2: 364-1455; a Hamptons house: 4768 a day;
-    //   wages: the cashier job pays 25 an hour, staff start at 12 to 18 an hour.
-    // A hostel bed (45) costs as much as the cheapest apartment's rent and sleeps worse, so it
-    // is a stopgap and never the better deal; a week of it (36 a night) is still dearer than
-    // renting in Industry City. A mid-range room is a day's rent of a mid-sized apartment in
-    // the same district; a luxury room a day's rent of a large one. A beach week is about
-    // twelve days of the cashier job.
-
+    /// <summary>A hotel's class, which sets its rooms.</summary>
     public enum HotelTier { Budget, MidRange, Luxury, Cottage }
 
+    /// <summary>The weather's four seasons, which set prices.</summary>
     public enum TravelSeason { Spring, Summer, Autumn, Winter }
 
     /// <summary>One kind of room: what a night costs and how well one sleeps in it.</summary>
@@ -26,15 +13,15 @@ namespace RealLifeOverhaul
     {
         public string Id;
         public string NameKey;
-        public int Rate;             // dollars a night before the hotel's own factor, the day and the season
-        public int Quality;          // 0 dormitory, 1 plain, 2 comfortable, 3 luxurious: what the bridges are told
-        public int Bed;              // 0 = as a bench, 1 = as a car seat, 2 = as a bed: which of the game's own energy rates sleep uses
-        public float BedBonus;       // added to the game's bed multiplier, as a bed's quality is
-        public float RoughNight;     // chance that a night's sleep comes with an event from the rough pool
-        public float Refund;         // share of prepaid nights not begun that an early departure gets back
+        public int Rate;             // dollars a night, before the hotel, day and season factors
+        public int Quality;          // 0 dormitory to 3 luxurious, as the bridges are told
+        public int Bed;              // the game's sleep rate used: 0 bench, 1 car seat, 2 bed
+        public float BedBonus;       // added to the game's bed multiplier
+        public float RoughNight;     // chance that a night brings an event from the rough pool
+        public float Refund;         // share of unbegun prepaid nights returned on leaving early
     }
 
-    /// <summary>Where one hotel is looked for. The building is picked from static data only, so it is the same in every session.</summary>
+    /// <summary>Where one hotel is looked for. Static data only, so every session finds the same building.</summary>
     public sealed class HotelSlot
     {
         public string Id;            // what a booking remembers
@@ -44,43 +31,47 @@ namespace RealLifeOverhaul
         public string Sizes;         // building sizes that will do, by their last letter, best first
         public float RateFactor;     // the district's own level
         public bool Doorman;
-        public string[] Anchors;     // for a place with no building of its own (the cottages): "street|number" of buildings to stand its board by, best first
+        public string[] Anchors;     // no building of its own: "street|number" of buildings to stand its board by, best first
     }
 
+    /// <summary>Real: in the game's world (the Hamptons). Abstract: played in cards. Business: a trade fair, in cards.</summary>
     public enum TripKind { Real, Abstract, Business }
 
+    /// <summary>A trip the agent sells.</summary>
     public sealed class Trip
     {
         public string Id;
         public string NameKey;
         public string PitchKey;      // the agent's description: {price}, {first}, {days}
         public TripKind Kind;
-        public int Days;             // length; an abstract trip has one card a day
+        public int Days;             // an abstract trip has one card a day
         public int Price;            // economy, before the season
-        public float FirstClass;     // multiplier for the better class
-        public TravelSeason Peak;    // the dear season
-        public TravelSeason Low;     // the cheap one
+        public float FirstClass;     // price multiplier
+        public TravelSeason Peak;
+        public TravelSeason Low;
         public int Splurge;          // what a day's splurge costs
         public bool JetLag;
         public string DepartKey;
         public string ReturnKey;
-        public string[] DayKeys;     // one opening line per day, in order; the last repeats if the trip is longer
-        public string[] Events;      // this destination's own events (ids into TravelCatalogue.Events)
+        public string[] DayKeys;     // one opening line per day; the last repeats if the trip is longer
+        public string[] Events;      // keys into PlaceEvents
     }
 
+    /// <summary>How a day of a trip is spent.</summary>
     public enum TripChoice { Relax, Explore, Splurge }
 
     /// <summary>A small thing that happens on a trip or in a room: a line and what it does.</summary>
     public sealed class TravelEvent
     {
         public string Key;
-        public int Mood;             // -2 to 2: which of the mod's shared mood modifiers, 0 for none
+        public int Mood;             // -2 to 2, 0 for none
         public int Money;            // signed dollars, never more than the player has
-        public int Energy;           // signed
+        public int Energy;
         public bool Companion;       // only with somebody along; its text has {name}
-        public bool Souvenir;        // comes home with one more thing to give away
+        public bool Souvenir;        // one more thing to give away at home
     }
 
+    /// <summary>Every number and name of travel, game-free; prices are set against the game's rents and wages.</summary>
     public static class TravelCatalogue
     {
         public const int CheckoutHour = 11;
@@ -91,28 +82,36 @@ namespace RealLifeOverhaul
         public const float WeeklyFactor = 0.8f;          // seven nights or more, every night
         public const float FortnightFactor = 0.72f;      // fourteen or more
         public const int StampsForFreeNight = 8;
-        public const int FreeNightCap = 250;             // the most a loyalty night is worth
+        public const int FreeNightCap = 250;             // dollars: the most a loyalty night is worth
         public static int SuitcasePrice => Prices.At(120);
         public const float InsuranceShare = 0.08f;       // of the trip's price
         public const float CompanionShare = 0.7f;        // a second traveller costs this much more
         public const float CancelChance = 0.06f;         // a trip falls through at the gate
         public const float UninsuredRefund = 0.4f;
-        public const int TicketDays = 7;                 // a booked trip must be begun within this many days
+        public const int TicketDays = 7;                 // a ticket must be used within this many days
         public const float ExpiredRefund = 0.5f;
         public const int BurnoutWarnDays = 18;           // days without a break before a friend says something
-        public const int BurnoutDays = 24;               // ...and before work starts to suffer
+        public const int BurnoutDays = 24;               // days without a break before work suffers
         public const int TradeFairEveryDays = 21;
 
         public static readonly int[] NightChoices = { 1, 2, 3, 5, 7, 14 };
 
-        private static readonly RoomType Dorm = new RoomType { Id = "dorm", NameKey = "reallife_travel_room_dorm", Rate = 45, Quality = 0, Bed = 0, BedBonus = -0.1f, RoughNight = 0.45f, Refund = 0f };
-        private static readonly RoomType Single = new RoomType { Id = "single", NameKey = "reallife_travel_room_single", Rate = 75, Quality = 1, Bed = 1, BedBonus = 0f, RoughNight = 0.25f, Refund = 0f };
-        private static readonly RoomType Standard = new RoomType { Id = "standard", NameKey = "reallife_travel_room_standard", Rate = 150, Quality = 2, Bed = 2, BedBonus = 0f, RoughNight = 0.05f, Refund = 0.5f };
-        private static readonly RoomType Deluxe = new RoomType { Id = "deluxe", NameKey = "reallife_travel_room_deluxe", Rate = 230, Quality = 2, Bed = 2, BedBonus = 0.2f, RoughNight = 0f, Refund = 0.5f };
-        private static readonly RoomType King = new RoomType { Id = "king", NameKey = "reallife_travel_room_king", Rate = 480, Quality = 3, Bed = 2, BedBonus = 0.4f, RoughNight = 0f, Refund = 0.7f };
-        private static readonly RoomType Suite = new RoomType { Id = "suite", NameKey = "reallife_travel_room_suite", Rate = 900, Quality = 3, Bed = 2, BedBonus = 0.6f, RoughNight = 0f, Refund = 0.7f };
-        private static readonly RoomType CottageRoom = new RoomType { Id = "cottage_room", NameKey = "reallife_travel_room_cottage_room", Rate = 210, Quality = 2, Bed = 2, BedBonus = 0.15f, RoughNight = 0f, Refund = 0.5f };
-        private static readonly RoomType CottageWhole = new RoomType { Id = "cottage_whole", NameKey = "reallife_travel_room_cottage_whole", Rate = 380, Quality = 3, Bed = 2, BedBonus = 0.35f, RoughNight = 0f, Refund = 0.5f };
+        private static readonly RoomType Dorm = new RoomType { Id = "dorm", NameKey = "reallife_travel_room_dorm",
+            Rate = 45, Quality = 0, Bed = 0, BedBonus = -0.1f, RoughNight = 0.45f, Refund = 0f };
+        private static readonly RoomType Single = new RoomType { Id = "single", NameKey = "reallife_travel_room_single",
+            Rate = 75, Quality = 1, Bed = 1, BedBonus = 0f, RoughNight = 0.25f, Refund = 0f };
+        private static readonly RoomType Standard = new RoomType { Id = "standard", NameKey = "reallife_travel_room_standard",
+            Rate = 150, Quality = 2, Bed = 2, BedBonus = 0f, RoughNight = 0.05f, Refund = 0.5f };
+        private static readonly RoomType Deluxe = new RoomType { Id = "deluxe", NameKey = "reallife_travel_room_deluxe",
+            Rate = 230, Quality = 2, Bed = 2, BedBonus = 0.2f, RoughNight = 0f, Refund = 0.5f };
+        private static readonly RoomType King = new RoomType { Id = "king", NameKey = "reallife_travel_room_king",
+            Rate = 480, Quality = 3, Bed = 2, BedBonus = 0.4f, RoughNight = 0f, Refund = 0.7f };
+        private static readonly RoomType Suite = new RoomType { Id = "suite", NameKey = "reallife_travel_room_suite",
+            Rate = 900, Quality = 3, Bed = 2, BedBonus = 0.6f, RoughNight = 0f, Refund = 0.7f };
+        private static readonly RoomType CottageRoom = new RoomType { Id = "cottage_room", NameKey = "reallife_travel_room_cottage_room",
+            Rate = 210, Quality = 2, Bed = 2, BedBonus = 0.15f, RoughNight = 0f, Refund = 0.5f };
+        private static readonly RoomType CottageWhole = new RoomType { Id = "cottage_whole", NameKey = "reallife_travel_room_cottage_whole",
+            Rate = 380, Quality = 3, Bed = 2, BedBonus = 0.35f, RoughNight = 0f, Refund = 0.5f };
 
         private static readonly RoomType[][] RoomsByTier =
         {
@@ -122,23 +121,23 @@ namespace RealLifeOverhaul
         public const string HamptonsSlot = "hamptons_cottages";
         public const string Hamptons = "ba:neighborhood_thehamptons";
 
-        /// <summary>
-        /// The eight places to stay. A city hotel is the residential building of its district, of
-        /// the sizes named, with the most passing trade (ties by street name, then number) that the
-        /// player neither rents nor owns. With the game's data as shipped these are: Fourth Avenue 1
-        /// (Garment District), Twenty-first Street 23 (Industry City), Second Avenue 8 (Hell's
-        /// Kitchen), Fourth Avenue 45 (Lower Manhattan), Sixth Avenue 18 (Murray Hill), Broadway 13
-        /// (Midtown), Second Avenue 14 (Hell's Kitchen).
-        /// </summary>
+        /// <summary>The eight places to stay; <see cref="RealLifeOverhaul.Hotels"/> picks a building for each.</summary>
         public static readonly HotelSlot[] Hotels =
         {
-            new HotelSlot { Id = "garment_hostel", NameKey = "reallife_travel_hotel_garment_hostel", Tier = HotelTier.Budget, Neighbourhood = "ba:neighborhood_garmentdistrict", Sizes = "f", RateFactor = 1f },
-            new HotelSlot { Id = "industry_hostel", NameKey = "reallife_travel_hotel_industry_hostel", Tier = HotelTier.Budget, Neighbourhood = "ba:neighborhood_industrycity", Sizes = "fl", RateFactor = 0.85f },
-            new HotelSlot { Id = "kitchen_hotel", NameKey = "reallife_travel_hotel_kitchen_hotel", Tier = HotelTier.MidRange, Neighbourhood = "ba:neighborhood_hellskitchen", Sizes = "l", RateFactor = 1f, Doorman = true },
-            new HotelSlot { Id = "downtown_hotel", NameKey = "reallife_travel_hotel_downtown_hotel", Tier = HotelTier.MidRange, Neighbourhood = "ba:neighborhood_lowermanhattan", Sizes = "nl", RateFactor = 0.85f, Doorman = true },
-            new HotelSlot { Id = "murray_hotel", NameKey = "reallife_travel_hotel_murray_hotel", Tier = HotelTier.MidRange, Neighbourhood = "ba:neighborhood_murrayhill", Sizes = "l", RateFactor = 0.95f, Doorman = true },
-            new HotelSlot { Id = "midtown_grand", NameKey = "reallife_travel_hotel_midtown_grand", Tier = HotelTier.Luxury, Neighbourhood = "ba:neighborhood_midtown", Sizes = "n", RateFactor = 1.2f, Doorman = true },
-            new HotelSlot { Id = "kitchen_tower", NameKey = "reallife_travel_hotel_kitchen_tower", Tier = HotelTier.Luxury, Neighbourhood = "ba:neighborhood_hellskitchen", Sizes = "n", RateFactor = 1f, Doorman = true },
+            new HotelSlot { Id = "garment_hostel", NameKey = "reallife_travel_hotel_garment_hostel", Tier = HotelTier.Budget,
+                Neighbourhood = "ba:neighborhood_garmentdistrict", Sizes = "f", RateFactor = 1f },
+            new HotelSlot { Id = "industry_hostel", NameKey = "reallife_travel_hotel_industry_hostel", Tier = HotelTier.Budget,
+                Neighbourhood = "ba:neighborhood_industrycity", Sizes = "fl", RateFactor = 0.85f },
+            new HotelSlot { Id = "kitchen_hotel", NameKey = "reallife_travel_hotel_kitchen_hotel", Tier = HotelTier.MidRange,
+                Neighbourhood = "ba:neighborhood_hellskitchen", Sizes = "l", RateFactor = 1f, Doorman = true },
+            new HotelSlot { Id = "downtown_hotel", NameKey = "reallife_travel_hotel_downtown_hotel", Tier = HotelTier.MidRange,
+                Neighbourhood = "ba:neighborhood_lowermanhattan", Sizes = "nl", RateFactor = 0.85f, Doorman = true },
+            new HotelSlot { Id = "murray_hotel", NameKey = "reallife_travel_hotel_murray_hotel", Tier = HotelTier.MidRange,
+                Neighbourhood = "ba:neighborhood_murrayhill", Sizes = "l", RateFactor = 0.95f, Doorman = true },
+            new HotelSlot { Id = "midtown_grand", NameKey = "reallife_travel_hotel_midtown_grand", Tier = HotelTier.Luxury,
+                Neighbourhood = "ba:neighborhood_midtown", Sizes = "n", RateFactor = 1.2f, Doorman = true },
+            new HotelSlot { Id = "kitchen_tower", NameKey = "reallife_travel_hotel_kitchen_tower", Tier = HotelTier.Luxury,
+                Neighbourhood = "ba:neighborhood_hellskitchen", Sizes = "n", RateFactor = 1f, Doorman = true },
             new HotelSlot
             {
                 Id = HamptonsSlot, NameKey = "reallife_travel_hotel_hamptons_cottages", Tier = HotelTier.Cottage, Neighbourhood = Hamptons, RateFactor = 1f,
@@ -196,7 +195,6 @@ namespace RealLifeOverhaul
             }
         };
 
-        /// <summary>What can happen on a day spent resting.</summary>
         public static readonly TravelEvent[] RelaxEvents =
         {
             E("reallife_travel_ev_relax_1", 1), E("reallife_travel_ev_relax_2", 1, 0, 6), E("reallife_travel_ev_relax_3", 0, 0, 8), E("reallife_travel_ev_relax_4", 1),
@@ -204,7 +202,6 @@ namespace RealLifeOverhaul
             E("reallife_travel_ev_relax_9", -1, 0, -6), E("reallife_travel_ev_relax_10", 1), E("reallife_travel_ev_relax_11", 0, 0, 5), E("reallife_travel_ev_relax_12", 2)
         };
 
-        /// <summary>...on a day spent looking about.</summary>
         public static readonly TravelEvent[] ExploreEvents =
         {
             E("reallife_travel_ev_explore_1", 1, 0, -6), E("reallife_travel_ev_explore_2", 2, 0, -8), Gift("reallife_travel_ev_explore_3", 1, -30), E("reallife_travel_ev_explore_4", -1, -60),
@@ -213,7 +210,6 @@ namespace RealLifeOverhaul
             E("reallife_travel_ev_explore_13", 2, 0, -6), E("reallife_travel_ev_explore_14", 0, -20), E("reallife_travel_ev_explore_15", 1), E("reallife_travel_ev_explore_16", 1, 0, -4)
         };
 
-        /// <summary>...on a day of spending.</summary>
         public static readonly TravelEvent[] SplurgeEvents =
         {
             Gift("reallife_travel_ev_splurge_1", 2), E("reallife_travel_ev_splurge_2", 2), Gift("reallife_travel_ev_splurge_3", 1), E("reallife_travel_ev_splurge_4", 1, -80),
@@ -221,14 +217,13 @@ namespace RealLifeOverhaul
             E("reallife_travel_ev_splurge_9", 2), E("reallife_travel_ev_splurge_10", 0, -50), Gift("reallife_travel_ev_splurge_11", 1), E("reallife_travel_ev_splurge_12", 2, 0, 6)
         };
 
-        /// <summary>...with somebody along ({name}); one of these takes the place of the day's own event now and then.</summary>
+        /// <summary>With somebody along ({name}): now and then one of these takes the place of the day's own event.</summary>
         public static readonly TravelEvent[] CompanionEvents =
         {
             With("reallife_travel_ev_companion_1", 2), With("reallife_travel_ev_companion_2", 1), With("reallife_travel_ev_companion_3", 2), With("reallife_travel_ev_companion_4", -1),
             With("reallife_travel_ev_companion_5", 1), With("reallife_travel_ev_companion_6", 2), With("reallife_travel_ev_companion_7", 1), With("reallife_travel_ev_companion_8", 2)
         };
 
-        /// <summary>Each destination's own.</summary>
         public static readonly TravelEvent[] PlaceEvents =
         {
             E("reallife_travel_ev_hamptons_1", 1), E("reallife_travel_ev_hamptons_2", 2), E("reallife_travel_ev_hamptons_3", 0, -35), E("reallife_travel_ev_hamptons_4", 1, 0, 5),
@@ -239,7 +234,6 @@ namespace RealLifeOverhaul
             E("reallife_travel_ev_tradefair_1", 1), E("reallife_travel_ev_tradefair_2", 1, 0, -6), E("reallife_travel_ev_tradefair_3", 0, -40), E("reallife_travel_ev_tradefair_4", 2)
         };
 
-        /// <summary>A bad night in a cheap room.</summary>
         public static readonly TravelEvent[] RoughNights =
         {
             E("reallife_travel_ev_rough_1", -1, 0, -10), E("reallife_travel_ev_rough_2", -1, 0, -8), E("reallife_travel_ev_rough_3", -2, 0, -12), E("reallife_travel_ev_rough_4", -1, 0, -6),
@@ -247,21 +241,18 @@ namespace RealLifeOverhaul
             E("reallife_travel_ev_rough_9", -1, 0, -8), E("reallife_travel_ev_rough_10", 1, 0, -4)
         };
 
-        /// <summary>The small kindnesses of a good hotel, one each morning.</summary>
         public static readonly TravelEvent[] FineMornings =
         {
             E("reallife_travel_ev_fine_1", 1), E("reallife_travel_ev_fine_2", 1, 0, 4), E("reallife_travel_ev_fine_3", 1), E("reallife_travel_ev_fine_4", 2),
             E("reallife_travel_ev_fine_5", 1, 0, 3), E("reallife_travel_ev_fine_6", 1)
         };
 
-        /// <summary>A walk on the beach at the cottages.</summary>
         public static readonly TravelEvent[] BeachWalks =
         {
             E("reallife_travel_ev_beach_1", 1), Gift("reallife_travel_ev_beach_2", 1), E("reallife_travel_ev_beach_3", 2), E("reallife_travel_ev_beach_4", 0, 0, -4),
             E("reallife_travel_ev_beach_5", 1, 20), E("reallife_travel_ev_beach_6", 2), E("reallife_travel_ev_beach_7", 1), E("reallife_travel_ev_beach_8", -1)
         };
 
-        /// <summary>Why a trip fell through at the gate.</summary>
         public static readonly string[] Cancellations =
         {
             "reallife_travel_cancel_1", "reallife_travel_cancel_2", "reallife_travel_cancel_3", "reallife_travel_cancel_4"
@@ -307,10 +298,7 @@ namespace RealLifeOverhaul
             return new TravelEvent { Key = key, Mood = mood, Companion = true };
         }
 
-        public static RoomType[] Rooms(HotelTier tier)
-        {
-            return RoomsByTier[(int)tier];
-        }
+        public static RoomType[] Rooms(HotelTier tier) => RoomsByTier[(int)tier];
 
         public static RoomType Room(string id)
         {
@@ -339,7 +327,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>The dorm bed's and the corner suite's own rates (before the hotel's district, the day and the season), at today's prices.</summary>
+        /// <summary>The dorm bed's and the corner suite's own rates at today's prices, before the hotel, day and season factors.</summary>
         public static int DormRate => Prices.At(Dorm.Rate);
         public static int SuiteRate => Prices.At(Suite.Rate);
 
@@ -367,17 +355,10 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>The season of a day, the weather's own (GameCalendar): quarters of the year the player chose, counted from spring.</summary>
-        public static TravelSeason Season(int day)
-        {
-            return (TravelSeason)GameCalendar.SeasonFromSpring(day);
-        }
+        public static TravelSeason Season(int day) => (TravelSeason)GameCalendar.SeasonFromSpring(day);
 
         /// <param name="weekday">The game's ordered day of the week: 1 Monday to 7 Sunday.</param>
-        public static bool WeekendNight(int weekday)
-        {
-            return weekday == 5 || weekday == 6;
-        }
+        public static bool WeekendNight(int weekday) => weekday == 5 || weekday == 6;
 
         public static float SeasonFactor(HotelSlot hotel, TravelSeason season)
         {
@@ -388,7 +369,7 @@ namespace RealLifeOverhaul
             return season == TravelSeason.Summer ? 1.15f : season == TravelSeason.Winter ? 0.9f : 1f;
         }
 
-        /// <summary>What one night costs, rounded to the dollar.</summary>
+        /// <summary>What one night costs at today's prices, rounded to the dollar.</summary>
         /// <param name="demand">The leisure bridge's figure for the day: 1 on an ordinary one.</param>
         public static int NightRate(HotelSlot hotel, RoomType room, int day, int weekday, float demand)
         {
@@ -398,18 +379,13 @@ namespace RealLifeOverhaul
                 rate *= WeekendFactor;
             }
             rate *= Math.Min(Math.Max(demand, 0.8f), 1.6f);
-            return Math.Max(1, (int)Math.Round(Prices.At(rate)));   // at today's prices
+            return Math.Max(1, (int)Math.Round(Prices.At(rate)));
         }
 
-        public static float LongStayFactor(int nights)
-        {
-            return nights >= 14 ? FortnightFactor : nights >= 7 ? WeeklyFactor : 1f;
-        }
+        public static float LongStayFactor(int nights) => nights >= 14 ? FortnightFactor : nights >= 7 ? WeeklyFactor : 1f;
 
         /// <summary>
-        /// How many of a kind of room are free on a day, 0 for none: the same answer all day and in
-        /// every session (a hash of the day, the hotel and the room), fewer at weekends, in the
-        /// dear season and when the leisure bridge says the town is busy.
+        /// Rooms of a kind free on a day: a hash of day, hotel and room, the same all day on every machine; fewer when busy.
         /// </summary>
         public static int RoomsFree(HotelSlot hotel, RoomType room, int day, int weekday, float demand)
         {
@@ -417,12 +393,21 @@ namespace RealLifeOverhaul
             hash ^= hash >> 15;
             hash *= 2246822519u;
             hash ^= hash >> 13;
-            int roll = (int)(hash % 100u);                      // 0 to 99
-            float busy = 0.10f;                                 // an ordinary weekday: one day in ten a kind of room is gone
-            if (WeekendNight(weekday)) busy += 0.12f;
-            if (SeasonFactor(hotel, Season(day)) > 1.05f) busy += 0.08f;
+            int roll = (int)(hash % 100u);
+            float busy = 0.10f;   // an ordinary weekday: one day in ten a kind of room is gone
+            if (WeekendNight(weekday))
+            {
+                busy += 0.12f;
+            }
+            if (SeasonFactor(hotel, Season(day)) > 1.05f)
+            {
+                busy += 0.08f;
+            }
             busy += Math.Max(0f, demand - 1f) * 0.6f;
-            if (room.Quality == 0) busy *= 0.5f;                // there is nearly always a bunk
+            if (room.Quality == 0)
+            {
+                busy *= 0.5f;   // there is nearly always a bunk
+            }
             int threshold = (int)(Math.Min(busy, 0.85f) * 100f);
             return roll < threshold ? 0 : 1 + (roll - threshold) / 12;
         }
@@ -444,7 +429,7 @@ namespace RealLifeOverhaul
             {
                 price *= 1f + InsuranceShare;
             }
-            return (int)Math.Round(Prices.At(price) / 10f) * 10;   // at today's prices
+            return (int)Math.Round(Prices.At(price) / 10f) * 10;   // at today's prices, to ten dollars
         }
 
         private static uint Hash(string text)

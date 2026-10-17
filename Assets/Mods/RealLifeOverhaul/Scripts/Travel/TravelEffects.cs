@@ -1,20 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using BigAmbitions.DayNightCycle;
 using Helpers;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What travel does to the player, all of it through the game's own systems: money (the
-    /// game's transactions), hunger and energy (EnergyHelper), and happiness modifiers. The
-    /// modifier types are travel's own; they are registered the way ModState registers the
-    /// mod's others and carry its prefix, so ModState takes them out of the save while it is
-    /// written and puts them back on load: a save never holds a modifier the base game does
-    /// not know.
-    /// </summary>
+    /// <summary>What travel does to the player through the game's systems; ModState keeps its moods out of the save.</summary>
     public static class TravelEffects
     {
         public const string Rested = "reallife_happinessmodifier_travel_rested";         // back from a holiday
@@ -26,9 +17,8 @@ namespace RealLifeOverhaul
         public const string Together = "reallife_happinessmodifier_travel_together";     // a trip with somebody
         public const string TradeFair = "reallife_happinessmodifier_travel_tradefair";
 
-        // Energy losses stop here, clear of the game's fainting and hospital thresholds; the game multiplies energy spent by up to 1.9.
-        private const float EnergyFloor = 15f;
-        private const float WorstEnergyMultiplier = 1.9f;
+        private const float EnergyFloor = 15f;              // energy losses stop here, clear of fainting and the hospital
+        private const float WorstEnergyMultiplier = 1.9f;   // the most the game multiplies energy spent by
 
         private static readonly (string type, int amount, int hours)[] Modifiers =
         {
@@ -36,21 +26,15 @@ namespace RealLifeOverhaul
             (JetLag, -4, 36), (Burnout, -6, 6), (Together, 8, 48), (TradeFair, 4, 48)
         };
 
-        /// <summary>
-        /// Adds travel's modifier types to the game's registry. Called when the travel component
-        /// is made (before ModState reads a save, so modifiers stashed in it find their types)
-        /// and again when the save is ready. False if the registry could not be reached: mood
-        /// effects are then left out, everything else works.
-        /// </summary>
-        public static bool Register(BAModAPI.IModLogger logger)
+        /// <summary>Adds travel's modifier types to the game's registry, before ModState restores any from a save.</summary>
+        public static void Register(BAModAPI.IModLogger logger)
         {
             try
             {
-                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
-                var registry = field?.GetValue(null) as Dictionary<string, HappinessModifier>;
+                var registry = GameContract.HappinessRegistry.Field?.GetValue(null) as Dictionary<string, HappinessModifier>;
                 if (registry == null)
                 {
-                    return false;
+                    return;
                 }
                 foreach ((string type, int amount, int hours) in Modifiers)
                 {
@@ -65,12 +49,10 @@ namespace RealLifeOverhaul
                     modifier.maxHoursDuration = -1;
                     registry[type] = modifier;
                 }
-                return true;
             }
             catch (Exception e)
             {
                 logger?.Error(e);
-                return false;
             }
         }
 
@@ -86,13 +68,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Takes a price if the player has it. False (and the game's own "not enough money" toast) if not.</summary>
+        /// <summary>Takes a price if the player has it; if not, false and the game's own "not enough money" notice.</summary>
         public static bool Pay(int amount, string transaction)
         {
             return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
         }
 
-        /// <summary>A bill that is owed whatever the balance (a stay on deposit), or money coming back.</summary>
+        /// <summary>A bill owed whatever the balance (a stay on deposit), or money coming back.</summary>
         public static void Settle(int amount, string transaction)
         {
             if (amount != 0)
@@ -101,8 +83,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Small money from an event: a loss never takes more than the player has.</summary>
-        public static int Pocket(int amount, string transaction)
+        // An event's money: a loss never takes more than the player has.
+        private static void Pocket(int amount, string transaction)
         {
             float money = SaveGameManager.Current.Money;
             if (amount < 0)
@@ -110,7 +92,6 @@ namespace RealLifeOverhaul
                 amount = -Mathf.Min(-amount, Mathf.FloorToInt(Mathf.Max(money, 0f)));
             }
             Settle(amount, transaction);
-            return amount;
         }
 
         public static void Energy(float amount)
@@ -130,7 +111,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Food: hunger goes up by an amount, never past full.</summary>
         public static void Feed(float amount)
         {
             GameInstance save = SaveGameManager.Current;
@@ -154,29 +134,12 @@ namespace RealLifeOverhaul
             Energy(e.Energy);
         }
 
-        /// <summary>The game's ordered weekday (1 Monday to 7 Sunday) of a day number.</summary>
-        public static int Weekday(int day)
-        {
-            return (int)TimeHelper.GetDayOfWeek(day);
-        }
+        /// <summary>The game's ordered weekday of a day number: 1 Monday to 7 Sunday.</summary>
+        public static int Weekday(int day) => (int)TimeHelper.GetDayOfWeek(day);
 
-        /// <summary>
-        /// The hotel's day: a night belongs to the day it began on, so until six in the morning
-        /// it is still "yesterday" at the desk.
-        /// </summary>
-        public static int StayDay()
-        {
-            return TimeHelper.CurrentHour < 6 ? TimeHelper.CurrentDay - 1 : TimeHelper.CurrentDay;
-        }
+        /// <summary>The hotel's day: a night belongs to the day it began, so until 06:00 it is still yesterday.</summary>
+        public static int StayDay() => TimeHelper.CurrentHour < 6 ? TimeHelper.CurrentDay - 1 : TimeHelper.CurrentDay;
 
-        public static string DayName(int day)
-        {
-            return TimeHelper.GetDayOfWeek(day).GetLocalization();
-        }
-
-        public static Timestamp At(int day, int hour)
-        {
-            return new Timestamp(day, hour, 0f);
-        }
+        public static string DayName(int day) => TimeHelper.GetDayOfWeek(day).GetLocalization();
     }
 }

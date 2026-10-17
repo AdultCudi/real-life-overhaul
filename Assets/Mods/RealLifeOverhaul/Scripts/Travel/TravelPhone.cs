@@ -1,28 +1,19 @@
 using System;
-using System.Collections.Generic;
 using System.Text;
 using BAModAPI;
 using Dialogs;
 using Entities;
-using Helpers;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Travel on the phone: "Trips" (the page with the current booking, the room and the nights
-    /// left, past trips and loyalty; also where a ticket is used and the nearest hotel found)
-    /// and the travel agency itself, callable once an agency has been visited (or from the
-    /// start in a city that has none). Registered the way the mod's other contacts are.
-    /// </summary>
+    /// <summary>Travel's phone contacts: Trips, and the agency once one has been visited or if the city has none.</summary>
     public static class TravelPhone
     {
         public const string TripsId = "reallife-trips";
         public const string AgentId = "reallife-travel";
-
-        private static readonly List<Sprite> Icons = new List<Sprite>(2);   // kept for the session: the game caches contact icons by sprite name
 
         public static void Setup()
         {
@@ -35,7 +26,7 @@ namespace RealLifeOverhaul
             {
                 ContactPictures.Add(TripsId);
                 Register(TripsId, "reallife_contact_trips_desc", "reallife_trips_calldialogtype", () => new TripsDialog(), "reallife_text_trips_welcome");
-                bool noAgency = director != null && director.Holidays != null && director.Holidays.AgencyCount == 0;
+                bool noAgency = director != null && director.Holidays.AgencyCount == 0;
                 if (Settings.Holidays && (TravelState.AgencyVisited || noAgency))
                 {
                     ContactPictures.Add(AgentId);
@@ -54,18 +45,17 @@ namespace RealLifeOverhaul
         {
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, descriptionKey, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
-            contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
+            contact.callDialogTypeOverride = dialogType;   // the game does not save it: set on every load
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(dialog));
             if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
             {
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
             }
         }
-
     }
 
-    /// <summary>The Trips page: what is booked now; then past trips and loyalty; the nearest hotel; a ticket used.</summary>
-    public class TripsDialog : Dialog
+    /// <summary>The Trips page: what is booked now, past trips and loyalty, the way to the nearest hotel, a ticket used.</summary>
+    public sealed class TripsDialog : Dialog
     {
         public TripsDialog()
         {
@@ -183,7 +173,7 @@ namespace RealLifeOverhaul
             };
         }
 
-        // Points the way to a bed: the player's own hotel if they have a room, else the nearest.
+        // The player's own hotel if they have a room, else the nearest.
         private static DialogEntry Nearest()
         {
             TravelDirector director = TravelDirector.Instance;

@@ -1,41 +1,23 @@
-using System;
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
-    // The doors through which travel and lodging talk to features that live in other folders
-    // (Scripts/Home, Scripts/Social, Scripts/Law, Scripts/Transport, Scripts/Leisure). Each is a
-    // small interface with a default that works on its own, so this folder compiles and plays
-    // with none of them present. A feature takes a door over with one line when it starts:
-    //
-    //     TravelBridges.Home = new MyHomeBridge();        // Scripts/Home: hygiene, stress, laundry
-    //     TravelBridges.Social = new MySocialBridge();    // Scripts/Social: companions, gifts, dinners, missed dates
-    //     TravelBridges.Justice = new MyJusticeBridge();  // Scripts/Law: bail and probation
-    //     TravelBridges.Transport = new MyTransportBridge();
-    //     TravelBridges.Leisure = new MyLeisureBridge();
-    //
-    // and hands it back with TravelBridges.Reset...() or by setting null (null means the default).
-    // Nothing here is called per frame: only when the player presses a button or a day turns.
-
-    /// <summary>Home routines: hygiene, stress and clean clothes.</summary>
+    /// <summary>Hygiene, stress and clean clothes, for a room of quality 0 (hostel) to 3 (luxury).</summary>
     public interface ITravelHome
     {
-        /// <summary>The player showered or freshened up in a room of this quality (0 hostel, 1 budget, 2 mid-range, 3 luxury). Return true if hygiene was handled.</summary>
         bool Freshen(int quality);
 
-        /// <summary>The hotel laundered what the player wears. Return true if handled.</summary>
         bool Laundry(int quality);
 
-        /// <summary>The player rested for this many hours somewhere comfortable (0 to 3). Return true if stress was handled.</summary>
         bool Rest(int hours, int quality);
 
-        /// <summary>A whole holiday of this many days was taken: stress is cleared. Return true if handled.</summary>
         bool Holiday(int days);
 
-        /// <summary>For how many days in a row stress has been high; -1 if stress is not tracked (travel then counts days without a break itself).</summary>
+        /// <summary>Days in a row of high stress; -1 if not tracked (travel then counts its own days without a break).</summary>
         int HighStressDays { get; }
 
-        /// <summary>True if the player has somewhere of their own to sleep tonight; null if not known (travel then looks at rented apartments).</summary>
+        /// <summary>Whether the player has a bed of their own tonight; null if not known (travel then looks for a rented apartment).</summary>
         bool? HasBed { get; }
     }
 
@@ -43,64 +25,62 @@ namespace RealLifeOverhaul
     public struct TravelCompanion
     {
         public string Id;      // the social feature's own id for them
-        public string Name;    // as shown to the player, already localised
+        public string Name;    // already localised
     }
 
     /// <summary>Friends and partner.</summary>
     public interface ITravelSocial
     {
-        /// <summary>Fills the list with the people who would come on a trip now (the partner first). Leave it empty for none.</summary>
+        /// <summary>Fills the list with who would come on a trip now, the partner first; empty for nobody.</summary>
         void Companions(List<TravelCompanion> into);
 
-        /// <summary>The trip was taken together: a big step for the relationship.</summary>
         void TripTogether(string companionId, int days);
 
-        /// <summary>The player came home with this many souvenirs to give away. Return how many were taken as gifts (the rest are kept for later).</summary>
+        /// <summary>Souvenirs brought home to give away. Returns how many were taken as gifts; the rest are kept.</summary>
         int Souvenirs(int count);
 
-        /// <summary>The concierge booked a table for tonight. Return true if the social feature made a date of it.</summary>
         bool TableBooked(string hotelName);
 
-        /// <summary>The player was away from one day to another: return the locale keys of the lines to show for what was missed (dates, calls), or null.</summary>
+        /// <summary>Locale keys of what was missed while away (dates, calls), or null.</summary>
         List<string> MissedWhileAway(int fromDay, int toDay);
     }
 
     /// <summary>Bail, probation, court dates.</summary>
     public interface ITravelJustice
     {
-        /// <summary>True if the player may leave town for this many days. With false, <paramref name="reasonKey"/> is the locale key of the sentence the travel agent says.</summary>
+        /// <summary>Whether the player may leave town for this many days; if not, the locale key of the agent's reason.</summary>
         bool MayLeaveTown(int days, out string reasonKey);
 
-        /// <summary>The player was away: anything due in that time is the justice feature's to settle. Returns locale keys to show, or null.</summary>
+        /// <summary>Settles anything due while the player was away. Returns locale keys to show, or null.</summary>
         List<string> MissedWhileAway(int fromDay, int toDay);
     }
 
     /// <summary>Getting about: coaches and cars on call.</summary>
     public interface ITravelTransport
     {
-        /// <summary>A coach seat to the Hamptons, there and back. Return true if the transport feature runs one (the price is then added to the package).</summary>
+        /// <summary>A coach seat to the Hamptons and back, if the transport feature runs one; its price joins the package.</summary>
         bool CoachToHamptons(out int price);
 
-        /// <summary>The coach leaves now with the player on it. Return true if the player was taken there.</summary>
         bool RideCoachToHamptons();
 
-        /// <summary>The concierge calls a car to the hotel door. Return true if one is coming.</summary>
         bool CallCar(UnityEngine.Vector3 door);
     }
 
     /// <summary>Things to do on a real holiday.</summary>
     public interface ITravelLeisure
     {
-        /// <summary>A round of golf in the Hamptons. Return true if the leisure feature took the player to it.</summary>
         bool PlayGolf();
 
-        /// <summary>Dinner out near a place. Return true if the leisure feature staged it.</summary>
         bool DinnerOut(UnityEngine.Vector3 near);
 
-        /// <summary>A multiplier for hotel demand today (1 = an ordinary day; 1.5 = a festival in town). Rooms are scarcer and dearer above 1.</summary>
+        /// <summary>Hotel demand today: 1 on an ordinary day, 1.5 with a festival in town. Above 1 rooms are scarcer and dearer.</summary>
         float DemandToday { get; }
     }
 
+    /// <summary>
+    /// Travel's doors to other features, set by Wiring; null means the default. A door's bool method returns true when its
+    /// feature handled the matter, and false lets travel apply its own effect.
+    /// </summary>
     public static class TravelBridges
     {
         private static readonly DefaultBridge Fallback = new DefaultBridge();
@@ -116,22 +96,17 @@ namespace RealLifeOverhaul
         public static ITravelTransport Transport { get => _transport ?? Fallback; set => _transport = value; }
         public static ITravelLeisure Leisure { get => _leisure ?? Fallback; set => _leisure = value; }
 
-        /// <summary>True while the social feature has taken its door over (travel then leaves gifts and companions to it entirely).</summary>
+        /// <summary>True while the social feature holds its door: travel then leaves gifts and companions to it.</summary>
         public static bool HasSocial => _social != null;
-
-        public static bool HasHome => _home != null;
 
         public static bool HasTransport => _transport != null;
 
         public static bool HasLeisure => _leisure != null;
 
-        /// <summary>
-        /// True once City Utilities has chosen its building (or is off): the hotels choose theirs after it, so the two never
-        /// race for a residential building and every machine of a Going Public session has the same. Null: nothing to wait for.
-        /// </summary>
+        /// <summary>True once City Utilities has chosen or is off; hotels choose after it, so every machine agrees.</summary>
         public static Func<bool> UtilitiesPicked;
 
-        /// <summary>Called when the city unloads: whoever took a door over is gone with it.</summary>
+        /// <summary>Called as the city unloads: whoever held a door is gone with it.</summary>
         public static void Reset()
         {
             _home = null;
@@ -142,11 +117,7 @@ namespace RealLifeOverhaul
             UtilitiesPicked = null;
         }
 
-        /// <summary>
-        /// What happens with no other feature present. Everything answers "not handled", and the
-        /// caller (HotelStay, Holidays) then applies its own effect through the game's own
-        /// hunger, energy and happiness; the one companion is the mod's Friend contact.
-        /// </summary>
+        // Nothing handled, so the caller applies its own effect; the one companion is the mod's Friend contact.
         private sealed class DefaultBridge : ITravelHome, ITravelSocial, ITravelJustice, ITravelTransport, ITravelLeisure
         {
             public bool Freshen(int quality) => false;
