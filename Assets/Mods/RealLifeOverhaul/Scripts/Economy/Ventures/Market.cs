@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul.Economy.Ventures
@@ -149,7 +150,8 @@ namespace RealLifeOverhaul.Economy.Ventures
                 c.Remember(c.PriceCents);
                 if (log != null)
                 {
-                    log.Append(i > 0 ? "; " : string.Empty).Append(c.Name).Append(' ').Append((was / 100.0).ToString("0.00")).Append(" to ").Append((c.PriceCents / 100.0).ToString("0.00"))
+                    log.Append(i > 0 ? "; " : string.Empty).Append(c.Name).Append(' ').Append((was / 100.0).ToString("0.00", CultureInfo.InvariantCulture)).Append(" to ")
+                        .Append((c.PriceCents / 100.0).ToString("0.00", CultureInfo.InvariantCulture))
                         .Append(" (news ").Append(newsBp).Append(" bp").Append(cause > 0 ? ", " + (MarketCause)cause : string.Empty).Append(')');
                 }
             }

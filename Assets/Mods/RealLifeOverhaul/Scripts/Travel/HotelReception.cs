@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -64,7 +65,7 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     TravelDirector.Instance.Log("Travel check (reception list): the game's list is open: " + rooms + " rooms at " + site.Slot.Id + ", "
-                                                + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                                + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
                 }
                 return true;
             }

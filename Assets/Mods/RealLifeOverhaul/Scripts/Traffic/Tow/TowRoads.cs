@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using GleyTrafficSystem;
 using UnityEngine;
 
@@ -111,7 +112,8 @@ namespace RealLifeOverhaul
             float lateral = Vector3.Dot(centre - origin, side);
             if (sideWays - lateral - reachAcross < TowRules.HalfWidth + PassMargin)
             {
-                plan.Refusal = "the wreck reaches " + (lateral + reachAcross).ToString("F1") + " m towards the lane beside, " + sideWays.ToString("F1") + " m across: no room to pass it";
+                plan.Refusal = "the wreck reaches " + (lateral + reachAcross).ToString("F1", CultureInfo.InvariantCulture) + " m towards the lane beside, "
+                    + sideWays.ToString("F1", CultureInfo.InvariantCulture) + " m across: no room to pass it";
                 return false;
             }
             TowRules.Stretch(middle, middle + reach, across, halfLength, out float mergeFrom, out float mergeTo, out float standAt);

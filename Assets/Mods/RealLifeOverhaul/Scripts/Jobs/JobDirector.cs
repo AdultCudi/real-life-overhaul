@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Entities;
@@ -342,7 +343,8 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Jobs check (saved shift): '" + job.Def.Id + "' is on at the save: paid so far " + _saved.Paid.Total + " for " + _saved.Paid.Units + " unit(s), owed "
-                                 + _saved.Owed.Total + " for " + _saved.Owed.Units + (shift != null ? ", " + shift.Employer.Id + " at " + shift.Hourly.ToString("F1") + " an hour" : string.Empty)
+                                 + _saved.Owed.Total + " for " + _saved.Owed.Units
+                                 + (shift != null ? ", " + shift.Employer.Id + " at " + shift.Hourly.ToString("F1", CultureInfo.InvariantCulture) + " an hour" : string.Empty)
                                  + "; written to the save: " + (line.Length > 0 ? "PASS" : "FAIL") + ".");
                 }
                 return line;
@@ -391,7 +393,7 @@ namespace RealLifeOverhaul
                 Notifications.Show(sum.Total > 0 ? NotificationType.Success : NotificationType.Info,
                     saved.Rota && employer != null ? "reallife_job_saved_rota" : sum.Total > 0 ? "reallife_job_saved_paid" : "reallife_job_saved_nothing", words, 14f);
                 Logger?.Info("Jobs check (saved shift): settled '" + def.Id + "' saved on day " + saved.Day + ": paid " + sum.Work + " for " + sum.UnitsOwed + " unit(s) owed"
-                             + (saved.Rota ? ", basic wage " + sum.Wage + " for " + sum.Hours + " h at " + saved.Hourly.ToString("F1") : string.Empty)
+                             + (saved.Rota ? ", basic wage " + sum.Wage + " for " + sum.Hours + " h at " + saved.Hourly.ToString("F1", CultureInfo.InvariantCulture) : string.Empty)
                              + "; " + saved.Paid.Total + " had been paid before the save; no strike, no mark: PASS.");
             }
             catch (Exception e)
@@ -602,7 +604,8 @@ namespace RealLifeOverhaul
             _wasPulledOver = PoliceAttention.PulledOver;
             _momentAt = -1f;
             _nextTick = 0f;
-            Logger?.Info("Jobs: '" + def.Id + "' started" + (test ? " by the test button" : string.Empty) + ", level " + _context.Level + ", rate " + _context.Rate.ToString("F2") + ".");
+            Logger?.Info("Jobs: '" + def.Id + "' started" + (test ? " by the test button" : string.Empty) + ", level " + _context.Level + ", rate "
+                + _context.Rate.ToString("F2", CultureInfo.InvariantCulture) + ".");
             if (Meta.Dev.Verbose)
             {
                 GigWords.Log(Logger, _context.Offer, TimeHelper.CurrentDay, TimeHelper.CurrentHour);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Entities;
 using UI.Notification;
 using UnityEngine;
@@ -178,7 +179,8 @@ namespace RealLifeOverhaul.Tech
             {
                 Logger?.Info("Tech check (labour market, day " + day + "): " + HiringRules.Open(_hiring) + " seeker(s) of " + HiringRules.Target(HiringGame.Cycle, HiringGame.Summer(day)) + " wanted, "
                              + _hiring.RivalAds.Count + " rival ad(s), " + came + " application(s), " + _notes.Count + " answer(s) and withdrawal(s), " + startedHires + " start(s), "
-                             + delivered + " from searches, " + bonus + " extra from the recruitment office; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS");
+                             + delivered + " from searches, " + bonus + " extra from the recruitment office; "
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
 

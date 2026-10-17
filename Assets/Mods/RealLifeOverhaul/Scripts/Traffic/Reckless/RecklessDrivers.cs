@@ -390,7 +390,7 @@ namespace RealLifeOverhaul
             Logger?.Info($"Reckless driver: '{TrafficTools.Name(taken)}' {Vector3.Distance(player, taken.transform.position):F0} m from the player is now a {kind}"
                          + $" ({(never ? "test: brakes for no vehicle" : accidentDue ? "an accident is due: no margin" : "with a margin: gets away with it unless somebody else errs")}"
                          + $"{(blind ? ", does not see people on foot" : string.Empty)}), cruising at {_car.Cruise * 3.6f:F0} km/h for up to {_until - now:F0} s."
-                         + $" Owing: {_carsDue:F2} car accident(s), {_peopleDue:F2} pedestrian(s).");
+                         + FormattableString.Invariant($" Owing: {_carsDue:F2} car accident(s), {_peopleDue:F2} pedestrian(s)."));
             return true;
         }
 
@@ -705,7 +705,7 @@ namespace RealLifeOverhaul
             bool fatal = incidents.TrafficKilled;
             if (!ours)
             {
-                Logger?.Info($"Traffic check (struck): '{TrafficTools.Name(car)}' ran somebody down at {speed * 3.6f:F0} km/h ({(fatal ? "fatal" : "injured")}). Still owing: {_peopleDue:F2} pedestrian(s).");
+                Logger?.Info(FormattableString.Invariant($"Traffic check (struck): '{TrafficTools.Name(car)}' ran somebody down at {speed * 3.6f:F0} km/h ({(fatal ? "fatal" : "injured")}). Still owing: {_peopleDue:F2} pedestrian(s)."));
                 _striker = car;
                 _jayAt = now;
                 if (_phase != Phase.Idle || !_working || !car.gameObject.activeInHierarchy || !CrimeCars.IsOrdinary(car)
@@ -1000,7 +1000,8 @@ namespace RealLifeOverhaul
             if (accidents != null && accidents.BeginAt(mine, other, closing, notice, own, theirs))
             {
                 _carsDue = Mathf.Max(0f, _carsDue - 1f);
-                Logger?.Info($"Reckless driver: the {kind} {what} at {closing * 3.6f:F0} km/h; the accident scene has both from here. Still owing: {_carsDue:F2} car accident(s).");
+                Logger?.Info(FormattableString.Invariant(
+                    $"Reckless driver: the {kind} {what} at {closing * 3.6f:F0} km/h; the accident scene has both from here. Still owing: {_carsDue:F2} car accident(s)."));
             }
             else
             {

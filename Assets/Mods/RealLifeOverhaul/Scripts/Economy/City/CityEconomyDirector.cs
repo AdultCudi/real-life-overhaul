@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Entities;
@@ -409,15 +410,18 @@ namespace RealLifeOverhaul.Economy
                     if (Verbose && tick.MonthTurned)
                     {
                         Logger?.Info("Economy check (city, month " + CityModel.MonthNumber(_state, _monthDays) + " on day " + d + "): the rate " + Quarters(rateBefore) + " to " + Quarters(_state.Base)
-                                     + " (" + _state.LastReason + "), inflation " + (inflationBefore / 100f).ToString("0.00") + "% to " + (_state.Inflation / 100f).ToString("0.00")
-                                     + "% a year (pressure " + (_state.Pressure / 100f).ToString("0.00") + ", the rate it feels " + Quarters(_state.BaseBefore) + "), the index "
+                                     + " (" + _state.LastReason + "), inflation " + (inflationBefore / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% to "
+                                     + (_state.Inflation / 100f).ToString("0.00", CultureInfo.InvariantCulture)
+                                     + "% a year (pressure " + (_state.Pressure / 100f).ToString("0.00", CultureInfo.InvariantCulture) + ", the rate it feels " + Quarters(_state.BaseBefore)
+                                     + "), the index "
                                      + CityText.Index(indexBefore) + " to " + CityText.Index(_state.Index) + ", the cycle " + cycleBefore + " to " + _state.Cycle + " (month " + _state.MonthsIn + ", "
                                      + _state.MonthsLeft + " left): PASS");
                     }
                     if (Verbose && _state.Pending && CityModel.DaysToTurn(_state, _monthDays) == 1)
                     {
-                        Logger?.Info("Economy check (city, decision on day " + d + "): inflation " + (_state.Inflation / 100f).ToString("0.00") + "% against a target of "
-                                     + (MacroCatalogue.InflationTarget / 100f).ToString("0.00") + "%, the cycle " + _state.Cycle + ", the rate " + Quarters(_state.Base) + ": "
+                        Logger?.Info("Economy check (city, decision on day " + d + "): inflation " + (_state.Inflation / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% against a target of "
+                                     + (MacroCatalogue.InflationTarget / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "%, the cycle " + _state.Cycle + ", the rate " + Quarters(_state.Base)
+                                     + ": "
                                      + (_state.PendingMove == 0 ? "held" : "moved by " + Quarters(_state.PendingMove)) + " from tomorrow (" + _state.PendingReason + "): PASS");
                     }
                 }
@@ -577,7 +581,7 @@ namespace RealLifeOverhaul.Economy
                     if (log != null && i < 6)
                     {
                         log.Append(i > 0 ? "; " : string.Empty).Append(shop.Reg.BusinessName).Append(' ').Append(CityText.Percent(shop.Wanted)).Append(" (cycle ").Append(shop.Cycle).Append(", district ")
-                            .Append(shop.Area).Append(", prices ").Append(shop.Price).Append(shop.Against > 0 ? " at " + (shop.Against / 10f).ToString("0.#") + "% of what the district bears" : ", none to judge by")
+                            .Append(shop.Area).Append(", prices ").Append(shop.Price).Append(shop.Against > 0 ? " at " + (shop.Against / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "% of what the district bears" : ", none to judge by")
                             .Append(shop.HasFigure ? ", promotion " + shop.Own + " to " + shop.Written : ", no promotion figure").Append(')');
                     }
                 }
@@ -594,12 +598,12 @@ namespace RealLifeOverhaul.Economy
                 var factors = new StringBuilder(80);
                 for (int k = 0; k < MacroCatalogue.SupplyKinds; k++)
                 {
-                    factors.Append(k > 0 ? ", " : string.Empty).Append(CityText.KindKeys[k].Substring(CityText.KindKeys[k].LastIndexOf('_') + 1)).Append(' ').Append((CityModel.Wholesale(_state, k) / 1000f).ToString("0.000"));
+                    factors.Append(k > 0 ? ", " : string.Empty).Append(CityText.KindKeys[k].Substring(CityText.KindKeys[k].LastIndexOf('_') + 1)).Append(' ').Append((CityModel.Wholesale(_state, k) / 1000f).ToString("0.000", CultureInfo.InvariantCulture));
                 }
                 Logger?.Info("Economy check (city, applied, " + when + ", day " + day + "): the rate " + Quarters(_state.Base) + (rate ? " (changed)" : string.Empty) + ", " + prices
                              + " wholesale price(s) written (" + factors + "), " + written + " footfall figure(s) written, " + redrawn + " with the day's customers asked to be drawn again (the customers' line says how many were)"
                              + (log.Length > 0 ? ": " + log : string.Empty) + (_shops.Count > 6 ? "; and " + (_shops.Count - 6) + " more" : string.Empty) + ". " + detail + "; "
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: " + (ok ? "PASS" : "FAIL"));
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: " + (ok ? "PASS" : "FAIL"));
             }
         }
 
@@ -700,7 +704,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (Verbose && (charge != 0 || before != 0))
             {
-                Logger?.Info("Economy check (city, adjustment for day " + day + "): " + what + " " + figure.ToString("0") + " by the game, factor " + (factor / 1000f).ToString("0.000") + ", so "
+                Logger?.Info("Economy check (city, adjustment for day " + day + "): " + what + " " + figure.ToString("0") + " by the game, factor "
+                             + (factor / 1000f).ToString("0.000", CultureInfo.InvariantCulture) + ", so "
                              + (charge >= 0 ? charge + " more to pay" : -charge + " back") + "; carried from before " + before + "; " + (taken >= 0 ? taken + " taken" : -taken + " paid")
                              + ", " + carried + " carried to tomorrow: " + ((long)before + charge == (long)taken + carried ? "PASS" : "FAIL"));
             }
@@ -772,7 +777,7 @@ namespace RealLifeOverhaul.Economy
             if (Verbose)
             {
                 Logger?.Info("Economy check (city, rival): " + best.Reg.BusinessName + " made a profit on each of the last " + MacroCatalogue.CopycatDays + " days (" + most.ToString("0")
-                             + " in all), the chance today was " + (chance / 10f).ToString("0.#") + "%: " + (started ? "a rival opens beside it (the business feature's own issue)" : "the business feature did not start one there today") + ": PASS");
+                             + " in all), the chance today was " + (chance / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "%: " + (started ? "a rival opens beside it (the business feature's own issue)" : "the business feature did not start one there today") + ": PASS");
             }
         }
 
@@ -953,7 +958,7 @@ namespace RealLifeOverhaul.Economy
         private string Summary()
         {
             return "The economy is " + _state.Cycle + " (month " + _state.MonthsIn + ", " + _state.MonthsLeft + " left), the bank rate " + Quarters(_state.Base) + " on the banks' own, inflation "
-                   + (_state.Inflation / 100f).ToString("0.00") + "% a year, the price index " + CityText.Index(_state.Index) + ", strength " + _level + ".";
+                   + (_state.Inflation / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% a year, the price index " + CityText.Index(_state.Index) + ", strength " + _level + ".";
         }
 
         // ---------------------------------------------------------------- for the save tools
@@ -1048,7 +1053,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     text.Append(" Announced for the turn of the month: ").Append(_state.PendingMove == 0 ? "the rate is held" : "the rate moves by " + Quarters(_state.PendingMove)).Append(" (").Append(_state.PendingReason).Append(").");
                 }
-                text.Append(" Rents and wages x").Append((CityModel.Costs(_state) / 1000f).ToString("0.000")).Append(", takings x").Append((CityModel.Takings(_state, _level) / 1000f).ToString("0.000"))
+                text.Append(" Rents and wages x").Append((CityModel.Costs(_state) / 1000f).ToString("0.000", CultureInfo.InvariantCulture)).Append(", takings x").Append((CityModel.Takings(_state, _level) / 1000f).ToString("0.000", CultureInfo.InvariantCulture))
                     .Append("; carried: rent ").Append(_state.CarryRent).Append(", wages ").Append(_state.CarryWages).Append(", takings ").Append(_state.CarryTakings).Append(", shops and services ").Append(_state.CarryLiving).Append(". Test changes in place: ")
                     .Append(_beforeTests != null ? "yes" : "no").Append('.');
                 Logger?.Warn(text.ToString());
@@ -1056,14 +1061,14 @@ namespace RealLifeOverhaul.Economy
                 {
                     CityDistrict d = _state.Districts[i];
                     Logger?.Warn("City economy:   district " + d.Name + ": income " + CityText.Income(d.Income) + " (started at " + CityText.Income(d.Start) + ", a month ago " + CityText.Income(d.Before)
-                                 + "), footfall " + CityText.Percent(CityModel.DistrictFootfall(d)) + ", bears " + (CityModel.Tolerance(_state, d, _level) / 10f).ToString("0.#") + "% of the game's own price.");
+                                 + "), footfall " + CityText.Percent(CityModel.DistrictFootfall(d)) + ", bears " + (CityModel.Tolerance(_state, d, _level) / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "% of the game's own price.");
                 }
                 for (int k = 0; k < MacroCatalogue.SupplyKinds; k++)
                 {
                     SupplyLine line = _state.Supply[k];
-                    Logger?.Warn("City economy:   supply " + k + " (" + CityGame.CountOf(k) + " good(s)): factor " + (line.Factor / 1000f).ToString("0.000") + ", with prices x" + (CityModel.Wholesale(_state, k) / 1000f).ToString("0.000")
+                    Logger?.Warn("City economy:   supply " + k + " (" + CityGame.CountOf(k) + " good(s)): factor " + (line.Factor / 1000f).ToString("0.000", CultureInfo.InvariantCulture) + ", with prices x" + (CityModel.Wholesale(_state, k) / 1000f).ToString("0.000", CultureInfo.InvariantCulture)
                                  + (line.Shock == SupplyShock.None ? string.Empty : ", " + line.Shock + (line.Announced(_state.Age) ? " from tomorrow" : " running") + " for " + line.Days + " day(s), size "
-                                                                                   + (line.Size / 10f).ToString("0.#") + "%") + ((_state.Buys & (1 << k)) != 0 ? ", stocked by the player" : string.Empty) + ".");
+                                                                                   + (line.Size / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "%") + ((_state.Buys & (1 << k)) != 0 ? ", stocked by the player" : string.Empty) + ".");
                 }
                 float multiplier = Save.gameVariables != null ? Save.gameVariables.baseCustomerPromotionMultiplier : 0.5f;
                 for (int i = 0; i < _shops.Count; i++)
@@ -1071,7 +1076,7 @@ namespace RealLifeOverhaul.Economy
                     CityShop s = _shops[i];
                     Logger?.Warn("City economy:   business " + s.Reg.BusinessName + " in " + (s.District != null ? s.District.Name : "?") + ": footfall " + CityText.Percent(s.Wanted) + " asked (cycle " + s.Cycle
                                  + ", district " + s.Area + ", prices " + s.Price + "), " + (s.HasFigure ? "promotion " + s.Own + " to " + s.Written + ", which gives " + CityText.Percent(s.Achieved(multiplier)) : "no promotion figure")
-                                 + "; prices " + (s.Against > 0 ? "at " + (s.Against / 10f).ToString("0.#") + "% of what the district bears" + (s.Over ? " (over)" : string.Empty) : "none to judge by") + ".");
+                                 + "; prices " + (s.Against > 0 ? "at " + (s.Against / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "% of what the district bears" + (s.Over ? " (over)" : string.Empty) : "none to judge by") + ".");
                 }
                 string detail;
                 bool ok = CityGame.CheckWholesale(_state, out detail);

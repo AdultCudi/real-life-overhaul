@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using UI.Load;
 using UnityEngine;
@@ -427,7 +428,8 @@ namespace RealLifeOverhaul.Faults
             FaultBridges.CrimeScale?.Invoke(scale);
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("City faults check (a dark lamp near): street crime here scaled by " + scale.ToString("F2") + (scale > 1f ? " after dark" : " (none)") + ": PASS");
+                Logger?.Info("City faults check (a dark lamp near): street crime here scaled by " + scale.ToString("F2", CultureInfo.InvariantCulture) + (scale > 1f ? " after dark" : " (none)")
+                    + ": PASS");
             }
         }
 
@@ -496,8 +498,8 @@ namespace RealLifeOverhaul.Faults
             }
             wear = FaultRules.TyreWear(speed);
             jolt = FaultRules.Jolt(speed);
-            Logger?.Info("City faults: the player's car went over a pothole at " + (speed * 3.6f).ToString("F0") + " km/h: a jolt of " + jolt.ToString("F2") + " m/s, "
-                         + (wear * 100f).ToString("F1") + "% of the tyres' life.");
+            Logger?.Info("City faults: the player's car went over a pothole at " + (speed * 3.6f).ToString("F0") + " km/h: a jolt of " + jolt.ToString("F2", CultureInfo.InvariantCulture) + " m/s, "
+                         + (wear * 100f).ToString("F1", CultureInfo.InvariantCulture) + "% of the tyres' life.");
             return true;
         }
 

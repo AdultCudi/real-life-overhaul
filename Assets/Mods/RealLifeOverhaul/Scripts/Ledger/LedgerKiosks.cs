@@ -207,8 +207,8 @@ namespace RealLifeOverhaul.Ledger
             {
                 if (_offer < 0 && Meta.Dev.Verbose)
                 {
-                    LedgerDirector.Logger?.Info("City Ledger check (kiosk counter): the player is " + Mathf.Sqrt(CitySpots.Flat(_fronts[kiosk] - player)).ToString("F1")
-                                                + " m from the counter (offered within " + Reach.ToString("F1") + " m); it offers " + (offer == 0 ? "nothing (shut)" : offer == 1 ? "nothing (not in yet)"
+                    LedgerDirector.Logger?.Info("City Ledger check (kiosk counter): the player is " + Mathf.Sqrt(CitySpots.Flat(_fronts[kiosk] - player)).ToString("F1", CultureInfo.InvariantCulture)
+                                                + " m from the counter (offered within " + Reach.ToString("F1", CultureInfo.InvariantCulture) + " m); it offers " + (offer == 0 ? "nothing (shut)" : offer == 1 ? "nothing (not in yet)"
                                                 : offer == 3 ? "the copy bought" : offer == 4 ? "the paper, but there is not the money" : "today's paper") + ": PASS.");
                 }
                 _offer = offer;

@@ -218,7 +218,7 @@ namespace RealLifeOverhaul
                 {
                     Notifications.Show(NotificationType.Error, killed > 0 ? "reallife_pedhit_fled_dead" : "reallife_pedhit_fled_injured", data, 10f);
                 }
-                Logger?.Info($"Pedestrian hit settled ({(stopped ? "stopped" : "left the scene")}): {hurt} injured, {killed} killed, charged {fine} at the roadside of {nominal} (at most {JusticeLaw.FineShareOfCash:P0} of the cash in hand, never bounded below {JusticeLaw.FineFloor}); {rest} left to the court.");
+                Logger?.Info(FormattableString.Invariant($"Pedestrian hit settled ({(stopped ? "stopped" : "left the scene")}): {hurt} injured, {killed} killed, charged {fine} at the roadside of {nominal} (at most {JusticeLaw.FineShareOfCash:P0} of the cash in hand, never bounded below {JusticeLaw.FineFloor}); {rest} left to the court."));
                 JusticeReport report = JusticeReports.Struck(hurt, killed, stopped, fine);
                 SayRest(rest, report != null);
                 Justice.Summon(report);   // a death, or leaving the scene, goes to court (Scripts/Justice), where what was paid here is credited

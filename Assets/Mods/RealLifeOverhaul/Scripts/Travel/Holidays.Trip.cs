@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BigAmbitions.DayNightCycle;
 using Entities;
@@ -353,7 +354,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 _director.Log("Travel check (trip list): " + (opening ? "the game's list is open: " : "") + trip.Id + ", step " + step + " of " + last + ", " + entries
-                              + " choice(s), " + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                              + " choice(s), " + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

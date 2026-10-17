@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Extensions;
@@ -128,7 +129,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 Licences.Logger?.Info("Licences check (desk list): the game's list is open: " + entries + " entries, " + list.Made + " entries made so far; "
-                                      + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                      + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
             return true;
         }

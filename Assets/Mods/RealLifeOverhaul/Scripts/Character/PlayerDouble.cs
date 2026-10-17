@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters.Appearance;
 using Helpers;
@@ -801,11 +802,12 @@ namespace RealLifeOverhaul
             float allowed = MaxBoneGap * Mathf.Max(0.1f, _playerRoot.lossyScale.y);
             if (_worstGap > allowed)
             {
-                Fail("the detailed skeleton does not line up with the player's: '" + _worstBone + "' is " + _worstGap.ToString("F2") + " m away", null);
+                Fail("the detailed skeleton does not line up with the player's: '" + _worstBone + "' is " + _worstGap.ToString("F2", CultureInfo.InvariantCulture) + " m away", null);
             }
             else
             {
-                Logger?.Info("High-detail player: pose check passed, largest joint offset " + _worstGap.ToString("F3") + " m at '" + _worstBone + "', hips scale " + _hipsScale.ToString("F3") + ".");
+                Logger?.Info("High-detail player: pose check passed, largest joint offset " + _worstGap.ToString("F3", CultureInfo.InvariantCulture) + " m at '" + _worstBone + "', hips scale "
+                    + _hipsScale.ToString("F3", CultureInfo.InvariantCulture) + ".");
             }
         }
 
@@ -927,8 +929,8 @@ namespace RealLifeOverhaul
                 return "waiting for the player";
             }
             MeasureGap();
-            return "ACTIVE, copied from '" + _sourceName + "', matched bones " + _from.Length + ", hips scale " + _hipsScale.ToString("F3")
-                   + ", largest joint offset now " + _worstGap.ToString("F3") + " m at '" + _worstBone + "', shown " + _shown
+            return "ACTIVE, copied from '" + _sourceName + "', matched bones " + _from.Length + ", hips scale " + _hipsScale.ToString("F3", CultureInfo.InvariantCulture)
+                   + ", largest joint offset now " + _worstGap.ToString("F3", CultureInfo.InvariantCulture) + " m at '" + _worstBone + "', shown " + _shown
                    + ", suspended " + _suspended + ", player renderers hidden " + _hiddenLow.Count;
         }
     }

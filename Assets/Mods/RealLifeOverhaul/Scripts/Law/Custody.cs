@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using BigAmbitions.DayNightCycle;
@@ -343,7 +344,7 @@ namespace RealLifeOverhaul.Law
                         {
                             _officer.Gesture(CrimeSceneGestures.Reach);
                         }
-                        Logger?.Info($"Law: cuffed in the clip, the officer {gap:F2} m behind (the pair is made for {SceneClips.CuffBehind:F2}): "
+                        Logger?.Info(FormattableString.Invariant($"Law: cuffed in the clip, the officer {gap:F2} m behind (the pair is made for {SceneClips.CuffBehind:F2}): ")
                                      + (officerPlays ? "the officer's half is played." : "the officer reaches instead."));
                         float click = Mathf.Clamp(cuffing.Mark(SceneClips.CuffClick, cuffing.Length * 0.6f), 0.1f, Mathf.Max(0.1f, cuffing.Length));
                         yield return Wait(click);
@@ -725,7 +726,7 @@ namespace RealLifeOverhaul.Law
                     if (Crime.Pay(state.Bail, "reallife_transaction_bail"))
                     {
                         _bailed = true;
-                        Logger?.Info($"Law: bail of {state.Bail} posted with {left / 60f:F1} h left.");
+                        Logger?.Info(FormattableString.Invariant($"Law: bail of {state.Bail} posted with {left / 60f:F1} h left."));
                         break;
                     }
                     _panel.SetStatus("reallife_law_cell_bail_short".Tr());
@@ -737,7 +738,7 @@ namespace RealLifeOverhaul.Law
                         state.Lawyer = true;
                         float now = TimeHelper.NowInMinutes();
                         state.ReleaseAt = now + LawBook.AfterLawyer(left);
-                        Logger?.Info($"Law: lawyer called for {fee}: {left / 60f:F1} h left becomes {(state.ReleaseAt - now) / 60f:F1} h.");
+                        Logger?.Info(FormattableString.Invariant($"Law: lawyer called for {fee}: {left / 60f:F1} h left becomes {(state.ReleaseAt - now) / 60f:F1} h."));
                         _panel.SetOption(2, "reallife_law_cell_lawyer_used".Tr(), null, false);
                         _panel.Refresh();
                         _panel.SetStatus("reallife_law_cell_lawyer_done".Tr());
@@ -760,7 +761,7 @@ namespace RealLifeOverhaul.Law
                     Feed();
                     if (state.Court && !Bridges.CourtStands)
                     {
-                        Logger?.Info("Law: the courts were switched off with " + (left / 60f).ToString("F1") + " h of their hold left; the player is let out.");
+                        Logger?.Info("Law: the courts were switched off with " + (left / 60f).ToString("F1", CultureInfo.InvariantCulture) + " h of their hold left; the player is let out.");
                         break;
                     }
                 }
@@ -1268,8 +1269,8 @@ namespace RealLifeOverhaul.Law
                 bool sane = left > 1f && left <= LawBook.MostHours * 60f + 1f && Settings.LawCustody && where != null
                             && (!BuildingManager.IsInsideBuilding || inside) && !PlayerHelper.IsUsingVehicle
                             && (!state.Court || Bridges.CourtStands);   // (a court's hold needs its court: gone or switched off, they are let out)
-                Logger?.Info($"Law: a stay in the cell was on the save with {left / 60f:F1} h left: {(sane ? "resumed" : "released")}.");
-                Check(state.Court, "a save made during the hold was loaded with " + (left / 60f).ToString("F1") + " h left: " + (sane ? "resumed" : "let out"), true);
+                Logger?.Info(FormattableString.Invariant($"Law: a stay in the cell was on the save with {left / 60f:F1} h left: {(sane ? "resumed" : "released")}."));
+                Check(state.Court, "a save made during the hold was loaded with " + (left / 60f).ToString("F1", CultureInfo.InvariantCulture) + " h left: " + (sane ? "resumed" : "let out"), true);
                 if (sane)
                 {
                     _faded = true;

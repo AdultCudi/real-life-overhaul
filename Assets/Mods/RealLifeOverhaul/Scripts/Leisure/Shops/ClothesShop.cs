@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using BigAmbitions.Characters;
 using Buildings;
 using Helpers;
@@ -212,7 +213,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 MeshCuts.Note("a clothes rack on a shop floor");
                 _prop = prop;
-                LeisureDirector.Logger?.Info("Leisure: the rack stands on the shop floor, " + edge.distance.ToString("F1") + " m from the nearest fitting.");
+                LeisureDirector.Logger?.Info("Leisure: the rack stands on the shop floor, " + edge.distance.ToString("F1", CultureInfo.InvariantCulture) + " m from the nearest fitting.");
             }
             if (_prop == null)
             {

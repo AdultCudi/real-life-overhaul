@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using BAModAPI;
@@ -468,13 +469,16 @@ namespace RealLifeOverhaul.Nav
             _keptPrint = job.Print;
             Picture = picture;
             _stage = Stage.Done;
-            Logger?.Info("Navigation: the minimap's buildings and water made: " + job.Width + " x " + job.Height + " pixels (" + (1f / job.PerMetre).ToString("F2") + " m a pixel, "
-                         + (job.Rgba.Length / 1048576f).ToString("F1") + " MB), " + job.Drawn + " buildings and " + job.WaterCells + " squares of water of " + _data.Cells.Length + ", "
+            Logger?.Info("Navigation: the minimap's buildings and water made: " + job.Width + " x " + job.Height + " pixels (" + (1f / job.PerMetre).ToString("F2", CultureInfo.InvariantCulture)
+                         + " m a pixel, "
+                         + (job.Rgba.Length / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB), " + job.Drawn + " buildings and " + job.WaterCells + " squares of water of "
+                         + _data.Cells.Length + ", "
                          + (_fromFile
                              ? "read from the mod's folder"
                              : "measured now (" + _asked + " looks down in " + _frames + " frames, " + _measureMilliseconds.ToString("F0") + " ms in all, longest "
-                               + _longestSlice.ToString("F2") + " ms) and " + (job.SaveFault == null ? "kept in the mod's folder" : "not kept (" + job.SaveFault + ")"))
-                         + ", drawn in " + job.Milliseconds.ToString("F0") + " ms off the main thread, sent to the graphics card in " + watch.Elapsed.TotalMilliseconds.ToString("F1") + " ms.");
+                               + _longestSlice.ToString("F2", CultureInfo.InvariantCulture) + " ms) and " + (job.SaveFault == null ? "kept in the mod's folder" : "not kept (" + job.SaveFault + ")"))
+                         + ", drawn in " + job.Milliseconds.ToString("F0") + " ms off the main thread, sent to the graphics card in "
+                         + watch.Elapsed.TotalMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms.");
         }
 
         private void Fail(string why)

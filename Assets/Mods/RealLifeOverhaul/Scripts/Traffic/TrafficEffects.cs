@@ -717,7 +717,8 @@ namespace RealLifeOverhaul
 
             ParticleSystem.MainModule main = source.GetComponent<ParticleSystem>().main;
             Logger?.Info($"Accident: smoke copied from '{source.name}' (parent '{(source.transform.parent != null ? source.transform.parent.name : "none")}'), "
-                         + $"material {source.sharedMaterial.name}, mode {source.renderMode}, size {main.startSize.constantMax:F2}, life {main.startLifetime.constantMax:F2}, "
+                         + FormattableString.Invariant(
+                             $"material {source.sharedMaterial.name}, mode {source.renderMode}, size {main.startSize.constantMax:F2}, life {main.startLifetime.constantMax:F2}, ")
                          + $"space {main.simulationSpace}, scale {source.transform.lossyScale}");
             return _smokeTemplate;
         }

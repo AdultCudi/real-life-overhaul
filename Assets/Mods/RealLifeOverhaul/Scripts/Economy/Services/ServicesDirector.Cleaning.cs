@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using Entities;
 using Localizor;
 using UI.Notification;
@@ -286,7 +287,8 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Info("Cleaning check (round, " + (why ?? "the hour") + "): from " + Clock(now) + ", " + _shifts.Count + " shift(s) of " + _crew.Count + " cleaner(s), " + _jobs.Count + " visit(s) due, "
                              + taken + " planned and " + left + " left over" + (left > 0 ? " (" + LeftOver() + ")" : string.Empty) + ", " + kept + " kept from before; " + (_state.Van ? "by van" : "on foot") + ", "
-                             + _cache.Misses + " distance(s) worked out and " + _cache.Hits + " kept; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00") + " ms: PASS");
+                             + _cache.Misses + " distance(s) worked out and " + _cache.Hits + " kept; "
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
 

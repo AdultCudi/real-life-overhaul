@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using BAModAPI;
@@ -427,7 +428,7 @@ namespace RealLifeOverhaul.Texts
             KeepSpeed(speed);
             if (Hub.AheadOnly)
             {
-                Logger?.Info("RLO Texts: a reply takes about " + estimate.ToString("0.0") + " s here: only what is asked well ahead is written by the model (posts, replies due later, the paper); spoken lines keep the written ones.");
+                Logger?.Info("RLO Texts: a reply takes about " + estimate.ToString("0.0", CultureInfo.InvariantCulture) + " s here: only what is asked well ahead is written by the model (posts, replies due later, the paper); spoken lines keep the written ones.");
             }
             if (TextSpeed.SuggestLite(_pack.Rank, estimate) && !Told("lite"))
             {

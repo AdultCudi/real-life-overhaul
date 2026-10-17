@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
@@ -471,12 +472,13 @@ namespace RealLifeOverhaul
             }
             Collider collider = _scooter.vehicleCollider;
             Vector3 scale = transform.lossyScale;
-            return $"{Def.Kind} at {at.ToString("F2")}, heading {transform.eulerAngles.y:F0}, {Vector3.Angle(transform.up, Vector3.up):F0} deg off upright; "
-                   + (ground ? $"ground under it at {height:F2} ({(pavement ? "pavement" : "not pavement")}), so it stands {at.y - height:F2} above it; " : "NO GROUND found under it; ")
+            return $"{Def.Kind} at {at.ToString("F2", CultureInfo.InvariantCulture)}, heading {transform.eulerAngles.y:F0}, {Vector3.Angle(transform.up, Vector3.up):F0} deg off upright; "
+                   + (ground ? FormattableString.Invariant(
+                       $"ground under it at {height:F2} ({(pavement ? "pavement" : "not pavement")}), so it stands {at.y - height:F2} above it; ") : "NO GROUND found under it; ")
                    + $"body: {(_body == null ? "none" : _body.Modelled ? "modelled" : "stand-in")}, {drawn} of {total} renderers drawn, {forcedOff} forced off, {noMaterial} without a material, "
-                   + (any ? $"bounds centre {bounds.center.ToString("F2")} size {bounds.size.ToString("F2")}; " : "no bounds; ")
+                   + (any ? $"bounds centre {bounds.center.ToString("F2", CultureInfo.InvariantCulture)} size {bounds.size.ToString("F2", CultureInfo.InvariantCulture)}; " : "no bounds; ")
                    + $"scooter's own: {_hidden.Count} hidden, {stillDrawn} still drawn; object {(gameObject.activeInHierarchy ? "active" : "INACTIVE")}, layer {LayerMask.LayerToName(gameObject.layer)}, "
-                   + $"scale {scale.ToString("F2")}, collider {(collider != null ? "on " + LayerMask.LayerToName(collider.gameObject.layer) + (_frame != null ? " " + _frame.size.ToString("F2") + " turned " + _frame.transform.localEulerAngles.ToString("F0") : " (the scooter's)") : "none")}"
+                   + $"scale {scale.ToString("F2", CultureInfo.InvariantCulture)}, collider {(collider != null ? "on " + LayerMask.LayerToName(collider.gameObject.layer) + (_frame != null ? " " + _frame.size.ToString("F2", CultureInfo.InvariantCulture) + " turned " + _frame.transform.localEulerAngles.ToString("F0") : " (the scooter's)") : "none")}"
                    + $", bars {(_bars != null ? (_bars.enabled ? "on " : "off ") + LayerMask.LayerToName(_bars.gameObject.layer) : "none")}, "
                    + (_rigidbody != null ? $"body {(_rigidbody.isKinematic ? "kinematic" : "dynamic")} {_rigidbody.constraints}, " : "no rigidbody, ")
                    + $"physics {(_nwh != null && _nwh.enabled ? "running" : "at rest")}, map marker {(_poi != null ? "yes" : "no")}.";
@@ -593,8 +595,9 @@ namespace RealLifeOverhaul
                     }
                 }
                 _drag = BikeRules.Drag(Def.Push, _rigidbody.mass, rolling);
-                line = $"Two-wheelers: {Def.Kind}: pedalled ({Def.Push.PowerPerKg * _rigidbody.mass / 1000f:F1} kW of push, {Def.Push.StartPush:F1} m/s2 at most), cruising {Def.CruiseKmh:F0} km/h "
-                       + $"(drag {_drag:F2}, rolling {rolling:F0} N), {_rigidbody.mass:F0} kg; the scooter's engine off, clutch out, final drive {_final:F2} -> {BikeRules.FreeWheelRatio:F2}; engine sounds off.";
+                line = FormattableString.Invariant(
+                    $"Two-wheelers: {Def.Kind}: pedalled ({Def.Push.PowerPerKg * _rigidbody.mass / 1000f:F1} kW of push, {Def.Push.StartPush:F1} m/s2 at most), cruising {Def.CruiseKmh:F0} km/h ")
+                       + FormattableString.Invariant($"(drag {_drag:F2}, rolling {rolling:F0} N), {_rigidbody.mass:F0} kg; the scooter's engine off, clutch out, final drive {_final:F2} -> {BikeRules.FreeWheelRatio:F2}; engine sounds off.");
             }
             else if (GarageTuning.SolveBike(_nwh, Def.Seconds, Def.TopKmh, Setup, out CarRun run, out int firstForward, out string why)
                      && Setup.PowerKw >= 5f && Setup.PowerKw <= _rigidbody.mass)
@@ -617,9 +620,9 @@ namespace RealLifeOverhaul
                     _limiter.speedLimit = 0f;   // the limiter's own "no limit": drag ends the speed now
                 }
                 _nwh.brakes.maxTorque = _brake * 1.6f;   // it has three times the scooter's speed to lose
-                line = $"Two-wheelers: {Def.Kind}: target 0-100 {Def.Seconds:F1} s, top {Def.TopKmh:F0} km/h; power {_power:F0} -> {Setup.PowerKw:F0} kW, "
-                       + $"final drive {_final:F2} -> {final:F2}, drag {_drag:F3}, limiter {_limit:F0} -> off, brakes x1.6; "
-                       + $"expect 0-50 {run.To50:F1} s, 0-100 {run.To100:F1} s, top {run.TopKmh:F0} km/h" + (Setup.TyreLimited ? " (the tyre cannot put down what the time needs)" : string.Empty) + ".";
+                line = FormattableString.Invariant($"Two-wheelers: {Def.Kind}: target 0-100 {Def.Seconds:F1} s, top {Def.TopKmh:F0} km/h; power {_power:F0} -> {Setup.PowerKw:F0} kW, ")
+                       + FormattableString.Invariant($"final drive {_final:F2} -> {final:F2}, drag {_drag:F3}, limiter {_limit:F0} -> off, brakes x1.6; ")
+                       + FormattableString.Invariant($"expect 0-50 {run.To50:F1} s, 0-100 {run.To100:F1} s, top {run.TopKmh:F0} km/h") + (Setup.TyreLimited ? " (the tyre cannot put down what the time needs)" : string.Empty) + ".";
             }
             else
             {
@@ -628,7 +631,7 @@ namespace RealLifeOverhaul
             line += _lean != null ? $" Lean: {BikeRules.LeanMostDeg:F0} degrees from {BikeRules.FullLeanAt * 3.6f:F0} km/h." : " Lean: the scooter has no lean module; as the game has it.";
             if (Mathf.Abs(wheelBase - BikeCatalogue.ScooterFrontZ) > 0.12f)
             {
-                line += " The scooter's wheels are not where the bodies were made for (front at " + wheelBase.ToString("F2") + " m).";
+                line += " The scooter's wheels are not where the bodies were made for (front at " + wheelBase.ToString("F2", CultureInfo.InvariantCulture) + " m).";
             }
             if (Logged.Add((int)Def.Kind))
             {

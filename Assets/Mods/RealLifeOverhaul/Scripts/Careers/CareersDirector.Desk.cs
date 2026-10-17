@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using Helpers;
 using RealLifeOverhaul.FitOut;
 using RealLifeOverhaul.Tech;
@@ -295,7 +296,7 @@ namespace RealLifeOverhaul.Careers
                          + string.Join(", ", DeskRules.Kinds(p)) + " here; a " + preset + " is fitted out.");
         }
 
-        private static string StationName(EmployeeStationController s) => s != null ? s.name + " at " + s.transform.position.ToString("F1") : "none";
+        private static string StationName(EmployeeStationController s) => s != null ? s.name + " at " + s.transform.position.ToString("F1", CultureInfo.InvariantCulture) : "none";
 
         private void DeskFail(string place, string why)
         {
@@ -427,7 +428,8 @@ namespace RealLifeOverhaul.Careers
             d._deskFailed = d._deskPointer == null;
             d._deskWhat = DeskRules.What(StationKind.None, PresetOf(desk.Kind));
             d._deskWhatOf = desk.Place;
-            Logger?.Info("Careers: the desk of " + j.Def.Key + " at " + j.Post.Employer + ": a desk of the fitted floor (" + desk.Kind + ") at " + desk.Desk.position.ToString("F1")
+            Logger?.Info("Careers: the desk of " + j.Def.Key + " at " + j.Post.Employer + ": a desk of the fitted floor (" + desk.Kind + ") at "
+                         + desk.Desk.position.ToString("F1", CultureInfo.InvariantCulture)
                          + (d._deskPointer != null ? "." : ", but the game has no layer for a pointer: the Career app starts the working day."));
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -230,7 +231,8 @@ namespace RealLifeOverhaul
             Ctx.Logger?.Info("Jobs: dispatcher shift, " + Plans + " batches of " + DispatchPlan.Parcels + ".");
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: dispatch: the desk is " + JobSpots.Flat(_desk, Ctx.PlayerPosition).ToString("F1") + " m from the player; shown in the game's own interface: job panel "
+                Ctx.Logger?.Info("Jobs: dispatch: the desk is " + JobSpots.Flat(_desk, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture)
+                                 + " m from the player; shown in the game's own interface: job panel "
                                  + (_figures.Shown ? "copied" : "NOT copied (the panel over the desk is all there is)") + ", no clock offered (a plan is a decision, not a wait).");
             }
             return true;
@@ -464,8 +466,9 @@ namespace RealLifeOverhaul
             Show(JobText.T("reallife_job_dispatch_obj_done", "km", km, "best", best));
             JobText.Toast(quality >= 0.85f ? NotificationType.Success : quality >= PoorBelow ? NotificationType.Info : NotificationType.Warning,
                 JobText.Pick(quality >= 0.85f ? Great : quality >= PoorBelow ? Fair : Poor, ref _line), "amount", JobText.Money(pay), 6f);
-            Ctx.Logger?.Info("Jobs: dispatch plan " + _plan + ": " + cost.ToString("F2") + " against best " + _best.ToString("F2") + " and worst " + _worst.ToString("F2")
-                             + ", quality " + quality.ToString("F2") + ", paid " + pay + ".");
+            Ctx.Logger?.Info("Jobs: dispatch plan " + _plan + ": " + cost.ToString("F2", CultureInfo.InvariantCulture) + " against best " + _best.ToString("F2", CultureInfo.InvariantCulture)
+                             + " and worst " + _worst.ToString("F2", CultureInfo.InvariantCulture)
+                             + ", quality " + quality.ToString("F2", CultureInfo.InvariantCulture) + ", paid " + pay + ".");
         }
 
         private void Settle()

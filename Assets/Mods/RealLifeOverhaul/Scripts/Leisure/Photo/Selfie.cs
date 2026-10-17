@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using BAModAPI;
 using UnityEngine;
 
@@ -147,8 +148,9 @@ namespace RealLifeOverhaul.Leisure
             Place();
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Photo mode: selfie check (lens " + _distance.ToString("0.00") + " m from the eyes, wanted " + Near.ToString("0.00") + " to "
-                             + Far.ToString("0.00") + "; body " + (_turned ? "turned to the free camera" : "left as it sat") + "; clip poses "
+                Logger?.Info("Photo mode: selfie check (lens " + _distance.ToString("0.00", CultureInfo.InvariantCulture) + " m from the eyes, wanted "
+                             + Near.ToString("0.00", CultureInfo.InvariantCulture) + " to "
+                             + Far.ToString("0.00", CultureInfo.InvariantCulture) + "; body " + (_turned ? "turned to the free camera" : "left as it sat") + "; clip poses "
                              + (_clipsOffered ? "offered" : "not offered (bundle not ready, or a clip of the mod's already on the player)") + "): PASS");
             }
             return true;

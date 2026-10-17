@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using Entities;
 using Helpers;
 using UI;
@@ -1121,8 +1122,9 @@ namespace RealLifeOverhaul.Family
                 }
                 if (Meta.Dev.Verbose)
                 {
-                    FamilyDirector.Logger?.Info("Family: the first dance, " + gap.ToString("F2") + " m apart (made for " + DanceGap.ToString("F2") + " m, give or take "
-                                                + DanceSlack.ToString("F2") + "): " + (_dancing ? "played." : "not played."));
+                    FamilyDirector.Logger?.Info("Family: the first dance, " + gap.ToString("F2", CultureInfo.InvariantCulture) + " m apart (made for "
+                                                + DanceGap.ToString("F2", CultureInfo.InvariantCulture) + " m, give or take "
+                                                + DanceSlack.ToString("F2", CultureInfo.InvariantCulture) + "): " + (_dancing ? "played." : "not played."));
                 }
                 if (!_dancing)
                 {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -466,8 +467,9 @@ namespace RealLifeOverhaul.Economy.Brands
                     float done = Time.realtimeSinceStartup;
                     Logger?.Info("Brands check (day " + day + "): " + _state.Brands.Count + " brand(s), " + _state.Members.Count + " member shop(s)" + (left > 0 ? ", " + left + " no longer the player's" : string.Empty) + ", "
                                  + _state.Franchises.Count + " franchised shop(s), " + _state.Applicants.Count + " applicant(s), " + written + " footfall figure(s) written, " + _alerts.Count
-                                 + " row(s) for the Planner; reading the game " + ((read - started) * 1000f).ToString("0.0") + " ms, the rules " + ((ruled - read) * 1000f).ToString("0.00") + " ms, footfall and rows "
-                                 + ((done - ruled) * 1000f).ToString("0.0") + " ms, " + ((done - started) * 1000f).ToString("0.0") + " ms in all: PASS");
+                                 + " row(s) for the Planner; reading the game " + ((read - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, the rules " + ((ruled - read) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms, footfall and rows "
+                                 + ((done - ruled) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, " + ((done - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
+                                 + " ms in all: PASS");
                 }
             }
             catch (Exception e)

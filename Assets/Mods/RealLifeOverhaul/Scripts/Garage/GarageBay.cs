@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using BAModAPI;
 using Localizor;
 using RealLifeOverhaul.GameUi;
@@ -336,7 +337,7 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Garage check (workshop): the game's list is open for " + car.name + " with " + entries + " entries (" + (CarOwnership.Instance != null ? CarOwnership.Instance.DueWords(car) : "car ownership is off")
-                                 + "); " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                 + "); " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
                 }
             }
             catch (Exception e)

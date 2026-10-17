@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Threading.Tasks;
 using BAModAPI;
 using Cinemachine;
@@ -712,7 +713,8 @@ namespace RealLifeOverhaul.Photos
                 Logger?.Info("Camera: a " + (selfie ? "selfie" : "photo") + " saved (" + System.IO.Path.GetFileName(path) + ", " + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB).");
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Camera check (the screen read on the main thread in " + shot.ReadMs.ToString("0.0") + " ms, wanted under " + CameraRules.ReadMost.ToString("0") + "; the photo "
+                    Logger?.Info("Camera check (the screen read on the main thread in " + shot.ReadMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms, wanted under "
+                                 + CameraRules.ReadMost.ToString("0") + "; the photo "
                                  + made.Width + " x " + made.Height + " in " + made.Ms.ToString("0") + " ms on a worker; its small copy " + made.SmallWidth + " x " + made.SmallHeight + "): "
                                  + (shot.ReadMs < CameraRules.ReadMost ? "PASS" : "slow"));
                 }

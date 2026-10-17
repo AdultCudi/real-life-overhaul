@@ -1,3 +1,4 @@
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters;
 using GleyTrafficSystem;
@@ -1001,7 +1002,7 @@ namespace RealLifeOverhaul
                 if (!planned)
                 {
                     Check("set off", false, _stretcher == null ? "there is no stretcher to be had this session"
-                        : $"no way for the stretcher could be planned ({_way.Why}); rear doors to its place {_way.Straight:F1} m straight"
+                        : System.FormattableString.Invariant($"no way for the stretcher could be planned ({_way.Why}); rear doors to its place {_way.Straight:F1} m straight")
                           + (_way.Failed != null ? "; its place failed its clear test: " + _way.Failed : "")
                           + "; the stretcher stays in the ambulance, the crew goes on foot with the bag and treats where the casualty lies");
                     _stretcher = null;
@@ -1104,8 +1105,9 @@ namespace RealLifeOverhaul
             _treatFor = treat;
             Phase(now, reach);
             Logger?.Info($"People: paramedics out ({(gotA && gotB ? 2 : 1)}){(_stretcher != null ? " with the stretcher" : "")}, {straight:F0} m from "
-                         + (down ? "the casualty" : "the driver") + (paced ? $", at the {SceneClips.WalkPace:F1} m/s their walking clips are made for" : "")
-                         + $"; back aboard in about {reach + treat + back:F0} s. Sending them out took: the way {_msPlan:F1} ms ({_way.Cost}), the two characters {_msCrew:F0} ms, "
+                         + (down ? "the casualty" : "the driver") + (paced ? System.FormattableString.Invariant($", at the {SceneClips.WalkPace:F1} m/s their walking clips are made for") : "")
+                         + System.FormattableString.Invariant(
+                             $"; back aboard in about {reach + treat + back:F0} s. Sending them out took: the way {_msPlan:F1} ms ({_way.Cost}), the two characters {_msCrew:F0} ms, ")
                          + $"the stretcher taken {_msWheel:F0} ms, the cordon run round it {_msCordon:F0} ms, the lane shut {_msLane:F0} ms.");
             return now + reach + treat + back;
         }
@@ -1142,15 +1144,15 @@ namespace RealLifeOverhaul
             bool clearAhead = _way.Between == null;
             bool pass = pusherOff <= PlaceWithin && bedOff <= PlaceWithin && clearAhead && _way.HomeChecked;
             Check("set off", pass,
-                $"way out {_way.Out.Travel:F1} m with {_way.Out.Corners} corner(s) rounded to 1.2 m" + (_way.Swing ? ", then a swing-in from 2.1 m off the casualty's line" : ", a run-in along the casualty")
-                + $", way back {_way.Home.Travel:F1} m with {_way.Home.Corners}" + (_way.Square ? ", round behind the ambulance to the doors square" : ", swung square at the doors (no room to turn behind)")
+                System.FormattableString.Invariant($"way out {_way.Out.Travel:F1} m with {_way.Out.Corners} corner(s) rounded to 1.2 m") + (_way.Swing ? ", then a swing-in from 2.1 m off the casualty's line" : ", a run-in along the casualty")
+                + System.FormattableString.Invariant($", way back {_way.Home.Travel:F1} m with {_way.Home.Corners}") + (_way.Square ? ", round behind the ambulance to the doors square" : ", swung square at the doors (no room to turn behind)")
                 + (_way.HomeChecked ? "" : " (NOT clear when planned: something stands behind the ambulance)")
-                + $"; rear doors to the stretcher's place {_way.Straight:F1} m straight; by the ambulance's {(_way.AwaySide < 0f ? "left" : "right")} side"
+                + System.FormattableString.Invariant($"; rear doors to the stretcher's place {_way.Straight:F1} m straight; by the ambulance's {(_way.AwaySide < 0f ? "left" : "right")} side")
                 + (_way.Tier == 0 ? ", on the carriageway" : ", wherever there was room (not all of it carriageway)")
                 + (_way.OpenLane ? ", through the lane traffic is let past in (held shut meanwhile)" : "")
                 + (_way.BySide ? "; the stretcher goes to the other side of the casualty from the one first chosen (the only one with a clear way)" : "")
-                + (_way.DoorsToTape >= 0f ? $"; rear doors {_way.DoorsToTape:F1} m from the tape" + (clearAhead ? ", nothing between the ambulance and it" : $", and {_way.Between} stands between the ambulance and it") : "; no tape between the ambulance and the casualty")
-                + $"; every pose tested against vehicles, fixtures, the tape and the casualty; {(two ? "two" : "one")} of the crew; whoever pushes starts {pusherOff:F2} m from the line, the stretcher {bedOff:F2} m ({PlaceWithin:F2} m allowed)"
+                + (_way.DoorsToTape >= 0f ? System.FormattableString.Invariant($"; rear doors {_way.DoorsToTape:F1} m from the tape") + (clearAhead ? ", nothing between the ambulance and it" : $", and {_way.Between} stands between the ambulance and it") : "; no tape between the ambulance and the casualty")
+                + System.FormattableString.Invariant($"; every pose tested against vehicles, fixtures, the tape and the casualty; {(two ? "two" : "one")} of the crew; whoever pushes starts {pusherOff:F2} m from the line, the stretcher {bedOff:F2} m ({PlaceWithin:F2} m allowed)")
                 + (_way.Failed != null ? "; (the side first chosen failed its clear test: " + _way.Failed + ")" : ""));
         }
 
@@ -1166,7 +1168,8 @@ namespace RealLifeOverhaul
             bool taped = _plan != null && _plan.Up && !_plan.Lowered;
             Check(step, !taped || clear >= TapeWithin,
                 !taped ? "the stretcher crosses where the tape will run; none is up yet"
-                    : $"the stretcher crosses the tape by its opening; the nearest post, cone, barrier or tape is {clear:F2} m from anything of the crew ({TapeWithin:F2} m at least)");
+                    : System.FormattableString.Invariant(
+                        $"the stretcher crosses the tape by its opening; the nearest post, cone, barrier or tape is {clear:F2} m from anything of the crew ({TapeWithin:F2} m at least)"));
         }
 
         // The step the crew is on began now and should take so long. (Only for finishing it at once when it is well overdue and nobody can see.)
@@ -1440,8 +1443,9 @@ namespace RealLifeOverhaul
             float skew = Vector3.Angle(bed.forward, _way.Axis);
             skew = skew > 90f ? 180f - skew : skew;
             Check("parked beside", off <= PlaceWithin && skew <= AngleWithin && Mathf.Abs(beside - CrewWay.BedOut) <= PlaceWithin,
-                $"the stretcher stands {off:F2} m from its place ({PlaceWithin:F2} m allowed), its middle line {beside:F2} m from the casualty's ({CrewWay.BedOut:F2} m wanted), "
-                + $"{skew:F1} deg off parallel ({AngleWithin:F0} allowed)" + (_way.Swing ? ", swung in" : ", wheeled straight in"));
+                System.FormattableString.Invariant(
+                    $"the stretcher stands {off:F2} m from its place ({PlaceWithin:F2} m allowed), its middle line {beside:F2} m from the casualty's ({CrewWay.BedOut:F2} m wanted), ")
+                + System.FormattableString.Invariant($"{skew:F1} deg off parallel ({AngleWithin:F0} allowed)") + (_way.Swing ? ", swung in" : ", wheeled straight in"));
             _stretcher.Park();   // hands off it, and the bag off the bed into the hand of whoever treats
             GiveLaneBack();
             // Nobody kneels where it stands: the places were laid out clear of where it was to stand, which is where it is.
@@ -1516,11 +1520,12 @@ namespace RealLifeOverhaul
             float rearOff = _rear != null && _rear.Present ? _stretcher.FromAnEnd(_rear.Position) : 0f;
             float lifting = there && !covered ? _stretcher.Lift(_lead, _rear) : 0f;
             Check("lifted", leadOff <= HandleWithin && rearOff <= HandleWithin && (!there || covered || _stretcher.Laden),
-                $"whoever pushes back stands {leadOff:F2} m from their end of the stretcher" + (_rear != null ? $", the other {rearOff:F2} m from theirs" : ", alone")
-                + $" ({HandleWithin:F2} m allowed); "
+                System.FormattableString.Invariant($"whoever pushes back stands {leadOff:F2} m from their end of the stretcher")
+                    + (_rear != null ? System.FormattableString.Invariant($", the other {rearOff:F2} m from theirs") : ", alone")
+                + System.FormattableString.Invariant($" ({HandleWithin:F2} m allowed); ")
                 + (!there ? "nobody left to lift, the stretcher goes back empty"
                     : covered ? "the casualty is covered on the stretcher and off the road"
-                    : lifting > 0f ? $"the crew lifts the casualty onto it ({lifting:F1} s)" : "the casualty is lifted onto it"));
+                    : lifting > 0f ? System.FormattableString.Invariant($"the crew lifts the casualty onto it ({lifting:F1} s)") : "the casualty is lifted onto it"));
             if (lifting > 0f)
             {
                 _care = Care.Loading;
@@ -1561,9 +1566,9 @@ namespace RealLifeOverhaul
             Vector3 start = _stretcher.HandleFor(_way.HomeHeading);
             float pusherOff = Flat(_lead.Position - start).magnitude;
             Check("set off back", pusherOff <= HandleWithin && inWay == null,
-                $"whoever pushes takes it up {pusherOff:F2} m from its handle ({HandleWithin:F2} m allowed)"
+                System.FormattableString.Invariant($"whoever pushes takes it up {pusherOff:F2} m from its handle ({HandleWithin:F2} m allowed)")
                 + (second != null ? ", the other of the crew walked at its leading end" : ", alone")
-                + $"; way back {_way.Home.Travel:F1} m" + (_way.Swing ? ", swung out to it first" : "")
+                + System.FormattableString.Invariant($"; way back {_way.Home.Travel:F1} m") + (_way.Swing ? ", swung out to it first" : "")
                 + (inWay == null ? "; nothing stands on it" : "; '" + inWay.name + "' (layer " + LayerMask.LayerToName(inWay.gameObject.layer) + ") stands on it and could not be moved"));
             _care = Care.Wheeling;
             Phase(now, _way.Home.Travel / SceneClips.WalkPace + (_way.Swing ? 5f : 1f) + (final ? 5f : 1f));
@@ -1601,8 +1606,10 @@ namespace RealLifeOverhaul
             float aside = Flat(_stretcher.LeadingEnd - _way.RearFace - _way.Back * gap).magnitude;
             float skew = Vector3.Angle(_stretcher.Heading, -_way.Back);
             Check("loaded", Mathf.Abs(gap - CrewWay.DoorGap) <= DoorsWithin && aside <= DoorsWithin && skew <= AngleWithin,
-                $"the stretcher's leading end is {gap:F2} m from the rear doors ({CrewWay.DoorGap:F2} m wanted, {DoorsWithin:F2} m either way), {aside:F2} m off their middle, "
-                + $"{skew:F1} deg off square ({AngleWithin:F0} allowed)" + (_way.Square ? ", brought round behind the ambulance" : ", swung square on the spot") + "; crew aboard");
+                System.FormattableString.Invariant(
+                    $"the stretcher's leading end is {gap:F2} m from the rear doors ({CrewWay.DoorGap:F2} m wanted, {DoorsWithin:F2} m either way), {aside:F2} m off their middle, ")
+                + System.FormattableString.Invariant($"{skew:F1} deg off square ({AngleWithin:F0} allowed)") + (_way.Square ? ", brought round behind the ambulance" : ", swung square on the spot")
+                + "; crew aboard");
             if (_stretcher.Laden)
             {
                 ICasualty patient = Patient;
@@ -1864,7 +1871,7 @@ namespace RealLifeOverhaul
                 {
                     StandHits[i] = null;
                 }
-                string then = found ? "they stand " + moved.ToString("F1") + " m from it instead." : "nowhere clear within 1.5 m, so they make for it as planned.";
+                string then = found ? "they stand " + moved.ToString("F1", CultureInfo.InvariantCulture) + " m from it instead." : "nowhere clear within 1.5 m, so they make for it as planned.";
                 Logger?.Info("People: the place planned for the " + who + " failed its clear test: " + what + "; " + then + " (First of this scene.)");
             }
             return onStreet ? spot : wanted;

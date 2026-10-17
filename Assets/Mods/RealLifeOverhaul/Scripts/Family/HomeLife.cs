@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
@@ -761,7 +762,7 @@ namespace RealLifeOverhaul.Family
             _mode = Mode.Sitting;
             _satAt = now;
             _nextMove = now + Random.Range(70f, 160f);
-            Seating.Check(FamilyDirector.Logger, "the partner sat down on " + item.itemName + ", " + step.ToString("F2") + " m from where they stood, for " + (_nextMove - now).ToString("F0") + " s", true);
+            Seating.Check(FamilyDirector.Logger, "the partner sat down on " + item.itemName + ", " + step.ToString("F2", CultureInfo.InvariantCulture) + " m from where they stood, for " + (_nextMove - now).ToString("F0") + " s", true);
             return true;
         }
 

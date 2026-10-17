@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Smartphone;
@@ -182,7 +183,8 @@ namespace RealLifeOverhaul.Economy
                 _table.Show(table, _rows, _picked);
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Online shops: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                    Logger?.Info("Online shops: tab " + _tab + " written, " + _rows.Count + " row(s); "
+                        + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
                 }
             }
             finally

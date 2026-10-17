@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using BAModAPI;
 using GleyTrafficSystem;
@@ -229,7 +230,7 @@ namespace RealLifeOverhaul.Nav
             Roads = roads;
             _streetOfRoad = new string[roads];
             Logger?.Info("Navigation: road graph made: " + count + " lane points, " + to.Length + " edges (" + laneChanges + " of them changes of lane), "
-                         + roads + " roads, " + watch.Elapsed.TotalMilliseconds.ToString("F1") + " ms (the city's one graph, shared with the buses"
+                         + roads + " roads, " + watch.Elapsed.TotalMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms (the city's one graph, shared with the buses"
                          + (ScenePrewarm.InLate ? ", behind the loading screen)." : ")."));
             return true;
         }
@@ -243,7 +244,7 @@ namespace RealLifeOverhaul.Nav
             Walk.SetEdges(start, to, extra);
             Places = new NavIndex(Drive.X, Drive.Z, Usable, Drive.Count);
             Logger?.Info("Navigation: walking graph and index made: " + to.Length + " edges, " + Places.Indexed + " lane points in the index, "
-                         + watch.Elapsed.TotalMilliseconds.ToString("F1") + " ms.");
+                         + watch.Elapsed.TotalMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms.");
         }
 
         private void StartPicture()
@@ -339,9 +340,9 @@ namespace RealLifeOverhaul.Nav
             _keptPicture = picture;
             _keptPrint = job.Print;
             Picture = picture;
-            Logger?.Info("Navigation: map made: " + job.Width + " x " + job.Height + " pixels (" + job.PerMetre.ToString("F2") + " a metre, "
-                         + (job.Pixels.Length / 1048576f).ToString("F1") + " MB), " + job.Bands + " lanes drawn in " + job.Milliseconds.ToString("F0")
-                         + " ms off the main thread, sent to the graphics card in " + watch.Elapsed.TotalMilliseconds.ToString("F1") + " ms.");
+            Logger?.Info("Navigation: map made: " + job.Width + " x " + job.Height + " pixels (" + job.PerMetre.ToString("F2", CultureInfo.InvariantCulture) + " a metre, "
+                         + (job.Pixels.Length / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB), " + job.Bands + " lanes drawn in " + job.Milliseconds.ToString("F0")
+                         + " ms off the main thread, sent to the graphics card in " + watch.Elapsed.TotalMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms.");
         }
 
         /// <summary>The city is going: everything of it is let go but the picture, which is kept for the next load (see the summary).</summary>

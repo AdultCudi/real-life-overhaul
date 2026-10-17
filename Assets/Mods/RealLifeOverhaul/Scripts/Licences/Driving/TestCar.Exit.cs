@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using Helpers;
 using UI;
@@ -235,7 +236,8 @@ namespace RealLifeOverhaul
                 pc.ResetNavigation();
                 HideCard(car);
                 _logger?.Info("Licences: out of the school's car, the player was " + why + "; the school finished the exit"
-                              + (warped ? " and put them on their feet " + Vector3.Distance(spot, car != null ? car.transform.position : spot).ToString("F1") + " m from the car's middle."
+                              + (warped ? " and put them on their feet " + Vector3.Distance(spot, car != null ? car.transform.position : spot).ToString("F1", CultureInfo.InvariantCulture)
+                              + " m from the car's middle."
                                   : ", but found no walkable place to put them (" + (found ? "the warp was refused" : "none within reach") + ")."));
             }
             catch (Exception e)

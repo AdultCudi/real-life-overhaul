@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Characters.EmojiSystem;
 using UI.Notification;
 using UnityEngine;
@@ -211,9 +212,9 @@ namespace RealLifeOverhaul
             Vector3 at = person.Position;
             float off = SocialPlaces.OffMesh(at);
             bool route = SocialCast.Walk(person, goal, out float length, out bool whole);
-            SocialDirector.Logger.Info("Social: " + who.Name + " " + how + " at (" + at.x.ToString("F0") + ", " + at.y.ToString("F1") + ", " + at.z.ToString("F0") + "), "
+            SocialDirector.Logger.Info("Social: " + who.Name + " " + how + " at (" + at.x.ToString("F0") + ", " + at.y.ToString("F1", CultureInfo.InvariantCulture) + ", " + at.z.ToString("F0") + "), "
                                        + JobSpots.Flat(at, SocialDirector.Where()).ToString("F0") + " m from the player; navigation mesh "
-                                       + (off < 0f ? "NOT within 1 m" : off.ToString("F2") + " m off") + "; walk to the place: "
+                                       + (off < 0f ? "NOT within 1 m" : off.ToString("F2", CultureInfo.InvariantCulture) + " m off") + "; walk to the place: "
                                        + (!route ? "no route" : length.ToString("F0") + " m" + (whole ? string.Empty : " (ends short of it)")) + ", "
                                        + JobSpots.Flat(at, goal).ToString("F0") + " m in a straight line.");
         }

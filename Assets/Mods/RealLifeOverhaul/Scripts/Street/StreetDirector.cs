@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using Streets.Pedestrians;
@@ -243,7 +244,8 @@ namespace RealLifeOverhaul.Street
                 _shown = true;
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Street talk check (offer): the box is up over " + What(at, player.transform.forward) + ", after " + (_aim.Seen - _aim.Since).ToString("0.0")
+                    Logger?.Info("Street talk check (offer): the box is up over " + What(at, player.transform.forward) + ", after "
+                                 + (_aim.Seen - _aim.Since).ToString("0.0", CultureInfo.InvariantCulture)
                                  + " s in front (" + StreetRules.Dwell + " s wanted)" + (_aim.InGrace(now) ? ", kept by the grace as they step out of the front" : string.Empty) + ": PASS.");
                 }
             }
@@ -340,7 +342,7 @@ namespace RealLifeOverhaul.Street
                 verdict = shouldHave ? "FAIL (the nearest is in reach and in front and was not offered)" : "PASS";
             }
             string nearest = closed != null ? "not looked for"
-                : StreetGame.NearFound ? Mathf.Sqrt(StreetGame.NearSqr).ToString("0.0") + " m away, " + StreetOffer.Degrees(StreetGame.NearCos) + " deg off the facing, " + KindName(StreetGame.NearKind)
+                : StreetGame.NearFound ? Mathf.Sqrt(StreetGame.NearSqr).ToString("0.0", CultureInfo.InvariantCulture) + " m away, " + StreetOffer.Degrees(StreetGame.NearCos) + " deg off the facing, " + KindName(StreetGame.NearKind)
                                          + (StreetGame.NearUsable ? ", usable" : ", not usable (hidden, held by another feature or another player's)")
                 : "nobody within 12 m";
             Logger?.Info("Street talk check (offer): nothing offered: " + why + "; out: " + StreetGame.LastWalkers + " walker(s), " + StreetGame.LastFigures
@@ -355,7 +357,7 @@ namespace RealLifeOverhaul.Street
                 return "nobody";
             }
             Vector3 o = _offered.transform.position - at;
-            return "'" + _offeredLine + "' (" + KindName(_offeredKind) + ") " + Mathf.Sqrt(o.x * o.x + o.z * o.z).ToString("0.0") + " m away, "
+            return "'" + _offeredLine + "' (" + KindName(_offeredKind) + ") " + Mathf.Sqrt(o.x * o.x + o.z * o.z).ToString("0.0", CultureInfo.InvariantCulture) + " m away, "
                    + StreetOffer.Degrees(StreetOffer.Cos(o.x, o.z, forward.x, forward.z)) + " deg off the facing";
         }
 

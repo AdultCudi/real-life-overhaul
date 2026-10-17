@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Dialogs;
@@ -793,9 +794,10 @@ namespace RealLifeOverhaul.Economy
 
         private static string Factors(CreditScore s)
         {
-            return "Factors: payments " + s.Factor[0].ToString("0.00") + " (" + s.OnTime + " on time, " + s.Missed + " missed), owed " + s.Factor[1].ToString("0.00")
-                   + ", length " + s.Factor[2].ToString("0.00") + " (" + s.HistoryDays + " days), record " + s.Factor[3].ToString("0.00")
-                   + ", applications " + s.Factor[4].ToString("0.00") + " (" + s.Applications + ").";
+            return "Factors: payments " + s.Factor[0].ToString("0.00", CultureInfo.InvariantCulture) + " (" + s.OnTime + " on time, " + s.Missed + " missed), owed "
+                + s.Factor[1].ToString("0.00", CultureInfo.InvariantCulture)
+                   + ", length " + s.Factor[2].ToString("0.00", CultureInfo.InvariantCulture) + " (" + s.HistoryDays + " days), record " + s.Factor[3].ToString("0.00", CultureInfo.InvariantCulture)
+                   + ", applications " + s.Factor[4].ToString("0.00", CultureInfo.InvariantCulture) + " (" + s.Applications + ").";
         }
 
         // ---------------------------------------------------------------- the bank in person
@@ -922,7 +924,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Logger?.Info("Economy check (application): " + amount + " from " + (lender != null ? lender.Name : "nobody") + " by phone at rating " + score + ", the most it lends now " + most.ToString("0")
                                  + (answer == LoanAnswer.Approved
-                                     ? ": approved at " + quote.AnnualRate.ToString("0.#") + "% a year, " + quote.DailyPayment + " a day and " + quote.DailyInterest + " interest for " + quote.Days + " days, fee " + quote.Fee + ": PASS"
+                                     ? ": approved at " + quote.AnnualRate.ToString("0.#", CultureInfo.InvariantCulture) + "% a year, " + quote.DailyPayment + " a day and " + quote.DailyInterest + " interest for " + quote.Days + " days, fee " + quote.Fee + ": PASS"
                                      : ": refused (" + answer + "): PASS"));
                 }
                 return answer;

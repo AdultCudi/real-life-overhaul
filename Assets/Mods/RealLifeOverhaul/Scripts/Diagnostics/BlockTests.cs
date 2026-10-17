@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using Helpers;
 using UI.Notification;
@@ -45,14 +46,15 @@ namespace RealLifeOverhaul
                 }
                 Vector3 feet = player.transform.position;
                 Text.Length = 0;
-                Text.Append("Block check: the player at (").Append(feet.x.ToString("0.0")).Append(", ").Append(feet.y.ToString("0.0")).Append(", ").Append(feet.z.ToString("0.0")).Append(")");
+                Text.Append("Block check: the player at (").Append(feet.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(", ").Append(feet.y.ToString("0.0", CultureInfo.InvariantCulture))
+                    .Append(", ").Append(feet.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(")");
                 Text.Append(NavMesh.SamplePosition(feet, out NavMeshHit on, Reach, NavMesh.AllAreas)
-                    ? "; the walkable mesh is " + Vector3.Distance(on.position, feet).ToString("0.00") + " m from their feet"
+                    ? "; the walkable mesh is " + Vector3.Distance(on.position, feet).ToString("0.00", CultureInfo.InvariantCulture) + " m from their feet"
                     : "; no walkable mesh within " + Reach + " m");
                 if (NavMesh.FindClosestEdge(feet, out NavMeshHit edge, NavMesh.AllAreas))
                 {
                     Vector3 to = edge.position - feet;
-                    Text.Append("; its nearest edge is ").Append(edge.distance.ToString("0.00")).Append(" m away, towards (").Append(to.x.ToString("0.0")).Append(", ").Append(to.z.ToString("0.0")).Append(")");
+                    Text.Append("; its nearest edge is ").Append(edge.distance.ToString("0.00", CultureInfo.InvariantCulture)).Append(" m away, towards (").Append(to.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(", ").Append(to.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(")");
                 }
                 Text.Append(". The mod's obstacles changed so far: ").Append(MeshCuts.Total).Append(MeshCuts.Last != null ? ", the last: " + MeshCuts.Last : string.Empty).Append('.');
                 ClickWatch.Logger?.Warn(Text.ToString());
@@ -74,10 +76,12 @@ namespace RealLifeOverhaul
                     if (obstacles++ < Most)
                     {
                         Text.Length = 0;
-                        Text.Append("Block check (obstacle): '").Append(Path(o.transform)).Append("', ").Append(Mathf.Max(0f, flat).ToString("0.0")).Append(" m away, ")
-                            .Append(o.carving ? "CUTS the mesh" : "does not cut the mesh").Append(", ").Append(size.x.ToString("0.0")).Append(" x ").Append(size.z.ToString("0.0")).Append(" m, ")
+                        Text.Append("Block check (obstacle): '").Append(Path(o.transform)).Append("', ").Append(Mathf.Max(0f, flat).ToString("0.0", CultureInfo.InvariantCulture)).Append(" m away, ")
+                            .Append(o.carving ? "CUTS the mesh" : "does not cut the mesh").Append(", ").Append(size.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(" x ")
+                                .Append(size.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(" m, ")
                             .Append(drawn ? "drawn" : "NOT DRAWN").Append(" (").Append(renderers).Append(" renderer(s) of its own, ").Append(seen).Append(" in view), its middle ")
-                            .Append((centre.x - feet.x).ToString("0.0")).Append(" m east and ").Append((centre.z - feet.z).ToString("0.0")).Append(" m north of the player, turned ")
+                            .Append((centre.x - feet.x).ToString("0.0", CultureInfo.InvariantCulture)).Append(" m east and ").Append((centre.z - feet.z).ToString("0.0", CultureInfo.InvariantCulture))
+                                .Append(" m north of the player, turned ")
                             .Append(Mathf.RoundToInt(o.transform.eulerAngles.y)).Append(" degrees, layer ").Append(LayerMask.LayerToName(o.gameObject.layer)).Append('.');
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }
@@ -98,7 +102,7 @@ namespace RealLifeOverhaul
                     if (agents++ < Most)
                     {
                         Text.Length = 0;
-                        Text.Append("Block check (walker): '").Append(Path(a.transform)).Append("', ").Append(flat.ToString("0.0")).Append(" m away, radius ").Append(a.radius.ToString("0.00")).Append(" m, ")
+                        Text.Append("Block check (walker): '").Append(Path(a.transform)).Append("', ").Append(flat.ToString("0.0", CultureInfo.InvariantCulture)).Append(" m away, radius ").Append(a.radius.ToString("0.00", CultureInfo.InvariantCulture)).Append(" m, ")
                             .Append(drawn ? "drawn" : "NOT DRAWN").Append(" (").Append(renderers).Append(" renderer(s), ").Append(seen).Append(" in view), avoidance ").Append(a.obstacleAvoidanceType).Append('.');
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }
@@ -118,8 +122,10 @@ namespace RealLifeOverhaul
                     if (!drawn && solids++ < Most)
                     {
                         Text.Length = 0;
-                        Text.Append("Block check (solid, not drawn): '").Append(Path(c.transform)).Append("', ").Append(Flat(c.bounds.center, feet).ToString("0.0")).Append(" m away, ")
-                            .Append(c.GetType().Name).Append(' ').Append(c.bounds.size.x.ToString("0.0")).Append(" x ").Append(c.bounds.size.z.ToString("0.0")).Append(" m, layer ")
+                        Text.Append("Block check (solid, not drawn): '").Append(Path(c.transform)).Append("', ").Append(Flat(c.bounds.center, feet).ToString("0.0", CultureInfo.InvariantCulture))
+                            .Append(" m away, ")
+                            .Append(c.GetType().Name).Append(' ').Append(c.bounds.size.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(" x ")
+                                .Append(c.bounds.size.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(" m, layer ")
                             .Append(LayerMask.LayerToName(c.gameObject.layer)).Append('.');
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }

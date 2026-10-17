@@ -542,10 +542,12 @@ namespace RealLifeOverhaul
             if (!_capLogged)
             {
                 _capLogged = true;
-                ActorPool.Logger?.Info($"People: police cap fitted to the measured head: crown {top:F3} m above the head joint, eyes at {eyes:F3} m "
-                                       + $"({(jointed ? "from the eye joints" : "by proportion, no usable eye joints")}), head {size:F2} of the standard width; "
-                                       + $"band's lower edge at {band:F3} m ({band - eyes:F3} m above the eyes), tip of the peak {band - CapBrimDrop * tall - eyes:F3} m above the eyes; "
-                                       + $"skull there {w * 2f:F3} m wide and {depth * 2f:F3} m deep, cap scaled {wide:F2} x {tall:F2} x {deep:F2}. (Logged once.)");
+                ActorPool.Logger?.Info(System.FormattableString.Invariant($"People: police cap fitted to the measured head: crown {top:F3} m above the head joint, eyes at {eyes:F3} m ")
+                                       + System.FormattableString.Invariant($"({(jointed ? "from the eye joints" : "by proportion, no usable eye joints")}), head {size:F2} of the standard width; ")
+                                       + System.FormattableString.Invariant(
+                                           $"band's lower edge at {band:F3} m ({band - eyes:F3} m above the eyes), tip of the peak {band - CapBrimDrop * tall - eyes:F3} m above the eyes; ")
+                                       + System.FormattableString.Invariant(
+                                           $"skull there {w * 2f:F3} m wide and {depth * 2f:F3} m deep, cap scaled {wide:F2} x {tall:F2} x {deep:F2}. (Logged once.)"));
             }
             return true;
         }

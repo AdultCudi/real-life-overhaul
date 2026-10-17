@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Extensions;
 using Helpers;
 using RealLifeOverhaul.GameUi;
@@ -214,7 +215,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 Licences.Logger?.Info("Licences check (theory): question " + (_index + 1) + " of " + _paper.Count + ", " + (opening ? "the game's list is open, " : string.Empty) + list.Made
-                                      + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                      + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
             return true;
         }

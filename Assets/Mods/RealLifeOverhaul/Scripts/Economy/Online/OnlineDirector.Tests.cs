@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -133,7 +134,7 @@ namespace RealLifeOverhaul.Economy
                     TestRefusals.TellKey(Logger, "Online open", "reallife_online_test_no_business");
                     return;
                 }
-                TestDone("a Standard site opened free at " + place.Business + " with " + place.Shop.Lines.Count + " product(s) from its stock; " + (place.Site.PerDay / 1000f).ToString("0.0") + " order(s) a day expected", TabShops, "shop:" + key);
+                TestDone("a Standard site opened free at " + place.Business + " with " + place.Shop.Lines.Count + " product(s) from its stock; " + (place.Site.PerDay / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " order(s) a day expected", TabShops, "shop:" + key);
             });
         }
 
@@ -315,7 +316,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 PlanAll(Save.Day);
                 TestDone("twenty-four hours worked through at " + _places.Count + " site(s): " + came + " order(s) came, " + picked + " picked from real stock, " + lost + " cancelled or given up, " + arrived + " at the door of which "
-                         + late + " late, " + open + " still open; the books were paid in and the game's cash moved by " + (Save.Money - cash).ToString("0.00"), TabShops, "shop:" + _places[0].Shop.Place);
+                         + late + " late, " + open + " still open; the books were paid in and the game's cash moved by " + (Save.Money - cash).ToString("0.00", CultureInfo.InvariantCulture), TabShops, "shop:" + _places[0].Shop.Place);
             });
         }
 

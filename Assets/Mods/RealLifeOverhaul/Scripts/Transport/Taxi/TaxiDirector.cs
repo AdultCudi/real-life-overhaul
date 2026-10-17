@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
@@ -430,8 +431,9 @@ namespace RealLifeOverhaul
                     }
                 }
                 if (Loud) Say("route", plan.Route.Count + " lane points, " + plan.Metres.ToString("F0") + " m of road from a start " + plan.StartAway.ToString("F0") + " m off (band "
-                             + least.ToString("F0") + " to " + most.ToString("F0") + "), to a lane point " + plan.FromCaller.ToString("F1") + " m from the caller; " + plan.Starts
-                             + " places to start from, " + plan.Goals + " to end at, " + plan.Steps + " search steps, " + plan.Milliseconds.ToString("F2") + " ms: PASS");
+                             + least.ToString("F0") + " to " + most.ToString("F0") + "), to a lane point " + plan.FromCaller.ToString("F1", CultureInfo.InvariantCulture) + " m from the caller; "
+                             + plan.Starts
+                             + " places to start from, " + plan.Goals + " to end at, " + plan.Steps + " search steps, " + plan.Milliseconds.ToString("F2", CultureInfo.InvariantCulture) + " ms: PASS");
                 bool seen = CitySpots.InView(plan.StartAt) || StreetSpots.IsInView(plan.StartAt);
                 if (_cab.Send(plan, _roads, pick, idle, out why, out bool startTaken))
                 {
@@ -554,8 +556,10 @@ namespace RealLifeOverhaul
             {
                 _cab.Measure(out float along, out float aside, out float angle);
                 bool good = Mathf.Abs(along) <= ArrivedWithin && angle <= 25f;
-                Say("arrival", "after " + _cab.Took.ToString("F0") + " s over " + _cab.StartedBack.ToString("F0") + " m; " + away.ToString("F1") + " m from the player; standing "
-                               + (_cab.AtKerb ? "at the kerb" : "on the lane") + ", its middle " + along.ToString("F1") + " m along and " + aside.ToString("F1")
+                Say("arrival", "after " + _cab.Took.ToString("F0") + " s over " + _cab.StartedBack.ToString("F0") + " m; " + away.ToString("F1", CultureInfo.InvariantCulture)
+                    + " m from the player; standing "
+                               + (_cab.AtKerb ? "at the kerb" : "on the lane") + ", its middle " + along.ToString("F1", CultureInfo.InvariantCulture) + " m along and "
+                               + aside.ToString("F1", CultureInfo.InvariantCulture)
                                + " m aside of the lane point it was sent to, " + angle.ToString("F0") + " degrees off the lane: " + (good ? "PASS" : "FAIL"));
             }
             if (TaxiRules.FarAtArrival(away))

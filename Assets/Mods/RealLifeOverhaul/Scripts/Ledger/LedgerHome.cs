@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -72,7 +73,7 @@ namespace RealLifeOverhaul.Ledger
             _placedFor = edition;
             if (Meta.Dev.Verbose)
             {
-                LedgerDirector.Logger?.Info("City Ledger check (the copy at home): today's paper lies inside the door at " + floor.ToString("F1") + ", "
+                LedgerDirector.Logger?.Info("City Ledger check (the copy at home): today's paper lies inside the door at " + floor.ToString("F1", CultureInfo.InvariantCulture) + ", "
                                             + (_pointer != null ? "a click away: PASS" : "but cannot be pointed at (the game has no layer for it): FAIL") + ".");
             }
         }

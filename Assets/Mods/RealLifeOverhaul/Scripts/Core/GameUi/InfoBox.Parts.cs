@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using Localizor;
 using TMPro;
@@ -87,8 +88,9 @@ namespace RealLifeOverhaul.GameUi
             }
             long now = Stopwatch.GetTimestamp();
             double ms = _clock.Own(now) * 1000.0 / Stopwatch.Frequency, page = _clock.Page(now) * 1000.0 / Stopwatch.Frequency;
-            Logger?.Info("Info box check (" + _box.name + "): a page of " + _parts + " parts written in " + ms.ToString("0.00") + " ms of the box's own work ("
-                         + page.ToString("0.00") + " ms from Clear to Done with the app's own work between), wanted under " + FillBudgetMs.ToString("0.#") + " ms: "
+            Logger?.Info("Info box check (" + _box.name + "): a page of " + _parts + " parts written in " + ms.ToString("0.00", CultureInfo.InvariantCulture) + " ms of the box's own work ("
+                         + page.ToString("0.00", CultureInfo.InvariantCulture) + " ms from Clear to Done with the app's own work between), wanted under "
+                         + FillBudgetMs.ToString("0.#", CultureInfo.InvariantCulture) + " ms: "
                          + (ms < FillBudgetMs ? "PASS" : "SLOW") + ".");
             _begun = false;
         }

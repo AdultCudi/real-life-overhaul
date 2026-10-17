@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -104,8 +105,9 @@ namespace RealLifeOverhaul.Economy
             t.Risk = TaxRules.RiskDay(t.Risk, hidden);
             if (Verbose && (before != t.Risk || hiding))
             {
-                Logger?.Info("Company check (tax, the audit risk): " + hidden + "% hidden in all, the risk " + (before / 100f).ToString("0.00") + "% to " + (t.Risk / 100f).ToString("0.00") + "% a day, with accountant "
-                             + t.Accountant + " " + (TaxRules.AuditChance(t.Risk, t.Accountant) / 100f).ToString("0.00") + "%; saved since the last audit " + t.Saved + ": PASS");
+                Logger?.Info("Company check (tax, the audit risk): " + hidden + "% hidden in all, the risk " + (before / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% to " + (t.Risk / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% a day, with accountant "
+                             + t.Accountant + " " + (TaxRules.AuditChance(t.Risk, t.Accountant) / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "%; saved since the last audit " + t.Saved
+                             + ": PASS");
             }
             if (Settings.EconomyCompanyHide && TaxRules.Audited(t, _state.Seed, _state.Age))
             {
@@ -174,7 +176,7 @@ namespace RealLifeOverhaul.Economy
             if (owed <= 0)
             {
                 Tell(NotificationType.Info, "reallife_co_note_audit_clean", null, TabTax, null);
-                Logger?.Info("Company: a tax audit on day " + day + " (risk " + (risk / 100f).ToString("0.00") + "% a day) found nothing kept back.");
+                Logger?.Info("Company: a tax audit on day " + day + " (risk " + (risk / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% a day) found nothing kept back.");
                 return;
             }
             for (int i = 0; i < _state.Shops.Count; i++)
@@ -189,7 +191,7 @@ namespace RealLifeOverhaul.Economy
             {
                 { "tax", CompanyText.Money(backTax) }, { "fine", CompanyText.Money(fine) }, { "owed", CompanyText.Money(t.Owed) }
             }, TabTax, null);
-            Logger?.Info("Company: a tax audit on day " + day + " (risk " + (risk / 100f).ToString("0.00") + "% a day) found " + backTax + " of tax kept back; fine " + fine + " (" + CompanyText.Share(CompanyCatalogue.FineShare[_level])
+            Logger?.Info("Company: a tax audit on day " + day + " (risk " + (risk / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "% a day) found " + backTax + " of tax kept back; fine " + fine + " (" + CompanyText.Share(CompanyCatalogue.FineShare[_level])
                          + " at strictness " + _level + "); " + (court ? number > 0 ? "over " + CompanyCatalogue.CourtSum + ": case " + number + " opened in the courts" : "over " + CompanyCatalogue.CourtSum
                                                                                                                                                                   + ", but there is no court to open a case with" : "no court case")
                          + "; still owed " + t.Owed + "; every business's share is back at nothing.");

@@ -259,8 +259,8 @@ namespace RealLifeOverhaul
             if (!_stepSaid)
             {
                 _stepSaid = true;
-                _logger?.Info($"Justice: the player was not walked to the place litter_pick is made for ({gap.magnitude:F2} m short after {StepSeconds:F1} s, "
-                              + $"allowed {StandSlack:F2}); after {StepTries} such in a shift the litter is picked from where they stand. (Said once.)");
+                _logger?.Info(FormattableString.Invariant($"Justice: the player was not walked to the place litter_pick is made for ({gap.magnitude:F2} m short after {StepSeconds:F1} s, ")
+                              + FormattableString.Invariant($"allowed {StandSlack:F2}); after {StepTries} such in a shift the litter is picked from where they stand. (Said once.)"));
             }
         }
 

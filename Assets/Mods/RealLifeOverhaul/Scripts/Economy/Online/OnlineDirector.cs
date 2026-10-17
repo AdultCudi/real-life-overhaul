@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -532,7 +533,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Info("Online check (hour " + (now % 24) + " of day " + (now / 24) + ", " + hours + " hour(s) worked through): " + _places.Count + " site(s), " + came + " order(s) came, " + picked + " picked from real stock, "
                              + cancelled + " cancelled or given up, " + sent + " sent, " + arrived + " at the door of which " + late + " late, " + returned + " returned; "
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00") + " ms: PASS");
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
 
@@ -574,8 +575,8 @@ namespace RealLifeOverhaul.Economy
             {
                 float moved = Save.Money - before, wanted = (b.Takings - b.Refunds - b.Delivery) / 100f;
                 Logger?.Info("Online check (the book of day " + b.Day + ", " + shop.Name + "): " + b.Orders + " order(s) came, " + b.Picked + " picked, takings " + Cents(b.Takings) + ", cost of goods " + Cents(b.Goods)
-                             + ", refunds " + Cents(b.Refunds) + ", delivery " + Cents(b.Delivery) + ", hosting " + Cents(b.Hosting) + " (taken when due); the game's cash moved by " + moved.ToString("0.00")
-                             + " against " + wanted.ToString("0.00") + " wanted: " + (Mathf.Abs(moved - wanted) <= 0.02f + (Mathf.Abs(before) + Mathf.Abs(wanted)) * 0.000004f ? "PASS" : "FAIL, the cash did not move by the book's sum"));   // (the game keeps cash in a float: a few millionths of it is as near as two readings can be)
+                             + ", refunds " + Cents(b.Refunds) + ", delivery " + Cents(b.Delivery) + ", hosting " + Cents(b.Hosting) + " (taken when due); the game's cash moved by " + moved.ToString("0.00", CultureInfo.InvariantCulture)
+                             + " against " + wanted.ToString("0.00", CultureInfo.InvariantCulture) + " wanted: " + (Mathf.Abs(moved - wanted) <= 0.02f + (Mathf.Abs(before) + Mathf.Abs(wanted)) * 0.000004f ? "PASS" : "FAIL, the cash did not move by the book's sum"));   // (the game keeps cash in a float: a few millionths of it is as near as two readings can be)
             }
             return true;
         }
@@ -632,8 +633,8 @@ namespace RealLifeOverhaul.Economy
                     Logger?.Info("Online check (day " + day + "): " + _places.Count + " site(s)" + (gone > 0 ? ", " + gone + " closed with its business" : string.Empty) + "; " + booked + " site(s) had yesterday's sales of "
                                  + Cents(sales) + " and goods of " + Cents(goods) + " entered in the game's statement for day " + (day - 1)
                                  + (waiting > 0 ? ", " + waiting + " wait for a statement the game has not made" : string.Empty) + (pruned > 0 ? ", " + pruned + " product(s) no longer offered taken out" : string.Empty)
-                                 + "; prices " + (_index / 10f).ToString("0.0") + ", the economy " + CityEconomy.State + "; the books " + ((entered - started) * 1000f).ToString("0.0") + " ms, demand and the first hour "
-                                 + ((done - entered) * 1000f).ToString("0.0") + " ms: PASS");
+                                 + "; prices " + (_index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", the economy " + CityEconomy.State + "; the books " + ((entered - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, demand and the first hour "
+                                 + ((done - entered) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
             catch (Exception e)
@@ -696,7 +697,7 @@ namespace RealLifeOverhaul.Economy
             if (Verbose && say)
             {
                 Site s = place.Site;
-                Logger?.Info("Online check (demand, " + place.Shop.Name + "): " + (s.PerDay / 1000f).ToString("0.0") + " order(s) a day of at most "
+                Logger?.Info("Online check (demand, " + place.Shop.Name + "): " + (s.PerDay / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " order(s) a day of at most "
                              + OnlineCatalogue.OrdersMost[OnlineCatalogue.Quality(place.Shop.Quality)] + ": quality " + place.Shop.Quality + (place.Shop.InHouse ? " built in-house" : string.Empty) + ", " + s.Lines
                              + " product(s), the game's demand " + s.Need + " of 100, prices " + s.Price + ", promise " + place.Shop.Promise + ", stars " + s.Stars + ", advertising " + s.Ads + "%, a campaign at the business "
                              + s.Campaign + "%, the economy " + s.Cycle + ", season " + s.Season + ", " + s.Crowd + " site(s) sharing the city (factors in thousandths)" + (place.Shop.Offline ? "; offline, hosting unpaid" : string.Empty) + ": PASS");

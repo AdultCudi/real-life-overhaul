@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UI.Notification;
 using UnityEngine;
 using UnityEngine.AI;
@@ -393,8 +394,8 @@ namespace RealLifeOverhaul
             {
                 // A stop in the lane is judged by where the car stands, not how straight.
                 float out0 = OverBox(centre, halfLength, halfWidth);
-                _logger?.Info("Licences: stopped " + Mathf.Max(0f, out0).ToString("F2") + " m over the edge of the stop box painted in the lane ("
-                              + (_boxHalfWidth * 2f).ToString("F1") + " by " + (_boxHalfLength * 2f).ToString("F1") + " m).");
+                _logger?.Info("Licences: stopped " + Mathf.Max(0f, out0).ToString("F2", CultureInfo.InvariantCulture) + " m over the edge of the stop box painted in the lane ("
+                              + (_boxHalfWidth * 2f).ToString("F1", CultureInfo.InvariantCulture) + " by " + (_boxHalfLength * 2f).ToString("F1", CultureInfo.InvariantCulture) + " m).");
                 if (out0 > BoxNear)
                 {
                     _faults[(int)TestFault.NotParked]++;
@@ -411,8 +412,10 @@ namespace RealLifeOverhaul
             float overSide = Mathf.Abs(local.x) + halfWidth - _route.BayHalfWidth;
             float overEnd = Mathf.Abs(local.z) + halfLength - _route.BayHalfLength;
             float over = Mathf.Max(overSide, overEnd);
-            _logger?.Info("Licences: parked " + local.x.ToString("F2") + " m across and " + local.z.ToString("F2") + " m along from the middle of the bay, "
-                          + angle.ToString("F0") + " degrees off, " + Mathf.Max(0f, over).ToString("F2") + " m over its edge; reversed " + _reversed.ToString("F1") + " m.");
+            _logger?.Info("Licences: parked " + local.x.ToString("F2", CultureInfo.InvariantCulture) + " m across and " + local.z.ToString("F2", CultureInfo.InvariantCulture)
+                          + " m along from the middle of the bay, "
+                          + angle.ToString("F0") + " degrees off, " + Mathf.Max(0f, over).ToString("F2", CultureInfo.InvariantCulture) + " m over its edge; reversed "
+                          + _reversed.ToString("F1", CultureInfo.InvariantCulture) + " m.");
             if (over > 0.6f || angle > 25f)
             {
                 _faults[(int)TestFault.NotParked]++;

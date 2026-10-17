@@ -211,7 +211,7 @@ namespace RealLifeOverhaul.Law
                 {
                     return;
                 }
-                _logger?.Info($"Law: {precinct.Name}: the room is only {_length:F1} m deep from the door; it is left bare, the front desk answers where you stand.");
+                _logger?.Info(FormattableString.Invariant($"Law: {precinct.Name}: the room is only {_length:F1} m deep from the door; it is left bare, the front desk answers where you stand."));
                 return;
             }
 
@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Law
             _nextPeople = 0f;
             BeginCast(desk);              // its people, seated and at work at once, under the fade (StationInterior.Cast.cs)
             BeginFill();                  // what floor is still bare, a city office's back rooms, a little a frame (StationInterior.Fill.cs)
-            _logger?.Info($"Law: {precinct.Name}: inside: room {_length:F1} m deep from the door: {_fitted}.");
+            _logger?.Info(FormattableString.Invariant($"Law: {precinct.Name}: inside: room {_length:F1} m deep from the door: {_fitted}."));
         }
 
         private bool _cellBenchFits;
@@ -617,7 +617,7 @@ namespace RealLifeOverhaul.Law
             }
             if (wide < panel + 0.8f)
             {
-                _fitted.Append($"cell: the back of the room is {wide:F1} m wide, neither one panel nor room for a corner; ");
+                _fitted.Append(FormattableString.Invariant($"cell: the back of the room is {wide:F1} m wide, neither one panel nor room for a corner; "));
                 return false;
             }
             for (int attempt = 0; attempt < 2; attempt++)

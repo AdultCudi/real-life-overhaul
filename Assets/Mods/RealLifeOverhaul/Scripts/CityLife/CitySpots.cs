@@ -1,3 +1,4 @@
+using System.Globalization;
 using Extensions;
 using UnityEngine;
 using UnityEngine.AI;
@@ -257,7 +258,8 @@ namespace RealLifeOverhaul
                 {
                     _wallLogged = true;
                     CityLifeDirector.Logger?.Info("City life: shopfronts are found on layer '" + LayerMask.LayerToName(face.collider.gameObject.layer) + "' (first: "
-                                                  + face.collider.GetType().Name + " '" + face.collider.name + "', " + gap.ToString("F2") + " m from where the worker stands).");
+                                                  + face.collider.GetType().Name + " '" + face.collider.name + "', " + gap.ToString("F2", CultureInfo.InvariantCulture)
+                                                  + " m from where the worker stands).");
                 }
                 stand = found;
                 outward = normal;

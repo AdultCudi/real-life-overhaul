@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using UnityEngine;
@@ -120,7 +121,8 @@ namespace RealLifeOverhaul.Tech
             Apply(centre, day);
             if (_plan.Servers + _plan.Accelerators > 0)
             {
-                _said.Append("hall ").Append((_plan.X1 - _plan.X0).ToString("F1")).Append(" x ").Append((_plan.Z1 - _plan.Z0).ToString("F1")).Append(" m, ")
+                _said.Append("hall ").Append((_plan.X1 - _plan.X0).ToString("F1", CultureInfo.InvariantCulture)).Append(" x ")
+                    .Append((_plan.Z1 - _plan.Z0).ToString("F1", CultureInfo.InvariantCulture)).Append(" m, ")
                     .Append(_plan.Servers).Append(" server and ").Append(_plan.Accelerators).Append(" accelerator racks of ").Append(centre.Racks + centre.GpuRacks)
                     .Append(" (room for ").Append(_plan.Slots).Append("), ").Append(_plan.Rows).Append(" rows, ").Append(_plan.Cooling).Append(" cooling, ")
                     .Append(_plan.Ups).Append(" battery cabinets").Append(_plan.HasDesk ? ", the desk" : ", no desk")

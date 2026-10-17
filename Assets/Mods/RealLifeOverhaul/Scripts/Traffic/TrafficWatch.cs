@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
@@ -281,7 +282,7 @@ namespace RealLifeOverhaul
             {
                 _reports++;
                 string touch = TrafficTools.LastTouch(car, out float ago);
-                Logger?.Warn("Traffic watch: '" + TrafficTools.Name(car) + "' was bouncing on the spot (" + travel.ToString("F2") + " m up and down for "
+                Logger?.Warn("Traffic watch: '" + TrafficTools.Name(car) + "' was bouncing on the spot (" + travel.ToString("F2", CultureInfo.InvariantCulture) + " m up and down for "
                              + (Window * Windows).ToString("F0") + " s), " + TrafficTools.State(car) + "; "
                              + (touch != null ? "the mod last touched it " + ago.ToString("F0") + " s ago: " + touch : "the mod has not touched it (ordinary traffic)")
                              + "; " + Standing(car, body) + "; "

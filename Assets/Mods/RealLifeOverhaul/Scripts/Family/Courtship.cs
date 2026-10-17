@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Family
             {
                 reason = rough ? "reallife_family_propose_no_rough" : moment < 0f ? "reallife_family_propose_no_moment" : "reallife_family_propose_no_not_yet";
             }
-            FamilyDirector.Logger?.Info($"Family: proposal answered {(yes ? "yes" : "not yet")} (odds {odds:F2}, moment {moment:F2}, ring {s.Ring}).");
+            FamilyDirector.Logger?.Info(System.FormattableString.Invariant($"Family: proposal answered {(yes ? "yes" : "not yet")} (odds {odds:F2}, moment {moment:F2}, ring {s.Ring})."));
             return yes;
         }
 

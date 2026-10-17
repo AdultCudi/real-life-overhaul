@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using GleyTrafficSystem;
@@ -380,7 +381,7 @@ namespace RealLifeOverhaul.Law
                 }
             }
             text.Append("; patrol cars ").Append(CarsOut()).Append(" of ").Append(Cars);
-            text.Append("; wall ").Append(_wallKnown ? _wall.ToString("F2") + " m from the door's plane" : "not found");
+            text.Append("; wall ").Append(_wallKnown ? _wall.ToString("F2", CultureInfo.InvariantCulture) + " m from the door's plane" : "not found");
             return text.ToString();
         }
 
@@ -611,7 +612,7 @@ namespace RealLifeOverhaul.Law
             float tall = high - low;
             if (wide < 1.2f || wide > 16f || tall < 0.25f || tall > 2.4f || low < 1.9f || face - back > 1.2f || Mathf.Abs(fromAside + toAside) * 0.5f > 12f)
             {
-                Skip(Piece.Fascia, $"its sign band measures {wide:F1} x {tall:F1} m, {low:F1} m up: not a board over a shopfront");
+                Skip(Piece.Fascia, FormattableString.Invariant($"its sign band measures {wide:F1} x {tall:F1} m, {low:F1} m up: not a board over a shopfront"));
                 return;
             }
             if (_fascia == null)

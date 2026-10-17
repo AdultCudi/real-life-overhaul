@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using AI.Customers.CustomerEntries;
 using BAModAPI;
@@ -652,7 +653,8 @@ namespace RealLifeOverhaul
             if (Verbose && r.Asked > 0)
             {
                 Logger?.Info("Customers check (" + (r.Why ?? "as asked") + "): " + r.Asked + " asked for, " + r.Kept + " left as drawn already with their figure, " + r.Drawn + " drawn again"
-                             + (r.Frames > 0 ? " over " + r.Frames + " frame(s) (the longest " + r.Worst.ToString("0.00") + " ms)" : " at once") + ", " + r.Ms.ToString("0.0") + " ms in all; "
+                             + (r.Frames > 0 ? " over " + r.Frames + " frame(s) (the longest " + r.Worst.ToString("0.00", CultureInfo.InvariantCulture) + " ms)" : " at once") + ", "
+                             + r.Ms.ToString("0.0", CultureInfo.InvariantCulture) + " ms in all; "
                              + (r.Late == 0 ? "every one within the hour it was asked in: PASS" : r.Late + " after their hour had turned: FAIL"));
             }
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -361,7 +362,8 @@ namespace RealLifeOverhaul.Texts
             }
             if (ok)
             {
-                _log?.Invoke("RLO Texts: start-up, " + TextStartWatch.Name(stage) + " in " + took.ToString("0.0") + " s" + (_detail != null ? " (" + _detail + ")" : string.Empty) + ".");
+                _log?.Invoke("RLO Texts: start-up, " + TextStartWatch.Name(stage) + " in " + took.ToString("0.0", CultureInfo.InvariantCulture) + " s"
+                    + (_detail != null ? " (" + _detail + ")" : string.Empty) + ".");
             }
             return ok;
         }
@@ -411,7 +413,7 @@ namespace RealLifeOverhaul.Texts
                 }
                 catch (Exception e)
                 {
-                    why = e is SocketException || e is IOException ? "it took longer than " + limit.ToString("0.0") + " s" : e.GetType().Name + ": " + e.Message;
+                    why = e is SocketException || e is IOException ? "it took longer than " + limit.ToString("0.0", CultureInfo.InvariantCulture) + " s" : e.GetType().Name + ": " + e.Message;
                 }
             }
             double took = TextClock.Now - begun;
@@ -729,8 +731,10 @@ namespace RealLifeOverhaul.Texts
                 detail = "no answer within " + TextSpeed.TestSeconds.ToString("0") + " s (" + e.Message + "); the server used " + Seconds(Cpu() - cpu) + " of processor time";
             }
             Speed = result;
-            _log?.Invoke("RLO Texts: speed test: " + result.PromptMsPerToken.ToString("0.0") + " ms a token read, " + result.TokensPerSecond.ToString("0.0")
-                         + " tokens a second written: an ordinary reply in about " + result.Estimate.ToString("0.0") + " s" + (result.Capped ? " (past the test's cap)" : "")
+            _log?.Invoke("RLO Texts: speed test: " + result.PromptMsPerToken.ToString("0.0", CultureInfo.InvariantCulture) + " ms a token read, "
+                         + result.TokensPerSecond.ToString("0.0", CultureInfo.InvariantCulture)
+                         + " tokens a second written: an ordinary reply in about " + result.Estimate.ToString("0.0", CultureInfo.InvariantCulture) + " s"
+                         + (result.Capped ? " (past the test's cap)" : "")
                          + " (sent the test card, " + TextSpeed.ReplyTokens + " tokens to write, " + (_headSaved ? "the head put back first in " + (restored * 1000.0).ToString("0") + " ms" : "the head read with it")
                          + ": " + detail + "; " + (LowPriority(_start.Device) ? "below normal" : "normal") + " priority, " + _start.Threads + " threads).");
             return true;
@@ -759,7 +763,7 @@ namespace RealLifeOverhaul.Texts
         // Seconds for a log line ("0.42 s"), or "unknown" where the system could not say.
         private static string Seconds(double seconds)
         {
-            return double.IsNaN(seconds) || double.IsInfinity(seconds) ? "unknown" : seconds.ToString("0.00") + " s";
+            return double.IsNaN(seconds) || double.IsInfinity(seconds) ? "unknown" : seconds.ToString("0.00", CultureInfo.InvariantCulture) + " s";
         }
 
         // The processor time the server has used so far, in seconds (NaN where the system cannot say).

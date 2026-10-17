@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UI.Notification;
 using UnityEngine;
 
@@ -143,7 +144,8 @@ namespace RealLifeOverhaul.Tech
             if (Verbose)
             {
                 Logger?.Info("Tech check (startups, day " + day + "): " + _venture.Startups.Count + " startup(s), mood " + mood + ", the AI wave " + hype + ", " + _ventureNotes.Count + " event(s), "
-                             + _venture.Caps.Count + " firm(s) of the player's with investors; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS");
+                             + _venture.Caps.Count + " firm(s) of the player's with investors; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
+                             + " ms: PASS");
             }
         }
 

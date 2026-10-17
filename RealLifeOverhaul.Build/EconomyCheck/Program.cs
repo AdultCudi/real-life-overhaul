@@ -152,6 +152,7 @@ internal static partial class Program
         FlareFaceLoad();   // Flare's faces drawn ahead: the likely ones behind the loading screen within its budget, once per look, the textures and the folder bounded, each face the person's own (FlareFaceLoadChecks.cs)
         Shared();
         Fame();
+        LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         Endings();
         Infra2();
         Ventures2();

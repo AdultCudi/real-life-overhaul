@@ -239,8 +239,9 @@ namespace RealLifeOverhaul
                             _gearsWritten = true;
                             _dragDelta = Setup.Drag - stockDrag;
                             engine.powerModifiers.Add(_modifier);
-                            Note(id, $"Garage: {typeName}: 0-100 {stock.To100:F1} -> {run.To100:F1} s, top {stock.TopKmh:F0} -> {run.TopKmh:F0} km/h "
-                                     + $"(power x{_powerFactor:F2} to {Setup.PowerKw:F0} kW, final drive {_finalBefore:F2} -> {final:F2}, drag {stockDrag:F3} -> {Setup.Drag:F3}).");
+                            Note(id, FormattableString.Invariant($"Garage: {typeName}: 0-100 {stock.To100:F1} -> {run.To100:F1} s, top {stock.TopKmh:F0} -> {run.TopKmh:F0} km/h ")
+                                     + FormattableString.Invariant(
+                                         $"(power x{_powerFactor:F2} to {Setup.PowerKw:F0} kW, final drive {_finalBefore:F2} -> {final:F2}, drag {stockDrag:F3} -> {Setup.Drag:F3})."));
                             return;
                         }
                     }
@@ -259,7 +260,7 @@ namespace RealLifeOverhaul
                 _limitWritten = _limitBefore * m.TopSpeed;
                 _limiter.speedLimit = _limitWritten;
             }
-            Note(id, $"Garage: {typeName}: engine power x{_powerFactor:F2}"
+            Note(id, FormattableString.Invariant($"Garage: {typeName}: engine power x{_powerFactor:F2}")
                      + (_limiter != null ? $", speed limiter {_limitBefore:F0} -> {_limitWritten:F0}" : string.Empty) + " (the car model is not driving this car).");
         }
 

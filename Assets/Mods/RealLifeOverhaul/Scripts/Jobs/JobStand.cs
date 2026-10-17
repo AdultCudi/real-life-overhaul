@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters;
 using Helpers;
@@ -167,7 +168,7 @@ namespace RealLifeOverhaul
             float off = JobSpots.Flat(player.transform.position, _post);
             if (off > Missed)
             {
-                Leave("the place could not be reached (" + off.ToString("F2") + " m short)");
+                Leave("the place could not be reached (" + off.ToString("F2", CultureInfo.InvariantCulture) + " m short)");
                 _armed = false;
                 yield break;
             }
@@ -176,8 +177,9 @@ namespace RealLifeOverhaul
             bool posed = _idle != null && ClipLibrary.Has(_idle) && _body.Clip(_idle, 0.3f);
             if (Meta.Dev.Verbose)
             {
-                _logger?.Info("Jobs: stand entered: walked into the zone " + from.ToString("F2") + " m from the place (zone " + _reach.ToString("F2") + " m), now "
-                              + off.ToString("F2") + " m from it, facing the customers, movement locked; working pose: "
+                _logger?.Info("Jobs: stand entered: walked into the zone " + from.ToString("F2", CultureInfo.InvariantCulture) + " m from the place (zone "
+                              + _reach.ToString("F2", CultureInfo.InvariantCulture) + " m), now "
+                              + off.ToString("F2", CultureInfo.InvariantCulture) + " m from it, facing the customers, movement locked; working pose: "
                               + (posed ? "'" + _idle + "'" : _idle != null ? "the game's own standing ('" + _idle + "' is not to be had)" : "the game's own standing") + ".");
             }
         }

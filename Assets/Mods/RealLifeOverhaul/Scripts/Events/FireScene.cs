@@ -1416,7 +1416,8 @@ namespace RealLifeOverhaul.Events
                 }
                 var data = new Dictionary<string, string>(2) { { "amount", ((float)bill).ToCurrencyFormat() }, { "hours", hours.ToString() } };
                 Notifications.Show(NotificationType.Error, closedByUs ? "reallife_fire_own_bill" : "reallife_fire_own_bill_only", data, 14f);
-                EventDirector.Logger?.Info($"Fire: the player's business at {business.StreetName} {business.StreetNumber}: water after {secondsToWater:F0} s, security {security:P0}, warned {warned}, "
+                EventDirector.Logger?.Info(FormattableString.Invariant(
+                    $"Fire: the player's business at {business.StreetName} {business.StreetNumber}: water after {secondsToWater:F0} s, security {security:P0}, warned {warned}, ")
                                            + $"called {called}: repair bill {bill}, " + (closedByUs ? $"closed for {hours} h (the game's own temporary closure)." : "not closed (it already was, or another closure is running)."));
             }
             catch (Exception e)

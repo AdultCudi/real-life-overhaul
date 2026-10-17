@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using Characters.EmojiSystem;
 using Helpers;
@@ -279,8 +280,9 @@ namespace RealLifeOverhaul
             Card(now);
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: vendor cart put down " + JobSpots.Flat(_cartAt, Ctx.PlayerPosition).ToString("F1") + " m from the player; the vendor's place is "
-                                 + JobSpots.Flat(_post, Ctx.PlayerPosition).ToString("F1") + " m away (the zone that takes the player is " + PostReach.ToString("F1")
+                Ctx.Logger?.Info("Jobs: vendor cart put down " + JobSpots.Flat(_cartAt, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture) + " m from the player; the vendor's place is "
+                                 + JobSpots.Flat(_post, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture) + " m away (the zone that takes the player is "
+                                 + PostReach.ToString("F1", CultureInfo.InvariantCulture)
                                  + " m round it); " + _customers + " customers; shown in the game's own interface: job panel "
                                  + (card != null ? "copied" : "NOT copied (the panel over the cart is all there is)") + ", the game's guider points at the place.");
             }
@@ -330,8 +332,9 @@ namespace RealLifeOverhaul
         {
             if (_solid.VerifyDue && _solid.Verify(now, _post, _counter, out bool cut, out bool kept, out bool way))
             {
-                Ctx.Logger?.Info("Jobs check (cart solid): walker radius " + _solid.Radius.ToString("F2") + " m, box " + (CartHalfLength * 2f).ToString("F2") + " x "
-                                 + (_solid.HalfDepth * 2f).ToString("F2") + " m; cut out of the mesh: the cart's middle " + (cut ? "yes" : "no")
+                Ctx.Logger?.Info("Jobs check (cart solid): walker radius " + _solid.Radius.ToString("F2", CultureInfo.InvariantCulture) + " m, box "
+                                 + (CartHalfLength * 2f).ToString("F2", CultureInfo.InvariantCulture) + " x "
+                                 + (_solid.HalfDepth * 2f).ToString("F2", CultureInfo.InvariantCulture) + " m; cut out of the mesh: the cart's middle " + (cut ? "yes" : "no")
                                  + "; still walkable: the vendor's place and the customer's place " + (kept ? "yes" : "no") + ", a way on foot from one to the other "
                                  + (way ? "yes" : "no") + ": " + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)"
                                      : "FAIL (the cart can be walked through)") + ".");
@@ -745,7 +748,7 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     Ctx.Logger?.Info("Jobs: vendor: wrong drink by hand (" + ItemKeys[choice] + " for " + ItemKeys[_wants] + "): " + WrongCost.ToString("F0")
-                                     + " s off the customer's patience, " + Mathf.Max(0f, _orderEnds - now).ToString("F1") + " s left.");
+                                     + " s off the customer's patience, " + Mathf.Max(0f, _orderEnds - now).ToString("F1", CultureInfo.InvariantCulture) + " s left.");
                 }
                 return;
             }
@@ -765,7 +768,7 @@ namespace RealLifeOverhaul
             _tips += tip;
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: vendor: customer served by hand (" + ItemKeys[_wants] + ") in " + took.ToString("F1") + " s, tip " + tip + " ("
+                Ctx.Logger?.Info("Jobs: vendor: customer served by hand (" + ItemKeys[_wants] + ") in " + took.ToString("F1", CultureInfo.InvariantCulture) + " s, tip " + tip + " ("
                                  + (took <= QuickTip ? "quick" : took <= FairTip ? "fair" : "slow") + "); served " + _served + " of " + _customers + ", walk-offs " + _misses + ".");
             }
             // The cup on the counter between them; they reach for it and it is theirs.
@@ -1065,7 +1068,8 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: vendor: the rest of the shift is left to the clock: " + _skipLeft + " customers, " + (_skipLeft * _minutesEach) + " game minutes, at "
-                                 + Mathf.RoundToInt(ShiftRates.Share * 100f) + "% of " + PayEach.ToString("F2") + " a customer; the game's activity panel shows its progress.");
+                                 + Mathf.RoundToInt(ShiftRates.Share * 100f) + "% of " + PayEach.ToString("F2", CultureInfo.InvariantCulture)
+                                 + " a customer; the game's activity panel shows its progress.");
             }
         }
 
@@ -1096,8 +1100,10 @@ namespace RealLifeOverhaul
                 Ctx.Pay(this, new PaySlip { Units = count, Base = pay }, "reallife_job_vendor_slip");
             }
             float energyAfter = SaveGameManager.Current != null ? SaveGameManager.Current.Energy : 0f;
-            Ctx.Logger?.Info("Jobs: vendor: shift skipped by the clock: " + (minutes / 60f).ToString("F1") + " game hours (" + minutes + " min), " + count + " customers at "
-                             + Mathf.RoundToInt(ShiftRates.Share * 100f) + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1") + " -> " + energyAfter.ToString("F1")
+            Ctx.Logger?.Info("Jobs: vendor: shift skipped by the clock: " + (minutes / 60f).ToString("F1", CultureInfo.InvariantCulture) + " game hours (" + minutes + " min), " + count
+                             + " customers at "
+                             + Mathf.RoundToInt(ShiftRates.Share * 100f) + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1", CultureInfo.InvariantCulture) + " -> "
+                             + energyAfter.ToString("F1", CultureInfo.InvariantCulture)
                              + "; " + (whole ? "to the end of the shift" : "stopped early: " + LeftToServe + " customers are left to serve by hand") + ".");
         }
 
@@ -1211,7 +1217,7 @@ namespace RealLifeOverhaul
                 if (log)
                 {
                     _text.Append(_text.Length > 0 ? "; " : string.Empty).Append(Mathf.Sqrt(offset.x * offset.x + offset.z * offset.z).ToString("F0")).Append(" m: ").Append(outcome)
-                        .Append(" (roll ").Append(roll.ToString("F2")).Append(')');
+                        .Append(" (roll ").Append(roll.ToString("F2", CultureInfo.InvariantCulture)).Append(')');
                 }
             }
             float heatBefore = _heat;
@@ -1233,9 +1239,12 @@ namespace RealLifeOverhaul
             }
             if (log)
             {
-                Ctx.Logger?.Info("Jobs: vendor: called out. Chances: tempted " + tempt.ToString("F2") + " (base " + HawkTempt.ToString("F2") + " x hour " + hourFactor.ToString("F1")
-                                 + " at " + hour + "h x busy " + busyFactor.ToString("F2") + " with " + about + " about x skill " + skillFactor.ToString("F2") + " x queue "
-                                 + queueFactor.ToString("F1") + " with " + waiting + " at the cart or on the way, recent calls " + heatBefore.ToString("F1") + "), annoyed " + annoy.ToString("F2")
+                Ctx.Logger?.Info("Jobs: vendor: called out. Chances: tempted " + tempt.ToString("F2", CultureInfo.InvariantCulture) + " (base "
+                                 + HawkTempt.ToString("F2", CultureInfo.InvariantCulture) + " x hour " + hourFactor.ToString("F1", CultureInfo.InvariantCulture)
+                                 + " at " + hour + "h x busy " + busyFactor.ToString("F2", CultureInfo.InvariantCulture) + " with " + about + " about x skill "
+                                 + skillFactor.ToString("F2", CultureInfo.InvariantCulture) + " x queue "
+                                 + queueFactor.ToString("F1", CultureInfo.InvariantCulture) + " with " + waiting + " at the cart or on the way, recent calls "
+                                 + heatBefore.ToString("F1", CultureInfo.InvariantCulture) + "), annoyed " + annoy.ToString("F2", CultureInfo.InvariantCulture)
                                  + ". Within " + HawkWithin.ToString("F0") + " m: " + near + (near > 0 ? " (" + _text + ")" : string.Empty) + ". Customers gained: " + gained
                                  + " (the shift is now " + _customers + ")" + (warned ? "; an officer's warning " + _hawkWarnings + " of 2" + (_hawkBanned ? ": no more calling out this shift" : string.Empty) : string.Empty)
                                  + "; next call in " + HawkCooldown.ToString("F0") + " s.");

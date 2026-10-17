@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using Localizor;
 
 namespace RealLifeOverhaul.GameUi
@@ -254,7 +255,7 @@ namespace RealLifeOverhaul.GameUi
 
         private static string Ms(long started)
         {
-            return ((Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency).ToString("0.00");
+            return ((Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency).ToString("0.00", CultureInfo.InvariantCulture);
         }
 
         // ---------------------------------------------------------------- the self-check

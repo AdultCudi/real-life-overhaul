@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -338,7 +339,7 @@ namespace RealLifeOverhaul.Economy
             int rents = WriteRents(false);
             if (Verbose)
             {
-                Logger?.Info("Estate check (applied, day " + day + "): " + written + " building value(s) written at a market of " + _state.Real + " and prices of " + (_climate.Index / 10f).ToString("0.0") + ", "
+                Logger?.Info("Estate check (applied, day " + day + "): " + written + " building value(s) written at a market of " + _state.Real + " and prices of " + (_climate.Index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", "
                              + rents + " rent(s) of buildings the player lets himself: PASS");
             }
         }
@@ -562,9 +563,10 @@ namespace RealLifeOverhaul.Economy
                 Changed();
                 if (Verbose)
                 {
-                    Logger?.Info("Estate check (day " + day + "): " + _state.Holdings.Count + " building(s), the market " + _state.Real + ", prices " + (_climate.Index / 10f).ToString("0.0") + ", cycle " + _climate.Cycle
+                    Logger?.Info("Estate check (day " + day + "): " + _state.Holdings.Count + " building(s), the market " + _state.Real + ", prices " + (_climate.Index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", cycle " + _climate.Cycle
                                  + ", " + _state.Agency.Open.Count + " instruction(s), " + _state.Hotels.Count + " hotel(s), " + _state.Hire.Count(HireState.Out) + " of " + _state.Hire.Cars.Count
-                                 + " car(s) out, " + _alerts.Count + " row(s) for the Planner; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00") + " ms in all: PASS");
+                                 + " car(s) out, " + _alerts.Count + " row(s) for the Planner; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture)
+                                 + " ms in all: PASS");
                 }
             }
             catch (Exception e)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Localizor;
 using RealLifeOverhaul.GameUi;
@@ -243,7 +244,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Brands: tab " + _tab + " written, " + _rows.Count + " row(s)" + (_pick != null ? ", picked " + _pick : string.Empty) + "; "
-                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
                 }
             }
             finally

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using BAModAPI;
 using Helpers;
@@ -119,7 +120,7 @@ namespace RealLifeOverhaul
                     if (Meta.Dev.Verbose)
                     {
                         Logger?.Info("Home check (offer): '" + (coffee ? "Click to make a coffee" : "Click to cook") + "' is on " + item.itemName + " at "
-                                     + item.transform.position.ToString("F1") + ".");
+                                     + item.transform.position.ToString("F1", CultureInfo.InvariantCulture) + ".");
                     }
                 }
             }

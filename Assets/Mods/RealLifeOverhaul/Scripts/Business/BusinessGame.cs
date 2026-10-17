@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using AI.Customers.CustomerEntries;
 using BAModAPI;
 using BigAmbitions.Characters.Skills;
@@ -615,7 +616,7 @@ namespace RealLifeOverhaul
             float before = e.hourlyWage;
             int formula = Mathf.RoundToInt(ExpectedWage(e) * 100f);
             e.hourlyWage = WageRules.UpTo(Mathf.RoundToInt(before * 100f), Mathf.RoundToInt(wage * 100f), formula) / 100f;   // a wage only ever goes up here, and never past the cap
-            Logger?.Info("Business: " + NameOf(e) + "'s wage " + before.ToString("F2") + " -> " + e.hourlyWage.ToString("F2") + ".");
+            Logger?.Info("Business: " + NameOf(e) + "'s wage " + before.ToString("F2", CultureInfo.InvariantCulture) + " -> " + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
         }
 
         public static void Mood(EmployeeInstance e, float change)

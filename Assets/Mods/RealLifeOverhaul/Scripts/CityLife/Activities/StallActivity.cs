@@ -1,3 +1,4 @@
+using System.Globalization;
 using Extensions;
 using Helpers;
 using UI.Notification;
@@ -189,7 +190,8 @@ namespace RealLifeOverhaul
             _solid.Solid(walker != null && !PlayerHelper.IsUsingVehicle && CitySpots.Flat(walker.transform.position - _cart) < solidWithin * solidWithin, now);
             if (_solid.VerifyDue && _solid.Verify(now, _vendor, _places[0], out bool cut, out bool kept, out bool way) && Meta.Dev.Verbose)
             {
-                CityLifeDirector.Logger?.Info("City life check (cart solid): the " + (_kind == StallKind.Coffee ? "coffee" : "hot-dog") + " cart: walker radius " + _solid.Radius.ToString("F2")
+                CityLifeDirector.Logger?.Info("City life check (cart solid): the " + (_kind == StallKind.Coffee ? "coffee" : "hot-dog") + " cart: walker radius "
+                                              + _solid.Radius.ToString("F2", CultureInfo.InvariantCulture)
                                               + " m; cut out of the mesh: the cart's middle " + (cut ? "yes" : "no") + "; still walkable: the vendor's place and the first customer's place "
                                               + (kept ? "yes" : "no") + ", a way on foot from one to the other " + (way ? "yes" : "no") + ": "
                                               + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)" : "FAIL (the cart can be walked through)") + ".");

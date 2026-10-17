@@ -627,7 +627,7 @@ namespace RealLifeOverhaul.Events
                 _unit.Driver.Begin(car, _unit.Path, scene, back, 28f);
             }
             string wears = Modelled ? "wearing the modelled body with its axles on the truck's"
-                : PropLibrary.TryGet(EngineLivery.Body, out _, out _) ? $"repainted (wheelbase {car.wheelDistance:F2}: not the truck the modelled body is made to)"
+                : PropLibrary.TryGet(EngineLivery.Body, out _, out _) ? FormattableString.Invariant($"repainted (wheelbase {car.wheelDistance:F2}: not the truck the modelled body is made to)")
                 : "repainted (no modelled body in the prop bundle)";
             EventDirector.Logger?.Info($"Fire: {TrafficTools.Name(car)} dispatched as the fire engine{(van ? " (a van: no truck was free)" : "")}, {wears}, {_unit.Path.Count} road points, "
                                        + (hasStand ? $"to stand {back:F0} m short of the fire in its lane." : "no lane to stand in: it pulls up where it can."));

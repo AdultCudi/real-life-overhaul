@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace RealLifeOverhaul
 {
@@ -415,7 +416,8 @@ namespace RealLifeOverhaul
             }
             if (length > span * StretchMost + StretchExtra)
             {
-                return "it is " + (length / 1000f).ToString("F1") + " km long for " + (span / 1000f).ToString("F1") + " km as the crow flies";
+                return "it is " + (length / 1000f).ToString("F1", CultureInfo.InvariantCulture) + " km long for " + (span / 1000f).ToString("F1", CultureInfo.InvariantCulture)
+                    + " km as the crow flies";
             }
             return DoublesBack(x, z, count) ? "it doubles back on itself" : null;
         }

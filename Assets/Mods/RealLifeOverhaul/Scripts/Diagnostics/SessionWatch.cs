@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Unity.Profiling;
@@ -683,7 +684,7 @@ namespace RealLifeOverhaul
                 long named = Marks.SpentIn(frame);
                 if (named > 0)
                 {
-                    _line.Append(" (the mod's named and timed work in that frame took ").Append(Ms(named).ToString("F1")).Append(" ms of it)");
+                    _line.Append(" (the mod's named and timed work in that frame took ").Append(Ms(named).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms of it)");
                 }
                 else if (markSpent < 0)
                 {
@@ -740,11 +741,11 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _line.Append(own.ToString("F1")).Append(" ms");
+                _line.Append(own.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms");
                 int named = 0;
                 for (int k = 0; k < 3 && HotSpots.FrameTop(frame, k, out int slot, out double ms) && ms >= 0.05; k++)
                 {
-                    _line.Append(named++ == 0 ? " (" : ", ").Append(HotSpots.Name(slot)).Append(' ').Append(ms.ToString("F1")).Append(" ms");
+                    _line.Append(named++ == 0 ? " (" : ", ").Append(HotSpots.Name(slot)).Append(' ').Append(ms.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms");
                 }
                 if (named > 0)
                 {
@@ -764,7 +765,7 @@ namespace RealLifeOverhaul
             }
             if (_collector.Valid)
             {
-                _line.Append(", at work ").Append((collectorNanos / 1000000.0).ToString("F1")).Append(" ms");
+                _line.Append(", at work ").Append((collectorNanos / 1000000.0).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms");
             }
             _line.Append(", heap ").Append(Megabytes(heapBefore)).Append(" MB before and ").Append(Megabytes(heap)).Append(" MB after");
 
@@ -791,7 +792,8 @@ namespace RealLifeOverhaul
             float cutAgo = began - MeshCuts.At;
             if (MeshCuts.Last != null && cutAgo < 2.5f)
             {
-                _line.Append(" (the last: ").Append(MeshCuts.Last).Append(", ").Append(Mathf.Max(0f, cutAgo).ToString("F1")).Append(" s before; the engine cuts about half a second after)");
+                _line.Append(" (the last: ").Append(MeshCuts.Last).Append(", ").Append(Mathf.Max(0f, cutAgo).ToString("F1", CultureInfo.InvariantCulture))
+                    .Append(" s before; the engine cuts about half a second after)");
             }
 
             // What the mod last did, whether or not it explains the frame.
@@ -802,7 +804,7 @@ namespace RealLifeOverhaul
                 _line.Append(back > 0 ? ", \"" : "\"").Append(text).Append("\" (");
                 if (spent >= 0)
                 {
-                    _line.Append(Ms(spent).ToString("F1")).Append(" ms) ");
+                    _line.Append(Ms(spent).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms) ");
                 }
                 else
                 {
@@ -874,7 +876,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _line.Append(Mathf.Max(0f, began - happenedAt).ToString("F1")).Append(" s before");
+                _line.Append(Mathf.Max(0f, began - happenedAt).ToString("F1", CultureInfo.InvariantCulture)).Append(" s before");
             }
         }
 
@@ -888,18 +890,19 @@ namespace RealLifeOverhaul
             CountObjects(ref objects, ref shown, ref roots);
             _line.Length = 0;
             _line.Append("Session ").Append(Mathf.RoundToInt((Time.unscaledTime - _started) / 60f)).Append(" min: frames ").Append(_frames)
-                .Append(", average ").Append((_frames > 0 ? seconds * 1000f / _frames : 0f).ToString("F1"))
+                .Append(", average ").Append((_frames > 0 ? seconds * 1000f / _frames : 0f).ToString("F1", CultureInfo.InvariantCulture))
                 .Append(" ms, worst ").Append((_worst * 1000f).ToString("F0"))
                 .Append(" ms, over 33 ms: ").Append(_over33).Append(", over 50 ms: ").Append(_over50)
                 .Append("; managed heap ").Append(Megabytes(GC.GetTotalMemory(false))).Append(" MB of ").Append(Megabytes(Profiler.GetMonoHeapSizeLong()))
                 .Append(" MB, collections in the minute ").Append(collections - _collections)
                 // The allocation budget: what the heap grew by, frame over frame, and what the collector cost for it.
-                .Append(", grown by ").Append((_grown / (1024.0 * 1024.0)).ToString("F1")).Append(" MB in the minute (").Append((seconds > 0f ? _grown / 1024.0 / seconds : 0.0).ToString("F0"))
+                .Append(", grown by ").Append((_grown / (1024.0 * 1024.0)).ToString("F1", CultureInfo.InvariantCulture)).Append(" MB in the minute (")
+                    .Append((seconds > 0f ? _grown / 1024.0 / seconds : 0.0).ToString("F0"))
                 .Append(" KB a second)");
             if (_collector.Valid)
             {
                 _line.Append(", the collector at work ").Append((_collectorNanos / 1000000.0).ToString("F0")).Append(" ms in the minute and ")
-                    .Append((_collectorWorst / 1000000.0).ToString("F1")).Append(" ms at most in a frame");
+                    .Append((_collectorWorst / 1000000.0).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms at most in a frame");
             }
             _line.Append("; engine memory ").Append(Megabytes(Profiler.GetTotalAllocatedMemoryLong()))
                 .Append(" MB; mod objects ").Append(objects).Append(" (").Append(shown).Append(" shown) under ").Append(roots).Append(" roots");
@@ -980,7 +983,7 @@ namespace RealLifeOverhaul
                 }
             }
             _line.Append(any ? string.Empty : "none");
-            _line.Append(_timing ? "; the graphics card " + _gpuWorst.ToString("F1") + " ms at most in a frame (the engine's own figures)" : "; the engine's own frame timing: not offered by this build");
+            _line.Append(_timing ? "; the graphics card " + _gpuWorst.ToString("F1", CultureInfo.InvariantCulture) + " ms at most in a frame (the engine's own figures)" : "; the engine's own frame timing: not offered by this build");
         }
 
         // The minute of the mod's own scripts (Core/HotSpots): their time a frame, the three that took the most, and the
@@ -988,12 +991,13 @@ namespace RealLifeOverhaul
         private void OwnScripts(float seconds)
         {
             int frames = HotSpots.Frames;
-            _line.Append("; the mod's own scripts: ").Append((frames > 0 ? HotSpots.TotalMs / frames : 0.0).ToString("F2")).Append(" ms a frame on average and ")
-                .Append(HotSpots.WorstFrameMs.ToString("F1")).Append(" ms at most in a frame");
+            _line.Append("; the mod's own scripts: ").Append((frames > 0 ? HotSpots.TotalMs / frames : 0.0).ToString("F2", CultureInfo.InvariantCulture)).Append(" ms a frame on average and ")
+                .Append(HotSpots.WorstFrameMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms at most in a frame");
             for (int k = 0; k < 3 && HotSpots.StretchTop(k, false, out int slot, out double total, out double worst, out _); k++)
             {
                 _line.Append(k == 0 ? ", the most in the minute: " : ", ").Append(HotSpots.Name(slot)).Append(" (")
-                    .Append((frames > 0 ? total / frames : 0.0).ToString("F2")).Append(" ms a frame, ").Append(worst.ToString("F1")).Append(" ms at worst)");
+                    .Append((frames > 0 ? total / frames : 0.0).ToString("F2", CultureInfo.InvariantCulture)).Append(" ms a frame, ").Append(worst.ToString("F1", CultureInfo.InvariantCulture))
+                        .Append(" ms at worst)");
             }
             int sampled = HotSpots.Sampled;
             if (sampled > 0 && seconds > 0f)

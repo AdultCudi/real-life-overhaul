@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.DayNightCycle;
 using BigAmbitions.InteriorDesigner.InteriorElements;
@@ -998,7 +999,7 @@ namespace RealLifeOverhaul.Careers
             if (Meta.Dev.Verbose)
             {
                 logger?.Info("Careers check (university room sign): room " + room + ": one face, out of the room ("
-                             + (chair != null ? "the room's chair " + new Vector2(from.x - at.x, from.z - at.z).magnitude.ToString("0.0") + " m away on the other side" : "no chair found, the door's own forward")
+                             + (chair != null ? "the room's chair " + new Vector2(from.x - at.x, from.z - at.z).magnitude.ToString("0.0", CultureInfo.InvariantCulture) + " m away on the other side" : "no chair found, the door's own forward")
                              + "), " + (plaque != null ? "on its plaque" : "no plaque") + ", " + (look != null ? "drawn from the front only" : "the font's own material") + ": PASS");
             }
             return root;

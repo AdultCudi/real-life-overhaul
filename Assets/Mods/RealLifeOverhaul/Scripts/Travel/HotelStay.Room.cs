@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -395,7 +396,7 @@ namespace RealLifeOverhaul
             if (opening && Meta.Dev.Verbose)
             {
                 _director.Log("Travel check (room list): the game's list is open: " + entries + " entries for the " + room.Id + " at " + hotel.Id + ", "
-                              + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                              + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

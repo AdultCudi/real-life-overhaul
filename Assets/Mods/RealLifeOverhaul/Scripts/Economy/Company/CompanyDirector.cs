@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -609,9 +610,9 @@ namespace RealLifeOverhaul.Economy
                 {
                     float done = Time.realtimeSinceStartup;
                     Logger?.Info("Company check (day " + day + "): " + _shops.Count + " business(es)" + (added > 0 ? ", " + added + " new" : string.Empty) + (dropped > 0 ? ", " + dropped + " no longer the player's" : string.Empty)
-                                 + ", " + _state.Staff.Count + " employee(s)" + (gone > 0 ? ", " + gone + " gone and their files dropped" : string.Empty) + ", prices " + (_index / 10f).ToString("0.0") + ", the economy " + _cycle
-                                 + ", " + written + " footfall figure(s) written, " + _alerts.Count + " row(s) for the Planner; reading the game " + ((read - started) * 1000f).ToString("0.0") + " ms, the rules "
-                                 + ((ruled - read) * 1000f).ToString("0.0") + " ms, footfall and rows " + ((done - ruled) * 1000f).ToString("0.0") + " ms, " + ((done - started) * 1000f).ToString("0.0") + " ms in all: PASS");
+                                 + ", " + _state.Staff.Count + " employee(s)" + (gone > 0 ? ", " + gone + " gone and their files dropped" : string.Empty) + ", prices " + (_index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", the economy " + _cycle
+                                 + ", " + written + " footfall figure(s) written, " + _alerts.Count + " row(s) for the Planner; reading the game " + ((read - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, the rules "
+                                 + ((ruled - read) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, footfall and rows " + ((done - ruled) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, " + ((done - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms in all: PASS");
                 }
             }
             catch (Exception e)

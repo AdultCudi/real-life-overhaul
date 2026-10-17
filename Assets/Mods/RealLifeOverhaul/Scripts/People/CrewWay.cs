@@ -1,3 +1,4 @@
+using System.Globalization;
 using GleyTrafficSystem;
 using UnityEngine;
 using UnityEngine.AI;
@@ -315,7 +316,7 @@ namespace RealLifeOverhaul
                 Forget();
                 Try(firstSide);
                 Face(_preferred);
-                Why = "no way " + Width.ToString("F1") + " m wide is clear from either side of the ambulance to either side of the casualty, by a run-in or a swing-in"
+                Why = "no way " + Width.ToString("F1", CultureInfo.InvariantCulture) + " m wide is clear from either side of the ambulance to either side of the casualty, by a run-in or a swing-in"
                       + (_blocked != null ? " (the last one tried: " + _blocked + ")" : "");
                 return false;
             }

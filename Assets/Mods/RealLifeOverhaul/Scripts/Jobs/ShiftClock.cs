@@ -1,3 +1,4 @@
+using System.Globalization;
 using RealLifeOverhaul.GameUi;
 using UI.Elements;
 using UnityEngine;
@@ -170,7 +171,8 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 _ctx.Logger?.Info("Jobs: " + _name + ": the rest of the shift is left to the clock: " + _left + " " + JobText.T(_unitsKey) + ", " + (_left * _each) + " game minutes, at "
-                                  + ShiftRates.Percent + "% of " + _shift.ClockPay.ToString("F2") + " a " + JobText.T(_unitKey) + "; the game's activity panel shows its progress.");
+                                  + ShiftRates.Percent + "% of " + _shift.ClockPay.ToString("F2", CultureInfo.InvariantCulture) + " a " + JobText.T(_unitKey)
+                                  + "; the game's activity panel shows its progress.");
             }
         }
 
@@ -199,9 +201,11 @@ namespace RealLifeOverhaul
                 _ctx.Pay(_job, _asTips ? new PaySlip { Units = count, Tips = pay } : new PaySlip { Units = count, Base = pay }, _slipKey);
             }
             float energyAfter = SaveGameManager.Current != null ? SaveGameManager.Current.Energy : 0f;
-            _ctx.Logger?.Info("Jobs: " + _name + ": shift skipped by the clock: " + (minutes / 60f).ToString("F1") + " game hours (" + minutes + " min), " + count + " "
-                              + JobText.T(_unitsKey) + " at " + ShiftRates.Percent + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1") + " -> "
-                              + energyAfter.ToString("F1") + "; " + (whole ? "to the end of the shift" : "stopped early: " + _shift.ClockLeft + " are left to do by hand") + ".");
+            _ctx.Logger?.Info("Jobs: " + _name + ": shift skipped by the clock: " + (minutes / 60f).ToString("F1", CultureInfo.InvariantCulture) + " game hours (" + minutes + " min), " + count + " "
+                              + JobText.T(_unitsKey) + " at " + ShiftRates.Percent + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1", CultureInfo.InvariantCulture)
+                              + " -> "
+                              + energyAfter.ToString("F1", CultureInfo.InvariantCulture) + "; "
+                              + (whole ? "to the end of the shift" : "stopped early: " + _shift.ClockLeft + " are left to do by hand") + ".");
         }
     }
 }

@@ -657,7 +657,7 @@ namespace RealLifeOverhaul
             }
             if (say)
             {
-                Logger?.Info($"Pedestrian collisions: {vehicle.name} measured {half.x * 2f:F1} m wide, {half.z * 2f:F1} m long.");
+                Logger?.Info(FormattableString.Invariant($"Pedestrian collisions: {vehicle.name} measured {half.x * 2f:F1} m wide, {half.z * 2f:F1} m long."));
             }
         }
     }

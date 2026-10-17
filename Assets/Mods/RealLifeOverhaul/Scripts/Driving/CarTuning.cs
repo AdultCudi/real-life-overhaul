@@ -181,7 +181,8 @@ namespace RealLifeOverhaul
             float finalDrive = _setup.Ratios[_setup.Ratios.Length - 1] / box.gears[box.gears.Count - 1];   // top gear keeps its own ratio
             if (!(_setup.PowerKw >= 5f) || !(_setup.PowerKw <= body.mass) || !(finalDrive > 0.2f) || !(finalDrive < 60f) || !(_setup.Drag >= 0f) || !(_setup.Drag < 20f))
             {
-                Note(typeName, $"Car tuning: {typeName} is left as the game made it (the sums came out at {_setup.PowerKw:F0} kW, final drive {finalDrive:F2}, drag {_setup.Drag:F3}).");
+                Note(typeName, FormattableString.Invariant(
+                    $"Car tuning: {typeName} is left as the game made it (the sums came out at {_setup.PowerKw:F0} kW, final drive {finalDrive:F2}, drag {_setup.Drag:F3})."));
                 return;
             }
 
@@ -234,11 +235,12 @@ namespace RealLifeOverhaul
             TargetTopKmh = topKmh;
 
             float firstGearKmh = CarModel.TopGearRevs * _physics.RevLimitRpm * 0.10471976f * _physics.WheelRadius / _setup.Ratios[0] * 3.6f;
-            Note(typeName, $"Car tuning: {typeName} ({spec.Kind}): target 0-100 {seconds:F1} s, top {topKmh:F0} km/h; "
-                + $"power {_stock.Power:F0} -> {_setup.PowerKw:F0} kW, final drive {_stock.FinalDrive:F2} -> {finalDrive:F2}, drag {_setup.Drag:F3}; "
-                + $"first gear to {firstGearKmh:F0} km/h, shifts at {_setup.UpshiftRpm:F0} to {_setup.UpshiftRpm * (1f + _setup.ShiftIntensity):F0} rpm in {_setup.ShiftSeconds:F2} s, "
-                + $"limiter {_stock.SpeedLimit:F0} -> off; {body.mass:F0} kg, {_driven.Count} of {vehicle.powertrain.wheels.Count} wheels driven, tyres hold {_physics.TractionForce / (body.mass * 9.81f):F1} g; "
-                + $"expect 0-50 {run.To50:F1} s, 0-100 {run.To100:F1} s, {run.KmhAfter20:F0} km/h after 20 s, top {run.TopKmh:F0} km/h"
+            Note(typeName, FormattableString.Invariant($"Car tuning: {typeName} ({spec.Kind}): target 0-100 {seconds:F1} s, top {topKmh:F0} km/h; ")
+                + FormattableString.Invariant($"power {_stock.Power:F0} -> {_setup.PowerKw:F0} kW, final drive {_stock.FinalDrive:F2} -> {finalDrive:F2}, drag {_setup.Drag:F3}; ")
+                + FormattableString.Invariant(
+                    $"first gear to {firstGearKmh:F0} km/h, shifts at {_setup.UpshiftRpm:F0} to {_setup.UpshiftRpm * (1f + _setup.ShiftIntensity):F0} rpm in {_setup.ShiftSeconds:F2} s, ")
+                + FormattableString.Invariant($"limiter {_stock.SpeedLimit:F0} -> off; {body.mass:F0} kg, {_driven.Count} of {vehicle.powertrain.wheels.Count} wheels driven, tyres hold {_physics.TractionForce / (body.mass * 9.81f):F1} g; ")
+                + FormattableString.Invariant($"expect 0-50 {run.To50:F1} s, 0-100 {run.To100:F1} s, {run.KmhAfter20:F0} km/h after 20 s, top {run.TopKmh:F0} km/h")
                 + (_setup.TyreLimited ? " (the tyres cannot put down what the target time needs)" : string.Empty) + ".");
         }
 

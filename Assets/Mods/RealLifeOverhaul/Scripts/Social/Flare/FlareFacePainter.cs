@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using RealLifeOverhaul.GameUi;
@@ -272,8 +273,10 @@ namespace RealLifeOverhaul.Flare
             if (was && Meta.Dev.Verbose)
             {
                 double each = FlareFaceAheadRules.Each(_loadMs, _loadDrawn);
-                FlareDirector.Logger?.Info("Flare check (faces at load): " + _loadDrawn + " drawn in " + _loadMs.ToString("0") + " ms (" + each.ToString("0.0") + " ms a face, "
-                                           + FlareFaceAheadRules.Each(_loadMainMs, _loadDrawn).ToString("0.0") + " ms of it the main thread's), " + _loadDisk + " from disk, "
+                FlareDirector.Logger?.Info("Flare check (faces at load): " + _loadDrawn + " drawn in " + _loadMs.ToString("0") + " ms (" + each.ToString("0.0", CultureInfo.InvariantCulture)
+                                           + " ms a face, "
+                                           + FlareFaceAheadRules.Each(_loadMainMs, _loadDrawn).ToString("0.0", CultureInfo.InvariantCulture) + " ms of it the main thread's), " + _loadDisk
+                                           + " from disk, "
                                            + left + " left for later (the black screens, or Flare open)" + (_loadMissed > 0 ? ", " + _loadMissed + " not to be had" : string.Empty)
                                            + "; the loading screen held " + LoadHold.Spent.ToString("0") + " ms of at most " + FlareFaceAheadRules.LoadBudgetMs.ToString("0")
                                            + (done ? "" : " (the time was up)") + ": PASS");
@@ -521,7 +524,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (Meta.Dev.Verbose && moment != Moment.Load)
             {
-                FlareDirector.Logger?.Info("Flare check (faces): a face asked of the game's portrait camera in " + _mainMs.ToString("0.0") + " ms of the main thread ("
+                FlareDirector.Logger?.Info("Flare check (faces): a face asked of the game's portrait camera in " + _mainMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms of the main thread ("
                                            + (moment == Moment.Black ? "behind a black screen" : "the app open") + ", wanted under " + PortraitTurn.Timeout + " s a face); " + Report() + ": PASS");
             }
         }

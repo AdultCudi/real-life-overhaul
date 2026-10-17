@@ -306,7 +306,7 @@ namespace RealLifeOverhaul
             if (own != copied)
             {
                 _placement.distance = own;   // its own frame places its camera at this distance (PlacementCam.MoveCamera)
-                Logger?.Info($"Camera: the placement camera had copied this mod's indoor distance ({copied:F1} m); it has the game's own ({own:F1} m).");
+                Logger?.Info(System.FormattableString.Invariant($"Camera: the placement camera had copied this mod's indoor distance ({copied:F1} m); it has the game's own ({own:F1} m)."));
             }
         }
 
@@ -511,7 +511,8 @@ namespace RealLifeOverhaul
                     if (Meta.Dev.Verbose)
                     {
                         bool same = Figures(state).Same(back) && state.VCam.Follow == state.Follow && state.VCam.LookAt == state.LookAt;
-                        Logger?.Info($"Camera check (given back, {(state.Indoor ? "indoor" : "on foot")}): the game's figures as taken (distance {back.Distance:F1} m, lens {back.Fov:F0}): "
+                        Logger?.Info(System.FormattableString.Invariant(
+                            $"Camera check (given back, {(state.Indoor ? "indoor" : "on foot")}): the game's figures as taken (distance {back.Distance:F1} m, lens {back.Fov:F0}): ")
                                      + (same ? "PASS" : "FAIL (the camera does not have them)") + ".");
                     }
                 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Localizor;
@@ -89,7 +90,7 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Home check (cooking list): the game's list is open: " + found + " " + _list.Made + " entries made so far; "
-                                 + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                 + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
                 }
                 return found;
             }

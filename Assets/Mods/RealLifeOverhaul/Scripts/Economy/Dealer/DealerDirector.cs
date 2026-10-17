@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using RealLifeOverhaul.GameUi;
@@ -546,7 +547,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 if (Verbose && (offers > 0 || closed > 0 || drives > 0))
                 {
                     Logger?.Info("Dealership check (hour " + Save.Hour + " of day " + Save.Day + "): " + _state.Yards.Count + " dealership(s), " + offers + " offer(s) made, " + drives + " test drive(s), "
-                                 + closed + " deal(s) closed by the staff; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00") + " ms: PASS");
+                                 + closed + " deal(s) closed by the staff; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
             catch (Exception e)
@@ -711,7 +712,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     Logger?.Info("Dealership check (day " + day + "): " + _state.Plans.Count + " finance plan(s): " + paid + " paid in, " + missed + " week(s) missed, " + defaulted + " car(s) taken back, " + finished
                                  + " paid off; " + _state.Covers.Count + " warranty(ies): " + claims + " claim(s) of " + claimed + "; the economy at " + economy + " thousandths of the usual misses; "
-                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00") + " ms: PASS");
+                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
             catch (Exception e)

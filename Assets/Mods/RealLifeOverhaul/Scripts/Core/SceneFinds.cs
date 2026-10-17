@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -75,7 +76,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
-                SessionWatch.Logger?.Info("Scene search check (" + what + "): " + found + " found in " + ms.ToString("F1") + " ms, "
+                SessionWatch.Logger?.Info("Scene search check (" + what + "): " + found + " found in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms, "
                                           + (hidden ? "behind the loading screen, a pause or the game's black screen: PASS."
                                               : "while the game was being played: FAIL (a stutter of that length; it belongs behind the loading screen)."));
             }
