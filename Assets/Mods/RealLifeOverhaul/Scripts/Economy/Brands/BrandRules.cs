@@ -3,10 +3,8 @@ using System;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// A brand by rule: its standards, its recognition by district and city-wide, what it adds to a member shop's
-    /// footfall, its campaigns and its scandals. Game-free and whole numbers only, so the same days give the same
-    /// history. Nothing per frame and nothing allocated; a brand's day walks its shops once for each of its districts.
-    /// The balance against owned shops is worked through in EconomyCheck's BrandBalance.
+    /// A brand by rule: standards, recognition by district and city-wide, footfall, campaigns and scandals. Game-free
+    /// whole numbers, so the same days give the same history. The balance is worked through in EconomyCheck's BrandBalance.
     /// </summary>
     public static class BrandRules
     {
@@ -26,10 +24,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandCatalogue.Clamp(standards + BrandCatalogue.Clamp(interior, -BrandCatalogue.InteriorMost, BrandCatalogue.InteriorMost), 0, 100);
         }
 
-        /// <summary>
-        /// The brand's standards: six tenths the mean of its shops, four tenths its worst. A franchised shop counts with
-        /// what it really is, inspected or not. 0 with no shop.
-        /// </summary>
+        /// <summary>The brand's standards: mostly the mean of its shops, the rest its worst (a franchised shop as it really is). 0 with no shop.</summary>
         public static int Standards(BrandsState s, Brand b)
         {
             long sum = 0;
@@ -119,10 +114,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return customers > 0 ? (int)Math.Min(takings * 100 / customers, int.MaxValue / 4) : b.Ticket;
         }
 
-        /// <summary>
-        /// What a district's figure gains in a day before it slows near the top, hundredths: from the shops there, the
-        /// customers they serve, the brand's standards (which take away under 50) and a campaign.
-        /// </summary>
+        /// <summary>A district's daily gain before it slows near the top, hundredths; standards under 50 take away.</summary>
         public static int Gain(int shops, int customers, int standards, int campaign)
         {
             if (shops <= 0)
@@ -135,10 +127,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return presence + footfall + good + Math.Max(0, campaign);
         }
 
-        /// <summary>
-        /// What a district with a shop of the brand gains a day from the brand's shops in other districts, hundredths:
-        /// less for each further shop, so a brand spread over the city rises everywhere and does not run away.
-        /// </summary>
+        /// <summary>What a district with a shop gains a day from the brand's shops elsewhere, hundredths: less for each one, so a wide brand does not run away.</summary>
         public static int Pull(int others)
         {
             int pull = 0;
@@ -149,16 +138,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return pull;
         }
 
-        /// <summary>The pull for a district of the brand's with this many of its shops: nothing where it has none.</summary>
         public static int PullIn(BrandsState s, Brand b, int shops)
         {
             return shops > 0 ? Pull(Shops(s, b, null) - shops) : 0;
         }
 
-        /// <summary>
-        /// What a district's figure gains on the brand's day of the given age. Both the day's step and the app's
-        /// "tomorrow" ask this, so the page says what the step will do.
-        /// </summary>
+        /// <summary>A district's gain on the brand's day of this age; the day's step and the app's "tomorrow" both ask this.</summary>
         public static int GainOn(BrandsState s, Brand b, DistrictFile d, int age)
         {
             int shops = Shops(s, b, d.Name);
@@ -169,22 +154,18 @@ namespace RealLifeOverhaul.Economy.Brands
             return Gain(shops, Customers(s, b, d.Name), b.Standards, campaign) + PullIn(s, b, shops);
         }
 
-        /// <summary>
-        /// Mornings since the brand began on which its recognition did not take its step: Brands was not running, or a
-        /// jump of several days counted once. Never negative.
-        /// </summary>
+        /// <summary>Mornings since the brand began on which recognition took no step: Brands was off, or days jumped at once.</summary>
         public static int Missed(Brand b, int today)
         {
             return Math.Max(0, today - b.Founded - b.Age);
         }
 
-        /// <summary>The text key for the brand page's line about its mornings: none yet, one, or several.</summary>
+        /// <summary>The text key for the brand page's line about its mornings.</summary>
         public static string StepsKey(int days, int moved)
         {
             return days <= 0 ? "reallife_brand_fig_steps_first" : days > 1 ? "reallife_brand_fig_steps" : moved > 0 ? "reallife_brand_fig_steps_one" : "reallife_brand_fig_steps_one_still";
         }
 
-        /// <summary>The text key for the line saying on how many mornings it stood still.</summary>
         public static string MissedKey(int missed)
         {
             return missed == 1 ? "reallife_brand_fig_missed_one" : "reallife_brand_fig_missed";
@@ -196,10 +177,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandCatalogue.Clamp(hundredths, 0, BrandCatalogue.RecMost) / 10;
         }
 
-        /// <summary>
-        /// A district's figure a day later: a gain counts for less the nearer the figure is to 100, a loss is taken
-        /// whole, and a little of the figure fades (more where the brand has no shop left).
-        /// </summary>
+        /// <summary>A district's figure a day later: a gain slows near the top, a loss is whole, and a little fades (more with no shop left).</summary>
         public static int Step(int rec, int gain, bool present)
         {
             rec = BrandCatalogue.Clamp(rec, 0, BrandCatalogue.RecMost);
@@ -219,10 +197,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return rec;
         }
 
-        /// <summary>
-        /// A new brand with one shop in each of so many districts, all alike, after some days, hundredths: each
-        /// district's figure, and the city-wide one in <paramref name="city"/>. For the Guide; the same steps as <see cref="Day"/>.
-        /// </summary>
+        /// <summary>For the Guide: each district's figure of a new brand with one shop in each of so many districts after some days, and the city-wide one.</summary>
         public static int AfterSpread(int districts, int customers, int standards, int days, out int city)
         {
             int rec = 0, gain = Gain(1, customers, standards, 0) + Pull(districts - 1);
@@ -249,9 +224,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// Where the city-wide figure heads, hundredths: the districts' sum divided by eight, times the districts with a
-        /// shop, never above their mean nor under the sum divided by eight. So one district gives an eighth of its
-        /// figure, two a quarter of their sum, and three or more their mean.
+        /// Where the city-wide figure heads, hundredths: the sum over eight times the districts with a shop, kept between
+        /// the sum over eight and the mean. One district gives an eighth, two a quarter of their sum, three or more their mean.
         /// </summary>
         public static int CityTarget(long sum, int districts, int withShops)
         {
@@ -261,11 +235,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return (int)Math.Min(BrandCatalogue.RecMost, Math.Max(eighth, Math.Min(spread, mean)));
         }
 
-        /// <summary>
-        /// One day of the brand's own clock: its standards, every district's step, the city-wide figure a tenth of the
-        /// way to <see cref="CityTarget"/>, and a campaign that has run its days ends. The members' figures are
-        /// those read from the game this morning.
-        /// </summary>
+        /// <summary>One day of the brand's own clock, on the figures read this morning: standards, each district's step, the city-wide figure, a campaign's end.</summary>
         public static void Day(BrandsState s, Brand b)
         {
             b.Age++;
@@ -395,10 +365,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 : (BrandCatalogue.CannibalEach * (BrandCatalogue.CannibalRadius - metres) + BrandCatalogue.CannibalRadius - 1) / BrandCatalogue.CannibalRadius;
         }
 
-        /// <summary>
-        /// The same from every franchised shop of the member's brand that is in the books only. One that is a business
-        /// of the game's competes by the game's own rules and is not counted.
-        /// </summary>
+        /// <summary>The same from every franchised shop in the books only; one that is the game's business competes by the game's rules.</summary>
         public static int CannibalAll(BrandsState s, Member m)
         {
             int all = 0;
@@ -419,7 +386,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandCatalogue.Clamp(rec + forgiven - cannibal, BrandCatalogue.FootfallLeast, BrandCatalogue.FootfallMost);
         }
 
-        /// <summary>Works out the three parts for a member shop and returns them together.</summary>
+        /// <summary>Works out the three parts for a member shop and returns what they come to, within bounds.</summary>
         public static int Apply(BrandsState s, Brand b, Member m)
         {
             m.Rec = RecFootfall(Effective(b, m.District), b.Standards);
@@ -515,10 +482,7 @@ namespace RealLifeOverhaul.Economy.Brands
             s.Brands.Remove(b);
         }
 
-        /// <summary>
-        /// The mean of the brand's figures over the districts where it has a member shop, hundredths: what a brand spread
-        /// over the city is known by. 0 with no such district; <paramref name="districts"/> is how many it averaged.
-        /// </summary>
+        /// <summary>The mean of the brand's figures over the districts with a member shop, hundredths; <paramref name="districts"/> counts them.</summary>
         public static int MeanRec(BrandsState s, Brand b, out int districts)
         {
             long sum = 0;
@@ -542,10 +506,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return districts >= BrandCatalogue.OfferMeanDistricts ? mean : 0;
         }
 
-        /// <summary>
-        /// Whether the brand may be offered: enough member shops with good standards, and enough recognition city-wide,
-        /// in one district, or on average over its districts. <paramref name="good"/> counts the good shops.
-        /// </summary>
+        /// <summary>Whether the brand may be offered: enough good member shops and enough recognition; <paramref name="good"/> counts the good shops.</summary>
         public static bool CanOffer(BrandsState s, Brand b, out int good)
         {
             good = 0;

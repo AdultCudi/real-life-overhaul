@@ -1,9 +1,6 @@
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The director's part for footfall: what a brand or a chain asks for at each shop is handed to business pressure,
-    /// which writes the game's promotion figure, and put back when this stops or the game saves.
-    /// </summary>
+    /// <summary>The director's part for footfall: what each shop's brand or chain asks for, written through business pressure.</summary>
     public sealed partial class BrandsDirector
     {
         // What the brand or the chain asks for at each shop, per cent of customers.
@@ -19,9 +16,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// What a brand or a city chain adds to a business's footfall now, per cent of customers, asked whenever business
-        /// pressure writes a business's figure (Wiring/BrandLinks). 0 while not running or while the figures are held
-        /// for a save. A look-up in an index of the shops read.
+        /// What a brand or a chain adds to a business's footfall, per cent, asked whenever business pressure writes its
+        /// figure: an index look-up. 0 while not running or held for a save.
         /// </summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
@@ -63,8 +59,7 @@ namespace RealLifeOverhaul.Economy.Brands
             shop.Applied = applied;
         }
 
-        // Every shop where a brand adds something, or did: its figure is written, in one batch so that a shop to be drawn
-        // again is drawn once, spread over the frames that follow (Core/CustomerDraw). Returns how many.
+        // Every shop where a brand adds something, or did, in one batch: a shop drawn again is drawn once (Core/CustomerDraw).
         private int WriteAll(bool redraw, bool newDay)
         {
             int written = 0;
@@ -107,7 +102,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>True where the game keeps a customer figure for the business, so that a brand can change its footfall.</summary>
+        /// <summary>True where the game keeps a promotion figure for the business, so that a brand can change its footfall.</summary>
         public bool Promoted(BrandShop shop)
         {
             return shop != null && shop.Reg != null && BrandsBridges.Promoted != null && BrandsBridges.Promoted(shop.Reg);

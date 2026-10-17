@@ -39,11 +39,9 @@ namespace RealLifeOverhaul.Economy.Brands
     }
 
     /// <summary>
-    /// Everything brands and franchises read from or do to the game, each done as the game itself does the same thing:
-    /// money as dated transactions, a franchised shop as a business of the game's own, prices as its price cell writes
-    /// them, hours as its hour switches leave them. Footfall goes through <see cref="BrandsBridges"/>, never from here.
-    /// Nothing per frame: the game is read at the start, once a game day and when the app opens; once a second
-    /// <see cref="Marks"/> compares one number with the last.
+    /// Everything brands and franchises read from or do to the game, each done as the game itself does it. Footfall goes
+    /// through <see cref="BrandsBridges"/>. Nothing per frame: the game is read at the start, each game day and when the
+    /// app opens, and once a second <see cref="Marks"/> compares one number with the last.
     /// </summary>
     internal static partial class BrandsGame
     {
@@ -89,7 +87,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>A business by its address, written as business pressure and the company write a place.</summary>
+        /// <summary>A business by its address, as business pressure and the company write a place.</summary>
         public static string Place(BuildingRegistration reg)
         {
             return Place(reg.StreetName, reg.StreetNumber);
@@ -126,7 +124,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>A building's address as the game writes one.</summary>
         public static string AddressWords(string place)
         {
             try
@@ -182,10 +179,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>
-        /// The buildings in a district to let by the game's own list, empty and of the kind the business type goes in,
-        /// busiest street first. One pass over the district's buildings.
-        /// </summary>
+        /// <summary>The buildings in a district to let by the game's own list, empty and of the type's kind, busiest street first.</summary>
         public static void Sites(string district, string type, List<BrandSite> into)
         {
             into.Clear();
@@ -226,10 +220,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// The customers an ordinary day brings a business of a type in a building, by the game's own formula for a
-        /// business not the player's (CustomerEntriesCalculator): each open hour, capacity x (base + 0.75 x traffic /
-        /// 100) x the type's day and hour factors, rounded up; a week of that over seven. A registration with opening
-        /// hours gives the hours and a customer limit; otherwise 9:00 to 21:00 every day.
+        /// The customers an ordinary day brings a business of a type in a building, by the game's own formula
+        /// (CustomerEntriesCalculator) averaged over a week; a registration's own hours and limit where it has them.
         /// </summary>
         public static int Customers(Building building, string type, BuildingRegistration reg)
         {
@@ -306,7 +298,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return 0f;
         }
 
-        /// <summary>Asks for a name with the game's own text input. False if the game has none to show.</summary>
+        /// <summary>Asks for a name with the game's own text input; false if it has none to show.</summary>
         public static bool AskName(string initial, Action<string> done)
         {
             try
@@ -326,10 +318,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>
-        /// Takes an amount as a transaction of the mod's own, marked deductible as the game marks its own if asked. Unless
-        /// <paramref name="force"/>, a charge the cash does not cover is refused: false, and nothing is taken.
-        /// </summary>
+        /// <summary>Takes an amount as a transaction of the mod's own. Unless <paramref name="force"/>, false and nothing taken if the cash is short.</summary>
         public static bool Take(int amount, string key, string name, bool deductible, bool force)
         {
             if (amount <= 0)
@@ -362,10 +351,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
         }
 
-        /// <summary>
-        /// The franchised shops on the city map (Core/MapPlaces), each marked with the brand's and the franchisee's names.
-        /// Called once a second: one comparison while nothing has changed; otherwise the markers are made again, a few a call.
-        /// </summary>
+        /// <summary>The franchised shops on the city map. Once a second: one comparison while nothing has changed, else the markers again, a few a call.</summary>
         public static void Marks(BrandsState state, bool on, Func<Franchise, string> name)
         {
             try

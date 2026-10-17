@@ -3,9 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A franchisee's civil claim against the brand's owner (through Wiring/BrandLinks): one of Justice's own civil
-    /// suits, as a lender's claim is (Justice/DebtClaims), filed, asked after and withdrawn here. While Justice is not
-    /// working, <see cref="File"/> returns 0 and the dispute is answered in the Brands app alone. Nothing on a timer.
+    /// A franchisee's civil claim against the brand's owner: one of Justice's own civil suits, as a lender's claim is
+    /// (Justice/DebtClaims). While Justice is not working <see cref="File"/> returns 0 and the app alone answers it.
     /// </summary>
     public static class BrandClaims
     {

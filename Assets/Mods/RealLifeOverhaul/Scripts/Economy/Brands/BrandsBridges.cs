@@ -2,10 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// What brands and franchises ask of the rest of the mod, filled in by Wiring/BrandLinks. Each is optional with a
-    /// default, so Economy/Brands works alone and never calls another feature directly.
-    /// </summary>
+    /// <summary>What brands and franchises ask of the rest of the mod, filled in by Wiring/BrandLinks; each has a default, so Brands works alone.</summary>
     public static class BrandsBridges
     {
         /// <summary>Writes a business's promotion figure again as it should stand now (business pressure's writer). Default: nothing is written.</summary>

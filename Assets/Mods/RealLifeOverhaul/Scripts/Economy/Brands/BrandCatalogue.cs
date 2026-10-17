@@ -119,7 +119,6 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int CannibalMost = 8;          // from all of them together
         public const int FootfallLeast = -8, FootfallMost = 15;   // what a brand may ask for at one shop, everything together
 
-        // Offering a franchise.
         public const int OfferCityRec = 2500;       // city-wide recognition, or...
         public const int OfferDistrictRec = 4000;   // ...this much in one district, or...
         public const int OfferMeanRec = 1000;       // ...this much on average over the districts where it has a member shop...
@@ -127,7 +126,6 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int OfferShops = 3;            // member shops...
         public const int OfferStandards = 60;       // ...with standards of this or more
 
-        // Applicants.
         public const int ArriveBase = 60;           // per mille a day for a brand on offer...
         public const int ArrivePerPoint = 2;        // ...and this for each point of city-wide recognition
         public const int ApplicantDays = 10;        // an applicant waits this long
@@ -179,7 +177,6 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int DriftBp = 1000;            // ten-thousandths of the gap closed a day
         public const int DriftNoise = 200;          // hundredths either way a day
 
-        // Keeping a franchisee to the standards.
         public const int InspectorFee = 250;        // at a price index of 100
         public const int InspectDueDays = 30;       // the Planner asks for an inspection after this long without one
         public const int FreshDays = 10;            // an inspection counts as evidence for this long
@@ -192,7 +189,6 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int CompensationDaysMost = 60; // ...up to this many days
         public const int CompensationLeastShare = 500;   // thousandths of the entry fee: never less
 
-        // What a franchisee asks.
         public const int AskDays = 10;              // days an ask waits for an answer
         public const int RenewalNotice = 14;        // days before the end that a renewal is asked for
         public const int SecondAfterDays = 30;      // days trading before a second shop is thought of

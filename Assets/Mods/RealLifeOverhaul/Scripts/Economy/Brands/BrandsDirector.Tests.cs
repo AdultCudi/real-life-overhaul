@@ -4,9 +4,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// The director's part for the test tools on the options page. Each puts one thing in place and opens the app on
-    /// it; the state before the first test is kept once, and "Test: put brands back" restores it. A test moves no money
-    /// itself, but the player's answers after it and the next day's royalty are real.
+    /// The director's part for the test tools: each puts one thing in place and opens the app on it. The state before
+    /// the first test is kept for "put brands back"; money moved after a test is real.
     /// </summary>
     public sealed partial class BrandsDirector
     {
@@ -69,11 +68,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return null;
         }
 
-        /// <summary>
-        /// "Test: make my best shop a brand with high recognition": the shop under nothing that took most yesterday
-        /// becomes a brand (or the first brand is used), every other shop of its type joins, its recognition is put
-        /// high, and it goes on offer.
-        /// </summary>
+        /// <summary>Makes the best free shop a brand (or takes the first), joins every shop of its type, and puts it on offer with high recognition.</summary>
         public void TestMake()
         {
             if (!TestReady("Brands make"))
@@ -138,7 +133,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>"Test: an applicant": somebody applies to the first brand, on offer or not.</summary>
+        /// <summary>Somebody applies to the first brand, on offer or not.</summary>
         public void TestApplicant()
         {
             if (!TestReady("Brands applicant"))
@@ -165,10 +160,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>
-        /// "Test: sign a franchise in the next district": a careful franchisee signs the middle terms with the first
-        /// brand, in the first district after its flagship's with somewhere to open. No entry fee is paid.
-        /// </summary>
+        /// <summary>A careful franchisee signs the middle terms with the first brand in the next district with somewhere to open; no fee is paid.</summary>
         public void TestSign()
         {
             if (!TestReady("Brands sign"))
@@ -220,7 +212,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>"Test: a franchisee in trouble": the first franchised shop has one ordinary day's takings left and asks for help.</summary>
+        /// <summary>The first franchised shop has one ordinary day's takings left and asks for help.</summary>
         public void TestTrouble()
         {
             if (!TestReady("Brands trouble"))
@@ -254,7 +246,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>"Test: a scandal at a member shop": a failed inspection is heard of at the first member shop. No inspection happens and no fine is charged.</summary>
+        /// <summary>A failed inspection is heard of at the first member shop; no inspection happens and no fine is charged.</summary>
         public void TestScandal()
         {
             if (!TestReady("Brands scandal"))
@@ -275,10 +267,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>
-        /// "Test: a year passes for the brand": every brand's own clock runs a year of days on today's figures. The
-        /// game's day does not move, no franchised shop trades and no money moves.
-        /// </summary>
+        /// <summary>Every brand's own clock runs a year on today's figures; the game's day, the franchises and the money stand still.</summary>
         public void TestYear()
         {
             if (!TestReady("Brands year"))
@@ -309,10 +298,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>
-        /// "Test: put brands back": the state from before the first test. A business of the game's that a test franchise
-        /// opened is closed by the game's own closure. Money that has moved since stays moved.
-        /// </summary>
+        /// <summary>Puts back the state from before the first test; a business a test franchise opened is closed by the game's closure.</summary>
         public void TestBack()
         {
             if (Save == null || !ModState.Loaded)

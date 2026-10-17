@@ -5,9 +5,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// The director's part for what the player does with brands and city chains in the Brands app (franchises are in
-    /// the Franchises part). Each runs once, on a press, and ends in <see cref="Changed"/>; a press that cannot be done
-    /// says why in one of the game's notifications.
+    /// The director's part for what the player does with brands and city chains, each on a press; a press that cannot be
+    /// done says why in a notification.
     /// </summary>
     public sealed partial class BrandsDirector
     {
@@ -34,7 +33,6 @@ namespace RealLifeOverhaul.Economy.Brands
             Notifications.Show(type, key, data, 9f, null, null, true, false);
         }
 
-        /// <summary>A shop becomes a brand under its own name, which can be changed afterwards.</summary>
         public void CreateBrand(string place)
         {
             Act("making a brand", () =>
@@ -59,7 +57,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>The brand's name, typed with the game's own text input; a notification says so if the game has none.</summary>
+        /// <summary>The brand's name, typed with the game's own text input.</summary>
         public void Rename(int brandId)
         {
             Act("naming a brand", () =>
@@ -186,7 +184,6 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>What a brand campaign would cost today.</summary>
         public int PushCost(Brand b, int kind, string district)
         {
             return BrandRules.PushCost(kind, kind == BrandCatalogue.PushCity ? 0 : BrandRules.Shops(_state, b, district), Index);
@@ -219,7 +216,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>The flagship's prices at every other member shop, for the products each already sells.</summary>
+        /// <summary>The flagship's prices at every other member shop, for the products it already sells.</summary>
         public void SharePrices(int brandId)
         {
             Act("sharing prices", () =>
@@ -280,7 +277,6 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        // The player's businesses again, now: a shop has just joined or left something.
         private void Reread()
         {
             int left;
@@ -318,7 +314,6 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>What leaving its chain would cost a shop today.</summary>
         public int ChainExit(Taken t)
         {
             return FranchiseRules.ChainExit(t, Index);

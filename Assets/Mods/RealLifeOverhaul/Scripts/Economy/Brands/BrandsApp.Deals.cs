@@ -3,11 +3,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The Applicants and Agreements tabs, and the page of one franchised shop that they and the Shops tab show. An
-    /// applicant has three pages one after the other (their record; where and for how long; the money and their
-    /// answer); a franchise has two chosen with the selector (the shop, the agreement).
-    /// </summary>
+    /// <summary>The app's part for the Applicants and Agreements tabs, and a franchised shop's page, which the Shops tab shows too.</summary>
     public sealed partial class BrandsApp
     {
         private static readonly string[] FranchisePageKeys = { "reallife_brand_page_shop", "reallife_brand_page_agreement" };
@@ -272,7 +268,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // Where the shop is and how it stands in the city, what it takes, and its standards as far as they are known.
         private void WriteFranchiseShop(InfoBox box, Brand b, Franchise f, int day)
         {
             int id = f.Id, index = BrandsDirector.Index;
@@ -310,7 +305,6 @@ namespace RealLifeOverhaul.Economy.Brands
             BackButton(box);
         }
 
-        // The agreement's terms, what the franchisee asks with the answers, and ending it.
         private void WriteFranchiseAgreement(InfoBox box, Brand b, Franchise f, int day)
         {
             int id = f.Id;

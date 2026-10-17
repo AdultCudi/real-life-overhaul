@@ -10,10 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// The Brands app, in the game's frame (GameUi.AppShell) with the kit's table: four tabs (brands, shops, applicants,
-    /// agreements), each a table on the right and, on the left, a box with the one row picked. Each tab's page is in a
-    /// part file and every table is declared in <see cref="BrandsTables"/>. Nothing per frame, open or closed: the page
-    /// is made again when the app opens, a tab or row is picked, or the director says something changed.
+    /// The Brands app in the game's frame: four tabs, each a table and a box for the row picked, each tab's page in a
+    /// part file. Nothing per frame, open or closed: a page is made again on a click or when the director says so.
     /// </summary>
     public sealed partial class BrandsApp
     {
@@ -61,7 +59,7 @@ namespace RealLifeOverhaul.Economy.Brands
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification was clicked, or something was just made).</summary>
+        /// <summary>The tab to show the next time the app opens, and what is picked on it.</summary>
         public void Want(int tab, string pick)
         {
             _wanted = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
@@ -101,7 +99,6 @@ namespace RealLifeOverhaul.Economy.Brands
             _ready = false;
         }
 
-        /// <summary>The director says something has changed: the page is written again if it is showing.</summary>
         public void Changed()
         {
             if (Showing && _ready && !_writing)

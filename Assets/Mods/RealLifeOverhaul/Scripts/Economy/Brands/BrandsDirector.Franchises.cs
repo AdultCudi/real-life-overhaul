@@ -4,13 +4,10 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The director's part for what the player does with applicants and franchisees: signing, inspecting, warning,
-    /// retraining, ending an agreement and answering what a franchisee asks. Each runs once, on a press.
-    /// </summary>
+    /// <summary>The director's part for what the player does with applicants and franchisees, each on a press.</summary>
     public sealed partial class BrandsDirector
     {
-        /// <summary>The buildings to let in the district an applicant wants, for the brand's type: read when the applicant's page first shows, kept while it shows.</summary>
+        /// <summary>The buildings to let in the district an applicant wants, read when the applicant's page first shows.</summary>
         public IReadOnlyList<BrandSite> SitesFor(Applicant a)
         {
             if (a == null)
@@ -40,11 +37,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>
-        /// The agreement is signed at these terms if the applicant takes them, and the shop opens: in the building picked
-        /// as a business of the game's where the game has one that fits; otherwise the franchisee takes on a business of
-        /// the type that already trades in the district; otherwise in the mod's books only, at the building picked.
-        /// </summary>
+        /// <summary>The agreement is signed at these terms if the applicant takes them, and the shop opens.</summary>
         public void Sign(int applicantId, int site, int feeTier, int royaltyTier, int levyTier, bool exclusive, int lengthTier)
         {
             Act("signing a franchise", () =>
@@ -94,9 +87,8 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        // A signed shop is put in the city: at the site, or as the existing business of the type the franchisee takes on
-        // where the site gives no business of the game's. The game's market leaves it alone from today, and where the
-        // game's formula gives the building no customers for the type, the member shops' average of yesterday stands in.
+        // A signed shop opens at the site; where that gives no business of the game's, the franchisee takes on the existing
+        // one of the type. Where the game's formula gives no customers, the member shops' average of yesterday stands in.
         private void Place(Franchise f, Brand b, BrandSite site, Franchise existing, int day)
         {
             if (site != null)
@@ -129,7 +121,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Logger?.Info("Brands: the game's formula gives " + f.Place + " no customers for " + b.Type + "; the member shops' average of yesterday, " + f.Base + ", is used.");
         }
 
-        /// <summary>An inspection: in person and free if the player stands in the shop, otherwise an inspector is sent for a fee.</summary>
+        /// <summary>An inspection: free if the player stands in the shop, otherwise by an inspector for a fee.</summary>
         public void Inspect(int franchiseId)
         {
             Act("an inspection", () =>
@@ -202,7 +194,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return b == null || FranchiseRules.HasCause(b, f, Save.Day) ? 0 : FranchiseRules.Compensation(b, f, Save.Day);
         }
 
-        /// <summary>The brand ends the agreement: with cause if there is one, otherwise for compensation and at a cost in recognition.</summary>
+        /// <summary>The brand ends the agreement: with cause if there is one, otherwise for compensation and recognition.</summary>
         public void End(int franchiseId)
         {
             Act("ending an agreement", () =>
@@ -349,8 +341,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        // The brand is sold to the franchisee that bid for it: the price is paid, its agreements pass to the buyer, and
-        // the player's member shops are plain shops again.
+        // The brand is sold to the bidder: its agreements pass to the buyer and its member shops are plain shops again.
         private void Sell(Brand b, Franchise buyer)
         {
             int price = b.Bid;

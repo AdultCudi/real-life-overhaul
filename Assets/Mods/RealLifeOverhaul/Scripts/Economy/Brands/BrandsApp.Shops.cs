@@ -4,11 +4,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The Shops tab: every shop of the player's and every franchised shop. The box shows, for a plain shop, the ways
-    /// into a brand or a chain; for a member shop, what the brand brings it; for a chain's shop, how it stands with the
-    /// chain; for a franchised shop, the Agreements tab's page.
-    /// </summary>
+    /// <summary>The app's part for the Shops tab: the player's shops, with what each can join or what it gets, and the franchised shops.</summary>
     public sealed partial class BrandsApp
     {
         private readonly List<Brand> _joinable = new List<Brand>(4);
@@ -123,7 +119,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // A shop under a brand of the player's: its standards and what the brand brings it, part by part.
         private void WriteMember(InfoBox box, BrandsState state, BrandShop shop)
         {
             Member m = shop.File;
@@ -177,7 +172,6 @@ namespace RealLifeOverhaul.Economy.Brands
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_brand_back", ClosePick);
         }
 
-        // A shop under a city chain: what the chain asks, how the shop stands, what it pays and what leaving costs.
         private void WriteChainShop(InfoBox box, BrandShop shop)
         {
             Taken t = shop.Chain;
@@ -232,7 +226,6 @@ namespace RealLifeOverhaul.Economy.Brands
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_brand_back", ClosePick);
         }
 
-        // A shop under nothing: make a brand of it, join a brand of its type, or take a city chain's franchise.
         private void WritePlainShop(InfoBox box, BrandsState state, BrandShop shop)
         {
             string place = shop.Place, name = shop.Name;

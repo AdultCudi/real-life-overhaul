@@ -15,11 +15,7 @@ namespace RealLifeOverhaul.Economy.Brands
 
         private static readonly List<BuildingRegistration> One = new List<BuildingRegistration>(1);
 
-        /// <summary>
-        /// Opens a franchised shop at a building to let: a business of the game's own where the game has one of the type
-        /// that fits the building, in the books only where it has none. The file gets its place, hold, the game's name
-        /// for the business, its door and its customers.
-        /// </summary>
+        /// <summary>Opens a franchised shop at a building to let: as a business of the game's own where one of the type fits, else in the books only.</summary>
         public static void Open(Franchise f, BrandSite site, string type)
         {
             f.Place = site.Place;
@@ -62,16 +58,13 @@ namespace RealLifeOverhaul.Economy.Brands
                 : " in the mod's books only (the game has no business of this type that fits the building)") + "; " + f.Base + " customers on an ordinary day by the game's formula.");
         }
 
-        /// <summary>True while a building is to let by the game's own list, empty and not the player's: what a franchised shop may open in.</summary>
+        /// <summary>True while a building is to let by the game's own list, empty and not the player's.</summary>
         public static bool Free(BuildingRegistration reg)
         {
             return reg != null && !reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && reg.AvailableForRent && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == EmptyType);
         }
 
-        /// <summary>
-        /// Finds a business of the game's own of the brand's type trading in the district and not yet franchised, and
-        /// fills in the file given for it to join as it stands. Nothing of the game's changes. False if there is none.
-        /// </summary>
+        /// <summary>Fills in the file for a business of the game's of the type, trading in the district and not franchised; changes nothing. False if none.</summary>
         public static bool Convert(Franchise f, BrandsState state, string district, string type)
         {
             try
@@ -129,8 +122,8 @@ namespace RealLifeOverhaul.Economy.Brands
             f.Base = Customers(building, type, reg);
         }
 
-        // One of the game's ready-made businesses of the type with a layout for this building's size, an ordinary trader
-        // before one of a rival's chain (a rival that is beaten takes its chain's shops with it).
+        // One of the game's ready-made businesses of the type that fits the building, an ordinary trader before a rival's
+        // chain (a beaten rival takes its chain's shops with it).
         private static AiBusinessDefault Default(string type, BuildingRegistration reg)
         {
             if (reg == null || reg.BuildingCached == null)
@@ -168,9 +161,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// Keeps the city's own market from closing a franchised shop while its agreement runs: the game's daily run
-        /// never closes a business that started within the last forty days (CompetitionHelper.TryShutdownBusinesses),
-        /// so the shop's start day is kept at today. A converted shop's own day is put back by <see cref="Close"/>.
+        /// Keeps the city's market from closing a franchised shop: the game never closes a business started in the last
+        /// forty days (CompetitionHelper.TryShutdownBusinesses), so its start day is kept at today.
         /// </summary>
         public static void Keep(Franchise f, string type, int day)
         {
@@ -185,10 +177,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>
-        /// A franchised shop closes. One the game started for the brand is closed by the game's own closure, which puts
-        /// the building back to let; a converted one trades on with the start day it had; one in the books was never there.
-        /// </summary>
+        /// <summary>A franchised shop closes: an opened one by the game's own closure, a converted one trades on with its own start day.</summary>
         public static void Close(Franchise f, string type)
         {
             if (f.Hold == Hold.Converted && Stands(f, type))
@@ -226,7 +215,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>True while the player stands inside the building a franchised shop is in.</summary>
         public static bool PlayerInside(Franchise f)
         {
             try

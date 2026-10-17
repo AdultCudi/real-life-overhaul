@@ -9,11 +9,7 @@ namespace RealLifeOverhaul.Economy.Brands
     /// <summary>The game part for opening hours copied from the flagship, with the game's own follow-ups.</summary>
     internal static partial class BrandsGame
     {
-        /// <summary>
-        /// The flagship's opening hours at another shop of the brand: each day's hours and whether it is open, as the
-        /// game's hour switches and the rota planner leave them, with the steps the game takes after its schedule screen.
-        /// No shift is changed. Returns how many days changed.
-        /// </summary>
+        /// <summary>The flagship's opening hours at another shop, as the game's hour switches leave them; no shift changes. Returns how many days changed.</summary>
         public static int ShareHours(BuildingRegistration from, BuildingRegistration to)
         {
             if (from == null || to == null || from.scheduleDays == null || to.scheduleDays == null || ReferenceEquals(from, to))

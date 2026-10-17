@@ -12,10 +12,8 @@ namespace RealLifeOverhaul.Economy.Brands
     }
 
     /// <summary>
-    /// Franchising by rule: applicants and the terms they take, a franchised shop's day, the franchisee's standards
-    /// and cash, what they ask and how an agreement ends; and a shop of the player's under a city chain. Game-free:
-    /// every chance is <see cref="BrandCatalogue.Dice"/> of the save's seed, so the same days replay the same. A shop's
-    /// day is about forty integer operations and allocates nothing.
+    /// Franchising by rule: applicants and terms, a franchised shop's day, what franchisees ask, how agreements end, and
+    /// a shop of the player's under a city chain. Game-free; every chance is <see cref="BrandCatalogue.Dice"/> of the seed.
     /// </summary>
     public static class FranchiseRules
     {
@@ -90,10 +88,7 @@ namespace RealLifeOverhaul.Economy.Brands
                    + BrandCatalogue.BearTemper[BrandCatalogue.Clamp((int)temper, 0, 2)];
         }
 
-        /// <summary>
-        /// True if the district is taken: another franchisee holds it alone, or these terms ask for it alone while
-        /// another already trades there. A franchisee's own shops do not shut them out.
-        /// </summary>
+        /// <summary>True if another franchisee holds the district alone, or these terms ask for it alone while another trades there; their own shops do not count.</summary>
         public static bool TerritoryTaken(BrandsState s, Brand b, Applicant a, bool exclusive)
         {
             Franchise own = a.From != 0 ? s.Franchise(a.From) : null;
@@ -112,7 +107,6 @@ namespace RealLifeOverhaul.Economy.Brands
             return false;
         }
 
-        /// <summary>The applicant's answer to terms.</summary>
         public static Refusal Answer(BrandsState s, Brand b, Applicant a, int feeTier, int royaltyTier, int levyTier, bool exclusive, int index)
         {
             if (s.Franchises.Count >= BrandCatalogue.FranchisesMost)
@@ -131,9 +125,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// The agreement is signed: the applicant becomes a franchisee with their capital less the entry fee and the
-        /// fit-out. The shop itself (its place, hold and customers) is filled in by the caller. A second shop takes its
-        /// capital out of the first one's cash.
+        /// The agreement is signed: the applicant becomes a franchisee with their capital less the fee and the fit-out,
+        /// out of the first shop's cash for a second shop. The caller fills in the shop itself.
         /// </summary>
         public static Franchise Sign(BrandsState s, Brand b, Applicant a, int feeTier, int royaltyTier, int levyTier, bool exclusive, int lengthTier, int index, int day, int yearDays)
         {
@@ -163,11 +156,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return (int)Math.Min(int.MaxValue / 8, ((long)Math.Max(0, customers) * Math.Max(0, ticket) + 50) / 100);
         }
 
-        /// <summary>
-        /// What a franchised shop takes in a day: an ordinary day's takings by the franchisee's ability, the brand's
-        /// recognition there, the district's income, the economy, its standards, the brand's other shops beside it and
-        /// the day's luck. Never falls when any of the first seven rises, never rises with more shops beside it.
-        /// </summary>
+        /// <summary>An ordinary day's takings by each factor in turn; never falls when any of the first seven rises, nor rises with more shops beside it.</summary>
         public static int Takings(int customers, int ticket, int rec, int income, CycleState cycle, int ability, int standards, int others, int seed, int day)
         {
             long t = Ordinary(customers, ticket);
@@ -222,9 +211,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// One day at a franchised shop: its takings, the royalty and levy on them (none while waived) and its support;
-        /// the franchisee's cash and standards; then at most one event: it closes, the agreement runs out, or the
-        /// franchisee asks for something. An ask not answered in time is dropped first. The caller books the money.
+        /// One day at a franchised shop: its takings and what they pay, the franchisee's cash and standards, then at most
+        /// one event (it closes, runs out, or the franchisee asks). An ask past its day is dropped first. The caller books the money.
         /// </summary>
         public static FranchiseDay Day(BrandsState s, Brand b, Franchise f, int day, int income, CycleState cycle, int index)
         {
@@ -338,14 +326,13 @@ namespace RealLifeOverhaul.Economy.Brands
             f.AskRest = day + BrandCatalogue.AskRestDays;
         }
 
-        /// <summary>The week's average of what the franchises bring in a day after support.</summary>
+        /// <summary>Keeps the week's average of what the franchises bring in a day after support.</summary>
         public static void NoteNet(Brand b, int net)
         {
             int sum = b.Net * 6 + net;
             b.Net = sum >= 0 ? (sum + 3) / 7 : -((-sum + 3) / 7);
         }
 
-        /// <summary>An inspection: the shop's standards today become known.</summary>
         public static int Inspect(Franchise f, int day)
         {
             f.Seen = f.StandardsNow;
@@ -454,11 +441,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Drop(b, f, day);
         }
 
-        /// <summary>
-        /// A second shop agreed in principle: the franchisee joins the applicants with half their cash as capital, in
-        /// their own district, to be given a building and terms like anybody else. Null if the applicants are full:
-        /// the ask then stands.
-        /// </summary>
+        /// <summary>A second shop agreed: the franchisee joins the applicants with half their cash. Null if the applicants are full, and the ask stands.</summary>
         public static Applicant Second(BrandsState s, Brand b, Franchise f, int day)
         {
             if (s.Applicants.Count >= BrandCatalogue.ApplicantsMost)
@@ -555,10 +538,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return royalty;
         }
 
-        /// <summary>
-        /// A day in or out of what the chain asks: 1 on the day the chain writes, 2 on the day it fines, 3 from the day it
-        /// ends the agreement, else 0. A day back inside clears the count.
-        /// </summary>
+        /// <summary>A day in or out of what the chain asks: 1 the day it writes, 2 the day it fines, 3 from the day it ends the agreement, else 0.</summary>
         public static int ChainStep(Taken t, bool breach, int day, int yearDays)
         {
             if (day >= t.Until)

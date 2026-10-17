@@ -5,18 +5,15 @@ using UI.Notification;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// The director's part for kept prices (<see cref="KeptPrices"/>): a chain's shop kept inside the chain's range, or
-    /// a member shop kept on the flagship's prices, each by the player's switch. On the day event every kept shop is
-    /// written afresh, before the chain looks at its prices. Each hour one round compares each price with what was
-    /// last written (a dictionary look-up a product, nothing allocated) and puts back a price something else moved,
-    /// at most <see cref="BrandCatalogue.KeepPerRound"/> shops a round. Switched off, prices stay as they stand.
+    /// The director's part for kept prices (<see cref="KeptPrices"/>): written afresh each day before the chain looks
+    /// at them, and each hour a price something else moved is put back (a dictionary look-up a product).
     /// </summary>
     public sealed partial class BrandsDirector
     {
         private readonly Dictionary<string, KeptBook> _books = new Dictionary<string, KeptBook>(16, StringComparer.Ordinal);
         private int _keepFrom;   // the shop the next hourly round starts with
 
-        /// <summary>True for a shop whose prices are kept: a chain's shop with its switch on, or a member shop (not the flagship) of a brand that keeps them.</summary>
+        /// <summary>True for a chain's shop with its switch on, or a member shop (not the flagship) of a brand that keeps prices.</summary>
         internal bool Kept(BrandShop shop)
         {
             BrandShop from;
@@ -56,10 +53,8 @@ namespace RealLifeOverhaul.Economy.Brands
             return book;
         }
 
-        /// <summary>
-        /// One round over the kept shops: on the day event every one is written afresh; on the hour only those whose
-        /// prices are not as they should stand, a capped number, the next round starting with the first left.
-        /// </summary>
+        // On the day every kept shop is written afresh; on the hour only those not as they should stand, a capped number,
+        // the next round starting with the first left.
         private void KeepRound(bool day)
         {
             int count = _shops.Count, written = 0, prices = 0, outside = 0, kept = 0;
@@ -152,9 +147,8 @@ namespace RealLifeOverhaul.Economy.Brands
             return look;
         }
 
-        // A chain's shop: every product with a market price inside the chain's range. On the day each is worked out
-        // afresh; on the hour one already written is put back at what was written, and only a new one is worked out.
-        // Returns how many prices changed.
+        // A chain's shop: worked out afresh on the day; on the hour a price already written is put back, and only a new one
+        // is worked out. Returns how many changed.
         private int KeepChain(BrandShop shop, KeptBook book, bool day, out int moved)
         {
             moved = 0;
@@ -210,7 +204,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return KeptPrices.ChainPrice(market, target, chain);
         }
 
-        // A member shop: the flagship's price for each product both sell, times the district's adjustment. Returns how many prices changed.
+        // A member shop: the flagship's price for each product both sell, times the district's adjustment.
         private int KeepMember(BrandShop shop, Brand b, BrandShop from, KeptBook book, out int moved)
         {
             moved = 0;
@@ -239,7 +233,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return changed;
         }
 
-        // Something else changed a kept price and it was put back: told once for each shop, written to the log each time.
+        // Told once for each shop, logged each time.
         private void PutBack(BrandShop shop, int moved)
         {
             bool told = shop.Chain != null ? shop.Chain.Told : shop.File != null && shop.File.Told;
@@ -263,7 +257,6 @@ namespace RealLifeOverhaul.Economy.Brands
             Tell(NotificationType.Info, "reallife_brand_note_kept_back", new Dictionary<string, string> { { "business", shop.Name } }, TabShops, "shop:" + shop.Place);
         }
 
-        /// <summary>A chain's shop: its prices kept inside the chain's range, or no longer.</summary>
         public void KeepChainPrices(string place, bool on)
         {
             Act("keeping a chain's prices", () =>
@@ -290,7 +283,6 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>A brand: its member shops kept on the flagship's prices, or no longer.</summary>
         public void KeepBrandPrices(int brandId, bool on)
         {
             Act("keeping a brand's prices", () =>
@@ -313,7 +305,6 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>A brand that keeps its prices: the district's adjustment on or off.</summary>
         public void KeepBrandLocal(int brandId, bool on)
         {
             Act("a brand's district adjustment", () =>
@@ -330,7 +321,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        // The brand's member shops written afresh now; none while it does not keep them. Returns how many prices changed.
+        // The brand's member shops written afresh now, if it keeps them. Returns how many prices changed.
         private int KeepBrandNow(Brand b)
         {
             int changed = 0;

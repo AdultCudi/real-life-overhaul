@@ -157,8 +157,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // A franchised shop that was a business of the game's is no longer that business (the city's market closed it, or
-        // the building changed hands): the agreement ends with nobody at fault.
+        // A franchised shop that was the game's business is no longer it (the market closed it, or the building changed hands).
         private void Gone(Brand b, Franchise f, int day)
         {
             FranchiseRules.Lapse(_state, b, f, day);
@@ -199,10 +198,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>
-        /// Something the city hears about has happened at a business (Wiring/BrandLinks). If it trades under a brand of
-        /// the player's, the brand's recognition falls in the district and a little city-wide.
-        /// </summary>
+        /// <summary>A scandal at a business (Wiring/BrandLinks): if it is a member shop, the brand's recognition falls there and a little city-wide.</summary>
         public void Heard(string place, Scandal kind)
         {
             if (!_running || _broken || _state == null)
@@ -242,7 +238,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>Recognition a scandal took at a shop is given back (an honest answer on Flare, Wiring/FlareLinks). Returns what came back, hundredths.</summary>
+        /// <summary>Recognition a scandal took is given back (an honest answer on Flare). Returns what came back, hundredths.</summary>
         public int Recover(string place, int points)
         {
             if (!_running || _broken || _state == null)

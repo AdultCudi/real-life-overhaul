@@ -9,17 +9,10 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The game part for prices: a shop's prices written as the game's own price cell writes them, and what kept
-    /// prices read (the market price, the district's price index and demand, the pricing manager's ceiling, the
-    /// wholesale price).
-    /// </summary>
+    /// <summary>The game part for prices: written as the game's own price cell writes them, and what kept prices read.</summary>
     internal static partial class BrandsGame
     {
-        /// <summary>
-        /// The flagship's prices at another shop of the brand, for each product both sell, written as the game's own
-        /// price cell writes them. A product the shop does not sell is not added. Returns how many prices changed.
-        /// </summary>
+        /// <summary>The flagship's prices at another shop, for the products both sell. Returns how many changed.</summary>
         public static int SharePrices(BuildingRegistration from, BuildingRegistration to)
         {
             int changed = 0;
@@ -35,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return changed;
         }
 
-        /// <summary>A shop's prices put at the middle of what a city chain asks, against the game's own market price for each product. Returns how many changed.</summary>
+        /// <summary>A shop's prices put at the middle of what a city chain asks. Returns how many changed.</summary>
         public static int ChainPrices(BuildingRegistration reg, int chain)
         {
             int changed = 0;
@@ -53,8 +46,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return changed;
         }
 
-        // One price where the shop already has one for the product: the price list, the stored one, then the game's own
-        // market update (InventoryProductCellView). True if it changed.
+        // One price, where the shop has one for the product: both price lists, then the game's market update (InventoryProductCellView).
         private static bool SetPrice(BuildingRegistration reg, string item, float price)
         {
             RetailPrice mine = null;
@@ -116,10 +108,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return !string.IsNullOrEmpty(district) && CitizenHelper.averagePriceIndicesInNeighborhoods.TryGetValue(district, out index) && index > 0f ? Mathf.RoundToInt(index * 1000f) : 0;
         }
 
-        /// <summary>
-        /// The game's demand for a product in a district (0 to 100) and whether the player is its only seller there; -1 for a
-        /// product the game keeps no demand for.
-        /// </summary>
+        /// <summary>The game's demand for a product in a district (0 to 100), and whether the player is its only seller; -1 for none.</summary>
         public static int Demand(string item, string district, out bool monopoly)
         {
             monopoly = false;
@@ -145,10 +134,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return -1;
         }
 
-        /// <summary>
-        /// The highest price the game's own pricing manager would set for a product in a district, thousandths of its market
-        /// price; 0 where it would set none.
-        /// </summary>
+        /// <summary>The highest price the game's pricing manager would set in a district, thousandths of the market price; 0 for none.</summary>
         public static int Ceiling(string item, string district, float market)
         {
             try
@@ -167,7 +153,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>What the product costs the player at the wholesaler today, thousandths of its market price; 0 for none (a service).</summary>
+        /// <summary>The wholesale price today, thousandths of the market price; 0 for none (a service).</summary>
         public static int Cost(string item, float market)
         {
             try
@@ -182,7 +168,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>True while one of the game's own pricing managers watches the district: it sets the prices of every shop of the player's there once a day.</summary>
+        /// <summary>True while one of the game's pricing managers sets the player's prices in the district each day.</summary>
         public static bool ManagerWatches(string district)
         {
             try
@@ -195,7 +181,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>The price a shop asks for a product; false where it has none.</summary>
         public static bool PriceOf(BuildingRegistration reg, string item, out float price)
         {
             price = 0f;
@@ -212,9 +197,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// One kept price, written as the game's own price cell writes one; with <paramref name="add"/>, a product with no
-        /// price is given one as the game's pricing manager adds one. Only at the player's own business, never another
-        /// player's in a Going Public session. True if it changed.
+        /// One kept price, as the game's price cell writes one; with <paramref name="add"/>, given to a product with none as
+        /// its pricing manager adds one. Never at another player's business. True if it changed.
         /// </summary>
         public static bool KeepPrice(BuildingRegistration reg, string item, float price, string district, bool add)
         {

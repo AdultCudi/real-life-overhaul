@@ -18,16 +18,10 @@ namespace RealLifeOverhaul.Economy.Brands
     }
 
     /// <summary>
-    /// Brands and franchises: keeps the feature going (<see cref="BrandRules"/> and <see cref="FranchiseRules"/> hold
-    /// the rules, <see cref="BrandsGame"/> what is read from and done to the game). Per frame: nothing; it has no Update.
-    /// The credit side's second calls <see cref="EachSecond"/> (a dozen comparisons and the map's stamp while idle),
-    /// and its hour and day events call <see cref="OnHour"/> and <see cref="OnDay"/> after the city's economy and the
-    /// company. The start after a load and the app's install run in seconds of their own, each timed: together they
-    /// once made one frame of about 36 ms.
-    ///
-    /// Every effect is undone: the footfall figures are put back before every save and whenever this stops; a
-    /// franchised shop that is a business of the game's trades on as the city's; shared prices and hours are the
-    /// player's own settings. A fault switches the feature off for the session.
+    /// Brands and franchises: keeps the feature going. Per frame: nothing, it has no Update; the credit side's second
+    /// costs a dozen comparisons while idle, and its hour and day events drive the rest. The start after a load and the
+    /// app's install run in seconds of their own: together they would cost a frame of about 36 ms. The footfall figures are put
+    /// back before every save and whenever this stops; a fault switches the feature off for the session.
     /// </summary>
     public sealed partial class BrandsDirector : MonoBehaviour
     {
@@ -62,7 +56,7 @@ namespace RealLifeOverhaul.Economy.Brands
 
         public bool Running => _running;
 
-        /// <summary>The state in use; null while the feature is not running.</summary>
+        /// <summary>Null while the feature is not running.</summary>
         public BrandsState State => _running ? _state : null;
 
         /// <summary>The player's businesses as read this morning, or when the app was last opened.</summary>
@@ -235,8 +229,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Recount();
         }
 
-        // The feature stops and every figure it changed is the game's own again. With 'keep' the state goes into the
-        // save's data first (a stop in the middle of play).
+        // Every figure the feature changed is the game's own again; with 'keep' the state goes into the save's data first.
         private void StandDown(string why, bool tell, bool keep, bool unloading)
         {
             bool was = _running;
@@ -428,8 +421,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // The game is about to save: the footfall figures are put at the game's own (the registration that holds them is
-        // saved) until the next game hour, and the state is written.
+        // The footfall figures are the game's own until the next game hour, as the registration that holds them is saved.
         private void OnSave()
         {
             try
@@ -508,7 +500,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>A notification of the game's that opens the Brands app on a tab, with something picked.</summary>
+        /// <summary>A notification of the game's that opens the app on a tab, with something picked.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
             Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
@@ -523,7 +515,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>The app has been opened: the player's businesses are read again, so that a shop opened or sold since the morning shows.</summary>
+        /// <summary>The app has opened: the businesses are read again, so that a shop opened or sold since the morning shows.</summary>
         public bool AppOpened()
         {
             if (!_running || _broken || Save == null)
@@ -545,10 +537,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        /// <summary>
-        /// Something has changed: with 'refoot' what each shop gets is worked out again and written where it differs;
-        /// then the Planner's rows, the badge, and the app if it is open.
-        /// </summary>
+        /// <summary>Something has changed: with 'refoot' the footfall is worked out and written again; then the Planner's rows, the badge and the app.</summary>
         internal void Changed(bool refoot = true)
         {
             if (!_running || Save == null)
@@ -595,7 +584,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return waiting;
         }
 
-        /// <summary>The shop at a place among today's shops: a look-up in an index made again with each read of them.</summary>
+        /// <summary>The shop at a place among today's shops: a look-up in an index made again with each read.</summary>
         internal BrandShop ShopAt(string place)
         {
             return _places.First(_shops, place, _read);

@@ -5,10 +5,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The figures the Guide's page "Brands and franchises" prints, filled from <see cref="BrandCatalogue"/> and the
-    /// rules so the page says what the rules do. Each is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The figures the Guide's page "Brands and franchises" prints, from the catalogue and the rules, worked out when it opens.</summary>
     public static class BrandsGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -130,7 +127,6 @@ namespace RealLifeOverhaul.Economy.Brands
                 .Replace("{fire}", Hundredths(BrandCatalogue.ScandalLoss[(int)Scandal.Fire]));
         }
 
-        // One line per city chain, from the tables the rules themselves read.
         private static string Chains()
         {
             var text = new StringBuilder();

@@ -19,9 +19,8 @@ namespace RealLifeOverhaul.Economy.Brands
         private static readonly HashSet<Address> SkillFaults = new HashSet<Address>();
         private static bool _skillsRead, _skillsFault;
         /// <summary>
-        /// The player's businesses today, each with its file if it trades under a brand or a chain and then the game's
-        /// figures. A member or chain shop no longer the player's is dropped from the state (<paramref name="left"/>
-        /// counts them). One pass over the save's buildings.
+        /// The player's businesses today, with the game's figures for those under a brand or a chain. A shop no longer the
+        /// player's leaves its brand or chain; <paramref name="left"/> counts them.
         /// </summary>
         public static void ReadShops(BrandsState state, List<BrandShop> into, List<BrandShop> pool, int day, out int left)
         {
@@ -128,7 +127,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // The game's own figures for one shop with a file.
         private static void Figures(BrandShop shop, int day)
         {
             BuildingRegistration reg = shop.Reg;
@@ -223,8 +221,8 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // The mean of the staff's main skill (0 to 100); 50 for a shop the player runs alone. A look-up in one pass over the
-        // game's employees (ReadSkills); only a business with no address walks them itself, as the game's query then takes everyone.
+        // The mean of the staff's main skill (0 to 100); 50 for a shop the player runs alone. Only a business with no address
+        // walks the employees itself, as the game's query then takes everyone.
         private static int Skill(BuildingRegistration reg)
         {
             Address address = reg.Address;
@@ -268,8 +266,8 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // Every employee assigned to a business and not being replaced, as the game's query gives them: the main skill added
-        // to that business's sum in the game's own order, so each mean is the walk's to the last bit.
+        // One pass over the game's employees for a read of the shops: each main skill added to its business's sum, in the
+        // game's own order so each mean matches the game's query to the last bit.
         private static void ReadSkills()
         {
             _skillsRead = true;

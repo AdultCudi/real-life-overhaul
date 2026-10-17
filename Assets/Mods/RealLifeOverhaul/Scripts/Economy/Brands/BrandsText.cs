@@ -3,10 +3,7 @@ using Localizor;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The words of brands and franchises: every figure they show is written here, the same in the app, the Planner
-    /// and a notification. Every text is a key of en.json; money is written as the Finance app writes it.
-    /// </summary>
+    /// <summary>The words of brands and franchises: every figure they show is written here, the same everywhere, from keys of en.json.</summary>
     public static class BrandsText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;

@@ -4,10 +4,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The Brands tab: each brand and each district it has a figure for. A brand's box has three pages (its figures,
-    /// its settings, its campaigns); a district's says what its recognition is made of today.
-    /// </summary>
+    /// <summary>The app's part for the Brands tab: each brand and its districts; a brand's box has three pages.</summary>
     public sealed partial class BrandsApp
     {
         private static readonly string[] BrandPageKeys = { "reallife_brand_page_figures", "reallife_brand_page_settings", "reallife_brand_page_campaigns" };
@@ -129,7 +126,6 @@ namespace RealLifeOverhaul.Economy.Brands
             InfoBox.Button(last, InfoBox.Additional, "reallife_brand_back", ClosePick);
         }
 
-        // The brand's two figures, what they are made of and moved by, and whether the day's step has run.
         private void WriteBrandFigures(InfoBox box, BrandsState state, Brand b, int today)
         {
             int members = BrandRules.Members(state, b, null), franchised = BrandRules.Franchised(state, b, null);
@@ -178,7 +174,6 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // The minimum for standards, the franchise offer, shared prices and hours, the name, giving the brand up.
         private void WriteBrandSettings(InfoBox box, BrandsState state, Brand b, out string mainKey, out Action main)
         {
             int id = b.Id;
@@ -250,7 +245,6 @@ namespace RealLifeOverhaul.Economy.Brands
             main = () => _director.Rename(id);
         }
 
-        // The campaign that runs, or the two to choose from with today's cost.
         private void WriteBrandCampaigns(InfoBox box, BrandsState state, Brand b, out string mainKey, out Action main)
         {
             int id = b.Id;
@@ -293,7 +287,6 @@ namespace RealLifeOverhaul.Economy.Brands
             main = () => _director.BookPush(id, chosen, chosenDistrict);
         }
 
-        // One district of a brand: what its recognition gains today and what it is worth to a shop there.
         private void WriteDistrict(InfoBox box, BrandsState state, Brand b, DistrictFile d)
         {
             int shops = BrandRules.Shops(state, b, d.Name), customers = BrandRules.Customers(state, b, d.Name);
