@@ -6,31 +6,9 @@ using System.Text;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The cleaning service and selling a business in the save: one line of the save's modData, under <see cref="Key"/>.
-    /// Game-free.
-    ///
-    ///     v=1^h:...^k:...^c:...^o:...^l:...^f:...^d:...^n:...^r:...
-    ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: seed|first day|last day|next id|van|last contract offer day|metres driven today|
-    ///      seven days of van cost|seven days of contract income
-    ///   k  the crew: an employee's id each
-    ///   c  the clients: place|name|district|outside|x|z|mode|three hours|threshold|need a day|worst tile at the
-    ///      last morning|cleaned today|minutes today|minutes the day before|cleanliness at the last morning|last
-    ///      visit day|its minute|its cleaner|then, for a contract: dirt|dirt a day|m2|capacity|fee|standard|week
-    ///      from|days under|weeks missed|earned
-    ///   o  contract offers: place|name|district|m2|capacity|x|z|fee|standard|until
-    ///   l  businesses on the market: place|name|listed day|asking step|asking|value|next offer day|offers made
-    ///   f  offers for them: id|place|buyer|price|ceiling|keeps staff|parts|clause days|deadline|countered|face
-    ///   d  parts of a price still to come: name|buyer|part|left|next day
-    ///   n  clauses: type|district|name|from|until|price
-    ///   r  sales completed: day|name|price|gain
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads. A figure out of its bounds is put inside them; a line
-    /// that cannot be read is left alone and the feature starts afresh. The lists are capped when written. Nothing
-    /// here is the game's: a save loads in the plain game with this line ignored.
+    /// The state as one line of the save's modData, game-free: parts divided by '^', each a letter and a colon, records by
+    /// ';' and fields by '|', as <see cref="Write"/> writes them. A later version adds fields at the end or new parts,
+    /// which this reader skips; a figure out of bounds is clamped.
     /// </summary>
     public static class ServicesStore
     {
@@ -39,16 +17,15 @@ namespace RealLifeOverhaul.Economy
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>The state of this save; null if the save has none or it cannot be read.</summary>
+        /// <summary>The state of this save; null if it has none or it cannot be read (the line is then kept as it is).</summary>
         public static ServicesState Load(Dictionary<string, string> data, out int version)
         {
             version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
+            if (data == null || !data.TryGetValue(Key, out string text) || string.IsNullOrEmpty(text))
             {
                 return null;
             }
-            return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, Key, Read(text, out version), version, Version);
         }
 
         public static string Write(ServicesState s)
@@ -128,7 +105,7 @@ namespace RealLifeOverhaul.Economy
             return t.ToString();
         }
 
-        /// <summary>Reads a line. Null for one that is not this feature's at all.</summary>
+        /// <summary>Reads a line; null for one that is not this feature's or cannot be read.</summary>
         public static ServicesState Read(string text, out int version)
         {
             version = 0;
@@ -214,7 +191,8 @@ namespace RealLifeOverhaul.Economy
                                 {
                                     s.Listings.Add(new SaleListing
                                     {
-                                        Place = c[0], Name = c[1], ListedDay = Math.Max(0, I(c, 2)), Step = ServicesCatalogue.Clamp(I(c, 3, ServicesCatalogue.AskingDefault), 0, ServicesCatalogue.AskingPct.Length - 1),
+                                        Place = c[0], Name = c[1], ListedDay = Math.Max(0, I(c, 2)),
+                                        Step = ServicesCatalogue.Clamp(I(c, 3, ServicesCatalogue.AskingDefault), 0, ServicesCatalogue.AskingPct.Length - 1),
                                         Asking = Math.Max(0, I(c, 4)), Value = Math.Max(0, I(c, 5)), NextOfferDay = Math.Max(0, I(c, 6)), OffersMade = Math.Max(0, I(c, 7))
                                     });
                                 }
@@ -225,13 +203,15 @@ namespace RealLifeOverhaul.Economy
                             {
                                 string[] c = record.Split('|');
                                 int buyer = I(c, 2, -1);
-                                if (c.Length >= 11 && c[1].Length > 0 && buyer >= 0 && buyer < (int)BuyerKind.Count && s.SaleOffers.Count < ServicesCatalogue.OffersKept && s.SaleOffer(I(c, 0)) == null)
+                                if (c.Length >= 11 && c[1].Length > 0 && buyer >= 0 && buyer < (int)BuyerKind.Count && s.SaleOffers.Count < ServicesCatalogue.OffersKept
+                                    && s.SaleOffer(I(c, 0)) == null)
                                 {
                                     int price = Math.Max(0, I(c, 3));
                                     s.SaleOffers.Add(new SaleOffer
                                     {
                                         Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Buyer = buyer, Price = price, Ceiling = Math.Max(price, I(c, 4)), KeepsStaff = I(c, 5) != 0,
-                                        Parts = ServicesCatalogue.Clamp(I(c, 6), 0, 12), ClauseDays = Math.Max(0, I(c, 7)), Deadline = Math.Max(0, I(c, 8)), Countered = I(c, 9) != 0, Face = Math.Max(0, I(c, 10))
+                                        Parts = ServicesCatalogue.Clamp(I(c, 6), 0, 12), ClauseDays = Math.Max(0, I(c, 7)), Deadline = Math.Max(0, I(c, 8)), Countered = I(c, 9) != 0,
+                                        Face = Math.Max(0, I(c, 10))
                                     });
                                 }
                             }
@@ -243,7 +223,10 @@ namespace RealLifeOverhaul.Economy
                                 int buyer = I(c, 1, -1);
                                 if (c.Length >= 5 && buyer >= 0 && buyer < (int)BuyerKind.Count && s.Dues.Count < ServicesCatalogue.DuesMost)
                                 {
-                                    s.Dues.Add(new SaleDue { Name = c[0], Buyer = buyer, Part = Math.Max(0, I(c, 2)), Left = ServicesCatalogue.Clamp(I(c, 3), 0, 12), NextDay = Math.Max(0, I(c, 4)) });
+                                    s.Dues.Add(new SaleDue
+                                    {
+                                        Name = c[0], Buyer = buyer, Part = Math.Max(0, I(c, 2)), Left = ServicesCatalogue.Clamp(I(c, 3), 0, 12), NextDay = Math.Max(0, I(c, 4))
+                                    });
                                 }
                             }
                             break;
@@ -253,7 +236,10 @@ namespace RealLifeOverhaul.Economy
                                 string[] c = record.Split('|');
                                 if (c.Length >= 6 && c[0].Length > 0 && s.Clauses.Count < ServicesCatalogue.ClausesMost)
                                 {
-                                    s.Clauses.Add(new SaleClause { Type = c[0], District = c[1], Name = c[2], FromDay = Math.Max(0, I(c, 3)), Until = Math.Max(0, I(c, 4)), Price = Math.Max(0, I(c, 5)) });
+                                    s.Clauses.Add(new SaleClause
+                                    {
+                                        Type = c[0], District = c[1], Name = c[2], FromDay = Math.Max(0, I(c, 3)), Until = Math.Max(0, I(c, 4)), Price = Math.Max(0, I(c, 5))
+                                    });
                                 }
                             }
                             break;
@@ -312,11 +298,10 @@ namespace RealLifeOverhaul.Economy
 
         private static int I(string[] c, int at, int fallback = 0)
         {
-            int value;
-            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
+            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out int value) ? value : fallback;
         }
 
-        /// <summary>A text with the three dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the line's three dividers taken out, so that it can never break the line apart.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('^', ' ');

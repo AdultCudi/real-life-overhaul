@@ -20,8 +20,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Company/RotaLadder.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/LoanBook.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/ContractRules.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/SaleRules.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Market.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Pitch.cs	5
@@ -583,7 +581,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/ServicesDirect
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/ServicesDirector.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/ServicesGame.Sale.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/ServicesGame.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Services/ServicesStore.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Pitch.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/PitchMeeting.cs	6

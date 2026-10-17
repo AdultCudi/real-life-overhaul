@@ -11,27 +11,18 @@ namespace RealLifeOverhaul.Economy
         public int Income;               // its district's income level, 60 to 140
     }
 
+    /// <summary>How a contract's week ended, if it did.</summary>
     public enum ContractWeek { None, Paid, Missed, Lost }
 
     /// <summary>
-    /// Cleaning for other businesses. Game-free; every drawn figure comes from the save's seed.
-    ///
-    /// The game keeps no dirt for a business that is not the player's, so a client's floor is one figure of the
-    /// mod's: it gains a day's dirt each morning (more where there is room for more customers) and loses what the
-    /// crew's visits take off, by the same arithmetic as a shop of the player's (<see cref="CleaningRules"/>).
-    ///
-    ///   an offer     now and then a business asks: a weekly fee, the cleanliness it wants, a few days to answer.
-    ///                No two open offers are in one district while another district has a business to offer
-    ///   a week       each morning the floor is measured. A week with more than two mornings under the standard is
-    ///                missed: no fee, and a penalty. Two missed weeks running end the contract
-    ///   the fee      the wages of the cleaning the floor takes from a middling cleaner, with a margin, by the
-    ///                district's income and by prices
+    /// Cleaning for other businesses, game-free and seeded. The game keeps no dirt for a business that is not the player's,
+    /// so a client's floor is one figure of the mod's: it gains a day's dirt each morning and loses what visits take off.
     /// </summary>
     public static class ContractRules
     {
         private const int PurposeStart = 11, PurposeStandard = 12;
 
-        /// <summary>The dirt a client's floor gains in a day, in hundredths.</summary>
+        /// <summary>The dirt a client's floor gains in a day, in hundredths: more where there is room for more customers.</summary>
         public static int DirtDay(int capacity)
         {
             return ServicesCatalogue.Clamp(ServicesCatalogue.ContractDirtBase + Math.Max(0, capacity) * ServicesCatalogue.ContractDirtPerCustomer,
@@ -44,7 +35,7 @@ namespace RealLifeOverhaul.Economy
             return CleaningRules.Minutes(DirtDay(capacity), Math.Max(1, ServicesCatalogue.ContractSkillRef / CleaningRules.Force(sqm)));
         }
 
-        /// <summary>The weekly fee. The index is in tenths of a point, the income a district's level (100 in the middle).</summary>
+        /// <summary>The weekly fee: the wages of the cleaning it takes with a margin, by district income (100 in the middle) and price index.</summary>
         public static int Fee(int sqm, int capacity, int income, int index)
         {
             long wages = (long)MinutesDay(sqm, capacity) * ServicesCatalogue.ContractWeekDays * ServicesCatalogue.ContractWageRef / 60;
@@ -52,17 +43,12 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(ServicesCatalogue.ContractFeeLeast, ServicesCatalogue.Round10(ServicesCatalogue.AtPrices(fee, index)));
         }
 
-        /// <summary>True on a day a new offer is looked for.</summary>
         public static bool OfferDue(ServicesState s, int day)
         {
             return s.Offers.Count < ServicesCatalogue.OffersMost && day - s.LastOfferDay >= ServicesCatalogue.OfferEveryDays;
         }
 
-        /// <summary>
-        /// Draws an offer from the businesses that could want one. The start of the search comes from the seed and the
-        /// day; the first that is neither a client nor already asking is taken, one in a district with no open offer
-        /// before any other. Null if there is nobody to ask. The day is noted either way.
-        /// </summary>
+        /// <summary>Draws an offer from a seeded start, a district with no open offer first; null if nobody can ask. The day is noted either way.</summary>
         public static CleaningOffer Draw(ServicesState s, List<ContractCandidate> candidates, int day, int index)
         {
             s.LastOfferDay = day;
@@ -115,7 +101,7 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        /// <summary>Offers whose days have run out are taken away. Returns how many.</summary>
+        /// <summary>Takes away offers whose days have run out. Returns how many.</summary>
         public static int Expire(ServicesState s, int day)
         {
             int gone = 0;
@@ -141,10 +127,7 @@ namespace RealLifeOverhaul.Economy
             return count;
         }
 
-        /// <summary>
-        /// An offer is taken up: the business joins the round, served as needed with a threshold at or above its
-        /// standard, and its first week begins today. Null if there is no room for another contract or client.
-        /// </summary>
+        /// <summary>Takes an offer up: the business joins the round as needed, its first week from today; null if there is no room.</summary>
         public static CleaningClient Accept(ServicesState s, CleaningOffer offer, int day)
         {
             if (offer == null || s.Client(offer.Place) != null || Running(s) >= ServicesCatalogue.ContractsMost || s.Clients.Count >= ServicesCatalogue.ClientsMost)
@@ -164,7 +147,7 @@ namespace RealLifeOverhaul.Economy
             return client;
         }
 
-        /// <summary>The lowest threshold the page offers that is above a standard, so that a visit falls due before the standard is missed; the highest if there is none.</summary>
+        /// <summary>The lowest threshold the page offers above a standard, so a visit falls due before it is missed; the highest if none is above.</summary>
         public static int ThresholdFor(int standard)
         {
             int[] steps = ServicesCatalogue.Thresholds;
@@ -178,10 +161,7 @@ namespace RealLifeOverhaul.Economy
             return steps[steps.Length - 1];
         }
 
-        /// <summary>
-        /// A client's morning: its floor is measured against the standard as the crew left it, and then gains the new
-        /// day's dirt. Returns true if it was under the standard.
-        /// </summary>
+        /// <summary>A client's morning: the floor is measured against the standard as the crew left it, then gains the day's dirt. True if it was under.</summary>
         public static bool Morning(CleaningClient c)
         {
             bool under = CleaningRules.Even(c.Dirt) < c.Standard;
@@ -190,16 +170,12 @@ namespace RealLifeOverhaul.Economy
             return under;
         }
 
-        /// <summary>A visit's cleaning at a client under contract.</summary>
         public static void Visit(CleaningClient c, int rate, int minutes)
         {
             c.Dirt = CleaningRules.Clean(c.Dirt, CleaningRules.Off(rate, minutes));
         }
 
-        /// <summary>
-        /// The end of a client's week, if this is it: the fee if the standard was kept, or no fee and a penalty.
-        /// <see cref="ContractWeek.Lost"/> means this was one missed week too many: the caller takes the client off.
-        /// </summary>
+        /// <summary>The end of a client's week, if this is it: the fee, or a penalty; <see cref="ContractWeek.Lost"/> and the caller takes it off.</summary>
         public static ContractWeek Week(CleaningClient c, int day, out int fee, out int penalty)
         {
             fee = penalty = 0;
