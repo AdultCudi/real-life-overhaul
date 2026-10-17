@@ -71,12 +71,14 @@ namespace RealLifeOverhaul.Economy
 
         public Address AddressAt(int i) => _parts.Keys[i].Address;
         public string CategoryAt(int i) => _parts.Keys[i].Category;
-        public bool DeductibleAt(int i) => _parts.Keys[i].Deductible;
 
-        public void Add(Address address, string category, float figure, bool deductible = false)
+        /// <summary>The name the game deducted the part's charges under; empty for deductible without a name, null for not deductible.</summary>
+        public string DeductedAt(int i) => _parts.Keys[i].Deducted;
+
+        public void Add(Address address, string category, float figure, string deducted = null)
         {
             Total += figure;
-            _parts.Add(new DayKey { Address = address, Category = category, Deductible = deductible }, figure);
+            _parts.Add(new DayKey { Address = address, Category = category, Deducted = deducted }, figure);
         }
     }
 
@@ -85,7 +87,7 @@ namespace RealLifeOverhaul.Economy
     {
         public Address Address;
         public string Category;
-        public bool Deductible;
+        public string Deducted;   // the game's deduction name; null: not deductible
 
         public static readonly IEqualityComparer<DayKey> Comparer = new KeyComparer();
 
@@ -93,7 +95,7 @@ namespace RealLifeOverhaul.Economy
         {
             public bool Equals(DayKey a, DayKey b)
             {
-                return a.Deductible == b.Deductible && a.Category == b.Category
+                return a.Deducted == b.Deducted && a.Category == b.Category
                        && (ReferenceEquals(a.Address, b.Address) || (!ReferenceEquals(a.Address, null) && !ReferenceEquals(b.Address, null) && a.Address.Equals(b.Address)));
             }
 
@@ -102,7 +104,7 @@ namespace RealLifeOverhaul.Economy
                 unchecked
                 {
                     int address = ReferenceEquals(k.Address, null) ? 0 : k.Address.GetHashCode();
-                    return (address * 397 ^ (k.Category != null ? k.Category.GetHashCode() : 0)) * 2 + (k.Deductible ? 1 : 0);
+                    return (address * 397 ^ (k.Category != null ? k.Category.GetHashCode() : 0)) * 2 + (k.Deducted != null ? 1 : 0);
                 }
             }
         }
@@ -472,15 +474,16 @@ namespace RealLifeOverhaul.Economy
 
         // A business's prices against the game's own for its neighbourhood (default market price times the neighbourhood's
         // price index, with the monopoly allowance), the mean over its price list in thousandths; 0 with nothing to judge by.
+        // Its goods are noted in 'buys' whether or not its prices can be judged.
         private static int PriceRatio(BuildingRegistration reg, string district, ref int buys)
         {
             List<RetailPrice> prices = reg.retailPrices;
-            float index;
-            if (prices == null || string.IsNullOrEmpty(district) || !CitizenHelper.averagePriceIndicesInNeighborhoods.TryGetValue(district, out index)
-                || index <= 0f)
+            if (prices == null)
             {
                 return 0;
             }
+            float index = 0f;
+            bool judged = !string.IsNullOrEmpty(district) && CitizenHelper.averagePriceIndicesInNeighborhoods.TryGetValue(district, out index) && index > 0f;
             double sum = 0.0;
             int count = 0;
             for (int i = 0; i < prices.Count; i++)
@@ -495,7 +498,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     buys |= 1 << good.Kind;
                 }
-                if (price.price <= 0f || good.Market <= 0f)
+                if (!judged || price.price <= 0f || good.Market <= 0f)
                 {
                     continue;
                 }
@@ -525,7 +528,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (t.amount > 0f && givenBack != null && givenBack(t.transactionType))
                     {
-                        books.Living.Add(null, Kept(t), -t.amount);   // a game charge the mod paid back
+                        books.Living.Add(null, Kept(t), -t.amount);   // a game charge the mod paid back, deducted under nothing
                     }
                     continue;
                 }
@@ -537,11 +540,11 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (t.transactionCategories != null && t.transactionCategories.Contains(RentCategory))
                     {
-                        books.Rent.Add(t.address, RentCategory, -t.amount, t.isTaxDeductible);
+                        books.Rent.Add(t.address, RentCategory, -t.amount, Deducted(t));
                     }
                     else if (t.transactionCategories != null && t.transactionCategories.Contains(SalaryCategory))
                     {
-                        books.Wages.Add(t.address, SalaryCategory, -t.amount, t.isTaxDeductible);
+                        books.Wages.Add(t.address, SalaryCategory, -t.amount, Deducted(t));
                     }
                     else if (LivingTypes.Contains(t.transactionType) && !AtWholesale(t))
                     {
@@ -549,11 +552,22 @@ namespace RealLifeOverhaul.Economy
                         // the headhunter by their category alone; the rest is the player's.
                         string category = Kept(t);
                         Address at = category == GameBooks.Marketing || category == GameBooks.Licensing ? t.address : null;
-                        books.Living.Add(at, category, -t.amount, t.isTaxDeductible);
+                        books.Living.Add(at, category, -t.amount, Deducted(t));
                     }
                 }
             }
             return books;
+        }
+
+        // The name the game deducts a charge under (TaxHelper.TrackTransaction); empty if it is marked deductible without one, null if not deductible.
+        private static string Deducted(Transaction t)
+        {
+            if (!t.isTaxDeductible)
+            {
+                return null;
+            }
+            string name;
+            return t.transactionData != null && t.transactionData.TryGetValue("taxDeductibleName", out name) && name != null ? name : string.Empty;
         }
 
         // The category a charge is kept under where the day's statement has a line for it; null for none.
@@ -585,8 +599,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Cash in hand, whole and never under nothing.</summary>
         public static int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
 
-        /// <summary>One adjustment, dated on the day it is for: positive is paid, negative taken. False, nothing taken, for a charge the cash does not cover.</summary>
-        public static bool Book(int amount, string key, int day, string percent, Address address = null, string category = null, bool deductible = false)
+        /// <summary>
+        /// One adjustment, dated on the day it is for: positive is paid, negative taken. A charge is deducted as the charges
+        /// it adjusts were (<paramref name="deducted"/> not null); a refund lowers their deduction. False, nothing taken, for
+        /// a charge the cash does not cover.
+        /// </summary>
+        public static bool Book(int amount, string key, int day, string percent, Address address = null, string category = null, string deducted = null)
         {
             if (amount == 0 || SaveGameManager.Current == null)
             {
@@ -595,11 +613,31 @@ namespace RealLifeOverhaul.Economy
             // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
             var data = new Dictionary<string, string>(2) { { "percent", percent } };
             var info = category != null ? new TransactionInfo(key, category, data) : new TransactionInfo(key, data);
-            if (deductible && amount < 0)
+            if (deducted != null && amount < 0)
             {
-                info.SetTaxDeductibleName(key);   // deducted as the charges it adjusts are
+                info.SetTaxDeductibleName(key);
             }
-            return GameManager.ChangeMoneySafe(amount, info, day, address, amount > 0);
+            bool booked = GameManager.ChangeMoneySafe(amount, info, day, address, amount > 0);
+            if (booked && amount > 0 && !string.IsNullOrEmpty(deducted))
+            {
+                LowerDeduction(deducted, amount);   // the game counts charges alone (TaxHelper.TrackTransaction)
+            }
+            return booked;
+        }
+
+        // The tax period's deduction kept under a name, lowered by a refund of the charges it was made for.
+        private static void LowerDeduction(string name, float amount)
+        {
+            List<TaxDeductibleExpense> kept = SaveGameManager.Current.currentTaxPeriodDeductibleExpenses;
+            float left = amount;
+            for (int i = 0; kept != null && i < kept.Count && left > 0f; i++)
+            {
+                TaxDeductibleExpense e = kept[i];
+                if (e != null && e.key == name)
+                {
+                    e.amount = CityAdjust.Lowered(e.amount, ref left);
+                }
+            }
         }
 
         /// <summary>What the game says a building the player owns is worth (Building.GetMarketValue); 0 if it cannot be read.</summary>

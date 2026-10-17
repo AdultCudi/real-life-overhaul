@@ -303,7 +303,8 @@ namespace RealLifeOverhaul.Economy
             {
                 _holding = false;
                 KeepRate();
-                if (Save.Day > _state.LastDay)
+                int done = SharedCity.Follows('E') ? Math.Max(_followedDay, _state.LastDay) : _state.LastDay;   // a guest's own part of the day is its own
+                if (Save.Day > done)
                 {
                     return;   // a new day: the game's run writes every figure afresh in a moment, and the day event follows
                 }
@@ -358,7 +359,7 @@ namespace RealLifeOverhaul.Economy
                 int from = Math.Max(_state.LastDay + 1, day - _monthDays + 1);   // a jump of many days counts a month of them at most
                 for (int d = from; d <= day; d++)
                 {
-                    int rateBefore = _state.Base, indexBefore = _state.Index, inflationBefore = _state.Inflation;
+                    int rateBefore = _state.Base, felt = _state.BaseBefore, indexBefore = _state.Index, inflationBefore = _state.Inflation;
                     CycleState cycleBefore = _state.Cycle;
                     CityTick tick = CityModel.Day(_state, d, DayOf(d), _level, _monthDays);
                     all.MonthTurned |= tick.MonthTurned;
@@ -369,7 +370,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         Logger?.Info("Economy check (city, month " + CityModel.MonthNumber(_state, _monthDays) + " on day " + d + "): the rate " + Quarters(rateBefore) + " to "
                                      + Quarters(_state.Base) + " (" + _state.LastReason + "), inflation " + PerCent(inflationBefore) + "% to " + PerCent(_state.Inflation)
-                                     + "% a year (pressure " + PerCent(_state.Pressure) + ", the rate it feels " + Quarters(_state.BaseBefore) + "), the index "
+                                     + "% a year (pressure " + PerCent(_state.Pressure) + ", the rate it felt " + Quarters(felt) + "), the index "
                                      + CityText.Index(indexBefore) + " to " + CityText.Index(_state.Index) + ", the cycle " + cycleBefore + " to " + _state.Cycle
                                      + " (month " + _state.MonthsIn + ", " + _state.MonthsLeft + " left): PASS");
                     }

@@ -271,10 +271,7 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 back.LastDay = Save.Day;
-                back.CarryRent = _state.CarryRent;      // what was really carried since is still owed
-                back.CarryWages = _state.CarryWages;
-                back.CarryTakings = _state.CarryTakings;
-                back.CarryLiving = _state.CarryLiving;
+                CityModel.KeepReal(back, _state);
                 CityGame.Districts(back);
                 _state = back;
                 _beforeTests = null;

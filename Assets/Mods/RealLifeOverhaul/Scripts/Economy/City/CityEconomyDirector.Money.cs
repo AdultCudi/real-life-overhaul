@@ -28,6 +28,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>Tonight's rent with the city's adjustment of it and what was carried, as the next morning takes it; the game's own while this is not running.</summary>
+        public static float RentWithCity(float rent)
+        {
+            CityEconomyDirector d = Instance;
+            return d != null && d._running ? CityAdjust.With(rent, CityModel.Costs(d._state), d._state.CarryRent) : rent;
+        }
+
         // A charge (positive: the player pays) is taken as far as the cash goes and the rest carried; a refund is paid.
         private void Settle(int charge, ref int carried, string key, int day, int factor, string what, DayLine line)
         {
@@ -63,15 +70,7 @@ namespace RealLifeOverhaul.Economy
                 return CityGame.Book(amount, key, day, percent) ? amount : 0;
             }
             int[] parts = CityAdjust.Split(amount, line.Figures.ToArray());
-            int booked = 0;
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (parts[i] != 0 && CityGame.Book(parts[i], key, day, percent, line.AddressAt(i), line.CategoryAt(i), line.DeductibleAt(i)))
-                {
-                    booked += parts[i];
-                }
-            }
-            return booked;
+            return CityAdjust.BookParts(parts, (i, part) => CityGame.Book(part, key, day, percent, line.AddressAt(i), line.CategoryAt(i), line.DeductedAt(i)));
         }
     }
 }

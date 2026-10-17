@@ -97,6 +97,30 @@ namespace RealLifeOverhaul.Economy
     /// <summary>How the city's economy moves, day by day. Game-free and seeded: the same seed and days give the same history.</summary>
     public static class CityModel
     {
+        /// <summary>
+        /// What putting the state from before the tests back keeps of the state now: what was really carried since and is
+        /// still owed, and a rival that opened since, so its rest and its piece in the paper stand.
+        /// </summary>
+        public static void KeepReal(CityState back, CityState now)
+        {
+            back.CarryRent = now.CarryRent;
+            back.CarryWages = now.CarryWages;
+            back.CarryTakings = now.CarryTakings;
+            back.CarryLiving = now.CarryLiving;
+            if (now.LastCopycatDay <= back.LastCopycatDay)
+            {
+                return;
+            }
+            back.LastCopycatDay = now.LastCopycatDay;
+            for (int i = 0; i < now.News.Count; i++)
+            {
+                if (now.News[i].Kind == CityNewsKind.Rival && now.News[i].Day == now.LastCopycatDay && !back.News.Contains(now.News[i]))
+                {
+                    back.News.Add(now.News[i]);
+                }
+            }
+        }
+
         private const int PurposeCycle = 11, PurposeMonths = 12, PurposeJitter = 13, PurposePressure = 21, PurposeShock = 22,
             PurposeDistrict = 31, PurposeSupply = 41, PurposeSupplyKind = 42, PurposeSupplyWhich = 43, PurposeSupplySize = 44, PurposeSupplyDays = 45;
 
@@ -589,6 +613,41 @@ namespace RealLifeOverhaul.Economy
             int take = (int)Math.Min(want, Math.Max(0, cash));
             carried = (int)Math.Min(want - take, int.MaxValue / 2);
             return take;
+        }
+
+        /// <summary>A figure of the game's with the city's adjustment of it and what was carried from before: what a night takes.</summary>
+        public static float With(float figure, int factor, int carried)
+        {
+            return figure + Of(figure, factor) + Math.Max(0, carried);
+        }
+
+        /// <summary>
+        /// Each share booked through <paramref name="book"/> (its index and amount, positive paid to the player), the
+        /// refunds first, as the cash they bring may be what pays the charges beside them; what was booked in all.
+        /// </summary>
+        public static int BookParts(int[] parts, Func<int, int, bool> book)
+        {
+            int booked = 0;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    int part = parts[i];
+                    if (part != 0 && (part > 0) == (pass == 0) && book(i, part))
+                    {
+                        booked += part;
+                    }
+                }
+            }
+            return booked;
+        }
+
+        /// <summary>A deduction lowered by what is left of a refund, never under nothing; what it could not take stays in <paramref name="left"/>.</summary>
+        public static float Lowered(float deduction, ref float left)
+        {
+            float take = Math.Min(Math.Max(0f, deduction), Math.Max(0f, left));
+            left -= take;
+            return deduction - take;
         }
 
         /// <summary>An amount shared out by weights in whole money that sums exactly, the units left over going to the shares cut most.</summary>
