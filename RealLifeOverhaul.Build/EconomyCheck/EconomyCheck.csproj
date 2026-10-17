@@ -314,8 +314,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitSearch.cs" Link="Mod\TransitSearch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RouteSearch.cs" Link="Mod\RouteSearch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankCatalogue.cs" Link="Mod\OwnBankCatalogue.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankModel.cs" Link="Mod\OwnBankModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBank.cs" Link="Mod\OwnBank.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.Day.cs" Link="Mod\OwnBankRules.Day.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />

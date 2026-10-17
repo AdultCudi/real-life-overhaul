@@ -4,32 +4,15 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The bank's fund: a share of its deposits put into the Stocks app's companies, within rules the player chooses
-    /// from (a strategy and a limit) and the regulator's. Game-free; the market's figures come in as quotes
-    /// (<see cref="FundQuote"/>, read by Wiring/OwnBankLinks), and the bank trades at the last price, over it to buy and
-    /// under it to sell by FundSpreadBp, with a commission, as an institution's trades are not the player's orders and
-    /// do not move the market's prices.
-    ///
-    ///   the rules   a cautious fund holds only large companies under a tenth in distress, a balanced one large and mid
-    ///               sized ones under a fifth, a bold one any listed company under three tenths; never one under a bid.
-    ///               It holds FundCompanies of them, the largest by market value, each an even part of what it may
-    ///               hold: the limit's share of the deposits, as far as the reserves over what the deposits need and the
-    ///               capital over the lending line (a share counts FundWeight against it) allow.
-    ///   the day     each holding's price and dividend are brought up to date; a company gone from the market pays out
-    ///               what it was paid out at (nothing for one that failed); the dividends come in a day at a time (the
-    ///               last quarterly dividend, four a year); a holding the rules no longer allow is sold; once a week,
-    ///               or the day after a choice changed, the fund is traded back to its parts (a part more than
-    ///               FundDrift off). In a run or a breach nothing is bought.
-    ///
-    /// Every sum moves the reserves, the fund's cost and the capital together, so the balance sheet still balances.
-    /// Cost: a pass over the quotes (some 150) once a day; the weekly rebalance sorts the eligible ones once.
+    /// The bank's fund in the Stocks app's companies, game-free. It trades at the last price and a spread, with a commission,
+    /// and never moves the market. Cost: a pass over some 150 quotes a day; the weekly rebalance sorts them once.
     /// </summary>
     public static class OwnBankFund
     {
         private static readonly List<int> Picked = new List<int>(16);    // places in the quotes, worked in here
         private static readonly List<int> Order = new List<int>(160);
 
-        /// <summary>Whether the fund's rules let it hold a company under a strategy.</summary>
+        /// <summary>Whether a strategy may hold a company: by its size, its distress, and never one delisted or under a bid.</summary>
         public static bool Eligible(FundQuote q, int strategy)
         {
             if (strategy <= 0 || strategy >= OwnBankCatalogue.Strategies || !q.Listed || q.UnderBid || q.LastCents <= 0 || q.Distress > OwnBankCatalogue.FundDistress[strategy])
@@ -39,7 +22,7 @@ namespace RealLifeOverhaul.Economy
             return strategy == 1 ? q.Size == 0 : strategy == 2 ? q.Size <= 1 : true;
         }
 
-        /// <summary>What the fund may hold in all now, cents: the limit's share of the deposits, as far as the cash and the capital allow.</summary>
+        /// <summary>What the fund may hold in all now: the limit's share of the deposits, as far as the cash and the capital allow.</summary>
         public static long Room(OwnBank b)
         {
             if (b.Strategy <= 0 || b.FundLimit <= 0)
@@ -54,7 +37,10 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(0, Math.Min(byLimit, Math.Min(byCash, byCapital)));
         }
 
-        /// <summary>The fund's day (see the summary). Nothing while there are no quotes: the market is not running.</summary>
+        /// <summary>
+        /// The fund's day: prices brought up to date, a day of each quarterly dividend paid, a company gone settled at its
+        /// payout, one no longer allowed sold, and weekly or after a choice the fund traded back to its parts.
+        /// </summary>
         public static void Day(OwnBank b, BankCity c, int day, IList<FundQuote> quotes, BankDay into)
         {
             if (quotes == null)
@@ -68,7 +54,7 @@ namespace RealLifeOverhaul.Economy
                 int at = IndexOf(quotes, h.StockId);
                 if (at < 0)
                 {
-                    continue;   // (a market that does not list it today: kept at its last price)
+                    continue;   // not quoted today: kept at its last price
                 }
                 FundQuote q = quotes[at];
                 h.Name = q.Name ?? h.Name;
@@ -103,7 +89,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The fund traded back to its parts: the largest eligible companies, an even part each; what is not among them sold.
+        // The largest eligible companies by market value, an even part each; what is not among them sold.
         private static void Rebalance(OwnBank b, IList<FundQuote> quotes, bool mayBuy, BankDay into)
         {
             int n = OwnBankCatalogue.FundCompanies[b.Strategy];
@@ -161,7 +147,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Shares bought for about an amount: as many whole ones as it pays for at the last price and the spread over it, with the commission.
+        // As many whole shares as about this amount buys at the last price and the spread, with the commission.
         private static void Buy(OwnBank b, FundQuote q, long cents, BankDay into)
         {
             long price = (long)q.LastCents * (10000 + OwnBankCatalogue.FundSpreadBp) / 10000;
@@ -188,7 +174,7 @@ namespace RealLifeOverhaul.Economy
             into.Bought += cost;
         }
 
-        // Shares of a holding sold at its last price less a discount (hundred-thousandths of the price: 200 is the spread's 0.2%), with the commission.
+        // Shares sold at the last price less a discount in hundred-thousandths (200 is the spread's 0.2%), with the commission.
         private static void SellShares(OwnBank b, int index, long qty, int under, BankDay into)
         {
             if (index < 0 || index >= b.Holdings.Count || qty <= 0)
@@ -213,7 +199,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Money come back for shares: into the reserves, and what it is over (or under) what they cost into the capital.
+        // Money for shares into the reserves, its gain or loss on their cost into the capital; a holding gone counts all it cost.
         private static void Settle(OwnBank b, FundHolding gone, long proceeds, long basis, BankDay into)
         {
             if (gone != null)
@@ -235,10 +221,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// The bank must pay its savers more than its reserves hold: shares are sold, largest holding first, at the last
-        /// price less FundFireSale, until it can or nothing is left.
-        /// </summary>
+        /// <summary>Shares sold under the market, the largest holding first, until the savers' need is met or nothing is left.</summary>
         public static void FireSale(OwnBank b, long need, BankDay into)
         {
             while (need > 0 && b.Holdings.Count > 0)
@@ -257,12 +240,12 @@ namespace RealLifeOverhaul.Economy
                 need -= b.Reserves - before;
                 if (b.Reserves <= before)
                 {
-                    break;   // (shares worth nothing: nothing more to be had)
+                    break;   // shares worth nothing
                 }
             }
         }
 
-        /// <summary>A trade's commission, cents.</summary>
+        /// <summary>A trade's commission, rounded up.</summary>
         public static long Fee(long cents)
         {
             return cents <= 0 ? 0 : (cents * OwnBankCatalogue.FundCommissionBp + 9999) / 10000;

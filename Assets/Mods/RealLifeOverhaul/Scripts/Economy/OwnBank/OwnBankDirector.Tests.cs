@@ -3,18 +3,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The test tools of the player's bank (the options page). Each does at once what otherwise takes months, and opens
-    /// the bank's app on it. The bank's line as it stood before the first test of the session is kept (in the save
-    /// too, under <see cref="TestKey"/>), so "put my bank back" undoes every test since.
-    ///
-    /// "Found a bank for a test" founds one with the least capital, the licence and the capital not taken from the
-    /// player: such a bank pays nothing out (no dividend, no sale, nothing from a winding up). "A month now" and "a hard
-    /// month" run a month of the bank's days at once, booked today (the money moves as on any day: the day's profit is
-    /// kept in the bank, so the player's cash is where it was), the second in a recession with every borrower under
-    /// business pressure at its worst. "A run" fills the city with the scare a run begins from; "the regulator's
-    /// deadline" brings a breach's deadline to today; "the fund trades" trades it to its parts now.
-    /// </summary>
+    /// <summary>The bank's test tools; its line before the session's first test is kept (<see cref="TestKey"/>) to be put back.</summary>
     public sealed partial class OwnBankDirector
     {
         public const string TestKey = "reallife:economy_ownbank_test";
@@ -22,7 +11,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Test (Core/EndScale): the bank starts coming to scale today, or is at it at once. False with no bank running.</summary>
         public bool TestScale(bool full)
         {
-            if (Save == null || !Running || _bank == null || !_bank.Running)
+            if (Save == null || !Running || !_bank.Running)
             {
                 return false;
             }
@@ -38,7 +27,7 @@ namespace RealLifeOverhaul.Economy
                 TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);
                 return false;
             }
-            if (!Settings.Economy || !Settings.EconomyBank || !Running || _bank == null)
+            if (!Settings.Economy || !Settings.EconomyBank || !Running)
             {
                 TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
                 return false;
@@ -51,7 +40,6 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // The bank's line before the first test of the session, kept to be put back.
         private void Keep()
         {
             if (_beforeTests != null)
@@ -85,7 +73,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>"Test: found a bank" with the least capital, paid by nobody; it pays nothing out.</summary>
+        /// <summary>A bank founded with the least capital, paid by nobody; it pays nothing out.</summary>
         public void TestFound()
         {
             if (!TestReady("Found a bank", false))
@@ -101,13 +89,13 @@ namespace RealLifeOverhaul.Economy
                 }
                 Keep();
                 BuildingRegistration hq = OwnBankGame.Headquarters();
-                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level, 0, EndScaleRules.Buying(Settings.EndScale)), Named(null, hq));
+                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level, 0, EndScaleRules.Buying(Settings.EndScale)),
+                    Named(null, hq));
                 _bank.Test = true;
                 TestDone("a bank founded with the least capital, paid by nobody", TabBank);
             });
         }
 
-        /// <summary>"Test: a month now": a month of the bank's days run at once in the city as it is.</summary>
         public void TestMonth()
         {
             if (TestReady("A month of my bank", true))
@@ -116,7 +104,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>"Test: a hard month": the same in a recession, with inflation high and business pressure at its worst.</summary>
+        /// <summary>A month run now in a recession, with inflation high and business pressure at its worst.</summary>
         public void TestHardMonth()
         {
             if (TestReady("A hard month", true))
@@ -125,7 +113,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>"Test: a run": the city as scared as a run begins from, and a day run.</summary>
+        /// <summary>The city as scared as it gets, and a day run.</summary>
         public void TestRun()
         {
             if (TestReady("A run on my bank", true))
@@ -139,7 +127,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>"Test: the regulator's deadline": a breach's deadline brought to today, and a day run.</summary>
+        /// <summary>A breach's deadline brought to today, and a day run.</summary>
         public void TestDeadline()
         {
             if (!TestReady("The regulator's deadline", true))
@@ -159,7 +147,6 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: the fund trades": traded to its parts now.</summary>
         public void TestFund()
         {
             if (!TestReady("The fund trades", true))
@@ -179,7 +166,6 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: put my bank back": the bank as it was before the first test of the session.</summary>
         public void TestBack()
         {
             if (!TestReady("Put my bank back", false))
@@ -210,8 +196,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        // Some of the bank's days run now, booked today: the bank's own days are counted on and its clock then set back, so
-        // that the game's next day is its next day and everything that waits on a day (a deadline, its months) has moved on.
+        // Days run now and booked today, then the bank's clock set back by as many, so that what waits on a day has moved on.
         private void TestDays(int days, bool hard, string what)
         {
             Keep();

@@ -10,38 +10,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The player's own bank (Economy/OwnBank; its rules OwnBankRules, its money OwnBankGame, its page OwnBankApp). See
-    /// the Guide's page "Your own bank".
-    ///
-    /// This class keeps it going. It has no Update and no place of its own in the game's events: once a second the
-    /// credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the option is looked at, the app is
-    /// put on the phone), and the credit side's handler of the game's day calls <see cref="OnDay"/> when its own work is
-    /// done (EconomyDirector.AfterDay), so the day's books go into the statement the game made for it (GameBooks).
-    ///
-    ///   the day    each day that has ended since the last (a week at most, after a long jump) is run (OwnBankRules.Day,
-    ///              with the city as it is now and the Stocks app's quotes) and booked at the headquarters
-    ///              (OwnBankGame.BookDay); what happened is told (a notification that opens the app), printed in the
-    ///              City Ledger the next morning (Wiring/OwnBankLinks, the paper's pieces) and, for a fine or a bank
-    ///              closed, held against the player's integrity (Standing). At the turn of the bank's month its figures
-    ///              are told in one notification.
-    ///   the save   the bank is written under its own key (OwnBankStore).
-    ///
-    /// With the option off, or the credit rating off, the bank stands still: nothing is run, booked or charged, the app
-    /// is taken off the phone, and the bank is kept in the save as it was, to go on when the option is on again (the
-    /// days between are not run). A fault switches it off for the session with one line.
-    ///
-    /// At the end game's scale (Core/EndScale, its option on: <see cref="ScaleNow"/>) the day reads the city at its real
-    /// size, hires the bank's crews and charges their wages, its systems and the deposit insurance; a bank that ran before
-    /// is brought to it over four game weeks, with a notice on the first day.
-    ///
-    /// Cost: nothing per frame. Once a second: a few comparisons. Once a game day: one run of the rules per day ended
-    /// (a few dozen sums, the fund's pass over the market's quotes) and a handful of transactions.
+    /// Keeps the player's own bank going: started and stopped on the credit side's second, its days run after the credit
+    /// side's day so they land in the game's statement. Cost: nothing per frame; one run of the rules a game day.
     /// </summary>
     public sealed partial class OwnBankDirector : MonoBehaviour
     {
         public const string AppId = "RealLifeOwnBank";
         public const int TabBank = 0, TabSavers = 1, TabLending = 2, TabFund = 3;
-        private const int CatchUpDays = 7;   // a long jump (a stay in hospital, a trip) is run day by day for at most a week
+        private const int CatchUpDays = 7;   // after a long jump (a stay in hospital, a trip), at most a week is run
         private const int NewsKept = 8;
 
         private static readonly string[] AppGlyphs = { "Icon-Security", "Icon-Coin", "Icon-Building" };
@@ -62,20 +38,17 @@ namespace RealLifeOverhaul.Economy
         private OwnBankApp _view;
         private Action _second, _onSave, _onDay;
         private int _warnedDay = -1;
-        private int _watchTold = int.MinValue;   // the day the regulator's watch was last told (once a month at most, as a ratio hovers on the line)
-        private bool _keepLine;                  // the save has a line of the bank's that could not be read: it is kept as it is (Core/SaveLines)
-        private string _beforeTests;   // the bank's line before the first test of the session, for "put my bank back"
+        private int _watchTold = int.MinValue;   // the day the regulator's watch was last told, as a ratio may hover on the line
+        private bool _keepLine;                  // the save's line could not be read: it is kept as it is (Core/SaveLines)
+        private string _beforeTests;             // the bank's line before the session's first test
         private readonly BankDay _day = new BankDay();
         private readonly List<FundQuote> _quotes = new List<FundQuote>(160);
         private readonly List<Piece> _paper = new List<Piece>(NewsKept);
 
-        /// <summary>The bank while the feature runs (it may be none yet: OwnBankState.None); null otherwise.</summary>
+        /// <summary>The bank while the feature runs (it may be OwnBankState.None); null otherwise.</summary>
         public OwnBank Bank => _running && !_broken ? _bank : null;
 
-        /// <summary>
-        /// The end game's share for the bank today (Core/EndScale): 0 with its option off or no bank file; the day it began
-        /// is kept with the bank, so a bank that ran before comes to it over four game weeks, with a notice on the first day.
-        /// </summary>
+        /// <summary>The end game's share for the bank today (Core/EndScale); a bank that ran before comes to it over four weeks, with a notice.</summary>
         public int ScaleNow()
         {
             if (_bank == null || Save == null)
@@ -109,11 +82,10 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
-            OwnBankApp.Logger = Logger;
             _second = EachSecond;
             _onSave = OnSave;
             _onDay = OnDay;
-            EconomyDirector.Follow(StartSeats.OwnBank, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
+            EconomyDirector.Follow(StartSeats.OwnBank, _second);   // its first second after a load waits for its seat (Core/StartLine)
             EconomyDirector.AfterDay += _onDay;
         }
 
@@ -127,16 +99,14 @@ namespace RealLifeOverhaul.Economy
                 RemoveApp();
                 return;   // another city's director has started since
             }
-            _running = false;   // (the city is unloading: what the save keeps was written when the game saved)
+            _running = false;   // the city is unloading: the save was written when the game saved
             Instance = null;
         }
-
-        // ---------------------------------------------------------------- once a second (the credit side's timer)
 
         private static readonly int HotSecond = HotSpots.Slot("Economy: OwnBankDirector.Second");
         private void EachSecond()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSecond);
             if (_broken)
             {
                 return;
@@ -172,8 +142,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- starting and stopping
-
         private void StartUp()
         {
             GameInstance save = Save;
@@ -187,14 +155,14 @@ namespace RealLifeOverhaul.Economy
             _keepLine = fresh && line != null;
             if (_keepLine)
             {
-                SaveLines.Unreadable(save.modData, OwnBankStore.Key, "it could not be read");   // (put back as it was read at every save)
+                SaveLines.Unreadable(save.modData, OwnBankStore.Key, "it could not be read");
                 Logger?.Warn("Own bank: the save's line for the bank could not be read; it is kept in the save as it is, and the feature starts with no bank this session.");
             }
             bank = bank ?? new OwnBank();
             bool mended = OwnBankStore.Mend(bank);
             if (bank.Running)
             {
-                bank.LastDay = Math.Max(bank.LastDay, save.Day - 1 - CatchUpDays);   // (days while the bank was switched off are not run)
+                bank.LastDay = Math.Max(bank.LastDay, save.Day - 1 - CatchUpDays);   // days it stood still beyond the catch-up week are not run
             }
             _bank = bank;
             _running = true;
@@ -205,7 +173,7 @@ namespace RealLifeOverhaul.Economy
 
         private void StandDown(string why, bool keep)
         {
-            if (keep && _running && Save != null && _bank != null)
+            if (keep && _running && Save != null)
             {
                 Write(Save);
             }
@@ -250,15 +218,15 @@ namespace RealLifeOverhaul.Economy
                 TitleKey = "reallife_ob_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(214, 182, 96, 255), new Color32(128, 92, 30, 255), 0.42f, "AppIcon-OwnBank"),
                 Build = view.Build,
-                Opened = view.Opened,
-                Closed = view.Closed
+                Opened = view.Opened
             }, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Own bank: the game's phone is not built as this version expects, so its app is left off. A bank that is running still runs, and notifications still say what happens.");
+                    Logger?.Warn("Own bank: the game's phone is not built as this version expects, so its app is left off. "
+                                 + "A bank that is running still runs, and notifications still say what happens.");
                 }
                 return;
             }
@@ -278,22 +246,19 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        /// <summary>Opens the app on a tab.</summary>
         public void Open(int tab)
         {
-            if (_app != null && _view != null && Running)
+            if (_app != null && Running)
             {
                 _view.Want(tab);
                 _app.Open();
             }
         }
 
-        // ---------------------------------------------------------------- the day, the save
-
-        // The game's day event (after its daily run), after the credit side has settled its day: each day that ended since the last.
+        // After the credit side's day: each day ended since the last, a week at most.
         private void OnDay()
         {
-            if (!Running || Save == null || _bank == null || !_bank.Running)
+            if (!Running || Save == null || !_bank.Running)
             {
                 return;
             }
@@ -312,7 +277,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // One day of the bank, run and booked (dated on it, or today for a test), and what happened told.
+        // One day run, booked (on that day, or today for a test) and told.
         private void RunDay(int day, BankCity city, bool dated)
         {
             float started = Time.realtimeSinceStartup;
@@ -345,7 +310,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // What a day did, told: a notification, a piece for the paper, the player's name; a bank closed is wound up into the player's cash.
+        // What a day did: notifications, the paper's pieces, the player's integrity; what a winding up left paid to the player.
         private void Happened(int day, BankCity city, BuildingRegistration hq)
         {
             string name = _bank.Name;
@@ -406,7 +371,7 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                if (Running && Save != null && _bank != null)
+                if (Running && Save != null)
                 {
                     Write(Save);
                 }
@@ -430,13 +395,11 @@ namespace RealLifeOverhaul.Economy
             }
             else if (!_keepLine)
             {
-                save.modData.Remove(OwnBankStore.Key);   // (no bank: a save without the feature's line)
+                save.modData.Remove(OwnBankStore.Key);
             }
         }
 
-        // ---------------------------------------------------------------- what the player does (the app)
-
-        /// <summary>The bank founded with the least capital: the licence and the capital out of the player's cash at the headquarters. False with a reason key if it cannot be.</summary>
+        /// <summary>The bank founded with the least capital, the licence and the capital paid from the player's cash. False with a reason key if it cannot be.</summary>
         public bool Found(string name, out string why)
         {
             why = Ready();
@@ -444,7 +407,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            why = _bank.Running ? "reallife_ob_why_already" : OwnBankGame.AgainWhy(_bank);   // (a bank the regulator closed: a year, then a recovered integrity)
+            why = _bank.Running ? "reallife_ob_why_already" : OwnBankGame.AgainWhy(_bank);
             BuildingRegistration hq = OwnBankGame.Headquarters();
             if (why == null && OwnBankBridges.Qualified != null && !OwnBankBridges.Qualified())
             {
@@ -454,7 +417,7 @@ namespace RealLifeOverhaul.Economy
             {
                 why = "reallife_ob_why_no_hq";
             }
-            int level = Prices.Level, share = EndScaleRules.Buying(Settings.EndScale);   // (what is paid in is at the whole scale while it is on)
+            int level = Prices.Level, share = EndScaleRules.Buying(Settings.EndScale);
             long licence = OwnBankRules.Licence(level, share), capital = OwnBankRules.CapitalLeast(level, _bank.Closures, share);
             if (why == null && licence + capital > OwnBankGame.Cash)
             {
@@ -517,7 +480,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>A dividend out of the bank's capital into the player's cash, to the step. False with a reason key if it cannot be.</summary>
+        /// <summary>A dividend from the bank's capital into the player's cash, to the step. False with a reason key if it cannot be.</summary>
         public bool TakeOut(long cents, out string why)
         {
             why = Ready() ?? (!_bank.Running ? "reallife_ob_why_none" : _bank.Test ? "reallife_ob_why_test" : null);
@@ -557,7 +520,7 @@ namespace RealLifeOverhaul.Economy
 
         public void SetSaverRate(int kind, int offset)
         {
-            if (Bank != null && _bank.Running && kind >= 0 && kind < OwnBankCatalogue.Savers)
+            if (Running && _bank.Running && kind >= 0 && kind < OwnBankCatalogue.Savers)
             {
                 _bank.SaverOffset[kind] = Math.Max(OwnBankCatalogue.SaverOffsetLeast, Math.Min(OwnBankCatalogue.SaverOffsetMost, offset));
             }
@@ -565,7 +528,7 @@ namespace RealLifeOverhaul.Economy
 
         public void SetLoanRate(int segment, int offset)
         {
-            if (Bank != null && _bank.Running && segment >= 0 && segment < OwnBankCatalogue.Segments)
+            if (Running && _bank.Running && segment >= 0 && segment < OwnBankCatalogue.Segments)
             {
                 _bank.LoanOffset[segment] = Math.Max(OwnBankCatalogue.LoanOffsetLeast, Math.Min(OwnBankCatalogue.LoanOffsetMost, offset));
             }
@@ -573,7 +536,7 @@ namespace RealLifeOverhaul.Economy
 
         public void SetLending(int segment, bool on)
         {
-            if (Bank != null && _bank.Running && segment >= 0 && segment < OwnBankCatalogue.Segments)
+            if (Running && _bank.Running && segment >= 0 && segment < OwnBankCatalogue.Segments)
             {
                 _bank.Lending[segment] = on;
             }
@@ -581,7 +544,7 @@ namespace RealLifeOverhaul.Economy
 
         public void SetStrategy(int strategy)
         {
-            if (Bank != null && _bank.Running)
+            if (Running && _bank.Running)
             {
                 _bank.Strategy = Math.Max(0, Math.Min(OwnBankCatalogue.Strategies - 1, strategy));
                 _bank.Rebalance = true;
@@ -590,7 +553,7 @@ namespace RealLifeOverhaul.Economy
 
         public void SetFundLimit(int limit)
         {
-            if (Bank != null && _bank.Running)
+            if (Running && _bank.Running)
             {
                 _bank.FundLimit = Math.Max(0, Math.Min(OwnBankCatalogue.FundLimitMost, limit / OwnBankCatalogue.FundLimitStep * OwnBankCatalogue.FundLimitStep));
                 _bank.Rebalance = true;
@@ -600,24 +563,21 @@ namespace RealLifeOverhaul.Economy
         // Why nothing can be done now; null if it can.
         private string Ready()
         {
-            return !Running || Save == null || _bank == null ? "reallife_ob_why_off" : null;
+            return !Running || Save == null ? "reallife_ob_why_off" : null;
         }
 
-        // ---------------------------------------------------------------- what the player is told
-
-        /// <summary>The page is written again if it is showing.</summary>
         public void Changed()
         {
             _view?.Changed();
         }
 
-        /// <summary>A notification of the game's that opens the app on a tab; its names filled in (name, value, name, value).</summary>
+        // A notification of the game's that opens the app on a tab, its names filled in from pairs: name, value, name, value.
         private void Tell(NotificationType type, string key, int tab, params string[] pairs)
         {
             Dictionary<string, string> data = null;
             if (pairs != null && pairs.Length >= 2)
             {
-                data = new Dictionary<string, string>(pairs.Length / 2);   // (the game keeps a notification's data for as long as it lists it)
+                data = new Dictionary<string, string>(pairs.Length / 2);   // one each: the game keeps a notification's data while it lists it
                 for (int i = 0; i + 1 < pairs.Length; i += 2)
                 {
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
@@ -626,7 +586,7 @@ namespace RealLifeOverhaul.Economy
             Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab)), true, false);
         }
 
-        // A piece for the City Ledger: tomorrow's paper if this morning's is out (after six), else this morning's.
+        // A piece for the City Ledger: tomorrow's paper once this morning's is out (after six), else this morning's.
         private void Print(string key, params string[] pairs)
         {
             var data = new Dictionary<string, string>(pairs.Length / 2 + 1);
@@ -642,7 +602,7 @@ namespace RealLifeOverhaul.Economy
             _paper.Add(new Piece { Day = day, Key = key, Data = data });
         }
 
-        /// <summary>The bank's pieces for a day's paper (the City Ledger, through Wiring/OwnBankLinks): the same for the same day however often it is asked.</summary>
+        /// <summary>The bank's pieces for a day's City Ledger: the same however often it is asked.</summary>
         public void PaperPieces(int day, List<NewsItem> into)
         {
             for (int i = 0; i < _paper.Count; i++)
@@ -665,12 +625,10 @@ namespace RealLifeOverhaul.Economy
             {
                 return b.Name + " (" + b.State + " on day " + b.EndDay + (b.Why != ClosedWhy.None ? ", " + b.Why : string.Empty) + ")";
             }
-            return b.Name + " founded on day " + b.FoundedDay + ": deposits " + b.Savings / 100 + ", loans " + b.Lent / 100 + ", arrears " + b.InArrears / 100 + ", the fund " + b.FundValue / 100
-                   + " in " + b.Holdings.Count + " companies, reserves " + b.Reserves / 100 + ", capital " + b.Capital / 100 + ", ratio " + OwnBankRules.Ratio(b) + " thousandths, " + b.Stage
-                   + (b.Run ? ", in a run" : string.Empty) + (b.Test ? ", founded by a test" : string.Empty);
+            return b.Name + " founded on day " + b.FoundedDay + ": deposits " + b.Savings / 100 + ", loans " + b.Lent / 100 + ", arrears " + b.InArrears / 100 + ", the fund "
+                   + b.FundValue / 100 + " in " + b.Holdings.Count + " companies, reserves " + b.Reserves / 100 + ", capital " + b.Capital / 100 + ", ratio " + OwnBankRules.Ratio(b)
+                   + " thousandths, " + b.Stage + (b.Run ? ", in a run" : string.Empty) + (b.Test ? ", founded by a test" : string.Empty);
         }
-
-        // ---------------------------------------------------------------- for the save tools
 
         /// <summary>For the save tools: the bank is written and stands still; the timer starts it again if its option is on.</summary>
         public void StopAll()
