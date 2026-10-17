@@ -1,17 +1,13 @@
 using System;
 using System.Collections.Generic;
 using Helpers;
-using Streets;
 using Localizor;
+using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What the player's bank asks of the rest of the mod. Each has a default, so Economy/OwnBank works alone;
-    /// Scripts/Wiring/OwnBankLinks.cs fills them in on every city load and <see cref="Reset"/> puts them back. The bank
-    /// never calls another feature itself.
-    /// </summary>
+    /// <summary>What the player's bank asks of the rest of the mod, filled in by Wiring/OwnBankLinks; each may be null.</summary>
     public static class OwnBankBridges
     {
         /// <summary>The player's integrity as an owner, 0 to 100 (Standing). Default: 50, a newcomer's.</summary>
@@ -20,19 +16,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Where one of the council's levers stands: -1, 0 or 1 (Civic). Default: as the city came.</summary>
         public static Func<Lever, int> Policy;
 
-        /// <summary>True while the justice system takes a lender's claims (Justice: DebtClaims.Available). Default: no courts.</summary>
+        /// <summary>True while the justice system takes a lender's claims. Default: no courts.</summary>
         public static Func<bool> Courts;
 
-        /// <summary>Fills the list with the Stocks app's listed companies as the fund sees them; false while the market is not running. Default: no market.</summary>
+        /// <summary>Fills the list with the Stocks app's companies as the fund sees them; false while the market is not running. Default: no market.</summary>
         public static Func<List<FundQuote>, bool> Quotes;
 
-        /// <summary>Something the bank did moves the player's integrity (Standing): by how much, and whether it was a scandal. Default: nobody hears.</summary>
+        /// <summary>The bank moved the player's integrity (Standing): by how much, and whether as a scandal. Default: nobody hears.</summary>
         public static Action<int, bool> Moved;
 
-        /// <summary>True if the bank has the qualified person the licence asks for (Careers: a finance qualification of the player's, or a senior professional of theirs in finance). Default: yes.</summary>
+        /// <summary>True if the bank has the qualified person its licence asks for (Careers). Default: yes.</summary>
         public static Func<bool> Qualified;
 
-        /// <summary>True while Standing keeps the player's reputation, so that their integrity is theirs and not a newcomer's stand-in. Default: no.</summary>
+        /// <summary>True while Standing keeps the player's reputation, so their integrity is their own. Default: no.</summary>
         public static Func<bool> StandingOn;
 
         public static void Reset()
@@ -48,44 +44,26 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// Everything the player's bank reads from or does to the game, in one place.
-    ///
-    /// READ: the player's headquarters (BuildingRegistration: RentedByPlayer, businessTypeName, and Going Public's
-    /// Mine, so that another player's office in a session is never taken for it); the game's year
-    /// (gameVariables.daysPerYear, GameCalendar) and its interest multiplier (gameVariables.bankInterestMultiplier,
-    /// as the game's banks charge it: LoanHelper.CalculateEffectiveAnnualInterestRate); the largest rival bank's own
-    /// rate (BankTerms.House, its BankSettings.annualInterestRate as the game ships it); the city's economy
-    /// (CityEconomy: the cycle, the central bank's points, inflation; CityEconomyDirector.TroubleScale, business
-    /// pressure's chance in it) and the price level (Core/Prices).
-    ///
-    /// DONE: money, as the game's own transactions (GameManager.ChangeMoneySafe) under the bank's keys at the
-    /// headquarters' address, dated on the day they are for: its takings, what its savers are paid and its losses (rows
-    /// among the headquarters' goods), its staff (under the game's salaries, so in the statement's salary line), all
-    /// deducted by the game's tax as a business's costs are; then the day's profit kept in the bank's capital, or its
-    /// loss met from it, so that the player's cash is what it was (the bank's money is the bank's: OwnBankRules). The
-    /// licence and the capital put in come out of the player's cash, a dividend and a sale go into it. Nothing else of
-    /// the game's is changed.
-    ///
-    /// Nothing here runs per frame: once a game day, and when the player does something in the app.
+    /// Everything the player's bank reads from or does to the game. Its money moves as the game's transactions at the
+    /// headquarters, the day's profit then kept in the bank, so the player's cash nets to nothing. Nothing runs per frame.
     /// </summary>
     public static class OwnBankGame
     {
         private const string HeadquartersType = "ba:businesstype_headquarters";
         private const string DeductKey = "reallife_ob_deduct";
 
-        public static GameInstance Save => SaveGameManager.Current;
+        private static GameInstance Save => SaveGameManager.Current;
         public static int Today => Save != null ? Save.Day : 0;
 
-        /// <summary>The player's integrity as an owner now (Standing), 0 to 100: 50, a newcomer's, with no bridge.</summary>
+        /// <summary>The player's integrity as an owner now, 0 to 100; 50 with no bridge.</summary>
         public static int Integrity => OwnBankBridges.Integrity != null ? Mathf.Clamp(OwnBankBridges.Integrity(), 0, 100) : 50;
 
-        /// <summary>True while Standing keeps the player's integrity (OwnBankBridges.StandingOn).</summary>
         public static bool StandingOn => OwnBankBridges.StandingOn != null && OwnBankBridges.StandingOn();
 
-        /// <summary>Why a new licence may not be applied for yet after the regulator closed the bank (OwnBankRules.AgainWhy), with today, the save's year and the player's integrity; null if it may.</summary>
+        /// <summary>Why a new licence may not be applied for yet after a closure (OwnBankRules.AgainWhy, today); null if it may.</summary>
         public static string AgainWhy(OwnBank b) => OwnBankRules.AgainWhy(b, Today, GameCalendar.DaysPerYear, StandingOn, Integrity);
 
-        /// <summary>The player's cash in cents (what the game holds as money, floored).</summary>
+        /// <summary>The player's cash in cents, floored.</summary>
         public static long Cash => Save != null ? (long)Math.Floor(Math.Max(0.0, Save.Money) * 100.0) : 0;
 
         /// <summary>The player's headquarters (the game has one at most), or null.</summary>
@@ -109,11 +87,10 @@ namespace RealLifeOverhaul.Economy
             return reg == null ? string.Empty : string.IsNullOrEmpty(reg.BusinessName) ? reg.Address.ToFormattedString() : reg.BusinessName;
         }
 
-        /// <summary>The city as the bank's day reads it now (see the summary for where each figure comes from).</summary>
         public static BankCity City()
         {
             GameInstance save = Save;
-            float multiplier = save != null && save.gameVariables != null ? save.gameVariables.bankInterestMultiplier : 1f;
+            float multiplier = save != null && save.gameVariables != null ? save.gameVariables.bankInterestMultiplier : 1f;   // as the game's banks charge it (LoanHelper)
             Lender house = BankTerms.House;
             int houseRate = house != null ? BankTerms.OwnRate(house.Settings) : 0;
             Func<Lever, int> lever = OwnBankBridges.Policy;
@@ -129,7 +106,7 @@ namespace RealLifeOverhaul.Economy
                 Cycle = CityEconomy.State,
                 InflationBp = Mathf.RoundToInt(CityEconomy.InflationPercent * 100f),
                 Trouble = Mathf.RoundToInt(CityEconomyDirector.TroubleScale() * 1000f),
-                Integrity = OwnBankBridges.Integrity != null ? Mathf.Clamp(OwnBankBridges.Integrity(), 0, 100) : 50,
+                Integrity = OwnBankGame.Integrity,
                 Tax = lever != null ? lever(Lever.BusinessTax) : 0,
                 Grants = lever != null ? lever(Lever.Grants) : 0,
                 Wages = lever != null ? lever(Lever.Wages) : 0,
@@ -139,11 +116,7 @@ namespace RealLifeOverhaul.Economy
             };
         }
 
-        /// <summary>
-        /// A day of the bank booked at the headquarters (the day it is for; the address of none if the player has
-        /// none): its takings; what it lost being met from its capital; what its savers were paid, its losses and fees,
-        /// its staff and any fine; and what it made kept in its capital. The player's cash comes out where it was.
-        /// </summary>
+        /// <summary>A day booked at the headquarters on the day it is for: takings, costs, and the profit kept or the loss met.</summary>
         public static void BookDay(BankDay d, BuildingRegistration hq, int day)
         {
             long profit = d.Profit;
@@ -163,13 +136,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Money out of the player's cash for the bank (the licence, capital put in): taken only if the cash covers it. False if not.</summary>
+        /// <summary>Money from the player's cash for the bank (the licence, capital put in), only if the cash covers it. False if not.</summary>
         public static bool Pay(long cents, string key, BuildingRegistration hq, string category)
         {
             return cents <= 0 || (cents <= Cash && Book(-cents, key, hq, category, null, false, false));
         }
 
-        /// <summary>Money into the player's cash from the bank (a dividend, a sale, what a winding up left).</summary>
+        /// <summary>Money into the player's cash from the bank: a dividend, a sale, what a winding up left.</summary>
         public static void Give(long cents, string key, BuildingRegistration hq)
         {
             Book(cents, key, hq, null, null, false, false);
@@ -181,7 +154,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return true;
             }
-            var data = new Dictionary<string, string>(1) { { "place", Name(hq) } };   // (one each: the game keeps a transaction's data for as long as it lists it)
+            var data = new Dictionary<string, string>(1) { { "place", Name(hq) } };   // one each: the game keeps a transaction's data while it lists it
             TransactionInfo info = category != null ? new TransactionInfo(key, category, data) : new TransactionInfo(key, data);
             if (deductible && cents < 0)
             {

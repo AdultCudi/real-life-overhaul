@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using BAModAPI;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
@@ -12,10 +11,10 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The bank app's tables, declared as data (GameUi.TableSpec).</summary>
+    /// <summary>The bank app's tables (GameUi.TableSpec).</summary>
     internal static class OwnBankTables
     {
-        /// <summary>0 what, 1 amount, 2 against what. In the order written: the assets, then the deposits and the capital.</summary>
+        /// <summary>0 what, 1 amount, 2 against what: the assets, then the deposits and the capital.</summary>
         public static readonly TableSpec Books = new TableSpec("OwnBank", "Books")
             .Column("reallife_ob_col_item", 760f, TableSort.None, flexible: true)
             .Column("reallife_ob_col_amount", 360f, TableSort.None)
@@ -43,7 +42,7 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_ob_col_lends", 200f, TableSort.Text, right: true)
             .Empty("reallife_ob_empty_lending");
 
-        /// <summary>0 company, 1 shares, 2 cost, 3 value, 4 gain, 5 dividends a year. Opens with the largest holding first.</summary>
+        /// <summary>0 company, 1 shares, 2 cost, 3 value, 4 gain, 5 dividends a year; the largest holding first.</summary>
         public static readonly TableSpec Fund = new TableSpec("OwnBank", "Fund")
             .Column("reallife_ob_col_company", 520f, TableSort.Text, flexible: true)
             .Column("reallife_ob_col_shares", 220f, TableSort.Number)
@@ -55,28 +54,12 @@ namespace RealLifeOverhaul.Economy
             .Empty("reallife_ob_empty_fund");
     }
 
-    /// <summary>
-    /// The bank's app, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Services, Utilities and
-    /// Finance are, with the kit's table, on four tabs:
-    ///
-    ///   Bank      the balance sheet (reserves, loans, arrears, the fund, the deposits, the capital, the assets at risk);
-    ///             the white box founds the bank (the licence and the least capital), or shows its trust, its ratio
-    ///             against the law's, the regulator's view and its months, puts capital in, takes a dividend, sells it
-    ///   Savers    the city's people and its businesses: what they keep here, their share of the city's savings, the
-    ///             rate paid against the rival banks'; the white box sets that rate
-    ///   Lending   the five kinds of borrower: what is lent and in arrears, the rate against the rival banks' (the
-    ///             private lender's customers against a premium on the fair rate), defaults a year; the white box sets
-    ///             the rate and whether it lends to them
-    ///   Fund      the companies of the Stocks app the fund holds; the white box sets its strategy and its limit
-    ///
-    /// Nothing runs while the app is closed; a page is written when it opens, when a choice is made and after the day.
-    /// </summary>
+    /// <summary>The bank's app (GameUi.AppShell) on four tabs: bank, savers, lending, fund. Written on opening, on a choice and after the day.</summary>
     public sealed class OwnBankApp
     {
         private static readonly string[] TabKeys = { "reallife_ob_tab_bank", "reallife_ob_tab_savers", "reallife_ob_tab_lending", "reallife_ob_tab_fund" };
         private const int TypedLength = 12;
-
-        public static IModLogger Logger;
+        private const string GuideTitle = "reallife_meta_title_economy_ownbank";
 
         private readonly OwnBankDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(16);
@@ -117,27 +100,19 @@ namespace RealLifeOverhaul.Economy
 
         public void Opened()
         {
-            if (_shell != null && _table != null)
-            {
-                Refresh();
-            }
+            Refresh();
         }
 
-        public void Closed()
-        {
-        }
-
-        /// <summary>The tab shown when the app next opens (a notification or another app sends the player here).</summary>
+        /// <summary>The tab shown when the app next opens.</summary>
         public void Want(int tab)
         {
             _tab = Math.Max(0, Math.Min(TabKeys.Length - 1, tab));
             _pick = null;
         }
 
-        /// <summary>The director says something has changed: the page is written again if it is showing.</summary>
         public void Changed()
         {
-            if (Showing && !_writing)
+            if (Showing)
             {
                 Refresh();
             }
@@ -208,7 +183,8 @@ namespace RealLifeOverhaul.Economy
                 else
                 {
                     BankCity city = OwnBankGame.City();
-                    UiClone.Words(_shell.Header, bank.Running ? OwnBankText.Fill("reallife_ob_headline", "bank", bank.Name, "deposits", OwnBankText.Money(bank.Savings), "loans", OwnBankText.Money(bank.Lent))
+                    UiClone.Words(_shell.Header, bank.Running
+                        ? OwnBankText.Fill("reallife_ob_headline", "bank", bank.Name, "deposits", OwnBankText.Money(bank.Savings), "loans", OwnBankText.Money(bank.Lent))
                         : OwnBankText.T("reallife_ob_app"));
                     if (!bank.Running && _tab != OwnBankDirector.TabBank)
                     {
@@ -225,7 +201,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     else if (_tab == OwnBankDirector.TabFund)
                     {
-                        WriteFund(box, bank, city, ref selected);
+                        WriteFund(box, bank);
                     }
                     else
                     {
@@ -241,22 +217,23 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- the bank
-
-        private const string GuideTitle = "reallife_meta_title_economy_ownbank";   // the Guide's page every page of the app points to at its foot
-
         private void WriteBank(InfoBox box, OwnBank b, BankCity c)
         {
             int ratio = OwnBankRules.Ratio(b);
             if (b.Running)
             {
                 long assets = b.Reserves + b.Lent + b.InArrears + b.FundValue;
-                Info("reserves", "reallife_ob_row_reserves", b.Reserves, OwnBankText.T("reallife_ob_note_reserves", "need", OwnBankText.Money(OwnBankRules.ReserveNeed(b))), b.Reserves < OwnBankRules.ReserveNeed(b) ? TableRow.Yellow : TableRow.Plain);
+                long need = OwnBankRules.ReserveNeed(b);
+                Info("reserves", "reallife_ob_row_reserves", b.Reserves, OwnBankText.T("reallife_ob_note_reserves", "need", OwnBankText.Money(need)),
+                    b.Reserves < need ? TableRow.Yellow : TableRow.Plain);
                 Info("loans", "reallife_ob_row_loans", b.Lent, OwnBankText.T("reallife_ob_note_share", "share", OwnBankText.Share(b.Lent, assets)), TableRow.Plain);
-                Info("arrears", "reallife_ob_row_arrears", b.InArrears, OwnBankText.T("reallife_ob_note_written", "lost", OwnBankText.Money(b.LostAll), "back", OwnBankText.Money(b.RecoveredAll)), b.InArrears > 0 ? TableRow.Yellow : TableRow.Plain);
+                Info("arrears", "reallife_ob_row_arrears", b.InArrears, OwnBankText.T("reallife_ob_note_written", "lost", OwnBankText.Money(b.LostAll), "back", OwnBankText.Money(b.RecoveredAll)),
+                    b.InArrears > 0 ? TableRow.Yellow : TableRow.Plain);
                 Info("fund", "reallife_ob_row_fund", b.FundValue, OwnBankText.T("reallife_ob_note_fund", "gain", OwnBankText.Signed(b.FundValue - b.FundCost)), TableRow.Plain);
-                Info("deposits", "reallife_ob_row_deposits", b.Savings, OwnBankText.T("reallife_ob_note_city", "share", OwnBankText.Share(b.Savings, OwnBankRules.SavingsPool(c, 0) + OwnBankRules.SavingsPool(c, 1))), TableRow.Plain);
-                Info("capital", "reallife_ob_row_capital", OwnBankRules.CapitalNow(b), OwnBankText.T("reallife_ob_note_ratio", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)),
+                Info("deposits", "reallife_ob_row_deposits", b.Savings,
+                    OwnBankText.T("reallife_ob_note_city", "share", OwnBankText.Share(b.Savings, OwnBankRules.SavingsPool(c, 0) + OwnBankRules.SavingsPool(c, 1))), TableRow.Plain);
+                Info("capital", "reallife_ob_row_capital", OwnBankRules.CapitalNow(b),
+                    OwnBankText.T("reallife_ob_note_ratio", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)),
                     ratio < OwnBankCatalogue.MinRatio ? TableRow.Red : ratio < OwnBankCatalogue.WatchRatio ? TableRow.Yellow : TableRow.Green);
                 Info("risk", "reallife_ob_row_risk", OwnBankRules.RiskWeighted(b), OwnBankText.T("reallife_ob_note_risk"), TableRow.Plain);
             }
@@ -268,16 +245,16 @@ namespace RealLifeOverhaul.Economy
                 if (b.State == OwnBankState.Closed)
                 {
                     box.Chip(OwnBankText.T("reallife_ibox_chip_closed"), CellTone.Red);
-                    box.Line(OwnBankText.Fill("reallife_ob_box_closed", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "why", OwnBankText.T(OwnBankText.WhyKey(b.Why)), "left", OwnBankText.Money(b.EndCents)));
+                    box.Line(OwnBankText.Fill("reallife_ob_box_closed", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "why", OwnBankText.T(OwnBankText.WhyKey(b.Why)),
+                        "left", OwnBankText.Money(b.EndCents)));
                     int again = OwnBankRules.AgainDay(b, GameCalendar.DaysPerYear);
                     string wait = OwnBankGame.AgainWhy(b);
                     long next = OwnBankRules.CapitalLeast(level, b.Closures, buy);
                     if (wait != null)
                     {
-                        // Not yet: the date a licence may be applied for, and the stricter terms the next bank is held to.
                         box.Line(OwnBankText.Fill(wait == OwnBankRules.AgainWaitKey ? "reallife_ob_box_closed_after" : "reallife_ob_box_closed_integrity", "day", FinanceText.Day(again),
                             "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture), "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)), CellTone.Yellow);
-                        if (b.Closures > 0)   // (a bank a test founded and closed raises nothing)
+                        if (b.Closures > 0)   // a bank a test founded and closed raises nothing
                         {
                             box.Note(OwnBankText.Fill("reallife_ob_box_closed_terms", "capital", OwnBankText.Money(next), "first", OwnBankText.Money(OwnBankRules.CapitalLeast(level, 0, buy))));
                         }
@@ -297,11 +274,13 @@ namespace RealLifeOverhaul.Economy
                     box.Line(OwnBankText.Fill("reallife_ob_box_sold", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "price", OwnBankText.Money(b.EndCents)));
                 }
                 long licence = OwnBankRules.Licence(level, buy), capital = OwnBankRules.CapitalLeast(level, b.Closures, buy);
-                box.Note(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
+                box.Note(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio",
+                    OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
                 box.Section("reallife_ibox_sec_next");
                 box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"), hq != null ? CellTone.Green : CellTone.Yellow);
                 box.RowPair("reallife_ibox_licence", OwnBankText.Money(licence), "reallife_ibox_capital", OwnBankText.Money(capital));
-                box.Note(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans", OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
+                box.Note(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans",
+                    OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
                 if (hq != null)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_ob_box_found", () => AskName(hq, licence, capital));
@@ -363,12 +342,12 @@ namespace RealLifeOverhaul.Economy
             if (OwnBankRules.Sellable(b))
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_ob_box_sell", () => Ask("reallife_ob_confirm_sell_title".Localize(new { bank = b.Name }),
-                    "reallife_ob_confirm_sell_body".Localize(new { price = OwnBankText.Money(value), years = OwnBankCatalogue.SaleYears.ToString() }), "reallife_ob_box_sell", true, () => _director.Sell(out string why) ? null : why));
+                    "reallife_ob_confirm_sell_body".Localize(new { price = OwnBankText.Money(value), years = OwnBankCatalogue.SaleYears.ToString() }), "reallife_ob_box_sell", true,
+                    () => _director.Sell(out string why) ? null : why));
             }
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // A line of the balance sheet: not to be picked.
         private void Info(string id, string key, long cents, string note, CellTone tone)
         {
             TableRow row = Row("b|" + id);
@@ -377,8 +356,6 @@ namespace RealLifeOverhaul.Economy
             row.Set(1, OwnBankText.Money(cents), cents / 100.0, tone);
             row.Set(2, note);
         }
-
-        // ---------------------------------------------------------------- the savers
 
         private void WriteSavers(InfoBox box, OwnBank b, BankCity c, ref string selected)
         {
@@ -433,7 +410,8 @@ namespace RealLifeOverhaul.Economy
             box.Headline("reallife_ob_box_rate_head");
             int least = OwnBankCatalogue.SaverOffsetLeast, step = OwnBankCatalogue.SaverOffsetStep, rivalBp = OwnBankRules.RivalSaverBp(c, b, kind);
             box.Selector((OwnBankCatalogue.SaverOffsetMost - least) / step + 1, (b.SaverOffset[kind] - least) / step,
-                i => OwnBankText.Fill("reallife_ob_rate_option", "rate", OwnBankText.Rate(Math.Max(0, rivalBp + least + i * step)), "points", OwnBankText.Points(least + i * step)), i => UiClone.Safe(() =>
+                i => OwnBankText.Fill("reallife_ob_rate_option", "rate", OwnBankText.Rate(Math.Max(0, rivalBp + least + i * step)), "points", OwnBankText.Points(least + i * step)),
+                i => UiClone.Safe(() =>
                 {
                     _director.SetSaverRate(kind, least + i * step);
                     Refresh();
@@ -442,8 +420,6 @@ namespace RealLifeOverhaul.Economy
             box.Note(OwnBankText.T(kind == OwnBankCatalogue.Firms ? "reallife_ob_box_firms_note" : "reallife_ob_box_people_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
-
-        // ---------------------------------------------------------------- lending
 
         private void WriteLending(InfoBox box, OwnBank b, BankCity c, ref string selected)
         {
@@ -505,7 +481,8 @@ namespace RealLifeOverhaul.Economy
             box.Headline("reallife_ob_box_rate_head");
             int least = OwnBankCatalogue.LoanOffsetLeast, step = OwnBankCatalogue.LoanOffsetStep, rivalBp = OwnBankRules.RivalLoanBp(c, b, seg);
             box.Selector((OwnBankCatalogue.LoanOffsetMost - least) / step + 1, (b.LoanOffset[seg] - least) / step,
-                i => OwnBankText.Fill("reallife_ob_rate_option", "rate", OwnBankText.Rate(Math.Max(CreditCatalogue.RateFloor * 100, rivalBp + least + i * step)), "points", OwnBankText.Points(least + i * step)),
+                i => OwnBankText.Fill("reallife_ob_rate_option", "rate", OwnBankText.Rate(Math.Max(CreditCatalogue.RateFloor * 100, rivalBp + least + i * step)),
+                    "points", OwnBankText.Points(least + i * step)),
                 i => UiClone.Safe(() =>
                 {
                     _director.SetLoanRate(seg, least + i * step);
@@ -521,11 +498,8 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- the fund
-
-        private void WriteFund(InfoBox box, OwnBank b, BankCity c, ref string selected)
+        private void WriteFund(InfoBox box, OwnBank b)
         {
-            int y = Math.Max(1, c.YearDays);
             long dividends = 0;
             for (int i = 0; i < b.Holdings.Count; i++)
             {
@@ -535,7 +509,7 @@ namespace RealLifeOverhaul.Economy
                 long value = h.Qty * h.LastCents, gain = value - h.CostCents, year = h.Qty * h.DpsCents * 4;
                 dividends += year;
                 row.Set(0, string.IsNullOrEmpty(h.Ticker) ? h.Name : h.Name + " (" + h.Ticker + ")");
-                row.Set(1, h.Qty.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), h.Qty);
+                row.Set(1, h.Qty.ToString("N0", CultureInfo.InvariantCulture), h.Qty);
                 row.Set(2, OwnBankText.Money(h.CostCents), h.CostCents / 100.0);
                 row.Set(3, OwnBankText.Money(value), value / 100.0);
                 row.Set(4, OwnBankText.Signed(gain), gain / 100.0, gain < 0 ? TableRow.Red : gain > 0 ? TableRow.Green : TableRow.Plain);
@@ -554,18 +528,18 @@ namespace RealLifeOverhaul.Economy
                 Refresh();
             }));
             int step = OwnBankCatalogue.FundLimitStep;
-            box.Selector(OwnBankCatalogue.FundLimitMost / step + 1, b.FundLimit / step, i => OwnBankText.T("reallife_ob_fund_limit_option", "share", OwnBankText.Ratio(i * step)), i => UiClone.Safe(() =>
-            {
-                _director.SetFundLimit(i * step);
-                Refresh();
-            }));
-            box.Note(OwnBankText.Fill("reallife_ob_box_fund_rules", "companies", OwnBankCatalogue.FundCompanies[Math.Max(1, b.Strategy)].ToString(), "weight", OwnBankText.Ratio(OwnBankCatalogue.FundWeight)));
+            box.Selector(OwnBankCatalogue.FundLimitMost / step + 1, b.FundLimit / step, i => OwnBankText.T("reallife_ob_fund_limit_option", "share", OwnBankText.Ratio(i * step)),
+                i => UiClone.Safe(() =>
+                {
+                    _director.SetFundLimit(i * step);
+                    Refresh();
+                }));
+            box.Note(OwnBankText.Fill("reallife_ob_box_fund_rules", "companies", OwnBankCatalogue.FundCompanies[Math.Max(1, b.Strategy)].ToString(), "weight",
+                OwnBankText.Ratio(OwnBankCatalogue.FundWeight)));
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- questions and amounts
-
-        // The bank's name, typed into the game's own text box (empty: the headquarters' name and "Bank"), then the game's own question before the fortune is paid.
+        // The bank's name typed into the game's text box (empty: the headquarters' name and "Bank"), then the game's question.
         private void AskName(BuildingRegistration hq, long licence, long capital)
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -581,11 +555,12 @@ namespace RealLifeOverhaul.Economy
 
         private void AskFound(string name, long licence, long capital)
         {
-            Ask("reallife_ob_confirm_found_title".Localize(new { bank = name }), "reallife_ob_confirm_found_body".Localize(new { licence = OwnBankText.Money(licence), capital = OwnBankText.Money(capital) }),
+            Ask("reallife_ob_confirm_found_title".Localize(new { bank = name }),
+                "reallife_ob_confirm_found_body".Localize(new { licence = OwnBankText.Money(licence), capital = OwnBankText.Money(capital) }),
                 "reallife_ob_box_found", false, () => _director.Found(name, out string why) ? null : why);
         }
 
-        // The game's own text box for an amount, whole money; what is typed is checked by the action it is for.
+        // An amount in whole money typed into the game's text box; the action it is for checks it.
         private void AskAmount(string placeholderKey, long initialCents, Func<long, string> act)
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -609,7 +584,7 @@ namespace RealLifeOverhaul.Economy
             }), null, (Math.Max(0, initialCents) / 100).ToString(), false, TypedLength);
         }
 
-        // A whole amount read from what was typed (digits; the comma, a space and the sign the game writes in "$5,000" let through). False for anything else.
+        // A whole amount from what was typed: digits, with the comma, space and sign of "$5,000" let through. False for anything else.
         internal static bool Whole(string text, out long amount)
         {
             amount = 0;
@@ -630,7 +605,7 @@ namespace RealLifeOverhaul.Economy
             return digits;
         }
 
-        // The game's own question before a large sum is spent (or the bank sold): on yes, done, and any refusal said.
+        // The game's own question before a large sum is spent or the bank sold; on yes, done, and any refusal said.
         private void Ask(LanguageChangeEventDataHolder title, LanguageChangeEventDataHolder body, string confirmKey, bool negative, Func<string> act)
         {
             UiClone.Safe(() => GameConfirm.Show(title, body, () => UiClone.Safe(() =>
