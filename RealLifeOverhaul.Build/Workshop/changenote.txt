@@ -1,4 +1,4 @@
-0.29.3
+0.30.0
 
-Fixed
-- In a debt arrangement you can now pay the credit card off early, and the arrangement ends once everything in it is paid. A missed card payment now counts once per statement, and what is overdue stays in the next minimum.
+New
+- Classes now play as the game's own studying does: at the university you are walked to your classroom and sit at its desk, and online classes and homework are done at a computer at home, with fast forward and skip.
