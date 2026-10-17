@@ -47,7 +47,7 @@ internal static partial class Program
 
     private static EstateHolding Building(int value = 1000000, int use = 1, int cond = 900, bool managed = true)
     {
-        return new EstateHolding { Place = "High%20Street~" + value, Base = value, Use = use, AsBuilt = use, Income = 1000, Cond = cond, Managed = managed };
+        return new EstateHolding { Place = "High%20Street~" + value, Base = value, Use = use, Income = 1000, Cond = cond, Managed = managed };
     }
 
     // A tenant is put in at a rent, with a record.
@@ -1115,7 +1115,7 @@ internal static partial class Program
         var s = new EstateState { Seed = seed, FirstDay = 1, Real = 1000 };
         for (int i = 0; i < 6; i++)
         {
-            s.Holdings.Add(new EstateHolding { Place = "Street~" + i, Base = 600000 + i * 150000, Use = i % 4, AsBuilt = i % 4, Income = 700 + i * 120, Cond = EstateRules.StreetCondition(seed, i), Managed = true, Cover = i % 2 == 0 });
+            s.Holdings.Add(new EstateHolding { Place = "Street~" + i, Base = 600000 + i * 150000, Use = i % 4, Income = 700 + i * 120, Cond = EstateRules.StreetCondition(seed, i), Managed = true, Cover = i % 2 == 0 });
         }
         s.Agency.Office = "Office~1";
         s.Agency.Capacity = 80;

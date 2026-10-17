@@ -3,23 +3,18 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The property part's day and what the player can do in it: the market's month, each building's morning
-    /// (EstateRules), the money that goes with it, and the agency (AgencyRules). One pass over the buildings the
-    /// player owns and the agency's instructions, once a game day; a press of a button in the app changes one
-    /// building. Nothing here runs between those.
-    /// </summary>
+    /// <summary>The property part: the market and each building's morning, and what the player does with them in the app.</summary>
     public sealed partial class EstateDirector
     {
-        private const int MonthsAtOnce = 24;   // after a long jump of days the market moves this many months and no more
+        private const int MonthsAtOnce = 24;   // months the market moves at most after a long jump of days
 
         private void PropertyDay(int day)
         {
             EstateState s = _state;
             EstateClimate c = _climate;
 
-            // What the game's nightly run has just paid for each building, before anything is written again. A building
-            // the game lets has the rental income option settled on it here: the difference to the setting, as rent.
+            // What the game's nightly run has just paid for each building, before anything is written again; a building
+            // the game lets has the rental income option settled on it as rent.
             int paid = 0, wrong = 0, topped = 0, topUps = 0;
             for (int i = 0; i < s.Holdings.Count; i++)
             {
@@ -28,7 +23,7 @@ namespace RealLifeOverhaul.Economy
                 int extra = EstateRules.TopUp(h, day, rent, c.RentScale);
                 if (extra != 0)
                 {
-                    EstateGame.AdjustRent(extra, h);
+                    EstateGame.BookRent(extra, h);
                     topped += extra;
                     topUps++;
                 }
@@ -41,15 +36,15 @@ namespace RealLifeOverhaul.Economy
             if (Verbose)
             {
                 Logger?.Info("Estate check (rent, day " + day + "): the game's run paid " + paid + " for " + s.Holdings.Count + " building(s); " + wrong
-                             + " building(s) the player lets himself were paid something other than the agreed rent of their units that owe nothing (the game may let a few units less on a day): "
-                             + (wrong == 0 ? "PASS" : "LOOK"));
+                             + " building(s) the player lets himself were paid something other than the agreed rent of their units that owe nothing "
+                             + "(the game may let a few units less on a day): " + (wrong == 0 ? "PASS" : "LOOK"));
             }
             if (topUps > 0)
             {
-                Logger?.Info("Estate: rental income at " + (EstateRules.RentShare(c.RentScale) / 10) + "%: " + topped + " " + (topped > 0 ? "added to" : "taken from") + " the game's own rent of " + topUps + " building(s) it lets.");
+                Logger?.Info("Estate: rental income at " + (EstateRules.RentShare(c.RentScale) / 10) + "%: " + topped + " " + (topped > 0 ? "added to" : "taken from")
+                             + " the game's own rent of " + topUps + " building(s) it lets.");
             }
 
-            // The market: a step for each month of the city's economy that has passed.
             int monthDays = MacroCatalogue.MonthDays(c.DaysPerYear);
             int months = (day - s.FirstDay) / Math.Max(1, monthDays);
             int was = s.Real;
@@ -61,8 +56,8 @@ namespace RealLifeOverhaul.Economy
             s.Months = Math.Max(s.Months, months);
             if (Verbose && s.Real != was)
             {
-                Logger?.Info("Estate check (the market, month " + s.Months + "): " + was + " to " + s.Real + ", heading for " + EstateRules.RealTarget(c.Cycle, c.Quarters) + " (cycle " + c.Cycle + ", the bank's rate "
-                             + c.Quarters + " quarter point(s)): " + (Math.Abs(s.Real - was) <= EstateCatalogue.RealStepMost ? "PASS" : "FAIL"));
+                Logger?.Info("Estate check (the market, month " + s.Months + "): " + was + " to " + s.Real + ", heading for " + EstateRules.RealTarget(c.Cycle, c.Quarters)
+                             + " (cycle " + c.Cycle + ", the bank's rate " + c.Quarters + " quarter point(s)): " + (Math.Abs(s.Real - was) <= EstateCatalogue.RealStepMost ? "PASS" : "FAIL"));
             }
 
             int added, dropped;
@@ -76,7 +71,6 @@ namespace RealLifeOverhaul.Economy
             EstateGame.WriteValues(s, c.Index);
         }
 
-        // One building's morning.
         private void HoldingDay(EstateHolding h, int day)
         {
             EstateState s = _state;
@@ -84,7 +78,7 @@ namespace RealLifeOverhaul.Economy
             string pick = "own:" + h.Place;
             if (h.Managed && h.Self)
             {
-                // The player has taken a unit for himself in the game's own app: every tenancy is over and the game lets the rest again.
+                // The player has taken a unit for himself in the game's own app: every tenancy ends and the game lets the rest.
                 h.Managed = false;
                 for (int u = 0; u < h.Units.Count; u++)
                 {
@@ -116,10 +110,11 @@ namespace RealLifeOverhaul.Economy
                         firstMissed = firstMissed < 0 ? u : firstMissed;
                     }
                 }
-                // A missed day at one unit is told as it was; several on one morning are one notice for the building.
+                // Several units missing on one morning are one notice for the building.
                 if (missed == 1)
                 {
-                    Tell(NotificationType.Warning, "reallife_estate_note_missed", Data("building", EstateText.UnitName(h, firstMissed), "amount", EstateText.Money(missedRent)), TabTenants, UnitPick(h, firstMissed));
+                    Tell(NotificationType.Warning, "reallife_estate_note_missed", Data("building", EstateText.UnitName(h, firstMissed), "amount", EstateText.Money(missedRent)), TabTenants,
+                        UnitPick(h, firstMissed));
                 }
                 else if (missed > 1)
                 {
@@ -139,7 +134,8 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (applied == 1)
                 {
-                    Tell(NotificationType.Info, "reallife_estate_note_applied", Data("building", EstateText.UnitName(h, firstApplied), "who", EstateText.Tenant(h.Use, one.Kind), "amount", EstateText.Money(one.Offer)), TabTenants,
+                    Tell(NotificationType.Info, "reallife_estate_note_applied",
+                        Data("building", EstateText.UnitName(h, firstApplied), "who", EstateText.Tenant(h.Use, one.Kind), "amount", EstateText.Money(one.Offer)), TabTenants,
                         "app:" + h.Place + ":" + one.Id);
                 }
                 else if (applied > 1)
@@ -149,8 +145,9 @@ namespace RealLifeOverhaul.Economy
                 if (Verbose && h.Units.Count > 1)
                 {
                     int behind, let = h.LetUnits(out behind);
-                    Logger?.Info("Estate check (units, " + h.Name + ", day " + day + "): " + h.Units.Count + " unit(s), " + let + " let, " + behind + " behind; the building wore " + lost + " (the average of its units), "
-                                 + applied + " application(s) came, " + h.ApplicantCount + " wait of " + EstateRules.ApplicantCap(h.Units.Count) + " at most; the game is told to pay " + EstateRules.PayingRent(h) + ": PASS");
+                    Logger?.Info("Estate check (units, " + h.Name + ", day " + day + "): " + h.Units.Count + " unit(s), " + let + " let, " + behind + " behind; the building wore " + lost
+                                 + " (the average of its units), " + applied + " application(s) came, " + h.ApplicantCount + " wait of " + EstateRules.ApplicantCap(h.Units.Count)
+                                 + " at most; the game is told to pay " + EstateRules.PayingRent(h) + ": PASS");
                 }
             }
             else
@@ -165,7 +162,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     Pay(z.Payout, EstateGame.ClaimKey, h.Name, h.Place, "landlord's cover pays a fire's repair bill of " + z.Bill + " less its excess");
                 }
-                Tell(NotificationType.Error, z.Payout > 0 ? "reallife_estate_note_fire_covered" : "reallife_estate_note_fire", Data("building", h.Name, "amount", EstateText.Money(z.Payout), "bill", EstateText.Money(z.Bill)), TabWorks, pick);
+                Tell(NotificationType.Error, z.Payout > 0 ? "reallife_estate_note_fire_covered" : "reallife_estate_note_fire",
+                    Data("building", h.Name, "amount", EstateText.Money(z.Payout), "bill", EstateText.Money(z.Bill)), TabWorks, pick);
             }
             else if (z.Breakdown)
             {
@@ -212,8 +210,8 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // One unit's morning (EstateRules.Day) and the money and notices that go with it. True if its tenant missed a
-        // day's rent for the first time, which HoldingDay tells for the building's units together.
+        // One unit's morning, with its money and notices. True if its tenant missed a day's rent for the first time,
+        // which HoldingDay tells for the building's units together.
         private bool UnitDay(EstateHolding h, int unit, int day)
         {
             EstateUnit u = h.Units[unit];
@@ -222,7 +220,7 @@ namespace RealLifeOverhaul.Economy
             string name = EstateText.UnitName(h, unit), pick = UnitPick(h, unit);
             if (d.Lump > 0)
             {
-                EstateGame.GiveRent(d.Lump, h);
+                EstateGame.BookRent(d.Lump, h);
                 h.RentYear += d.Lump;
             }
             if (d.Evicted)
@@ -243,13 +241,14 @@ namespace RealLifeOverhaul.Economy
             }
             if (Verbose && (d.Missed || d.Lump > 0 || d.Left || d.Evicted || d.Renewed))
             {
-                Logger?.Info("Estate check (tenancy, " + name + ", day " + day + "): " + (d.Evicted ? "put out by the court" : d.Left ? "gone" : d.Missed ? "a day's rent of " + rent + " missed" : d.Renewed ? "the lease renewed" : "paid up")
-                             + "; " + d.Lump + " came in, " + d.WrittenOff + " written off, arrears now " + u.Arrears + " over " + u.ArrearsDays + " day(s): PASS");
+                string what = d.Evicted ? "put out by the court" : d.Left ? "gone" : d.Missed ? "a day's rent of " + rent + " missed" : d.Renewed ? "the lease renewed" : "paid up";
+                Logger?.Info("Estate check (tenancy, " + name + ", day " + day + "): " + what + "; " + d.Lump + " came in, " + d.WrittenOff + " written off, arrears now " + u.Arrears
+                             + " over " + u.ArrearsDays + " day(s): PASS");
             }
             return d.Missed && days == 0 && !d.Left && !d.Evicted;
         }
 
-        // What a notice about a unit opens: the unit's lease on the Tenants tab.
+        // What a notice about a unit picks: its lease on the Tenants tab.
         internal static string UnitPick(EstateHolding h, int unit)
         {
             return "unt:" + h.Place + ":" + unit.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -263,8 +262,8 @@ namespace RealLifeOverhaul.Economy
                 Data("building", h.Name, "use", EstateText.Use(done == EstateWork.Planning && granted ? h.PlanUse : h.Use), "level", h.Level.ToString()), TabWorks, "own:" + h.Place);
             if (Verbose)
             {
-                Logger?.Info("Estate check (works, " + h.Name + "): " + done + " finished" + (done == EstateWork.Planning ? (granted ? ", permission given" : ", permission refused") : string.Empty) + "; condition "
-                             + h.Cond + ", level " + h.Level + ", use " + (EstateUse)h.Use + ", worth " + EstateRules.Value(h, _state.Real, _climate.Index) + " now: PASS");
+                Logger?.Info("Estate check (works, " + h.Name + "): " + done + " finished" + (done == EstateWork.Planning ? (granted ? ", permission given" : ", permission refused") : string.Empty)
+                             + "; condition " + h.Cond + ", level " + h.Level + ", use " + (EstateUse)h.Use + ", worth " + EstateRules.Value(h, _state.Real, _climate.Index) + " now: PASS");
             }
         }
 
@@ -282,14 +281,13 @@ namespace RealLifeOverhaul.Economy
             int price = h.SalePrice;
             if (GoingPublic.InSession)
             {
-                // Who owns what is the host's record in a Going Public session, told by the game's own sales and not by this one
-                // (Core/GoingPublic): the sale completes the first day the game is played alone.
+                // In a Going Public session who owns what is the host's record: the sale completes the first day played alone.
                 h.SaleDay = day + 1;
                 return false;
             }
             if (!EstateGame.Sell(h, price))
             {
-                h.SaleDay = day + 1;   // the player is standing inside it, as the game's own sale would not have it either: tomorrow
+                h.SaleDay = day + 1;   // the player stands inside it, which the game's own sale does not allow either
                 return false;
             }
             int fee = EstateRules.AgentFee(price, _climate.Index), tax = EstateRules.GainsTax(price, fee, h.Paid, h.Spent, _climate.TaxPercent);
@@ -304,12 +302,13 @@ namespace RealLifeOverhaul.Economy
             Tell(NotificationType.Success, "reallife_estate_note_sold", Data("building", h.Name, "amount", EstateText.Money(price), "fee", EstateText.Money(fee + tax)), TabMine, null);
             if (Verbose)
             {
-                Logger?.Info("Estate check (sale, " + h.Name + "): sold for " + price + " under the game's own transaction, fee " + fee + ", tax on the gain " + tax + "; the game has it as a competitor's now: PASS");
+                Logger?.Info("Estate check (sale, " + h.Name + "): sold for " + price + " under the game's own transaction, fee " + fee + ", tax on the gain " + tax
+                             + "; the game has it as a competitor's now: PASS");
             }
             return true;
         }
 
-        // Every building the player lets himself is told to the game (or, with 'own', handed back to it). Returns how many.
+        // Every building the player lets himself is told to the game, or with 'own' handed back to it. Returns how many.
         private int WriteRents(bool own)
         {
             int written = 0;
@@ -323,8 +322,6 @@ namespace RealLifeOverhaul.Economy
             }
             return written;
         }
-
-        // ---------------------------------------------------------------- what the player does
 
         private EstateHolding Mine(string place)
         {
@@ -350,7 +347,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The player lets a building himself from now on, every unit of it: the game's own letting stops, and applicants are looked for.</summary>
+        /// <summary>The player lets every unit of a building himself from now on: the game's own letting stops and applicants are looked for.</summary>
         public void TakeOn(string place)
         {
             EstateHolding h = Mine(place);
@@ -381,7 +378,6 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
-        // A unit of a building of the player's, or null.
         private EstateUnit UnitOf(string place, int unit, out EstateHolding h)
         {
             h = Mine(place);
@@ -420,7 +416,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>An applicant becomes the tenant of the unit applied for. Returns the unit, or -1 if it could not be.</summary>
+        /// <summary>An applicant becomes the tenant of the unit applied for. Returns the unit, or -1.</summary>
         public int Accept(string place, int applicant)
         {
             EstateHolding h = Mine(place);
@@ -432,9 +428,9 @@ namespace RealLifeOverhaul.Economy
             EstateUnit u = h.Units[unit];
             if (Verbose)
             {
-                Logger?.Info("Estate check (letting, " + EstateText.UnitName(h, unit) + "): a tenant with a record of " + u.Record + " at " + u.Rent + " a day against the unit's market rent of " + EstateRules.UnitRent(h, _climate)
-                             + " (the building's " + EstateRules.MarketRent(h, _climate) + " over " + h.Units.Count + " unit(s)), until day " + u.Until + ", deposit " + u.Deposit + " held; the game is told to pay "
-                             + EstateRules.PayingRent(h) + " a night for the building: PASS");
+                Logger?.Info("Estate check (letting, " + EstateText.UnitName(h, unit) + "): a tenant with a record of " + u.Record + " at " + u.Rent + " a day against the unit's market rent of "
+                             + EstateRules.UnitRent(h, _climate) + " (the building's " + EstateRules.MarketRent(h, _climate) + " over " + h.Units.Count + " unit(s)), until day " + u.Until
+                             + ", deposit " + u.Deposit + " held; the game is told to pay " + EstateRules.PayingRent(h) + " a night for the building: PASS");
             }
             Touched(h);
             return unit;
@@ -461,7 +457,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The court is asked for possession of a unit: its fee is paid first, and the order comes in six days.</summary>
+        /// <summary>The court is asked for possession of a unit: its fee is paid first, and the order comes in CourtDays.</summary>
         public void GoToCourt(string place, int unit)
         {
             EstateHolding h = Mine(place);
@@ -480,7 +476,6 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
-        /// <summary>A job is paid for and begun.</summary>
         public void StartWork(string place, EstateWork work, int toUse)
         {
             EstateHolding h = Mine(place);
@@ -507,7 +502,8 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            h.List = share <= 0 ? 0 : EstateCatalogue.Share(EstateRules.Value(h, _state.Real, _climate.Index), EstateCatalogue.Clamp(share, EstateCatalogue.ListLeast, EstateCatalogue.ListMost));
+            h.List = share <= 0 ? 0
+                : EstateCatalogue.Share(EstateRules.Value(h, _state.Real, _climate.Index), EstateCatalogue.Clamp(share, EstateCatalogue.ListLeast, EstateCatalogue.ListMost));
             h.Offer = h.OfferLapse = 0;
             Changed();
         }
@@ -531,111 +527,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- the agency
-
-        private void AgencyDay(int day)
-        {
-            AgencyFile agency = _state.Agency;
-            if (!agency.Running && agency.Open.Count == 0)
-            {
-                return;
-            }
-            Instruction arrived = AgencyRules.Arrive(agency, _state.Seed, day, _climate, _state.Real);
-            if (arrived != null)
-            {
-                Tell(NotificationType.Info, arrived.Sale ? "reallife_estate_note_instruction_sale" : "reallife_estate_note_instruction_let",
-                    Data("district", EstateText.District(arrived.District), "amount", EstateText.Money(arrived.Value), "day", arrived.Day.ToString()), TabAgency, "ins:" + arrived.Id);
-            }
-            _events.Clear();
-            AgencyRules.Day(agency, _state.Seed, day, _climate, _events);
-            for (int i = 0; i < _events.Count; i++)
-            {
-                AgencyEvent e = _events[i];
-                string district = EstateText.District(e.District);
-                switch (e.Kind)
-                {
-                    case AgencyEvent.Completed:
-                        Pay(e.Amount, EstateGame.CommissionKey, district, agency.Running ? agency.Office : null, "commission on an instruction that completed");
-                        Tell(NotificationType.Success, "reallife_estate_note_commission", Data("district", district, "amount", EstateText.Money(e.Amount)), TabAgency, null);
-                        break;
-                    case AgencyEvent.Agreed:
-                        Tell(NotificationType.Info, "reallife_estate_note_agreed", Data("district", district, "amount", EstateText.Money(e.Amount)), TabAgency, "ins:" + e.Id);
-                        break;
-                    case AgencyEvent.NoDeal:
-                    case AgencyEvent.FellThrough:
-                    case AgencyEvent.Lapsed:
-                        Tell(NotificationType.Warning, e.Kind == AgencyEvent.NoDeal ? "reallife_estate_note_no_deal" : e.Kind == AgencyEvent.Lapsed ? "reallife_estate_note_instruction_lost" : "reallife_estate_note_fell_through",
-                            Data("district", district), TabAgency, null);
-                        break;
-                }
-                if (Verbose)
-                {
-                    Logger?.Info("Estate check (agency, instruction " + e.Id + " in " + e.District + "): outcome " + e.Kind + ", " + e.Amount + (e.Kind == AgencyEvent.Completed ? " commission paid" : string.Empty)
-                                 + "; " + agency.Capacity / 10f + " agent's hour(s) a day from " + agency.Negotiators + " negotiator(s): PASS");
-                }
-            }
-        }
-
-        /// <summary>The agency opens at an office the player holds, or moves there.</summary>
-        public void OpenAgency(string place)
-        {
-            if (!On(EstatePart.Property) || string.IsNullOrEmpty(place))
-            {
-                return;
-            }
-            _state.Agency.Office = place;
-            EstateGame.ReadAgency(_state.Agency);
-            Changed();
-        }
-
-        /// <summary>The agency shuts: what it had in hand lapses by its own days.</summary>
-        public void CloseAgency()
-        {
-            if (On(EstatePart.Property))
-            {
-                _state.Agency.Office = string.Empty;
-                _state.Agency.Capacity = _state.Agency.Negotiators = 0;
-                Changed();
-            }
-        }
-
-        /// <summary>An instruction is taken on: its marketing is paid for now.</summary>
-        public void TakeInstruction(int id)
-        {
-            Instruction i = On(EstatePart.Property) ? _state.Agency.Find(id) : null;
-            int cost = AgencyRules.TakeCost(i);
-            if (cost <= 0)
-            {
-                return;
-            }
-            if (!Cost(cost, EstateGame.MarketingKey, EstateText.District(i.District), _state.Agency.Running ? _state.Agency.Office : null, "marketing an instruction worth " + i.Value))
-            {
-                Notifications.ShowInsufficientMoney();
-                return;
-            }
-            AgencyRules.Take(i, Save.Day);
-            Changed();
-        }
-
-        public void DeclineInstruction(int id)
-        {
-            Instruction i = On(EstatePart.Property) ? _state.Agency.Find(id) : null;
-            if (i != null && i.Stage == (int)InstructionStage.Offered)
-            {
-                _state.Agency.Open.Remove(i);
-                Changed();
-            }
-        }
-
-        // ---------------------------------------------------------------- the Planner's rows
-
         partial void PropertyAlerts(int day)
         {
             for (int i = 0; i < _state.Holdings.Count; i++)
             {
                 EstateHolding h = _state.Holdings[i];
                 int id = EstateRules.Hash(h.Place);
-                // A building's units are one row of each kind: the applications all wait, the earliest day stands for the rest.
+                // A building's units make one row of each kind, at the earliest day.
                 int waiting = 0, lapse = int.MaxValue, owed = 0, behind = 0, answer = 0, court = int.MaxValue, notice = int.MaxValue;
                 string named = h.Name;
                 for (int n = 0; n < h.Units.Count; n++)
@@ -649,7 +547,7 @@ namespace RealLifeOverhaul.Economy
                     if (EstateRules.MayServeNotice(h, n, day) || EstateRules.MayGoToCourt(h, n, day))
                     {
                         owed += u.Arrears;
-                        named = answer++ == 0 ? EstateText.UnitName(h, n) : h.Name;   // (one unit is named; several are the building's)
+                        named = answer++ == 0 ? EstateText.UnitName(h, n) : h.Name;   // one unit is named; several are the building
                         behind = Math.Max(behind, u.ArrearsDays);
                     }
                     if (u.CourtDay > 0)
@@ -663,13 +561,13 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (waiting > 0)
                 {
-                    Alert(1, id, Math.Max(day, lapse), EstateText.T("reallife_estate_plan_applicants_title", "building", h.Name), EstateText.T("reallife_estate_plan_applicants_what", "count", waiting.ToString()), null,
-                        EstateText.T("reallife_estate_plan_applicants_missed"));
+                    Alert(1, id, Math.Max(day, lapse), EstateText.T("reallife_estate_plan_applicants_title", "building", h.Name),
+                        EstateText.T("reallife_estate_plan_applicants_what", "count", waiting.ToString()), null, EstateText.T("reallife_estate_plan_applicants_missed"));
                 }
                 if (answer > 0)
                 {
-                    Alert(2, id, day, EstateText.T("reallife_estate_plan_arrears_title", "building", named), EstateText.T("reallife_estate_plan_arrears_what", "amount", EstateText.Money(owed), "days", behind.ToString()),
-                        null, null);
+                    Alert(2, id, day, EstateText.T("reallife_estate_plan_arrears_title", "building", named),
+                        EstateText.T("reallife_estate_plan_arrears_what", "amount", EstateText.Money(owed), "days", behind.ToString()), null, null);
                 }
                 if (court < int.MaxValue)
                 {

@@ -3,15 +3,9 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The hotel's and the hire business's days and what the player can do in them (HotelRules, HireRules), with the
-    /// money that goes with each. A hotel is one night's sums, once a game day; a hire car is a few comparisons a
-    /// day, and on the hour only while it is out or due back. Nothing here runs between those.
-    /// </summary>
+    /// <summary>The hotels' and car hire's days, and what the player does in them.</summary>
     public sealed partial class EstateDirector
     {
-        // ---------------------------------------------------------------- the hotels
-
         private void ReadHotels(int day)
         {
             for (int i = 0; i < _state.Hotels.Count; i++)
@@ -20,7 +14,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>True if the player holds the hotel with this id of Travel's: its reception then has the owner's entry and the room is free.</summary>
+        /// <summary>Whether the player holds the hotel with this id of Travel's: its reception then has the owner's entry and the room is free.</summary>
         public static bool OwnsHotel(string slot)
         {
             EstateDirector d = Instance;
@@ -43,7 +37,7 @@ namespace RealLifeOverhaul.Economy
                 HotelFile f = _state.Hotels[i];
                 if (!EstateGame.ReadHotel(f, night))
                 {
-                    continue;   // Travel no longer has it: it is kept and stands still
+                    continue;   // Travel no longer has it: kept, standing still
                 }
                 Night(f, night, c);
             }
@@ -59,7 +53,8 @@ namespace RealLifeOverhaul.Economy
             }
             HotelNight n = HotelRules.Night(f, _state.Seed, night, c);
             Pay(n.Takings, EstateGame.HotelTakingsKey, f.Name, null, n.Sold0 + " and " + n.Sold1 + " room(s) sold");
-            Cost(n.Costs + n.Lease, EstateGame.HotelCostsKey, f.Name, null, "the night's staff, laundry, breakfast and utilities" + (n.Lease > 0 ? ", and the day's lease of " + n.Lease : string.Empty), true);
+            Cost(n.Costs + n.Lease, EstateGame.HotelCostsKey, f.Name, null,
+                "the night's staff, laundry, breakfast and utilities" + (n.Lease > 0 ? ", and the day's lease of " + n.Lease : string.Empty), true);
             if (n.Pipe)
             {
                 Cost(n.PipeCost, EstateGame.HotelCostsKey, f.Name, null, "a burst pipe", true);
@@ -89,9 +84,10 @@ namespace RealLifeOverhaul.Economy
             if (Verbose)
             {
                 int rooms = HotelRules.Rooms(f.Tier);
-                Logger?.Info("Estate check (hotel night " + night + ", " + f.Name + "): " + (n.Sold0 + n.Sold1) + " of " + rooms + " room(s) sold at rates of " + f.Rate[0] + " and " + f.Rate[1] + " against going rates of "
-                             + f.Going[0] + " and " + f.Going[1] + " (season " + c.Season + ", weekday " + c.Weekday + ", event " + c.Event + ", cycle " + c.Cycle + "), takings " + n.Takings + ", costs " + n.Costs + ", lease "
-                             + n.Lease + ", clean " + f.Clean + ", rating " + f.Rating + ": " + (n.Sold0 + n.Sold1 <= rooms && n.Takings >= 0 ? "PASS" : "FAIL"));
+                Logger?.Info("Estate check (hotel night " + night + ", " + f.Name + "): " + (n.Sold0 + n.Sold1) + " of " + rooms + " room(s) sold at rates of " + f.Rate[0] + " and " + f.Rate[1]
+                             + " against going rates of " + f.Going[0] + " and " + f.Going[1] + " (season " + c.Season + ", weekday " + c.Weekday + ", event " + c.Event + ", cycle " + c.Cycle
+                             + "), takings " + n.Takings + ", costs " + n.Costs + ", lease " + n.Lease + ", clean " + f.Clean + ", rating " + f.Rating + ": "
+                             + (n.Sold0 + n.Sold1 <= rooms && n.Takings >= 0 ? "PASS" : "FAIL"));
             }
         }
 
@@ -107,19 +103,25 @@ namespace RealLifeOverhaul.Economy
             int price = EstateGame.HotelPrice(slot, _state.Real, _climate.DaysPerYear);
             int pay = leased ? HotelRules.LeaseDeposit(tier, price, _climate.DaysPerYear) : price;
             string name = EstateGame.HotelName(slot);
-            if (!Cost(pay, EstateGame.HotelBuyKey, name, null, leased ? "the deposit on a lease of a hotel asked " + price + " for" : "a hotel bought as a going concern", false, false))
+            string how = leased ? "the deposit on a lease of a hotel asked " + price + " for" : "a hotel bought as a going concern";
+            if (!Cost(pay, EstateGame.HotelBuyKey, name, null, how, false, false))
             {
                 Notifications.ShowInsufficientMoney();
                 return;
             }
-            var f = new HotelFile { Slot = slotId, Leased = leased, Paid = pay, Day = day, LeaseDaily = leased ? HotelRules.LeaseDaily(tier, price, _climate.DaysPerYear) : 0, InspectDay = day + EstateCatalogue.InspectionEvery };
+            var f = new HotelFile
+            {
+                Slot = slotId, Leased = leased, Paid = pay, Day = day, LeaseDaily = leased ? HotelRules.LeaseDaily(tier, price, _climate.DaysPerYear) : 0,
+                InspectDay = day + EstateCatalogue.InspectionEvery
+            };
             _state.Hotels.Add(f);
             EstateGame.ReadHotel(f, day);
-            Tell(NotificationType.Success, leased ? "reallife_estate_note_hotel_leased" : "reallife_estate_note_hotel_bought", Data("hotel", name, "amount", EstateText.Money(pay)), TabHotel, "hot:" + slotId);
+            Tell(NotificationType.Success, leased ? "reallife_estate_note_hotel_leased" : "reallife_estate_note_hotel_bought", Data("hotel", name, "amount", EstateText.Money(pay)), TabHotel,
+                "hot:" + slotId);
             Changed();
         }
 
-        /// <summary>A hotel is sold back for a little under what it is asked for now, or a lease is ended and its deposit comes back.</summary>
+        /// <summary>A hotel is sold back for a little under its price now, or a lease ends and its deposit comes back.</summary>
         public void GiveUpHotel(string slotId)
         {
             HotelFile f = On(EstatePart.Hotel) && Save != null ? _state.Hotel(slotId) : null;
@@ -204,17 +206,15 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (f.InspectDay > 0 && f.InspectDay - day <= 3 && f.Clean < EstateCatalogue.InspectionPass)
                 {
-                    Alert(11, id, Math.Max(day, f.InspectDay), EstateText.T("reallife_estate_plan_inspection_title", "hotel", f.Name), EstateText.T("reallife_estate_plan_inspection_what"), null, null);
+                    Alert(11, id, Math.Max(day, f.InspectDay), EstateText.T("reallife_estate_plan_inspection_title", "hotel", f.Name), EstateText.T("reallife_estate_plan_inspection_what"),
+                        null, null);
                 }
             }
         }
 
-        // ---------------------------------------------------------------- car hire
-
         private string _damageNext;   // a test tool has asked that this car comes back damaged
 
-        // Once when the hire part is on at a start: a car that is out and has an object in the city again (a save was
-        // loaded: the game makes every vehicle on its list) is taken out again; one the save no longer has is dropped.
+        // When the hire part comes on: a car out that a load made again goes again; one the save no longer has is dropped.
         private void HireReconcile()
         {
             HireFile hire = _state.Hire;
@@ -235,13 +235,13 @@ namespace RealLifeOverhaul.Economy
             }
             if (Verbose || hidden > 0 || dropped > 0)
             {
-                Logger?.Info("Estate check (hire cars at a start): " + hire.Cars.Count + " on the books, " + hire.Count(HireState.Out) + " out, " + hidden + " taken out of the city again after a load, " + dropped
-                             + " no longer the player's and dropped: PASS");
+                Logger?.Info("Estate check (hire cars at a start): " + hire.Cars.Count + " on the books, " + hire.Count(HireState.Out) + " out, " + hidden
+                             + " taken out of the city again after a load, " + dropped + " no longer the player's and dropped: PASS");
             }
         }
 
-        // The hire part stops: every car that is out is called back. It is in the city again at once where its space is
-        // clear, and on the hour when it is not. Nothing is charged for a hire cut short, and its deposit goes back.
+        // The hire part stops: every car out is called back, at once where its space is clear and on the hour when it is
+        // not. Nothing is charged for a hire cut short, and its deposit goes back.
         private void RecallCars(string why)
         {
             HireFile hire = _state != null ? _state.Hire : null;
@@ -272,7 +272,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (back > 0 || waiting > 0)
             {
-                Logger?.Info("Estate check (hire cars called back, " + why + "): " + back + " in the city again, " + waiting + " waiting for a clear space (each is on the save's list of vehicles all the while): PASS");
+                Logger?.Info("Estate check (hire cars called back, " + why + "): " + back + " in the city again, " + waiting
+                             + " waiting for a clear space (each is on the save's list of vehicles all the while): PASS");
             }
         }
 
@@ -341,13 +342,12 @@ namespace RealLifeOverhaul.Economy
             if (Verbose && hire.Cars.Count > 0)
             {
                 int outNow = hire.Count(HireState.Out);
-                Logger?.Info("Estate check (hire, day " + day + "): " + outNow + " of " + hire.Cars.Count + " car(s) out (" + out0 + " this morning), " + hire.Spaces + " space(s) at the lot, rating " + hire.Rating + ": "
-                             + (outNow <= hire.Cars.Count ? "PASS" : "FAIL"));
+                Logger?.Info("Estate check (hire, day " + day + "): " + outNow + " of " + hire.Cars.Count + " car(s) out (" + out0 + " this morning), " + hire.Spaces + " space(s) at the lot, rating "
+                             + hire.Rating + ": " + (outNow <= hire.Cars.Count ? "PASS" : "FAIL"));
             }
         }
 
-        // A hire has been agreed by the rules: the car leaves if it can. If it cannot (somebody is standing by it, it has
-        // been moved or driven), the customer goes elsewhere and nothing is charged.
+        // A hire agreed by the rules: the car leaves if it can; if not, the customer goes elsewhere and nothing is charged.
         private bool GoOut(HireCar car, int day, bool force)
         {
             HireFile hire = _state.Hire;
@@ -362,14 +362,14 @@ namespace RealLifeOverhaul.Economy
             hire.Rating = HireRules.Rated(hire.Rating, EstateGame.GoodOrder(car.Id, day));
             if (Verbose)
             {
-                Logger?.Info("Estate check (a hire begins, " + name + "): out for " + car.HireDays + " day(s) at " + car.HireRate + " a day against a going rate of " + HireRules.Going(car.Price, _climate.Index)
-                             + ", deposit " + car.Deposit + "; its object is out of the city and its entry is on the save's list: " + (EstateGame.IsOut(car) ? "PASS" : "FAIL"));
+                Logger?.Info("Estate check (a hire begins, " + name + "): out for " + car.HireDays + " day(s) at " + car.HireRate + " a day against a going rate of "
+                             + HireRules.Going(car.Price, _climate.Index) + ", deposit " + car.Deposit + "; its object is out of the city and its entry is on the save's list: "
+                             + (EstateGame.IsOut(car) ? "PASS" : "FAIL"));
             }
             return true;
         }
 
-        // A car is due back: the hire is settled and the car is in the city again, or (its space taken, the player standing
-        // there) it waits for the next hour. Rarely it does not come back at all.
+        // A car is due back: settled and in the city again, or waiting for the next hour; rarely it never comes back.
         private void Due(HireCar car, int day, bool force)
         {
             HireFile hire = _state.Hire;
@@ -391,9 +391,10 @@ namespace RealLifeOverhaul.Economy
                 hire.TakingsYear += r.Rent;
                 EstateGame.Lose(car);
                 hire.Cars.Remove(car);
-                Tell(NotificationType.Error, r.Payout > 0 ? "reallife_estate_note_car_stolen_covered" : "reallife_estate_note_car_stolen", Data("car", name, "amount", EstateText.Money(r.Payout), "kept", EstateText.Money(r.Kept)),
-                    TabHire, null);
-                Logger?.Info("Estate: a hire car (" + name + ", id " + car.Id + ") was not brought back; it is off the save's list of vehicles by the game's own removal, cover paid " + r.Payout + ".");
+                Tell(NotificationType.Error, r.Payout > 0 ? "reallife_estate_note_car_stolen_covered" : "reallife_estate_note_car_stolen",
+                    Data("car", name, "amount", EstateText.Money(r.Payout), "kept", EstateText.Money(r.Kept)), TabHire, null);
+                Logger?.Info("Estate: a hire car (" + name + ", id " + car.Id + ") was not brought back; it is off the save's list of vehicles by the game's own removal, cover paid "
+                             + r.Payout + ".");
                 return;
             }
             if (!EstateGame.BringBack(car, r, day, force))
@@ -403,7 +404,8 @@ namespace RealLifeOverhaul.Economy
             }
             _damageNext = _damageNext == car.Id ? null : _damageNext;
             Pay(r.Rent, EstateGame.HireRentKey, name, null, r.Days + " day(s) of hire" + (r.Late ? ", the last one late" : string.Empty));
-            Cost(car.Deposit - r.Kept, EstateGame.HireDepositKey, name, null, "the deposit goes back" + (r.Kept > 0 ? ", less " + r.Kept + " kept against damage" : string.Empty), true, false);
+            Cost(car.Deposit - r.Kept, EstateGame.HireDepositKey, name, null, "the deposit goes back" + (r.Kept > 0 ? ", less " + r.Kept + " kept against damage" : string.Empty),
+                true, false);
             Cost(r.Cleaning, EstateGame.HireCostsKey, name, null, "cleaning after a hire", true);
             Pay(r.Payout, EstateGame.HireClaimKey, name, null, "fleet cover for damage of " + r.Repair + " over the deposit");
             hire.TakingsYear += r.Rent;
@@ -411,7 +413,8 @@ namespace RealLifeOverhaul.Economy
             HireRules.Settle(car, r);
             if (r.Damage > 0)
             {
-                Tell(NotificationType.Warning, "reallife_estate_note_car_damaged", Data("car", name, "amount", EstateText.Money(r.Repair), "kept", EstateText.Money(r.Kept + r.Payout)), TabHire, "car:" + car.Id);
+                Tell(NotificationType.Warning, "reallife_estate_note_car_damaged", Data("car", name, "amount", EstateText.Money(r.Repair), "kept", EstateText.Money(r.Kept + r.Payout)),
+                    TabHire, "car:" + car.Id);
             }
             else if (r.Late)
             {
@@ -419,12 +422,13 @@ namespace RealLifeOverhaul.Economy
             }
             if (Verbose)
             {
-                Logger?.Info("Estate check (a hire ends, " + name + "): " + r.Days + " day(s), " + r.Km + " km, fuel at " + r.Fuel / 10 + "% of a tank at most, damage " + r.Damage / 10 + "% (repair reckoned at " + r.Repair
-                             + ", " + r.Kept + " of the deposit kept, cover paid " + r.Payout + "), rent " + r.Rent + ", cleaning " + r.Cleaning + "; it stands where it stood: " + (!EstateGame.IsOut(car) ? "PASS" : "FAIL"));
+                Logger?.Info("Estate check (a hire ends, " + name + "): " + r.Days + " day(s), " + r.Km + " km, fuel at " + r.Fuel / 10 + "% of a tank at most, damage " + r.Damage / 10
+                             + "% (repair reckoned at " + r.Repair + ", " + r.Kept + " of the deposit kept, cover paid " + r.Payout + "), rent " + r.Rent + ", cleaning " + r.Cleaning
+                             + "; it stands where it stood: " + (!EstateGame.IsOut(car) ? "PASS" : "FAIL"));
             }
         }
 
-        // On the hour: a car that is out is kept legally parked on paper, and one that waits for its space tries again.
+        // On the hour: a car out is kept legally parked on paper, and one that waits for its space tries again.
         private void HireHour(int day)
         {
             HireFile hire = _state.Hire;
@@ -525,7 +529,8 @@ namespace RealLifeOverhaul.Economy
                 HireCar car = hire.Cars[i];
                 if (car.State == (int)HireState.Waiting)
                 {
-                    Alert(12, EstateRules.Hash(car.Id), day, EstateText.T("reallife_estate_plan_car_title", "car", EstateGame.CarName(car.Type)), EstateText.T("reallife_estate_plan_car_what"), null, null);
+                    Alert(12, EstateRules.Hash(car.Id), day, EstateText.T("reallife_estate_plan_car_title", "car", EstateGame.CarName(car.Type)), EstateText.T("reallife_estate_plan_car_what"),
+                        null, null);
                 }
             }
         }
