@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using RealLifeOverhaul.Texts;
@@ -1075,6 +1076,7 @@ namespace RealLifeOverhaul.Flare
 
         private readonly HashSet<T> _waiting = new HashSet<T>();
         private readonly Dictionary<T, int> _asks = new Dictionary<T, int>();
+        private readonly List<T> _gone = new List<T>();
 
         /// <summary>True if the item may be asked now: not waiting, not worded, and asked fewer than <see cref="Most"/> times.</summary>
         public bool May(T item)
@@ -1103,6 +1105,27 @@ namespace RealLifeOverhaul.Flare
         {
             _waiting.Clear();
             _asks.Clear();
+        }
+
+        /// <summary>The items that are gone (a post pruned from the feed) let go, so the record of asks lasts no longer than the items. Returns how many went.</summary>
+        public int Prune(Predicate<T> keep)
+        {
+            _gone.Clear();
+            foreach (T item in _asks.Keys)
+            {
+                if (!keep(item))
+                {
+                    _gone.Add(item);
+                }
+            }
+            for (int i = 0; i < _gone.Count; i++)
+            {
+                _asks.Remove(_gone[i]);
+                _waiting.Remove(_gone[i]);
+            }
+            int gone = _gone.Count;
+            _gone.Clear();
+            return gone;
         }
     }
 }

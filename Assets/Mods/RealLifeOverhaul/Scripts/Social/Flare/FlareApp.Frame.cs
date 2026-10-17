@@ -327,5 +327,6 @@ namespace RealLifeOverhaul.Flare
 
         // The heights of the rows measured so far, by what they show, so that a screen written again keeps its place.
         private readonly Dictionary<long, float> _heights = new Dictionary<long, float>(256);
+        private const int HeightsMost = 1024;   // rows' heights kept: posts come and go all session, and past this the old ones are measured again when seen
     }
 }
