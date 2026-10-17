@@ -258,6 +258,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Cost(car.Deposit, EstateGame.HireDepositKey, EstateGame.CarName(car.Type), null, "a hire cut short: the deposit goes back", true, false);
                     car.HireDays = car.HireRate = car.Deposit = car.HireSeed = 0;
+                    car.HireRating = -1;
                     car.State = (int)HireState.Waiting;
                     car.Day = Save.Day;
                 }
@@ -362,6 +363,7 @@ namespace RealLifeOverhaul.Economy
             {
                 car.State = (int)HireState.Idle;
                 car.HireDays = car.HireRate = car.Deposit = car.HireSeed = car.Day = 0;
+                car.HireRating = -1;
                 return false;
             }
             string name = EstateGame.CarName(car.Type);
