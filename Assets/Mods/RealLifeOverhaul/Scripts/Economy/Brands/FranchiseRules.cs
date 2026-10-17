@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>What one day did at a franchised shop: the money that moves, and what the franchisee now asks, if anything.</summary>
+    /// <summary>What one day did at a franchised shop: the money that moves, and what the franchisee now asks.</summary>
     public struct FranchiseDay
     {
         public int Takings, Customers;
@@ -12,27 +12,20 @@ namespace RealLifeOverhaul.Economy.Brands
     }
 
     /// <summary>
-    /// Franchising by rule: who applies, which terms they take, what a franchised shop takes in a day and what of it
-    /// is the brand's, how a franchisee's standards and cash move, what they ask, and every way an agreement ends;
-    /// and the other direction, a shop of the player's under one of the city's chains. Game-free and whole numbers
-    /// only: every chance is <see cref="BrandCatalogue.Dice"/> of the save's seed, so the same days replay the same.
-    /// See <see cref="BrandRules"/> for the balance worked through.
-    ///
-    /// COST: nothing per frame and nothing allocated but an applicant when one comes. A franchised shop's day is about
-    /// forty integer operations and one walk over its brand's shops; sixty of them with three brands' days take
-    /// under 0.2 ms (checked offline).
+    /// Franchising by rule: applicants and the terms they take, a franchised shop's day, the franchisee's standards
+    /// and cash, what they ask and how an agreement ends; and a shop of the player's under a city chain. Game-free:
+    /// every chance is <see cref="BrandCatalogue.Dice"/> of the save's seed, so the same days replay the same. A shop's
+    /// day is about forty integer operations and allocates nothing.
     /// </summary>
     public static class FranchiseRules
     {
-        // ---------------------------------------------------------------- applicants
-
-        /// <summary>Whether somebody applies to a brand today: 6% a day for a brand on offer, and 0.2% more for each point of city-wide recognition.</summary>
+        /// <summary>Whether somebody applies to a brand on offer today, more likely the better known it is city-wide.</summary>
         public static bool Arrives(int seed, Brand b, int day)
         {
             return b.Offered && BrandCatalogue.Dice(seed, b.Id * 31 + 7, day) < BrandCatalogue.ArriveBase + BrandCatalogue.ArrivePerPoint * (b.City / 100);
         }
 
-        /// <summary>An applicant, wholly from the save's seed and their number: the same on every machine. They want one of the districts given.</summary>
+        /// <summary>An applicant, wholly from the save's seed and their number, wanting one of the districts given.</summary>
         public static Applicant Generate(int seed, int id, int brandId, int day, IList<string> districts)
         {
             var a = new Applicant { Id = id, BrandId = brandId, Until = day + BrandCatalogue.ApplicantDays };
@@ -43,7 +36,8 @@ namespace RealLifeOverhaul.Economy.Brands
             a.Experience = BrandCatalogue.Dice(seed, id, 3) * (BrandCatalogue.ExperienceMost + 1) / 1000;
             a.ShopsRun = Math.Min(5, a.Experience / 3 + BrandCatalogue.Dice(seed, id, 4) % 2);
             a.ShopsClosed = Math.Min(a.ShopsRun, BrandCatalogue.Dice(seed, id, 5) % (a.Temper == Temper.CornerCutting ? 3 : 2));
-            a.Ability = BrandCatalogue.Clamp(BrandCatalogue.AbilityBase[t] + a.Experience * BrandCatalogue.AbilityPerYear - a.ShopsClosed * 6 + BrandCatalogue.Dice(seed, id, 6) % 11 - 5, 5, 100);
+            a.Ability = BrandCatalogue.Clamp(BrandCatalogue.AbilityBase[t] + a.Experience * BrandCatalogue.AbilityPerYear - a.ShopsClosed * 6 + BrandCatalogue.Dice(seed, id, 6) % 11 - 5,
+                5, 100);
             a.District = districts != null && districts.Count > 0 ? districts[BrandCatalogue.Dice(seed, id, 7) % districts.Count] ?? string.Empty : string.Empty;
             a.Name = BrandCatalogue.NameFirst[BrandCatalogue.Dice(seed, id, 8) % BrandCatalogue.NameFirst.Length] + " "
                      + BrandCatalogue.NameSecond[BrandCatalogue.Dice(seed, id, 9) % BrandCatalogue.NameSecond.Length] + " "
@@ -51,7 +45,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return a;
         }
 
-        /// <summary>Applicants who have waited their ten days go. Returns how many.</summary>
+        /// <summary>Applicants past their last day go. Returns how many.</summary>
         public static int Lapse(BrandsState s, int day)
         {
             int gone = 0;
@@ -66,14 +60,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return gone;
         }
 
-        // ---------------------------------------------------------------- terms
-
         public static int Tier(int tier)
         {
             return BrandCatalogue.Clamp(tier, 0, BrandCatalogue.Tiers - 1);
         }
 
-        /// <summary>The entry fee of a tier at today's prices; half of it for a franchisee's second shop.</summary>
+        /// <summary>The entry fee of a tier at today's prices; less for a franchisee's second shop.</summary>
         public static int EntryFee(Applicant a, int tier, int index)
         {
             int fee = CompanyCatalogue.AtPrices(BrandCatalogue.EntryFee[Tier(tier)], index);
@@ -85,19 +77,23 @@ namespace RealLifeOverhaul.Economy.Brands
             return CompanyCatalogue.AtPrices(BrandCatalogue.FitOut, index);
         }
 
-        /// <summary>How heavy terms are to an applicant: two for each step of the entry fee and of the royalty, one for each step of the levy, two off for a district of their own.</summary>
+        /// <summary>How heavy terms are to an applicant: two a step of the fee and of the royalty, one a step of the levy, less for a district of their own.</summary>
         public static int Burden(int feeTier, int royaltyTier, int levyTier, bool exclusive)
         {
             return Math.Max(0, Tier(feeTier) * 2 + Tier(royaltyTier) * 2 + Tier(levyTier) - (exclusive ? BrandCatalogue.ExclusiveRelief : 0));
         }
 
-        /// <summary>What an applicant will bear: three, one more for each 25 points of recognition where they want to trade, and one more for the ambitious and the corner-cutter.</summary>
+        /// <summary>What an applicant will bear: more the better known the brand is where they want to trade, and more for the bolder tempers.</summary>
         public static int Bears(Temper temper, int rec)
         {
-            return BrandCatalogue.BearBase + BrandCatalogue.Clamp(rec, 0, BrandCatalogue.RecMost) / BrandCatalogue.BearPerRec + BrandCatalogue.BearTemper[BrandCatalogue.Clamp((int)temper, 0, 2)];
+            return BrandCatalogue.BearBase + BrandCatalogue.Clamp(rec, 0, BrandCatalogue.RecMost) / BrandCatalogue.BearPerRec
+                   + BrandCatalogue.BearTemper[BrandCatalogue.Clamp((int)temper, 0, 2)];
         }
 
-        /// <summary>True if the district is taken: another franchisee holds it alone, or these terms ask for it alone while another already trades there. A franchisee's own shops do not shut them out.</summary>
+        /// <summary>
+        /// True if the district is taken: another franchisee holds it alone, or these terms ask for it alone while
+        /// another already trades there. A franchisee's own shops do not shut them out.
+        /// </summary>
         public static bool TerritoryTaken(BrandsState s, Brand b, Applicant a, bool exclusive)
         {
             Franchise own = a.From != 0 ? s.Franchise(a.From) : null;
@@ -116,7 +112,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return false;
         }
 
-        /// <summary>The applicant's answer to terms: none of the four refusals, or why not.</summary>
+        /// <summary>The applicant's answer to terms.</summary>
         public static Refusal Answer(BrandsState s, Brand b, Applicant a, int feeTier, int royaltyTier, int levyTier, bool exclusive, int index)
         {
             if (s.Franchises.Count >= BrandCatalogue.FranchisesMost)
@@ -135,10 +131,9 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// The agreement is signed: the applicant becomes a franchisee with what is left of their capital after the
-        /// entry fee and the fit-out, standards where their temperament and ability put them, and a first inspection
-        /// counted from today. The shop itself (its place, its hold, its customers) is filled in by whoever found the
-        /// building. A second shop takes its capital out of the first one's cash.
+        /// The agreement is signed: the applicant becomes a franchisee with their capital less the entry fee and the
+        /// fit-out. The shop itself (its place, hold and customers) is filled in by the caller. A second shop takes its
+        /// capital out of the first one's cash.
         /// </summary>
         public static Franchise Sign(BrandsState s, Brand b, Applicant a, int feeTier, int royaltyTier, int levyTier, bool exclusive, int lengthTier, int index, int day, int yearDays)
         {
@@ -162,20 +157,16 @@ namespace RealLifeOverhaul.Economy.Brands
             return f;
         }
 
-        // ---------------------------------------------------------------- a day's takings
-
-        /// <summary>An ordinary day's takings at a shop: the customers the game's own formula gives the building and the type, at what a customer spends at the brand's member shops.</summary>
+        /// <summary>An ordinary day's takings at a shop: the game's customers for it, at what a customer spends at the brand's member shops.</summary>
         public static int Ordinary(int customers, int ticket)
         {
             return (int)Math.Min(int.MaxValue / 8, ((long)Math.Max(0, customers) * Math.Max(0, ticket) + 50) / 100);
         }
 
         /// <summary>
-        /// What a franchised shop takes in a day: an ordinary day's takings by the franchisee's ability (0.60 to 1.10),
-        /// the brand's recognition there (0.85 to 1.15), the district's income (1.00 at 100), the economy (1.05 in a
-        /// boom to 0.88 in a recession), its own standards (0.90 to 1.10), the brand's other shops in the district (6%
-        /// off for each, 30% at most) and the day (8% either way, the same for the same shop and day). Never falls when
-        /// any one of the first seven rises, and never rises with more shops beside it.
+        /// What a franchised shop takes in a day: an ordinary day's takings by the franchisee's ability, the brand's
+        /// recognition there, the district's income, the economy, its standards, the brand's other shops beside it and
+        /// the day's luck. Never falls when any of the first seven rises, never rises with more shops beside it.
         /// </summary>
         public static int Takings(int customers, int ticket, int rec, int income, CycleState cycle, int ability, int standards, int others, int seed, int day)
         {
@@ -190,19 +181,19 @@ namespace RealLifeOverhaul.Economy.Brands
             return (int)Math.Min(t, int.MaxValue / 8);
         }
 
-        /// <summary>A share of takings in ten-thousandths, to the nearest whole unit (a half goes up).</summary>
+        /// <summary>A share of takings in ten-thousandths, to the nearest whole unit.</summary>
         public static int Royalty(int takings, int bp)
         {
             return BrandCatalogue.Bp(Math.Max(0, takings), Math.Max(0, bp));
         }
 
-        /// <summary>What supporting one franchised shop costs the brand in a day: 40 at today's prices and 1% of its takings.</summary>
+        /// <summary>What supporting one franchised shop costs the brand in a day, at today's prices.</summary>
         public static int Support(int takings, int index)
         {
             return CompanyCatalogue.AtPrices(BrandCatalogue.SupportBase, index) + BrandCatalogue.Bp(Math.Max(0, takings), BrandCatalogue.SupportBp);
         }
 
-        /// <summary>Where a franchisee's standards head, points: their temperament's level, a point for each five of ability over 50, lifted while a warning or a retraining lasts, lower while they are short of cash.</summary>
+        /// <summary>Where a franchisee's standards head, points: by temperament and ability, lifted by a warning or retraining, lower while short of cash.</summary>
         public static int Target(Franchise f, int day)
         {
             return BrandCatalogue.Clamp(BrandCatalogue.StandardsTarget[BrandCatalogue.Clamp((int)f.Temper, 0, 2)] + (f.Ability - 50) / BrandCatalogue.AbilityPull
@@ -210,20 +201,20 @@ namespace RealLifeOverhaul.Economy.Brands
                                         - (f.Trouble ? BrandCatalogue.TroubleDrop : 0), 0, 100);
         }
 
-        /// <summary>True while the franchisee has something to complain of: the top royalty, a warning on file, or levy collected and left unspent.</summary>
+        /// <summary>True while the franchisee has something to complain of: the top royalty, a warning on file, or levy left unspent.</summary>
         public static bool Grievance(Brand b, Franchise f, int index)
         {
             return f.RoyaltyBp >= BrandCatalogue.RoyaltyBp[BrandCatalogue.Tiers - 1] || f.Warnings > 0 || b.Fund > CompanyCatalogue.AtPrices(BrandCatalogue.FundIdleMost, index);
         }
 
-        /// <summary>What a franchisee claims back in a dispute: thirty ordinary days of royalty and levy.</summary>
+        /// <summary>What a franchisee claims back in a dispute: some ordinary days of royalty and levy.</summary>
         public static int DisputeClaim(Brand b, Franchise f)
         {
             int ordinary = Ordinary(f.Base, b.Ticket);
             return (Royalty(ordinary, f.RoyaltyBp) + Royalty(ordinary, f.LevyBp)) * BrandCatalogue.DisputeDays;
         }
 
-        /// <summary>What a franchisee bids for the brand: 120 days of what the franchises bring in after support, and 400 at today's prices for each point of city-wide recognition.</summary>
+        /// <summary>What a franchisee bids for the brand: days of what the franchises bring in after support, and a sum for each point of city-wide recognition.</summary>
         public static int BidPrice(Brand b, int index)
         {
             long price = (long)Math.Max(0, b.Net) * BrandCatalogue.BidDays + (long)CompanyCatalogue.AtPrices(BrandCatalogue.BidPerPoint, index) * (b.City / 100);
@@ -231,12 +222,9 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// One day at a franchised shop. Its takings by <see cref="Takings"/>; the royalty and the levy on them (none
-        /// while they are waived) and what its support costs; the franchisee's own cash (22% of takings is theirs
-        /// before the brand's share and the fixed costs of an ordinary day); their standards a tenth of the way to
-        /// where they head; and then at most one event: it closes, the agreement runs out, or the franchisee asks for
-        /// something. An ask that was not answered in time is dropped first. Nothing here moves the player's money:
-        /// the caller books what is returned.
+        /// One day at a franchised shop: its takings, the royalty and levy on them (none while waived) and its support;
+        /// the franchisee's cash and standards; then at most one event: it closes, the agreement runs out, or the
+        /// franchisee asks for something. An ask not answered in time is dropped first. The caller books the money.
         /// </summary>
         public static FranchiseDay Day(BrandsState s, Brand b, Franchise f, int day, int income, CycleState cycle, int index)
         {
@@ -273,7 +261,7 @@ namespace RealLifeOverhaul.Economy.Brands
             bool renewal = f.Until - day <= BrandCatalogue.RenewalNotice && !f.NoRenewal;
             if (f.Ask != Ask.None)
             {
-                // (a dispute before the court waits for the court; anything else gives way to the renewal when its time comes)
+                // A dispute before the court waits for the court; anything else gives way to the renewal when its time comes.
                 if (f.Suit != 0 || f.Ask == Ask.Renewal || (day <= f.AskUntil && !renewal))
                 {
                     return r;
@@ -334,7 +322,7 @@ namespace RealLifeOverhaul.Economy.Brands
             f.AskAmount = Math.Max(0, amount);
         }
 
-        /// <summary>An ask is over, answered or not: nothing of its kind comes again for thirty days, and a bid of this franchisee's is withdrawn.</summary>
+        /// <summary>An ask is over, answered or not: nothing of its kind comes again for a while, and a bid of this franchisee's is withdrawn.</summary>
         public static void Drop(Brand b, Franchise f, int day)
         {
             if (f.Ask == Ask.BuyBrand && b != null && b.BidBy == f.Id)
@@ -357,9 +345,7 @@ namespace RealLifeOverhaul.Economy.Brands
             b.Net = sum >= 0 ? (sum + 3) / 7 : -((-sum + 3) / 7);
         }
 
-        // ---------------------------------------------------------------- keeping a franchisee to the standards
-
-        /// <summary>An inspection: what the shop's standards are today is now known.</summary>
+        /// <summary>An inspection: the shop's standards today become known.</summary>
         public static int Inspect(Franchise f, int day)
         {
             f.Seen = f.StandardsNow;
@@ -372,7 +358,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return day - f.SeenDay >= BrandCatalogue.InspectDueDays;
         }
 
-        /// <summary>True while an inspection of the last ten days found the shop under the brand's required minimum. A brand with no minimum has nothing to hold anybody to.</summary>
+        /// <summary>True while a fresh inspection found the shop under the brand's minimum. A brand with no minimum holds nobody to anything.</summary>
         public static bool Evidence(Brand b, Franchise f, int day)
         {
             return b.Minimum > 0 && f.Seen >= 0 && day - f.SeenDay <= BrandCatalogue.FreshDays && f.Seen < b.Minimum;
@@ -383,7 +369,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return Evidence(b, f, day) && day >= f.WarnedUntil;
         }
 
-        /// <summary>A written warning: the standards head ten points higher for twenty days, and it is on file.</summary>
+        /// <summary>A written warning: the standards head higher for a while, and it is on file.</summary>
         public static void Warn(Franchise f, int day)
         {
             f.Warnings++;
@@ -400,7 +386,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return CompanyCatalogue.AtPrices(BrandCatalogue.InspectorFee, index);
         }
 
-        /// <summary>Retraining, paid by the brand: fifteen points at once, eight more headed for over thirty days, and a little ability for good.</summary>
+        /// <summary>Retraining, paid by the brand: standards up at once and headed higher for a while, and a little ability for good.</summary>
         public static void Retrain(Franchise f, int day)
         {
             f.True = Math.Min(10000, f.True + BrandCatalogue.RetrainLift);
@@ -408,20 +394,20 @@ namespace RealLifeOverhaul.Economy.Brands
             f.Ability = Math.Min(100, f.Ability + 3);
         }
 
-        /// <summary>An agreement may be ended with cause after two warnings, on a fresh inspection that still finds the shop under the minimum.</summary>
+        /// <summary>An agreement may be ended with cause after enough warnings, on a fresh inspection still under the minimum.</summary>
         public static bool HasCause(Brand b, Franchise f, int day)
         {
             return f.Warnings >= BrandCatalogue.CauseWarnings && Evidence(b, f, day);
         }
 
-        /// <summary>What ending an agreement without cause costs: 5% of an ordinary day's takings for each day left, sixty days at most, and never less than half the entry fee.</summary>
+        /// <summary>What ending an agreement without cause costs: a share of an ordinary day's takings for each day left, capped, and never under a share of the entry fee.</summary>
         public static int Compensation(Brand b, Franchise f, int day)
         {
             int left = BrandCatalogue.Clamp(f.Until - day, 0, BrandCatalogue.CompensationDaysMost);
             return Math.Max(CompanyCatalogue.Share(f.EntryFee, BrandCatalogue.CompensationLeastShare), left * BrandCatalogue.Bp(Ordinary(f.Base, b.Ticket), BrandCatalogue.CompensationBp));
         }
 
-        /// <summary>The agreement is ended by the brand. Without cause the district and the city think less of it. Returns the recognition the district lost.</summary>
+        /// <summary>The brand ends the agreement; without cause the district and the city think less of it. Returns the recognition the district lost.</summary>
         public static int End(BrandsState s, Brand b, Franchise f, bool cause, int day)
         {
             Drop(b, f, day);
@@ -438,14 +424,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandRules.Lose(b, f.District, BrandCatalogue.FailureLoss, CompanyCatalogue.Share(BrandCatalogue.FailureLoss, BrandCatalogue.ScandalCityShare));
         }
 
-        /// <summary>The agreement has run out and was not renewed: the shop leaves the brand with no hard feelings.</summary>
+        /// <summary>The agreement ran out and was not renewed: the shop leaves the brand with no hard feelings.</summary>
         public static void Lapse(BrandsState s, Brand b, Franchise f, int day)
         {
             Drop(b, f, day);
             s.Franchises.Remove(f);
         }
-
-        // ---------------------------------------------------------------- answering what a franchisee asks
 
         /// <summary>Renewed for the same length again. The fee is the caller's to book.</summary>
         public static void Renew(Franchise f)
@@ -463,7 +447,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Drop(b, f, day);
         }
 
-        /// <summary>Or the royalty and the levy are waived for fourteen days.</summary>
+        /// <summary>The other answer to help: the royalty and the levy are waived for a while.</summary>
         public static void Waive(Brand b, Franchise f, int day)
         {
             f.WaivedUntil = day + BrandCatalogue.WaiveDays;
@@ -471,9 +455,9 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// A second shop is agreed in principle: the franchisee joins the applicants with half their cash as capital,
-        /// in their own district, to be given a building and terms like anybody else (at half the entry fee). Null if
-        /// four are waiting already: the ask then stands.
+        /// A second shop agreed in principle: the franchisee joins the applicants with half their cash as capital, in
+        /// their own district, to be given a building and terms like anybody else. Null if the applicants are full:
+        /// the ask then stands.
         /// </summary>
         public static Applicant Second(BrandsState s, Brand b, Franchise f, int day)
         {
@@ -519,15 +503,13 @@ namespace RealLifeOverhaul.Economy.Brands
             return gave;
         }
 
-        /// <summary>A dispute that was turned down, or that the court has dealt with: it is over, and the franchisee's heart is less in it (five points of standards).</summary>
+        /// <summary>A dispute turned down or dealt with by the court: it is over, and the franchisee's heart is less in it.</summary>
         public static void Stand(Brand b, Franchise f, int day)
         {
             f.Suit = 0;
-            f.True = Math.Max(0, f.True - 500);
+            f.True = Math.Max(0, f.True - 500);   // five points of standards
             Drop(b, f, day);
         }
-
-        // ---------------------------------------------------------------- the other direction: a shop under a city chain
 
         public static int Chain(int chain)
         {
@@ -545,7 +527,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandRules.RecFootfall(BrandCatalogue.ChainRec[Chain(chain)], 100);
         }
 
-        /// <summary>Outside what the chain asks: standards under its minimum, or prices (against the game's own market price, thousandths; 0 with none to judge by) outside its range.</summary>
+        /// <summary>Outside what the chain asks: standards under its minimum, or prices (thousandths of the market's; 0 for none to judge by) outside its range.</summary>
         public static bool ChainBreach(int chain, int standards, int prices)
         {
             chain = Chain(chain);
@@ -564,7 +546,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return t;
         }
 
-        /// <summary>The day's royalty on the shop's takings, and the week's average of it.</summary>
+        /// <summary>The day's royalty on the shop's takings, kept in the week's average.</summary>
         public static int ChainRoyalty(Taken t, int takings)
         {
             int royalty = Royalty(takings, BrandCatalogue.ChainRoyaltyBp[Chain(t.Chain)]);
@@ -574,9 +556,8 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// A day in or out of what the chain asks. Returns 0 for nothing, 1 on the day the chain writes (the third in
-        /// breach), 2 on the day it fines (the seventh) and 3 on the day it ends the agreement (the fourteenth). A day
-        /// back inside clears the count.
+        /// A day in or out of what the chain asks: 1 on the day the chain writes, 2 on the day it fines, 3 from the day it
+        /// ends the agreement, else 0. A day back inside clears the count.
         /// </summary>
         public static int ChainStep(Taken t, bool breach, int day, int yearDays)
         {
@@ -604,7 +585,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return Math.Max(CompanyCatalogue.AtPrices(BrandCatalogue.ChainFineLeast, index), t.Average * BrandCatalogue.ChainFineDaysOfRoyalty);
         }
 
-        /// <summary>What leaving costs: twenty ordinary days of royalty, and never less than half the fee at today's prices.</summary>
+        /// <summary>What leaving costs: days of royalty, and never less than a share of the fee at today's prices.</summary>
         public static int ChainExit(Taken t, int index)
         {
             return Math.Max(CompanyCatalogue.Share(ChainFee(t.Chain, index), BrandCatalogue.ChainExitLeastShare), t.Average * BrandCatalogue.ChainExitDays);

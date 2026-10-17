@@ -24,16 +24,9 @@ namespace RealLifeOverhaul.Economy.Brands
     ///   t  the player's shops under a city chain: place|chain|from|until|days in breach|average royalty|paid|prices kept|
     ///      told of a price put back
     ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads. A figure out of its bounds is put inside them, a record
-    /// that points at a brand that is not there is dropped, and a line that cannot be read is left alone and the
-    /// feature starts afresh. Nothing here is the game's: a save loads in the plain game with this line ignored.
-    ///
-    /// <see cref="TestKey"/> holds the same line as it was before the first test tool changed it, for as long as test
-    /// changes are in place.
-    ///
-    /// COST: one string built when the game saves and one line read when a save is loaded; nothing else.
+    /// A newer version adds fields at the end of a record, or parts with a new letter: this reader skips what it does
+    /// not know, so a later save still loads. A figure out of bounds is put inside them, a record that points at a
+    /// missing brand is dropped. <see cref="TestKey"/> holds the line as it was before the first test tool changed it.
     /// </summary>
     public static class BrandStore
     {
@@ -52,7 +45,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 return null;
             }
-            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is
         }
 
         public static string Write(BrandsState s)
@@ -112,8 +105,9 @@ namespace RealLifeOverhaul.Economy.Brands
                 t.Append('|').Append(Clean(f.Name)).Append('|');
                 Join(t, (int)f.Temper, f.Ability);
                 t.Append('|').Append(Clean(f.District)).Append('|').Append(Clean(f.Place)).Append('|').Append(Clean(f.GameName)).Append('|');
-                Join(t, (int)f.Hold, f.X, f.Z, f.HasSpot ? 1 : 0, f.Base, f.Signed, f.Until, f.Term, f.EntryFee, f.RoyaltyBp, f.LevyBp, f.Exclusive ? 1 : 0, f.True, f.Seen, f.SeenDay, f.Warnings,
-                    f.WarnedUntil, f.RetrainedUntil, f.Health, (int)f.Ask, f.AskUntil, f.AskAmount, f.AskRest, f.Suit, f.WaivedUntil, f.Takings, f.Royalty, f.Customers, f.Paid, f.NoRenewal ? 1 : 0, f.Born);
+                Join(t, (int)f.Hold, f.X, f.Z, f.HasSpot ? 1 : 0, f.Base, f.Signed, f.Until, f.Term, f.EntryFee, f.RoyaltyBp, f.LevyBp, f.Exclusive ? 1 : 0, f.True, f.Seen, f.SeenDay,
+                    f.Warnings, f.WarnedUntil, f.RetrainedUntil, f.Health, (int)f.Ask, f.AskUntil, f.AskAmount, f.AskRest, f.Suit, f.WaivedUntil, f.Takings, f.Royalty, f.Customers, f.Paid,
+                    f.NoRenewal ? 1 : 0, f.Born);
             }
             t.Append("^t:");
             for (int i = 0; i < s.Taken.Count && i < BrandCatalogue.TakenMost; i++)
@@ -247,7 +241,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     Brand b = s.Brands[i];
                     if (b.Bid > 0 && s.Franchise(b.BidBy) == null)
                     {
-                        b.Bid = b.BidBy = b.BidUntil = 0;   // (a bid whose bidder is not in the line)
+                        b.Bid = b.BidBy = b.BidUntil = 0;   // a bid whose bidder is not in the line
                     }
                     s.NextId = Math.Max(s.NextId, b.Id + 1);
                 }
@@ -298,7 +292,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 Id = id, BrandId = I(c, 1), Name = c[2], Temper = (Temper)BrandCatalogue.Clamp(I(c, 3), 0, 2), Ability = BrandCatalogue.Clamp(I(c, 4, 50), 0, 100), District = c[5], Place = c[6],
                 GameName = c[7], Hold = hold >= 0 && hold <= (int)Hold.Books ? (Hold)hold : Hold.Books, X = I(c, 9), Z = I(c, 10), HasSpot = I(c, 11) != 0, Base = Math.Max(0, I(c, 12)),
                 Signed = Math.Max(0, I(c, 13)), Until = Math.Max(0, I(c, 14)), Term = Math.Max(1, I(c, 15, 1)), EntryFee = Math.Max(0, I(c, 16)),
-                RoyaltyBp = BrandCatalogue.Clamp(I(c, 17), 0, BrandCatalogue.RoyaltyBp[BrandCatalogue.Tiers - 1]), LevyBp = BrandCatalogue.Clamp(I(c, 18), 0, BrandCatalogue.LevyBp[BrandCatalogue.Tiers - 1]),
+                RoyaltyBp = BrandCatalogue.Clamp(I(c, 17), 0, BrandCatalogue.RoyaltyBp[BrandCatalogue.Tiers - 1]),
+                LevyBp = BrandCatalogue.Clamp(I(c, 18), 0, BrandCatalogue.LevyBp[BrandCatalogue.Tiers - 1]),
                 Exclusive = I(c, 19) != 0, True = BrandCatalogue.Clamp(I(c, 20, 6000), 0, 10000), Seen = BrandCatalogue.Clamp(I(c, 21, -1), -1, 100), SeenDay = Math.Max(0, I(c, 22)),
                 Warnings = Math.Max(0, I(c, 23)), WarnedUntil = Math.Max(0, I(c, 24)), RetrainedUntil = Math.Max(0, I(c, 25)), Health = I(c, 26),
                 Ask = ask >= 0 && ask <= (int)Ask.BuyBrand ? (Ask)ask : Ask.None, AskUntil = Math.Max(0, I(c, 28)), AskAmount = Math.Max(0, I(c, 29)), AskRest = Math.Max(0, I(c, 30)),
@@ -326,7 +321,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
         }
 
-        /// <summary>A text with the three dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the line's three dividers taken out.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('^', ' ');

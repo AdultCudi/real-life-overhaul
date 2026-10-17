@@ -4,17 +4,9 @@ using Helpers;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A franchisee's civil claim against the brand's owner, filed with the courts from outside the justice system
-    /// (brands and franchises, through Wiring/BrandLinks, when a franchisee disputes the terms). It is one of
-    /// Justice's own civil suits and nothing else, exactly as a lender's claim for a debt is (Justice/DebtClaims.cs):
-    /// listed in the Legal file with the others, answered there (settled or contested) or left unanswered, judged by
-    /// Justice on the day after its date, and what is then owed is one of Justice's civil debts, collected as Justice
-    /// collects every debt. This file adds the three things brands need and Justice had no entry for: file one for a
-    /// stated amount with a text that says who claims and why, ask whether it is still before the court, and
-    /// withdraw it (the dispute was settled by giving way, or the agreement was ended for compensation).
-    ///
-    /// Nothing here runs on a timer. A claim is only taken while the justice system is on, has read the save and is
-    /// working; otherwise <see cref="File"/> returns 0 and the dispute is answered in the Brands app alone.
+    /// A franchisee's civil claim against the brand's owner (through Wiring/BrandLinks): one of Justice's own civil
+    /// suits, as a lender's claim is (Justice/DebtClaims), filed, asked after and withdrawn here. While Justice is not
+    /// working, <see cref="File"/> returns 0 and the dispute is answered in the Brands app alone. Nothing on a timer.
     /// </summary>
     public static class BrandClaims
     {
@@ -37,7 +29,8 @@ namespace RealLifeOverhaul
             {
                 { "amount", JusticeText.Money(amount) }, { "day", JusticeText.N(today + DebtClaims.AnswerDays) }
             });
-            JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for " + amount + " filed by a franchisee who disputes the terms, answer by day " + (today + DebtClaims.AnswerDays) + ".");
+            JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for " + amount + " filed by a franchisee who disputes the terms, answer by day "
+                                         + (today + DebtClaims.AnswerDays) + ".");
             return number;
         }
 
