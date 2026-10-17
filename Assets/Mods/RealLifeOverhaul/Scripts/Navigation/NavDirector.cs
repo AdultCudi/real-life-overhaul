@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Nav
         private Action<bool> _onMap, _mapSeen;
         private bool _mapOpen;
 
-        private const int PictureWaitMost = 1500;   // milliseconds the late prewarm waits for a picture's thread (some 100 to 130 ms on the owner's machine)
+        private const int PictureWaitMost = 1500;   // milliseconds the late prewarm waits for a picture's thread (it takes some 100 to 130 ms)
 
         private void Awake()
         {

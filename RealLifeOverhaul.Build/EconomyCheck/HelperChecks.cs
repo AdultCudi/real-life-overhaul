@@ -4,7 +4,7 @@ using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Markets;
 
-// Ten small helpers of 14 Oct 2026, each built on a rule that was already there: the recruitment office's last day
+// Ten small helpers, each built on a rule that was already there: the recruitment office's last day
 // (Careers/Work/ProRules.AgencyEnds), and the others added below as they come. For each: that it comes once, when it
 // may and may not, the save's field and an old save without it, and its texts in every language (at most 240
 // characters in English for a notification, and no dash or exclamation mark).

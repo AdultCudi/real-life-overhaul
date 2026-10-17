@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The Flare app: a social network's own look inside the game's phone (the owner's one exception to the native rule).
+    /// The Flare app: a social network's own look inside the game's phone (an exception to the native rule).
     /// The frame is the game's (GameUi.AppShell, copied from MyEmployees: the app's panel among the game's, its place and
     /// size on the full phone); inside it Flare draws its own screens with the game's own font (FlareKit):
     ///

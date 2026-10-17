@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
     /// looks for a camera moved by another hand, or one above the game's priorities).
     ///
     /// So while this mod's camera key is V, that controller is switched off (Behaviour.enabled): the one thing of
-    /// another author's mod this mod changes, on the owner's word, because the two views cannot share a key and that
+    /// another author's mod this mod changes, deliberately, because the two views cannot share a key and that
     /// mod has no setting for its own. Its own OnDisable puts the game's vehicle camera back and forgets its view; the
     /// camera the game wants now is then asked for again (<see cref="GameCamera"/>), so nothing is seen of it. It is
     /// switched on again as it was the moment the key is moved off V (<see cref="KeysChanged"/>) or this mod is unloaded,
@@ -30,7 +30,7 @@ namespace RealLifeOverhaul
     /// listens for the player getting into a vehicle (it joins it when it is switched on), a few entries read; only if
     /// it is not there, by a search of the scene, which is made behind the loading screen (<see cref="Prewarm"/>). That
     /// search used to be made the first time the chase camera came on: a frame of some 135 ms on the first drive of a
-    /// session (Player.log, two sessions).
+    /// session.
     /// </summary>
     public static class EmpireView
     {

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 
-// The credit card fixed (a player, 16 Oct 2026: "I managed to pay off everything except the credit card, there's no
-// option to pay it off and finally get out of the agreement"). Three faults, each reproduced here:
+// The credit card fixed: everything else could be paid off, but the card had no way to be paid off and so the agreement
+// never ended. Three faults, each reproduced here:
 //   1. in a debt arrangement every account was frozen and its buttons hidden, so the card could only be paid by the
 //      arrangement's daily payment; now a frozen debt can be paid by hand, that counts under the arrangement, and the
 //      arrangement ends cleared the moment the last of it is paid, by whatever route, once;

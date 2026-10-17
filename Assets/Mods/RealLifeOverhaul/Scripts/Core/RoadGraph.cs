@@ -14,8 +14,8 @@ namespace RealLifeOverhaul
     /// (the late prewarm of Core/SceneFinds), and each takes a search of its own over it
     /// (<see cref="RouteSearch.Over"/>), because a search keeps its state in the object and they may
     /// be searching in the same frames. The GPS and the buses each used to build their own, some
-    /// 1.2 MB and 10 to 20 ms each, in the frames the loading screen went (the owner's log of 14 Oct
-    /// 2026: 1284 KB and 1188 KB of a frame of 394 ms). It is built only once the traffic system has
+    /// 1.2 MB and 10 to 20 ms each, in the frames the loading screen went (1284 KB and 1188 KB of a
+    /// frame of 394 ms). It is built only once the traffic system has
     /// started (TrafficManager.IsInitialized): that is when the lane points at junctions are marked
     /// (enter, exit, give way: GenericIntersection.Initialize), and a change of lane is offered only
     /// between plain lane points, so a graph built before would not be the one the buses and the GPS

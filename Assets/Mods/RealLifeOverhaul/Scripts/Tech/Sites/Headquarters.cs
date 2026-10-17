@@ -12,8 +12,8 @@ namespace RealLifeOverhaul.Tech
     /// stock market's software, hardware and network companies the tech sector names, Skyvault Systems' cloud among them)
     /// share a few of the city's largest office buildings, the towers, a floor each (<see cref="HqTowers"/>: twelve
     /// companies, three towers of four). Up to 0.10.4 each had a building of its own, and with the City Utilities office
-    /// and the university the mod held every empty office the city had (a player, 14 Oct 2026: "every office is occupied
-    /// by a company"); the towers leave nine of those to let.
+    /// and the university the mod held every empty office the city had, so a player found none to rent; the towers leave
+    /// nine of those to let.
     ///
     /// Which building is <see cref="HqTowers"/>'s: the same city gives the same answer on every machine, so in a Going
     /// Public session every player's city has the same towers and floors (the candidates are the city's own office

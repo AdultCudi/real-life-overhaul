@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Threading;
 using RealLifeOverhaul.Texts;
 
-// The runner's start ends by its limits for certain (a player's report, 16 Oct 2026: the start on an integrated GPU hung
+// The runner's start ends by its limits for certain (the fault: the start on an integrated GPU hung
 // about seven minutes with no line, although the load has 90 s and the first reply 30 s): every wait on the server bounded
 // by the runner's own clock (Socket.Poll, not the socket's ReceiveTimeout, which Mono on Windows does not honour), each
 // stage logged with its time, and a watchdog on a timer that ends a stage stuck past its limit. Proved against a pretend

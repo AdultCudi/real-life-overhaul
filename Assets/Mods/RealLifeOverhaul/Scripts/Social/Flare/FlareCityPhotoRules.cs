@@ -154,8 +154,7 @@ namespace RealLifeOverhaul.Flare
 
     /// <summary>
     /// The city's photos, as a phone's photos of the city: a bank of them taken quietly while the player is out and about,
-    /// and the city's posts carrying one that fits (the owner's words, 16 Oct 2026: "please make the NPCs post photos. Make
-    /// it realistic").
+    /// and the city's posts carrying one that fits, so that the city's people post photos as real people do.
     ///
     /// THE BANK. While the player is outdoors (on foot or driving), the director's second looks, after the pace, at what can
     /// be seen here (<see cref="Plan"/>): the street event if one is on near them, the park or sight they stand at, the front

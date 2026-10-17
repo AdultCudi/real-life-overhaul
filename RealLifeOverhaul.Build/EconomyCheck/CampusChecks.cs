@@ -75,7 +75,7 @@ internal static partial class Program
               && !CampusRules.NoBusinessIn("ba:businesstype_empty", false, true, "") && !CampusRules.NoBusinessIn("ba:businesstype_empty", false, false, "player_2"),
             "campus: a building may serve only with no business in it and nobody's (the player's, another player's in a session, a rival's business)");
 
-        // The owner's city: the largest office (17 7th Street) is the utilities office; the next (12 Broadway) has a business.
+        // A city where the largest office (17 7th Street) is the utilities office; the next (12 Broadway) has a business.
         string[] street = { "ba:street_seventhstreet", "ba:street_broadwaystreet", "ba:street_broadwaystreet", "ba:street_secondstreet", "ba:street_firststreet" };
         int[] number = { 17, 12, 1, 54, 78 };
         int[] sqm = { 102502, 58989, 48567, 7195, 7195 };

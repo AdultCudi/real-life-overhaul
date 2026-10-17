@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Texts
     ///   priority   on the processor below normal (the server's threads and the worker's), so the game's frame always comes
     ///              first. On a GPU normal, with at most two threads (<see cref="LowPriority"/>, TextSpeed.GpuThreads): the
     ///              model's work is the GPU's, but each step of it is handed over and waited for by a thread of the server,
-    ///              and below normal that thread waits behind every busy thread of the game. Measured (16 Oct 2026, the 2B on
+    ///              and below normal that thread waits behind every busy thread of the game. Measured (the 2B on
     ///              an RTX 5070 Ti, a Ryzen 7700X's sixteen threads busy at normal priority and the GPU busy): below normal the
     ///              model took over 40 s to load, the first reply 5 s and words came at 3 to 6 a second; at normal priority
     ///              3.5 s, 0.1 s and 110 to 200 a second, the server using half a thread of the processor for the 0.1 to 0.3 s
@@ -159,8 +159,8 @@ namespace RealLifeOverhaul.Texts
     ///   shaders    a GPU's first reply builds llama.cpp's shaders, unless the driver kept them from an earlier start in its
     ///              own cache (llama.cpp keeps none of its own). Steam starts the game with variables that point the driver's
     ///              cache at the game's folder of Steam's shader pre-caching, and a child inherits them: there the NVIDIA
-    ///              driver kept nothing for llama.cpp, and every start in the game built every shader again (16 Oct 2026,
-    ///              the 2B on an RTX 5070 Ti: 22 s each session, 21 s of it processor time; outside the game 0.05 s). They are
+    ///              driver kept nothing for llama.cpp, and every start in the game built every shader again (the 2B on an
+    ///              RTX 5070 Ti: 22 s each session, 21 s of it processor time; outside the game 0.05 s). They are
     ///              not passed on (<see cref="OwnShaderCache"/>), so the driver keeps the shaders in its own cache: built once,
     ///              behind the written lines, within <see cref="TextServerStart.BuildSeconds"/>; the start's line says whether
     ///              the cache was used, created or missing (<see cref="ShaderCache"/>)
@@ -992,7 +992,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>
         /// A child process of llama.cpp's given the GPU driver's own shader cache: no <see cref="ShaderCacheVariable"/> reaches
         /// it (see the summary: under Steam's, the driver kept no shader for llama.cpp, and every start built them all again).
-        /// Returns the names taken out, for the log (empty: none). Measured outside the game (16 Oct 2026, the 2B on an RTX
+        /// Returns the names taken out, for the log (empty: none). Measured outside the game (the 2B on an RTX
         /// 5070 Ti, the server started as the runner starts it): with Steam's variables every start's first reply 9.9 s, the
         /// processor busy throughout, and nothing kept; without them 10.1 s once, then 0.05 s each start, killed or not.
         /// </summary>

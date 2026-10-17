@@ -5,7 +5,7 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// RLO Texts in a Going Public session (the owner's rule, 16 Oct 2026):
+    /// RLO Texts in a Going Public session:
     ///
     ///   personal   what is that player's own (texts from the partner, friends, family, the roommate, the in-laws, the boss;
     ///              Flare messages to them; replies addressed to them) is written on their own machine and never sent; a

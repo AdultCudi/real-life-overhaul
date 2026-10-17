@@ -2,7 +2,7 @@ namespace RealLifeOverhaul.Markets
 {
     public sealed partial class MarketDirector
     {
-        // ---------------------------------------------------------------- the owner's test buttons for the player's company
+        // ---------------------------------------------------------------- the test buttons for the player's company
 
         /// <summary>
         /// Test button: the player's company on the market as the test tools' company: no requirement asked, nothing paid

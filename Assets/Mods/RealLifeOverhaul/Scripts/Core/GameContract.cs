@@ -8,7 +8,7 @@ namespace RealLifeOverhaul
     /// (<see cref="GamePart.Off"/>), each said once in Player.log, on screen and on the options page, until the mod is
     /// updated; every other part runs as before.
     ///
-    /// Before a release (and at once after a game update) the owner runs RealLifeOverhaul.Build/ContractCheck, which
+    /// Before a release (and at once after a game update) the maintainer runs RealLifeOverhaul.Build/ContractCheck, which
     /// reads this file as it ships and checks every line against the game's assemblies on disk: what is missing or
     /// changed, and which parts that hits. Then <see cref="GameBuild.MadeFor"/> is set to the game's build.
     ///
@@ -384,7 +384,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember RegistrationName = Optional(Field(AppOpening, Game, "BuildingRegistration", "BusinessName", "String"));
         public static readonly GameMember NoticeError = Optional(StaticMethod(AppOpening, Game, "UI.Notification.Notifications", "ShowError", "Void", "String", "String", "Boolean"));
 
-        /// <summary>The five pieces a player's Build 3675 lacked (its Player.log, 14 Oct 2026; the funeral helper's two properties are one piece, its type): ContractCheck holds them to the contract, isolated.</summary>
+        /// <summary>The five pieces Build 3675 of the game lacks (the funeral helper's two properties are one piece, its type): ContractCheck holds them to the contract, isolated.</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };
 
         // ---------------------------------------------------------------- the game's layers, by name

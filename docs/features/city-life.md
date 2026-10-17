@@ -46,7 +46,7 @@ People at work and about their day on the pavements near the player: sweepers, w
 
 ## Clips nothing played
 
-`not-in-repo/tools/medium/clip_users.py` lists every clip the bundle's builder declares (`CityAssets/scripts/clips*.py`, 160) and the ones no script names.
+A maintainer's script lists every clip the bundle's builder declares (`CityAssets/scripts/clips*.py`, 160) and the ones no script names.
 There were 25.
 Six now have a home in the living city, each where the clip's own note says it belongs:
 

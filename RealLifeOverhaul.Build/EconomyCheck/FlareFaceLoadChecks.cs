@@ -5,8 +5,7 @@ using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Flare;
 
-// Flare's faces drawn ahead of need (owner, 16 Oct 2026: "Can you draw all the faces when we are loading into the save ...
-// we can load it in SSD, then use that right?"; built as the coordinator's hybrid): behind the loading screen the faces
+// Flare's faces drawn ahead of need, and kept on disk to be loaded from there after: behind the loading screen the faces
 // likely to be seen first, within two seconds; the rest behind the black screens and, for a card in view, with Flare
 // open. Held here: which faces are likely and in what order, each once and only faces; a face on disk is never drawn
 // again; the budget never starts a face it cannot finish in time; the textures kept hold a whole city and the oldest goes

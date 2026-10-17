@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 
-// The owner's check of the mod against a version of the game (see ContractCheck.csproj), run by the gate. A check that
+// The maintainer's check of the mod against a version of the game (see ContractCheck.csproj), run by the gate. A check that
 // fails prints one line; the last line is ALL CHECKS PASSED or the count that failed.
 //
 //   dotnet ContractCheck.dll [Managed folder] [--mod path\RealLifeOverhaul.dll] [--locale path\en.json]

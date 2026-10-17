@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 
-// Checks, over the mod's sources as they ship, that the phone apps' work stays where it costs nothing to see or is done once
-// (14 Oct 2026, "start the optimization work of this mod. Completely."): an app's panel built when it is first opened, not
+// Checks, over the mod's sources as they ship, that the phone apps' work stays where it costs nothing to see or is done once:
+// an app's panel built when it is first opened, not
 // as it installs in the first seconds after a load; the box's parts kept from page to page and set back to their template
 // before they are used again; the Cash flow tab and a bank's statement written as they scroll; the City Ledger's pages kept
 // for the paper they were laid out for, and its serif looked for through SceneFinds only when the game's is missing; Flare's

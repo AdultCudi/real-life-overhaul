@@ -61,7 +61,7 @@ internal static partial class Program
         Check(x.ClashWith == y && !x.ClashReach && z.ClashWith == y && !z.ClashReach && y.Clash,
             "reach: an entry that overlaps one and is too far from another names the overlap");
 
-        // The class at 09:00 while a shift runs 06:00 to 14:00 (the owner's own example).
+        // The class at 09:00 while a shift runs 06:00 to 14:00 (a common case).
         list.Begin(1, 10, false);
         PlannerEntry early = At(list, "work", 1, 5, 360, 840, 0f, 0f);
         PlannerEntry nine = At(list, "study", 2, 5, 540, 600, 0f, 0f);

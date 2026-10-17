@@ -139,7 +139,7 @@ namespace RealLifeOverhaul
     /// traffic system has marked the junctions (<see cref="Prewarm"/>, a late piece of Core/SceneFinds'
     /// ScenePrewarm), over the city's one road graph (Core/RoadGraph.Shared, the GPS's too, with costs of
     /// its own for the corridors). They used to be laid in play: the ends and a graph of its own in one
-    /// frame (1188 KB and 20 to 50 ms, the owner's log of 14 Oct 2026), then a search a frame of 3 to 6 ms
+    /// frame (1188 KB and 20 to 50 ms), then a search a frame of 3 to 6 ms
     /// for some 40 frames. The stops need the street (rays and samples against what stands on it, some
     /// thousands, most of them looking for bays), so they are placed on the director's timer in the first
     /// seconds out of doors, a slice a frame of about a millisecond (<see cref="WorkSlice"/>), never again.

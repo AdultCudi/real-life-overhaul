@@ -5,8 +5,8 @@ using System.Runtime.CompilerServices;
 using RealLifeOverhaul.Economy.Brands;
 using RealLifeOverhaul.Flare;
 
-// A player, 15 Oct 2026: three gyms run as a brand, store rating over 80, "my brand recognition still isn't increasing",
-// and an influencer hired for a campaign "isn't posting anything". Reproduced with the mod's own rules:
+// Three gyms run as a brand, store rating over 80, and brand recognition that did not seem to increase; and an influencer
+// hired for a campaign who posted nothing. Reproduced with the mod's own rules:
 //   recognition  three gyms in one district for twenty days, by BrandRules.Day: it does grow, about half a point a day,
 //                but the Brands app showed whole points (two mornings at 0) and a city-wide figure that stays near 0 for
 //                a brand in one district; the app now shows tenths, says on how many mornings it has moved
@@ -15,12 +15,12 @@ using RealLifeOverhaul.Flare;
 //                (FlareCast.Day skipped every inactive one); the Business tab counted only the player's own posts, so a
 //                deal's posts never showed there. Now the paid posts are made to the deal's end and counted on the deal
 //                (FlareHire.Posted, LastPost, saved), and the tab and the deal's page say so (FlareCast.PostsAbout, HireStage)
-// A player, 15 Oct 2026 (a save at day 40): one brand of three shops, one each in Garment District, Midtown and Murray
-// Hill, "recognition still has not gone up". Each district gained from its one shop alone and the city-wide figure headed
+// A save at day 40: one brand of three shops, one each in Garment District, Midtown and Murray Hill, and recognition
+// that had not gone up. Each district gained from its one shop alone and the city-wide figure headed
 // for the districts' sum divided by eight at 5% a day: under 2 points city-wide by day 40. Now each district also gains
 // from the brand's shops in other districts (BrandRules.Pull, diminishing) and the city-wide figure heads for their mean
 // from three districts on, at 10% a day (BrandRules.CityTarget). A brand in one district grows there as it did.
-// The same log had one frame of 35.8 ms in BrandsDirector's second: its first after the load read the save's brands and
+// The same save had one frame of 35.8 ms in BrandsDirector's second: its first after the load read the save's brands and
 // the shops and put the app on the phone in one frame; now the app goes on at the second after, each part timed.
 internal static partial class Program
 {
@@ -202,7 +202,7 @@ internal static partial class Program
         return watch.Elapsed.TotalMilliseconds;
     }
 
-    // A player, 16 Oct 2026 (day 60): one brand, three member shops in three districts, standards over 60, and no franchise on offer: the offer wanted
+    // A save at day 60: one brand, three member shops in three districts, standards over 60, and no franchise on offer: the offer wanted
     // 40 points in one district (or 25 city-wide) and a spread brand's districts and city-wide figure were near 12 by day 40. Now the mean over
     // the districts where it has a member shop counts too (BrandCatalogue.OfferMeanRec, from two districts).
     private static int FirstOfferDay(int[] shopsIn, int customers, int standards, int days, out BrandsState state, out Brand brand)

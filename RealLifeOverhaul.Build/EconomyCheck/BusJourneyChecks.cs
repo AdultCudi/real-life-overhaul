@@ -57,8 +57,8 @@ internal static partial class Program
     }
 
     // A bus held up on its way (Scripts/Transport/RideRules, TransitBus.OnTheWay): when it counts as standing at its stop where
-    // it is, when a car of the traffic that waits for it is told to go on, and how a hold is timed for the log. The 13 October
-    // report: the M9 stood still beside the player short of its place, never counted as arrived, and the player waited for it.
+    // it is, when a car of the traffic that waits for it is told to go on, and how a hold is timed for the log. The case it
+    // comes from: the M9 stood still beside the player short of its place, never counted as arrived, and the player waited for it.
     private static void BusHolds()
     {
         const float kerb = 3.92f, narrow = 1.84f, side = BusBay.BusSideHalf, half = BusBay.BusLength * 0.5f;

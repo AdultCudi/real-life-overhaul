@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Texts;
 
-// The answer to a message of the player's on Flare, worded by RLO Texts (a player's report, 16 Oct 2026: a city person
+// The answer to a message of the player's on Flare, worded by RLO Texts (the fault: a city person
 // asked "you up for a coffee?" answered with the written line although the model ran): its answerer read from the account
 // as Flare keys it (a city person "c6", no colon; an influencer "i:3"), so every city person's answer is asked with their
 // own card; which answers still want words; the player's message it answers; and an answer, or a post, handed back without

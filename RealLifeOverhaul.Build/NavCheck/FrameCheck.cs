@@ -5,7 +5,7 @@ using RealLifeOverhaul;
 // Checks for the long-frame line's account of where a stutter went (Diagnostics/FrameRules.cs): the cause the figures
 // point to (the main thread's own work, a wait for the last frame to be shown, another program, time outside the
 // engine's steps), and the words the line gives the processor, the page faults and the engine's own figures, with a
-// measure that is not available said in its place. Made-up frames like the 378 ms one of the 14 October log. Part of
+// measure that is not available said in its place. Made-up frames like a real one of 378 ms. Part of
 // the work against long frames (HitchCheck.cs). Compiled as it ships.
 internal static partial class Program
 {

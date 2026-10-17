@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// How fast this machine is, and what follows from it (the owner's words, 16 Oct 2026, for weaker processors):
+    /// How fast this machine is, and what follows from it (so that weaker processors are served too):
     ///
     ///   threads    2 on four cores or fewer, 3 on six, 4 on eight or more (real cores: logical ones halved where a core
     ///              runs two); the option overrides it; never so many that the game keeps fewer than <see cref="GameKeeps"/>.

@@ -10,8 +10,8 @@ namespace RealLifeOverhaul
     /// ask, gives each its timer tick, and starts the probe and the benchmark on their keys (Core/Keys: F7 and Shift+F7 unless rebound).
     /// Its own cost per frame while nothing is being measured: one key test, four flags and one time compare. Tweaks are
     /// switched one a frame (<see cref="Sync"/>): after a load, or when the options change, each switch has a frame of its
-    /// own, where every tweak used to be switched in the same frame (a frame of 9 to 20 ms of this director in play, the
-    /// owner's logs of 14 Oct 2026). What each looks at in the scene is taken behind the loading screen (PerfTweaks.Prewarm).
+    /// own, where every tweak used to be switched in the same frame (a frame of 9 to 20 ms of this director in play).
+    /// What each looks at in the scene is taken behind the loading screen (PerfTweaks.Prewarm).
     /// </summary>
     public sealed class PerfDirector : MonoBehaviour
     {

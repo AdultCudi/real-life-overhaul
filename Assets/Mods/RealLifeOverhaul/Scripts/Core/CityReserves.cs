@@ -14,7 +14,7 @@ namespace RealLifeOverhaul
     /// still open in them (both are size K version 1, one of the rivals' office sizes, with the game's office layouts):
     /// that is the game's, and the mod does not stop it.
     ///
-    /// CITY UTILITIES (the owner, 15 Oct 2026: "Just move the City Utilities"). At 13 7th Street, Midtown, the same in
+    /// CITY UTILITIES. At 13 7th Street, Midtown, the same in
     /// every game, its desk at the door. By the game's data it is an ordinary residential building of size F version 1,
     /// 6,980 sqm, traffic 40, with no special service: none of the game's own buildings (no game business, no game jobs).
     /// No business of any kind, the city's or a rival's, is ever opened in a residential building: the generator only

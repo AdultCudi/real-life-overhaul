@@ -11,7 +11,7 @@ using RealLifeOverhaul;
 // one they ran in before (the order they are made in, with the economy's followers inside its second), so that each still
 // finds what it reads of another there. And the session record's word for the game's screen in a long frame
 // (Diagnostics/FrameRules.cs): the loading screen, still fading out after the save has loaded, counts as hidden, as the
-// game's black screen does. The owner's log of 14 Oct 2026 had a frame of 1381 ms as the loading screen went, with some
+// game's black screen does. A session's log had a frame of 1381 ms as the loading screen went, with some
 // 205 ms of the mod's coroutines in it, said to be "clear".
 //
 // What is not here: how long each first load takes in the game, which the long-frame lines of Player.log now name

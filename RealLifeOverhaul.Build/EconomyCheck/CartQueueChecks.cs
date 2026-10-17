@@ -1,9 +1,9 @@
 using System;
 using RealLifeOverhaul;
 
-// The pavement drinks cart's queue (Scripts/Jobs/Kinds/CartQueueRules.cs): a customer who cannot get to the cart, or is no
-// longer the cart's, leaves the queue at once and is never a walk-off, and the cart gets its next customer. The owner,
-// 14 Oct 2026: the vendor was left waiting for a customer who never came, beside an accident's scene.
+// The pavement drinks cart's queue (Scripts/Jobs/Kinds/CartQueueRules.cs): a customer who cannot get to the cart, or is
+// no longer the cart's, leaves the queue at once and is never a walk-off, and the cart gets its next customer. The
+// fault it fixes: the vendor was left waiting for a customer who never came, beside an accident's scene.
 internal static partial class Program
 {
     private static void CartQueue()
@@ -56,7 +56,7 @@ internal static partial class Program
             "cart: while the route is still being worked out the customer is left to it");
     }
 
-    // The owner's case: the route does not reach, or ends short, or the customer is no longer the cart's. At once, on the first tick it is known.
+    // The case seen in play: the route does not reach, or ends short, or the customer is no longer the cart's. At once, on the first tick it is known.
     private static void CartCut()
     {
         float best = 18f, bestAt = 0f;
@@ -129,7 +129,7 @@ internal static partial class Program
             Check(!CartQueueRules.Account(CartGuest.There, ref came, ref lost, ref row) && !CartQueueRules.Account(CartGuest.Keep, ref came, ref lost, ref row)
                   && came == 9 && lost == 1 && row == 2, "cart: one still with the cart changes no count");
         }
-        // The owner's screen: 8 served of 16, one lost, 7 still to come, one on the way who cannot get there. After: still 7 to come, and a free place for the next.
+        // The case seen in play: 8 served of 16, one lost, 7 still to come, one on the way who cannot get there. After: still 7 to come, and a free place for the next.
         {
             int customers = 16, served = 8, came = 10, lost = 1, row = 0;
             int toComeBefore = customers - served - lost;

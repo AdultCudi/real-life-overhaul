@@ -7,14 +7,14 @@ using System.Text;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Flare;
 
-// Flare's city of four hundred and its influencers with no fixed most (owner, 16 Oct 2026: "Add 400 people", "Remove the
-// influencer cap"), and Mom and Alex with one face in every game ("Make mom and alex a permanent face"): the first forty
-// people exactly as the generator before made them (every saved "c0" to "c39" is still who it was), the rest with names
-// nobody else in the city has, dealt round the districts, of every nature and a fitting age; the day's posts, reactions,
-// replies and messages as many as before, spread over all four hundred; the cost of making them and of a day; Going Public
-// (the same people from the city's seed on every machine, another version of RLO refused whole, a person this version does
-// not have left out); the influencers over years round the level, the safety bound never reached, the records kept small;
-// Mom's and Alex's look the same for every seed and mended in a save from before; the Guide's figures from the code.
+// Flare's city of four hundred and its influencers with no fixed most, and Mom and Alex with one face in every game:
+// the first forty people exactly as the generator before made them (every saved "c0" to "c39" is still who it was), the
+// rest with names nobody else in the city has, dealt round the districts, of every nature and a fitting age; the day's
+// posts, reactions, replies and messages as many as before, spread over all four hundred; the cost of making them and
+// of a day; Going Public (the same people from the city's seed on every machine, another version of RLO refused whole,
+// a person this version does not have left out); the influencers over years round the level, the safety bound never
+// reached, the records kept small; Mom's and Alex's look the same for every seed and mended in a save from before; the
+// Guide's figures from the code.
 internal static partial class Program
 {
     private static void FlareCrowd()

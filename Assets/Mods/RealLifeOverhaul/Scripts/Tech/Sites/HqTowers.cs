@@ -14,8 +14,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>
     /// Which of the city's office buildings house the tech companies, and on which floor each company is. The twelve
     /// companies share a few large towers, a floor each, so that the mod holds three office buildings where it held
-    /// twelve and the rest stay on the market for the player (the owner, 14 Oct 2026: "every office is occupied by a
-    /// company").
+    /// twelve and the rest stay on the market for the player.
     ///
     ///   how many     <see cref="PerTower"/> companies to a tower: the game's panel at a door has four buttons, so every
     ///                floor of a tower is offered at once; twelve companies make three towers

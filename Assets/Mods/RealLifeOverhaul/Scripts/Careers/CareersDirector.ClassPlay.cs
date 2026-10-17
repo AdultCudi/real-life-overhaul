@@ -6,8 +6,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A class, homework or an exam played the way the game's own studying is (the owner, 17 Oct 2026: "when we press
-    /// learn the player goes to a room and ff or skip comes"), each where it is done, in one press:
+    /// A class, homework or an exam played the way the game's own studying is (a press of learn takes the player to a
+    /// room, where the game's fast-forward or skip comes up), each where it is done, in one press:
     ///
     ///   the university  the Campus app's Attend, Sit or Homework takes the player to the course's floor and opens its
     ///                   classroom door's study panel, as a click on the door does; the class is begun there for them

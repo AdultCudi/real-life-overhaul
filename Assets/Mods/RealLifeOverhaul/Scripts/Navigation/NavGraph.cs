@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Nav
     ///
     /// All four are done behind the loading screen (<see cref="StepsNow"/> and <see cref="WaitForPicture"/>, from the
     /// director's late prewarm: Core/SceneFinds), where they used to be done in the frames the loading screen went (a
-    /// frame of 394 ms with 1284 KB of this in it, the owner's log of 14 Oct 2026); the timer does them only where that
+    /// frame of 394 ms with 1284 KB of this in it); the timer does them only where that
     /// could not be. The picture is kept for the session with a print of what it was drawn from (Core/InputPrint): a city
     /// loaded again with the same roads is given the same picture, with no 9 MB array, no thread and no upload.
     ///

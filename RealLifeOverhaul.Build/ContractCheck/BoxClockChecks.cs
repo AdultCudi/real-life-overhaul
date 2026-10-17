@@ -7,7 +7,7 @@ using RealLifeOverhaul.GameUi;
 
 // The white box's self-check times the box's own work (Core/GameUi/BoxClock.cs, InfoBox.Parts.cs). It timed a page from
 // Clear to Done, and the Settings app does its own work between them (every option compared with the presets, its table
-// of a hundred rows filled): "a page of 5 parts written in 5.5 ms, wanted under 3 ms: SLOW" all session (16 Oct 2026),
+// of a hundred rows filled): "a page of 5 parts written in 5.5 ms, wanted under 3 ms: SLOW" all session,
 // while a page of 17 parts of the Planner's took 2.6 ms. Now only the time inside the box's calls counts, the page's
 // whole time is said beside it. The rules on made-up timestamps, a made-up page with the app's work between its parts
 // (the box's share stays its own however long the app takes, and costs nothing), and the sources: every call of the box

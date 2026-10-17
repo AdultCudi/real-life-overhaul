@@ -2,7 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.Texts;
 
-// RLO Texts on a GPU ran at the processor's priority (the owner's session, 16 Oct 2026: the 2B on an RTX 5070 Ti, the
+// RLO Texts on a GPU ran at the processor's priority (the 2B on an RTX 5070 Ti, the
 // first reply in 24 s and 39 words a second in the game, against 0.07 s and 294 a second outside it). The server was
 // below normal priority (the process's class and llama.cpp's --prio -1) with four threads: its thread that hands each
 // step to the GPU waited behind every busy thread of the game. Measured outside the game with sixteen busy threads and

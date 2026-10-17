@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Careers
     /// earlier rule put it, the largest office building of the city that is no special service, holds no business and is
     /// nobody's (CampusRules.NoBusinessIn), ties broken by address, leaving out every building another feature holds (the
     /// City Utilities office, the courthouse, the police stations, chosen first); and where every office building is taken
-    /// (by players, businesses or other mods' businesses: a player's advanced save had none free, 15 Oct 2026), at the door
+    /// (by players, businesses or other mods' businesses: an advanced save can have none free), at the door
     /// of the game's own Manhattan Business School, which always stands and is nobody's: its classes are joined at the
     /// door with the game's panel, the school inside stays the game's, and it keeps its own name. So the university always
     /// stands somewhere, with its map row, and why it is where it is goes to the log as one plain line whatever the

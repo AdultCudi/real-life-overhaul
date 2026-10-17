@@ -328,7 +328,7 @@ namespace RealLifeOverhaul.Texts
         /// one of the kinds the budget lets through that still waited past its time. Never a background request the queue
         /// held back itself (the game not quiet, the background's share of the minute used, or below the budget's floor):
         /// counted, those kept the budget at its lowest steps for good, since at step 2 the background is held, its requests
-        /// run out, and every one counted as another miss (Flare's comments were never written, 16 Oct 2026).
+        /// run out, and every one counted as another miss (Flare's comments were then never written).
         /// </summary>
         public bool BudgetMiss(TextJob job)
         {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Texts;
 
-// Every comment a post's count promises written out and shown (the owner's report of 16 Oct 2026: a resident's post with
+// Every comment a post's count promises written out and shown (the fault: a resident's post with
 // a count of 3 showed the player's own reply and "And 2 more replies.", the two comments never written): the asks of each
 // comment (FlareCommentAsks: asked again after a miss, the open thread's asked ahead, a cap on the background's share),
 // the budget no longer locked down by the background requests the queue holds back itself (TextsHub.BudgetMiss), the
@@ -134,7 +134,7 @@ internal static partial class Program
 
     private static void CommentAsksThread()
     {
-        // The screenshot's post: a resident's review, 3 replies, opened 22 hours after it went up. With all three worded the
+        // The post of the fault: a resident's review, 3 replies, opened 22 hours after it went up. With all three worded the
         // thread shows the two whose time has come and no "more" line at the card's count of two (the third comes at the day's end).
         var p = CommentPost(385, 3, 600, FlareAuthor.Citizen, FlareSource.Review, 3);
         var plan = new List<FlareComment>();

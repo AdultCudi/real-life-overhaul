@@ -506,7 +506,7 @@ namespace RealLifeOverhaul.Economy
         // A statement every few days; its minimum is taken on the due day, and what is then still unpaid of it bears
         // interest for the days of the statement. A minimum that could not be taken is tried again each day, and is
         // taken the day the cash is there, but only the statement's own due day counts: one missed payment for each
-        // statement, as a card counts it, so one late fee at most for each (a player, 16 Oct 2026, with no cash had
+        // statement, as a card counts it, so one late fee at most for each (counted daily, a player with no cash had
         // a miss a day and was at collections within a week). The day is known by Charged: it is set on that day.
         private static void Card(CreditAccount a, int today, IWallet wallet, string name, ref DayOutcome o)
         {

@@ -18,8 +18,8 @@ namespace RealLifeOverhaul.Flare
     /// another player's, a friend's, an influencer's): the post's number of replies (FlarePost.Replies) is the count on its
     /// card; every one of them is written out, up to what a phone's thread shows at once (<see cref="WrittenMost"/>), by
     /// people chosen from the post's seed, each coming in at the moment the count reaches it, and only past that does the
-    /// thread say how many more there are (the owner's words, 16 Oct 2026: "it just shows 2 more replies and not the real
-    /// replies"). Nothing is stored: the same post always gives the same comments, on every machine of a Going Public session
+    /// thread say how many more there are (never "2 more replies" with none of them shown). Nothing is stored: the same
+    /// post always gives the same comments, on every machine of a Going Public session
     /// (a shared post's seed is the city's seed and its session number, which every machine has; only the city's people
     /// comment on a shared post, never anybody's own friends or influencers). The words are asked of RLO Texts and kept by
     /// <see cref="Key"/>: a comment whose words have not come yet is not shown and counts among the more until they come.
@@ -419,7 +419,7 @@ namespace RealLifeOverhaul.Flare
     /// the request is the open thread's, asked ahead of the rest), worded (kept: never asked again), or asked so many times.
     /// A request handed back without words (its time ran out, the checker refused them, the model restarted) frees the
     /// comment, and it is asked again on the next look, up to <see cref="Most"/> times a session: a comment is never left
-    /// without words because one request missed (the screenshot of 16 Oct 2026: two of three comments never written).
+    /// without words because one request missed (else two of three comments could stay unwritten).
     /// A comment waiting at the background's priority is asked again at the open thread's when its thread is opened.
     /// Game-free (EconomyCheck, FlareCommentAskChecks.cs). COST: a dictionary look a comment; nothing per frame.
     /// </summary>

@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The one queue every request goes through, with the owner's scheduling rules (16 Oct 2026):
+    /// The one queue every request goes through, and its scheduling rules:
     ///
     ///   order      the worker always takes the most urgent request that can still be written by its deadline (Now before
     ///              Soon before Background; within one, the earliest deadline); one at a time

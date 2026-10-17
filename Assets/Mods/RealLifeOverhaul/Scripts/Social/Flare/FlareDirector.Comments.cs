@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// The comments under posts that are not the player's (FlareCommentRules): who writes them and when is the game's, from
-    /// the post's seed; their words are RLO Texts' alone (the owner's rule, 16 Oct 2026: no written comment lines). Every
+    /// the post's seed; their words are RLO Texts' alone (there are no written comment lines). Every
     /// comment a post's count promises is written out, up to FlareCommentRules.WrittenMost, so the words of every one are
     /// asked ahead, at the lowest priority, a few waiting at once: when the city's posts are made and each game hour (with
     /// the other words of Flare), when the feed is shown, and again on the director's second while a request has just come

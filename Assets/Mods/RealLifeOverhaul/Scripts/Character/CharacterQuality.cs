@@ -363,11 +363,11 @@ namespace RealLifeOverhaul
         //
         // Where they are found: every character of the scene, behind the game's black screen at a door or a loading screen
         // (Core/SearchPace: at most twice in one; never on a plain pause, whose menu would show each search, some 80 ms, as
-        // a hitch: it was made 14 times in two short sessions of 14 October, at doors, loading screens and pauses); and in
+        // a hitch: it can be made a dozen times in a short session, at doors, loading screens and pauses); and in
         // play, every five seconds, the other players' figures of a
         // Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game played alone the search
         // found nobody in the street. The search of the whole scene used to be made every five seconds of play: a frame of
-        // some 90 ms each time in the city (Player.log of 13 October, 0.9.4). The finish itself only on a change of look.
+        // some 90 ms each time in the city (0.9.4). The finish itself only on a change of look.
         private void FindOthers(AppearanceSetter[] all)
         {
             PruneOthers();

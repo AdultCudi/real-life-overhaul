@@ -10,11 +10,11 @@ namespace RealLifeOverhaul
     ///
     /// Tried, measured and removed again: pedestrian animator culling and off-screen skinning (the game already
     /// does both: 0 objects affected), sun shadows ending at 60 m (no sun shadows at all saved nothing either),
-    /// trees choosing their own level of detail, four bone weights per vertex (bench_130629: none beyond noise);
-    /// parking the savegame picture camera (perf_134404: the render pipeline drew the main camera and nothing
+    /// trees choosing their own level of detail, four bone weights per vertex (benchmarked: none beyond noise);
+    /// parking the savegame picture camera (probed: the render pipeline drew the main camera and nothing
     /// else in 1030 of 1030 frames, so that camera never cost anything).
     ///
-    /// Third benchmark (bench_140730, paired): no saving shown, removed: motion vectors (422,177 renderers touched
+    /// A paired benchmark showed no saving, so these were removed: motion vectors (422,177 renderers touched
     /// for nothing), a quarter of the texture streaming checks (slower if anything); trials that showed nothing:
     /// the whole post chain, the HBAO plug-in, subsurface scattering, shadow mask and light layers, cheap
     /// pedestrian avoidance (they already use it). Decals (+0.11 ms) are visible and stay as they are.

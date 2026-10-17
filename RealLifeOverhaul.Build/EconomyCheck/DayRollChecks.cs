@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Economy.Brands;
 
-// The game's night kept whole (Scripts/Core/DayRollRules.cs, DayRollGuard.cs). A player, 16 Oct 2026: three gyms in three
-// districts, "I hire employees and within a few days the salaries are higher than the daily income ... daily payrolls
-// reaching over 8k a day", firing everyone put it right, staff "scheduled but showing they do not have the 48 hours", and
-// in a new save no brand recognition in 40 days. Every night of their logs (days 37 to 62, 0.27.0 to 0.28.0) the game's
-// new day threw in its rivals' step: "Item with name it-services:itemname_hourlycloudservicesfee not found in
-// ItemsDictionary", then a NullReferenceException in CompetitionHelper.GetSuitableBuildingTypeForItem from
-// CompetitionHelper.RunDaily from GameManager.NewDay. The goods of a mod that was not loaded sat in the city's market.
-// NewDay had paid the wages (each employee's hours of the day times the wage) and stopped there: the day event this
-// mod's brands wait for, and the employees' day that clears the hours, never ran. Reproduced here with the game's
-// night as steps, three gyms of eight paid 37 an hour for 32 hours a week; then the guard's two answers.
+// The game's night kept whole (Scripts/Core/DayRollRules.cs, DayRollGuard.cs). The case: three gyms in three districts
+// whose daily payroll rose within days to over 8,000 a day, above the daily income, until firing everyone put it right;
+// staff scheduled but shown without their 48 hours; and in a new save no brand recognition in 40 days. Every night of
+// the logs (days 37 to 62, 0.27.0 to 0.28.0) the game's new day threw in its rivals' step: "Item with name
+// it-services:itemname_hourlycloudservicesfee not found in ItemsDictionary", then a NullReferenceException in
+// CompetitionHelper.GetSuitableBuildingTypeForItem from CompetitionHelper.RunDaily from GameManager.NewDay. The goods
+// of a mod that was not loaded sat in the city's market. NewDay had paid the wages (each employee's hours of the day
+// times the wage) and stopped there: the day event this mod's brands wait for, and the employees' day that clears the
+// hours, never ran. Reproduced here with the game's night as steps, three gyms of eight paid 37 an hour for 32 hours a
+// week; then the guard's two answers.
 internal static partial class Program
 {
     private const int RollStaff = 24;          // three gyms of eight

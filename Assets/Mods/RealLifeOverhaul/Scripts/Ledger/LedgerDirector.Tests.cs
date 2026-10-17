@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Ledger
 {
     public sealed partial class LedgerDirector
     {
-        // ---------------------------------------------------------------- the owner's test buttons
+        // ---------------------------------------------------------------- the test buttons
 
         /// <summary>Test button: today's paper opened whatever copy the player has (if there is no edition yet, one is put together now).</summary>
         public void TestOpen()
