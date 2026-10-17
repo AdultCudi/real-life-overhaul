@@ -68,8 +68,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/ResponseUnit.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/TrafficEffects.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Transport/CarRoadside.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Transport/SubwayJourney.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Travel/TravelBridges.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Travel/TravelCatalogue.cs	6
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Utilities/BroadbandRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusBuilding.cs	1
@@ -374,8 +372,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Transport/CarOwnership.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Transport/SubwayJourney.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Transport/TransitDirector.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Travel/Holidays.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Travel/TravelDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CompanyLinks.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StreetLinks.cs	1
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Civic/CivicOffice.cs	6
@@ -408,7 +404,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/News.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDialogs.cs	15
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialModel.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Transport/Taxi/TaxiDirector.cs	18
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Travel/TravelCatalogue.cs	3
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/RoommateLinks.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
@@ -844,12 +839,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Transport/TransitDirector.Journ
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Transport/TransitDirector.Player.cs	12
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Transport/TransitDirector.cs	18
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Transport/TransitMap.cs	8
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Travel/Holidays.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Travel/HotelReception.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Travel/HotelStay.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Travel/Hotels.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Travel/TravelCatalogue.cs	13
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Travel/TravelDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Utilities/BroadbandCatalogue.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Utilities/BroadbandCompany.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Utilities/UtilitiesApp.cs	7
