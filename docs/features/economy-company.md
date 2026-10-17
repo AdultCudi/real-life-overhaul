@@ -32,11 +32,14 @@ Economy/Company/        the first eight are game-free and compiled by EconomyChe
   LicenceRules            which licences, terms, the free first term, renewal
   CompanyStore            the save's one line, "reallife:economy_company"
   CompanyGame             everything read from or done to the game, and CompanyBridges (what it asks of the mod)
-  CompanyDirector         the timer's look, the hour, the day, the save, footfall, money, the Planner's rows
+  CompanyDirector         the timer's look, starting and standing down, faults, the app, the Planner's rows
+  CompanyDirector.Day     the reading, the hour, the day, the save
+  CompanyDirector.Effects footfall and money
   CompanyDirector.Staff / .Cover / .Marketing / .Tax / .Licences    one part each: its day, its answers, its rows
   CompanyDirector.Tests   the test tools
   CompanyApp              the frame, the tabs, the Overview
   CompanyApp.Staff / .Cover / .Marketing / .Tax / .Licences         one tab's page each
+  CompanyTables           the app's tables as data
   CompanyText             the words; CompanyGuide: the Guide page's figures, all from the catalogue
 Wiring/CompanyLinks.cs  business pressure, fires, break-ins, the courts, the paper, the Planner
 ```

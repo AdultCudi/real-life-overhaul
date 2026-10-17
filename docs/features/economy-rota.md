@@ -20,20 +20,23 @@ For every place the player runs it shows the game's own customer forecast for ea
 It keeps nothing in a save and has no Harmony patch.
 
 ```
-Economy/Company/        the first six are game-free and compiled by EconomyCheck
+Economy/Company/        the first eight are game-free and compiled by EconomyCheck
   RotaModel               the planner's numbers (the game's limits among them) and its plain data: problem, plan, demand
   RotaSolver              the rota itself: limits and goals, the start, placing an hour, a demand met or not
   RotaSolver.Shifts       whole-week stations, shifts for those with a least number of hours or days, shifts by value
   RotaSolver.Improve      the improving pass under a fixed budget of moves, and the rating of a rota
-  RotaAdvice              an hour's crew, the hours worth opening, what each hour at each station is worth, a week in
-                          money, the people a week takes, a station that is missing
+  RotaShop                one business as the arithmetic sees it: stations, customers by the hour, worth, wages
+  RotaOutlook             what the planner advises for a business and what each choice comes to in a week
+  RotaAdvisor             an hour's crew, the hours worth opening, what each hour at each station is worth, a week in
+                          money, the people a week takes; .Steps runs it a few steps a frame
   RotaLedger              what a fill may touch in a week that is there, what putting the week back restores, the stamp
   RotaGame                the places, what a business was worked out from, names; everything from the game is here
   RotaGame.Read           one business into plain numbers: stations, skills, the week it keeps, customers, worth, fees
   RotaGame.Demands        the game's rota demands, each asked of the demand itself
   RotaGame.Write          the rota and hours written, the week as it was kept and put back, as RotaLedger decides
-  CompanyDirector.Rota    the list of places, the jobs that work a business out a few steps a frame, the buttons, tests
-  CompanyApp.Rota         the tab: the places, one business's week, one day's hours
+  CompanyDirector.Rota    the list of places, the sheet kept, the player's choices; .RotaJobs the jobs that work a
+                          business out a few steps a frame; .RotaFill the buttons and writes; .RotaTests the tests
+  CompanyApp.Rota         the tab: the places; .RotaPlans one business's plans; .RotaWeek one plan's week and a day
   RotaGuide               the Guide page's figures, from RotaModel
 ```
 
@@ -110,7 +113,7 @@ Only on the player's button, after the game's own confirm dialogue where a rota 
 - **The late opening permit**: while licences are on and the business holds no permit, hours from 22:00 and before 05:00 are barred from the advice, so "Use these hours" can never put it in breach.
   The page says what the permit would add (hours and money), and says so when the business opens late without one as it stands.
 
-## The ladder of plans (`RotaLadder.cs`, `RotaLadder.Steps.cs`)
+## The ladder of plans (`RotaLadder.cs`, `RotaLadder.Steps.cs`, `RotaLadder.Week.cs`)
 
 The Rota page of a business no longer shows two extremes ("with the staff", "with all it takes").
 It shows a ladder, every rung a set of opening hours with a rota, all valued the same way (`RotaLadder.Evaluate`):
@@ -173,7 +176,7 @@ Every hour a plan opens or closes is listed with its reason and what it comes to
 
 **The range.** The game's hours demand is `Entities.Employee.JobDemands.Requirements/HoursWorkingPerWeek.cs`: `MinHours` (:20) and `MaxHours` (:22) are the two ends of a slider from 0 to 50 (:17) kept in each demand's own asset (`jobdemand_parttime`, `jobdemand_fulltime`), and `Fulfilled` (:24) asks for the assigned hours to be inside both.
 
-The figures themselves are in the game's data, not its code, so they could not be read offline; the planner reads them from the game for every employee (`RotaGame.Demands.cs:89`) and uses whatever they are.
+The figures themselves are in the game's data, not its code, so they could not be read offline; the planner reads them from the game for every employee (`RotaGame.Demands.cs`, `Demand`) and uses whatever they are.
 The game's own auto fill gives exactly the least (:98).
 
 **The rule.** In every rota the planner makes (the one "Fill the rota" writes and every rung above the week as it is), whoever asks for hours a week works no fewer than the least and no more than the most, or is given no hours at all and is named with the reason.
