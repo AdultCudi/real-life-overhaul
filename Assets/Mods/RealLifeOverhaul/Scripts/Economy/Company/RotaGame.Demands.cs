@@ -1,41 +1,19 @@
 using System;
 using System.Collections.Generic;
-using AI.Customers.CustomerEntries;
-using BAModAPI;
-using BigAmbitions.Characters.Skills;
 using BigAmbitions.DayNightCycle;
-using BigAmbitions.Items;
-using BigAmbitions.Tags;
-using Buildings;
-using Buildings.Office.Headquarters;
-using Buildings.Retail.Businesses.CinemaTheater;
-using Buildings.Schedule;
 using Entities;
 using Entities.Employee.JobDemands;
 using Entities.Employee.JobDemands.Requirements;
-using Helpers;
-using Localizor;
-using PlayerActivity;
-using UI;
-using UI.Smartphone.Apps.BizMan;
-using UI.Smartphone.Apps.BizMan.Schedule;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The game's rota demands as the planner's numbers, each asked of the demand itself.
-    /// </summary>
+    /// <summary>The game's rota demands as the planner's numbers, each asked of the demand itself.</summary>
     internal static partial class RotaGame
     {
-        // ---------------------------------------------------------------- demands
-
         /// <summary>
-        /// One of the game's demands as the planner's numbers; false for one that is not about the rota. Hours a
-        /// week and the stations asked for are read from the demand's public members. A number of days, free days
-        /// and hours not worked have no public figure: the demand's own Fulfilled is asked about an employee who
-        /// is nobody (never added to the game) with a made-up week, day by day and hour by hour, once for each
-        /// demand in a session.
+        /// One of the game's demands as the planner's numbers; false if it is not about the rota. Hours a week and the
+        /// stations asked for are the demand's public members. Days, free days and hours not worked have none: the
+        /// demand's own Fulfilled is asked about a made-up employee and week, once a demand a session.
         /// </summary>
         private static bool Demand(string name, RotaSheet sheet, BuildingRegistration reg, out RotaDemand demand)
         {
@@ -61,7 +39,7 @@ namespace RealLifeOverhaul.Economy
             var onItem = asked as WorksOnItem;
             if (onItem != null)
             {
-                // Which of this business's stations it accepts, by the demand's own answer (the item, the one it stands on, the ones stacked on it).
+                // Which of this business's stations it accepts, by the demand's own answer.
                 demand.Kind = RotaDemandKind.OnStation;
                 demand.Priority = (int)asked.priority;
                 for (int s = 0; s < sheet.Stations.Count; s++)
@@ -141,10 +119,11 @@ namespace RealLifeOverhaul.Economy
                 }
                 else
                 {
-                    // Not about the rota (a clean workplace, health insurance, an item in the building, the player's happiness), or a kind this version does not know.
+                    // Not about the rota (a clean workplace, health insurance, an item there), or unknown here.
                     if (asked is IScheduleDemand || asked is IScheduleConstraint)
                     {
-                        Logger?.Warn("Rota: the game's demand '" + name + "' (" + asked.GetType().Name + ") is about the schedule and is of a kind this version of the planner does not know; rotas are made without it.");
+                        Logger?.Warn("Rota: the game's demand '" + name + "' (" + asked.GetType().Name
+                                     + ") is about the schedule and is of a kind this version of the planner does not know; rotas are made without it.");
                     }
                     Unknown.Add(name);
                     return false;
@@ -160,7 +139,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // The employee a demand is asked about, with a week of one open day and one shift of one hour: never added to the game, never saved.
+        // The employee a demand is asked about, with a week of one open day and a one-hour shift; never in the game.
         private static EmployeeInstance Nobody()
         {
             if (_made == null)

@@ -10,34 +10,22 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What the ladder of plans counts beside customers and wages, read from the game once for a sheet (never on a
-    /// timer): the going wage of somebody new at each group of stations, how content the customers and each employee
-    /// are, what the game's hourly theft takes, what a night shut risks from the mod's break-ins, and whether the
-    /// cleaning service looks after the floor. Each figure says in RotaShop what it is; where the game gives none it
-    /// stays at nothing and the ladder counts nothing for it.
-    ///
-    /// The game's arithmetic these follow (decompiled, file and line in docs/features/economy-rota.md):
-    ///   theft       BusinessSecurityHelper.SimulateTheft: thieves a shelf = customers of the last hour x 0.04 x
-    ///               (1 - security); under one, that is the chance one unit goes from a stocked shelf; a shelf under
-    ///               a camera is passed over with the security level's chance, any other one time in twenty where a
-    ///               security sign hangs. From one thief a shelf on, the game's code takes nothing
-    ///   break-ins   Crime/OffscreenCrimes.BreakIn: once a night, at one of the player's shops that is shut then
-    ///
-    /// Cost: one pass over the business's items and employees each time a sheet is read.
+    /// What the ladder of plans counts beside customers and wages: a hire's going wage, how content customers and staff
+    /// are, theft, the night risk of break-ins, the cleaning service. Cost: one pass over a sheet's items and staff.
     /// </summary>
     internal static partial class RotaGame
     {
-        private const float ThievesPerCustomer = 0.04f, SignSkips = 0.05f;                      // BusinessSecurityHelper
-        private const float BreakInChance = 0.04f, BreakInCap = 2500f, BreakInShare = 0.25f;     // Crime/OffscreenCrimes
-        private const int BreakInRepair = 205;                                                   // the middle of its repair bill
+        private const float ThievesPerCustomer = 0.04f, SignSkips = 0.05f;                      // BusinessSecurityHelper.SimulateTheft
+        private const float BreakInChance = 0.04f, BreakInCap = 2500f, BreakInShare = 0.25f;     // Crime/OffscreenCrimes: a night, money, of the shelves
+        private const int BreakInRepair = 205;                                                   // money: the middle of its repair bill
         private static readonly StringBuilder Words = new StringBuilder(96);
 
-        /// <summary>Fills the deeper figures of a sheet that has just been read. <paramref name="market"/>: the going rate against the game's wage formula, thousandths (StaffRules.Market).</summary>
+        /// <summary>Fills in a sheet just read; <paramref name="market"/> is StaffRules.Market, thousandths.</summary>
         public static void ReadDeep(RotaSheet sheet, int market)
         {
             RotaShop shop = sheet.Shop;
             BuildingRegistration reg = sheet.Reg;
-            if (sheet.TooLarge || reg == null)
+            if (sheet.TooLarge)
             {
                 return;
             }
@@ -57,7 +45,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     catch (Exception)
                     {
-                        shop.GroupGoing[g] = 0;   // (the station's own wage is taken)
+                        shop.GroupGoing[g] = 0;   // the station's own wage is taken
                     }
                 }
             }
@@ -78,6 +66,8 @@ namespace RealLifeOverhaul.Economy
             ReadTheft(shop, reg);
         }
 
+        // The game's theft: thieves a shelf = customers x 0.04 x (1 - security), under one the chance a unit goes;
+        // skipped by the security chance under a camera, one time in twenty by a sign. Break-ins: a shut shop a night.
         private static void ReadTheft(RotaShop shop, BuildingRegistration reg)
         {
             BusinessType type = BusinessTypeHelper.GetData(reg);
@@ -99,7 +89,8 @@ namespace RealLifeOverhaul.Economy
             foreach (ItemInstance item in reg.itemInstances.Values)
             {
                 Item data = item != null ? item.ItemCached : null;
-                if (data == null || (data.type & (ItemType.PointOfSale | ItemType.ShowcaseShelf)) == 0 || item.cargoInstances == null || item.cargoInstances.Count != 1 || item.cargoInstances[0].amount <= 0)
+                if (data == null || (data.type & (ItemType.PointOfSale | ItemType.ShowcaseShelf)) == 0 || item.cargoInstances == null || item.cargoInstances.Count != 1
+                    || item.cargoInstances[0].amount <= 0)
                 {
                     continue;
                 }
@@ -109,7 +100,7 @@ namespace RealLifeOverhaul.Economy
             }
             float thieves = ThievesPerCustomer * (1f - security);
             shop.TheftRate = Mathf.RoundToInt(thieves * exposed * 100f);
-            shop.TheftLimit = thieves > 0f ? Mathf.CeilToInt(1f / thieves) : 0;
+            shop.TheftLimit = thieves > 0f ? Mathf.CeilToInt(1f / thieves) : 0;   // from one thief a shelf on, the game's code takes nothing
             if (!Settings.CrimeAgainstPlayer)
             {
                 return;
@@ -125,7 +116,7 @@ namespace RealLifeOverhaul.Economy
             shop.NightRisk = Mathf.RoundToInt(BreakInChance * frequency * Mathf.Max(exposure, 0.08f) / Mathf.Max(1, shops) * loss * 100f);
         }
 
-        /// <summary>Somebody's skills as the game names them, each with its value: "Customer Service 62, Cleaning 40".</summary>
+        /// <summary>Somebody's skills as the game names them: "Customer Service 62, Cleaning 40".</summary>
         public static string Skills(EmployeeInstance e)
         {
             Words.Length = 0;

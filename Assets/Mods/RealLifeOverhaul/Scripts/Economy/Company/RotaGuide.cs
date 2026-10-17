@@ -3,11 +3,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The figures the Guide's page "Staff rota planner" prints: every {name} in its text is filled from
-    /// <see cref="RotaCatalogue"/> (and the late opening hours from <see cref="CompanyCatalogue"/>) here, so the page can never say anything the planner does not do. Called once,
-    /// when the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The figures of the Guide page "Staff rota planner", from the catalogues, as the page opens.</summary>
     public static class RotaGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
