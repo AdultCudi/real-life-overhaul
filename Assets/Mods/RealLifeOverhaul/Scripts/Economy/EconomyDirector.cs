@@ -156,6 +156,8 @@ namespace RealLifeOverhaul.Economy
             GlobalEvents.onNewHour -= _onHour;
             GlobalEvents.onNewDay -= _onDay;
             GameEvent.onGameEventTriggered -= _onGameEvent;   // (the handler that was put on: Guard.Wrap's, not the method itself)
+            CreditLedger.GradeChanged -= _onGrade;   // this director's own: on the ledger's static events they would keep it, and all it read, alive
+            CreditLedger.Posted -= _onPosted;
             if (Instance != this)
             {
                 // Another city's director has started since: the file, the banks and the ledger are its, and are left alone.
