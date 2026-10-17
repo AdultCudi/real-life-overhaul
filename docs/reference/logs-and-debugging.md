@@ -126,7 +126,9 @@ A second line a minute says what grew since the first minute of the record, so t
 ```
 Session 12 min, what grew since minute 2: textures 1834 (+40), 612 MB (+35); the mod's holders: Civic Props +120 (160
 now), Transit +40 (310 now), Fire Effects +6 (12 now); the kinds below them: Civic Props > cone +80 (100 now), ...; in the
-scene kept across loads 412 of the mod's objects (+3) (58 holders and 214 kinds counted).
+scene kept across loads 412 of the mod's objects (+3) (58 holders and 214 kinds counted); the managed heap after its last
+collection 690 MB (+40 since the first collection seen); the mod's log lines in the minute 52, 610 this run (the game
+keeps every log line in memory for the whole run).
 ```
 
 | part | what it is | what to look for over a session |
@@ -135,6 +137,8 @@ scene kept across loads 412 of the mod's objects (+3) (58 holders and 214 kinds 
 | the mod's holders | the objects right under a root of the mod's (`Civic Props`, `Transit`, `Fire Effects`), each with everything below it, against the first minute: the three that grew the most | everything is pooled, so a holder grows while new kinds of scene are met and then stands still |
 | the kinds below them | the same one level down, by name without its number (`Civic Props > cone`, `Transit > Bus Stop`) | the kind that keeps growing is the leak, by name |
 | the scene kept across loads | the mod's objects in the engine's scene for objects kept across loads (`DontDestroyOnLoad`), counted for this line alone so the first line's "mod objects" means what it always has | stands still after the first minutes |
+| the managed heap after its last collection | `GC.GetTotalMemory(false)` in the first frame after a collection finished: what the heap keeps, its garbage gone, against the first collection the record saw | the first line's heap goes up and down with garbage; this one rises only with what is held. Tens of megabytes an hour, hour after hour, is memory kept somewhere: the game's or the mod's |
+| the mod's log lines | lines the mod wrote to the log in the minute and this run (`Meta.Dev.Lines`) | the game keeps every log line in memory for the whole run (`DebugLogCollector`), and goes through all of them for each new one: with Developer diagnostics on, a few thousand an hour |
 
 One line for a frame in which the managed heap grew by 8 MB or more at once (6 a minute at most): how much, how much of it under the mod's own scripts (where that frame was counted) and under which, and the mod's last pieces of work.
 

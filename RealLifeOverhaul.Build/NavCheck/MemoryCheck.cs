@@ -146,5 +146,8 @@ internal static partial class Program
         Check(scene.Contains("GetComponentsInChildren(true, _under)") && scene.Contains("_kinds.Add(ObjectKinds.Key(") && scene.Contains("_holders.Add(ObjectKinds.Key("),
             "kinds: the walk fills a list it keeps and counts every holder and kind");
         Check(Body(watch, "private Scene KeptScene()").Contains("if (!_keptRead)"), "kinds: the scene kept across loads is found once");
+        string update = Body(watch, "private void OnUpdate()"), grew = Body(watch, "private void Grew(");
+        Check(update.Contains("if (collections != collectionsBefore)") && update.Contains("_afterCollection = heap;") && grew.Contains("after its last collection") && grew.Contains("Meta.Dev.Lines"),
+            "kinds: the line a minute says what the heap keeps after a collection (garbage aside) and how many lines the mod logged, which the game keeps all run");
     }
 }

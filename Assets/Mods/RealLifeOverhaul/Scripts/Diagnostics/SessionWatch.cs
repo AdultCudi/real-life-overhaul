@@ -41,10 +41,13 @@ namespace RealLifeOverhaul
     ///
     ///   Session 12 min, what grew since minute 2: textures 1834 (+40), 612 MB (+35); the mod's holders: Civic Props
     ///   +120 (160 now), ...; the kinds below them: Civic Props > cone +80 (100 now), ...; in the scene kept across
-    ///   loads 412 of the mod's objects (+3).
+    ///   loads 412 of the mod's objects (+3) (58 holders and 214 kinds counted); the managed heap after its last
+    ///   collection 690 MB (+40 since the first collection seen); the mod's log lines in the minute 52, 610 this run.
     ///
     /// Textures are the engine's own count of those not streamed (every one a script makes is among them); the holders
     /// are the objects right under a root of the mod's, and the kinds those under a holder, names without their numbers.
+    /// The heap after a collection is what is kept, garbage aside: a rise of it minute after minute is memory held.
+    /// The game keeps every line of the log in memory for the whole run, so the log lines are memory too.
     ///
     /// The line for a long frame says what the mod was doing, if one of its large one-off pieces of work was
     /// under way: the places that do such work name it with <see cref="Mark"/> (a character being built, a bus
@@ -152,6 +155,8 @@ namespace RealLifeOverhaul
         private bool _keptRead;
         private int _keptObjects, _keptFirst = -1;
         private long _texturesFirst = -1, _textureBytesFirst;
+        private long _afterCollection = -1, _afterCollectionFirst = -1;   // the managed heap in the first frame after a collection: what is kept, not garbage
+        private int _linesAtMinute = -1;
 
         private float _since;
         private float _started;
@@ -578,6 +583,10 @@ namespace RealLifeOverhaul
             long heap = GC.GetTotalMemory(false);
             long heapBefore = _heapLastFrame;
             _heapLastFrame = heap;
+            if (collections != collectionsBefore)
+            {
+                _afterCollection = heap;
+            }
             long collectorNanos = _collector.Valid ? _collector.LastValue : 0L;   // the frame before this one, complete
             bool inside = BuildingManager.IsInsideBuilding;
             bool faded = UI.UiFader.isFading;
@@ -973,7 +982,25 @@ namespace RealLifeOverhaul
             _line.Append("; the kinds below them: ");
             Growers(_kinds);
             _line.Append("; in the scene kept across loads ").Append(_keptObjects).Append(" of the mod's objects (").Append(Signed(_keptObjects - _keptFirst)).Append(")");
-            _line.Append(" (").Append(_holders.Count).Append(" holders and ").Append(_kinds.Count).Append(" kinds counted).");
+            _line.Append(" (").Append(_holders.Count).Append(" holders and ").Append(_kinds.Count).Append(" kinds counted)");
+            // What the heap keeps (read just after a collection, so garbage is not in it), and the log's own share of it.
+            if (_afterCollection >= 0 && _afterCollectionFirst < 0)
+            {
+                _afterCollectionFirst = _afterCollection;
+            }
+            _line.Append("; the managed heap after its last collection ");
+            if (_afterCollection >= 0)
+            {
+                _line.Append(Megabytes(_afterCollection)).Append(" MB (").Append(Signed(Megabytes(_afterCollection) - Megabytes(_afterCollectionFirst))).Append(" since the first collection seen)");
+            }
+            else
+            {
+                _line.Append("not seen yet");
+            }
+            int lines = Meta.Dev.Lines;
+            _line.Append("; the mod's log lines in the minute ").Append(_linesAtMinute >= 0 ? lines - _linesAtMinute : 0).Append(", ").Append(lines)
+                .Append(" this run (the game keeps every log line in memory for the whole run).");
+            _linesAtMinute = lines;
             Logger?.Info(_line.ToString());
         }
 
