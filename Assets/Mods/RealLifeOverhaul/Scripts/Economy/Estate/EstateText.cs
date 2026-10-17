@@ -3,28 +3,27 @@ using Localizor;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The property business's words: every text is a key of the locale file, filled in here, with money, days and
-    /// shares written as the Finance app writes them. Nothing is kept; a text is made when a page is written or a
-    /// notice is sent.
-    /// </summary>
+    /// <summary>The property business's words: locale keys filled in, with money and shares written as the Finance app writes them.</summary>
     public static class EstateText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        public static readonly string[] UseKeys = { "reallife_estate_use_homes", "reallife_estate_use_shops", "reallife_estate_use_offices", "reallife_estate_use_storage" };
-        public static readonly string[] WorkKeys = { "reallife_estate_work_none", "reallife_estate_work_repair", "reallife_estate_work_refurbish", "reallife_estate_work_planning", "reallife_estate_work_convert" };
-        public static readonly string[] CycleKeys = { "reallife_estate_cycle_boom", "reallife_estate_cycle_steady", "reallife_estate_cycle_slowdown", "reallife_estate_cycle_recession" };
-        public static readonly string[] StaffKeys = { "reallife_estate_staff_basic", "reallife_estate_staff_standard", "reallife_estate_staff_excellent" };
-        public static readonly string[] ReviewKeys =
+        private static readonly string[] UseKeys = { "reallife_estate_use_homes", "reallife_estate_use_shops", "reallife_estate_use_offices", "reallife_estate_use_storage" };
+        private static readonly string[] WorkKeys =
         {
-            "reallife_estate_review_none", "reallife_estate_review_clean", "reallife_estate_review_dirty", "reallife_estate_review_staff", "reallife_estate_review_no_staff", "reallife_estate_review_value",
-            "reallife_estate_review_dear"
+            "reallife_estate_work_none", "reallife_estate_work_repair", "reallife_estate_work_refurbish", "reallife_estate_work_planning", "reallife_estate_work_convert"
         };
-        public static readonly string[] CarStateKeys = { "reallife_estate_car_idle", "reallife_estate_car_out", "reallife_estate_car_valet", "reallife_estate_car_waiting" };
+        private static readonly string[] CycleKeys = { "reallife_estate_cycle_boom", "reallife_estate_cycle_steady", "reallife_estate_cycle_slowdown", "reallife_estate_cycle_recession" };
+        private static readonly string[] StaffKeys = { "reallife_estate_staff_basic", "reallife_estate_staff_standard", "reallife_estate_staff_excellent" };
+        private static readonly string[] ReviewKeys =
+        {
+            "reallife_estate_review_none", "reallife_estate_review_clean", "reallife_estate_review_dirty", "reallife_estate_review_staff", "reallife_estate_review_no_staff",
+            "reallife_estate_review_value", "reallife_estate_review_dear"
+        };
+        private static readonly string[] CarStateKeys = { "reallife_estate_car_idle", "reallife_estate_car_out", "reallife_estate_car_valet", "reallife_estate_car_waiting" };
         public static readonly string[] ClassKeys = { "reallife_estate_class_economy", "reallife_estate_class_standard", "reallife_estate_class_premium", "reallife_estate_class_luxury" };
         public static readonly string[] StageKeys = { "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing" };
-        /// <summary>Who a tenant is, by the building's use: eight descriptions each. Never a name.</summary>
+        // Eight descriptions for each use: a tenant is never named.
         private static readonly string[][] TenantKeys =
         {
             new[] { "reallife_estate_tenant_homes_0", "reallife_estate_tenant_homes_1", "reallife_estate_tenant_homes_2", "reallife_estate_tenant_homes_3",
@@ -66,11 +65,6 @@ namespace RealLifeOverhaul.Economy
         public static string Money(float amount)
         {
             return FinanceText.Money(amount);
-        }
-
-        public static string Pair(string labelKey, string value)
-        {
-            return FinanceText.Pair(labelKey, value);
         }
 
         /// <summary>Thousandths as a per cent: "105%", "6.5%".</summary>
@@ -131,7 +125,7 @@ namespace RealLifeOverhaul.Economy
             return T(StageKeys[EstateCatalogue.Clamp(stage, 0, StageKeys.Length - 1)]);
         }
 
-        /// <summary>Who a tenant or an applicant is: one of eight descriptions for the building's use. Never a name.</summary>
+        /// <summary>Who a tenant or an applicant is, by the building's use.</summary>
         public static string Tenant(int use, int kind)
         {
             string[] kinds = TenantKeys[EstateCatalogue.Clamp(use, 0, TenantKeys.Length - 1)];
@@ -150,7 +144,6 @@ namespace RealLifeOverhaul.Economy
             return T(record >= 80 ? "reallife_estate_record_good" : record >= 60 ? "reallife_estate_record_fair" : record >= 40 ? "reallife_estate_record_patchy" : "reallife_estate_record_poor");
         }
 
-        /// <summary>A district's name as the game writes it.</summary>
         public static string District(string district)
         {
             return CompanyText.District(district);
