@@ -1,13 +1,38 @@
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using RealLifeOverhaul.Fame;
 
 // Checks for Standing's scene window (Scripts/Fame/FamePanel): it is destroyed with the director, as every window the
-// mod makes from the game's list is destroyed somewhere.
+// mod makes from the game's list is destroyed somewhere; and its figures in tenths read the same on every machine.
 internal static partial class Program
 {
     private static void FameFixes()
     {
         FameWindowGoes();
+        FameTenths();
+    }
+
+    private static void FameTenths()
+    {
+        CultureInfo was = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+            Check(FameRules.Tenths(16) == "1.6" && FameRules.Tenths(-5) == "-0.5" && FameRules.Tenths(0) == "0.0" && FameRules.Tenths(300) == "30.0",
+                "Standing: tenths of a point read 1.6, not 1,6, on a machine that writes a decimal comma");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = was;
+        }
+        string fame = string.Empty;
+        foreach (string file in Directory.GetFiles(System.IO.Path.Combine(PhotoScripts, "Fame"), "*.cs"))
+        {
+            fame += File.ReadAllText(file);
+        }
+        Check(fame.Length > 0 && !Regex.IsMatch(fame, @"\.ToString\(""[^""]*[0#][.,][^""]*""\)"),
+            "Standing: no figure with a decimal is written in the machine's culture (FameRules.Tenths, or InvariantCulture)");
     }
 
     private static void FameWindowGoes()

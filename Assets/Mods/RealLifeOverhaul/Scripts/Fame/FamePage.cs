@@ -181,8 +181,7 @@ namespace RealLifeOverhaul.Fame
                 box.Title(FameText.T("reallife_fame_row_recognition"));
                 box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_fame_label_recognition", RecognitionValue(f));
-                box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press",
-                    (f.Press / 10f).ToString("0.0", CultureInfo.InvariantCulture)));
+                box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", FameRules.Tenths(f.Press)));
                 about = FameText.T("reallife_fame_recognition_about");
             }
             else if (picked.StartsWith("part:", StringComparison.Ordinal))

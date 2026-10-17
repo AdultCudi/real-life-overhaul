@@ -247,7 +247,7 @@ namespace RealLifeOverhaul.Fame
             FamePromise promise = a.Promises ? FamePress.Promise(_file, ask.Promise, cause, day) : null;
             _scenePress += press;
             Logger?.Info("Standing: " + venue + ", " + ask.Question + (ask.Question == FameQuestion.Hard ? " about " + ask.Topic : string.Empty) + ", answer " + (option + 1)
-                         + ": " + (press / 10f).ToString("0.0") + " recognition from the papers" + (a.MoveA != 0 ? ", " + a.PartA + " " + a.MoveA : string.Empty)
+                         + ": " + FameRules.Tenths(press) + " recognition from the papers" + (a.MoveA != 0 ? ", " + a.PartA + " " + a.MoveA : string.Empty)
                          + (a.MoveB != 0 ? ", " + a.PartB + " " + a.MoveB : string.Empty)
                          + (promise != null ? ", a promise (" + promise.Kind + ", goal " + promise.Goal + " by day " + promise.Due + ")"
                             : a.Promises ? ", no new promise (one of the kind or three are open)" : string.Empty) + ".");
@@ -339,7 +339,7 @@ namespace RealLifeOverhaul.Fame
             string speaker = FameText.T(show ? "reallife_fame_show_host" : "reallife_fame_magazine_writer");
             if (_sceneAt >= _asks.Count)
             {
-                string end = FameText.Fill(_sceneHard > _sceneGood ? "reallife_fame_scene_end_hard" : "reallife_fame_scene_end", "points", (_scenePress / 10f).ToString("0.0"));
+                string end = FameText.Fill(_sceneHard > _sceneGood ? "reallife_fame_scene_end_hard" : "reallife_fame_scene_end", "points", FameRules.Tenths(_scenePress));
                 _panel.Show(title, place, speaker, end, new[] { FameText.T("reallife_fame_scene_leave") }, null, 1, _ => SceneOver(true));
                 return;
             }

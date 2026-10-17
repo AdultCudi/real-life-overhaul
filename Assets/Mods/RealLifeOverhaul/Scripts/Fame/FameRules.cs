@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace RealLifeOverhaul.Fame
 {
@@ -55,6 +56,9 @@ namespace RealLifeOverhaul.Fame
         public const int VisitStanding = 1;        // points of each one's standing, up or down
 
         public static int Clamp(int value, int least, int most) => value < least ? least : value > most ? most : value;
+
+        /// <summary>Tenths of a point with one decimal, the same on every machine: 16 is "1.6".</summary>
+        public static string Tenths(int tenths) => (tenths / 10f).ToString("0.0", CultureInfo.InvariantCulture);
 
         private static int Round(double value) => (int)Math.Floor(value + 0.5);
 
