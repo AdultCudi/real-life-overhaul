@@ -41,12 +41,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobCatalogue.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobPhone.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeBridges.cs	4
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeLaw.cs	2
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticePanel.cs	2
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeSettings.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeState.cs	8
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Justice/LegalCounsel.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Law/RecordPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/LeisureApi.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/Shops/ClothesShop.cs	1
@@ -363,7 +357,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobBoards.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobSites.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/LeisureDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Licences/Driving/DrivingEnforcement.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Licences/Driving/DrivingSchool.cs	1
@@ -663,13 +656,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/CleanerJob.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/CourierJob.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/LeadJob.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/VendorJob.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/CommunityService.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/CourtHearing.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeBridges.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/RestraintClaims.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/RivalClaims.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Justice/TaxCases.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Law/Custody.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Law/PrecinctFrontage.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Law/Precincts.cs	1
