@@ -3,23 +3,14 @@ using System;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// "This business is gone", for "running a business": the one thing selling a business needs of it and that it
-    /// did not have. It lives here, in its own file beside the feature that calls it (through
-    /// Wiring/ServicesLinks), so that nothing of the company's own files is changed.
-    ///
-    /// The company would find out by itself the next morning, when it reads the player's businesses again and drops
-    /// the file of one that is no longer theirs (its insurance, licences, campaign, strike and overtime go with the
-    /// file). Until then its pages would still list the business, and its hourly look would go on writing the
-    /// footfall of a building that is now somebody else's. So the businesses and the staff are read again at once:
-    /// the business is no longer among them, and nothing of the company's touches its building again. (What a
-    /// campaign had added to the business's promotion figure is not taken back: the figure went with the business,
-    /// and the game works it out afresh each night for a building that is the player's.)
-    ///
-    /// Cost: one reading of the player's businesses and staff, when a business is sold.
+    /// The company's part that hears a business is gone, kept beside selling a business, which calls it through
+    /// Wiring/ServicesLinks. The file closes at once rather than the next morning, so nothing of the company touches a
+    /// building that is now somebody else's; what a campaign added to its promotion went with the business. Cost: one
+    /// reading of the player's businesses and staff, per sale.
     /// </summary>
     public sealed partial class CompanyDirector
     {
-        /// <summary>A business of the player's has been sold or given up: by its place, as business pressure writes one. Does nothing if the company does not know it.</summary>
+        /// <summary>A business of the player's has been sold or given up, by its place. Does nothing if the company does not know it.</summary>
         public void BusinessGone(string place)
         {
             if (!_running || _broken || Save == null || string.IsNullOrEmpty(place))
@@ -40,8 +31,8 @@ namespace RealLifeOverhaul.Economy
                 Read(Save.Day, false, false, out added, out dropped, out gone);
                 RotaRead();
                 Changed();
-                Logger?.Info("Company: '" + name + "' is no longer the player's. Its file is closed (insurance, licences, campaign, strike and overtime go with it); " + dropped + " business file(s) and " + gone
-                             + " staff file(s) dropped, " + _shops.Count + " business(es) left.");
+                Logger?.Info("Company: '" + name + "' is no longer the player's. Its file is closed (insurance, licences, campaign, strike and overtime go with it); "
+                             + dropped + " business file(s) and " + gone + " staff file(s) dropped, " + _shops.Count + " business(es) left.");
             }
             catch (Exception e)
             {

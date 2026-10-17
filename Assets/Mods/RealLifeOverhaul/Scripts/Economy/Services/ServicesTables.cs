@@ -3,13 +3,12 @@ using RealLifeOverhaul.GameUi;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Services app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, which
-    /// are summed, what its rows can be filtered by, the order it opens in, and the sentence shown when a filter
-    /// leaves nothing. The numbers beside each are the columns, for whoever writes the rows.
+    /// The Services app's tables as data (GameUi.TableSpec): each tab's columns, sorting, sums, filter, opening order and
+    /// the sentence shown when a filter leaves nothing. Each table's summary numbers its columns, for whoever writes rows.
     /// </summary>
     internal static class ServicesTables
     {
-        // ---- the kinds of row of each table (its filter)
+        // The kinds of row of each table, for its filter.
         public const int Own = 0, Contract = 1, NotOn = 2;                // Cleaning
         public const int OnCrew = 0, OffCrew = 1;                        // Crew
         public const int Offer = 0, Running = 1;                         // Contracts
@@ -23,7 +22,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>While the feature is not running, or a part is off: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Services", "Off").Column("reallife_co_col_business", 600f, TableSort.None, flexible: true);
 
-        /// <summary>Cleaning: 0 business, 1 district, 2 minutes a day it needs, 3 minutes it got today, 4 cleanliness, 5 next visit, 6 state. Opens with the dirtiest floor first.</summary>
+        /// <summary>0 business, 1 district, 2 minutes a day it needs, 3 minutes it got today, 4 cleanliness, 5 next visit, 6 state.</summary>
         public static readonly TableSpec Cleaning = new TableSpec("Services", "Cleaning")
             .Column("reallife_co_col_business", 460f, TableSort.Text, flexible: true)
             .Column("reallife_co_col_district", 280f, TableSort.Text)
@@ -36,7 +35,7 @@ namespace RealLifeOverhaul.Economy
             .Order(4, true)
             .Empty("reallife_svc_empty_cleaning");
 
-        /// <summary>Crew: 0 name, 1 assigned to, 2 cleaning skill, 3 satisfaction, 4 wage an hour, 5 hours a week, 6 wages a week, 7 today's shift, 8 on the crew or not. Opens by name.</summary>
+        /// <summary>0 name, 1 assigned to, 2 skill, 3 satisfaction, 4 wage an hour, 5 hours a week, 6 wages a week, 7 today's shift, 8 on the crew.</summary>
         public static readonly TableSpec Crew = new TableSpec("Services", "Crew")
             .Column("reallife_co_col_name", 360f, TableSort.Text, flexible: true)
             .Column("reallife_svc_col_base", 340f, TableSort.Text)
@@ -51,7 +50,7 @@ namespace RealLifeOverhaul.Economy
             .Order(0, true)
             .Empty("reallife_svc_empty_crew");
 
-        /// <summary>Contracts: 0 business, 1 district, 2 fee a week, 3 the cleanliness it asks, 4 its floor now, 5 the day to answer by or the day its week ends, 6 state. Opens with the nearest day first.</summary>
+        /// <summary>0 business, 1 district, 2 fee a week, 3 standard asked, 4 floor now, 5 the day to answer by or the week ends, 6 state.</summary>
         public static readonly TableSpec Contracts = new TableSpec("Services", "Contracts")
             .Column("reallife_co_col_business", 460f, TableSort.Text, flexible: true)
             .Column("reallife_co_col_district", 320f, TableSort.Text)
@@ -64,7 +63,7 @@ namespace RealLifeOverhaul.Economy
             .Order(5, true)
             .Empty("reallife_svc_empty_contracts");
 
-        /// <summary>Sell: 0 business, 1 its district or the buyer, 2 worth, 3 asking price or offer, 4 offers standing, 5 the day an offer stands until, 6 state. Opens with what is worth most first.</summary>
+        /// <summary>0 business, 1 district or buyer, 2 worth, 3 asking price or offer, 4 offers standing, 5 an offer's last day, 6 state.</summary>
         public static readonly TableSpec Sale = new TableSpec("Services", "Sell")
             .Column("reallife_co_col_business", 460f, TableSort.Text, flexible: true)
             .Column("reallife_svc_col_buyer", 420f, TableSort.Text)

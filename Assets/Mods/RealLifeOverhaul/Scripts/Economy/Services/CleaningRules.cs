@@ -4,44 +4,27 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What a cleaner does to a floor, by the game's own arithmetic. Game-free.
-    ///
-    /// The game cleans once an hour: every tile of a building loses the skill of each cleaner on a cleaning shift
-    /// there, times their satisfaction, divided by the cleaners the floor needs for its size
-    /// (BuildingCleanliness.SimulateCleaning). A visit by the cleaning service does exactly that for the minutes the
-    /// cleaner is there, and nothing else: the same figure for a shop of the player's (written to the game's own
-    /// tiles) and for a client under contract (kept by the mod, since the game keeps no dirt for a business that is
-    /// not the player's).
-    ///
-    /// Dirt is in hundredths of the game's points, a rate in hundredths an hour off every tile.
+    /// What a cleaner does to a floor, by the game's own sum (BuildingCleanliness.SimulateCleaning), for a visit's minutes.
+    /// Game-free; dirt in hundredths of the game's points, a rate in hundredths an hour off every tile.
     /// </summary>
     public static class CleaningRules
     {
         /// <summary>The cleaners a floor of this size needs: one for each 200 m2 begun, one at least.</summary>
-        public static int Force(int squareMetres)
-        {
-            return Math.Max(1, (Math.Max(0, squareMetres) * ServicesCatalogue.ForcePerThousandSqm + 999) / 1000);
-        }
+        public static int Force(int squareMetres) => Math.Max(1, (Math.Max(0, squareMetres) * ServicesCatalogue.ForcePerThousandSqm + 999) / 1000);
 
-        /// <summary>What one cleaner takes off every tile in an hour: skill (0 to 100) by satisfaction (0 to 100) over the force.</summary>
+        /// <summary>What one cleaner takes off every tile in an hour: skill by satisfaction (each 0 to 100) over the force.</summary>
         public static int Rate(int skill, int satisfaction, int force)
         {
             return ServicesCatalogue.Clamp(skill, 0, 100) * ServicesCatalogue.Clamp(satisfaction, 0, 100) / Math.Max(1, force);
         }
 
         /// <summary>What comes off every tile in so many minutes at a rate.</summary>
-        public static int Off(int rate, int minutes)
-        {
-            return rate <= 0 || minutes <= 0 ? 0 : (int)((long)rate * minutes / 60);
-        }
+        public static int Off(int rate, int minutes) => rate <= 0 || minutes <= 0 ? 0 : (int)((long)rate * minutes / 60);
 
-        /// <summary>The minutes it takes to bring a tile this dirty to nothing; 0 for a clean one or a cleaner who takes nothing off.</summary>
-        public static int Minutes(int dirt, int rate)
-        {
-            return dirt <= 0 || rate <= 0 ? 0 : (int)(((long)dirt * 60 + rate - 1) / rate);
-        }
+        /// <summary>The minutes that bring a tile this dirty to nothing; 0 for a clean tile or a rate of nothing.</summary>
+        public static int Minutes(int dirt, int rate) => dirt <= 0 || rate <= 0 ? 0 : (int)(((long)dirt * 60 + rate - 1) / rate);
 
-        /// <summary>The length a visit is planned at: what the dirt takes, between the shortest and the longest visit; the usual length where the dirt is not known.</summary>
+        /// <summary>A visit's planned length: what the dirt takes, within the shortest and longest visit; the usual length for unknown (negative) dirt.</summary>
         public static int Planned(int dirt, int rate)
         {
             if (rate <= 0)
@@ -51,13 +34,9 @@ namespace RealLifeOverhaul.Economy
             return dirt < 0 ? ServicesCatalogue.VisitDefault : ServicesCatalogue.Clamp(Minutes(dirt, rate), ServicesCatalogue.VisitLeast, ServicesCatalogue.VisitMost);
         }
 
-        /// <summary>A tile after cleaning.</summary>
-        public static int Clean(int dirt, int off)
-        {
-            return Math.Max(0, dirt - Math.Max(0, off));
-        }
+        public static int Clean(int dirt, int off) => Math.Max(0, dirt - Math.Max(0, off));
 
-        /// <summary>Every tile of a floor after cleaning. Returns the dirtiest that is left.</summary>
+        /// <summary>Cleans every tile of a floor; returns the dirtiest that is left.</summary>
         public static int Clean(int[] tiles, int off)
         {
             int worst = 0;
@@ -69,20 +48,10 @@ namespace RealLifeOverhaul.Economy
             return worst;
         }
 
-        /// <summary>
-        /// A tile at the cleaner's own base before the game's hourly cleaning, for the minutes they were out: the
-        /// game is about to take a whole hour of their work off it, so the part of the hour they spent elsewhere is
-        /// put on first and the two cancel. Never past the dirtiest a tile can be.
-        /// </summary>
-        public static int Hold(int dirt, int rate, int awayMinutes)
-        {
-            return Math.Min(ServicesCatalogue.DirtMost, dirt + Off(rate, Math.Min(60, awayMinutes)));
-        }
+        /// <summary>A tile at a cleaner's base with their minutes away put back on, before the game takes a whole hour of their work off it.</summary>
+        public static int Hold(int dirt, int rate, int awayMinutes) => Math.Min(ServicesCatalogue.DirtMost, dirt + Off(rate, Math.Min(60, awayMinutes)));
 
-        /// <summary>
-        /// A floor's cleanliness as the game works it out (BuildingCleanliness.GetCleanliness): 100 less the mean dirt
-        /// of all tiles and less the mean of the dirt that shows, cut to a whole number; 100 where nothing shows.
-        /// </summary>
+        /// <summary>A floor's cleanliness as BuildingCleanliness.GetCleanliness works it out: 100 less the mean dirt and the mean dirt that shows.</summary>
         public static int Cleanliness(long total, long visible, int tiles)
         {
             if (tiles <= 0 || visible <= 0)
@@ -103,16 +72,10 @@ namespace RealLifeOverhaul.Economy
             return Cleanliness(total, visible, tiles != null ? tiles.Length : 0);
         }
 
-        /// <summary>The cleanliness of a floor that is evenly this dirty: a client under contract, whose floor the mod keeps as one figure.</summary>
-        public static int Even(int dirt)
-        {
-            return Cleanliness(dirt, dirt >= ServicesCatalogue.DirtVisible ? dirt : 0, 1);
-        }
+        /// <summary>The cleanliness of a floor evenly this dirty: a contract client's, which the mod keeps as one figure.</summary>
+        public static int Even(int dirt) => Cleanliness(dirt, dirt >= ServicesCatalogue.DirtVisible ? dirt : 0, 1);
 
-        /// <summary>
-        /// The dirt a business makes in a day, measured: how much dirtier its worst tile is than a day ago, with what
-        /// the service took off in between put back. Averaged over the last days; -1 until there is a first day.
-        /// </summary>
+        /// <summary>A business's dirt a day: its worst tile's rise since yesterday plus what the service took off, averaged; today's alone at first.</summary>
         public static int NeedDay(int before, int worstStart, int worstEnd, int cleaned)
         {
             int today = Math.Max(0, worstEnd - worstStart + Math.Max(0, cleaned));
@@ -120,16 +83,10 @@ namespace RealLifeOverhaul.Economy
             return before < 0 ? today : (int)(((long)before * (days - 1) + today + days / 2) / days);
         }
 
-        /// <summary>The minutes of cleaning a day that keep such a business level, at a rate; 0 while nothing has been measured.</summary>
-        public static int NeedMinutes(int needDay, int rate)
-        {
-            return needDay <= 0 ? 0 : Minutes(needDay, rate);
-        }
+        /// <summary>The minutes of cleaning a day that keep such a business level; 0 while nothing has been measured.</summary>
+        public static int NeedMinutes(int needDay, int rate) => needDay <= 0 ? 0 : Minutes(needDay, rate);
 
-        /// <summary>
-        /// What a cleaner of its own would cost a business a week: whole hours a day, the shortest shift at least,
-        /// seven days, at an hourly wage in hundredths.
-        /// </summary>
+        /// <summary>What a shop's own cleaner would cost a week: whole hours a day, the shortest shift at least, at a wage in hundredths an hour.</summary>
         public static int OwnWeek(int needMinutesDay, int wage)
         {
             int hours = Math.Max(ServicesCatalogue.OwnShiftLeastHours, (Math.Max(0, needMinutesDay) + 59) / 60);
@@ -137,13 +94,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// The way between two doors. Game-free.
-    ///
-    /// The distance is the straight line times a factor for the streets; the time is that distance at the pace of
-    /// somebody on foot or of a van, in minutes of the game's clock. A distance is worked out once for a pair of doors
-    /// and kept (<see cref="TravelCache"/>): a round asks for the same pairs again and again.
-    /// </summary>
+    /// <summary>The way between two doors: the straight line times a factor for the streets, on foot or by van. Game-free.</summary>
     public static class TravelRules
     {
         public static int Metres(int x1, int z1, int x2, int z2)
@@ -152,26 +103,26 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Round(Math.Sqrt(dx * dx + dz * dz) * ServicesCatalogue.StreetFactor / 100.0);
         }
 
-        /// <summary>Minutes of the game's clock for a way, rounded up; nothing for no way at all.</summary>
+        /// <summary>Game minutes for a way, rounded up.</summary>
         public static int Minutes(int metres, bool van)
         {
             int pace = van ? ServicesCatalogue.VanPerMinute : ServicesCatalogue.WalkPerMinute;
             return metres <= 0 ? 0 : (int)(((long)metres * 100 + pace - 1) / pace);
         }
 
-        /// <summary>What a day's driving costs. The index is in tenths of a point.</summary>
+        /// <summary>What a day's driving costs at a price index in tenths of a point.</summary>
         public static int Cost(int metres, int index)
         {
             return metres <= 0 ? 0 : (int)(((long)metres * ServicesCatalogue.VanCostPerKm * ServicesCatalogue.Clamp(index, 500, 4000) + 500000) / 1000000);
         }
     }
 
-    /// <summary>Distances between doors, each worked out once. A few dozen entries; cleared when the list of places changes.</summary>
+    /// <summary>Distances between doors, each worked out once: a round asks for the same pairs again and again.</summary>
     public sealed class TravelCache
     {
         private readonly Dictionary<long, int> _metres = new Dictionary<long, int>(64);
 
-        /// <summary>How often a distance was already known, and how often it had to be worked out.</summary>
+        /// <summary>How often a distance was already known; <see cref="Misses"/>: how often it was worked out.</summary>
         public int Hits { get; private set; }
         public int Misses { get; private set; }
         public int Count => _metres.Count;
@@ -184,8 +135,7 @@ namespace RealLifeOverhaul.Economy
                 return 0;
             }
             long key = a < b ? (a << 32) | b : (b << 32) | a;
-            int metres;
-            if (_metres.TryGetValue(key, out metres))
+            if (_metres.TryGetValue(key, out int metres))
             {
                 Hits++;
                 return metres;
