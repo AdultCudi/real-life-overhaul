@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using BigAmbitions.Rivals;
 using Buildings;
 using Entities;
-using Extensions;
-using GleyTrafficSystem;
 using Helpers;
 using Localizor;
 using Streets;
@@ -14,11 +11,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What the property business asks of the rest of the mod. Each is optional and has a default, so
-    /// Economy/Estate works alone; Scripts/Wiring/EstateLinks.cs fills them in. It never calls another feature
-    /// directly, except Travel's catalogue of hotels and rooms, which is static data.
-    /// </summary>
+    /// <summary>What the property business asks of the rest of the mod, filled in by Wiring/EstateLinks; each is optional.</summary>
     public static class EstateBridges
     {
         /// <summary>The council's rent policy: -1 freed, 0 as it was, +1 controlled. Default: as it was.</summary>
@@ -27,16 +20,13 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The council's permits policy: -1 tightened, +1 eased. Default: as it was.</summary>
         public static Func<int> PermitLever;
 
-        /// <summary>What is on in the city on a day, by the event calendar's own number (0 for nothing). Default: nothing.</summary>
+        /// <summary>What is on in the city on a day, by the event calendar's number (0 for nothing).</summary>
         public static Func<int, int> EventOn;
 
-        /// <summary>The rows the Planner shows for the property business are handed over by Wiring; this says they changed. Default: nobody listens.</summary>
+        /// <summary>The Planner's rows for the property business have changed.</summary>
         public static Action Changed;
 
-        /// <summary>
-        /// What a rival buying up a district adds to the price of the buildings there that are not the player's, per mille, by
-        /// the game's own district key (Scripts/Rivals, through Wiring/RivalLinks). Default: nothing.
-        /// </summary>
+        /// <summary>Per mille a rival buying up a district adds to the price of its buildings that are not the player's, by the game's district key.</summary>
         public static Func<string, int> Premium;
 
         public static void Reset()
@@ -53,45 +43,23 @@ namespace RealLifeOverhaul.Economy
     internal sealed class CityBuilding
     {
         public Building B;
-        public float Custom;        // the game's own custom price, as it was found: put back when the feature stops
+        public float Custom;        // the game's own custom price, put back when the feature stops
         public int Base;            // the game's own value of it
         public int Key;             // a number for its address
-        public int Units = 1;       // the units the game counts in it (EstateRules.UnitCount)
+        public int Units = 1;       // the units the game counts in it
         public string Place, District;
         public EstateHolding Holding;   // the player's, while they own it
     }
 
     /// <summary>
-    /// Everything the property business reads from or does to the game, in one place.
-    ///
-    /// READ: every building's own value and district (Building.GetMarketValue, Neighbourhood), and the units it is
-    /// let in (its floor, Building.totalSqm, over its unit's size, BuildingSizeData.squareMeters); the buildings the
-    /// player owns and what the game recorded of the purchase (GameInstance.realEstate); the game's listings
-    /// (GameInstance.buildingsForSale); the employees at the agency's office (EmployeeInstance); Travel's hotels
-    /// and rooms; the player's vehicles (GameInstance.VehicleInstances, VehicleHelper.AllPlayerVehicles).
-    ///
-    /// WRITTEN, each put back when the feature stops:
-    ///   Building.customMarketPrice    the game's one figure for "what this building is worth" (GetMarketValue
-    ///                                 answers it when it is set): every screen and rule of the game then uses the
-    ///                                 mod's value. The asset's own figure is kept and put back.
-    ///   BuildingForSale.buildingPrice of listings that are not the player's, so the game asks what the mod says
-    ///   RealEstate.pricePerSqm and occupancy of a building the player lets himself: the game's own nightly run
-    ///                                 (RealEstateHelper.UpdatePlayerRealEstate) then pays exactly the agreed rent,
-    ///                                 or nothing. Put at the market's rent and half let before a save and when
-    ///                                 the feature stops, which is what the game gives a building it has just sold.
-    ///
-    /// DONE: money, as dated transactions (GameManager.ChangeMoneySafe); a sale, by the lines of the game's own
-    /// sale to a competitor (RealEstateHelper.SimulateCompetitorBuyingPlayerBuildings); a car that goes out on
-    /// hire and comes back (the object is removed and made again with VehicleHelper.CreateAndSpawnVehicle; its
-    /// entry in the save's list of vehicles stays where it is throughout, so a save always has the car).
-    ///
-    /// Nothing here runs on a timer: once when the feature starts, once a game day, once a month of the city's
-    /// economy, and when the player presses something.
+    /// Everything the property business reads from or does to the game. Building.customMarketPrice and the rent figures
+    /// of a building the player lets himself are put back when the feature stops, and the rents before every save too;
+    /// the game's listings that are not the player's are priced at the mod's value.
     /// </summary>
-    internal static class EstateGame
+    internal static partial class EstateGame
     {
         public const string RentKey = "ba:transaction_rentrevenue";       // the game's own, with the address
-        public const string SoldKey = "ba:transaction_buildingsold";      // the game's own: the mortgage's lender looks for it
+        public const string SoldKey = "ba:transaction_buildingsold";      // the game's own: a mortgage's lender looks for it
         public const string WorksKey = "reallife_transaction_estate_works";
         public const string CoverKey = "reallife_transaction_estate_cover";
         public const string ClaimKey = "reallife_transaction_estate_claim";
@@ -112,27 +80,19 @@ namespace RealLifeOverhaul.Economy
         private const string DeductKey = "reallife_estate_deduct";
         private const string CustomerService = "ba:skill_customerservice";
         private const string OfficeType = "ba:buildingtype_office";
-        private const float KeepAway = 40f;        // metres: a car does not leave or come back with the player nearer than this
-        private const float SpaceClear = 3f;       // metres: a space is taken if another of the player's vehicles stands this near its middle
-        private const float GameRentShare = 50f;   // the share let that the game's own letting is handed back with
-
-        public static IModLogger Logger;
+        private const float GameRentShare = 50f;   // per cent let: what the game gives a building it has just sold
 
         private static readonly List<CityBuilding> City = new List<CityBuilding>(512);
         private static readonly Dictionary<string, CityBuilding> ByPlace = new Dictionary<string, CityBuilding>(512);
-        private static readonly Dictionary<(string, int), CityBuilding> ByAddress = new Dictionary<(string, int), CityBuilding>(512);   // the same, by street and number: no place made to look one up
+        private static readonly Dictionary<(string, int), CityBuilding> ByAddress = new Dictionary<(string, int), CityBuilding>(512);   // by street and number: no place made to look one up
         private static readonly Dictionary<string, long> SqmSum = new Dictionary<string, long>(24);
         private static readonly Dictionary<string, int> SqmCount = new Dictionary<string, int>(24);
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
-
         public static int Buildings => City.Count;
 
-        // ---------------------------------------------------------------- the day's climate
-
-        /// <summary>The city as it stands on a day: the cycle, prices, the bank's rate, the council's policies, the season, the weekday and what is on.</summary>
+        /// <summary>The city as the rules see it on a day.</summary>
         public static EstateClimate Climate(int day)
         {
             GameInstance save = Save;
@@ -153,12 +113,10 @@ namespace RealLifeOverhaul.Economy
             };
         }
 
-        /// <summary>The options' rental income (percent) as the rules take it: thousandths of the market's rent.</summary>
+        /// <summary>The option's rental income as the rules take it: thousandths of the market's rent.</summary>
         public static int RentScale => EstateRules.RentShare(Settings.EstateRent * 10);
 
-        // ---------------------------------------------------------------- the city's buildings and their values
-
-        /// <summary>A building by its address, written as business pressure writes a place.</summary>
+        /// <summary>A building by its address: the street escaped, a tilde, the number.</summary>
         public static string Place(string street, int number)
         {
             return Uri.EscapeDataString(street ?? string.Empty) + "~" + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -171,10 +129,7 @@ namespace RealLifeOverhaul.Economy
             return at > 0 && int.TryParse(place.Substring(at + 1), out number) ? new Address(Uri.UnescapeDataString(place.Substring(0, at)), number) : null;
         }
 
-        /// <summary>
-        /// Every building of the city, once per start: its own value and custom price as the game has them, and what
-        /// a square metre goes for in each district. One pass over the game's buildings. False while the city is not there.
-        /// </summary>
+        /// <summary>Every building of the city and each district's price a square metre, once per start; false while the city is not there.</summary>
         public static bool ReadCity()
         {
             List<Building> all = BuildingHelper.allBuildings;
@@ -211,12 +166,12 @@ namespace RealLifeOverhaul.Economy
                 }
                 var c = new CityBuilding
                 {
-                    B = b, Custom = b.customMarketPrice, Base = Mathf.RoundToInt(Mathf.Min(value, int.MaxValue / 8)), Place = place, Key = EstateRules.Hash(place), District = b.Neighbourhood ?? string.Empty,
-                    Units = EstateRules.UnitCount(b.totalSqm, UnitSqm(b))
+                    B = b, Custom = b.customMarketPrice, Base = Mathf.RoundToInt(Mathf.Min(value, int.MaxValue / 8)), Place = place, Key = EstateRules.Hash(place),
+                    District = b.Neighbourhood ?? string.Empty, Units = EstateRules.UnitCount(b.totalSqm, UnitSqm(b))
                 };
                 City.Add(c);
                 ByPlace[place] = c;
-                ByAddress[(b.StreetName, b.StreetNumber)] = c;   // (the same building by its street and number: a place is one street and number, and back)
+                ByAddress[(b.StreetName, b.StreetNumber)] = c;
                 long sum;
                 int count;
                 SqmSum.TryGetValue(c.District, out sum);
@@ -227,9 +182,8 @@ namespace RealLifeOverhaul.Economy
             return City.Count > 0;
         }
 
-        // The size of the unit the game lets on its own in a building and lets the player take for a business (its
-        // BuildingSizeData, as Building.GetBuildingDailyMarketRent and RealEstate.MaxOccupancy read it); 0 for a size
-        // the game has no data of (BuildingSizeHelper.GetData looks it up in a dictionary and throws for one it lacks).
+        // The size of the unit the game lets on its own in a building (BuildingSizeData, as RealEstate.MaxOccupancy reads
+        // it); 0 for a size the game has no data of, for which BuildingSizeHelper.GetData throws.
         private static int UnitSqm(Building b)
         {
             try
@@ -249,8 +203,7 @@ namespace RealLifeOverhaul.Economy
             return place != null && ByPlace.TryGetValue(place, out c) ? c : null;
         }
 
-        /// <summary>A building by its street and number: what <see cref="Find"/> gives for their place.</summary>
-        internal static CityBuilding FindAt(string street, int number)
+        private static CityBuilding FindAt(string street, int number)
         {
             CityBuilding c;
             return ByAddress.TryGetValue((street ?? string.Empty, number), out c) ? c : null;
@@ -273,16 +226,11 @@ namespace RealLifeOverhaul.Economy
                 return EstateRules.Value(c.Holding, s.Real, index);
             }
             int value = EstateRules.Value(c.Base, s.Real, index, Income(c.District), EstateRules.StreetCondition(s.Seed, c.Key), 0);
-            int premium = EstateBridges.Premium != null ? Mathf.Clamp(EstateBridges.Premium(c.District), 0, 1000) : 0;   // (a rival buying up the district: Scripts/Rivals)
+            int premium = EstateBridges.Premium != null ? Mathf.Clamp(EstateBridges.Premium(c.District), 0, 1000) : 0;
             return premium > 0 ? value + value / 1000 * premium : value;
         }
 
-        /// <summary>
-        /// Every building's value is written where the game reads it (Building.customMarketPrice), and the game's
-        /// listings that are not the player's are priced by it. One pass over the city's buildings, writing only a value
-        /// that has changed, and one over the listings, each found by its street and number (no text made for it).
-        /// Returns how many buildings were looked at.
-        /// </summary>
+        /// <summary>Every building's value written where the game reads it, and the listings not the player's priced by it.</summary>
         public static int WriteValues(EstateState s, int index)
         {
             for (int i = 0; i < City.Count; i++)
@@ -301,7 +249,6 @@ namespace RealLifeOverhaul.Economy
             return City.Count;
         }
 
-        /// <summary>One building's value, written now: the player has changed something there.</summary>
         public static void WriteValue(EstateHolding h, EstateState s, int index)
         {
             CityBuilding c = Find(h.Place);
@@ -352,8 +299,6 @@ namespace RealLifeOverhaul.Economy
                 : type.EndsWith("warehouse", StringComparison.Ordinal) ? (int)EstateUse.Storage : (int)EstateUse.Shops;
         }
 
-        // ---------------------------------------------------------------- what the player owns
-
         private static RealEstate Estate(string place)
         {
             GameInstance save = Save;
@@ -369,11 +314,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        /// <summary>
-        /// The buildings the player owns as they stand today, each with its file. One seen for the first time gets
-        /// one, with the condition the street has left it in; one that is no longer the player's is dropped (a sale
-        /// in the game's own app, a seizure). The Hamptons houses are homes of the game's and are left to it.
-        /// </summary>
+        /// <summary>The buildings the player owns today, each with its file; the Hamptons houses are homes and left to the game.</summary>
         public static void ReadHoldings(EstateState s, out int added, out int dropped)
         {
             added = dropped = 0;
@@ -411,7 +352,6 @@ namespace RealLifeOverhaul.Economy
                 h.Paid = (int)Math.Min(int.MaxValue / 4, Math.Max(0.0, e.purchasePrice));
                 h.BoughtDay = e.purchaseDay;
                 h.Base = c.Base;
-                h.AsBuilt = UseOf(c.B.BuildingType);
                 h.District = c.District;
                 h.Income = Income(c.District);
                 h.Name = e.address.ToFormattedString();
@@ -430,11 +370,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The game is told what its nightly run should pay for a building the player lets himself: the agreed rent
-        /// of every unit whose tenant owes nothing (EstateRules.PayingRent), or nothing. With <paramref name="own"/>
-        /// the figures are the game's own again (the market's rent, half let). A rent set in the game's own app
-        /// meanwhile is taken off: the tenancies' rents are the agreed ones. False if the game no longer has the
-        /// building as the player's.
+        /// The game is told what its nightly run pays for a building the player lets himself, or with <paramref name="own"/>
+        /// its own figures again. False if the building is no longer the player's.
         /// </summary>
         public static bool WriteRent(EstateHolding h, bool own)
         {
@@ -460,7 +397,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>What the game's nightly run will pay for a building as its figures stand.</summary>
+        /// <summary>What the game's nightly run pays for a building as its figures stand.</summary>
         public static int GameRent(EstateHolding h)
         {
             RealEstate e = Estate(h.Place);
@@ -488,10 +425,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// A sale completes: the lines of the game's own sale of a player's building to a competitor
-        /// (RealEstateHelper.SimulateCompetitorBuyingPlayerBuildings), for the price agreed. The price arrives under
-        /// the game's own "building sold" transaction, which is what a mortgage's lender looks for. False, with
-        /// nothing done, if the game no longer has the building as the player's or the player stands inside it.
+        /// A sale completes as the game's own sale to a competitor does (RealEstateHelper.SimulateCompetitorBuyingPlayerBuildings).
+        /// False, with nothing done, if the building is no longer the player's or the player stands inside it.
         /// </summary>
         public static bool Sell(EstateHolding h, int price)
         {
@@ -509,7 +444,7 @@ namespace RealLifeOverhaul.Economy
             }
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(address);
             Building building = BuildingHelper.GetBuilding(address);
-            GameManager.ChangeMoneySafe(price, new TransactionInfo(SoldKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, null, true);
+            GameManager.ChangeMoneySafe(price, AtAddress(SoldKey, address), null, null, true);
             if (reg != null)
             {
                 reg.buildingOwnerRivalId = RivalsHelper.GetRandomRivalForBuilding(reg.Neighborhood);
@@ -541,8 +476,6 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // ---------------------------------------------------------------- the agency
-
         /// <summary>The office buildings the player holds, for the agency to be run from.</summary>
         public static void Offices(List<BuildingRegistration> into)
         {
@@ -565,11 +498,7 @@ namespace RealLifeOverhaul.Economy
             return address != null ? address.ToFormattedString() : string.Empty;
         }
 
-        /// <summary>
-        /// The agency as it stands this morning: whether the office is still the player's, the negotiators assigned
-        /// there (anybody with the game's customer service skill and hours on its rota) and what a day of them comes
-        /// to, and every district with what a square metre goes for there. One pass over the game's employees.
-        /// </summary>
+        /// <summary>The districts' prices, whether the office is still the player's, and its negotiators: staff there with the customer service skill.</summary>
         public static void ReadAgency(AgencyFile agency)
         {
             GameInstance save = Save;
@@ -600,7 +529,7 @@ namespace RealLifeOverhaul.Economy
             BuildingRegistration reg = office != null ? BuildingHelper.GetBuildingRegistration(office) : null;
             if (reg == null || !GoingPublic.Mine(reg))
             {
-                agency.Office = string.Empty;   // the office is no longer held: the agency is shut, what it had in hand lapses by its own days
+                agency.Office = string.Empty;   // no longer held: the agency shuts, what it had in hand lapses by its own days
                 return;
             }
             List<EmployeeInstance> all = save.EmployeeInstances;
@@ -616,371 +545,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- hotels
-
-        public static HotelSlot Slot(string id)
-        {
-            return TravelCatalogue.Hotel(id);
-        }
-
-        public static string HotelName(HotelSlot slot)
-        {
-            return slot != null ? slot.NameKey.GetLocalization() : string.Empty;
-        }
-
-        /// <summary>A hotel's tier, district and tonight's going rates, from Travel's own figures.</summary>
-        public static bool ReadHotel(HotelFile f, int day)
-        {
-            HotelSlot slot = Slot(f.Slot);
-            f.Seen = slot != null;
-            if (slot == null)
-            {
-                return false;
-            }
-            RoomType[] rooms = TravelCatalogue.Rooms(slot.Tier);
-            f.Tier = Mathf.Clamp((int)slot.Tier, 0, EstateCatalogue.HotelTiers - 1);
-            f.Income = Income(slot.Neighbourhood);
-            f.Name = HotelName(slot);
-            for (int type = 0; type < EstateCatalogue.RoomTypes && type < rooms.Length; type++)
-            {
-                f.Going[type] = TravelCatalogue.NightRate(slot, rooms[type], day, (int)TimeHelper.GetDayOfWeek(day), 1f);
-            }
-            return true;
-        }
-
-        /// <summary>What a hotel is asked for today.</summary>
-        public static int HotelPrice(HotelSlot slot, int real, int daysPerYear)
-        {
-            RoomType[] rooms = TravelCatalogue.Rooms(slot.Tier);
-            return HotelRules.Price((int)slot.Tier, Mathf.RoundToInt(rooms[0].Rate * slot.RateFactor), Mathf.RoundToInt(rooms[rooms.Length > 1 ? 1 : 0].Rate * slot.RateFactor), real, daysPerYear);
-        }
-
-        public static string RoomName(int tier, int type)
-        {
-            RoomType[] rooms = TravelCatalogue.Rooms((HotelTier)Mathf.Clamp(tier, 0, EstateCatalogue.HotelTiers - 1));
-            return rooms[Mathf.Clamp(type, 0, rooms.Length - 1)].NameKey.GetLocalization();
-        }
-
-        // ---------------------------------------------------------------- car hire
-
-        /// <summary>The buildings the player holds, for the hire business to be run from.</summary>
-        public static void Lots(List<BuildingRegistration> into)
-        {
-            into.Clear();
-            GameInstance save = Save;
-            List<BuildingRegistration> all = save != null ? save.BuildingRegistrations : null;
-            for (int i = 0; all != null && i < all.Count; i++)
-            {
-                BuildingRegistration reg = all[i];
-                if (reg != null && reg.HasValidAddress && (GoingPublic.Mine(reg) || reg.BuildingOwnedByPlayer) && !reg.BuildingCached.IsHamptonsHouse())
-                {
-                    into.Add(reg);
-                }
-            }
-        }
-
-        /// <summary>The spaces a lot has: the building's own vehicle spaces by the game's size data, or the kerb in front of one that has none. 0 if it is no longer held.</summary>
-        public static int Spaces(string lot)
-        {
-            Address address = AddressOf(lot);
-            BuildingRegistration reg = address != null ? BuildingHelper.GetBuildingRegistration(address) : null;
-            if (reg == null || (!GoingPublic.Mine(reg) && !reg.BuildingOwnedByPlayer))
-            {
-                return 0;
-            }
-            BuildingSizeData size = BuildingSizeHelper.GetData(reg);
-            return Math.Min(EstateCatalogue.HireCarsMost, Math.Max(EstateCatalogue.HireSpacesAnyBuilding, size != null ? size.numberOfVehicleSlots : 0));
-        }
-
-        private static bool Door(string lot, out Vector3 door)
-        {
-            door = default(Vector3);
-            Address address = AddressOf(lot);
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController controller = address != null && city != null ? city.FindCityBuildingController(address) : null;
-            if (controller == null || controller.entranceDoors == null)
-            {
-                return false;
-            }
-            for (int i = 0; i < controller.entranceDoors.Length; i++)
-            {
-                if (controller.entranceDoors[i] != null && controller.entranceDoors[i].doorTransform != null)
-                {
-                    door = controller.entranceDoors[i].doorTransform.position;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static VehicleInstance Vehicle(string id)
-        {
-            GameInstance save = Save;
-            List<VehicleInstance> all = save != null ? save.VehicleInstances : null;
-            for (int i = 0; all != null && i < all.Count; i++)
-            {
-                if (all[i] != null && all[i].id == id)
-                {
-                    return all[i];
-                }
-            }
-            return null;
-        }
-
-        private static VehicleController Controller(string id)
-        {
-            List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
-            for (int i = 0; i < all.Count; i++)
-            {
-                if (all[i] != null && all[i].vehicleInstance != null && all[i].vehicleInstance.id == id)
-                {
-                    return all[i];
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Whether a vehicle of the player's can go on hire from a lot: a motor vehicle that is theirs to sell,
-        /// standing empty and legally parked in the open within sixty metres of the lot's door, with nothing in it
-        /// and nobody in it. With false, <paramref name="why"/> is the key of the sentence that says what is in the way.
-        /// </summary>
-        public static bool MayHire(VehicleInstance v, string lot, out string why)
-        {
-            why = null;
-            GameInstance save = Save;
-            VehicleController controller = v != null ? Controller(v.id) : null;
-            Vector3 door;
-            if (GoingPublic.InSession)
-            {
-                why = "reallife_gp_estate_hire";   // a car taken out of the city and made again would not be the same car to Going Public's other players (Core/GoingPublic)
-            }
-            else if (v == null || save == null || v.VehicleType == null || !v.VehicleType.IsMotorVehicle || v.zeroSellingPrice || v.VehicleType.spawnInPlayerObject)
-            {
-                why = "reallife_estate_hire_no_kind";
-            }
-            else if (Dealerships.Stock(v))
-            {
-                why = "reallife_estate_hire_no_stock";   // the dealership's to sell: a hire would take it out of its showroom and its records (Core/Dealerships)
-            }
-            else if (controller == null || controller.controlledByPlayer || save.ActiveVehicleId == v.id)
-            {
-                why = "reallife_estate_hire_no_driven";
-            }
-            else if (v.cargoInstances != null && v.cargoInstances.Count > 0)
-            {
-                why = "reallife_estate_hire_no_cargo";
-            }
-            else if (v.parkingState == ParkingState.Illegal || v.unpaidParkingAmount > 0f || !v.Address.IsUndefined())
-            {
-                why = "reallife_estate_hire_no_parked";
-            }
-            else if (!Door(lot, out door) || (controller.transform.position - door).sqrMagnitude > EstateCatalogue.HireLotMetres * EstateCatalogue.HireLotMetres)
-            {
-                why = "reallife_estate_hire_no_lot";
-            }
-            return why == null;
-        }
-
-        /// <summary>The player's vehicles that could go on hire from a lot now and are not on its books yet.</summary>
-        public static void Hireable(HireFile hire, List<VehicleInstance> into)
-        {
-            into.Clear();
-            GameInstance save = Save;
-            List<VehicleInstance> all = save != null ? save.VehicleInstances : null;
-            for (int i = 0; all != null && i < all.Count; i++)
-            {
-                string why;
-                if (all[i] != null && hire.Car(all[i].id) == null && MayHire(all[i], hire.Lot, out why))
-                {
-                    into.Add(all[i]);
-                }
-            }
-        }
-
-        public static string CarName(string type)
-        {
-            return string.IsNullOrEmpty(type) ? string.Empty : LocalizorManager.IsLocalizedKey(type) ? type.GetLocalization() : type;
-        }
-
-        public static int CarPrice(VehicleInstance v)
-        {
-            return v != null && v.VehicleType != null ? Mathf.RoundToInt(Mathf.Max(0f, v.VehicleType.price)) : 0;
-        }
-
-        private static bool PlayerNear(Vector3 at)
-        {
-            PlayerController player = PlayerHelper.PlayerController;
-            return (player != null && (player.transform.position - at).sqrMagnitude < KeepAway * KeepAway) || (EconomyBridges.InView != null && EconomyBridges.InView(at));
-        }
-
-        /// <summary>A car in good order is one whose service is not overdue and whose tyres and brakes are not worn out (the mod's own car records).</summary>
-        public static bool GoodOrder(string id, int day)
-        {
-            CarRecord r = CarGarage.Loaded ? CarGarage.For(id, day) : null;
-            return r == null || (!r.Broken && r.Tyres >= CarRules.WarnBelow && r.Brakes >= CarRules.WarnBelow);
-        }
-
-        /// <summary>
-        /// A hired car leaves: its object is taken out of the city (as the game's own removal does, without taking
-        /// its entry off the save's list: VehicleHelper.Delete, the first half) and where it stood is noted. It is
-        /// unassigned from a warehouse the game's own way. False, with nothing done, if it cannot go now: driven,
-        /// moved, or (unless <paramref name="force"/>, a test tool) the player is standing by it or looking at it.
-        /// </summary>
-        public static bool TakeOut(HireCar car, string lot, bool force)
-        {
-            VehicleInstance v = Vehicle(car.Id);
-            VehicleController controller = Controller(car.Id);
-            string why;
-            if (v == null || controller == null || !MayHire(v, lot, out why) || (!force && PlayerNear(controller.transform.position)))
-            {
-                return false;
-            }
-            Vector3 at = controller.transform.position;
-            car.X = Mathf.RoundToInt(at.x * 100f);
-            car.Y = Mathf.RoundToInt(at.y * 100f);
-            car.Z = Mathf.RoundToInt(at.z * 100f);
-            car.Yaw = Mathf.RoundToInt(controller.transform.eulerAngles.y * 10f);
-            v.UnAssignFromWarehouse(true);
-            Hide(controller);
-            v.parkingState = ParkingState.Legal;
-            return true;
-        }
-
-        // The object of a vehicle goes; its entry in the save stays. The traffic is told its collider is gone, as the game tells it.
-        private static void Hide(VehicleController controller)
-        {
-            if (controller.vehicleCollider != null)
-            {
-                Manager.TriggerColliderRemovedEvent(controller.vehicleCollider);
-            }
-            if (controller.additionalCollider != null)
-            {
-                Manager.TriggerColliderRemovedEvent(controller.additionalCollider);
-            }
-            VehicleHelper.onVehicleDestroyed?.Invoke(controller);
-            UnityEngine.Object.Destroy(controller.gameObject);
-        }
-
-        /// <summary>A car that is out and has an object in the city (a save was loaded: the game made every vehicle on its list) is taken out again. True if it was.</summary>
-        public static bool HideAgain(HireCar car)
-        {
-            VehicleController controller = Controller(car.Id);
-            if (controller == null || controller.controlledByPlayer)
-            {
-                return false;
-            }
-            Hide(controller);
-            return true;
-        }
-
-        /// <summary>True while a car that is out has no object in the city, as it should.</summary>
-        public static bool IsOut(HireCar car)
-        {
-            return Vehicle(car.Id) != null && Controller(car.Id) == null;
-        }
-
-        /// <summary>
-        /// A hired car comes back to where it stood, made the way the game makes a vehicle
-        /// (VehicleHelper.CreateAndSpawnVehicle, which puts its entry on the save's list: so it is taken off first),
-        /// with what the hire did to it: the fuel used, the dirt, the damage, and on the mod's car record the
-        /// distance and the wear of tyres and brakes that go with it. False, with nothing done, while the space is
-        /// taken by another of the player's vehicles or (unless <paramref name="force"/>: the feature is stopping, or
-        /// a test tool) the player is standing there or looking.
-        /// </summary>
-        public static bool BringBack(HireCar car, HireReturn r, int day, bool force)
-        {
-            GameInstance save = Save;
-            VehicleInstance v = Vehicle(car.Id);
-            if (save == null || v == null)
-            {
-                return false;
-            }
-            if (Controller(car.Id) != null)
-            {
-                return true;   // it is in the city already (the feature was off for a while): nothing to make
-            }
-            var at = new Vector3(car.X / 100f, car.Y / 100f, car.Z / 100f);
-            if (!force && PlayerNear(at))
-            {
-                return false;
-            }
-            List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
-            for (int i = 0; i < all.Count; i++)
-            {
-                if (all[i] != null && (all[i].transform.position - at).sqrMagnitude < SpaceClear * SpaceClear)
-                {
-                    return false;
-                }
-            }
-            Wear(v, r, day);
-            save.VehicleInstances.Remove(v);
-            try
-            {
-                VehicleHelper.CreateAndSpawnVehicle(v, at, Quaternion.Euler(0f, car.Yaw / 10f, 0f));
-            }
-            catch (Exception)
-            {
-                if (!save.VehicleInstances.Contains(v))
-                {
-                    save.VehicleInstances.Add(v);   // whatever happened, the car stays the player's
-                }
-                throw;
-            }
-            return true;
-        }
-
-        private static void Wear(VehicleInstance v, HireReturn r, int day)
-        {
-            if (r.Km <= 0)
-            {
-                return;   // (it was never out, or this is not the end of a hire)
-            }
-            float tank = v.VehicleType != null ? v.VehicleType.maxFuel : 0f;
-            v.fuel = Mathf.Min(v.fuel, tank * r.Fuel / 1000f);
-            v.dirtiness = Mathf.Clamp01(v.dirtiness + 0.1f * r.Days);
-            v.damage = Mathf.Clamp(v.damage + r.Damage / 1000f, 0f, 1f);
-            CarRecord record = CarGarage.Loaded ? CarGarage.For(v.id, day) : null;
-            if (record != null && v.VehicleType != null)
-            {
-                // (the wear is by the kind of car its price makes it: the mod's own kinds need the car's object, which is not there yet)
-                int cls = HireRules.Class(Mathf.RoundToInt(v.VehicleType.price));
-                CarKind kind = cls == 0 ? CarKind.Economy : cls == 1 ? CarKind.Saloon : CarKind.Luxury;
-                record.Km += r.Km;
-                record.Tyres = Mathf.Clamp01(record.Tyres - r.Km / Mathf.Max(1f, CarRules.TyreLife(kind)));
-                record.Brakes = Mathf.Clamp01(record.Brakes - r.Km / Mathf.Max(1f, CarRules.BrakeLife(kind)));
-            }
-        }
-
-        /// <summary>A car that never came back is taken off the save's list, the game's own way (VehicleHelper.Delete with no object).</summary>
-        public static void Lose(HireCar car)
-        {
-            VehicleInstance v = Vehicle(car.Id);
-            if (v != null)
-            {
-                VehicleController controller = Controller(car.Id);
-                OverlayGuard.Release(controller);
-                v.Delete(controller);
-            }
-        }
-
-        /// <summary>While a car is out the game's hourly parking round has nothing to say about it.</summary>
-        public static void KeepLegal(HireCar car)
-        {
-            VehicleInstance v = Vehicle(car.Id);
-            if (v != null && v.parkingState != ParkingState.Legal)
-            {
-                v.parkingState = ParkingState.Legal;
-            }
-        }
-
-        // ---------------------------------------------------------------- money
-
-        /// <summary>
-        /// Takes an amount as a transaction of the mod's own, at a building or at none. A business cost is marked
-        /// deductible as the game marks its own. Unless <paramref name="force"/>, the game's call refuses a charge
-        /// the cash does not cover: false, and nothing is taken.
-        /// </summary>
+        /// <summary>A cost as a transaction of the mod's own; unless <paramref name="force"/>, false with nothing taken if cash is short.</summary>
         public static bool Take(int amount, string key, string name, string place, bool deductible, bool force)
         {
             if (amount <= 0)
@@ -1007,27 +572,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Rent that comes in outside the game's nightly run (arrears paid at once, a deposit applied): under the game's own rent transaction, so its books and its tax see it as rent.</summary>
-        public static void GiveRent(int amount, EstateHolding h)
-        {
-            Address address = AddressOf(h.Place);
-            if (amount > 0 && Save != null && address != null)
-            {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(RentKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, address, true);
-            }
-        }
-
         /// <summary>
-        /// The rental income option settled on a night of the game's own rent: added (or, under 100%, taken back) under
-        /// the game's own rent transaction and the building's address, so its books read it as that building's rent and
-        /// its tax treats it as it treats rent.
+        /// Rent outside the game's nightly run (arrears paid, a deposit applied, the rental income option's top-up), under
+        /// the game's own rent transaction and address, so its books and tax read it as that building's rent.
         /// </summary>
-        public static void AdjustRent(int amount, EstateHolding h)
+        public static void BookRent(int amount, EstateHolding h)
         {
             Address address = AddressOf(h.Place);
             if (amount != 0 && Save != null && address != null)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(RentKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, address, true);
+                GameManager.ChangeMoneySafe(amount, AtAddress(RentKey, address), null, address, true);
             }
         }
 
@@ -1037,10 +591,15 @@ namespace RealLifeOverhaul.Economy
             return Save != null && Save.financialSummaries != null ? (long)TaxCalculationHelper.GetBusinessSales(from, to) : 0L;
         }
 
-        // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+        // A dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string key, string name)
         {
             return new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
+        }
+
+        private static TransactionInfo AtAddress(string key, Address address)
+        {
+            return new TransactionInfo(key, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } });
         }
     }
 }

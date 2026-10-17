@@ -2,47 +2,38 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The Property app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts,
-    /// which are summed, what its rows can be filtered by, the order it opens in, and the sentence shown when a filter
-    /// leaves nothing. The numbers beside each are the columns, for whoever writes the rows. Every column of the app
-    /// is declared here and nowhere else.
-    /// </summary>
+    /// <summary>The Property app's tables as data (GameUi.TableSpec); each summary numbers the columns for whoever writes the rows.</summary>
     internal static class EstateTables
     {
         /// <summary>The tabs, in the order of EstateDirector.TabMarket and its neighbours.</summary>
         public static readonly string[] Tabs =
         {
-            "reallife_estate_tab_market", "reallife_estate_tab_mine", "reallife_estate_tab_tenants", "reallife_estate_tab_works", "reallife_estate_tab_agency", "reallife_estate_tab_hotel", "reallife_estate_tab_hire"
+            "reallife_estate_tab_market", "reallife_estate_tab_mine", "reallife_estate_tab_tenants", "reallife_estate_tab_works", "reallife_estate_tab_agency",
+            "reallife_estate_tab_hotel", "reallife_estate_tab_hire"
         };
 
-        // ---- what is for sale (the Market tab's second filter): the four uses, then a hotel
+        // The Market tab's second filter: the four uses, then a hotel.
         public const int IsHotel = EstateCatalogue.Uses;
         private static readonly string[] MarketKinds =
         {
             "reallife_estate_use_homes", "reallife_estate_use_shops", "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel"
         };
 
-        // ---- what is owned (the Mine tab's filter)
         public const int OwnBuilding = 0, OwnHotel = 1, OwnLot = 2;
         private static readonly string[] OwnKinds = { "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot" };
 
-        // ---- how a letting stands (the Tenants tab's filter)
         public const int TenantPaying = 0, TenantBehind = 1, TenantNotice = 2, TenantNone = 3, TenantApplies = 4;
         private static readonly string[] TenantStates =
         {
             "reallife_estate_filter_paying", "reallife_estate_filter_behind", "reallife_estate_filter_notice", "reallife_estate_filter_empty", "reallife_estate_filter_applicants"
         };
 
-        // ---- how a building stands (the Works tab's filter)
         public const int WorksOn = 0, WorksNeeded = 1, WorksNone = 2;
         private static readonly string[] WorkStates = { "reallife_estate_filter_works_on", "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none" };
 
-        // ---- an instruction (the Agency tab's two filters)
         public const int IsLetting = 0, IsSale = 1;
         private static readonly string[] InstructionKinds = { "reallife_estate_filter_lettings", "reallife_estate_filter_sales" };
 
-        // ---- where a car is (the Car hire tab's second filter)
         public const int CarOut = 0, CarIn = 1, CarNotOnHire = 2;
         private static readonly string[] CarPlaces = { "reallife_estate_filter_out", "reallife_estate_filter_in", "reallife_estate_filter_not_on_hire" };
 
