@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     Taken t = shop.Chain;
                     bool breach = t.Breach > 0;
                     row.Set(4, BrandsText.Money(shop.Takings), shop.Takings);
-                    row.Set(5, BrandsText.Money(-t.Average), -t.Average);
+                    row.Set(5, BrandsText.Money(-t.Yesterday), -t.Yesterday);
                     row.Set(6, Standards(t.Standards), t.Standards, t.Standards < BrandCatalogue.ChainStandards[t.Chain] ? TableRow.Yellow : TableRow.Plain);
                     row.Set(7, breach ? BrandsText.T("reallife_brand_row_breach_days", "days", t.Breach.ToString()) : BrandsText.T("reallife_brand_status_chain"),
                         breach ? TableRow.Red : TableRow.Plain);
@@ -194,7 +194,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 : BrandsText.T("reallife_brand_chain_good"), trouble ? CellTone.Red : CellTone.Green);
             int exit = _director.ChainExit(t);
             box.Section("reallife_ibox_sec_money");
-            box.RowPair("reallife_ibox_ordinary_day", BrandsText.Money(t.Average), "reallife_brand_col_paid", BrandsText.Money(t.Paid));
+            box.RowPair("reallife_ibox_ordinary_day", BrandsText.Money(t.Average), "reallife_brand_col_paid_all", BrandsText.Money(t.Paid));
             box.Row("reallife_ibox_leaving_costs", BrandsText.Money(exit));
             bool kept = t.Keep;
             box.Section("reallife_ibox_sec_prices");

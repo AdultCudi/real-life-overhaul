@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 r.Event = DayEvent.Failed;
                 return r;
             }
-            if (day >= f.Until)
+            if (day > f.Until)   // it runs to the end of its last day, so the renewal dated that day can still be answered
             {
                 r.Event = DayEvent.Lapsed;
                 return r;
@@ -348,7 +348,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>True while a fresh inspection found the shop under the brand's minimum. A brand with no minimum holds nobody to anything.</summary>
         public static bool Evidence(Brand b, Franchise f, int day)
         {
-            return b.Minimum > 0 && f.Seen >= 0 && day - f.SeenDay <= BrandCatalogue.FreshDays && f.Seen < b.Minimum;
+            return b.Minimum > 0 && f.Seen >= 0 && day - f.SeenDay < BrandCatalogue.FreshDays && f.Seen < b.Minimum;   // its own day and the nine after
         }
 
         public static bool CanWarn(Brand b, Franchise f, int day)
@@ -416,6 +416,12 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             Drop(b, f, day);
             s.Franchises.Remove(f);
+        }
+
+        /// <summary>The start day a converted shop is given back when its agreement ends; -1 for none, as for a line that never knew it.</summary>
+        public static int BornBack(Franchise f)
+        {
+            return f.Hold == Hold.Converted && f.Born >= 0 ? f.Born : -1;
         }
 
         /// <summary>Renewed for the same length again. The fee is the caller's to book.</summary>
@@ -529,12 +535,13 @@ namespace RealLifeOverhaul.Economy.Brands
             return t;
         }
 
-        /// <summary>The day's royalty on the shop's takings, kept in the week's average.</summary>
+        /// <summary>The day's royalty on the shop's takings, kept as yesterday's and in the week's average.</summary>
         public static int ChainRoyalty(Taken t, int takings)
         {
             int royalty = Royalty(takings, BrandCatalogue.ChainRoyaltyBp[Chain(t.Chain)]);
             t.Average = (t.Average * 6 + royalty + 3) / 7;
             t.Paid += royalty;
+            t.Yesterday = royalty;
             return royalty;
         }
 

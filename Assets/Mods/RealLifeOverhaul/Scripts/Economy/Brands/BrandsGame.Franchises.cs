@@ -183,9 +183,10 @@ namespace RealLifeOverhaul.Economy.Brands
             if (f.Hold == Hold.Converted && Stands(f, type))
             {
                 BuildingRegistration was = RegAt(f.Place);
-                if (was != null)
+                int born = FranchiseRules.BornBack(f);
+                if (was != null && born >= 0)
                 {
-                    was.creationDay = f.Born;
+                    was.creationDay = born;   // unknown (an older save): the day the daily keep last wrote stands
                 }
                 return;
             }

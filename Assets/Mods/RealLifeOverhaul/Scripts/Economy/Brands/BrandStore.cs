@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Economy.Brands
     ///      retrained until|cash|ask|ask until|ask amount|ask rest|court number|waived until|takings|royalty paid
     ///      yesterday|customers yesterday|paid in all|no renewal|the business's own start day
     ///   t  the player's shops under a city chain: place|chain|from|until|days in breach|average royalty|paid|prices kept|
-    ///      told of a price put back
+    ///      told of a price put back|royalty paid yesterday
     ///
     /// A newer version adds fields at the end of a record, or parts with a new letter: this reader skips what it does
     /// not know, so a later save still loads. A figure out of bounds is put inside them, a record that points at a
@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 Taken k = s.Taken[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(k.Place)).Append('|');
-                Join(t, k.Chain, k.From, k.Until, k.Breach, k.Average, k.Paid, k.Keep ? 1 : 0, k.Told ? 1 : 0);
+                Join(t, k.Chain, k.From, k.Until, k.Breach, k.Average, k.Paid, k.Keep ? 1 : 0, k.Told ? 1 : 0, k.Yesterday);
             }
             return t.ToString();
         }
@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Economy.Brands
                                     {
                                         Place = c[0], Chain = BrandCatalogue.Clamp(I(c, 1), 0, BrandCatalogue.Chains - 1), From = Math.Max(0, I(c, 2)), Until = Math.Max(0, I(c, 3)),
                                         Breach = BrandCatalogue.Clamp(I(c, 4), 0, BrandCatalogue.ChainEndDays), Average = Math.Max(0, I(c, 5)), Paid = Math.Max(0, I(c, 6)),
-                                        Keep = I(c, 7) != 0, Told = I(c, 8) != 0
+                                        Keep = I(c, 7) != 0, Told = I(c, 8) != 0, Yesterday = Math.Max(0, I(c, 9, I(c, 5)))   // a line from before: its average
                                     });
                                 }
                             }

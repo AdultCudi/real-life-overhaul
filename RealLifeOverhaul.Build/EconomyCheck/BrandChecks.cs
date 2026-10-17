@@ -539,7 +539,7 @@ internal static partial class Program
         Check(FranchiseRules.InspectionDue(cutter, 31) && !FranchiseRules.InspectionDue(cutter, 30), "an inspection is due thirty days after the last (or after signing)");
         int found = FranchiseRules.Inspect(cutter, 120);
         Check(found == cutter.StandardsNow && cutter.Seen == found && cutter.SeenDay == 120 && !FranchiseRules.InspectionDue(cutter, 149), "an inspection finds what the standards are that day");
-        Check(FranchiseRules.Evidence(b, cutter, 120) && FranchiseRules.Evidence(b, cutter, 130) && !FranchiseRules.Evidence(b, cutter, 131), "under the brand's minimum of 60: evidence for ten days");
+        Check(FranchiseRules.Evidence(b, cutter, 120) && FranchiseRules.Evidence(b, cutter, 129) && !FranchiseRules.Evidence(b, cutter, 130), "under the brand's minimum of 60: evidence for ten days");
         b.Minimum = 0;
         Check(!FranchiseRules.Evidence(b, cutter, 120) && !FranchiseRules.CanWarn(b, cutter, 120), "a brand with no required minimum has nothing to warn anybody about");
         b.Minimum = 60;
@@ -562,7 +562,7 @@ internal static partial class Program
         FranchiseRules.Warn(cutter, 141);
         FranchiseRules.Inspect(cutter, 150);
         Check(cutter.Warnings == 2 && FranchiseRules.HasCause(b, cutter, 150), "two warnings and a fresh inspection that still finds it under the minimum: cause");
-        Check(!FranchiseRules.HasCause(b, cutter, 161), "an inspection eleven days old is cause no longer");
+        Check(FranchiseRules.HasCause(b, cutter, 159) && !FranchiseRules.HasCause(b, cutter, 160), "an inspection ten days old is cause no longer");
     }
 
     private static void FranchiseEndings()
@@ -583,7 +583,7 @@ internal static partial class Program
         h.Ask = Ask.BuyBrand;
         Check(FranchiseRules.Fail(s, b, h, 40) == 800 && b.District(Midtown).Rec == 3600 && b.City == 1650 && b.Failed == 1 && b.Bid == 0, "a franchisee that closes costs 8 points in the district and 2 city-wide, and its bid goes with it");
 
-        // Running out: a renewal is asked for fourteen days before, once; unanswered, the agreement lapses on its day.
+        // Running out: a renewal is asked for fourteen days before, once; unanswered, the agreement lapses the morning after its last day.
         Franchise r = Signed(s, b, Temper.Careful, 10);
         r.Health = 500000;
         DayEvent asked = DayEvent.None, ended = DayEvent.None;
@@ -604,8 +604,8 @@ internal static partial class Program
             }
         }
         Check(asked == DayEvent.AsksRenewal && askedDay == 70 - 14 && asks == 1 && r.AskAmount == 3750, "a renewal is asked for once, fourteen days before the end, at a quarter of the entry fee");
-        Check(ended == DayEvent.Lapsed && endedDay == 70, "unanswered, the agreement runs out on its day");
-        FranchiseRules.Lapse(s, b, r, 70);
+        Check(ended == DayEvent.Lapsed && endedDay == 71, "unanswered, the agreement runs to the end of its last day and lapses the morning after");
+        FranchiseRules.Lapse(s, b, r, 71);
         Check(s.Franchises.Count == 0 && b.District(Midtown).Rec == 3600, "a shop that leaves when its agreement runs out costs the brand no recognition");
         Franchise again = Signed(s, b, Temper.Careful, 10);
         again.Ask = Ask.Renewal;

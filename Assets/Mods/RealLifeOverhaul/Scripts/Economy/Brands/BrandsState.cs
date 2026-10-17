@@ -134,6 +134,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public int Paid;
         public bool Keep;                        // its prices are kept inside the chain's range (KeptPrices)
         public bool Told;                        // told once that a price changed here by something else was put back
+        public int Yesterday;                    // the royalty paid this morning, on yesterday's takings
 
         public int Standards = 50, Prices = 1000;   // read each day, not saved
         public bool Seen;

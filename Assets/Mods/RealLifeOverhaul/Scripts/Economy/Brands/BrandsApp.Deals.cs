@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 row.Set(1, BrandsText.Chain(t.Chain));
                 row.Set(2, BrandsText.District(shop.District));
                 row.Set(3, BrandsText.Bp(BrandCatalogue.ChainRoyaltyBp[t.Chain]), BrandCatalogue.ChainRoyaltyBp[t.Chain] / 100.0);
-                row.Set(4, BrandsText.Money(-t.Average), -t.Average);
+                row.Set(4, BrandsText.Money(-t.Yesterday), -t.Yesterday);
                 row.Set(5, BrandsText.Money(-t.Paid), -t.Paid);
                 row.Set(6, BrandsText.Day(t.Until), t.Until);
                 row.Set(7, t.Breach > 0 ? BrandsText.T("reallife_brand_row_breach_days", "days", t.Breach.ToString()) : BrandsText.T("reallife_brand_row_in_order"), t.Breach > 0 ? 2 : 0,

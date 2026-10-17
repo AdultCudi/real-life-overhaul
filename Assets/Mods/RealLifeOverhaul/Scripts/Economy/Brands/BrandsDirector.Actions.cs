@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     return;
                 }
                 Logger?.Info("Brands: " + shop.Name + " joins '" + b.Name + "'.");
+                _books.Remove(place);   // prices written for an earlier brand or chain are not what this one keeps
                 Reread();
                 Changed();
             });
@@ -118,6 +119,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     return;
                 }
                 Logger?.Info("Brands: " + ShopName(place) + " leaves '" + (b != null ? b.Name : "?") + "'.");
+                _books.Remove(place);
                 Reread();
                 Changed();
             });
@@ -309,6 +311,7 @@ namespace RealLifeOverhaul.Economy.Brands
                              + "% of customers while it keeps standards of " + BrandCatalogue.ChainStandards[chain] + " and prices inside " + BrandCatalogue.ChainPriceLeast[chain]
                              + " to " + BrandCatalogue.ChainPriceMost[chain] + " thousandths of the market's.");
                 Say(NotificationType.Success, "reallife_brand_note_chain_joined", new Dictionary<string, string> { { "business", shop.Name }, { "chain", BrandsText.Chain(chain) } });
+                _books.Remove(place);
                 Reread();
                 Changed();
             });
@@ -341,6 +344,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     { "business", ShopName(place) }, { "chain", BrandsText.Chain(t.Chain) }, { "amount", BrandsText.Money(exit) }
                 });
+                _books.Remove(place);
                 Reread();
                 Changed();
             });

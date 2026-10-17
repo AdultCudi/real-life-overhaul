@@ -298,7 +298,7 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
-        /// <summary>Puts back the state from before the first test; a business a test franchise opened is closed by the game's closure.</summary>
+        /// <summary>Puts back the state from before the first test; a business a test franchise opened is closed by the game's closure, one it converted keeps trading.</summary>
         public void TestBack()
         {
             if (Save == null || !ModState.Loaded)
@@ -326,10 +326,10 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     Franchise f = _state.Franchises[i];
                     Brand b = _state.Brand(f.BrandId);
-                    if (f.Hold == Hold.Opened && back.Franchise(f.Id) == null && b != null)
+                    if ((f.Hold == Hold.Opened || f.Hold == Hold.Converted) && back.Franchise(f.Id) == null && b != null)
                     {
-                        BrandsGame.Close(f, b.Type);
-                        closed++;
+                        BrandsGame.Close(f, b.Type);   // an opened shop is closed, a converted one given its own start day again
+                        closed += f.Hold == Hold.Opened ? 1 : 0;
                     }
                     if (f.Suit != 0 && back.Franchise(f.Id) == null && BrandsBridges.WithdrawClaim != null)
                     {
