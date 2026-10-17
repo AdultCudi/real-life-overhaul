@@ -76,6 +76,7 @@ A hostel bed costs what the cheapest apartment rents for and sleeps worse, so it
 A mid-range room costs a day's rent of a mid-sized apartment in the same district, a luxury room a day's rent of a large one, and a beach week about twelve days of the cashier job.
 
 Extras: vending sandwich 8 (+25 hunger), room service 32 (+60) or 65 in a luxury room (full), cottage hamper 28, minibar 12 or 18 (+12 hunger, +3 energy, four a day), laundry 8 / 25 / free, dinner through the concierge 85, dinner in the village 60.
+Every amount on this page is at the start's prices: the rooms, the extras, the loyalty night's cap, the trips, a splurge, the suitcase and what a trip's event gives or takes are all asked for through `Prices.At`, so they move with the city's price level, and the room's list shows what it charges (`TravelCatalogue`, checked by EconomyCheck's TravelPriceChecks).
 Nothing pays the player anything, and every effect is capped (hunger at full, one mood a day).
 
 | trip | days | economy | first class | splurge a day | dear / cheap season |

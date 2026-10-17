@@ -82,7 +82,7 @@ namespace RealLifeOverhaul
         {
             int nights = TravelCatalogue.NightChoices[choice % TravelCatalogue.NightChoices.Length];
             int total = HotelStay.Quote(Site.Slot, room, nights, out int perNight);
-            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightCap) : 0;
+            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightMost) : 0;
             string line = TravelText.T(nights >= 7 ? "reallife_travel_desk_nights_long" : "reallife_travel_desk_nights",
                 "nights", TravelText.Number(nights), "total", TravelText.Money(Mathf.Max(total - voucher, 0)),
                 "day", TravelEffects.DayName(TravelEffects.StayDay() + nights), "night", TravelText.Money(perNight));
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul
         private static DialogEntry Pay(RoomType room, int nights)
         {
             int total = HotelStay.Quote(Site.Slot, room, nights, out int perNight);
-            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightCap) : 0;
+            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightMost) : 0;
             if (nights == 1)
             {
                 return Finish(room, nights, false);

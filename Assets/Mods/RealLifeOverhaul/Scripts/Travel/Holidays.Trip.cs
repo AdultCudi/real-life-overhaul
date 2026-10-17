@@ -142,12 +142,13 @@ namespace RealLifeOverhaul
                     pool = TravelCatalogue.ExploreEvents;
                     break;
                 default:
-                    if (!TravelEffects.Pay(trip.Splurge, "reallife_transaction_holiday_spending"))
+                    int splurge = TravelCatalogue.SplurgePrice(trip);
+                    if (!TravelEffects.Pay(splurge, "reallife_transaction_holiday_spending"))
                     {
                         TravelText.Toast(NotificationType.Warning, TravelText.T("reallife_travel_trip_no_money"), 6f);
                         return;
                     }
-                    TravelState.AwaySpent += trip.Splurge;
+                    TravelState.AwaySpent += splurge;
                     TravelEffects.Mood(1);
                     pool = TravelCatalogue.SplurgeEvents;
                     break;
@@ -329,10 +330,11 @@ namespace RealLifeOverhaul
                 {
                     body = TravelText.T(trip.DayKeys[Mathf.Min(day, trip.DayKeys.Length - 1)]);
                     list.AddNote(heading, body, list.HeightFor(body.Length, false));
-                    bool afford = SaveGameManager.Current.Money >= trip.Splurge;
+                    int splurge = TravelCatalogue.SplurgePrice(trip);
+                    bool afford = SaveGameManager.Current.Money >= splurge;
                     list.Add(Relax, TravelText.T("reallife_travel_btn_relax"), TravelText.T("reallife_travel_list_relax"), ButtonDo, true);
                     list.Add(Explore, TravelText.T("reallife_travel_btn_explore"), TravelText.T("reallife_travel_list_explore"), ButtonDo, true);
-                    list.Add(Splurge, TravelText.T("reallife_travel_btn_splurge", "amount", TravelText.Money(trip.Splurge)),
+                    list.Add(Splurge, TravelText.T("reallife_travel_btn_splurge", "amount", TravelText.Money(splurge)),
                         TravelText.T(afford ? "reallife_travel_list_splurge" : "reallife_travel_list_no_splurge"), ButtonDo, afford);
                     entries = 3;
                 }

@@ -85,7 +85,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             int total = Quote(site.Slot, room, nights, out int perNight);
-            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightCap) : 0;
+            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightMost) : 0;
             int now = deposit ? Mathf.Max(perNight - voucher, 0) : Mathf.Max(total - voucher, 0);
             int later = deposit ? Mathf.RoundToInt((total - perNight) * (1f + TravelCatalogue.DepositSurcharge)) : 0;
             if (HotelReception.Owned(site.Slot.Id))

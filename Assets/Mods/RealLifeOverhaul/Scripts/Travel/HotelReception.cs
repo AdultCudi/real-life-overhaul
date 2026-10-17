@@ -114,7 +114,7 @@ namespace RealLifeOverhaul
         {
             int nights = TravelCatalogue.NightChoices[_nights % TravelCatalogue.NightChoices.Length];
             int total = HotelStay.Quote(_site.Slot, _room, nights, out int perNight);
-            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightCap) : 0;
+            int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightMost) : 0;
             int later = Mathf.RoundToInt((total - perNight) * (1f + TravelCatalogue.DepositSurcharge));
             string howLong = TravelText.T(nights >= 7 ? "reallife_travel_desk_nights_long" : "reallife_travel_desk_nights",
                 "nights", TravelText.Number(nights), "total", TravelText.Money(Mathf.Max(total - voucher, 0)),

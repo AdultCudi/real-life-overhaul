@@ -49,7 +49,7 @@ namespace RealLifeOverhaul
         public float FirstClass;     // price multiplier
         public TravelSeason Peak;
         public TravelSeason Low;
-        public int Splurge;          // what a day's splurge costs
+        public int Splurge;          // what a day's splurge costs, at the start's prices
         public bool JetLag;
         public string DepartKey;
         public string ReturnKey;
@@ -65,7 +65,7 @@ namespace RealLifeOverhaul
     {
         public string Key;
         public int Mood;             // -2 to 2, 0 for none
-        public int Money;            // signed dollars, never more than the player has
+        public int Money;            // signed dollars at the start's prices, never more than the player has
         public int Energy;
         public bool Companion;       // only with somebody along; its text has {name}
         public bool Souvenir;        // one more thing to give away at home
@@ -82,8 +82,22 @@ namespace RealLifeOverhaul
         public const float WeeklyFactor = 0.8f;          // seven nights or more, every night
         public const float FortnightFactor = 0.72f;      // fourteen or more
         public const int StampsForFreeNight = 8;
-        public const int FreeNightCap = 250;             // dollars: the most a loyalty night is worth
+        public const int FreeNightCap = 250;             // dollars at the start's prices: the most a loyalty night is worth
+        public static int FreeNightMost => Prices.At(FreeNightCap);
         public static int SuitcasePrice => Prices.At(120);
+
+        // The extras in dollars at the start's prices, asked for at today's (Prices.At) as the rooms are.
+        public static int MealPrice(HotelTier tier) => Prices.At(tier == HotelTier.Budget ? 8 : tier == HotelTier.Luxury ? 65 : tier == HotelTier.Cottage ? 28 : 32);
+        public static int MinibarPrice(HotelTier tier) => Prices.At(tier == HotelTier.Luxury ? 18 : 12);
+        public static int LaundryPrice(HotelTier tier) => Prices.At(tier == HotelTier.Luxury ? 0 : tier == HotelTier.Budget ? 8 : 25);
+        public static int TablePrice => Prices.At(85);   // dinner through the concierge
+        public static int DinnerPrice => Prices.At(60);  // dinner in the village by the cottages
+
+        /// <summary>A day's splurge on a trip at today's prices.</summary>
+        public static int SplurgePrice(Trip trip) => Prices.At(trip.Splurge);
+
+        /// <summary>What a trip's event gives or takes, at today's prices.</summary>
+        public static int EventMoney(TravelEvent e) => Prices.At(e.Money);
         public const float InsuranceShare = 0.08f;       // of the trip's price
         public const float CompanionShare = 0.7f;        // a second traveller costs this much more
         public const float CancelChance = 0.06f;         // a trip falls through at the gate

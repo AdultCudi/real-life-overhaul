@@ -17,8 +17,6 @@ namespace RealLifeOverhaul
         internal const int WakeNow = 19;   // the one entry listened to while time is skipped
 
         private const int MinibarPerDay = 4;
-        private const int TablePrice = 85;    // dollars before Prices.At: dinner through the concierge
-        private const int DinnerPrice = 60;   // dollars before Prices.At: dinner in the village by the cottages
 
         private const string ButtonDo = "reallife_travel_list_do";
         private const string ButtonChange = "reallife_travel_list_change";
@@ -76,7 +74,7 @@ namespace RealLifeOverhaul
                     }
                     break;
                 case RoomService:
-                    int meal = MealPrice(hotel.Tier);
+                    int meal = TravelCatalogue.MealPrice(hotel.Tier);
                     if (save.Hunger > 92f)
                     {
                         Say(TravelText.T("reallife_travel_room_not_hungry"));
@@ -99,7 +97,7 @@ namespace RealLifeOverhaul
                         TravelState.MinibarDay = today;
                         TravelState.MinibarCount = 0;
                     }
-                    int snack = MinibarPrice(hotel.Tier);
+                    int snack = TravelCatalogue.MinibarPrice(hotel.Tier);
                     if (TravelState.MinibarCount >= MinibarPerDay)
                     {
                         Say(TravelText.T("reallife_travel_room_minibar_empty"));
@@ -114,7 +112,7 @@ namespace RealLifeOverhaul
                     }
                     break;
                 case Laundry:
-                    int wash = LaundryPrice(hotel.Tier);
+                    int wash = TravelCatalogue.LaundryPrice(hotel.Tier);
                     if (TravelState.LaundryDay == today)
                     {
                         Say(TravelText.T("reallife_travel_room_laundry_again"));
@@ -168,6 +166,7 @@ namespace RealLifeOverhaul
                     TravelText.Toast(NotificationType.Success, CheckOutNow(true), 10f);
                     return;
                 case Table:
+                    int table = TravelCatalogue.TablePrice;
                     if (TravelState.DinnerDay == today)
                     {
                         Say(TravelText.T("reallife_travel_room_table_again"));
@@ -177,12 +176,12 @@ namespace RealLifeOverhaul
                         TravelState.DinnerDay = today;
                         Say(TravelText.T("reallife_travel_room_table_booked"));
                     }
-                    else if (PaidExtra(Prices.At(TablePrice)))
+                    else if (PaidExtra(table))
                     {
                         TravelState.DinnerDay = today;
                         TravelEffects.Feed(100f);
                         TravelEffects.Mood(2);
-                        Say(TravelText.T("reallife_travel_room_table", "amount", TravelText.Money(TablePrice)));
+                        Say(TravelText.T("reallife_travel_room_table", "amount", TravelText.Money(table)));
                     }
                     break;
                 case Car:
@@ -210,6 +209,7 @@ namespace RealLifeOverhaul
         private void CottageDinner(int today)
         {
             HotelSite site = _director.Hotels.ById(TravelState.HotelId);
+            int dinner = TravelCatalogue.DinnerPrice;
             if (TravelState.DinnerDay == today)
             {
                 Say(TravelText.T("reallife_travel_room_table_again"));
@@ -219,12 +219,12 @@ namespace RealLifeOverhaul
                 TravelState.DinnerDay = today;
                 LeaveRoom();
             }
-            else if (PaidExtra(Prices.At(DinnerPrice)))
+            else if (PaidExtra(dinner))
             {
                 TravelState.DinnerDay = today;
                 TravelEffects.Feed(100f);
                 TravelEffects.Mood(2);
-                Say(TravelText.T("reallife_travel_room_dinner", "amount", TravelText.Money(DinnerPrice)));
+                Say(TravelText.T("reallife_travel_room_dinner", "amount", TravelText.Money(dinner)));
             }
         }
 
@@ -323,12 +323,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        private static int MealPrice(HotelTier tier) => tier == HotelTier.Budget ? 8 : tier == HotelTier.Luxury ? 65 : tier == HotelTier.Cottage ? 28 : 32;
-
-        private static int MinibarPrice(HotelTier tier) => tier == HotelTier.Luxury ? 18 : 12;
-
-        private static int LaundryPrice(HotelTier tier) => tier == HotelTier.Luxury ? 0 : tier == HotelTier.Budget ? 8 : 25;
-
         private static int LateFee(HotelTier tier) => tier == HotelTier.Luxury ? 0 : Mathf.RoundToInt(TravelState.NightRate * TravelCatalogue.LateCheckoutShare);
 
         // Before noon, the first visit of the day to a luxury room after a night slept there brings a small treat.
@@ -421,25 +415,25 @@ namespace RealLifeOverhaul
             Add(Freshen, TravelText.T(room.Quality == 0 ? "reallife_travel_btn_freshen_shared" : "reallife_travel_btn_freshen"),
                 TravelText.T("reallife_travel_list_freshen"), ButtonDo, true);
             bool hungry = save.Hunger <= 92f;
-            Add(RoomService, TravelText.T(budget ? "reallife_travel_btn_vending" : "reallife_travel_btn_room_service", "amount", TravelText.Money(MealPrice(hotel.Tier))),
+            Add(RoomService, TravelText.T(budget ? "reallife_travel_btn_vending" : "reallife_travel_btn_room_service", "amount", TravelText.Money(TravelCatalogue.MealPrice(hotel.Tier))),
                 TravelText.T(hungry ? "reallife_travel_list_meal" : "reallife_travel_list_not_hungry"), ButtonDo, hungry);
             if (!budget)
             {
                 bool left = TravelState.MinibarDay != today || TravelState.MinibarCount < MinibarPerDay;
-                Add(Minibar, TravelText.T("reallife_travel_btn_minibar", "amount", TravelText.Money(MinibarPrice(hotel.Tier))),
+                Add(Minibar, TravelText.T("reallife_travel_btn_minibar", "amount", TravelText.Money(TravelCatalogue.MinibarPrice(hotel.Tier))),
                     TravelText.T(left ? "reallife_travel_list_minibar" : "reallife_travel_list_minibar_empty"), ButtonDo, left);
             }
             bool washed = TravelState.LaundryDay == today;
             string laundry = washed ? "reallife_travel_list_laundry_done" : luxury ? "reallife_travel_list_laundry_free" : "reallife_travel_list_laundry";
             Add(Laundry, TravelText.T(budget ? "reallife_travel_btn_laundry_coin" : "reallife_travel_btn_laundry"),
-                TravelText.T(laundry, "amount", TravelText.Money(LaundryPrice(hotel.Tier))), ButtonDo, !washed);
+                TravelText.T(laundry, "amount", TravelText.Money(TravelCatalogue.LaundryPrice(hotel.Tier))), ButtonDo, !washed);
             Add(Rest, TravelText.T("reallife_travel_btn_rest"), TravelText.T("reallife_travel_list_rest"), ButtonDo, true);
             Add(Messages, TravelText.T("reallife_travel_btn_messages"), TravelText.T("reallife_travel_list_messages"), ButtonDo, true);
             bool dined = TravelState.DinnerDay == today;
             if (luxury)
             {
                 Add(Table, TravelText.T("reallife_travel_btn_table"),
-                    TravelText.T(dined ? "reallife_travel_list_dined" : "reallife_travel_list_table", "amount", TravelText.Money(TablePrice)), ButtonDo, !dined);
+                    TravelText.T(dined ? "reallife_travel_list_dined" : "reallife_travel_list_table", "amount", TravelText.Money(TravelCatalogue.TablePrice)), ButtonDo, !dined);
                 if (TravelBridges.HasTransport)
                 {
                     Add(Car, TravelText.T("reallife_travel_btn_car"), TravelText.T("reallife_travel_list_car"), ButtonDo, true);
@@ -450,7 +444,7 @@ namespace RealLifeOverhaul
                 bool walked = TravelState.WalkDay == today;
                 Add(Walk, TravelText.T("reallife_travel_btn_walk"), TravelText.T(walked ? "reallife_travel_list_walked" : "reallife_travel_list_walk"), ButtonDo, !walked);
                 Add(Dinner, TravelText.T("reallife_travel_btn_dinner"),
-                    TravelText.T(dined ? "reallife_travel_list_dined" : "reallife_travel_list_dinner", "amount", TravelText.Money(DinnerPrice)), ButtonDo, !dined);
+                    TravelText.T(dined ? "reallife_travel_list_dined" : "reallife_travel_list_dinner", "amount", TravelText.Money(TravelCatalogue.DinnerPrice)), ButtonDo, !dined);
                 if (TravelBridges.HasLeisure)
                 {
                     Add(Golf, TravelText.T("reallife_travel_btn_golf"), TravelText.T("reallife_travel_list_golf"), ButtonDo, true);

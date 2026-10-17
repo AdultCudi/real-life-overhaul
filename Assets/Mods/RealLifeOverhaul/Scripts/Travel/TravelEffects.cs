@@ -129,7 +129,7 @@ namespace RealLifeOverhaul
             Mood(e.Mood);
             if (e.Money != 0)
             {
-                Pocket(e.Money, "reallife_transaction_travel_event");
+                Pocket(TravelCatalogue.EventMoney(e), "reallife_transaction_travel_event");
             }
             Energy(e.Energy);
         }
