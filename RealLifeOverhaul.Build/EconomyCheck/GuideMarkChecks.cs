@@ -6,7 +6,8 @@ using RealLifeOverhaul.GameUi;
 // A player, 0.28.0: an accident's "Pedestrian down" marker stayed on screen long after the scene was over. A mark takes
 // off only what it put on the guider, but takes that off whatever it believed; the watch takes off, once a second, a mark
 // whose owner is gone, stopped, past its time or done with its scene; every mark goes when the city unloads; and the
-// accident's own scene is ended when its updates stop, its marker first.
+// accident's own scene is ended when its updates stop, its marker first. A course (a driving lesson or test, a run) takes
+// the guider from a scene's mark, so that a pedestrian down nearby never leaves the test without its checkpoint marker.
 internal static partial class Program
 {
     private static void GuideMarks()
@@ -19,6 +20,10 @@ internal static partial class Program
         GuideMarkSources();
         GuideMarkCost();
         GuideMarkWords();
+        GuideMarkCourse();
+        GuideMarkCourseTicks();
+        GuideMarkCourseSources();
+        GuideMarkCourseWords();
     }
 
     // The game's one JobDestination guider, as the marks see it: whether it marks something, through the stand-in object
@@ -47,7 +52,7 @@ internal static partial class Program
         }
     }
 
-    // One of the mod's marks as GuideMark is one: Show takes a free guider (or its own), Hide resets it only while it is this mark's.
+    // One of the mod's marks as GuideMark is one: Show takes a free guider (its own, or a lower mark's for a course), Hide resets it only while it is this mark's.
     private sealed class StandInMark : IGuideMarkEntry
     {
         private readonly GuideMarkBook _book;
@@ -61,19 +66,22 @@ internal static partial class Program
         public GuideMarkFate DroppedFor = GuideMarkFate.Keep;
         public bool Cleared;
 
-        public StandInMark(GuideMarkBook book, MarkGuider guider)
+        public StandInMark(GuideMarkBook book, MarkGuider guider, GuideMarkRank rank = GuideMarkRank.Point)
         {
             _book = book;
             _guider = guider;
+            Rank = rank;
         }
+
+        public GuideMarkRank Rank { get; }
 
         public object Words => _words;
 
         public bool Show(float at)
         {
-            if (!StillOurs() && _guider.Marks)
+            if (!StillOurs() && !_book.MayTake(this, _guider.Marks))
             {
-                return false;   // another has it
+                return false;   // another has it (GuideMark.Show asks the book the same)
             }
             _guider.Set(at, _words);
             _at = at;
@@ -375,5 +383,171 @@ internal static partial class Program
             line &= found;
         }
         Check(line, "guide mark: What's new has the fix's line in English, Portuguese and Chinese, in some reallife_changes_ row");
+    }
+}
+
+internal static partial class Program
+{
+    // The player's case: a pedestrian down near a driving test, in either order, and with no test.
+    private static void GuideMarkCourse()
+    {
+        var book = new GuideMarkBook();
+        var guider = new MarkGuider();
+        var test = new StandInMark(book, guider, GuideMarkRank.Course);
+        var accident = new StandInMark(book, guider);
+        Check(test.Show(10f) && !accident.Show(40f) && test.StillOurs() && guider.Words == test.Words,
+            "guide mark course: a scene that starts during a test does not take the test's checkpoint marker");
+        accident.Hide();
+        Check(test.StillOurs() && guider.Words == test.Words && !test.Cleared, "guide mark course: the scene's end leaves the test's marker on the guider");
+        test.Hide();
+
+        book = new GuideMarkBook();
+        guider = new MarkGuider();
+        test = new StandInMark(book, guider, GuideMarkRank.Course);
+        accident = new StandInMark(book, guider);
+        accident.Show(40f);
+        Check(test.Show(10f) && test.StillOurs() && !accident.StillOurs() && guider.Words == test.Words && book.Holds(test),
+            "guide mark course: a test that starts while a scene has the guider takes it: its checkpoint is marked at once");
+        Check(!accident.Show(40f) && test.StillOurs(), "guide mark course: the scene asking again (every tick) does not take the guider back during the test");
+        Check(test.Show(25f) && test.StillOurs() && Math.Abs(guider.Place - 25f) < 0.01f, "guide mark course: the test moves its marker on to the next checkpoint with the scene still running");
+        Check(book.Sweep(1f) == 0 && accident.DroppedFor == GuideMarkFate.Lost && test.StillOurs(), "guide mark course: the watch only forgets the scene's mark that gave way; the test's stays");
+        accident.Hide();
+        Check(test.StillOurs() && guider.Words == test.Words && !accident.Cleared, "guide mark course: when the scene ends during the test the test's marker is still there");
+        accident.Show(40f);
+        test.Hide();
+        Check(!guider.Marks && test.Cleared, "guide mark course: the test's end takes its own marker off");
+        Check(accident.Show(40f) && accident.StillOurs() && guider.Words == accident.Words, "guide mark course: a scene still running has the guider again once the test is over");
+        accident.Hide();
+
+        book = new GuideMarkBook();
+        guider = new MarkGuider();
+        var scene = new StandInMark(book, guider);
+        var taxi = new StandInMark(book, guider);
+        Check(scene.Show(40f) && !taxi.Show(70f) && scene.StillOurs(), "guide mark course: with no test, the first mark keeps the guider as before");
+        scene.Hide();
+        Check(!guider.Marks && taxi.Show(70f) && taxi.StillOurs(), "guide mark course: with no test, the next mark takes the guider once the first lets it go, as before");
+        taxi.Hide();
+
+        object job = new object();
+        guider.Set(55f, job);   // a job of the mod's or the game's own delivery has set the guider itself
+        test = new StandInMark(book, guider, GuideMarkRank.Course);
+        Check(!test.Show(10f) && guider.Words == job, "guide mark course: a course never takes a job's or the game's own marker");
+        guider.Reset();
+        var run = new StandInMark(book, guider, GuideMarkRank.Course);
+        test.Show(10f);
+        Check(!run.Show(20f) && test.StillOurs(), "guide mark course: of two courses the first keeps the guider");
+        test.Hide();
+        run.Hide();
+
+        Check(GuideMarkRules.MayTake(false, false, GuideMarkRank.Course, GuideMarkRank.Point) && GuideMarkRules.MayTake(true, true, GuideMarkRank.Point, GuideMarkRank.Course)
+              && !GuideMarkRules.MayTake(true, true, GuideMarkRank.Point, GuideMarkRank.Point) && !GuideMarkRules.MayTake(true, true, GuideMarkRank.Course, GuideMarkRank.Point)
+              && !GuideMarkRules.MayTake(true, false, GuideMarkRank.Point, GuideMarkRank.Course) && !GuideMarkRules.MayTake(true, true, GuideMarkRank.Course, GuideMarkRank.Course),
+            "guide mark course: the rule: a free guider for anyone; a mark's for a course over a point; never a job's, a course's, or a point's for a point");
+    }
+
+    // A whole lesson as the director runs it: the test asks five times a second, the scenes (an accident, a crime, a street
+    // event) every tick of theirs, and the watch looks every second. After the test's first ask, every look finds its marker.
+    private static void GuideMarkCourseTicks()
+    {
+        var book = new GuideMarkBook();
+        var guider = new MarkGuider();
+        var test = new StandInMark(book, guider, GuideMarkRank.Course);
+        var scenes = new[] { new StandInMark(book, guider), new StandInMark(book, guider), new StandInMark(book, guider) };
+        float[] from = { 15f, 40f, 75f }, to = { 90f, 60f, 200f };   // seconds: the accident starts before the test, the street event outlasts it
+        int looks = 0, missing = 0;
+        float checkpoint = 1f;
+        for (int tick = 0; tick < 1500; tick++)
+        {
+            float now = tick * 0.2f;
+            for (int s = 0; s < scenes.Length; s++)
+            {
+                if (now >= from[s] && now < to[s])
+                {
+                    scenes[s].Show(100f + s);
+                }
+                else if (now >= to[s] && now < to[s] + 0.2f)
+                {
+                    scenes[s].Hide();
+                }
+            }
+            if (now >= 20f && now < 180f)
+            {
+                if (tick % 50 == 0)
+                {
+                    checkpoint += 1f;   // the next checkpoint, every ten seconds
+                }
+                test.Show(checkpoint);
+                looks++;
+                missing += test.StillOurs() && Math.Abs(guider.Place - checkpoint) < 0.01f ? 0 : 1;
+            }
+            else if (now >= 180f && now < 180.2f)
+            {
+                test.Hide();
+            }
+            if (tick % 5 == 0)
+            {
+                book.Sweep(now);
+            }
+        }
+        Check(looks > 700 && missing == 0, "guide mark course: through a lesson with three scenes coming and going, the test's checkpoint was marked at every look ("
+                                            + missing + " of " + looks + " without)");
+        Check(!guider.Marks && book.Count == 0, "guide mark course: once the test and every scene are over, nothing of theirs is left on the guider");
+    }
+
+    // The sources: GuideMark asks the book's rule, the driving test and the run are courses, nothing else is, and a
+    // driving test's checkpoint counts when driven through whether or not its marker is up.
+    private static void GuideMarkCourseSources()
+    {
+        string scripts = System.IO.Path.Combine(LocalesFolder(), @"..\Scripts");
+        string Read(string rel) => System.IO.File.ReadAllText(System.IO.Path.Combine(scripts, rel));
+        string mark = Read(@"Core\GameUi\GuideMark.cs");
+        Check(mark.Contains("Book.MayTake(this, marks)") && mark.Contains("GuideMarkRank IGuideMarkEntry.Rank => _rank;") && !mark.Contains("if (!mine && guider.target != null)"),
+            "guide mark course: GuideMark.Show takes the guider by the book's rule (a course over a point), and says its rank to the book");
+        string test = Read(@"Licences\Driving\PracticalTest.cs");
+        string run = Read(@"Home\JogRun.cs");
+        Check(test.Contains("new GuideMark(\"the driving test\").Ranked(GuideMarkRank.Course)") && run.Contains("new GameUi.GuideMark(\"the run\").Ranked(GameUi.GuideMarkRank.Course)"),
+            "guide mark course: the driving lesson and test, and the run, mark their checkpoints as courses");
+        var ranked = new System.Collections.Generic.List<string>();
+        foreach (string file in System.IO.Directory.GetFiles(scripts, "*.cs", System.IO.SearchOption.AllDirectories))
+        {
+            string name = System.IO.Path.GetFileName(file);
+            if (name != "PracticalTest.cs" && name != "JogRun.cs" && System.IO.File.ReadAllText(file).Contains("GuideMarkRank.Course)"))
+            {
+                ranked.Add(name);
+            }
+        }
+        Check(ranked.Count == 0, "guide mark course: no scene or errand is a course, so with no course running every mark keeps the guider as before (" + string.Join(", ", ranked) + ")");
+        string flat = test.Replace("\r\n", "\n");
+        int drive = flat.IndexOf("private void Drive(float now)", StringComparison.Ordinal);
+        int driveEnd = drive >= 0 ? flat.IndexOf("\n        private ", drive + 10, StringComparison.Ordinal) : -1;
+        string body = drive >= 0 && driveEnd > drive ? flat.Substring(drive, driveEnd - drive) : string.Empty;
+        Check(body.Contains("_route.Checkpoints[_next] - position") && body.Contains("sqr < Reach * Reach") && !body.Contains("_mark"),
+            "guide mark course: a test's checkpoint counts when the car is within reach of it, whether or not its marker is up");
+    }
+
+    private static void GuideMarkCourseWords()
+    {
+        var langs = LanguageWords(out string[] codes);
+        if (!LanguagesRead("guide mark course", langs, codes))
+        {
+            return;
+        }
+        string[] wanted =
+        {
+            "Fixed: a street scene during a driving lesson or test, such as a pedestrian hit by traffic, no longer stops the checkpoints from showing.",
+            "Corrigido: uma cena de rua durante uma aula ou prova de direção, como um pedestre atropelado, não impede mais que os pontos de controle apareçam.",
+            "已修复：驾驶课或驾驶考试期间发生的街头场景（例如行人被车撞倒）不再导致检查点无法显示。"
+        };
+        bool line = true;
+        for (int l = 0; l < 3 && l < langs.Length; l++)
+        {
+            bool found = false;
+            foreach (var row in langs[l])
+            {
+                found |= row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(wanted[l]);
+            }
+            line &= found;
+        }
+        Check(line, "guide mark course: What's new has the fix's line in English, Portuguese and Chinese, in some reallife_changes_ row");
     }
 }

@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.GameUi
     ///
     /// The game has one guider of that type and the mod's jobs and outings use it too. A mark therefore takes it
     /// only while it is free (or already this mark's), and takes off only what it put there: whoever was first
-    /// keeps the guider. Whose the guider is follows <see cref="GuideMarkRules.Ours"/>: the guider points at the
+    /// keeps the guider, except that a course (<see cref="Ranked"/>: a driving test's checkpoints, a run's) takes it from
+    /// a mark of the mod's that is not one, which has it back once the course lets it go. Whose the guider is follows <see cref="GuideMarkRules.Ours"/>: the guider points at the
     /// stand-in this mark set, no other mark has put itself there since, and the guider's words are still the very
     /// string this mark gave it (its place, where no words can be read). <see cref="Hide"/> clears the guider whenever
     /// that holds, whatever this mark believed, and never when it does not.
@@ -46,6 +47,7 @@ namespace RealLifeOverhaul.GameUi
         private bool _kept;
         private FeatureGuard _keeperGuard;
         private Func<bool> _while;     // the owner's own test that what the mark is for goes on (While), or none
+        private GuideMarkRank _rank;   // how much the owner needs the guider (Ranked): a course takes it from a mark that is not one
 
         public GuideMark() : this(null)
         {
@@ -88,6 +90,16 @@ namespace RealLifeOverhaul.GameUi
             return this;
         }
 
+        /// <summary>
+        /// How much the owner needs the guider (<see cref="GuideMarkRules.MayTake"/>): a course, checkpoints the player
+        /// follows against the clock, takes it from a mark of the mod's that is not one. Called once; returns this.
+        /// </summary>
+        public GuideMark Ranked(GuideMarkRank rank)
+        {
+            _rank = rank;
+            return this;
+        }
+
         /// <summary>True while this mark is the one on the game's guider.</summary>
         public bool Showing
         {
@@ -110,8 +122,8 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>
         /// Puts the mark on a place with a name (final words). False if the game's guider is not there or is marking
-        /// something else, or the mark's time is up; it can be asked again later. Asking again with the same place and
-        /// name costs a few compares.
+        /// something else (a course takes it from a mark of the mod's that is not one), or the mark's time is up; it can
+        /// be asked again later. Asking again with the same place and name costs a few compares.
         /// </summary>
         public bool Show(Vector3 at, string name)
         {
@@ -137,9 +149,15 @@ namespace RealLifeOverhaul.GameUi
                 {
                     return true;
                 }
-                if (!mine && guider.target != null)
+                GuideMark gaveWay = null;
+                if (!mine)
                 {
-                    return false;   // a job or an outing has it
+                    bool marks = guider.target != null;
+                    if (!Book.MayTake(this, marks))
+                    {
+                        return false;   // a job, an outing or another mark has it
+                    }
+                    gaveWay = marks ? Book.Holder as GuideMark : null;   // a mark of the mod's that gives way to this course
                 }
                 GuidersManager manager = InstanceBehavior<GuidersManager>.Instance;
                 DirectionGuider look = manager.destinationGuider != null ? manager.destinationGuider : guider;
@@ -156,6 +174,11 @@ namespace RealLifeOverhaul.GameUi
                     return false;
                 }
                 Took();
+                if (gaveWay != null && Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Guide mark check (a course over a mark): '" + words + "' of " + (_owner ?? "a feature") + " took the game's destination marker from '"
+                                 + (gaveWay._name ?? string.Empty) + "' of " + (gaveWay._owner ?? "a feature") + ", which has it back once the course lets it go: PASS.");
+                }
                 return true;
             }
             catch (Exception e)
@@ -220,6 +243,8 @@ namespace RealLifeOverhaul.GameUi
                 return false;
             }
         }
+
+        GuideMarkRank IGuideMarkEntry.Rank => _rank;
 
         bool IGuideMarkEntry.OwnerGone => _kept && _keeper == null;
 
