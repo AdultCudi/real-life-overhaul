@@ -6,26 +6,27 @@ namespace RealLifeOverhaul.Economy
     public enum LicenceNote
     {
         None = 0,
-        Remind = 1,     // it runs out within three days
+        Remind = 1,     // it runs out within the reminder's days
         Renew = 2,      // it ran out yesterday and renews by itself: the director takes the fee
         Lapsed = 3      // it ran out yesterday
     }
 
-    /// <summary>Licences and permits by rule: which a business needs, what each costs, how long it lasts, and what trading without one costs. Game-free.</summary>
+    /// <summary>Licences and permits: which a business needs, their terms, fees and fines. Game-free.</summary>
     public static class LicenceRules
     {
         private const int PurposeCheck = 81;
 
-        /// <summary>Whether an inspection is asked for today at a business that trades without a licence it needs; the same answer for a seed, a day and a business.</summary>
+        /// <summary>Whether an inspection is asked for where a licence is missing; fixed by seed and day.</summary>
         public static bool Checked(int seed, int age, int shop)
         {
             return CityModel.Draw(seed, PurposeCheck, age * CompanyCatalogue.ShopsMost + shop, 1000) < CompanyCatalogue.LicenceCheckChance;
         }
 
-        /// <summary>The licences a business needs, a bit each: food hygiene, alcohol, late opening, and signage for all.</summary>
+        /// <summary>The licences a business needs, a bit each; signage for all.</summary>
         public static int Needs(bool food, bool alcohol, bool late)
         {
-            return (food ? 1 << (int)LicenceKind.Hygiene : 0) | (alcohol ? 1 << (int)LicenceKind.Alcohol : 0) | (late ? 1 << (int)LicenceKind.Late : 0) | 1 << (int)LicenceKind.Signage;
+            return (food ? 1 << (int)LicenceKind.Hygiene : 0) | (alcohol ? 1 << (int)LicenceKind.Alcohol : 0) | (late ? 1 << (int)LicenceKind.Late : 0)
+                   | 1 << (int)LicenceKind.Signage;
         }
 
         public static bool Needed(int needs, int kind)
@@ -33,7 +34,7 @@ namespace RealLifeOverhaul.Economy
             return (needs & (1 << kind)) != 0;
         }
 
-        /// <summary>Opening hours that need the late opening permit: open at or past ten at night, or before five in the morning.</summary>
+        /// <summary>Opening hours that need the late opening permit: late at night or early in the morning.</summary>
         public static bool IsLate(int opens, int closes)
         {
             return closes > opens && (closes > CompanyCatalogue.LateHour || opens < CompanyCatalogue.EarlyHour);
@@ -54,7 +55,7 @@ namespace RealLifeOverhaul.Economy
             return l.Until >= day;
         }
 
-        /// <summary>A term is bought. Renewed before it runs out, the new term is added on at its end.</summary>
+        /// <summary>A term is bought; renewed early, it is added on at the end of the one running.</summary>
         public static void Grant(Licence l, int kind, int day)
         {
             l.Until = Math.Max(l.Until, day - 1) + CompanyCatalogue.LicenceTerm[kind];
@@ -62,8 +63,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// A business is seen for the first time. One that already ran when the rule appeared gets every licence it
-        /// needs for a first term, free. One opened later may trade for a few days before it needs them.
+        /// A business seen first: a free first term of each licence if it ran before the feature began, else a few
+        /// days' grace.
         /// </summary>
         public static void First(ShopFile s, int needs, int day, bool ranBefore)
         {
@@ -109,7 +110,7 @@ namespace RealLifeOverhaul.Economy
             return LicenceNote.None;
         }
 
-        /// <summary>Whether trading without this one shuts the doors for some hours as well as the fine.</summary>
+        /// <summary>Whether trading without this one also shuts the doors for some hours.</summary>
         public static bool Shuts(int kind)
         {
             return kind == (int)LicenceKind.Hygiene || kind == (int)LicenceKind.Alcohol;

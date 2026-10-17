@@ -171,15 +171,6 @@ namespace RealLifeOverhaul.Economy
                          + " from the game and leaves it out for this session; its page says so. Other businesses are still planned.");
         }
 
-        public bool HasAccountant => On(CompanyPart.Tax) && _state != null && _state.Tax != null && _state.Tax.Accountant >= 0;
-
-        /// <summary>The raise agreed for an employee on top of the game's wage, hundredths an hour; 0 for none or with the staff part off.</summary>
-        public int RaiseOf(string id)
-        {
-            StaffFile f = On(CompanyPart.Staff) && _state != null && id != null ? _state.Employee(id) : null;
-            return f != null ? f.Raise : 0;
-        }
-
         private CompanyShop RotaShopOf(RotaPlace place)
         {
             for (int i = _shops.Count - 1; i >= 0; i--)

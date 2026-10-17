@@ -3,11 +3,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The tax half of the Tax and licences tab. The table: the return, the accountant, and each business's cash off
-    /// the books. The box: the return with its figures and the one button that files it; the three accountants to
-    /// step through; a business's share off the books with what it saves and what it risks.
-    /// </summary>
+    /// <summary>The tax half of the Tax and licences tab: the return, the accountant, cash off the books.</summary>
     public sealed partial class CompanyApp
     {
         private int _tier = 1;   // the accountant whose terms are showing
@@ -22,17 +18,20 @@ namespace RealLifeOverhaul.Economy
             bool late = t.ReturnWaiting && day > t.ReturnDue;
             Pick("ret", CompanyText.T("reallife_co_row_return"), CompanyText.T("reallife_co_row_quarter", "quarter", (t.ReturnWaiting ? t.ReturnQuarter : t.Quarter).ToString()),
                 CompanyText.Day(t.ReturnWaiting ? t.ReturnDue : t.QuarterFrom + _director.QuarterDays),
-                CompanyText.T(late ? "reallife_co_row_return_late" : t.ReturnWaiting ? "reallife_co_row_return_due" : "reallife_co_row_return_running"), late ? 2 : t.ReturnWaiting ? 1 : 0, ref selected);
+                CompanyText.T(late ? "reallife_co_row_return_late" : t.ReturnWaiting ? "reallife_co_row_return_due" : "reallife_co_row_return_running"),
+                late ? 2 : t.ReturnWaiting ? 1 : 0, ref selected);
             Last.Kind = CompanyTables.AboutTax;
             Last.Key[2] = t.ReturnWaiting ? t.ReturnDue : t.QuarterFrom + _director.QuarterDays;
             Pick("acc", CompanyText.T("reallife_co_row_accountant"), CompanyText.Accountant(t.Accountant), t.Accountant >= 0 ? CompanyText.Day(t.AccountantNext) : string.Empty,
-                t.Accountant >= 0 ? CompanyText.T("reallife_co_row_a_month", "amount", CompanyText.Money(TaxRules.Fee(t.Accountant, _director.Index, _director.Hidden() > 0))) : string.Empty, 0, ref selected);
+                t.Accountant >= 0 ? CompanyText.T("reallife_co_row_a_month", "amount", CompanyText.Money(TaxRules.Fee(t.Accountant, _director.Index, _director.Hidden() > 0)))
+                    : string.Empty, 0, ref selected);
             Last.Kind = CompanyTables.AboutTax;
             Last.Key[2] = t.Accountant >= 0 ? t.AccountantNext : double.NaN;
             IReadOnlyList<CompanyShop> shops = _director.Shops;
             for (int i = 0; Settings.EconomyCompanyHide && i < shops.Count; i++)
             {
-                Pick("hide:" + shops[i].File.Place, shops[i].Name, CompanyText.T("reallife_co_row_hidden"), string.Empty, shops[i].File.Hide + "%", shops[i].File.Hide > 0 ? 1 : 0, ref selected);
+                Pick("hide:" + shops[i].File.Place, shops[i].Name, CompanyText.T("reallife_co_row_hidden"), string.Empty, shops[i].File.Hide + "%",
+                    shops[i].File.Hide > 0 ? 1 : 0, ref selected);
                 Last.Kind = CompanyTables.AboutHidden;
             }
 
@@ -62,7 +61,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10));
                 }
-                box.Row("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day", (t.QuarterFrom + _director.QuarterDays).ToString()));
+                box.Row("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day",
+                    (t.QuarterFrom + _director.QuarterDays).ToString()));
                 box.Row("reallife_co_tax_costs", CompanyText.Money(TaxRules.CostsSum(t)));
                 box.Row("reallife_co_row_accountant", CompanyText.Accountant(t.Accountant));
                 box.Section("reallife_ibox_sec_how");
@@ -79,8 +79,8 @@ namespace RealLifeOverhaul.Economy
                 !t.ReturnWaiting ? CellTone.Plain : day > t.ReturnDue ? CellTone.Red : CellTone.Yellow);
             if (!t.ReturnWaiting)
             {
-                box.Line(CompanyText.Fill("reallife_co_return_running", "quarter", t.Quarter.ToString(), "from", t.QuarterFrom.ToString(), "day", (t.QuarterFrom + _director.QuarterDays).ToString(),
-                    "days", CompanyCatalogue.ReturnDays.ToString()));
+                box.Line(CompanyText.Fill("reallife_co_return_running", "quarter", t.Quarter.ToString(), "from", t.QuarterFrom.ToString(),
+                    "day", (t.QuarterFrom + _director.QuarterDays).ToString(), "days", CompanyCatalogue.ReturnDays.ToString()));
                 box.Headline("reallife_co_return_costs");
                 for (int k = 0; k < t.Costs.Length; k++)
                 {
@@ -89,8 +89,9 @@ namespace RealLifeOverhaul.Economy
                 BackButton(box);
                 return;
             }
-            box.Line(CompanyText.T(day > t.ReturnDue ? "reallife_co_return_late" : "reallife_co_return_due", "day", t.ReturnDue.ToString(), "amount", CompanyText.Money(TaxRules.Penalty(t.ReturnTakings)),
-                "count", t.ReturnPenalties.ToString()), day > t.ReturnDue ? CellTone.Red : CellTone.Yellow);
+            box.Line(CompanyText.T(day > t.ReturnDue ? "reallife_co_return_late" : "reallife_co_return_due", "day", t.ReturnDue.ToString(),
+                    "amount", CompanyText.Money(TaxRules.Penalty(t.ReturnTakings)), "count", t.ReturnPenalties.ToString()),
+                day > t.ReturnDue ? CellTone.Red : CellTone.Yellow);
             box.Section("reallife_ibox_sec_return");
             box.Row("reallife_co_return_quarter", t.ReturnQuarter.ToString());
             box.Row("reallife_co_return_takings", CompanyText.Money(t.ReturnTakings));
@@ -98,7 +99,8 @@ namespace RealLifeOverhaul.Economy
             bool helped = TaxRules.Files(t.Accountant, _director.Hidden() > 0);
             if (helped)
             {
-                box.Line(CompanyText.T("reallife_co_return_rebate", "name", CompanyText.Accountant(t.Accountant), "amount", CompanyText.Money(TaxRules.Rebate(t.Accountant, t.ReturnCosts))), CellTone.Green);
+                box.Line(CompanyText.T("reallife_co_return_rebate", "name", CompanyText.Accountant(t.Accountant),
+                    "amount", CompanyText.Money(TaxRules.Rebate(t.Accountant, t.ReturnCosts))), CellTone.Green);
             }
             else if (t.Accountant >= 0)
             {
@@ -140,7 +142,8 @@ namespace RealLifeOverhaul.Economy
             box.Line(CompanyText.T("reallife_co_acc_risk", "share", CompanyText.Share(CompanyCatalogue.AccountantRisk[tier])));
             if (tier == 0)
             {
-                box.Note(CompanyText.T("reallife_co_acc_careless", "chance", CompanyText.Share(CompanyCatalogue.AccountantErrorChance), "more", CompanyText.Share(CompanyCatalogue.AccountantHidingFee - 1000)));
+                box.Note(CompanyText.T("reallife_co_acc_careless", "chance", CompanyText.Share(CompanyCatalogue.AccountantErrorChance),
+                    "more", CompanyText.Share(CompanyCatalogue.AccountantHidingFee - 1000)));
             }
             else
             {
@@ -179,10 +182,10 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_co_hide_saved", CompanyText.Money(t.Saved));
             box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10), CellTone.Yellow);
             box.Section("reallife_ibox_sec_risk");
-            box.Note(CompanyText.T("reallife_co_hide_risk", "grow", (CompanyCatalogue.RiskPerPercent / 100f).ToString("0.##"), "fall", (CompanyCatalogue.RiskDecay / 100f).ToString("0.##"),
-                "most", CompanyText.Share(CompanyCatalogue.RiskMost / 10)));
-            box.Note(CompanyText.T(level == CompanyCatalogue.Relaxed ? "reallife_co_hide_audit_relaxed" : "reallife_co_hide_audit", "fine", CompanyText.Share(CompanyCatalogue.FineShare[level]),
-                "sum", CompanyText.Money(CompanyCatalogue.CourtSum)));
+            box.Note(CompanyText.T("reallife_co_hide_risk", "grow", (CompanyCatalogue.RiskPerPercent / 100f).ToString("0.##"),
+                "fall", (CompanyCatalogue.RiskDecay / 100f).ToString("0.##"), "most", CompanyText.Share(CompanyCatalogue.RiskMost / 10)));
+            box.Note(CompanyText.T(level == CompanyCatalogue.Relaxed ? "reallife_co_hide_audit_relaxed" : "reallife_co_hide_audit",
+                "fine", CompanyText.Share(CompanyCatalogue.FineShare[level]), "sum", CompanyText.Money(CompanyCatalogue.CourtSum)));
             box.Note(CompanyText.T("reallife_co_hide_threshold"));
             BackButton(box);
         }

@@ -3,18 +3,14 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The Marketing tab. The table: each business with the campaign it has running or booked, then the last eight
-    /// reports, newest first. The box: for a business, the four campaigns to step through with today's cost and effect
-    /// (or the one that is running); for a report, its figures.
-    /// </summary>
+    /// <summary>The Marketing tab: each business's campaign, the campaigns to book, and the reports.</summary>
     public sealed partial class CompanyApp
     {
         private static readonly string[] CampaignAbout =
         {
-            "reallife_co_push_about_flyers", "reallife_co_push_about_radio", "reallife_co_push_about_discount", "reallife_co_push_about_refit", "reallife_co_push_about_sponsored",
-            "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer",
-            "reallife_co_push_about_influencer", "reallife_co_push_about_giveaway"
+            "reallife_co_push_about_flyers", "reallife_co_push_about_radio", "reallife_co_push_about_discount", "reallife_co_push_about_refit",
+            "reallife_co_push_about_sponsored", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer",
+            "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_giveaway"
         };
 
         private readonly List<int> _kinds = new List<int>(CompanyCatalogue.CampaignKinds);
@@ -42,7 +38,6 @@ namespace RealLifeOverhaul.Economy
             for (int i = state.Reports.Count - 1; i >= 0; i--)
             {
                 CampaignReport r = state.Reports[i];
-                // A campaign that has ended: how many more customers came, what it cost and what it brought in beyond that.
                 Pick("rep:" + i, CompanyText.T("reallife_co_row_report", "business", r.Name), CompanyText.Campaign(r.Kind), CompanyText.Day(r.From + r.Days - 1),
                     CompanyText.Percent(r.Footfall), 0, ref selected);
                 TableRow row = Last;
@@ -50,7 +45,8 @@ namespace RealLifeOverhaul.Economy
                 row.Key[2] = r.From + r.Days - 1;
                 row.Key[3] = r.Footfall;
                 row.Set(4, CompanyText.Money(r.Cost), r.Cost);
-                row.Set(5, CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra)), r.Extra, r.Extra < 0 ? TableRow.Red : r.Extra > 0 ? TableRow.Green : TableRow.Plain);
+                row.Set(5, CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra)), r.Extra,
+                    r.Extra < 0 ? TableRow.Red : r.Extra > 0 ? TableRow.Green : TableRow.Plain);
             }
             if (_rows.Count == 0)
             {
@@ -101,7 +97,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (!_director.Promoted(shop))
             {
-                box.Note(CompanyText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_co_push_empire" : "reallife_co_push_no_figure"));   // (Core/EmpireMotors: its customers are that mod's)
+                // An Empire Motors dealership's customers are that mod's (Core/EmpireMotors).
+                box.Note(CompanyText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_co_push_empire" : "reallife_co_push_no_figure"));
                 BackButton(box);
                 return;
             }
@@ -123,8 +120,9 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_co_push_cost", CompanyText.Money(cost));
             box.Row("reallife_co_push_length", CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day + 1).ToString()));
             box.Row("reallife_co_push_effect", CompanyText.Percent(percent), CellTone.Green);
+            string economy = CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)_director.Cycle, 0, 3)]);
             box.Note(CompanyText.T("reallife_co_push_parts", "own", CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind]), "district", CompanyText.Share(suit),
-                "economy", CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)_director.Cycle, 0, 3)])) + (repeat < 1000 ? " " + CompanyText.T("reallife_co_push_repeat", "share", CompanyText.Share(repeat)) : string.Empty));
+                "economy", economy) + (repeat < 1000 ? " " + CompanyText.T("reallife_co_push_repeat", "share", CompanyText.Share(repeat)) : string.Empty));
             var buttons = box.ButtonRow();
             int chosen = kind;
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_push_book", () => _director.BookCampaign(place, chosen));
@@ -146,7 +144,8 @@ namespace RealLifeOverhaul.Economy
                 box.Note(CompanyText.T("reallife_co_report_short", "before", r.DaysBefore.ToString(), "during", r.DaysDuring.ToString()));
             }
             box.Section("reallife_ibox_sec_before_during");
-            box.Line(CompanyText.T("reallife_co_report_customers", "before", r.CustomersBefore.ToString(), "during", r.CustomersDuring.ToString(), "change", CompanyText.Percent(r.Footfall)));
+            box.Line(CompanyText.T("reallife_co_report_customers", "before", r.CustomersBefore.ToString(), "during", r.CustomersDuring.ToString(),
+                "change", CompanyText.Percent(r.Footfall)));
             box.Line(CompanyText.T("reallife_co_report_takings", "before", CompanyText.Money(r.TakingsBefore), "during", CompanyText.Money(r.TakingsDuring)));
             box.Line(CompanyText.T("reallife_co_report_profit", "before", CompanyText.Money(r.ProfitBefore), "during", CompanyText.Money(r.ProfitDuring)));
             box.Section("reallife_ibox_sec_money");
