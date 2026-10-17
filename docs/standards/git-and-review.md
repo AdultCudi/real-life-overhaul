@@ -40,7 +40,7 @@ Checked by: review.
 
 ### RLO-GIT-004: No trailers, names or addresses
 
-**MUST NOT** add trailer lines (`Co-authored-by:`, `Signed-off-by:`) or any personal name or email address to a commit message.
+**MUST NOT** add trailer lines (a co-author or a sign-off line) or any personal name or email address to a commit message.
 
 Why: the repository is public, and the history has none.
 
