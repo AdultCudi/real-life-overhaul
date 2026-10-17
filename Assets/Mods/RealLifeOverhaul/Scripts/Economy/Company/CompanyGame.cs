@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using BigAmbitions.Characters.Skills;
 using Entities;
 using Helpers;
@@ -10,71 +9,59 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What "running a business" asks of the rest of the mod. Each is optional and has a default, so Economy/Company
-    /// works alone; Scripts/Wiring/CompanyLinks.cs fills them in. It never calls another feature directly.
-    /// </summary>
+    /// <summary>What running a business asks of the rest of the mod (Wiring/CompanyLinks); null does nothing.</summary>
     public static class CompanyBridges
     {
-        /// <summary>Has a business's promotion figure written again as it should stand now (business pressure's own writer). Default: nothing is written, so footfall is not changed.</summary>
+        /// <summary>Writes a business's promotion figure again as it should stand, by business pressure's writer.</summary>
         public static CityBridges.FootfallWriter Footfall;
 
-        /// <summary>True where the game keeps a promotion figure for a business, so that its footfall can be changed at all. Default: nowhere.</summary>
+        /// <summary>True where the game keeps a promotion figure for a business.</summary>
         public static Func<BuildingRegistration, bool> Promoted;
 
-        /// <summary>Shuts a business for some hours by business pressure's own closure, which reopens it itself. False if it would not. Default: never.</summary>
+        /// <summary>Shuts a business for some hours by business pressure's closure, which reopens it; false if it would not.</summary>
         public static Func<BuildingRegistration, int, bool> Close;
 
-        /// <summary>Starts business pressure's own tax audit at a business, by its own rules. Default: never.</summary>
+        /// <summary>Starts business pressure's tax audit at a business, by its own rules.</summary>
         public static Func<BuildingRegistration, bool> Audit;
 
-        /// <summary>Starts one of business pressure's own inspections at a business, by its own rules. Default: never.</summary>
+        /// <summary>Starts one of business pressure's inspections at a business, by its own rules.</summary>
         public static Func<BuildingRegistration, bool> Inspect;
 
-        /// <summary>True while business pressure has a staff dispute of its own open at a business: the mod's strike waits. Default: never.</summary>
+        /// <summary>True while business pressure has a staff dispute open at a business: the company's strike waits.</summary>
         public static Func<BuildingRegistration, bool> Dispute;
 
-        /// <summary>A rival's name to put to an offer; null if there is none to name. Default: none.</summary>
+        /// <summary>A rival's name to put to an offer; null for none.</summary>
         public static Func<BuildingRegistration, string> Rival;
 
-        /// <summary>Has an employee leave by the game's own resignation, as business pressure does. Default: nobody leaves.</summary>
+        /// <summary>An employee leaves by the game's own resignation, as business pressure has them leave.</summary>
         public static Action<EmployeeInstance> Leave;
 
-        /// <summary>Files a criminal case for tax kept back, for a sum. Returns the court's number; 0 with no court to file with. Default: 0.</summary>
+        /// <summary>Files a criminal case for tax kept back; the court's number, or 0 with no court.</summary>
         public static Func<int, int> TaxCase;
 
-        /// <summary>The footfall change, per cent, that one of business pressure's own issues has running at a business on a day; 0 with none then. Default: none.</summary>
+        /// <summary>Per cent of footfall one of business pressure's issues changes at a business on a day; 0 with none.</summary>
         public static Func<BuildingRegistration, int, int> IssueFootfall;
 
-        /// <summary>Income of the days from one to another (both counted) that is in no business's statement and belongs in the quarter's return: the gain on a business sold. Default: none.</summary>
+        /// <summary>Income of the days from one to another, both counted, that no statement holds: the gain on a business sold.</summary>
         public static Func<int, int, int> OtherIncome;
 
-        /// <summary>True for a business whose cleaning the cleaning service does on its round, so that the staff rota planner asks for no cleaning shift there. Default: none is.</summary>
+        /// <summary>True where the cleaning service cleans a business, so the rota planner wants no cleaning shift there.</summary>
         public static Func<Address, bool> Cleaned;
 
-        /// <summary>
-        /// A campaign of a kind that is not the company's own (CompanyCatalogue.CampaignOwnKinds and on: a sponsored post on
-        /// Flare): whether it can be booked at a business now, and its cost and its customers as thousandths of the
-        /// catalogue's figures. Default: none of them is offered.
-        /// </summary>
+        /// <summary>Whether a kind not the company's own can be booked at a place, with cost and reach in thousandths.</summary>
         public static OutsideQuote Outside;
 
         public delegate bool OutsideQuote(int kind, string place, out int cost, out int reach);
 
-        /// <summary>A campaign of a kind that is not the company's own has been booked and paid: its business, kind, first and last day, and customers. Default: nobody is told.</summary>
+        /// <summary>A campaign not of the company's own was booked and paid: place, kind, first and last day, per cent.</summary>
         public static Action<string, int, int, int, int> Booked;
 
-        /// <summary>
-        /// What it is like to work for the player as the city tells it (Standing's workers' reputation, through
-        /// Wiring/StandingLinks), -10 to 10: somebody new starts that many points of standing above or below the usual, and
-        /// a rival approaches the staff a quarter as much more or less often for every four points under or over. Default: 0.
-        /// </summary>
+        /// <summary>The city's view of the player as an employer, -10 to 10: a newcomer's standing, and rivals' approaches.</summary>
         public static Func<int> Esteem;
 
-        /// <summary>Points the workplace's comfort raises the level staff paid fairly settle at, by its place, 0 to 10 (Scripts/Interiors). Default: nothing.</summary>
+        /// <summary>Points the workplace's comfort raises the level staff paid fairly settle at, 0 to 10.</summary>
         public static Func<string, int> Comfort;
 
-        /// <summary>The comfort of a workplace, inside its bounds; 0 without it.</summary>
         internal static int ComfortAt(string place)
         {
             try
@@ -87,16 +74,11 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// The player's company and the city's market (Markets/Listing, through Wiring/ListingLinks): one line for the
-        /// Overview (where the company stands on its way to the market, or its price and the founder's stake), and the
-        /// Stocks app opened on the company's page. Null: the line and the button are not shown.
-        /// </summary>
+        /// <summary>The Overview's line on the company and the market (Markets/Listing); null: no line and no button.</summary>
         public static Func<string> ListingLine;
 
         public static Action OpenListing;
 
-        /// <summary>The esteem, inside its bounds; 0 without it.</summary>
         internal static int EsteemNow()
         {
             try
@@ -132,7 +114,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>One business of the player's as the company sees it today: its file and what was read from the game.</summary>
+    /// <summary>One of the player's businesses as the company sees it today: its file and what was read from the game.</summary>
     public sealed class CompanyShop
     {
         public ShopFile File;
@@ -143,30 +125,17 @@ namespace RealLifeOverhaul.Economy
         public int Income = CompanyCatalogue.IncomeMiddle;
         public int Needs;               // the licences it needs, a bit each
         public int Taste;               // +1 sells to the well-off, -1 sells on price, 0 neither
-        public int Average;             // an average day's takings by the game's statements of the last seven days
-        public int Takings, Profit;     // yesterday, by the game's statement
+        public int Average;             // an average day's takings over the last seven statements
+        public int Takings, Profit;     // yesterday's, by the game's statement
         public bool HasBooks;           // the game has a statement for yesterday
-        public int Staff, Low, Standing, Sick;   // its staff: how many, how many stand low, their standing added up, how many are off sick today
+        public int Staff, Low, Standing, Sick;   // staff, those standing low, their standing summed, those off sick
         public int Asked;               // per cent of customers the company asks for here now
         public bool Applied;            // something of the company's is in the game's figure
     }
 
     /// <summary>
-    /// Everything "running a business" reads from or does to the game, in one place.
-    ///
-    /// READ: the player's businesses (the same test the Finance app uses), each one's district, type, opening hours,
-    /// daily statement (GameInstance.financialSummaries) and customers (BuildingRegistration.orderHistory); every
-    /// employee's wage, main skill, satisfaction, hours and absence (EmployeeInstance); the game's tax rate and
-    /// whether the year's sales pass its threshold (TaxHelper, TaxCalculationHelper).
-    ///
-    /// DONE: money only, as dated transactions of the mod's own with their own keys and labels
-    /// (GameManager.ChangeMoneySafe). A business cost is marked deductible the way the game marks its own
-    /// (TransactionInfo.SetTaxDeductibleName), so the game's yearly tax deducts it itself. No wage, no satisfaction,
-    /// no schedule and no figure of a business is written here. Footfall, closures, inspections, audits, a
-    /// resignation and a court case are asked for through <see cref="CompanyBridges"/>.
-    ///
-    /// Nothing here runs on a timer: once when the feature starts, on the game's hour that opens a day, once a game
-    /// day, and when the app is opened.
+    /// Everything running a business reads from or does to the game. It writes money only, as transactions, never a
+    /// wage, a schedule or a business's figure. Runs at the start, the hour that opens a day, the day and the app's opening.
     /// </summary>
     internal static class CompanyGame
     {
@@ -187,22 +156,13 @@ namespace RealLifeOverhaul.Economy
         public const string LicenceKey = "reallife_transaction_co_licence";
         public const string LicenceFineKey = "reallife_transaction_co_licence_fine";
 
-        // The label a deductible cost goes under in the game's tax notice, by the kind of cost. Written as words, as
-        // the game writes a business's name there, so the notice reads the same in a save the mod has left.
-        private static readonly string[] DeductibleKeys =
-        {
-            "reallife_co_deduct_wages", "reallife_co_deduct_premiums", "reallife_co_deduct_marketing", "reallife_co_deduct_licences", "reallife_co_deduct_accountant"
-        };
-
-        // The game's business types by what they sell (their names as the game writes them, "ba:businesstype_...").
+        // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore" };
         private static readonly string[] AlcoholTypes = { "liquorstore", "nightclub" };
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
         private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop" };
         private const string DeliveryDriver = "ba:skill_deliverydriver";
-        private const int DriverHours = 570;    // what the game pays a delivery driver for a day (EmployeeInstance.PayWage), hundredths
-
-        public static IModLogger Logger;
+        private const int DriverHours = 570;    // hundredths: the fixed day the game pays a delivery driver (EmployeeInstance.PayWage)
 
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(16);
         private static readonly Dictionary<string, StaffFile> ById = new Dictionary<string, StaffFile>(64);
@@ -222,8 +182,6 @@ namespace RealLifeOverhaul.Economy
 
         public static int TaxPercent => Save != null && Save.gameVariables != null ? Mathf.Max(0, Save.gameVariables.taxPercentage) : 0;
 
-        // ---------------------------------------------------------------- the businesses
-
         /// <summary>A business by its address, written as business pressure writes a place.</summary>
         public static string Place(BuildingRegistration reg)
         {
@@ -231,10 +189,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The player's businesses as they stand today, each with its file. A business seen for the first time gets
-        /// one: with <paramref name="ranBefore"/> (the feature has just appeared in this save) every licence it needs
-        /// for a first term, free; otherwise a few days' grace. A file whose business is no longer the player's is
-        /// dropped. One pass over the save's buildings and each business's week of opening hours.
+        /// The player's businesses today, each with its file; a file whose business is gone is dropped. A new file holds a
+        /// first term of the licences free when <paramref name="ranBefore"/> (the feature is new to the save), else a grace.
         /// </summary>
         public static void ReadShops(CompanyState state, List<CompanyShop> into, List<CompanyShop> pool, int day, bool ranBefore, out int added, out int dropped)
         {
@@ -289,7 +245,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 catch (Exception)
                 {
-                    shop.Address = null;    // a business whose building cannot be read is in no district
+                    shop.Address = null;    // a building that cannot be read is in no district
                     shop.District = null;
                 }
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
@@ -329,7 +285,6 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // Open past ten at night or before five in the morning on any day of its week (the game's own opening hours).
         private static bool OpensLate(BuildingRegistration reg)
         {
             List<ScheduleDay> week = reg.scheduleDays;
@@ -348,12 +303,7 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // ---------------------------------------------------------------- the game's books
-
-        /// <summary>
-        /// Yesterday's takings and profit of each business and its average day over the last seven, from the game's
-        /// own daily statements. One walk back from the newest statement, at most <see cref="CompanyCatalogue.BooksDays"/> of them.
-        /// </summary>
+        /// <summary>Yesterday's takings and profit of each business, and its average day of the last seven statements.</summary>
         public static void ReadBooks(List<CompanyShop> shops, int today)
         {
             GameInstance save = Save;
@@ -373,7 +323,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (summary.dayNumber < from)
                 {
-                    break;   // (the game keeps them oldest first)
+                    break;   // the game keeps them oldest first
                 }
                 for (int b = 0; b < summary.businessIncomeStatements.Count; b++)
                 {
@@ -398,9 +348,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The businesses of a read by their address (the first at each, as a walk finds it; one with no address, or the
-        // game's "no address", is found by none): made at the start of each read, so that a statement or an employee is a
-        // look-up, not a walk of the businesses.
+        // The businesses of a read by address, the first at each, so a statement or an employee is a look-up.
         private static readonly Dictionary<Address, CompanyShop> ByAddress = new Dictionary<Address, CompanyShop>(64);
 
         private static void IndexShops(List<CompanyShop> shops)
@@ -409,7 +357,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < shops.Count; i++)
             {
                 Address a = shops[i].Address;
-                if (a != null && !ByAddress.ContainsKey(a))   // (Address != null: neither none nor the game's "no address")
+                if (a != null && !ByAddress.ContainsKey(a))   // Address's != also refuses the game's "no address"
                 {
                     ByAddress.Add(a, shops[i]);
                 }
@@ -421,7 +369,7 @@ namespace RealLifeOverhaul.Economy
             return !ReferenceEquals(address, null) && ByAddress.TryGetValue(address, out CompanyShop shop) ? shop : null;
         }
 
-        /// <summary>One day of a business in the game's books: its customers (the order history), its takings and its profit (the daily statement). False if the game has no statement for that day.</summary>
+        /// <summary>A business's customers, takings and profit on a day; false if the game has no statement for it.</summary>
         public static bool DayBook(CompanyShop shop, int day, out int customers, out int takings, out int profit)
         {
             customers = takings = profit = 0;
@@ -468,7 +416,9 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                return Save != null && Save.financialSummaries != null ? Mathf.RoundToInt(Mathf.Min(TaxCalculationHelper.GetBusinessSales(fromDay, toDay), int.MaxValue / 4)) : 0;
+                return Save != null && Save.financialSummaries != null
+                    ? Mathf.RoundToInt(Mathf.Min(TaxCalculationHelper.GetBusinessSales(fromDay, toDay), int.MaxValue / 4))
+                    : 0;
             }
             catch (Exception)
             {
@@ -476,12 +426,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Whether the game's yearly tax falls due on the last year's income as it stands: its own threshold, asked of the game.</summary>
+        /// <summary>Whether the last year's income passes the game's own threshold, so its yearly tax falls due.</summary>
         public static bool Taxed(int today)
         {
             try
             {
-                return Save != null && TaxHelper.MeetsIncomeTaxThreshold(TaxCalculationHelper.GetBusinessSales(today - DaysPerYear + 1, today), TaxCalculationHelper.GetCurrentTaxableGamblingWinnings());
+                return Save != null && TaxHelper.MeetsIncomeTaxThreshold(TaxCalculationHelper.GetBusinessSales(today - DaysPerYear + 1, today),
+                    TaxCalculationHelper.GetCurrentTaxableGamblingWinnings());
             }
             catch (Exception)
             {
@@ -489,7 +440,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The books are in order for a return: the game's own tax bill is not overdue and no back-tax is owed to it.</summary>
+        /// <summary>The game's own tax bill is not overdue and no back-tax is owed to it.</summary>
         public static bool BooksInOrder()
         {
             try
@@ -503,13 +454,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- the staff
-
-        /// <summary>
-        /// Every employee who works at one of the player's businesses, read into their file: the game's wage, the
-        /// going rate for their main skill there, their satisfaction, a day's hours and whether the game has them off
-        /// sick today. A file whose employee has gone is dropped. One pass over the game's employees.
-        /// </summary>
+        /// <summary>Every employee at one of the player's businesses read into their file; files of those gone are dropped.</summary>
         public static void ReadStaff(CompanyState state, List<CompanyShop> shops, int index, CycleState cycle, out int dropped)
         {
             dropped = 0;
@@ -533,7 +478,7 @@ namespace RealLifeOverhaul.Economy
                 CompanyShop shop = ShopOf(e.assignedAddress);
                 if (shop == null)
                 {
-                    continue;   // not at a business that takes money (a headquarters, a warehouse): outside the wage market
+                    continue;   // a headquarters or a warehouse takes no money: outside the wage market
                 }
                 StaffFile f;
                 if (!ById.TryGetValue(e.id, out f))
@@ -550,14 +495,13 @@ namespace RealLifeOverhaul.Economy
                 f.Seen = true;
                 f.Place = shop.File.Place;
                 f.Name = e.characterData.name ?? "?";
-                f.Wage = CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), index);   // at today's prices: the city's cost of living pays it so
+                f.Wage = CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), index);   // at today's prices, as the city's cost of living pays it
                 f.Skill = Mathf.RoundToInt(skill.value);
                 f.Mood = Mathf.RoundToInt(Mathf.Clamp(e.satisfaction, 0f, 100f));
                 f.Sick = e.isAbsent;
                 int days = e.assignedWeeklyDays != null ? e.assignedWeeklyDays.Count : 0;
                 f.DayHours = days > 0 && e.assignedWeeklyHours > 0 ? e.assignedWeeklyHours * 100 / days : 0;
                 f.Going = StaffRules.Going(Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(skill) * 100f), StaffRules.Market(index, cycle, shop.Income));
-                shop.Staff++;
                 shop.Sick += f.Sick ? 1 : 0;
             }
             for (int i = staff.Count - 1; i >= 0; i--)
@@ -571,10 +515,7 @@ namespace RealLifeOverhaul.Economy
             ById.Clear();
         }
 
-        /// <summary>
-        /// The hour that opens a new day, before the game's daily run pays the wages and clears the hours: what each
-        /// employee with an agreed raise worked on the day that is ending, by the game's own count.
-        /// </summary>
+        /// <summary>The hours each employee with an agreed raise worked on the ending day, before the game's run clears them.</summary>
         public static void NoteHours(CompanyState state)
         {
             List<StaffFile> staff = state.Staff;
@@ -594,7 +535,7 @@ namespace RealLifeOverhaul.Economy
                 EmployeeInstance e = f.Raise > 0 ? Employee(f.Id) : null;
                 if (e != null)
                 {
-                    // (the game pays a delivery driver for a fixed day whatever the count says: so does the raise)
+                    // The game pays a delivery driver a fixed day whatever the count says, and so does the raise.
                     f.Hours = e.IsAssignedToAnyBusiness() && e.HasSkill(DeliveryDriver) ? DriverHours : Mathf.Max(0, e.workedHoursToday) * 100;
                 }
             }
@@ -617,31 +558,30 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // (somebody whose satisfaction is at nothing has resigned: the game takes them off its list within the hour)
+        // Somebody whose satisfaction is at nothing has resigned: the game takes them off its list within the hour.
         private static bool Counts(EmployeeInstance e, EmployeeInstance self)
         {
-            return e != null && !ReferenceEquals(e, self) && !string.IsNullOrEmpty(e.id) && !e.IsCandidate && !e.isBeingReplaced && e.hourlyWage > 0f && e.satisfaction > 0f && e.characterData != null
-                   && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null && e.assignedAddress != null;
+            return e != null && !ReferenceEquals(e, self) && !string.IsNullOrEmpty(e.id) && !e.IsCandidate && !e.isBeingReplaced && e.hourlyWage > 0f && e.satisfaction > 0f
+                   && e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null
+                   && e.assignedAddress != null;
         }
 
         /// <summary>The name of somebody's main skill as the game writes it; empty if they are not found.</summary>
         public static string SkillName(string id)
         {
             EmployeeInstance e = Employee(id);
-            string skill = e != null && e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null ? e.characterData.skills[0].name : null;
+            string skill = e != null && e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null
+                ? e.characterData.skills[0].name
+                : null;
             return string.IsNullOrEmpty(skill) ? string.Empty : LocalizorManager.IsLocalizedKey(skill) ? skill.GetLocalization() : skill;
         }
 
-        // ---------------------------------------------------------------- money
-
-        // The game's category of each kind of cost that has a line of the game's daily statement (Economy/GameBooks); null for none.
+        // The game's statement line of each kind of cost (Economy/GameBooks); null where the statement has none.
         private static readonly string[] StatementLines = { GameBooks.Salaries, null, GameBooks.Marketing, GameBooks.Licensing, null };
 
         /// <summary>
-        /// Takes an amount as a transaction of the mod's own at a business (or at none). With a kind of cost it is
-        /// marked deductible as the game marks its own, and a kind that has a line of the game's daily statement (wages,
-        /// marketing, licences) is booked under it at the business, so that the statement counts it. Unless
-        /// <paramref name="force"/>, the game's call refuses a charge the cash does not cover: false, and nothing is taken.
+        /// Takes an amount as a transaction. A <see cref="CostKind"/> (else -1) is marked deductible and booked on the
+        /// business's statement line where it has one. Unless forced, false and nothing taken when the cash is short.
         /// </summary>
         public static bool Take(int amount, string key, string name, CompanyShop shop, int? day, int deductible, bool force)
         {
@@ -657,9 +597,10 @@ namespace RealLifeOverhaul.Economy
             TransactionInfo info = line != null
                 ? new TransactionInfo(key, line, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } })
                 : Info(key, name);
-            if (deductible >= 0 && deductible < DeductibleKeys.Length)
+            if (deductible >= 0 && deductible < CompanyText.CostKeys.Length)
             {
-                info.SetTaxDeductibleName(DeductibleKeys[deductible].GetLocalization());
+                // Words, not a key, as the game names its own: the tax notice reads the same in a save the mod has left.
+                info.SetTaxDeductibleName(CompanyText.CostKeys[deductible].GetLocalization());
             }
             return GameManager.ChangeMoneySafe(-amount, info, day, shop != null ? shop.Address : null, force);
         }
@@ -672,7 +613,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+        // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string key, string name)
         {
             return new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });

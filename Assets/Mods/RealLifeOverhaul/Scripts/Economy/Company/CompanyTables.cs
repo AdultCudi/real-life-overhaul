@@ -2,32 +2,28 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The Company app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, which
-    /// are summed, what its rows can be filtered by, and the sentence shown when a filter leaves nothing. The numbers
-    /// beside each are the columns, for whoever writes the rows.
-    /// </summary>
+    /// <summary>The Company app's tables as data (GameUi.TableSpec); each summary numbers the columns for the rows' writer.</summary>
     internal static class CompanyTables
     {
-        // ---- how a member of staff stands (the second filter of the Staff tab)
+        // How a member of staff stands: the Staff tab's second filter.
         public const int StaffWaiting = 0, StaffLeaving = 1, StaffUnderpaid = 2, StaffFine = 3;
         private static readonly string[] StaffStates = { "reallife_tab_co_staff_waiting", "reallife_tab_co_staff_leaving", "reallife_tab_co_staff_underpaid", "reallife_tab_co_staff_fine" };
 
-        // ---- insurance: a policy that runs, a cover with none, a claim (the second filter of the Insurance tab)
+        // A policy that runs, a cover with none, a claim: the Insurance tab's second filter.
         public const int Insured = 0, Uninsured = 1, IsClaim = 2;
         private static readonly string[] CoverStates = { "reallife_tab_co_insured", "reallife_tab_co_uninsured", "reallife_tab_co_claim" };
 
-        // ---- marketing: a campaign that runs, one that is booked, a business with none, a report on one that has ended
+        // A campaign running, booked, none at a business, a report on one that has ended.
         public const int PushRunning = 0, PushBooked = 1, PushNone = 2, PushEnded = 3;
         private static readonly string[] PushStates = { "reallife_tab_co_push_running", "reallife_tab_co_push_booked", "reallife_tab_co_push_none", "reallife_tab_co_push_ended" };
 
-        // ---- tax and licences: what a row is about, and how a licence stands
+        // What a row of the tax tab is about, and how a licence stands.
         public const int AboutTax = 0, AboutHidden = 1, AboutLicence = 2;
         private static readonly string[] TaxSubjects = { "reallife_tab_co_about_tax", "reallife_tab_co_about_hidden", "reallife_tab_co_about_licence" };
         public const int LicenceValid = 0, LicenceSoon = 1, LicenceMissing = 2;
         private static readonly string[] LicenceStates = { "reallife_tab_co_lic_valid", "reallife_tab_co_lic_soon", "reallife_tab_co_lic_missing" };
 
-        /// <summary>While the company's file is not open, and for a tab whose part is switched off: one empty column.</summary>
+        /// <summary>With no state, and for a tab whose part is off: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Company", "Off").Column("reallife_co_col_business", 600f, TableSort.None, flexible: true);
 
         /// <summary>Overview: 0 business, 1 district, 2 profit yesterday, 3 state.</summary>
@@ -90,14 +86,14 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_rota_col_staff", 300f, TableSort.Number)
             .Column("reallife_rota_col_rota", 300f, TableSort.Text, right: true);
 
-        // A business's week and one of its days are pages laid out by hand (headings between their rows): nothing sorts.
+        // A business's week and one of its days are laid out by hand, with headings between rows: nothing sorts.
         public static readonly TableSpec RotaWeek = new TableSpec("Company", "Rota: a week")
             .Column("reallife_rota_col_day", 620f, TableSort.None)
             .Column("reallife_rota_col_now", 500f, TableSort.None, flexible: true)
             .Column("reallife_rota_col_advised", 300f, TableSort.None)
             .Column("reallife_rota_col_customers", 300f, TableSort.None, right: true);
 
-        /// <summary>Rota, a business's ladder of plans: 0 plan, 1 hours a week, 2 staff, 3 profit a week, 4 gain, 5 what it needs. Under them the people (name, skills, wage, what they ask, hours, demands).</summary>
+        /// <summary>Rota, the plans: 0 plan, 1 hours a week, 2 staff, 3 profit a week, 4 gain, 5 needs; then the people.</summary>
         public static readonly TableSpec RotaPlans = new TableSpec("Company", "Rota: the plans")
             .Column("reallife_rota_col_plan", 520f, TableSort.None)
             .Column("reallife_rota_col_week_hours", 380f, TableSort.None)
@@ -112,7 +108,6 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_rota_col_worth", 300f, TableSort.None)
             .Column("reallife_rota_col_staff", 300f, TableSort.None, right: true);
 
-        /// <summary>The table a tab opens with.</summary>
         public static TableSpec For(int tab)
         {
             switch (tab)
@@ -126,7 +121,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The number of a name in a filter whose kinds are the app's own (districts, businesses), added if it is new.</summary>
+        /// <summary>The number of a name in a filter whose kinds are the app's own (districts, businesses), added if new.</summary>
         public static int KindOf(TableFilter filter, string name)
         {
             if (string.IsNullOrEmpty(name))

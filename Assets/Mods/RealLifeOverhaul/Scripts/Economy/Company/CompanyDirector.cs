@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -9,50 +8,23 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>One thing the Planner should say about the company: built on the day event and when the player changes something, never per frame.</summary>
+    /// <summary>One row the Planner shows for the company.</summary>
     public struct CompanyAlert
     {
-        public int A, B;        // what it is and which one: the Planner's id for the row
+        public int A, B;        // the Planner's id for the row: what it is and which one
         public int Day;
         public string Title, What, Money, IfMissed;
     }
 
     /// <summary>
-    /// Running a business: staff as an economy, insurance, marketing that is measured, a quarterly return with an
-    /// accountant and cash off the books, and licences. See docs/features/economy-company.md.
-    ///
-    /// This class keeps it going. It has no Update, no timer and no place of its own in the game's events: once a
-    /// second the credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the options are looked
-    /// at), and the credit side's own handlers of the game's hour and day events call <see cref="OnHour"/> and
-    /// <see cref="OnDay"/> when their own work is done (EconomyDirector.AfterHour, AfterDay), after the city's economy.
-    ///
-    ///   the day    one pass: the player's businesses, the game's statements for yesterday and every employee are
-    ///              read once; then each part does its day (the files CompanyDirector.Staff.cs and its neighbours);
-    ///              then the footfall figures are written and the Planner's rows are made again. The pass says how
-    ///              many milliseconds it took with "Developer diagnostics" on.
-    ///   the hour   the footfall figure of a business with a campaign, overtime or a strike is kept; a strike shuts
-    ///              the doors in the morning; on the hour that opens a day the hours worked are noted
-    ///   the save   the footfall figures are the game's own in the save; the state is written
-    ///
-    /// The staff rota planner (CompanyDirector.Rota.cs) is the one thing here that is no part with a day of its own:
-    /// it works a business out when its page is opened and writes a rota when the player presses the button.
-    ///
-    /// EVERY EFFECT AND HOW IT IS UNDONE
-    ///   footfall     what <see cref="FootfallOf"/> answers when business pressure writes a business's promotion figure
-    ///                (Wiring/CompanyLinks adds it to the city's economy's): put back before every save, when this
-    ///                stops for any reason, and by the game itself every night
-    ///   a closure    business pressure's own, which it reopens itself
-    ///   money        transactions of the mod's own, dated, each with its own key and label
-    ///   wages        never written: an agreed raise is paid as a transaction on top of the game's wage
-    ///
-    /// A fault in one part switches that part off for the session with one line and leaves the others running; a
-    /// fault outside the parts switches the whole feature off. Either way the footfall figures are put back and the
-    /// game's daily run and the rest of the economy are left alone.
+    /// Running a business (docs/features/economy-company.md): the parts' days, the footfall and money they cause, the
+    /// save and the Company app. No Update, so it costs nothing per frame; it follows the credit side's second, hour
+    /// and day. A fault in a part switches that part off for the session; any other fault switches the feature off.
     /// </summary>
     public sealed partial class CompanyDirector : MonoBehaviour
     {
         public const string AppId = "RealLifeCompany";
-        public const int TabOverview = 0, TabStaff = 1, TabCover = 2, TabMarketing = 3, TabTax = 4;   // (and TabRota, CompanyDirector.Rota.cs)
+        public const int TabOverview = 0, TabStaff = 1, TabCover = 2, TabMarketing = 3, TabTax = 4;   // TabRota is in .Rota
 
         private static readonly string[] PartNames = { "staff", "insurance", "marketing", "tax", "licences" };
         private static readonly string[] AppGlyphs = { "Icon-Shop", "Icon-Building", "Icon-Neighborhood" };
@@ -62,20 +34,21 @@ namespace RealLifeOverhaul.Economy
 
         private readonly List<CompanyShop> _shops = new List<CompanyShop>(16);
         private readonly List<CompanyShop> _pool = new List<CompanyShop>(16);
-        private readonly ListIndex<CompanyShop, string> _places = new ListIndex<CompanyShop, string>(PlaceOf, StringComparer.Ordinal);   // a business of _shops by its place
-        private readonly ListIndex<CompanyShop, BuildingRegistration> _regs = new ListIndex<CompanyShop, BuildingRegistration>(RegOf, ReferenceComparer<BuildingRegistration>.Instance);
-        private int _read;   // the reads of _shops so far: an index made before the last one is made again
+        private readonly ListIndex<CompanyShop, string> _places = new ListIndex<CompanyShop, string>(PlaceOf, StringComparer.Ordinal);
+        private readonly ListIndex<CompanyShop, BuildingRegistration> _regs =
+            new ListIndex<CompanyShop, BuildingRegistration>(RegOf, ReferenceComparer<BuildingRegistration>.Instance);
+        private int _read;   // reads of _shops so far: an index made before the last read is made again
         private readonly List<CompanyAlert> _alerts = new List<CompanyAlert>(16);
         private readonly bool[] _partBroken = new bool[(int)CompanyPart.Count];
 
         private CompanyState _state;
-        private string _beforeTests;   // the state's line as it was before the first test tool changed it; null with no test change in place
+        private string _beforeTests;   // the state's line before the first test tool changed it; null without one
         private bool _running;
-        private bool _broken;          // a fault outside the parts: off for the session
-        private bool _holding;         // the footfall figures are the game's own for a save: nothing is added until the next game hour
-        private bool _gaveUp;          // the game's phone is not built as expected: the app is left off, the rest runs
+        private bool _broken;          // off for the session
+        private bool _holding;         // the footfall figures are the game's own for a save until the next game hour
+        private bool _gaveUp;          // the game's phone is not as expected: no app, the rest runs
         private int _level;
-        private int _parts;            // which parts were on at the last look, a bit each
+        private int _parts;            // the parts on at the last look, a bit each
         private int _index = CompanyCatalogue.IndexStart;
         private CycleState _cycle = CycleState.Steady;
         private CompanyApp _view;
@@ -87,18 +60,18 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The state in use; null while the feature is not running.</summary>
         public CompanyState State => _running ? _state : null;
 
-        /// <summary>The player's businesses as they were read this morning (or when the feature started today).</summary>
+        /// <summary>The player's businesses as read this morning, or when the feature started.</summary>
         public IReadOnlyList<CompanyShop> Shops => _shops;
 
         public IReadOnlyList<CompanyAlert> Alerts => _alerts;
         public int Level => _level;
 
-        /// <summary>The price index as the company counts it: tenths of a point, 1000 at the start.</summary>
+        /// <summary>The price index: tenths of a point, 1000 at the start.</summary>
         public int Index => _index;
 
         public CycleState Cycle => _cycle;
 
-        /// <summary>The game's day now (0 with no save): what the pages measure a rest against.</summary>
+        /// <summary>The game's day; 0 with no save.</summary>
         public int Today => Save != null ? Save.Day : 0;
 
         private static GameInstance Save => SaveGameManager.Current;
@@ -107,12 +80,11 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
-            CompanyGame.Logger = Logger;
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
-            EconomyDirector.Follow(StartSeats.Company, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
+            EconomyDirector.Follow(StartSeats.Company, _second);
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
@@ -126,10 +98,9 @@ namespace RealLifeOverhaul.Economy
             if (Instance != this)
             {
                 RemoveApp();
-                return;   // another city's director has started since: the state and the figures are its
+                return;   // another city's director has started since: the state and the figures are its own
             }
-            // The city is unloading (or the mod is being switched off). Nothing is written to the save here: what a save
-            // keeps is written when the game saves.
+            // The city is unloading: nothing is written to the save here, only when the game saves.
             try
             {
                 StandDown("the city is unloading", false, false, true);
@@ -142,9 +113,7 @@ namespace RealLifeOverhaul.Economy
             Instance = null;
         }
 
-        // ---------------------------------------------------------------- the parts
-
-        /// <summary>Whether a part runs: the feature is running, the part's option is on and no fault has stopped it.</summary>
+        /// <summary>Whether a part runs: the feature runs, the part's option is on and no fault has stopped it.</summary>
         public bool On(CompanyPart part)
         {
             return _running && !_broken && !_partBroken[(int)part] && Wanted(part);
@@ -170,12 +139,11 @@ namespace RealLifeOverhaul.Economy
             {
                 mask |= On((CompanyPart)p) ? 1 << p : 0;
             }
-            mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // (no part of its own: the tax part's cash off the books)
-            mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // (no part either: the staff rota planner)
+            mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // cash off the books: no part of its own
+            mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // the rota planner: no part either
             return mask;
         }
 
-        // Each part's day, hour and rows for the Planner are in its own file; a part that is not built yet is simply not called.
         partial void StaffDay(int day);
         partial void StaffHour(int day, int hour);
         partial void StaffLevel();
@@ -219,12 +187,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- once a second (the credit side's timer)
-
         private static readonly int HotSecond = HotSpots.Slot("Economy: CompanyDirector.Second");
         private void EachSecond()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSecond);
             if (_broken)
             {
                 return;
@@ -269,7 +235,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            // The strictness or a part's switch was changed: what no longer applies is taken back at once.
+            // The strictness or a part's switch changed: what no longer applies is taken back at once.
             _level = level;
             _parts = parts;
             StaffLevel();
@@ -279,7 +245,8 @@ namespace RealLifeOverhaul.Economy
             Changed();
             if (Verbose)
             {
-                Logger?.Info("Company check (options): strictness " + _level + ", parts on " + PartList(parts) + "; the footfall figures were written again: PASS");
+                Logger?.Info("Company check (options): strictness " + _level + ", parts on " + PartList(parts)
+                             + "; the footfall figures were written again: PASS");
             }
         }
 
@@ -295,8 +262,6 @@ namespace RealLifeOverhaul.Economy
             }
             return list.Length > 0 ? list : "none";
         }
-
-        // ---------------------------------------------------------------- starting and stopping
 
         private void StartUp()
         {
@@ -330,60 +295,14 @@ namespace RealLifeOverhaul.Economy
             RotaLoad(save);
             RotaRead();
             BuildAlerts(today);
-            Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". " + _shops.Count + " business(es)"
-                         + (fresh && added > 0 ? ", each with the licences it needs for a first term" : string.Empty) + ", " + _state.Staff.Count + " employee(s), strictness " + _level
+            Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". "
+                         + _shops.Count + " business(es)"
+                         + (fresh && added > 0 ? ", each with the licences it needs for a first term" : string.Empty) + ", "
+                         + _state.Staff.Count + " employee(s), strictness " + _level
                          + ", parts on: " + PartList(_parts) + ", quarter " + _state.Tax.Quarter + " from day " + _state.Tax.QuarterFrom + ".");
         }
 
-        // The game is read once: the businesses, yesterday's statements, the staff. The economy's figures are read with it.
-        private void Read(int day, bool ranBefore, bool countLoss, out int added, out int dropped, out int gone)
-        {
-            _index = Prices.Level;
-            _cycle = CityEconomy.State;
-            CompanyGame.ReadShops(_state, _shops, _pool, day, ranBefore, out added, out dropped);
-            _read++;
-            CompanyGame.ReadBooks(_shops, day);
-            for (int i = 0; countLoss && i < _shops.Count; i++)
-            {
-                ShopFile file = _shops[i].File;
-                file.LossRun = _shops[i].HasBooks && _shops[i].Profit < 0 ? file.LossRun + 1 : 0;
-            }
-            ReadPeople(out gone);
-        }
-
-        // The staff as the game has them now, and each business's count of them.
-        private void ReadPeople(out int gone)
-        {
-            for (int i = 0; i < _shops.Count; i++)
-            {
-                _shops[i].Staff = _shops[i].Sick = 0;
-            }
-            CompanyGame.ReadStaff(_state, _shops, _index, _cycle, out gone);
-            Recount();
-        }
-
-        /// <summary>Each business's staff added up from their files: how many stand low, and their standing in all.</summary>
-        internal void Recount()
-        {
-            for (int i = 0; i < _shops.Count; i++)
-            {
-                _shops[i].Staff = _shops[i].Low = _shops[i].Standing = 0;
-            }
-            List<StaffFile> staff = _state.Staff;
-            for (int i = 0; i < staff.Count; i++)
-            {
-                CompanyShop shop = ShopAt(staff[i].Place);
-                if (shop != null)
-                {
-                    shop.Staff++;
-                    shop.Standing += staff[i].Standing;
-                    shop.Low += StaffRules.StandsLow(staff[i]) ? 1 : 0;
-                }
-            }
-        }
-
-        // The feature stops: every figure it changed is the game's own again. With 'keep' the state goes into the save's
-        // data first (a stop in the middle of play).
+        // Every figure the feature changed is the game's own again. With 'keep' the state goes into the save's data first.
         private void StandDown(string why, bool tell, bool keep, bool unloading)
         {
             bool was = _running;
@@ -401,7 +320,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (_shops[i].Applied)
                     {
-                        WriteFootfall(_shops[i], 0, true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
+                        WriteFootfall(_shops[i], 0, true, false);   // nothing runs now, so this is the game's own figure
                         put++;
                     }
                 }
@@ -425,7 +344,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (was && (tell || Verbose))
             {
-                Logger?.Info("Company check (restored, " + why + "): " + put + " footfall figure(s) put back; no wage and no figure of a business was ever written: PASS");
+                Logger?.Info("Company check (restored, " + why + "): " + put
+                             + " footfall figure(s) put back; no wage and no figure of a business was ever written: PASS");
             }
         }
 
@@ -439,7 +359,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A fault outside the parts: one line, every figure put back, and nothing more of the feature this session.</summary>
+        /// <summary>A fault outside the parts: one line, every figure put back, and the feature off for the session.</summary>
         private void Fault(string where, Exception e)
         {
             _broken = true;
@@ -453,15 +373,17 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Error(second);
                 _running = false;
             }
-            Logger?.Warn("Company: switched off for this session after an error in " + where + ". Every business's footfall is the game's own again; the game's daily run and the rest of the economy are not affected.");
+            Logger?.Warn("Company: switched off for this session after an error in " + where
+                         + ". Every business's footfall is the game's own again; the game's daily run and the rest of the economy are not affected.");
         }
 
-        /// <summary>A fault in one part: that part is off for the session, what it added to footfall is taken back, the others go on.</summary>
+        /// <summary>A fault in one part: that part is off for the session and its footfall taken back; the others go on.</summary>
         private void PartFault(CompanyPart part, string where, Exception e)
         {
             _partBroken[(int)part] = true;
             Logger?.Error(e);
-            Logger?.Warn("Company: " + PartNames[(int)part] + " switched off for this session after an error in " + where + ". What it added to any business's footfall is taken back; the other parts, the game's daily run and the rest of the economy are not affected.");
+            Logger?.Warn("Company: " + PartNames[(int)part] + " switched off for this session after an error in " + where
+                         + ". What it added to any business's footfall is taken back; the other parts, the game's daily run and the rest of the economy are not affected.");
             try
             {
                 _parts = PartsOn();
@@ -495,7 +417,8 @@ namespace RealLifeOverhaul.Economy
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Company: the game's phone is not built as this version expects, so the Company app is left off. The rules still run, and the Planner and the notifications still say what needs an answer.");
+                    Logger?.Warn("Company: the game's phone is not built as this version expects, so the Company app is left off. "
+                                 + "The rules still run, and the Planner and the notifications still say what needs an answer.");
                 }
                 return;
             }
@@ -516,299 +439,16 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        // ---------------------------------------------------------------- the hour, the day, the save
-
-        private static readonly int HotOnHour = HotSpots.Slot("Economy: CompanyDirector.OnHour");
-        // The game's hour event (every game hour, and first thing in its NewDay, before its daily run), after the credit side's and the city's work on it.
-        private void OnHour()
-        {
-            using var hotSpot = HotSpots.Time(HotOnHour);
-            if (!_running || _broken || Save == null)
-            {
-                return;
-            }
-            try
-            {
-                _holding = false;
-                int day = Save.Day;
-                if (day > _state.LastDay)
-                {
-                    CompanyGame.NoteHours(_state);   // the hours of the day that is ending, before the game's run clears them
-                    return;                          // (the run writes every footfall figure afresh in a moment, and the day event follows it)
-                }
-                for (int i = 0; i < _shops.Count; i++)
-                {
-                    int asked = Footfall(_shops[i], day);
-                    if (asked != 0 || _shops[i].Applied)
-                    {
-                        WriteFootfall(_shops[i], asked, false, false);
-                    }
-                }
-                if (On(CompanyPart.Staff))
-                {
-                    try
-                    {
-                        StaffHour(day, Save.Hour);
-                    }
-                    catch (Exception e)
-                    {
-                        PartFault(CompanyPart.Staff, "the hour", e);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Fault("the hour", e);
-            }
-        }
-
-        private static readonly int HotOnDay = HotSpots.Slot("Economy: CompanyDirector.OnDay");
-        // The game's day event (after its daily run), after the credit side has settled its day and the city's economy has applied its own.
-        private void OnDay()
-        {
-            using var hotSpot = HotSpots.Time(HotOnDay);
-            if (!_running || _broken || Save == null)
-            {
-                return;
-            }
-            try
-            {
-                int day = Save.Day;
-                if (day <= _state.LastDay)
-                {
-                    return;
-                }
-                float started = Time.realtimeSinceStartup;
-                _holding = false;
-                bool next = day == _state.LastDay + 1;   // (a jump of many days is one pass, for today)
-                _state.LastDay = day;
-                _state.Age++;
-                int added, dropped, gone;
-                Read(day, false, next, out added, out dropped, out gone);
-                float read = Time.realtimeSinceStartup;
-                for (int p = 0; p < (int)CompanyPart.Count; p++)
-                {
-                    var part = (CompanyPart)p;
-                    if (!On(part))
-                    {
-                        continue;
-                    }
-                    try
-                    {
-                        PartDay(part, day);
-                    }
-                    catch (Exception e)
-                    {
-                        PartFault(part, "the day", e);
-                    }
-                }
-                float ruled = Time.realtimeSinceStartup;
-                int written = WriteAll(day, true, true);
-                RotaRead();
-                Changed();
-                if (Verbose)
-                {
-                    float done = Time.realtimeSinceStartup;
-                    Logger?.Info("Company check (day " + day + "): " + _shops.Count + " business(es)" + (added > 0 ? ", " + added + " new" : string.Empty) + (dropped > 0 ? ", " + dropped + " no longer the player's" : string.Empty)
-                                 + ", " + _state.Staff.Count + " employee(s)" + (gone > 0 ? ", " + gone + " gone and their files dropped" : string.Empty) + ", prices " + (_index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", the economy " + _cycle
-                                 + ", " + written + " footfall figure(s) written, " + _alerts.Count + " row(s) for the Planner; reading the game " + ((read - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, the rules "
-                                 + ((ruled - read) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, footfall and rows " + ((done - ruled) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, " + ((done - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms in all: PASS");
-                }
-            }
-            catch (Exception e)
-            {
-                Fault("the day", e);
-            }
-        }
-
-        // The game is about to write a save. The footfall figures are put at what they are without the company (the
-        // registration that holds them is part of the save) and stay so until the next game hour; the state is written.
-        private void OnSave()
-        {
-            try
-            {
-                if (!_running || Save == null || _state == null)
-                {
-                    return;
-                }
-                int put = 0;
-                _holding = true;
-                for (int i = 0; i < _shops.Count; i++)
-                {
-                    if (_shops[i].Applied)
-                    {
-                        WriteFootfall(_shops[i], 0, false, false);
-                        put++;
-                    }
-                }
-                Write(Save);
-                if (Verbose)
-                {
-                    Logger?.Info("Company check (before a save): " + put + " footfall figure(s) put at the game's own until the next game hour; the state written under its own key: PASS");
-                }
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        private void Write(GameInstance save)
-        {
-            if (save.modData == null)
-            {
-                save.modData = new Dictionary<string, string>();
-            }
-            save.modData[CompanyStore.Key] = CompanyStore.Write(_state);
-            RotaSave(save);
-            if (_beforeTests != null)
-            {
-                save.modData[CompanyStore.TestKey] = _beforeTests;
-            }
-            else
-            {
-                save.modData.Remove(CompanyStore.TestKey);
-            }
-        }
-
-        // ---------------------------------------------------------------- footfall
-
-        // What the company asks for at a business on a day, per cent of customers: a pure function of the files and
-        // the day, so it is right whoever asks and whenever.
-        private int Footfall(CompanyShop shop, int day)
-        {
-            return (On(CompanyPart.Staff) ? StaffRules.Footfall(shop.File, day) : 0) + (On(CompanyPart.Marketing) ? CampaignRules.Footfall(shop.File, day) : 0);
-        }
-
-        /// <summary>
-        /// What the company adds to a business's footfall now, in per cent of customers: asked each time business
-        /// pressure writes a business's figure (Wiring/CompanyLinks). Nothing while this is not running, and nothing
-        /// while the figures are held at the game's own for a save.
-        /// </summary>
-        public static int FootfallOf(BuildingRegistration reg)
-        {
-            CompanyDirector d = Instance;
-            if (d == null || !d._running || d._holding || d._broken || Save == null || reg == null)
-            {
-                return 0;
-            }
-            CompanyShop shop = d._regs.First(d._shops, reg, d._read);   // (a look-up: asked on every figure of every business written)
-            return shop != null ? d.Footfall(shop, Save.Day) : 0;
-        }
-
-        private static string PlaceOf(CompanyShop shop)
-        {
-            return shop.File != null ? shop.File.Place : null;
-        }
-
-        private static BuildingRegistration RegOf(CompanyShop shop)
-        {
-            return shop.Reg;
-        }
-
-        private void WriteFootfall(CompanyShop shop, int asked, bool redraw, bool newDay)
-        {
-            int own = 0, written = 0;
-            bool has = CompanyBridges.Footfall != null && shop.Reg != null && CompanyBridges.Footfall(shop.Reg, redraw, newDay, out own, out written);
-            bool applied = has && _running && !_holding && asked != 0;
-            if (Verbose && (redraw || applied != shop.Applied || asked != shop.Asked))
-            {
-                Logger?.Info("Company check (footfall, " + shop.Name + "): " + (asked > 0 ? "+" : string.Empty) + asked + "% of customers asked for"
-                             + (has ? ", promotion " + own + " to " + written + " (with whatever else the mod has there)" : ", the game keeps no promotion figure there: nothing written")
-                             + (applied ? ": applied" : shop.Applied ? ": restored" : string.Empty) + ": PASS");
-            }
-            shop.Asked = asked;
-            shop.Applied = applied;
-        }
-
-        // Every business where the company adds something, or did: its figure is written. Returns how many. One batch of
-        // footfall writes: a business asked to be drawn again is drawn once, spread over the frames that follow (Core/CustomerDraw).
-        private int WriteAll(int day, bool redraw, bool newDay)
-        {
-            int written = 0;
-            CustomerDraw.Hold("the company's figures");
-            try
-            {
-                for (int i = 0; i < _shops.Count; i++)
-                {
-                    int asked = Footfall(_shops[i], day);
-                    if (asked != 0 || _shops[i].Applied)
-                    {
-                        WriteFootfall(_shops[i], asked, redraw, newDay);
-                        written++;
-                    }
-                }
-            }
-            finally
-            {
-                CustomerDraw.Release();
-            }
-            return written;
-        }
-
-        /// <summary>One business's figure, now: the player has just changed something there.</summary>
-        internal void Refoot(CompanyShop shop)
-        {
-            if (shop != null && Save != null)
-            {
-                WriteFootfall(shop, Footfall(shop, Save.Day), true, false);
-            }
-        }
-
-
-        /// <summary>True where the game keeps a customer figure for the business, so that a campaign, overtime or a strike can change its footfall.</summary>
-        public bool Promoted(CompanyShop shop)
-        {
-            return shop != null && shop.Reg != null && CompanyBridges.Promoted != null && CompanyBridges.Promoted(shop.Reg);
-        }
-        // ---------------------------------------------------------------- money
-
-        /// <summary>
-        /// A business cost: taken as a transaction of its own (unless 'force', never forced: false, and nothing is taken, if the cash
-        /// does not cover it), marked deductible, and counted in the quarter that is running.
-        /// </summary>
-        internal bool Cost(int amount, string key, CompanyShop shop, string name, CostKind kind, int? day, string how, bool force = false)
-        {
-            bool taken = CompanyGame.Take(amount, key, name, shop, day, (int)kind, force);
-            if (taken && amount > 0)
-            {
-                TaxRules.Note(_state.Tax, kind, amount);
-            }
-            if (Verbose && amount > 0)
-            {
-                Logger?.Info("Company check (transaction, " + key + ", " + name + "): " + amount + (taken ? " taken, deductible, counted in quarter " + _state.Tax.Quarter : " could not be taken: the cash does not cover it")
-                             + "; " + how + ": PASS");
-            }
-            return taken;
-        }
-
-        /// <summary>A charge that is no business cost (a penalty, a fine, back-tax): never deductible. With 'force' it is taken whatever the cash is.</summary>
-        internal bool Charge(int amount, string key, CompanyShop shop, string name, int? day, bool force, string how)
-        {
-            bool taken = CompanyGame.Take(amount, key, name, shop, day, -1, force);
-            if (Verbose && amount > 0)
-            {
-                Logger?.Info("Company check (transaction, " + key + ", " + name + "): " + amount + (taken ? " taken" : " could not be taken: the cash does not cover it") + "; " + how + ": PASS");
-            }
-            return taken;
-        }
-
-        /// <summary>Money paid to the player (a claim, a rebate).</summary>
-        internal void Pay(int amount, string key, CompanyShop shop, string name, int? day, string how)
-        {
-            CompanyGame.Give(amount, key, name, shop, day);
-            if (Verbose && amount > 0)
-            {
-                Logger?.Info("Company check (transaction, " + key + ", " + name + "): " + amount + " paid to the player; " + how + ": PASS");
-            }
-        }
-
-        // ---------------------------------------------------------------- what the player is told
-
         /// <summary>A notification of the game's that opens the Company app on a tab, with something picked.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
             Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
+        }
+
+        /// <summary>A notice that opens nothing when pressed, <paramref name="seconds"/> on screen.</summary>
+        internal static void Notify(NotificationType type, string key, Dictionary<string, string> data, float seconds)
+        {
+            Notifications.Show(type, key, data, seconds, null, null, true, false);
         }
 
         public void Open(int tab, string pick)
@@ -820,7 +460,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The app has been opened: the staff are read again, so that a wage changed in the game's own app since the morning shows.</summary>
+        /// <summary>The app has opened: the staff are read again, so a wage changed in the game's own app since the morning shows.</summary>
         public bool AppOpened()
         {
             if (!_running || _broken || Save == null)
@@ -842,7 +482,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Something has changed: the Planner's rows and the app's badge are made again, and the app if it is open.</summary>
+        /// <summary>Something has changed: the Planner's rows, the badge and the open app are made again.</summary>
         internal void Changed()
         {
             if (!_running || Save == null)
@@ -851,10 +491,7 @@ namespace RealLifeOverhaul.Economy
             }
             BuildAlerts(Save.Day);
             Badge();
-            if (_view != null)
-            {
-                _view.Changed();
-            }
+            _view?.Changed();
         }
 
         private void Badge()
@@ -865,7 +502,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>How many things wait for an answer from the player.</summary>
         public int Waiting()
         {
             if (!_running || _state == null || Save == null)
@@ -896,8 +532,6 @@ namespace RealLifeOverhaul.Economy
             return waiting;
         }
 
-        // ---------------------------------------------------------------- the Planner's rows
-
         private void BuildAlerts(int day)
         {
             _alerts.Clear();
@@ -915,13 +549,14 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
             }
-            // A business that lost money three days running, by the game's own statements: whatever parts are on.
+            // A loss three days running by the game's own statements, whatever parts are on.
             for (int i = 0; i < _shops.Count; i++)
             {
                 if (_shops[i].File.LossRun >= CompanyCatalogue.LossRunDays)
                 {
                     Alert(1, PlaceNumber(_shops[i].File.Place), day, CompanyText.T("reallife_co_plan_loss_title", "business", _shops[i].Name),
-                        CompanyText.T("reallife_co_plan_loss_what", "days", _shops[i].File.LossRun.ToString(), "amount", FinanceText.Money(-_shops[i].Profit)), null, null);
+                        CompanyText.T("reallife_co_plan_loss_what", "days", _shops[i].File.LossRun.ToString(), "amount", FinanceText.Money(-_shops[i].Profit)),
+                        null, null);
                 }
             }
             RotaAlerts(day);
@@ -935,7 +570,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A number for a place or an id that is always the same for it: the second half of a Planner row's id.</summary>
+        /// <summary>A number that is always the same for a place or an id: the second half of a Planner row's id.</summary>
         internal static int PlaceNumber(string text)
         {
             unchecked
@@ -949,9 +584,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- for the app and the parts
-
-        /// <summary>The business at a place, as a walk of today's businesses finds it: a look-up (Core/LookupRules ListIndex), made again with each read of them.</summary>
+        /// <summary>Today's business at a place: a look-up, made again with each read of them.</summary>
         internal CompanyShop ShopAt(string place)
         {
             return _places.First(_shops, place, _read);
@@ -968,8 +601,6 @@ namespace RealLifeOverhaul.Economy
             CompanyShop shop = ShopAt(place);
             return shop != null ? shop.Name : "?";
         }
-
-        // ---------------------------------------------------------------- for the save tools
 
         /// <summary>For the save tools: every figure is the game's own again; the timer starts it again if the option is on.</summary>
         public void StopAll()

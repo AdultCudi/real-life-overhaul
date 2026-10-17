@@ -4,19 +4,12 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The company's staff as a rival tycoon sees them (Scripts/Rivals, through Wiring/RivalLinks): a tycoon's holding makes
-    /// the company's own offer (StaffRules.Offer) to the player's most skilled employee who has nothing waiting, for more
-    /// over the going rate than the company's own rivals offer. It is answered as every offer is, on the Company app's Staff
-    /// tab: matched, they are paid it; not, they work their notice and leave by the game's own resignation. On the rivals'
-    /// day or a test; never per frame.
-    /// </summary>
+    /// <summary>The rival tycoons' offers to the player's staff (Scripts/Rivals, through Wiring/RivalLinks), answered as any offer.</summary>
     public sealed partial class CompanyDirector
     {
         /// <summary>
-        /// A rival's offer, of <paramref name="premium"/> thousandths over the going rate (never less than the company's own
-        /// rivals'), to the most skilled of the player's staff with no offer, request or notice waiting. False with nobody to
-        /// offer it to; otherwise who and where.
+        /// An offer of <paramref name="premium"/> thousandths over the going rate, never less than the company's own rivals
+        /// give, to the most skilled employee with nothing waiting. False with nobody to offer it to; otherwise who and where.
         /// </summary>
         public bool RivalOffer(string rival, int premium, out string name, out string business)
         {
