@@ -109,10 +109,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>What an insurer would charge a day for a kind of cover today, no claims counted.</summary>
+        /// <summary>What an insurer would charge a day for a kind of cover today, the last term's claims here counted.</summary>
         public int Quote(CompanyShop shop, int kind, int insurer)
         {
-            return CoverRules.Premium(kind, insurer, shop.Average, shop.Income, 0, _index);
+            return CoverRules.Premium(kind, insurer, shop.Average, shop.Income, CoverRules.Carried(shop.File.Cover[kind]), _index);
         }
 
         public void BuyCover(string place, int kind, int insurer)
@@ -127,10 +127,11 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            int premium = Quote(shop, kind, insurer);
+            int premium = Quote(shop, kind, insurer), carried = CoverRules.Carried(p);
             CoverRules.Buy(p, insurer, premium, Save.Day, CompanyCatalogue.TermDays(CompanyGame.DaysPerYear));
             Logger?.Info("Company: " + CompanyText.Cover(kind) + " cover bought for " + shop.Name + " from insurer " + insurer + ": " + premium
-                         + " a day (an average day's takings " + shop.Average + ", district income " + shop.Income + ", prices " + _index + "), to day " + p.Until + ".");
+                         + " a day (an average day's takings " + shop.Average + ", district income " + shop.Income + ", prices " + _index + ", " + carried
+                         + " claim(s) of the last term here), to day " + p.Until + ".");
             Notify(NotificationType.Success, "reallife_co_note_cover_bought", CoverData(shop, kind, insurer, premium), 8f);
             Changed();
         }

@@ -98,9 +98,13 @@ namespace RealLifeOverhaul.Economy
             {
                 return LicenceNote.None;
             }
+            if (l.Auto && day > l.Until)
+            {
+                return LicenceNote.Renew;   // every day until its fee can be paid, a day the pass did not run included
+            }
             if (day == l.Until + 1)
             {
-                return l.Auto ? LicenceNote.Renew : LicenceNote.Lapsed;
+                return LicenceNote.Lapsed;
             }
             if (!l.Reminded && !l.Auto && l.Until >= day && l.Until - day < CompanyCatalogue.LicenceRemindDays)
             {
@@ -108,6 +112,36 @@ namespace RealLifeOverhaul.Economy
                 return LicenceNote.Remind;
             }
             return LicenceNote.None;
+        }
+
+        /// <summary>
+        /// A licence that renews by itself and whose fee could not be paid: true when that is to be said, on the day it ran
+        /// out or the first day the pass found it so; afterwards it is only tried again each day.
+        /// </summary>
+        public static bool Unpaid(Licence l, int day)
+        {
+            bool say = day == l.Until + 1 || !l.Reminded;
+            l.Reminded = true;
+            return say;
+        }
+
+        /// <summary>
+        /// The licences a business has come to need and never held (it opens late now, or its type changed): the same few
+        /// days' grace as a business opened later, so that it is not fined the day it first needs one. A bit each.
+        /// </summary>
+        public static int Newly(ShopFile s, int needs, int day)
+        {
+            int granted = 0;
+            for (int k = 0; k < s.Permits.Length; k++)
+            {
+                if (Needed(needs, k) && s.Permits[k].Until <= 0)
+                {
+                    s.Permits[k].Until = day - 1 + CompanyCatalogue.LicenceGraceDays;
+                    s.Permits[k].Reminded = false;
+                    granted |= 1 << k;
+                }
+            }
+            return granted;
         }
 
         /// <summary>Whether trading without this one also shuts the doors for some hours.</summary>

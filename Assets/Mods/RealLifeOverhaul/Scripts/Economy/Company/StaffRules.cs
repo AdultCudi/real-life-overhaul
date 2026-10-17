@@ -152,6 +152,16 @@ namespace RealLifeOverhaul.Economy
                    && day >= f.PoachRest;
         }
 
+        /// <summary>
+        /// Whether a rival tycoon's holding may make somebody an offer today: as the company's own rivals, never on Relaxed,
+        /// nobody with something waiting and nobody within the rest after an answer. It wants the best, underpaid or not.
+        /// </summary>
+        public static bool RivalMay(StaffFile f, int level, int day)
+        {
+            return CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)] > 0 && f.Going > 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0
+                   && day >= f.PoachRest;
+        }
+
         public static bool Approach(int seed, int age, int level)
         {
             return Approach(seed, age, level, 0);
@@ -223,11 +233,34 @@ namespace RealLifeOverhaul.Economy
             return s.StrikeFrom == 0 && day >= s.StrikeRest;
         }
 
-        /// <summary>Called today, from tomorrow, for the length the strictness gives.</summary>
+        /// <summary>
+        /// Called today, from tomorrow, for the length the strictness gives. Staff who down tools work no extra hours: an
+        /// offer of overtime waiting is dropped, and overtime agreed stops before the strike's first day.
+        /// </summary>
         public static void Call(ShopFile s, int level, int day)
         {
             s.StrikeFrom = day + 1;
             s.StrikeEnd = s.StrikeFrom + CompanyCatalogue.StrikeDays[CompanyCatalogue.Level(level)];
+            if (s.OvertimeAsk > 0)
+            {
+                OvertimeAnswer(s, false, 0, day);
+            }
+            if (s.OvertimeFrom > 0)
+            {
+                s.OvertimeEnd = Math.Min(s.OvertimeEnd, s.StrikeFrom);
+            }
+        }
+
+        /// <summary>Whether agreed overtime is worked on a day: not on a day of a strike.</summary>
+        public static bool OvertimeRuns(ShopFile s, int day)
+        {
+            return s.Overtime(day) && !s.Striking(day);
+        }
+
+        /// <summary>The day a line about a strike names: its last while it runs, as a campaign's line does; its first while called.</summary>
+        public static int StrikeShown(ShopFile s, int day)
+        {
+            return s.Striking(day) ? s.StrikeEnd - 1 : s.StrikeFrom;
         }
 
         public static void End(ShopFile s, int day)
@@ -281,6 +314,7 @@ namespace RealLifeOverhaul.Economy
 
         public static void OvertimeAnswer(ShopFile s, bool agree, int cost, int day)
         {
+            agree &= s.StrikeFrom == 0;   // not while a strike is called or on
             s.OvertimeAsk = 0;
             if (agree)
             {
@@ -323,7 +357,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a strike and overtime do to a business's customers today, per cent.</summary>
         public static int Footfall(ShopFile s, int day)
         {
-            return (s.Striking(day) ? CompanyCatalogue.StrikeFootfall : 0) + (s.Overtime(day) ? CompanyCatalogue.OvertimeFootfall : 0);
+            return (s.Striking(day) ? CompanyCatalogue.StrikeFootfall : 0) + (OvertimeRuns(s, day) ? CompanyCatalogue.OvertimeFootfall : 0);
         }
 
         /// <summary>A number that changes when an agreed raise of anybody at a place does: the rota planner reads wages with them.</summary>

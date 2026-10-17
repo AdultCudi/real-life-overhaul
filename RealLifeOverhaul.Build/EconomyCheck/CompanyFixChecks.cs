@@ -46,6 +46,7 @@ internal static partial class Program
     {
         CompanyFixReport();
         CompanyFixBooks();
+        CompanyFixParts();
     }
 
     private static void CompanyFixReport()
@@ -135,5 +136,97 @@ internal static partial class Program
         string marketing = CompanySource("CompanyDirector.Marketing.cs");
         Check(InOrder(CompanyMethod(marketing, "partial void MarketingDay(int day)"), "CampaignRules.Gave(file, given)", "Refresh(yesterday)", "int gave = file.PushGiven", "CampaignRules.Measure(", "file.PushCost, gave,"),
             "company books: a report reads its last day's statement after the give-away is in it, and is told what was given away");
+    }
+
+
+    private static void CompanyFixParts()
+    {
+        // Cover: a term's claims follow the place and kind past a cancel, into the next policy's price and the insurers' limits.
+        int fire = (int)CoverKind.Fire;
+        var state = new CompanyState();
+        var policy = new Policy();
+        CoverRules.Buy(policy, 1, 20, 10, 60);
+        Claim first = CoverRules.Open(state, policy, "High%20Street~1", "Corner Shop", fire, 1000, 15);
+        CoverRules.File(first, policy, 16);
+        CoverRules.End(policy);
+        Check(!policy.Active && CoverRules.Carried(policy) == 1 && CoverRules.Premium(fire, 1, 2000, 100, CoverRules.Carried(policy), 1000) == 25
+              && CoverRules.WillWrite(policy, 0) && CoverRules.WillWrite(policy, 1),
+            "company cover: a claim, a cancel and the same cover bought again the same day costs 25 a day, the claim's loading, not 20");
+        Claim second = CoverRules.Open(state, new Policy { Insurer = 1, From = 10, Until = 69 }, "High%20Street~1", "Corner Shop", fire, 1000, 17);
+        CoverRules.File(second, policy, 18);
+        Check(CoverRules.Carried(policy) == 2 && !CoverRules.WillWrite(policy, 0) && !CoverRules.Declines(policy, 0) && CoverRules.WillWrite(policy, 1) && CoverRules.WillWrite(policy, 2),
+            "company cover: a claim put in after the cancel counts too, and the cheap insurer, which stands one, will not take the cover on after two");
+        CoverRules.Buy(policy, 1, CoverRules.Premium(fire, 1, 2000, 100, CoverRules.Carried(policy), 1000), 18, 60);
+        Check(policy.Active && policy.Claims == 0 && CoverRules.Carried(policy) == 0 && policy.Premium == 30, "company cover: bought again, it is priced on both claims and its own term starts with none");
+        var declined = new Policy();
+        CoverRules.Buy(declined, 1, 20, 10, 60);
+        declined.Claims = 3;
+        CoverRules.Renew(declined, fire, 2000, 100, 1000, 70, 60);
+        Check(CoverRules.Declines(declined, 1) && CoverRules.Carried(declined) == 3 && !CoverRules.WillWrite(declined, 0) && CoverRules.WillWrite(declined, 2),
+            "company cover: an insurer that declines after three claims leaves them on the place: the cheap one will not write it either, the dear one will");
+        var shop = new ShopFile { Place = "High%20Street~1" };
+        shop.Cover[0].Claims = 2;
+        var saved = new CompanyState { Seed = 1 };
+        saved.Shops.Add(shop);
+        CompanyState back = CompanyStore.Read(CompanyStore.Write(saved), out int version);
+        Check(back != null && !back.Shops[0].Cover[0].Active && back.Shops[0].Cover[0].Claims == 2, "company cover: the last term's claims of a place with no policy come back from the save");
+        Check(RotaFixKeys("reallife_co_policy_refused", "reallife_co_policy_carried") && RotaFixValues("reallife_co_policy_refused", "{insurer}", "{claims}"),
+            "company cover: the page says why an insurer will not take the cover on, and what the premium counts");
+
+        // Licences: one that renews by itself is tried every day until its fee is paid, and its running out is said once.
+        var auto = new Licence { Until = 49, Auto = true };
+        Check(LicenceRules.Day(auto, 50) == LicenceNote.Renew && LicenceRules.Unpaid(auto, 50) && LicenceRules.Day(auto, 51) == LicenceNote.Renew && !LicenceRules.Unpaid(auto, 51)
+              && LicenceRules.Day(auto, 58) == LicenceNote.Renew,
+            "company licences: a licence renewing by itself whose fee could not be paid is said to have run out once and tried again each day");
+        LicenceRules.Grant(auto, (int)LicenceKind.Signage, 58);
+        Check(auto.Until == 97 && !auto.Reminded && LicenceRules.Valid(auto, 58) && LicenceRules.Day(auto, 59) == LicenceNote.None, "company licences: paid at last, its term runs from that day");
+        var missed = new Licence { Until = 49, Auto = true };
+        Check(LicenceRules.Day(missed, 53) == LicenceNote.Renew && LicenceRules.Unpaid(missed, 53), "company licences: a day the pass did not run is no lapse in silence: the next day renews it, or says it ran out");
+        Check(LicenceRules.Day(new Licence { Until = 49 }, 51) == LicenceNote.None, "company licences: one not renewing by itself is said to lapse once, the day after its last");
+        var grown = new ShopFile();
+        LicenceRules.First(grown, LicenceRules.Needs(true, false, false), 10, true);
+        int late = 1 << (int)LicenceKind.Late, needs = LicenceRules.Needs(true, false, true);
+        int granted = LicenceRules.Newly(grown, needs, 20);
+        Check(granted == late && grown.Permits[(int)LicenceKind.Late].Until == 24 && LicenceRules.Missing(grown, needs, 24) == 0 && LicenceRules.Missing(grown, needs, 25) == late
+              && LicenceRules.Newly(grown, needs, 30) == 0,
+            "company licences: a business that starts to open late has five days to buy the permit, once, as a new business has");
+        Check(CompanyMethod(CompanySource("CompanyGame.cs"), "public static void ReadShops(").Contains("LicenceRules.Newly(file, shop.Needs, day);"),
+            "company licences: the reading of the businesses gives a newly needed licence its grace");
+
+        // A strike: no overtime runs or is paid through it, and none is agreed while one is called.
+        var busy = new ShopFile();
+        StaffRules.OvertimeAnswer(busy, true, 90, 5);
+        StaffRules.Call(busy, CompanyCatalogue.Standard, 6);
+        Check(busy.OvertimeEnd == 7 && StaffRules.OvertimeRuns(busy, 6) && !StaffRules.OvertimeRuns(busy, 7) && StaffRules.Footfall(busy, 7) == CompanyCatalogue.StrikeFootfall,
+            "company staff: overtime agreed before a strike stops the day the strike begins, and adds no customers to its days");
+        var asked = new ShopFile { OvertimeAsk = 6 };
+        StaffRules.Call(asked, CompanyCatalogue.Standard, 6);
+        Check(asked.OvertimeAsk == 0 && asked.OvertimeFrom == 0, "company staff: an offer of overtime waiting when a strike is called is dropped");
+        var called = new ShopFile { OvertimeAsk = 6 };
+        called.StrikeFrom = 8;
+        called.StrikeEnd = 10;
+        StaffRules.OvertimeAnswer(called, true, 90, 7);
+        Check(called.OvertimeFrom == 0 && called.OvertimeAsk == 0, "company staff: overtime is not agreed while a strike is called");
+        var both = new ShopFile { OvertimeFrom = 5, OvertimeEnd = 8, OvertimeCost = 90, StrikeFrom = 6, StrikeEnd = 9 };
+        Check(!StaffRules.OvertimeRuns(both, 6) && StaffRules.OvertimeRuns(both, 5) && StaffRules.Footfall(both, 6) == CompanyCatalogue.StrikeFootfall,
+            "company staff: a save with both on the same day pays and counts no overtime on the strike's days");
+        Check(CompanySource("CompanyDirector.Staff.cs").Contains("if (StaffRules.OvertimeRuns(file, day - 1) && file.OvertimeCost > 0)"), "company staff: overtime is paid only for a day it was worked");
+
+        // A rival tycoon's offer keeps the waits and stays away on Relaxed.
+        StaffFile wanted = Worker(1000, 1250, 90);
+        Check(StaffRules.RivalMay(wanted, CompanyCatalogue.Standard, 10) && !StaffRules.RivalMay(wanted, CompanyCatalogue.Relaxed, 10), "company staff: no rival tycoon poaches on Relaxed");
+        wanted.PoachRest = 20;
+        Check(!StaffRules.RivalMay(wanted, CompanyCatalogue.Hardcore, 19) && StaffRules.RivalMay(wanted, CompanyCatalogue.Hardcore, 20), "company staff: nor somebody within 21 days of answering an offer");
+        string rivals = CompanySource("CompanyDirector.Rivals.cs");
+        Check(InOrder(rivals, "Save.Day < _state.PoachRest", "StaffRules.RivalMay(f, _level, Save.Day)", "StaffRules.Offer(best,", "_state.PoachRest = Save.Day + CompanyCatalogue.PoachCompanyRestDays;"),
+            "company staff: and a week passes between any two offers, the company's own rivals' and the tycoons'");
+
+        // The standing meter and the strike line.
+        Check(CompanySource("CompanyApp.Staff.cs").Contains("StaffRules.StandsLow(f) ? CellTone.Red"), "company staff: the standing meter is red where the strike rule counts somebody low (30 itself)");
+        var strike = new ShopFile { StrikeFrom = 7, StrikeEnd = 9 };
+        Check(StaffRules.StrikeShown(strike, 6) == 7 && StaffRules.StrikeShown(strike, 7) == 8 && StaffRules.StrikeShown(strike, 8) == 8,
+            "company staff: a strike called names its first day, one running its last (day 8, back on day 9)");
+        Check(CompanySource("CompanyApp.cs").Contains("StaffRules.StrikeShown(file, day).ToString()") && CompanySource("CompanyApp.Staff.cs").Contains("StaffRules.StrikeShown(file, day).ToString()"),
+            "company staff: the business page and the staff list say the same day");
     }
 }

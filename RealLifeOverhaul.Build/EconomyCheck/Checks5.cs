@@ -393,8 +393,9 @@ internal static partial class Program
         p2.Claims = 1;
         Check(CoverRules.Renew(p2, fire, 2000, 100, 1000, 70, 60) && p2.Premium == 25 && p2.From == 70 && p2.Until == 129 && p2.Claims == 0, "a claim raises the next term's premium, and the count starts again");
         p2.Claims = 3;
-        Check(!CoverRules.Renew(p2, fire, 2000, 100, 1000, 130, 60) && !p2.Active && !CoverRules.WillWrite(p2, 1) && CoverRules.WillWrite(p2, 0) && CoverRules.WillWrite(p2, 2),
-            "after three claims in a term the middle insurer declines to renew and will not write that cover there again");
+        Check(!CoverRules.Renew(p2, fire, 2000, 100, 1000, 130, 60) && !p2.Active && !CoverRules.WillWrite(p2, 1) && CoverRules.Declines(p2, 1) && !CoverRules.WillWrite(p2, 0)
+              && CoverRules.WillWrite(p2, 2),
+            "after three claims in a term the middle insurer declines to renew and will not write that cover there again; the cheap one stands no three either, the dear one does");
         Check(!CoverRules.Renews(0, 2) && CoverRules.Renews(0, 1) && CoverRules.Renews(2, 3) && !CoverRules.Renews(2, 4), "the cheap insurer stands one claim in a term, the dear one three");
     }
 
@@ -646,7 +647,7 @@ internal static partial class Program
         Check(old.Permits[hygiene].Until == 49 && old.Permits[signage].Until == 59 && old.Permits[alcohol].Until == 0 && old.Permits[late].Until == 0,
             "a business that already ran gets every licence it needs for a first term, free, and none it does not need");
         Check(LicenceRules.Missing(old, 9, 20) == 0 && LicenceRules.Missing(old, 9, 49) == 0 && LicenceRules.Missing(old, 9, 50) == 1 && LicenceRules.Missing(old, 9, 60) == 9, "a licence is good to its last day and missing from the next");
-        Check(LicenceRules.Missing(old, 13, 20) == 4, "a need that appears later (late opening) is missing until it is bought");
+        Check(LicenceRules.Missing(old, 13, 20) == 4, "a need that appears later (late opening) is missing while the business holds none (the reading gives it a grace: LicenceRules.Newly)");
         var opened = new ShopFile();
         LicenceRules.First(opened, 14, 20, false);
         Check(opened.Permits[alcohol].Until == 24 && LicenceRules.Missing(opened, 14, 24) == 0 && LicenceRules.Missing(opened, 14, 25) == 14, "a business opened later may trade five days before it needs them");

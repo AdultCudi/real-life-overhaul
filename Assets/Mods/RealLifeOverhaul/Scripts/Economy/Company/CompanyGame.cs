@@ -259,6 +259,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     LicenceRules.First(file, shop.Needs, day, ranBefore);
                 }
+                else
+                {
+                    LicenceRules.Newly(file, shop.Needs, day);
+                }
                 into.Add(shop);
             }
             Regs.Clear();

@@ -50,9 +50,25 @@ namespace RealLifeOverhaul.Economy
             return claims < CompanyCatalogue.InsurerClaimsMost[insurer];
         }
 
+        /// <summary>Whether an insurer would write this cover now: it has not declined it here, and stands the last term's claims.</summary>
         public static bool WillWrite(Policy p, int insurer)
         {
-            return (p.Declined & (1 << insurer)) == 0;
+            return !Declines(p, insurer) && Renews(insurer, Carried(p));
+        }
+
+        /// <summary>The insurer declined to renew this cover here once, and will not write it again.</summary>
+        public static bool Declines(Policy p, int insurer)
+        {
+            return (p.Declined & (1 << insurer)) != 0;
+        }
+
+        /// <summary>
+        /// The claims a new policy here is priced on, as a renewal would be: with none running, those of its last term, so
+        /// that cancelling after a claim and buying again neither drops the claim's loading nor gets past an insurer's limit.
+        /// </summary>
+        public static int Carried(Policy p)
+        {
+            return p.Active ? 0 : Math.Max(0, p.Claims);
         }
 
         public static void Buy(Policy p, int insurer, int premium, int day, int termDays)
@@ -64,11 +80,11 @@ namespace RealLifeOverhaul.Economy
             p.Claims = p.Missed = 0;
         }
 
-        /// <summary>The policy ends; the insurers that declined are remembered.</summary>
+        /// <summary>The policy ends; the insurers that declined are remembered, and so are the term's claims (<see cref="Carried"/>).</summary>
         public static void End(Policy p)
         {
             p.Insurer = -1;
-            p.Premium = p.From = p.Until = p.Claims = p.Missed = 0;
+            p.Premium = p.From = p.Until = p.Missed = 0;
         }
 
         public static bool Covers(Policy p, int day)
@@ -161,9 +177,9 @@ namespace RealLifeOverhaul.Economy
             }
             c.Stage = ClaimStage.Filed;
             c.PayDay = day + CompanyCatalogue.InsurerPayDays[c.Insurer];
-            if (p != null && p.Insurer == c.Insurer)
+            if (p != null && (p.Insurer == c.Insurer || !p.Active))
             {
-                p.Claims++;
+                p.Claims++;   // put in after the policy ended, it counts against the next one here as its term's own would
             }
             return true;
         }

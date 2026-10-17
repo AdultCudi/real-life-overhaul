@@ -269,13 +269,13 @@ namespace RealLifeOverhaul.Economy
                 Policy p = shop.Cover[k];
                 int insurer = I(c, at, -1);
                 p.Declined = I(c, at + 6) & ((1 << CompanyCatalogue.Insurers) - 1);
+                p.Claims = Math.Max(0, I(c, at + 4));   // with no policy, the last term's (written as 0 before they were kept)
                 if (insurer >= 0 && insurer < CompanyCatalogue.Insurers)
                 {
                     p.Insurer = insurer;
                     p.Premium = Math.Max(1, I(c, at + 1, 1));
                     p.From = Math.Max(0, I(c, at + 2));
                     p.Until = Math.Max(0, I(c, at + 3));
-                    p.Claims = Math.Max(0, I(c, at + 4));
                     p.Missed = CompanyCatalogue.Clamp(I(c, at + 5), 0, CompanyCatalogue.PremiumMissedMost);
                 }
             }

@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Economy
         public int Premium;             // a day, fixed for the term
         public int From;                // the day it began
         public int Until;               // the last day of the term
-        public int Claims;              // claims put in during this term
+        public int Claims;              // claims put in during this term; with no policy, those of the last term here
         public int Missed;              // days running the premium could not be taken
         public int Declined;            // insurers that will not write this cover here again, a bit each
 
@@ -55,8 +55,8 @@ namespace RealLifeOverhaul.Economy
     public sealed class Licence
     {
         public int Until;               // the last day it is good for; 0 with none
-        public bool Auto;               // renewed by itself on the day after it runs out
-        public bool Reminded;           // this term's reminder has gone out
+        public bool Auto;               // renewed by itself from the day after it runs out, as soon as its fee can be paid
+        public bool Reminded;           // this term's reminder has gone out; renewing by itself, that its fee could not be paid
     }
 
     /// <summary>One of the player's businesses as the mod knows it, by its place.</summary>

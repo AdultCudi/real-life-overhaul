@@ -9,20 +9,21 @@ namespace RealLifeOverhaul.Economy
     {
         /// <summary>
         /// An offer of <paramref name="premium"/> thousandths over the going rate, never less than the company's own rivals
-        /// give, to the most skilled employee with nothing waiting. False with nobody to offer it to; otherwise who and where.
+        /// give, to the most skilled employee with nothing waiting, keeping the same waits and strictness as they do
+        /// (StaffRules.RivalMay). False with nobody to offer it to; otherwise who and where.
         /// </summary>
         public bool RivalOffer(string rival, int premium, out string name, out string business)
         {
             name = business = null;
-            if (!On(CompanyPart.Staff) || _state == null || Save == null)
+            if (!On(CompanyPart.Staff) || _state == null || Save == null || Save.Day < _state.PoachRest)
             {
-                return false;
+                return false;   // (a week between any two offers, the company's own rivals' and these alike)
             }
             StaffFile best = null;
             for (int i = 0; i < _state.Staff.Count; i++)
             {
                 StaffFile f = _state.Staff[i];
-                if (ShopIndex(f.Place) >= 0 && f.Going > 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0 && (best == null || f.Skill > best.Skill))
+                if (ShopIndex(f.Place) >= 0 && StaffRules.RivalMay(f, _level, Save.Day) && (best == null || f.Skill > best.Skill))
                 {
                     best = f;
                 }
@@ -32,6 +33,7 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             StaffRules.Offer(best, CompanyStore.Clean(rival), Save.Day);
+            _state.PoachRest = Save.Day + CompanyCatalogue.PoachCompanyRestDays;
             best.PoachOffer = Math.Max(best.PoachOffer, CompanyCatalogue.Share(best.Going, 1000 + Math.Max(CompanyCatalogue.PoachPremium, premium)));
             name = best.Name;
             business = ShopName(best.Place);

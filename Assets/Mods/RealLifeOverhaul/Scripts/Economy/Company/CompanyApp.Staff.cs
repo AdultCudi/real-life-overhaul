@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Pick("strike:" + file.Place, CompanyText.T("reallife_co_row_strike"), shops[i].Name,
                         CompanyText.T(file.Striking(day) ? "reallife_co_row_strike_until" : "reallife_co_row_strike_from", "day",
-                            (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()),
+                            StaffRules.StrikeShown(file, day).ToString()),
                         CompanyText.T("reallife_co_row_answer"), 2, ref selected);
                     Last.Pinned = true;   // something to answer, not a member of staff: it stays at the head of the list
                 }
@@ -189,7 +189,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_co_emp_going", CompanyText.Wage(f.Going), f.Going > f.Paid ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_feeling");
             box.Meter("reallife_co_emp_standing", f.Standing / 100f, f.Standing.ToString(),
-                f.Standing < 30 ? CellTone.Red : f.Standing < 60 ? CellTone.Yellow : CellTone.Green);
+                StaffRules.StandsLow(f) ? CellTone.Red : f.Standing < 60 ? CellTone.Yellow : CellTone.Green);
             box.Meter("reallife_co_emp_mood", f.Mood / 100f, f.Mood.ToString(), f.Mood < 30 ? CellTone.Red : f.Mood < 60 ? CellTone.Yellow : CellTone.Green);
             BackButton(box);
         }

@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Economy
         private void ShopStaffDay(CompanyShop shop, int at, int day)
         {
             ShopFile file = shop.File;
-            if (file.Overtime(day - 1) && file.OvertimeCost > 0)
+            if (StaffRules.OvertimeRuns(file, day - 1) && file.OvertimeCost > 0)
             {
                 WagePaid(file.OvertimeCost, CompanyGame.OvertimeKey, shop, day - 1,
                     CompanyCatalogue.OvertimeHours + " extra hours each at time and a half on day " + (day - 1));
@@ -440,6 +440,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             int cost = OvertimeCost(place);
+            agree &= shop.File.StrikeFrom == 0;   // as the rule has it: no overtime while a strike is called or on
             StaffRules.OvertimeAnswer(shop.File, agree, cost, Save.Day);
             for (int i = 0; agree && i < _state.Staff.Count; i++)
             {

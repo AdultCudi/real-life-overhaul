@@ -434,7 +434,7 @@ namespace RealLifeOverhaul.Economy
             if (_director.On(CompanyPart.Staff) && file.StrikeFrom > 0)
             {
                 box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day",
-                    (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()), CellTone.Red);
+                    StaffRules.StrikeShown(file, day).ToString()), CellTone.Red);
             }
             box.Section("reallife_ibox_yesterday");
             if (shop.HasBooks)

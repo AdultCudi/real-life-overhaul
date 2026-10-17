@@ -153,13 +153,22 @@ namespace RealLifeOverhaul.Economy
             box.Note(CompanyText.T("reallife_co_policy_claims", "most", (CompanyCatalogue.InsurerClaimsMost[insurer] - 1).ToString(),
                 "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading)));
             bool writes = CoverRules.WillWrite(p, insurer);
+            int carried = CoverRules.Carried(p);
             if (p.Active)
             {
                 box.Line(CompanyText.T("reallife_co_policy_term", "day", p.Until.ToString(), "claims", p.Claims.ToString()));
             }
-            else if (!writes)
+            else if (CoverRules.Declines(p, insurer))
             {
                 box.Line(CompanyText.T("reallife_co_policy_declined", "insurer", CompanyText.Insurer(insurer)), CellTone.Red);
+            }
+            else if (!writes)
+            {
+                box.Line(CompanyText.T("reallife_co_policy_refused", "insurer", CompanyText.Insurer(insurer), "claims", carried.ToString()), CellTone.Red);
+            }
+            else if (carried > 0)
+            {
+                box.Line(CompanyText.T("reallife_co_policy_carried", "claims", carried.ToString()), CellTone.Yellow);
             }
             var buttons = box.ButtonRow();
             if (p.Active)

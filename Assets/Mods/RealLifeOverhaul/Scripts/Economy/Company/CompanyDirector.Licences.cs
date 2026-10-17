@@ -30,6 +30,10 @@ namespace RealLifeOverhaul.Economy
                             LicenceRules.Grant(l, k, day);
                             continue;
                         }
+                        if (!LicenceRules.Unpaid(l, day))
+                        {
+                            continue;   // said once; tried again each day it is still renewing by itself
+                        }
                         note = LicenceNote.Lapsed;   // it could not be paid for
                     }
                     Tell(note == LicenceNote.Remind ? NotificationType.Info : NotificationType.Warning,
