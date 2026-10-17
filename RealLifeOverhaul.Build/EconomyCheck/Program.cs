@@ -153,6 +153,7 @@ internal static partial class Program
         Shared();
         Fame();
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
+        JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         Endings();
         Infra2();
         Ventures2();
