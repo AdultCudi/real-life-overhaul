@@ -151,7 +151,10 @@ namespace RealLifeOverhaul.Economy.Ventures
         // Money for a business not yet open.
         public const int PledgeDays = 14;            // to open the business in
         public const int PledgesMost = 3;
-        public static readonly int[] BudgetSteps = { 10000, 20000, 35000, 50000, 75000, 100000, 150000, 250000, 500000 };
+        public static readonly int[] BudgetSteps = { 10000, 20000, 35000, 50000, 75000, 100000, 150000, 250000, 500000 };   // at the start's prices
+
+        /// <summary>A budget step at today's prices.</summary>
+        public static int BudgetAt(int step) => Prices.At(BudgetSteps[Math.Max(0, Math.Min(BudgetSteps.Length - 1, step))]);
         public const int BudgetShareLeastPct = 30;   // of the budget, at the score an investor just accepts...
         public const int BudgetShareMostPct = 70;    // ...and at a perfect one
 

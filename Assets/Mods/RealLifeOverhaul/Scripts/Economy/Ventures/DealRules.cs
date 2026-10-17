@@ -102,7 +102,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     deal.TargetsMet++;
                     deal.FollowOn = true;
                     file.TargetsMet++;
-                    file.MoveReputation(VenturesCatalogue.ReputationMet);
+                    file.MoveReputation(VenturesCatalogue.ReputationMet, deal.Test);
                     Mood(deal, VenturesCatalogue.MoodMet);
                     Say(said, DealNews.TargetMet, deal, deal.TargetProfit);
                     if (deal.PaidOut >= deal.Amount)
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 if (unpaid && investor != null)
                 {
                     investor.ClosedUntil = day + VenturesCatalogue.ColdClosedDays;
-                    file.MoveReputation(VenturesCatalogue.ReputationCold);
+                    file.MoveReputation(VenturesCatalogue.ReputationCold, deal.Test);
                 }
                 Say(said, DealNews.WentCold, deal, unpaid ? 1 : 0);
             }
@@ -217,13 +217,19 @@ namespace RealLifeOverhaul.Economy.Ventures
                 {
                     // The courts have the debt now, judged and collected as every civil claim is.
                     deal.Claim = number;
-                    file.MoveReputation(VenturesCatalogue.ReputationClaim);
+                    file.MoveReputation(VenturesCatalogue.ReputationClaim, deal.Test);
                     Say(said, DealNews.Claimed, deal, deal.CallOwed);
                     file.Deals.Remove(deal);
                     return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>True for a called sum missed on as many days as take it to court, with no court that took it: the justice system is off.</summary>
+        public static bool NoCourt(Deal deal)
+        {
+            return deal.Stage == DealStage.Called && deal.Claim == 0 && deal.CallMisses >= VenturesCatalogue.CallMissesMost;
         }
 
         /// <summary>Answers a demand with a board seat (a fund has one already) or a promise to cut costs; false if there is no demand.</summary>
@@ -247,12 +253,19 @@ namespace RealLifeOverhaul.Economy.Ventures
             return true;
         }
 
-        /// <summary>Today's buy-out price: what is owed if called, else the greater of their share of recent profit and a little over their sum.</summary>
+        /// <summary>
+        /// Today's buy-out price: what is owed if called, what the next day calls if the business is gone (what they put in
+        /// less what they were paid), else the greater of their share of recent profit and a little over their sum.
+        /// </summary>
         public static int BuyOutPrice(Deal deal, in BusinessFigures b)
         {
             if (deal.Stage == DealStage.Called)
             {
                 return deal.CallOwed;
+            }
+            if (!b.Exists)
+            {
+                return Math.Max(0, deal.Amount - deal.PaidOut);
             }
             return Math.Max(VenturesCatalogue.Share(b.AvgProfit14 * VenturesCatalogue.BuyOutDays, deal.ShareBp), (int)((long)deal.Amount * VenturesCatalogue.BuyOutFloorPct / 100)) + deal.Arrears;
         }
@@ -269,7 +282,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             if (deal.Stage != DealStage.Called)
             {
-                file.MoveReputation(VenturesCatalogue.ReputationBoughtOut);
+                file.MoveReputation(VenturesCatalogue.ReputationBoughtOut, deal.Test);
             }
             file.Deals.Remove(deal);
             return true;

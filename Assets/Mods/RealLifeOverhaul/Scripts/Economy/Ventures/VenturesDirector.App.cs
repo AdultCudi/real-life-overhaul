@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     Pledge pledge = OfferRules.Promise(_file, offer, day, VenturesGame.CountOf(offer.TypeName));
                     if (pledge == null)
                     {
-                        Tell(NotificationType.Error, "reallife_ven_note_no_room", null);
+                        NoRoom(OfferRules.DealRoom(_file));
                         return false;
                     }
                     Tell(NotificationType.Success, "reallife_ven_note_pledged", _openInvestors, "name", investor.Name, "amount", FinanceText.Money(pledge.Amount),
@@ -74,6 +74,11 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }
                 int amount = offer.Amount, share = offer.ShareBp;
                 Deal deal = OfferRules.Accept(_file, offer, VenturesGame.Figures(r), day);
+                if (deal == null)
+                {
+                    NoRoom(false);   // the offer stands: room may be made by buying an investor out
+                    return false;
+                }
                 deal.Business = VenturesGame.Name(r);
                 _wallet.Give(amount, VenturesMoney.Invested, investor.Name);
                 Tell(NotificationType.Success, "reallife_ven_note_accepted", _openInvestors, "name", investor.Name, "business", deal.Business, "amount", FinanceText.Money(amount),
@@ -87,6 +92,17 @@ namespace RealLifeOverhaul.Economy.Ventures
                 Fault("accepting an offer", e);
                 return false;
             }
+        }
+
+        // Why an offer cannot be taken up: no room for another promise, or for another deal.
+        private void NoRoom(bool promisesFull)
+        {
+            if (promisesFull)
+            {
+                Tell(NotificationType.Error, "reallife_ven_note_no_room", null);
+                return;
+            }
+            Tell(NotificationType.Error, "reallife_ven_note_no_deal_room", null, "most", VenturesCatalogue.DealsMost.ToString(), "share", VenturesText.Share(VenturesCatalogue.ShareCapBp));
         }
 
         public void Refuse(int offerId)

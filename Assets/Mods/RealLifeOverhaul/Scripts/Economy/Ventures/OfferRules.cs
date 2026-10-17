@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Economy.Ventures
     /// <summary>How an offer is made, countered and taken up; game-free, every chance a roll seeded by what it is about.</summary>
     public static class OfferRules
     {
-        public const int YoungTarget = 300;   // the daily profit expected of a business that has none yet
+        /// <summary>The daily profit expected of a business that has none yet, at today's prices.</summary>
+        public static int YoungTarget => Prices.At(300);
 
         /// <summary>True for a business an investor would come to: a profit on enough of its last days, and enough of it.</summary>
         public static bool Qualifies(in BusinessFigures b)
@@ -56,13 +57,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             int room = VenturesCatalogue.ShareCapBp - file.ShareOn(place, day, out deals);
             shareBp = Math.Min(wantShareBp, room);
             amount = VenturesCatalogue.Share(recentProfit * valueDays, shareBp);
-            if (amount > investor.ChequeMost)
+            int most = investor.Most;
+            if (amount > most)
             {
-                shareBp = (int)(((long)shareBp * investor.ChequeMost + amount - 1) / amount);   // rounded up: never worth less than the sum
-                amount = investor.ChequeMost;
+                shareBp = (int)(((long)shareBp * most + amount - 1) / amount);   // rounded up: never worth less than the sum
+                amount = most;
             }
             amount = amount / 100 * 100;
-            return shareBp > 0 && amount >= investor.ChequeLeast;
+            return shareBp > 0 && amount >= investor.Least;
         }
 
         /// <summary>An offer for a business the player runs, added to the file; null if there is no room or the figures do not carry the investor's smallest sum.</summary>
@@ -101,9 +103,9 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>The one counter an offer allows, more money or a smaller share, answered by temperament and profitable days; changes the offer.</summary>
         public static CounterAnswer Counter(VenturesFile file, Offer offer, Investor investor, in BusinessFigures b, bool moreMoney)
         {
-            if (offer.Countered)
+            if (offer.Countered || (moreMoney && !MoreMoney(offer, investor)))
             {
-                return CounterAnswer.Refused;
+                return CounterAnswer.Refused;   // at their largest sum already: nothing to ask for, and the one counter is kept
             }
             offer.Countered = true;
             int t = (int)investor.Temper;
@@ -119,7 +121,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             int tenths = answer == CounterAnswer.Accepted ? step * 10 : step * 5;   // tenths of a per cent; half way is half the step
             if (moreMoney)
             {
-                offer.Amount = (int)Math.Min(investor.ChequeMost, (long)offer.Amount * (1000 + tenths) / 1000 / 100 * 100);
+                offer.Amount = (int)Math.Min(investor.Most, (long)offer.Amount * (1000 + tenths) / 1000 / 100 * 100);
             }
             else
             {
@@ -128,14 +130,35 @@ namespace RealLifeOverhaul.Economy.Ventures
             return answer;
         }
 
-        /// <summary>An offer for a running business taken up, as a new deal or a second round; the caller pays the money in. Null if not open.</summary>
-        public static Deal Accept(VenturesFile file, Offer offer, in BusinessFigures b, int day)
+        /// <summary>True while more money can be asked of an investor: the offer is under their largest sum.</summary>
+        public static bool MoreMoney(Offer offer, Investor investor)
         {
-            if (offer.ForNew)
+            return offer.Amount < investor.Most;
+        }
+
+        /// <summary>True while one more deal fits the file: its deals and the promises waiting to become deals stay within DealsMost.</summary>
+        public static bool DealRoom(VenturesFile file)
+        {
+            return file.Deals.Count + file.Pledges.Count < VenturesCatalogue.DealsMost;
+        }
+
+        /// <summary>
+        /// Whether an offer for a running business can still be taken up as things stand: the share within the business's
+        /// room, and a second round on a deal there is or a new deal within the caps.
+        /// </summary>
+        public static bool Fits(VenturesFile file, Offer offer, int day)
+        {
+            int deals;
+            if (file.ShareOn(offer.Place, day, out deals) + offer.ShareBp > VenturesCatalogue.ShareCapBp)
             {
-                return null;
+                return false;
             }
-            file.Offers.Remove(offer);
+            return Round(file, offer) != null || (DealRoom(file) && deals < VenturesCatalogue.DealsPerBusiness);
+        }
+
+        // The investor's deal on the business that a second round adds to; null for a new deal.
+        private static Deal Round(VenturesFile file, Offer offer)
+        {
             Deal deal = null;
             for (int i = 0; i < file.Deals.Count; i++)
             {
@@ -144,6 +167,18 @@ namespace RealLifeOverhaul.Economy.Ventures
                     deal = file.Deals[i];
                 }
             }
+            return deal;
+        }
+
+        /// <summary>An offer for a running business taken up, as a new deal or a second round; the caller pays the money in. Null if not open, or there is no room.</summary>
+        public static Deal Accept(VenturesFile file, Offer offer, in BusinessFigures b, int day)
+        {
+            if (offer.ForNew || !Fits(file, offer, day))
+            {
+                return null;
+            }
+            file.Offers.Remove(offer);
+            Deal deal = Round(file, offer);
             if (deal == null)
             {
                 deal = new Deal
@@ -166,7 +201,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>An offer for a business not yet open taken up: the money waits for one of that kind ('had': how many the player runs now).</summary>
         public static Pledge Promise(VenturesFile file, Offer offer, int day, int had = 0)
         {
-            if (!offer.ForNew || file.Pledges.Count >= VenturesCatalogue.PledgesMost)
+            if (!offer.ForNew || file.Pledges.Count >= VenturesCatalogue.PledgesMost || !DealRoom(file))
             {
                 return null;
             }
@@ -180,10 +215,21 @@ namespace RealLifeOverhaul.Economy.Ventures
             return pledge;
         }
 
-        /// <summary>The business a promise waited for has been opened: the deal starts on it. The caller pays the money in.</summary>
+        /// <summary>
+        /// The business a promise waited for has been opened: the deal starts on it, and that business is no other promise's
+        /// new one. The caller pays the money in. Null, the promise kept, while the file has no room for another deal.
+        /// </summary>
         public static Deal Open(VenturesFile file, Pledge pledge, string place, string business, int day)
         {
+            if (file.Deals.Count >= VenturesCatalogue.DealsMost)
+            {
+                return null;
+            }
             file.Pledges.Remove(pledge);
+            for (int i = 0; i < file.Pledges.Count; i++)
+            {
+                file.Pledges[i].Had += file.Pledges[i].TypeName == pledge.TypeName ? 1 : 0;
+            }
             var deal = new Deal
             {
                 Id = file.NextId++, InvestorId = pledge.InvestorId, Place = place, Business = business ?? string.Empty, Amount = pledge.Amount, ShareBp = pledge.ShareBp,

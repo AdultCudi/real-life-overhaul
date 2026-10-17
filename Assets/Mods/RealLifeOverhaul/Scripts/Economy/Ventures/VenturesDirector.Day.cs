@@ -56,6 +56,8 @@ namespace RealLifeOverhaul.Economy.Ventures
         // New offers come only while the option is on; it is read again in case it went off within the last second.
         private void InvestorsDay(int day)
         {
+            // Against the day that ended: a business opened in the last hour of a promise's last day is found before it lapses.
+            CheckPledges(day - 1);
             for (int i = _file.Offers.Count - 1; i >= 0; i--)
             {
                 Offer offer = _file.Offers[i];
@@ -76,7 +78,6 @@ namespace RealLifeOverhaul.Economy.Ventures
                     Detail("the promise " + pledge.Id + " from " + NameOf(pledge.InvestorId) + " lapsed on day " + day + ": nothing is owed");
                 }
             }
-            CheckPledges(day);
             int level = Level;
             for (int i = _file.Deals.Count - 1; i >= 0; i--)
             {
@@ -145,8 +146,8 @@ namespace RealLifeOverhaul.Economy.Ventures
                     Tell(NotificationType.Info, "reallife_ven_note_settled", _openInvestors, "name", name, "business", business);
                     break;
                 case DealNews.CallMissed:
-                    Tell(NotificationType.Error, "reallife_ven_note_call_missed", _openInvestors, "name", name, "amount", amount, "count", deal.CallMisses.ToString(),
-                        "most", VenturesCatalogue.CallMissesMost.ToString());
+                    Tell(NotificationType.Error, DealRules.NoCourt(deal) ? "reallife_ven_note_call_missed_no_court" : "reallife_ven_note_call_missed", _openInvestors, "name", name,
+                        "amount", amount, "count", deal.CallMisses.ToString(), "most", VenturesCatalogue.CallMissesMost.ToString());
                     break;
                 case DealNews.CallDone:
                     Tell(NotificationType.Success, "reallife_ven_note_call_done", _openInvestors, "name", name);
@@ -248,6 +249,10 @@ namespace RealLifeOverhaul.Economy.Ventures
                     continue;
                 }
                 Deal deal = OfferRules.Open(_file, pledge, Books.Key(opened.Address), VenturesGame.Name(opened), day);
+                if (deal == null)
+                {
+                    continue;   // no room for another deal: the promise waits, and lapses if none is made
+                }
                 _wallet.Give(deal.Amount, VenturesMoney.Invested, investor.Name);
                 Tell(NotificationType.Success, "reallife_ven_note_pledge_paid", _openInvestors, "name", investor.Name, "business", deal.Business, "amount", FinanceText.Money(deal.Amount),
                     "share", VenturesText.Share(deal.ShareBp));

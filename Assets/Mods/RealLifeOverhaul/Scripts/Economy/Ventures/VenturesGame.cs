@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             catch (Exception)
             {
-                return 0;   // the game's list could not be read
+                return -1;   // the game's list could not be read: the question is left out
             }
             finally
             {

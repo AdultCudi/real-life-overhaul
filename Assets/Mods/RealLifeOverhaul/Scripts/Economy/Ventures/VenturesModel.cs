@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public Temperament Temper;
         public int First, Last;      // indices into the catalogue's name lists; a fund's name is First in its list
         public int Likes;            // a bit per Sector
-        public int ChequeLeast, ChequeMost;
+        public int ChequeLeast, ChequeMost;   // at the start's prices: Least and Most are today's
         public int Diligence;        // how hard they check a figure, 0 to 100
         public int ClosedUntil;      // they see nobody before this day
         public int PitchedDay;       // last approached; 0: never
@@ -18,6 +18,12 @@ namespace RealLifeOverhaul.Economy.Ventures
         public string Name => Kind == InvestorKind.Firm
             ? VenturesCatalogue.FirmNames[First % VenturesCatalogue.FirmNames.Length]
             : VenturesCatalogue.FirstNames[First % VenturesCatalogue.FirstNames.Length] + " " + VenturesCatalogue.LastNames[Last % VenturesCatalogue.LastNames.Length];
+
+        /// <summary>Their smallest sum at today's prices.</summary>
+        public int Least => Prices.At(ChequeLeast);
+
+        /// <summary>Their largest sum at today's prices.</summary>
+        public int Most => Prices.At(ChequeMost);
 
         public bool LikesSector(Sector sector)
         {
@@ -317,9 +323,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             return false;
         }
 
-        public void MoveReputation(int by)
+        /// <summary>Not saved: what the test tools' deals and meetings moved the name by this session, for "put ventures back".</summary>
+        public int TestMoved;
+
+        public void MoveReputation(int by, bool test = false)
         {
+            int was = Reputation;
             Reputation = Reputation + by < 0 ? 0 : Reputation + by > 100 ? 100 : Reputation + by;
+            TestMoved += test ? Reputation - was : 0;
         }
     }
 

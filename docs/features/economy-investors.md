@@ -77,10 +77,12 @@ The tycoon values the business at 60 days of that profit and asks a share a quar
 
 The sum is that share of the value, cut to their largest sum (the share shrinks with it) and to the room left on the business (all investors together hold 60% of one business's profit at most, two deals to a business, eight deals in all, four offers open).
 Under their smallest sum there is no offer.
+An investor's sums, the first target of 300 a day and the budgets are written at the start's prices and asked at today's (`Prices`).
 
 The offer names a growth target (10% in 30 days patient, 15% in 24 even, 25% in 18 demanding, scaled by the level) and waits 5 days.
 
-Accept (the money is paid in at once), refuse, or counter once: 25% more money for the same share, or a share a quarter smaller for the same money.
+Accept (the money is paid in at once), refuse, or counter once: 25% more money for the same share (not asked of an investor already at their largest sum), or a share a quarter smaller for the same money.
+An offer is taken up only while it still fits: eight deals in all with the promises waiting to become deals, two to a business, 60% of its profit; otherwise it stands and a notice says why.
 The investor agrees with a chance of 40% / 30% / 15% by temperament plus 5 points for each profitable day over ten, meets half way (half the step) with 40% / 40% / 35%, and otherwise holds to the first terms.
 
 The roll is a hash of the save's seed and the offer, so loading and trying again changes nothing.
@@ -112,6 +114,8 @@ The phone is put away and the meeting is held in the game's list window, locked,
 
   A business not yet open gets 30% to 70% of its budget (from an angel or a firm), paid when the player runs one more business of that kind than on the day of the promise, within 14 days (the deal starts on the one of that kind with no deal and the fewest daily statements: the one just opened).
   Else the promise lapses and nothing is owed.
+  A business that pays one promise counts for the other promises of its kind too, so one new business pays one promise; one opened in the last hour of the last day is found at midnight, before the promise lapses.
+  A promise holds a deal's place: it is made only while the deals and promises are fewer than eight, and opens no ninth deal.
 
   An angel backs a business under 30 days old with their smallest sum whatever its profit.
 
@@ -136,11 +140,11 @@ The phone is put away and the meeting is held in the game's list window, locked,
   Unanswered, the investor takes the seat (a firm: the promise).
 
   Three times: a demanding investor calls their money back (what they put in less 50% of what they were paid, 25% of what they put in at least) over 30 / 30 / 20 / 14 days by level; the share stops.
-  After 5 daily payments missed running the rest is filed as a civil claim through `EconomyBridges.FileClaim` (Justice judges and collects it; with no court it stays owed).
+  After 5 daily payments missed running the rest is filed as a civil claim through `EconomyBridges.FileClaim` (Justice judges and collects it; with no court it stays owed, and the notice and the deal's page say there is no court).
 
   Anybody else, and everybody on Relaxed, loses interest: they keep their share and set no more targets, and one who has not had their money back will not back the founder again and costs 10 of the name.
 
-- **Buy-out** at any time: the investor's share of 75 days of the mean profit of the last 14, never less than 110% of what they put in; for a sum called back, what is still called.
+- **Buy-out** at any time: the investor's share of 75 days of the mean profit of the last 14, never less than 110% of what they put in; for a sum called back, what is still called; for a business sold or closed, what the next day calls.
 - **The business sold or closed**: the investor is owed what they put in less what they have been paid, by the day over the level's days (nothing if they have had it back).
 - **Levels** (the presets set `ventures_level`): growth asked 50% / 100% / 125% / 150% of the investor's figure; diligence -15 / 0 / +10 / +20; score needed -5 / 0 / +3 / +6; nobody calls money back on Relaxed.
 - What cannot be made safe by a rule is bounded: money for a business not yet open rests on a budget nobody can check, so a tycoon gives none, a firm's is called back when growth stops, and an angel's (60,000 at most) is lost to the angel once, with the angel and 10 of the name.
@@ -230,8 +234,9 @@ The investors and companies in the log.
 The market stepped 30 days (no dividend; the market as it stood is kept and is what a save keeps).
 A dividend paid now (with no shares, ten test shares of the first company are given first).
 
-An investor calls their money (a deal there is, or a test deal).
-"Test: put ventures back" (test offers, deals, promises and holdings removed; the market, the name with investors and the investors' days as before the first test of the session; money a test paid stays).
+An investor calls their money (a test deal; a real one is never called).
+"Test: put ventures back" (test offers, deals, promises and holdings removed; the market as before the first test of the session; the name with investors less what the tests' deals and meetings moved it, the meetings the tests began, and the days of the investors a test touched; money a test paid stays).
+A test offer makes room among test offers only.
 
 ## Log lines (with "Developer diagnostics" on)
 

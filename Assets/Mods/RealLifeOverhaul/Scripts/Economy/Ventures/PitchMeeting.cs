@@ -244,7 +244,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                         "name", _investor.Name, "amount", amount, "share", share, "business", _state.Business);
                     break;
                 case Verdict.TooSmall:
-                    verdict = FinanceText.T("reallife_ven_verdict_small", "name", _investor.Name, "least", FinanceText.Money(_investor.ChequeLeast));
+                    verdict = FinanceText.T("reallife_ven_verdict_small", "name", _investor.Name, "least", FinanceText.Money(_investor.Least));
                     break;
                 case Verdict.NoProfit:
                     verdict = FinanceText.T("reallife_ven_verdict_no_profit", "name", _investor.Name, "business", _state.Business);
@@ -306,7 +306,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                                               + _investor.LikesSector(_state.Facts.Sector) + " (+" + VenturesCatalogue.LikedScore + "), name with investors " + file.Reputation
                                               + "; score " + d.Score + " against " + d.Needed + "; "
                                               + (forNew ? "budget " + _state.Facts.Budget : "recent profit " + _state.Facts.AvgProfit7.ToString("0") + " a day valued at " + d.ValueDays + " days")
-                                              + (d.OnFounder ? ", backed on the founder" : string.Empty) + ", sums " + _investor.ChequeLeast + " to " + _investor.ChequeMost + ": "
+                                              + (d.OnFounder ? ", backed on the founder" : string.Empty) + ", sums " + _investor.Least + " to " + _investor.Most + ": "
                                               + d.Verdict + " " + d.Amount + " for " + d.ShareBp + " bp; best answer " + (d.Best + 1) + ", worst " + (d.Worst + 1) + ".");
             }
             Open(list);

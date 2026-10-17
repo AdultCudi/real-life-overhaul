@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public Sector Sector;
         public long SalesYesterday, SalesWeek, ProfitYesterday, ProfitWeek;
         public float AvgProfit7;     // the figure a valuation is made from
-        public int Staff, AgeDays, ProfitableDays;
+        public int Staff, AgeDays, ProfitableDays;   // Staff: -1 if the game's list could not be read
         public long Cash, Owed, Payments;
         public int Rating;           // 0: there is no credit file
         public int Convictions, Businesses, Missed;
@@ -247,6 +247,10 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>The figures offered: the truth (money as people say it), then better-sounding ones; under two, the question is not asked.</summary>
         public static int Options(Fact fact, in PitchFacts f, long[] values)
         {
+            if (fact == Fact.Staff && f.Staff < 0)
+            {
+                return 1;   // the staff could not be counted: nothing true to ask about
+            }
             long truth = Truth(fact, f);
             bool money = UnitOf(fact) == FactUnit.Money;
             long shown = money ? VenturesCatalogue.Round2(truth) : truth;
@@ -280,7 +284,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             else if (money)
             {
-                long full = Full[(int)fact];
+                long full = FullAt(fact);
                 stretch = truth > 0 ? Math.Max(VenturesCatalogue.Round2(truth * 1.3), shown + 1) : VenturesCatalogue.Round2(full * 0.2);
                 bold = truth > 0 ? Math.Max(VenturesCatalogue.Round2(truth * 1.8), stretch + 1) : VenturesCatalogue.Round2(full * 0.6);
             }
@@ -309,11 +313,18 @@ namespace RealLifeOverhaul.Economy.Ventures
                 case Fact.Rating: part = (value - 500) / 300.0; break;
                 case Fact.ProfitableDays: part = (value - 6) / 8.0; break;
                 default:
-                    part = (double)value / Full[(int)fact];
+                    part = (double)value / FullAt(fact);
                     part = LowerBetter(fact) ? 1.0 - part : part;
                     break;
             }
             return part < 0.0 ? 0.0 : part > 1.0 ? 1.0 : part;
+        }
+
+        // The figure at which a fact is as strong as it gets, money at today's prices.
+        private static long FullAt(Fact fact)
+        {
+            long full = Full[(int)fact];
+            return UnitOf(fact) == FactUnit.Money ? Prices.At((int)full) : full;
         }
 
         /// <summary>What a figure is worth when it is believed: never under <see cref="VenturesCatalogue.TruthBase"/>.</summary>
@@ -498,7 +509,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 state.Caught = true;
                 investor.ClosedUntil = day + VenturesCatalogue.CaughtCloseDays;
-                file.MoveReputation(VenturesCatalogue.ReputationCaught);
+                file.MoveReputation(VenturesCatalogue.ReputationCaught, state.Test);
             }
             return result;
         }
@@ -564,12 +575,12 @@ namespace RealLifeOverhaul.Economy.Ventures
             if (!f.Running)
             {
                 int budgetPct = VenturesCatalogue.Lerp(VenturesCatalogue.BudgetShareLeastPct, VenturesCatalogue.BudgetShareMostPct, over);
-                int sum = (int)Math.Min(investor.ChequeMost, (long)f.Budget * budgetPct / 100) / 100 * 100;
+                int sum = (int)Math.Min(investor.Most, (long)f.Budget * budgetPct / 100) / 100 * 100;
                 if (file.Pledges.Count >= VenturesCatalogue.PledgesMost || file.Offers.Count >= VenturesCatalogue.OffersMost)
                 {
                     d.Verdict = Verdict.NoRoom;
                 }
-                else if (sum < investor.ChequeLeast)
+                else if (sum < investor.Least)
                 {
                     d.Verdict = Verdict.TooSmall;
                 }
@@ -594,7 +605,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             if (investor.Kind == InvestorKind.Angel && f.AgeDays < VenturesCatalogue.YoungDays)
             {
-                d.Amount = investor.ChequeLeast;
+                d.Amount = investor.Least;
                 d.ShareBp = Math.Min(share, room);
                 d.OnFounder = true;
                 return d;
