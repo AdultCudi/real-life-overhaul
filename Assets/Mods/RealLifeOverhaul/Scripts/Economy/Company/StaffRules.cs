@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -323,6 +324,20 @@ namespace RealLifeOverhaul.Economy
         public static int Footfall(ShopFile s, int day)
         {
             return (s.Striking(day) ? CompanyCatalogue.StrikeFootfall : 0) + (s.Overtime(day) ? CompanyCatalogue.OvertimeFootfall : 0);
+        }
+
+        /// <summary>A number that changes when an agreed raise of anybody at a place does: the rota planner reads wages with them.</summary>
+        public static int RaisesAt(List<StaffFile> staff, string place)
+        {
+            int sum = 17;
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                if (string.Equals(staff[i].Place, place, StringComparison.Ordinal))
+                {
+                    sum = unchecked(sum * 31 + staff[i].Raise);
+                }
+            }
+            return sum;
         }
 
         public static void MoveStanding(StaffFile f, int points)

@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Economy
         private double _rotaSpent, _rotaLongest;
         private BuildingRegistration _rotaOwnOf;    // the business whose own promotion figure was last asked for...
         private int _rotaOwnHour, _rotaOwn;         // ...in which game hour, and what it was
+        private string _rotaWriting;                // the place a write is under way at: a fault puts its week back
         private string _rotaMade;                   // the place whose rota as it stands is the planner's own...
         private long _rotaMadeStamp;                // ...for as long as nothing it was made from has changed
 
@@ -186,7 +187,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>
         /// Fills <see cref="_rotaPromotion"/> with the promotion figure the mod will have written on each weekday ahead
         /// (-1: as it stands), by the function that writes it (BusinessCatalogue.Written). Returns a number that changes
-        /// when any of it does; bit 1 is set while the late opening permit is held or licences are off.
+        /// when any of it does, or an agreed raise there; bit 1 is set while the late opening permit is held or licences are off.
         /// </summary>
         private int RotaDays(RotaPlace place)
         {
@@ -209,8 +210,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 sum = unchecked(sum * 31 + _rotaPromotion[d]);
             }
+            int raises = _state != null ? StaffRules.RaisesAt(_state.Staff, place.Place) : 0;   // the wages are read with them
             return (unchecked(sum * 4) + (On(CompanyPart.Staff) ? 1 : 0) + (permit ? 2 : 0)) ^ (RotaModeOf(place.Place) << 24)
-                   ^ (RotaCleaned(place) ? 1 << 27 : 0) ^ ((shop != null ? shop.Income : 0) << 12) ^ (_index << 4);
+                   ^ (RotaCleaned(place) ? 1 << 27 : 0) ^ ((shop != null ? shop.Income : 0) << 12) ^ (_index << 4) ^ unchecked(raises << 2);
         }
 
         // A business's own promotion figure before the mod's, as the mod's one writer of it says; asked once a game hour.
@@ -275,7 +277,13 @@ namespace RealLifeOverhaul.Economy
                 {
                     _rotaModes.Remove(place);
                 }
-                _rotaModesUnread = false;
+                if (_rotaModesUnread)
+                {
+                    // The line this version could not read gives way to the choice made now, or it would be put back at every save.
+                    SaveLines.Release(Save.modData, RotaStore.Key);
+                    _rotaModesUnread = false;
+                    Logger?.Info("Company: the staff rota planner's line in this save, of a version this one cannot read, is replaced by the choice made now.");
+                }
                 RotaSave(Save);
                 Logger?.Info("Company: the staff rota planner's choice for " + place + " is now "
                              + (mode == RotaMode.StaffFirst ? "staff first" : mode == RotaMode.Lean ? "lean" : "whichever comes to more") + ".");

@@ -106,8 +106,11 @@ Only on the player's button, after the game's own confirm dialogue where a rota 
 
 - **Put back**: the week kept (each day's switch, its opening hours, every shift) is restored where the person still works there and the station still stands; shifts of those left alone stay as they are today.
   As a fill changes no plan, that is everything a fill changed; the "idle" task of somebody who has a shift again is closed by the game.
-- **Never from a stale reading**: what was worked out carries a stamp of everything it was worked out from (every assignable item by id and whether it lacks a requirement, prices, hours, shifts, everybody assigned with wage, satisfaction, skills and demands).
+  A fault in the middle of a write switches the planner off for the session and puts the week kept back at once, with the same notice, so nothing half written stays.
+- **Never from a stale reading**: what was worked out carries a stamp of everything it was worked out from (every assignable item by id and whether it lacks a requirement, prices, hours, shifts, everybody assigned with wage, satisfaction, skills and demands, and the raises agreed in the Company app).
   The stamp is compared again in the frame that writes; a business that changed is read again, and after three such readings nothing is written and the player is told.
+  What the player confirmed is written only while the business is as it was when they were asked; one that changed since (the day turned, its customers moved) is not written, and the notice asks for the button again.
+  A fill that ends with nothing written says so, in the log and in that notice.
 - **Never in part**: a business with more than 64 stations (one bit each in the solver) or 120 employees is refused with a sentence; nothing of it is read in part and nothing of its rota is touched.
   The game's building size data is asset data and is not in the decompiled code, so the largest business the game allows is not known here.
 - **The late opening permit**: while licences are on and the business holds no permit, hours from 22:00 and before 05:00 are barred from the advice, so "Use these hours" can never put it in breach.

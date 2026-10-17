@@ -107,6 +107,25 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>
+        /// The feature has replaced what a kept line held (the player chose afresh): the line is let go, so what the feature
+        /// writes from now on is what is saved. Safe when nothing is kept under the key.
+        /// </summary>
+        public static void Release(Dictionary<string, string> data, string key)
+        {
+            if (data == null || !ReferenceEquals(data, _save))
+            {
+                return;
+            }
+            for (int i = Kept.Count - 1; i >= 0; i--)
+            {
+                if (Kept[i].Key == key)
+                {
+                    Kept.RemoveAt(i);
+                }
+            }
+        }
+
         /// <summary>The keys kept in this save.</summary>
         public static List<string> Keys(Dictionary<string, string> data)
         {

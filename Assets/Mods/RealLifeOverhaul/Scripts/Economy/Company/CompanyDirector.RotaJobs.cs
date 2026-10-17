@@ -19,9 +19,10 @@ namespace RealLifeOverhaul.Economy
             public int Kind;
             public bool Test;
             public int Rung;        // the ladder's plan to write; -1: a rota for the hours kept now
+            public long Stamp;      // the sheet the player confirmed (RotaSheet.Stamp); 0: nothing was put to them
         }
 
-        private void RotaAsk(string place, int kind, bool test, int rung = -1)
+        private void RotaAsk(string place, int kind, bool test, int rung = -1, long stamp = 0)
         {
             for (int i = 0; i < _rotaJobs.Count; i++)
             {
@@ -30,7 +31,7 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
             }
-            _rotaJobs.Add(new RotaJob { Place = place, Kind = kind, Test = test, Rung = rung });
+            _rotaJobs.Add(new RotaJob { Place = place, Kind = kind, Test = test, Rung = rung, Stamp = stamp });
             if (!_rotaWorking)
             {
                 _rotaWorking = true;
@@ -48,11 +49,17 @@ namespace RealLifeOverhaul.Economy
 
         private IEnumerator RotaWork()
         {
-            while (RotaSlice())
+            try
             {
-                yield return null;
+                while (RotaSlice())
+                {
+                    yield return null;
+                }
             }
-            _rotaWorking = false;
+            finally
+            {
+                _rotaWorking = false;   // however it ends, a fault the guard caught included: the next job starts a coroutine again
+            }
         }
 
         // One frame's share of the first job. False when there is nothing left to do.
@@ -81,6 +88,10 @@ namespace RealLifeOverhaul.Economy
                 if (_rotaStage == StageWrite || at == null)
                 {
                     RotaFault("a rota for " + (at != null ? at.Name : job.Place), e);
+                    if (_rotaWriting == job.Place)
+                    {
+                        RotaRescue(job.Place);
+                    }
                 }
                 else
                 {
@@ -100,7 +111,14 @@ namespace RealLifeOverhaul.Economy
                 RotaBegin();
                 if (_view != null && job.Kind != JobTell)
                 {
-                    _view.Changed();
+                    try
+                    {
+                        _view.Changed();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger?.Error(e);   // the page is written again on its next change; the planner goes on
+                    }
                 }
             }
             return _rotaJobs.Count > 0;
@@ -179,13 +197,17 @@ namespace RealLifeOverhaul.Economy
                     {
                         return RotaAgain(job, place);   // never a rota from a reading that is no longer true
                     }
+                    if (job.Stamp != 0 && sheet.Stamp != job.Stamp)
+                    {
+                        return RotaUnwritten(job, place, "it changed after the plan was confirmed, so what was confirmed is no longer the plan");
+                    }
                     RotaRung rung = job.Kind == JobFillHours ? RotaRungOf(sheet, job.Rung) : null;
                     if (job.Kind == JobFillHours && rung == null)
                     {
-                        return true;   // a plan that takes a hire, or one no longer there: nothing is written
+                        return RotaUnwritten(job, place, "the plan is no longer one that can be written");   // one that takes a hire, or no longer there
                     }
-                    RotaWrite(job, place, sheet, rung != null ? rung.Plan : sheet.Ladder.Fill, rung);
-                    return true;
+                    return RotaWrite(job, place, sheet, rung != null ? rung.Plan : sheet.Ladder.Fill, rung)
+                           || RotaUnwritten(job, place, "the plan no longer fits the stations and people there");
             }
         }
 
@@ -195,12 +217,49 @@ namespace RealLifeOverhaul.Economy
             {
                 RotaPlansLog(sheet.Place, sheet, true);
             }
-            if (job.Kind == JobShow || RotaRefusal(sheet) != null || (job.Kind == JobFillHours && RotaRungOf(sheet, job.Rung) == null))
+            if (job.Kind == JobShow)
             {
                 return true;
             }
+            if (RotaRefusal(sheet) != null || (job.Kind == JobFillHours && RotaRungOf(sheet, job.Rung) == null))
+            {
+                string refusal = RotaRefusal(sheet);
+                return RotaUnwritten(job, sheet.Place, refusal != null ? "it cannot be filled (" + refusal + ")" : "the plan is no longer one that can be written");
+            }
             _rotaStage = StageWrite;
             return false;
+        }
+
+        // A fill that ends with nothing written: said in the log, and to the player unless a test asked for it.
+        private bool RotaUnwritten(RotaJob job, RotaPlace place, string why)
+        {
+            string name = place != null ? place.Name : job.Place;
+            Logger?.Info("Company: the rota of " + name + " was not written: " + why + ".");
+            if (!job.Test)
+            {
+                Notify(NotificationType.Warning, "reallife_rota_changed", new Dictionary<string, string> { { "business", name } }, 8f);
+            }
+            return true;
+        }
+
+        // After a fault in the middle of a write: the week kept before it is put back, so nothing half written stays.
+        private void RotaRescue(string place)
+        {
+            _rotaWriting = null;
+            try
+            {
+                RotaPlace at = RotaPlaceAt(place);
+                string name = at != null ? at.Name : place;
+                if (RotaPutBack(place) >= 0)
+                {
+                    Notify(NotificationType.Success, "reallife_rota_note_back", new Dictionary<string, string> { { "business", name } }, 7f);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                Logger?.Warn("Company: the week of " + place + " as it was before the planner wrote it could not be put back after the error above.");
+            }
         }
 
         private bool RotaAgain(RotaJob job, RotaPlace place)

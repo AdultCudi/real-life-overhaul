@@ -76,6 +76,7 @@ namespace RealLifeOverhaul.Economy
                     RotaAsk(place, kind, false, -1);
                     return;
                 }
+                long stamp = sheet.Stamp;   // what is put to the player: only that is written
                 RotaRung plan = useHours ? RotaRungOf(sheet, rung) : null;
                 if (plan == null && sheet.Ladder.FillLeft.Count > 0)
                 {
@@ -88,19 +89,19 @@ namespace RealLifeOverhaul.Economy
                     {
                         name = who, least = left.Least, room = left.Why == RotaClash.Shared ? left.Held : left.Room, count = sheet.Ladder.FillLeft.Count,
                         now = sheet.Ladder.Rungs[0].Sum.Hours, after = can != null ? can.Sum.Hours : sheet.Ladder.Rungs[0].Sum.Hours
-                    }), () => RotaConfirmed(place, can != null ? JobFillHours : kind, can != null ? 1 : -1), null, null, null, false, false);
+                    }), () => RotaConfirmed(place, can != null ? JobFillHours : kind, can != null ? 1 : -1, stamp), null, null, null, false, false);
                     return;
                 }
                 if (plan == null)
                 {
-                    GameConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1), null, null, null, true, false);
+                    GameConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1, stamp), null, null, null, true, false);
                     return;
                 }
                 // A plan that changes the opening hours is always asked about, with the hours now and after and what it brings.
                 GameConfirm.Show("reallife_rota_tab".Localize(), "reallife_rota_confirm_plan".Localize(new
                 {
                     now = sheet.Ladder.Rungs[0].Sum.Hours, after = plan.Sum.Hours, gain = CompanyText.Money((plan.Sum.Net - sheet.Ladder.Rungs[0].Sum.Net) / 100f)
-                }), () => RotaConfirmed(place, kind, rung), null, null, null, false, false);
+                }), () => RotaConfirmed(place, kind, rung, stamp), null, null, null, false, false);
             }
             catch (Exception e)
             {
@@ -108,13 +109,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void RotaConfirmed(string place, int kind, int rung)
+        private void RotaConfirmed(string place, int kind, int rung, long stamp)
         {
             try
             {
                 if (RotaOn)
                 {
-                    RotaAsk(place, kind, false, rung);
+                    RotaAsk(place, kind, false, rung, stamp);
                     Changed();
                 }
             }
@@ -124,13 +125,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // In one frame, on a sheet just found true. The week as it was is kept first: the oldest, if filled twice.
-        private void RotaWrite(RotaJob job, RotaPlace at, RotaSheet sheet, RotaPlan plan, RotaRung rung)
+        // In one frame, on a sheet just found true. The week as it was is kept first: the oldest, if filled twice. False
+        // with nothing written: never a rota with people in it who are not there.
+        private bool RotaWrite(RotaJob job, RotaPlace at, RotaSheet sheet, RotaPlan plan, RotaRung rung)
         {
             bool useHours = rung != null;
             if (plan.Stations != sheet.Stations.Count || (rung != null && (rung.Hires > 0 || rung.Workers != sheet.Workers.Count)))
             {
-                return;   // never a rota with people in it who are not there
+                return false;
             }
             string place = job.Place, name = at.Name;   // the places are read again below, and their entries with them
             int kept = RotaUndoAt(place);
@@ -143,7 +145,9 @@ namespace RealLifeOverhaul.Economy
                 _rotaUndo[kept].Kept |= job.Test;
             }
             double before = _rotaClock.Elapsed.TotalMilliseconds;
+            _rotaWriting = place;
             int shifts = RotaGame.Write(sheet, plan, useHours ? rung.Open : null);
+            _rotaWriting = null;
             double wrote = _rotaClock.Elapsed.TotalMilliseconds - before;
             _rotaSheetGood = false;
             _rotaOwnOf = null;
@@ -170,6 +174,7 @@ namespace RealLifeOverhaul.Economy
                     }, 9f);
                 Changed();
             }
+            return true;
         }
 
         /// <summary>"Put the old rota back": the week as it was before the first fill since the app was opened.</summary>
