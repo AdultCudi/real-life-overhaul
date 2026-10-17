@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using Entities;
 using Localizor;
 using UI.Notification;
@@ -535,8 +536,8 @@ namespace RealLifeOverhaul.Economy
                          + " left as they are, " + o.CustomersWeek + " customers a week by the game's calculator, " + sheet.Shop.Margin + " a customer in hundredths (" + (sheet.FromBooks ? "the books" : "the prices")
                          + "); hours now " + o.HoursNow + ", with the staff " + o.HoursStaffed + ", with all it takes " + o.HoursBest + (o.Barred ? ", with a late opening permit " + o.HoursFree : string.Empty)
                          + "; a week in hundredths " + o.ProfitNow + ", " + o.ProfitStaffed + ", " + o.ProfitBest + "; the rota it has covers " + sheet.Now.CoveredHours + " of " + sheet.Now.WantedHours
-                         + " wanted hours with " + sheet.Now.UnmetCount + " demand(s) unmet; worked out in " + (_rotaSpent + now).ToString("0.0") + " ms over " + (_rotaFrames + 1) + " frame(s), the longest share of a frame "
-                         + longest.ToString("0.0") + " ms (wanted: about " + RotaSliceMs.ToString("0") + " ms, the frame that reads the game apart): " + (longest <= RotaSliceMs * 4 ? "PASS" : "SLOW"));
+                         + " wanted hours with " + sheet.Now.UnmetCount + " demand(s) unmet; worked out in " + (_rotaSpent + now).ToString("0.0", CultureInfo.InvariantCulture) + " ms over " + (_rotaFrames + 1) + " frame(s), the longest share of a frame "
+                         + longest.ToString("0.0", CultureInfo.InvariantCulture) + " ms (wanted: about " + RotaSliceMs.ToString("0") + " ms, the frame that reads the game apart): " + (longest <= RotaSliceMs * 4 ? "PASS" : "SLOW"));
         }
 
         // ---------------------------------------------------------------- filling and putting back
@@ -687,8 +688,9 @@ namespace RealLifeOverhaul.Economy
             _rotaTestShifts += job.Test ? shifts : 0;
             Logger?.Info("Company: rota written for " + name + (useHours ? ", with the plan's opening hours (" + rung.Sum.Hours + " a week, " + sheet.Ladder.Rungs[0].Sum.Hours + " before)" : string.Empty) + ": " + shifts + " shift(s), "
                          + plan.CoveredHours + " of " + plan.WantedHours + " wanted hours covered, " + plan.UnmetCount + " demand(s) unmet" + (plan.Level > 0 ? " (optional demands gave way)" : string.Empty)
-                         + ", " + sheet.FixedCount + " employee(s) left as they were, wages " + plan.Wage / 100 + " a week; worked out in " + _rotaSpent.ToString("0.0") + " ms over " + (_rotaFrames + 1)
-                         + " frame(s), the longest share of a frame " + _rotaLongest.ToString("0.0") + " ms; written in " + wrote.ToString("0.0") + " ms.");
+                         + ", " + sheet.FixedCount + " employee(s) left as they were, wages " + plan.Wage / 100 + " a week; worked out in " + _rotaSpent.ToString("0.0", CultureInfo.InvariantCulture) + " ms over " + (_rotaFrames + 1)
+                         + " frame(s), the longest share of a frame " + _rotaLongest.ToString("0.0", CultureInfo.InvariantCulture) + " ms; written in "
+                         + wrote.ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
             if (!job.Test)
             {
                 Notifications.Show(plan.Full ? NotificationType.Success : NotificationType.Info, plan.Full ? "reallife_rota_note_filled" : "reallife_rota_note_partly", new Dictionary<string, string>
@@ -926,7 +928,7 @@ namespace RealLifeOverhaul.Economy
                 : r.Source == 2 ? "the hours kept less those nobody can keep" : "the hours worth opening") + ")" : "hire " + r.Hires;
             for (int i = 0; i < r.Hires; i++)
             {
-                what += (i == 0 ? " (" : ", ") + RotaGame.GroupSkill(sheet, r.Hire[i]) + " at " + (RotaLadder.Going(sheet.Shop, r.Hire[i]) / 100f).ToString("0.00") + (i == r.Hires - 1 ? ")" : string.Empty);
+                what += (i == 0 ? " (" : ", ") + RotaGame.GroupSkill(sheet, r.Hire[i]) + " at " + (RotaLadder.Going(sheet.Shop, r.Hire[i]) / 100f).ToString("0.00", CultureInfo.InvariantCulture) + (i == r.Hires - 1 ? ")" : string.Empty);
             }
             return what + ": " + s.Hours + " h open, " + s.Manned + " manned, " + s.StaffHours + " staff h (" + s.CleanHours + " cleaning), " + s.Served + " of " + s.Come + " customers served ("
                    + s.LostUnmanned + " found nobody, " + s.LostFull + " over what the stations serve), sales " + s.Sales / 100 + " (dirt takes " + s.Clean / 100 + "), wages " + s.Wages / 100 + ", fees " + s.Fees / 100

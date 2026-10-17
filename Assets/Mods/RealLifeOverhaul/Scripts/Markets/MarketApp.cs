@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Smartphone;
@@ -247,7 +248,7 @@ namespace RealLifeOverhaul.Markets
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Stocks: " + (_company != 0 ? "page " + _company : "tab " + _tab + ", " + _rows.Count + " row(s)") + "; "
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
             }
         }
 

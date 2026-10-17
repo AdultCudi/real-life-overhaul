@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using TMPro;
@@ -757,7 +758,7 @@ namespace RealLifeOverhaul.Ledger
             if (Meta.Dev.Verbose)
             {
                 LedgerDirector.Logger?.Info("Newsstand: " + NewsstandCatalogue.NameKeys[title] + " of day " + day + " written for the phone: " + made.Blocks.Count + " blocks, "
-                                            + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                                            + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
             }
             return made.Blocks;
         }

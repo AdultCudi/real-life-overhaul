@@ -1,3 +1,4 @@
+using System.Globalization;
 using Extensions;
 using UnityEngine;
 using UnityEngine.AI;
@@ -257,7 +258,8 @@ namespace RealLifeOverhaul
                 {
                     _wallLogged = true;
                     CityLifeDirector.Logger?.Info("City life: shopfronts are found on layer '" + LayerMask.LayerToName(face.collider.gameObject.layer) + "' (first: "
-                                                  + face.collider.GetType().Name + " '" + face.collider.name + "', " + gap.ToString("F2") + " m from where the worker stands).");
+                                                  + face.collider.GetType().Name + " '" + face.collider.name + "', " + gap.ToString("F2", CultureInfo.InvariantCulture)
+                                                  + " m from where the worker stands).");
                 }
                 stand = found;
                 outward = normal;
@@ -306,6 +308,7 @@ namespace RealLifeOverhaul
             return distance < 110f && distance > 0.01f && Vector3.Dot(offset, eye.forward) > 0.35f * distance;
         }
 
+        /// <summary>The square of a flat distance (x and z): compare it with a reach squared, never with metres.</summary>
         public static float Flat(Vector3 offset)
         {
             return offset.x * offset.x + offset.z * offset.z;

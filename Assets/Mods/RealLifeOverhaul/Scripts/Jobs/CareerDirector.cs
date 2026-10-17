@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Entities;
@@ -174,7 +175,7 @@ namespace RealLifeOverhaul
             }
             if (Meta.Dev.Verbose)
             {
-                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1") + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
+                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1", CultureInfo.InvariantCulture) + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
             }
             return shown;
         }
@@ -784,7 +785,7 @@ namespace RealLifeOverhaul
                 CareerState.CartPaidDay = day;
                 JobText.Toast(NotificationType.Info, "reallife_career_cart_rented", "amount", JobText.Money(CareerCatalogue.CartRent), 8f);
             }
-            _logger?.Info("Careers: shift for " + employer.Id + " as '" + rank.TitleKey + "' (" + def.Id + "), " + hourly.ToString("F1") + "/h"
+            _logger?.Info("Careers: shift for " + employer.Id + " as '" + rank.TitleKey + "' (" + def.Id + "), " + hourly.ToString("F1", CultureInfo.InvariantCulture) + "/h"
                           + (late ? ", late" : string.Empty) + (counts ? string.Empty : ", test") + ".");
             return true;
         }
@@ -891,7 +892,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 _logger?.Info("Careers: payslip shown as one of the game's notifications: total " + (piece + wage) + " (" + data["lines"] + "; basic " + hours + " h at "
-                              + shift.Hourly.ToString("F1") + " = " + wage + (shift.Late ? "; late: 1 h docked" : string.Empty) + ").");
+                              + shift.Hourly.ToString("F1", CultureInfo.InvariantCulture) + " = " + wage + (shift.Late ? "; late: 1 h docked" : string.Empty) + ").");
             }
         }
 

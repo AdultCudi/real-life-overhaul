@@ -1,21 +1,19 @@
 using System;
+using System.Globalization;
 using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Fame
 {
     /// <summary>
-    /// The Standing page, in the Finance app's frame (opened from its Overview with a button: EconomyBridges.Standing,
-    /// filled in by Wiring/StandingLinks). The white box has the three parts and the four reputations, or the one thing
-    /// picked; the table lists the parts, the districts, the newest changes and (FamePage.Press.cs, FamePage.City.cs)
-    /// the invitations, promises, requests and the council, which the filter over it tells apart. Everything on it is
-    /// the game's. PER FRAME: NOTHING. Written when the page is shown, a row is picked or a button is pressed: a few
-    /// dozen strings, on a click.
+    /// The Standing page in the Finance app's frame: a table of the parts, districts, changes, invitations, promises,
+    /// requests and the council, and the white box for the row picked. Written on a click, never per frame.
     /// </summary>
     public static partial class FamePage
     {
-        public const int KindPart = 0, KindDistrict = 1, KindChange = 2, KindInvite = 3, KindPromise = 4, KindRequest = 5, KindCouncil = 6;
+        private const int KindPart = 0, KindDistrict = 1, KindChange = 2, KindInvite = 3, KindPromise = 4, KindRequest = 5, KindCouncil = 6;
+        private const string GuideTitle = "reallife_meta_title_standing";
 
-        public static readonly string[] Kinds =
+        private static readonly string[] Kinds =
         {
             "reallife_fame_kind_part", "reallife_fame_kind_district", "reallife_fame_kind_change", "reallife_fame_kind_invite", "reallife_fame_kind_promise",
             "reallife_fame_kind_request", "reallife_fame_kind_council"
@@ -32,9 +30,6 @@ namespace RealLifeOverhaul.Fame
             .Column("reallife_fame_col_note", 440f, TableSort.Custom, right: true)
             .Filter("reallife_tab_all_kinds", Kinds)
             .Empty("reallife_fame_empty");
-
-        static partial void MoreRows(FameDirector director, FameFile f, Func<string, TableRow> row, int day);
-        static partial void MoreBox(FameDirector director, FameFile f, InfoBox box, string picked, Action<string> pick, Action back, ref bool written);
 
         /// <summary>True while there is a page to show: Standing runs and has played its first day.</summary>
         public static bool On()
@@ -56,29 +51,23 @@ namespace RealLifeOverhaul.Fame
                 return;
             }
             int day = FameGame.Day;
-            Rows(director, f, row, day);
-            bool written = false;
-            if (picked != null)
-            {
-                written = WritePicked(f, box, picked, pick, back);
-                if (!written)
-                {
-                    MoreBox(director, f, box, picked, pick, back, ref written);
-                }
-            }
+            Rows(f, row);
+            PressRows(f, row);
+            CityRows(f, row, day);
+            bool written = picked != null
+                           && (WritePicked(f, box, picked, pick, back) || PressBox(director, f, box, picked, pick, back) || CityBox(director, f, box, picked, pick, back));
             if (!written)
             {
                 WriteSummary(f, box, back);
             }
         }
 
-        // ---------------------------------------------------------------- the table
-
-        private static void Rows(FameDirector director, FameFile f, Func<string, TableRow> row, int day)
+        private static void Rows(FameFile f, Func<string, TableRow> row)
         {
             string kind = FameText.T(Kinds[KindPart]);
             TableRow r = row("wealth");
-            Cells(r, KindPart, FameText.T("reallife_fame_row_wealth"), kind, f.Wealth, FameText.N(f.Wealth), null, 0, FameText.Fill("reallife_fame_row_worth", "worth", FameText.Money(f.NetWorth)), f.NetWorth);
+            Cells(r, KindPart, FameText.T("reallife_fame_row_wealth"), kind, f.Wealth, FameText.N(f.Wealth), null, 0,
+                FameText.Fill("reallife_fame_row_worth", "worth", FameText.Money(f.NetWorth)), f.NetWorth);
             r = row("recognition");
             Cells(r, KindPart, FameText.T("reallife_fame_row_recognition"), kind, f.Recognition, FameText.N(f.Recognition), FameText.Tier(f.Tier), (int)f.Tier,
                 FameText.Fill("reallife_fame_row_followers", "count", FameText.N(f.Followers)), f.Followers);
@@ -86,8 +75,8 @@ namespace RealLifeOverhaul.Fame
             {
                 r = row("part:" + i);
                 FameNote last = LastNote(f, i);
-                Cells(r, KindPart, FameText.Part((FamePart)i), kind, f.Rep[i], FameText.Rep(f.Rep[i]),
-                    i == (int)FamePart.Integrity ? FameText.T("reallife_fame_heading_deeds") : FameText.Fill("reallife_fame_heading", "value", FameText.N(f.Target[i])), f.Target[i],
+                string heading = i == (int)FamePart.Integrity ? FameText.T("reallife_fame_heading_deeds") : FameText.Fill("reallife_fame_heading", "value", FameText.N(f.Target[i]));
+                Cells(r, KindPart, FameText.Part((FamePart)i), kind, f.Rep[i], FameText.Rep(f.Rep[i]), heading, f.Target[i],
                     last != null ? FameText.Cause(last.Cause) : string.Empty, last != null ? last.Day : 0);
                 r.Tones[2] = (byte)Tone(f.Rep[i]);
             }
@@ -96,8 +85,8 @@ namespace RealLifeOverhaul.Fame
             {
                 FameDistrict d = f.Districts[i];
                 r = row("district:" + i);
-                Cells(r, KindDistrict, FameGame.DistrictName(d.Name), kind, d.Opinion, FameText.Rep(d.Opinion), FameText.Fill("reallife_fame_known_by", "value", FameText.N(d.Known)), d.Known,
-                    FameText.Fill("reallife_fame_district_jobs", "jobs", FameText.N(d.Jobs), "raised", FameText.N(d.Raised)), d.Jobs - d.Raised * 5);
+                Cells(r, KindDistrict, FameGame.DistrictName(d.Name), kind, d.Opinion, FameText.Rep(d.Opinion), FameText.Fill("reallife_fame_known_by", "value", FameText.N(d.Known)),
+                    d.Known, FameText.Fill("reallife_fame_district_jobs", "jobs", FameText.N(d.Jobs), "raised", FameText.N(d.Raised)), d.Jobs - d.Raised * 5);
                 r.Tones[2] = (byte)Tone(d.Opinion);
             }
             kind = FameText.T(Kinds[KindChange]);
@@ -105,17 +94,19 @@ namespace RealLifeOverhaul.Fame
             {
                 FameNote n = f.Notes[i];
                 r = row("note:" + i);
-                string what = n.Part == FameNote.Recognition ? FameText.T("reallife_fame_row_recognition") : FameText.Part((FamePart)FameRules.Clamp(n.Part, 0, 3));
-                string amount = n.Part == FameNote.Recognition ? FameText.Fill("reallife_fame_press_change", "value", (n.Delta / 10f).ToString("+0.0;-0.0", System.Globalization.CultureInfo.InvariantCulture)) : FameText.Signed(n.Delta);
+                bool press = n.Part == FameNote.Recognition;
+                string what = press ? FameText.T("reallife_fame_row_recognition") : FameText.Part((FamePart)FameRules.Clamp(n.Part, 0, 3));
+                string amount = press
+                    ? FameText.Fill("reallife_fame_press_change", "value", (n.Delta / 10f).ToString("+0.0;-0.0", CultureInfo.InvariantCulture))
+                    : FameText.Signed(n.Delta);
                 Cells(r, KindChange, FameText.Cause(n.Cause) + (n.District != null ? ", " + FameGame.DistrictName(n.District) : string.Empty), kind, n.Delta, amount, what, 0,
                     FameText.Fill("reallife_fame_day", "day", FameText.N(n.Day)), n.Day);
                 r.Pick = false;
                 r.Tones[2] = (byte)(n.Delta > 0 ? TableRow.Green : TableRow.Red);
             }
-            MoreRows(director, f, row, day);
         }
 
-        internal static void Cells(TableRow r, int kind, string what, string kindName, double stands, string standsWords, string heading, double headingKey, string note, double noteKey)
+        private static void Cells(TableRow r, int kind, string what, string kindName, double stands, string standsWords, string heading, double headingKey, string note, double noteKey)
         {
             r.Kind = kind;
             r.Pick = true;
@@ -126,7 +117,7 @@ namespace RealLifeOverhaul.Fame
             r.Set(4, note ?? string.Empty, noteKey);
         }
 
-        internal static CellTone Tone(int value)
+        private static CellTone Tone(int value)
         {
             return value < 35 ? TableRow.Red : value < 50 ? TableRow.Yellow : value >= 65 ? TableRow.Green : TableRow.Plain;
         }
@@ -143,22 +134,20 @@ namespace RealLifeOverhaul.Fame
             return null;
         }
 
-        // ---------------------------------------------------------------- the white box
-
         private static void WriteSummary(FameFile f, InfoBox box, Action back)
         {
             box.Title(FameText.T("reallife_fame_title"));
-            int day = FameGame.Day;
-            box.Chip(FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall)));
-            if (FameCity.InScandal(f, day))
+            string profile = FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall));
+            box.Chip(profile);
+            if (FameCity.InScandal(f, FameGame.Day))
             {
                 box.Line(FameText.Fill("reallife_fame_scandal_line", "day", FameText.N(f.ScandalUntil)), CellTone.Red);
             }
             box.Section("reallife_ibox_sec_now");
-            box.Row("reallife_fame_label_profile", FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall)));
+            box.Row("reallife_fame_label_profile", profile);
             box.Row("reallife_fame_label_reputation", FameText.Rep(f.Overall));
             box.Row("reallife_fame_label_wealth", FameText.N(f.Wealth));
-            box.Row("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier)));
+            box.Row("reallife_fame_label_recognition", RecognitionValue(f));
             box.Row("reallife_fame_label_influence", FameText.N(FameCity.Influence(f)));
             box.Headline("reallife_fame_head_reputation");
             for (int i = 0; i < 4; i++)
@@ -169,9 +158,14 @@ namespace RealLifeOverhaul.Fame
             Meta.Guide.Point(box, GuideTitle);
         }
 
+        private static string RecognitionValue(FameFile f)
+        {
+            return FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier));
+        }
+
+        // The wealth, recognition, a part or a district picked; false for anything else.
         private static bool WritePicked(FameFile f, InfoBox box, string picked, Action<string> pick, Action back)
         {
-            Action close = () => pick(null);
             string about;
             if (picked == "wealth")
             {
@@ -186,8 +180,8 @@ namespace RealLifeOverhaul.Fame
             {
                 box.Title(FameText.T("reallife_fame_row_recognition"));
                 box.Section("reallife_ibox_sec_now");
-                box.Row("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier)));
-                box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", (f.Press / 10f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
+                box.Row("reallife_fame_label_recognition", RecognitionValue(f));
+                box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", FameRules.Tenths(f.Press)));
                 about = FameText.T("reallife_fame_recognition_about");
             }
             else if (picked.StartsWith("part:", StringComparison.Ordinal))
@@ -221,17 +215,15 @@ namespace RealLifeOverhaul.Fame
             {
                 return false;
             }
-            Buttons(box, close, back, about);
+            Buttons(box, pick, back, about);
             return true;
         }
 
-        private const string GuideTitle = "reallife_meta_title_standing";   // the Guide's page every page of Standing points to at its foot
-
-        /// <summary>The foot of a picked thing's page: closing it and going back, then what it is (null for nothing more) and the Guide's page.</summary>
-        internal static void Buttons(InfoBox box, Action close, Action back, string about = null)
+        /// <summary>The foot of a picked row's page: close and back, then what it is (null for nothing more) and the Guide's page.</summary>
+        private static void Buttons(InfoBox box, Action<string> pick, Action back, string about = null)
         {
             UnityEngine.Transform buttons = box.ButtonRow();
-            InfoBox.Button(buttons, InfoBox.Additional, "common_close", close);
+            InfoBox.Button(buttons, InfoBox.Additional, "common_close", () => pick(null));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_fame_back", back);
             if (!string.IsNullOrEmpty(about))
             {
@@ -241,10 +233,10 @@ namespace RealLifeOverhaul.Fame
         }
 
         /// <summary>The number after a row id's prefix ("district:3" from 9 is 3); -1 if there is none.</summary>
-        internal static int Number(string id, int from)
+        private static int Number(string id, int from)
         {
             int value;
-            return id != null && id.Length > from && int.TryParse(id.Substring(from), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out value) ? value : -1;
+            return id != null && id.Length > from && int.TryParse(id.Substring(from), NumberStyles.Integer, CultureInfo.InvariantCulture, out value) ? value : -1;
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using Parking.UndergroundParking;
@@ -331,7 +332,7 @@ namespace RealLifeOverhaul.Nav
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Navigation: no way by road to '" + _goalName + "' (" + (_searchOnFoot ? "on foot" : "driving") + "): " + _starts.Count + " lane points to start from, "
-                             + _goals.Count + " to end at, " + _searching.Expanded + " search steps in " + _slices + " slices, " + _searchMilliseconds.ToString("F2")
+                             + _goals.Count + " to end at, " + _searching.Expanded + " search steps in " + _slices + " slices, " + _searchMilliseconds.ToString("F2", CultureInfo.InvariantCulture)
                              + " ms. The marker's direction and distance are shown; tried again in " + RetryAfter.ToString("F0") + " s.");
             }
         }
@@ -856,8 +857,8 @@ namespace RealLifeOverhaul.Nav
             {
                 Logger?.Info("Navigation: route found to '" + _goalName + "' (" + (_routeOnFoot ? "on foot" : _routeAgainstTraffic ? "driving, but no way with the traffic: one-way rules left out" : "driving")
                              + "; " + _searchWhy + "): " + _route.Count + " lane points, " + _route.Length.ToString("F0") + " m, " + (_route.Turns.Count - 1) + " turns, "
-                             + _searching.Expanded + " search steps in " + _slices + " slices, " + _searchMilliseconds.ToString("F2") + " ms in all (longest slice "
-                             + _longestSlice.ToString("F2") + " ms).");
+                             + _searching.Expanded + " search steps in " + _slices + " slices, " + _searchMilliseconds.ToString("F2", CultureInfo.InvariantCulture) + " ms in all (longest slice "
+                             + _longestSlice.ToString("F2", CultureInfo.InvariantCulture) + " ms).");
             }
         }
 

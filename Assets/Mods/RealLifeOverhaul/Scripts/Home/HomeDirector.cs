@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Items;
 using Extensions;
@@ -597,7 +598,7 @@ namespace RealLifeOverhaul
                 _doctorState = state;
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Home check (doctor panel): " + Mathf.Sqrt(CitySpots.Flat(_doctorAt - at)).ToString("F1") + " m from " + (_doctorDesk ? "the doctor's desk" : "where the player came in (no desk found)")
+                    Logger?.Info("Home check (doctor panel): " + Mathf.Sqrt(CitySpots.Flat(_doctorAt - at)).ToString("F1", CultureInfo.InvariantCulture) + " m from " + (_doctorDesk ? "the doctor's desk" : "where the player came in (no desk found)")
                                  + ", offered within " + DoctorReach.ToString("F0") + " m: " + (state == 1 ? "the game's own panel is up (" + (ill ? "ill" : "well") + ", fee " + HomeBalance.ConsultationFee + "): PASS"
                                      : "FAIL (the game's panel is showing another place, a lift; it is tried again while the player stands here)") + ".");
                 }

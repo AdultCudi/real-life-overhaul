@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.InputSystem;
 using GleyTrafficSystem;
@@ -242,7 +243,7 @@ namespace RealLifeOverhaul
                 why = "the game would not walk the player to the door";
                 return false;
             }
-            Logger?.Info("Transit check (boarding): the player walks to the " + (_middleIn ? "middle" : "front") + " door of the " + Line() + " at " + Name(from) + ", " + Mathf.Sqrt(CitySpots.Flat(player.transform.position - door)).ToString("F1")
+            Logger?.Info("Transit check (boarding): the player walks to the " + (_middleIn ? "middle" : "front") + " door of the " + Line() + " at " + Name(from) + ", " + Mathf.Sqrt(CitySpots.Flat(player.transform.position - door)).ToString("F1", CultureInfo.InvariantCulture)
                          + " m, by the game's own walk, to " + ApproachWords(tried) + "; " + (full ? "the bus is full: they will stand at the strap" : "they will sit on the " + (_place == BusInside.Place.Seat ? "aisle" : "window") + " seat opposite the middle door") + ": PASS.");
             return true;
         }
@@ -262,7 +263,8 @@ namespace RealLifeOverhaul
             }
             if (!TransitState.PayBus(out bool pass))
             {
-                Logger?.Info("Transit check (boarding): the player reached the door but cannot pay the fare of " + TransitState.BusFare.ToString("F2") + ": they stay on the pavement: FAIL.");
+                Logger?.Info("Transit check (boarding): the player reached the door but cannot pay the fare of " + TransitState.BusFare.ToString("F2", CultureInfo.InvariantCulture)
+                    + ": they stay on the pavement: FAIL.");
                 RefusedFare = true;
                 Finish("no fare", put: false);
                 return;
@@ -328,7 +330,7 @@ namespace RealLifeOverhaul
             }
             if (_held && _step != Step.Squaring && (_player.transform.position - _lastPut).sqrMagnitude > 1f)
             {
-                Abort("something else moved the player " + Vector3.Distance(_player.transform.position, _lastPut).ToString("F1") + " m", put: false);
+                Abort("something else moved the player " + Vector3.Distance(_player.transform.position, _lastPut).ToString("F1", CultureInfo.InvariantCulture) + " m", put: false);
                 return;
             }
             switch (_step)
@@ -393,7 +395,7 @@ namespace RealLifeOverhaul
                         if (_stage == BusInside.Stage.Aboard)
                         {
                             Logger?.Info("Transit check (aboard): the player sits on the " + (_place == BusInside.Place.Seat ? "aisle" : "window") + " seat opposite the middle door, "
-                                         + (now - _since).ToString("F1") + " s after setting off for the door: PASS.");
+                                         + (now - _since).ToString("F1", CultureInfo.InvariantCulture) + " s after setting off for the door: PASS.");
                         }
                     }
                     break;
@@ -533,8 +535,9 @@ namespace RealLifeOverhaul
             Put(bus);
             _stage = BusInside.Stage.Aboard;
             Logger?.Info("Transit check (boarding): up the step at the " + (_middleIn ? "middle door: they tap in at the validator inside it" : "front door")
-                         + " with board_step; on the floor " + (_player.transform.position.y - was.y).ToString("F2")
-                         + " m over the road (the clip ends " + BusInside.StepUp.ToString("F2") + " up, the floor is " + BusInside.Floor.ToString("F2") + "): PASS.");
+                         + " with board_step; on the floor " + (_player.transform.position.y - was.y).ToString("F2", CultureInfo.InvariantCulture)
+                         + " m over the road (the clip ends " + BusInside.StepUp.ToString("F2", CultureInfo.InvariantCulture) + " up, the floor is "
+                         + BusInside.Floor.ToString("F2", CultureInfo.InvariantCulture) + "): PASS.");
             WalkTo(_middleIn ? BusInside.Place.MiddleAboard : BusInside.Place.Aboard, _middleIn ? BusInside.Place.MiddleReader : BusInside.Place.Reader, Then.Tap);
         }
 
@@ -626,7 +629,8 @@ namespace RealLifeOverhaul
                     _until = now + 0.5f;
                     if (_stage == BusInside.Stage.Aboard)
                     {
-                        Logger?.Info("Transit check (aboard): the bus is full: the player stands opposite the middle door holding the strap, " + (now - _since).ToString("F1")
+                        Logger?.Info("Transit check (aboard): the bus is full: the player stands opposite the middle door holding the strap, "
+                                     + (now - _since).ToString("F1", CultureInfo.InvariantCulture)
                                      + " s after setting off for the door: PASS.");
                     }
                     break;
@@ -709,7 +713,7 @@ namespace RealLifeOverhaul
                     if (chosen > 0)
                     {
                         Logger?.Info("Transit check (getting off): beside the " + (_frontWayOut ? "front" : "middle") + " door nothing could be stepped down to with a way onto the pavement: they get off "
-                                     + (tries[chosen].Middle ? "by the middle door" : "by the front door") + (Mathf.Abs(tries[chosen].Along) > 0.01f ? ", " + Mathf.Abs(tries[chosen].Along).ToString("F1") + " m along the side" : "") + ": PASS.");
+                                     + (tries[chosen].Middle ? "by the middle door" : "by the front door") + (Mathf.Abs(tries[chosen].Along) > 0.01f ? ", " + Mathf.Abs(tries[chosen].Along).ToString("F1", CultureInfo.InvariantCulture) + " m along the side" : "") + ": PASS.");
                     }
                 }
             }
@@ -769,7 +773,7 @@ namespace RealLifeOverhaul
             if (arriving)
             {
                 Logger?.Info("Transit check (getting off): the player stands up, walks to the middle door and steps down onto the road at " + Name(_to) + ", "
-                             + Mathf.Sqrt(CitySpots.Flat(_road - _to.Wait)).ToString("F1") + " m from the waiting place; the game walks them onto the pavement: PASS.");
+                             + Mathf.Sqrt(CitySpots.Flat(_road - _to.Wait)).ToString("F1", CultureInfo.InvariantCulture) + " m from the waiting place; the game walks them onto the pavement: PASS.");
             }
             _player.SetGoal(arriving ? _to.Wait : _from.Wait, null);
             _director.RiderOff(_bus, arriving);
@@ -822,7 +826,8 @@ namespace RealLifeOverhaul
             }
             if (BusInside.FadeNow(now - _shutSince, _movingSince < 0f ? 0f : now - _movingSince, metres))
             {
-                Logger?.Info("Transit check (ride): the doors shut and the bus pulls away with the player in it: " + metres.ToString("F0") + " m in " + (now - _shutSince).ToString("F1")
+                Logger?.Info("Transit check (ride): the doors shut and the bus pulls away with the player in it: " + metres.ToString("F0") + " m in "
+                             + (now - _shutSince).ToString("F1", CultureInfo.InvariantCulture)
                              + " s are seen before the time of the ride passes: " + (metres >= 5f ? "PASS" : "FAIL (it was held where it stood)") + ".");
                 _step = Step.Fading;
                 _since = now;
@@ -1309,7 +1314,7 @@ namespace RealLifeOverhaul
             BusInside.Approach a = _tries[tried - 1];
             string door = a.Middle ? _byChoice ? "the middle door, the nearer one" : "the middle door (the front door's place could not be walked to)"
                 : _byChoice ? "the front door (the middle door's place could not be walked to)" : "the front door";
-            return door + (Mathf.Abs(a.Along) > 0.01f ? ", " + Mathf.Abs(a.Along).ToString("F1") + " m along the kerb" : "");
+            return door + (Mathf.Abs(a.Along) > 0.01f ? ", " + Mathf.Abs(a.Along).ToString("F1", CultureInfo.InvariantCulture) + " m along the kerb" : "");
         }
 
         // A way on the walkable ground from one point to the other, all the way, by the game's own navigation mesh.

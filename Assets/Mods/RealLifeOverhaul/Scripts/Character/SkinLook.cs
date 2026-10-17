@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using BigAmbitions.Characters.Appearance;
@@ -100,7 +101,8 @@ namespace RealLifeOverhaul
             if (!_logged)
             {
                 _logged = true;
-                Logger?.Info("Skin: finish on (" + Maps.Count + " maps, " + (Maps.Bytes / 1048576f).ToString("F1") + " MB, made in " + Maps.Milliseconds.ToString("F0") + " ms).");
+                Logger?.Info("Skin: finish on (" + Maps.Count + " maps, " + (Maps.Bytes / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB, made in " + Maps.Milliseconds.ToString("F0")
+                    + " ms).");
             }
         }
 
@@ -235,7 +237,7 @@ namespace RealLifeOverhaul
         {
             int inUse = Count(null);
             text.AppendLine("skin finish: option " + Settings.CharacterSkin + ", characters " + Characters.Count + ", maps on their materials " + inUse
-                            + ", copies held " + Maps.Count + " (" + (Maps.Bytes / 1048576f).ToString("F2") + " MB), made this scene " + Maps.MadeEver
+                            + ", copies held " + Maps.Count + " (" + (Maps.Bytes / 1048576f).ToString("F2", CultureInfo.InvariantCulture) + " MB), made this scene " + Maps.MadeEver
                             + " in " + Maps.Milliseconds.ToString("F0") + " ms, materials left alone at the last change of look " + _leftAlone);
             for (int c = 0; c < Characters.Count; c++)
             {
@@ -257,7 +259,7 @@ namespace RealLifeOverhaul
                         }
                         Color tone = material.HasProperty(ToneId) ? material.GetColor(ToneId) : Color.white;
                         text.AppendLine("  on '" + character.name + "' / '" + Renderers[i].name + "': '" + material.name + "' tone " + ColorUtility.ToHtmlStringRGB(tone)
-                                        + " darkness " + SkinFinish.Darkness(tone).ToString("0.##") + MapList(material));
+                                        + " darkness " + SkinFinish.Darkness(tone).ToString("0.##", CultureInfo.InvariantCulture) + MapList(material));
                     }
                 }
                 Renderers.Clear();

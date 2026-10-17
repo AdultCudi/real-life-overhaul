@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Extensions;
 using Helpers;
@@ -207,7 +208,7 @@ namespace RealLifeOverhaul
                     Teleport(vehicle, position, rotation);
                     Rigidbody moved = vehicle.TryGetComponent(out NWH.VehiclePhysics2.VehicleController drives) ? drives.vehicleRigidbody : null;
                     float apart = moved != null ? Vector3.Distance(moved.position, vehicle.transform.position) : 0f;
-                    Logger?.Info("Tow check (one car): the model and the map's marker stand " + apart.ToString("0.00") + " m from the car's body after the move" + (apart < 0.5f ? ": PASS" : ": FAIL"));
+                    Logger?.Info("Tow check (one car): the model and the map's marker stand " + apart.ToString("0.00", CultureInfo.InvariantCulture) + " m from the car's body after the move" + (apart < 0.5f ? ": PASS" : ": FAIL"));
                     vehicle.vehicleInstance.parkingState = ParkingState.Legal;
                     vehicle.vehicleInstance.SetStreetData(string.Empty, 0);
                     if (vehicle.poi != null)

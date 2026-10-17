@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using BigAmbitions.DayNightCycle;
@@ -570,7 +571,8 @@ namespace RealLifeOverhaul
         {
             _record.Broken = true;
             _record.Breakdowns++;
-            Logger?.Info("Car ownership: breakdown at " + _record.Km.ToString("F1") + " km, " + (_record.Km - _record.ServicedKm).ToString("F1") + " km since its service (due every "
+            Logger?.Info("Car ownership: breakdown at " + _record.Km.ToString("F1", CultureInfo.InvariantCulture) + " km, "
+                         + (_record.Km - _record.ServicedKm).ToString("F1", CultureInfo.InvariantCulture) + " km since its service (due every "
                          + CarRules.ServiceEvery(_kind).ToString("F0") + "); breakdown number " + _record.Breakdowns + " for this car.");
             Notifications.Show(NotificationType.Error, "reallife_car_breakdown", null, 10f);
         }
@@ -973,7 +975,8 @@ namespace RealLifeOverhaul
                     record.RegisteredDay = TimeHelper.CurrentDay;
                     record.RemindedDay = 0;
                 }
-                Logger?.Info("Car ownership: serviced for " + total.ToString("F0") + " at " + record.Km.ToString("F1") + " km" + (wasBroken ? " (it had broken down)" : "") + ".");
+                Logger?.Info("Car ownership: serviced for " + total.ToString("F0") + " at " + record.Km.ToString("F1", CultureInfo.InvariantCulture) + " km"
+                    + (wasBroken ? " (it had broken down)" : "") + ".");
                 _faded = false;
                 yield return UiFader.UnFade();
                 Notifications.Show(NotificationType.Success, "reallife_garage_done", new Dictionary<string, string>(1) { { "amount", TransitText.Money(total) } }, 9f);
@@ -1073,7 +1076,8 @@ namespace RealLifeOverhaul
             }
             _car.SetFuel(_car.vehicleType.maxFuel * 0.05f);
             _lowFuelTold = false;
-            Logger?.Info("Fuel test: the tank is at 5 % (" + (_car.vehicleType.maxFuel * 0.05f).ToString("F1") + " of " + _car.vehicleType.maxFuel.ToString("F0") + " litres).");
+            Logger?.Info("Fuel test: the tank is at 5 % (" + (_car.vehicleType.maxFuel * 0.05f).ToString("F1", CultureInfo.InvariantCulture) + " of " + _car.vehicleType.maxFuel.ToString("F0")
+                + " litres).");
         }
 
         /// <summary>Options button: the driven car breaks down now.</summary>

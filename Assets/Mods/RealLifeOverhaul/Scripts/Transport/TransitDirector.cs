@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Extensions;
@@ -541,8 +542,9 @@ namespace RealLifeOverhaul
             double ms = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             double average = _costTicks * ms / Math.Max(1, _costCount);
             Logger?.Info("Transit check (cost): " + _costCount + " ticks of the director in the last " + (now - _costFrom).ToString("F0") + " s with buses out (" + _costBusesMost + " at the most, "
-                         + _made + " made this session besides the first three): " + average.ToString("F3") + " ms a tick on average, " + (_costWorst * ms).ToString("F2") + " ms at worst; "
-                         + (average * 4.0).ToString("F2") + " ms a second (wanted: under 1 ms a second on average): " + (average * 4.0 < 1.0 ? "PASS" : "FAIL") + ".");
+                         + _made + " made this session besides the first three): " + average.ToString("F3", CultureInfo.InvariantCulture) + " ms a tick on average, "
+                         + (_costWorst * ms).ToString("F2", CultureInfo.InvariantCulture) + " ms at worst; "
+                         + (average * 4.0).ToString("F2", CultureInfo.InvariantCulture) + " ms a second (wanted: under 1 ms a second on average): " + (average * 4.0 < 1.0 ? "PASS" : "FAIL") + ".");
             _costTicks = 0;
             _costWorst = 0;
             _costCount = 0;
@@ -1272,9 +1274,10 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (bus assigned): the " + line.Number + " to " + line.To + " for " + StopLabel(stop) + (test ? " (test button)" : "") + ": " + _bus.Chassis
                          + "; it starts " + _bus.StartedBack.ToString("F0") + " m of line before the stop, " + away.ToString("F0") + " m from the player, seen (on the screen, no building between): " + (seen ? "yes" : "no")
                          + "; " + _bus.Remaining.ToString("F0") + " m to drive, " + _bus.DriveAtStart.ToString("F0") + " s of open road as it will drive it, " + _bus.LightsAtStart + " lit junction(s); held at its start "
-                         + _bus.Held0.ToString("F0") + " s; the estimate (traffic x" + _pace.Traffic.ToString("F2") + ", " + _pace.Light.ToString("F1") + " s a junction) is "
+                         + _bus.Held0.ToString("F0") + " s; the estimate (traffic x" + _pace.Traffic.ToString("F2", CultureInfo.InvariantCulture) + ", "
+                         + _pace.Light.ToString("F1", CultureInfo.InvariantCulture) + " s a junction) is "
                          + _eta.Seconds.ToString("F0") + " s, the panel " + (_eta.State == TransitEta.Mode.Delayed ? "DELAYED" : "on time") + "; "
-                         + (_bus.InBay ? "it will stand in the stop's bay, " + stop.BayOffset.ToString("F2") + " m off the lane's line"
+                         + (_bus.InBay ? "it will stand in the stop's bay, " + stop.BayOffset.ToString("F2", CultureInfo.InvariantCulture) + " m off the lane's line"
                              : stop.HasBay ? "it will stop in the lane (" + (_bus.BayNote ?? "the bay cannot be used") + ")"
                              : "the stop has no bay (" + (stop.NoBay ?? "none laid out") + "): it will stop in the lane")
                          + (_bus.SentAway > 0 ? ", " + _bus.SentAway + " of the game's parked cars taken in from the bay out of view" : "")
@@ -1374,14 +1377,17 @@ namespace RealLifeOverhaul
             bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= -0.15f && toKerb >= 0f && angle <= 3f   // (its rear corner a hand's breadth in the lane at the narrowest bay: NavCheck)
                                 : Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
             string held = _bus.StoodShort;   // (held up short of its place, it is at the stop where it is: TransitBus.OnTheWay)
-            Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(stop) + (inBay ? " in its bay" : "") + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
-                         + (along >= 0f ? "past" : "short of") + (Mathf.Abs(stop.Stand) > 0.01f ? " its place " + Mathf.Abs(stop.Stand).ToString("F1") + " m " + (stop.Stand > 0f ? "on from" : "short of") + " the pole" : " the pole") + ", " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
-                         + " off the lane's line" + (inBay ? " (the bay's line is " + stop.BayOffset.ToString("F2") + ")" : "") + ", " + angle.ToString(inBay ? "F1" : "F0")
+            Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(stop) + (inBay ? " in its bay" : "") + " with its middle "
+                         + Mathf.Abs(along).ToString("F1", CultureInfo.InvariantCulture) + " m "
+                         + (along >= 0f ? "past" : "short of") + (Mathf.Abs(stop.Stand) > 0.01f ? " its place " + Mathf.Abs(stop.Stand).ToString("F1", CultureInfo.InvariantCulture) + " m " + (stop.Stand > 0f ? "on from" : "short of") + " the pole" : " the pole") + ", " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
+                         + " off the lane's line" + (inBay ? " (the bay's line is " + stop.BayOffset.ToString("F2", CultureInfo.InvariantCulture) + ")" : "") + ", "
+                         + angle.ToString(inBay ? "F1" : "F0")
                          + " degrees off the lane's direction, door side to the kerb with " + toKerb.ToString(inBay ? "F2" : "F1") + " m of road between"
-                         + (inBay ? ", its body " + toLane.ToString("F2") + " m clear of the lane's edge (a lorry on the lane's line passes " + (toLane + BusBay.LaneHalf - BusBay.WidestHalf).ToString("F2")
+                         + (inBay ? ", its body " + toLane.ToString("F2", CultureInfo.InvariantCulture) + " m clear of the lane's edge (a lorry on the lane's line passes " + (toLane + BusBay.LaneHalf - BusBay.WidestHalf).ToString("F2", CultureInfo.InvariantCulture)
                                     + " m from it): the lane is " + (toLane >= 0f ? "free" : "NOT free")
                              : stop.HasBay ? ", in the lane (" + (_bus.BayNote ?? "the bay was not used") + ")"
-                             : ", in the lane (no bay here: " + (stop.NoBay ?? "none laid out") + ", the kerb " + stop.KerbAside.ToString("F2") + " m from the lane's line)")
+                             : ", in the lane (no bay here: " + (stop.NoBay ?? "none laid out") + ", the kerb " + stop.KerbAside.ToString("F2", CultureInfo.InvariantCulture)
+                                 + " m from the lane's line)")
                          + "; " + _bus.Took.ToString("F0") + " s after setting out " + _bus.StartedBack.ToString("F0") + " m back"
                          + (held != null ? "; " + held : string.Empty) + ": "
                          + (placed ? "PASS" : held != null ? "PASS (where it was held up: it counts as standing at the stop)"
@@ -1425,7 +1431,7 @@ namespace RealLifeOverhaul
                 seated += _waiting[i].Sat ? 1 : 0;
             }
             bool sat = _seat.Seated && (_bookedLine < 0 || stop.Line == _bookedLine);
-            Logger?.Info("Transit check (doors): doors open; a place to step in " + (_doorFound ? "found " + out_.ToString("F1") + " m further out than the door wants" : "NOT found on the road surface beside the door")
+            Logger?.Info("Transit check (doors): doors open; a place to step in " + (_doorFound ? "found " + out_.ToString("F1", CultureInfo.InvariantCulture) + " m further out than the door wants" : "NOT found on the road surface beside the door")
                          + "; the way from the kerb to it " + (!_doorFound ? "not looked at" : wayClear ? "clear" : "has vehicles standing in it") + "; " + waiting + " waiting (" + seated + " seated)"
                          + (sat ? ", the player seated and getting up" : "") + "; the bus is " + (_busFull ? "full: no seat free, whoever boards stands" : "not full") + "; it stands "
                          + (_bus.InBay ? "out of the lane" : "in the lane") + ": "
@@ -1469,7 +1475,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (on time): the " + line.Number + " at " + StopLabel(stop) + " was promised for " + _promised.ToString("F0") + " s after it set out (" + (_bus.Held0 > 0.5f ? "held "
                          + _bus.Held0.ToString("F0") + " s at its start, " : string.Empty) + _bus.DriveAtStart.ToString("F0") + " s of open road, " + _bus.LightsAtStart + " lit junction(s)) and stood there after "
                          + took.ToString("F0") + " s (" + _bus.AtLights.ToString("F0") + " s of it at red lights): " + off.ToString("+0;-0") + " s against the promise" + shown + "; the estimate learns traffic x"
-                         + before.ToString("F2") + " to x" + _pace.Traffic.ToString("F2") + ", " + _pace.Light.ToString("F1") + " s a junction (" + _pace.Samples + " bus(es)); the panel said DELAYED: "
+                         + before.ToString("F2", CultureInfo.InvariantCulture) + " to x" + _pace.Traffic.ToString("F2", CultureInfo.InvariantCulture) + ", " + _pace.Light.ToString("F1", CultureInfo.InvariantCulture) + " s a junction (" + _pace.Samples + " bus(es)); the panel said DELAYED: "
                          + (_eta.State == TransitEta.Mode.Delayed || _wasDelayed ? "yes" : "no") + ": " + (Mathf.Abs(off) <= slack ? "PASS" : "FAIL (more than " + slack.ToString("F0") + " s out)") + ".");
             _promisedAt = 0f;
             _wasDelayed = false;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using UnityEngine;
@@ -154,7 +155,7 @@ namespace RealLifeOverhaul.Tech
             _nextPeople = 0f;
             _said.Length = 0;
             _said.Append(hq.Name).Append(": lobby ").Append(_plan.Pieces.Count).Append(" pieces")
-                .Append(_plan.HasDesk ? ", the desk " + _plan.Depth.ToString("F1") + " m in" : ", no desk").Append(_plan.HasSeating ? ", seating" : string.Empty)
+                .Append(_plan.HasDesk ? ", the desk " + _plan.Depth.ToString("F1", CultureInfo.InvariantCulture) + " m in" : ", no desk").Append(_plan.HasSeating ? ", seating" : string.Empty)
                 .Append(_plan.Why != null ? " (" + _plan.Why + ")" : string.Empty).Append(", ").Append(_seats.Count).Append(" seats");
             return true;
         }

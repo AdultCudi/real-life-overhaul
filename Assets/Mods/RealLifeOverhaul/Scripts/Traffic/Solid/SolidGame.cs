@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Streets.Pedestrians;
@@ -139,7 +140,7 @@ namespace RealLifeOverhaul
             How = native ? Mode.Native : _proxyLayer >= 0 && box != null && !_proxiesFailed ? Mode.StandIns : Mode.BrakesOnly;
 
             Said = "cars sense layers [" + Names(sensed) + "]; pedestrians are on '" + LayerMask.LayerToName(layer) + "' with their capsule " + (on ? "on" : "off")
-                   + "; sensor box " + SensorLength.ToString("F1") + " m long on '" + LayerMask.LayerToName(sensorLayer) + "', which "
+                   + "; sensor box " + SensorLength.ToString("F1", CultureInfo.InvariantCulture) + " m long on '" + LayerMask.LayerToName(sensorLayer) + "', which "
                    + (meets ? "meets" : "does not meet") + " the pedestrians' layer in the physics settings; mode: "
                    + (How == Mode.Native ? "the cars sense walking people themselves; stand-ins only for people without a capsule"
                        : How == Mode.StandIns ? "stand-ins on '" + LayerMask.LayerToName(_proxyLayer) + "' for everybody in a car's way"
@@ -466,7 +467,8 @@ namespace RealLifeOverhaul
             if (!_hiderSaid)
             {
                 _hiderSaid = true;
-                Logger?.Info($"Traffic check (fade): the game fades a person within {hider.detectionDistance:F1} m of anything on layers [{Names(_hiderMask[free].value)}]; "
+                Logger?.Info(FormattableString.Invariant(
+                    $"Traffic check (fade): the game fades a person within {hider.detectionDistance:F1} m of anything on layers [{Names(_hiderMask[free].value)}]; ")
                              + "held off for whoever a car is braking for or has hit, and put back a moment after: PASS");
             }
         }

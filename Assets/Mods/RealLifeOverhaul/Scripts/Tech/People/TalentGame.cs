@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Entities;
 using Helpers;
@@ -288,11 +289,11 @@ namespace RealLifeOverhaul.Tech
             int formula = FormulaCents(e), before = WageCents(e), after = WageRules.Rise(before, bp, formula);
             if (after <= before)
             {
-                Logger?.Info("Tech: " + NameOf(e) + "'s wage stays at " + (before / 100f).ToString("F2") + " (the most a raise of the mod's takes it to is " + (WageRules.Cap(formula) / 100f).ToString("F2") + ").");
+                Logger?.Info("Tech: " + NameOf(e) + "'s wage stays at " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " (the most a raise of the mod's takes it to is " + (WageRules.Cap(formula) / 100f).ToString("F2", CultureInfo.InvariantCulture) + ").");
                 return false;
             }
             e.hourlyWage = after / 100f;
-            Logger?.Info("Tech: " + NameOf(e) + "'s wage " + (before / 100f).ToString("F2") + " -> " + e.hourlyWage.ToString("F2") + ".");
+            Logger?.Info("Tech: " + NameOf(e) + "'s wage " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " -> " + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
             return true;
         }
 
@@ -308,8 +309,9 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             e.hourlyWage = after / 100f;
-            Logger?.Info("Tech: " + NameOf(e) + "'s wage, raised by the mod past " + (WageRules.CapBp / 10000) + " times the game's own for the skill (" + (formula / 100f).ToString("F2")
-                         + "), brought back from " + (before / 100f).ToString("F2") + " to " + e.hourlyWage.ToString("F2") + ".");
+            Logger?.Info("Tech: " + NameOf(e) + "'s wage, raised by the mod past " + (WageRules.CapBp / 10000) + " times the game's own for the skill ("
+                         + (formula / 100f).ToString("F2", CultureInfo.InvariantCulture)
+                         + "), brought back from " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " to " + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
             return true;
         }
 

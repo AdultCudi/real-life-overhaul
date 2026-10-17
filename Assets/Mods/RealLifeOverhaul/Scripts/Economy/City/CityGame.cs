@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using AI.Citizens;
 using BAModAPI;
@@ -385,7 +386,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (wrong++ < 3)
                     {
-                        text.Append(wrong > 1 ? "; " : string.Empty).Append(item.itemName).Append(" is ").Append(item.wholesalePrice.ToString("0.###")).Append(", expected ").Append(want.ToString("0.###"));
+                        text.Append(wrong > 1 ? "; " : string.Empty).Append(item.itemName).Append(" is ").Append(item.wholesalePrice.ToString("0.###", CultureInfo.InvariantCulture)).Append(", expected ").Append(want.ToString("0.###", CultureInfo.InvariantCulture));
                     }
                 }
             }

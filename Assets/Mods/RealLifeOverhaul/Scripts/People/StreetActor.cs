@@ -230,8 +230,9 @@ namespace RealLifeOverhaul
             Vector3 gone = Character.transform.position - _probeStart;
             gone.y = 0f;
             RuntimeAnimatorController controller = Character.animator != null ? Character.animator.runtimeAnimatorController : null;
-            ActorPool.Logger?.Info($"People: first runner of the session ({_probePace}): asked for {agent.speed:F1} m/s, reached {_probePeak:F1} m/s and covered "
-                                   + $"{gone.magnitude:F1} m in {now - _probeFrom:F1} s; acceleration {agent.acceleration:F0} m/s2 (the game's own {_acceleration:F0}), "
+            ActorPool.Logger?.Info(System.FormattableString.Invariant($"People: first runner of the session ({_probePace}): asked for {agent.speed:F1} m/s, reached {_probePeak:F1} m/s and covered ")
+                                   + System.FormattableString.Invariant(
+                                       $"{gone.magnitude:F1} m in {now - _probeFrom:F1} s; acceleration {agent.acceleration:F0} m/s2 (the game's own {_acceleration:F0}), ")
                                    + $"turning {agent.angularSpeed:F0} deg/s (the game's own {_turning:F0}), gives way at priority {agent.avoidancePriority}, "
                                    + $"{(agent.agentTypeID == NavMeshHelper.NpcAgentTypeId ? "pavement" : "road")} agent, animator '{(controller != null ? controller.name : "none")}'.");
         }

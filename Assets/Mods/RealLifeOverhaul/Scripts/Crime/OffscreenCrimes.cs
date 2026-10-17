@@ -304,7 +304,7 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Error, Random.value < 0.5f ? "reallife_crime_carbreak_1" : "reallife_crime_carbreak_2", data, 12f);
             News.Report(NewsKind.CarBreakIn, new Vector3(target.position.x, 0f, target.position.z));
             CivicBridges.NoteCrime();
-            Crime.Logger?.Info($"Crime: parked {target.vehicleTypeName} broken into, damage +{added:F3}.");
+            Crime.Logger?.Info(FormattableString.Invariant($"Crime: parked {target.vehicleTypeName} broken into, damage +{added:F3}."));
             return true;
         }
 

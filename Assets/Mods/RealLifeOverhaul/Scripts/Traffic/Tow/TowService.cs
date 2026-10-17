@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
@@ -159,7 +160,7 @@ namespace RealLifeOverhaul
                 TrafficTools.Footprint(car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);
                 if (!TowRules.Fits(halfLength * 2f, halfWidth * 2f))
                 {
-                    Logger?.Info("Tow: '" + TrafficTools.Name(car) + "' is " + (halfLength * 2f).ToString("F1") + " m long: too big for the bed; it goes as before.");
+                    Logger?.Info("Tow: '" + TrafficTools.Name(car) + "' is " + (halfLength * 2f).ToString("F1", CultureInfo.InvariantCulture) + " m long: too big for the bed; it goes as before.");
                     return false;
                 }
                 if (!TowRules.WorthSending(Mathf.Sqrt(CitySpots.Flat(centre - PlayerHelper.GetPosition())), TransitSight.Far))
@@ -594,7 +595,7 @@ namespace RealLifeOverhaul
             _truck.Hazards(true);
             _side = Vector3.Dot(_plan.Across, _truck.transform.right) > 0f ? -1 : 1;
             float short_ = Vector3.Dot(_plan.Stand - _driver.Front, _plan.Along);
-            Logger?.Info("Tow check (stand): the truck stands " + short_.ToString("F1") + " m short of its stand (wanted under " + StandNearEnough.ToString("F0") + "): " + (short_ < StandNearEnough + 0.5f ? "PASS" : "FAIL"));
+            Logger?.Info("Tow check (stand): the truck stands " + short_.ToString("F1", CultureInfo.InvariantCulture) + " m short of its stand (wanted under " + StandNearEnough.ToString("F0") + "): " + (short_ < StandNearEnough + 0.5f ? "PASS" : "FAIL"));
             if (_operator.Enter(Door(), ActorLook.Civilian, 2f, onRoad: true))
             {
                 _operator.HiVis(true);
@@ -649,8 +650,8 @@ namespace RealLifeOverhaul
             _operator.Go(PanelSpot(), Pace.Walk, truck.TransformPoint(new Vector3(_side * TowTruck.PanelOut, 1f, TowTruck.PanelAhead)), WalkAllow);
             _operator.Work(Clip("pump_panel"));
             bool upright = Vector3.Dot(car.up, Vector3.up) > 0.85f;
-            Logger?.Info("Tow check (winch): the wreck stands " + (_z0 - TowRules.FootAhead(halfLength)).ToString("F1") + " m from the foot of the bed along the truck (wanted 0 or less: drawn forward), "
-                         + _x0.ToString("F1") + " m across, " + _yaw0.ToString("F0") + " degrees round, " + (upright ? "on its wheels" : "on its side or roof") + ": "
+            Logger?.Info("Tow check (winch): the wreck stands " + (_z0 - TowRules.FootAhead(halfLength)).ToString("F1", CultureInfo.InvariantCulture) + " m from the foot of the bed along the truck (wanted 0 or less: drawn forward), "
+                         + _x0.ToString("F1", CultureInfo.InvariantCulture) + " m across, " + _yaw0.ToString("F0") + " degrees round, " + (upright ? "on its wheels" : "on its side or roof") + ": "
                          + (_z0 <= TowRules.FootAhead(halfLength) + 0.5f ? "PASS" : "FAIL"));
             if (upright)
             {

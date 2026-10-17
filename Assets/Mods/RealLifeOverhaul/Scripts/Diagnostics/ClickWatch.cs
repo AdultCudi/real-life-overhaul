@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Helpers;
@@ -105,7 +106,7 @@ namespace RealLifeOverhaul
             {
                 Collider c = Hits[i].collider;
                 _text.Append(i == 0 ? string.Empty : ", then ").Append('\'').Append(c.name).Append("' on ").Append(LayerMask.LayerToName(c.gameObject.layer))
-                     .Append(c.isTrigger ? " (trigger)" : string.Empty).Append(" at ").Append(Hits[i].distance.ToString("F1")).Append(" m");
+                     .Append(c.isTrigger ? " (trigger)" : string.Empty).Append(" at ").Append(Hits[i].distance.ToString("F1", CultureInfo.InvariantCulture)).Append(" m");
                 EntityController entity = c.GetComponentInParent<EntityController>();
                 if (entity != null)
                 {

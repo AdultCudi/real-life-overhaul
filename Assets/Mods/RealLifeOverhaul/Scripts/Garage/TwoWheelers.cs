@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using Localizor;
@@ -195,7 +196,7 @@ namespace RealLifeOverhaul
             bool shown = _mark.Show(_pointAt + Vector3.up * 1.4f, _pointLabel);
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Garage check (marker): '" + _pointLabel + "' at " + _pointAt.ToString("F1") + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked yet (the game's marker is on a job or an outing): FAIL")
+                Logger?.Info("Garage check (marker): '" + _pointLabel + "' at " + _pointAt.ToString("F1", CultureInfo.InvariantCulture) + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked yet (the game's marker is on a job or an outing): FAIL")
                              + ".");
             }
         }
@@ -308,7 +309,8 @@ namespace RealLifeOverhaul
             Vector3 at = scooter != null ? scooter.transform.position : record.Position;
             PointTo(mount, at, def, 30f);
             SayWhere(NotificationType.Info, BuildingManager.IsInsideBuilding ? "reallife_bike_where_indoors" : "reallife_bike_where", def, at);
-            Logger?.Info("Two-wheelers: shown " + (mount != null ? mount.Report() : def.Kind + ", not in the world now; last left at " + record.Position.ToString("F1") + "."));
+            Logger?.Info("Two-wheelers: shown " + (mount != null ? mount.Report() : def.Kind + ", not in the world now; last left at " + record.Position.ToString("F1", CultureInfo.InvariantCulture)
+                + "."));
         }
 
         /// <summary>
@@ -365,7 +367,7 @@ namespace RealLifeOverhaul
                 record.Position = spot;
                 record.Heading = facing.eulerAngles.y;
                 Watch(mount, spot, facing);
-                Logger?.Info("Two-wheelers: brought to the player from " + was.ToString("F1") + " (" + (fee > 0 ? "fee " + fee : "free") + "): " + mount.Report());
+                Logger?.Info("Two-wheelers: brought to the player from " + was.ToString("F1", CultureInfo.InvariantCulture) + " (" + (fee > 0 ? "fee " + fee : "free") + "): " + mount.Report());
             }
             else
             {
@@ -382,7 +384,8 @@ namespace RealLifeOverhaul
                 }
                 mount.Record.Day = record.Day;
                 Remove(id);
-                Logger?.Info("Two-wheelers: it was not in the world (last left at " + was.ToString("F1") + "); made again in front of the player (" + (fee > 0 ? "fee " + fee : "free") + ").");
+                Logger?.Info("Two-wheelers: it was not in the world (last left at " + was.ToString("F1", CultureInfo.InvariantCulture) + "); made again in front of the player ("
+                    + (fee > 0 ? "fee " + fee : "free") + ").");
             }
             PointTo(mount, spot, def);
             SayWhere(NotificationType.Success, "reallife_bike_brought", def, spot);
@@ -449,7 +452,7 @@ namespace RealLifeOverhaul
             if (mount == null)
             {
                 _watch = null;
-                Logger?.Warn("Two-wheelers: the two-wheeler stood at " + _watchSpot.ToString("F1") + " two seconds ago is no longer in the world: the game removed it.");
+                Logger?.Warn("Two-wheelers: the two-wheeler stood at " + _watchSpot.ToString("F1", CultureInfo.InvariantCulture) + " two seconds ago is no longer in the world: the game removed it.");
                 return;
             }
             if (mount.Ridden)
@@ -467,7 +470,7 @@ namespace RealLifeOverhaul
                 Logger?.Info("Two-wheelers: two seconds on it stands where it was put: " + mount.Report());
                 return;
             }
-            Logger?.Warn("Two-wheelers: two seconds on it is NOT where it was put (" + _watchSpot.ToString("F2") + "): " + mount.Report());
+            Logger?.Warn("Two-wheelers: two seconds on it is NOT where it was put (" + _watchSpot.ToString("F2", CultureInfo.InvariantCulture) + "): " + mount.Report());
             if (_watchRetried)
             {
                 _watch = null;
@@ -587,7 +590,7 @@ namespace RealLifeOverhaul
                 _worldState = shown;
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Garage check (place panel): at a " + place.Kind + ", " + Mathf.Sqrt(CitySpots.Flat(place.Position - player)).ToString("F1") + " m from it (offered within " + BikePlaces.Reach.ToString("F1") + " m): "
+                    Logger?.Info("Garage check (place panel): at a " + place.Kind + ", " + Mathf.Sqrt(CitySpots.Flat(place.Position - player)).ToString("F1", CultureInfo.InvariantCulture) + " m from it (offered within " + BikePlaces.Reach.ToString("F1", CultureInfo.InvariantCulture) + " m): "
                                  + (shown == 1 ? "the game's own panel is up with '" + (state == 1 ? "Hire" : state == 2 ? "Return" : "Browse") + "' on the game's interact key: PASS"
                                      : "FAIL (the game's panel is showing another place; it is tried again while the player stands here)") + ".");
                 }
@@ -801,7 +804,8 @@ namespace RealLifeOverhaul
             }
             else
             {
-                Logger?.Info("Two-wheelers: " + kind + (owned ? " (owned)" : " (hired)") + " made at " + position.ToString("F2") + ", but it could not be dressed: it is a scooter.");
+                Logger?.Info("Two-wheelers: " + kind + (owned ? " (owned)" : " (hired)") + " made at " + position.ToString("F2", CultureInfo.InvariantCulture)
+                    + ", but it could not be dressed: it is a scooter.");
             }
             return mount;
         }
@@ -1031,7 +1035,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Garage check (stand list): the game's list is open at a " + place.Kind + " with " + _acts.Count + " entries" + (near != null ? " (one of them sells the player's own standing by)" : string.Empty) + "; "
-                             + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                             + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

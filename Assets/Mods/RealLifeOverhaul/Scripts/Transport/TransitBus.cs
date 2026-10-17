@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using BAModAPI;
 using GleyTrafficSystem;
@@ -791,8 +792,9 @@ namespace RealLifeOverhaul
             SentAway = 0;
             StoodShort = null;
             _hold.Clear();
-            Chassis = "the mod's own city bus (" + BodyLength.ToString("F1") + " m long, " + (BodyHalfWidth * 2f).ToString("F2") + " wide, wheelbase "
-                      + BusVehicle.Wheelbase.ToString("F1") + "; " + (bus.Modelled ? "modelled" : "in plain shapes: the prop bundle has no city_bus yet") + ")";
+            Chassis = "the mod's own city bus (" + BodyLength.ToString("F1", CultureInfo.InvariantCulture) + " m long, " + (BodyHalfWidth * 2f).ToString("F2", CultureInfo.InvariantCulture)
+                + " wide, wheelbase "
+                      + BusVehicle.Wheelbase.ToString("F1", CultureInfo.InvariantCulture) + "; " + (bus.Modelled ? "modelled" : "in plain shapes: the prop bundle has no city_bus yet") + ")";
         }
 
         private void Add(TransitLine line, int pathIndex)
@@ -817,14 +819,15 @@ namespace RealLifeOverhaul
             // Its curves and the strip they take, as the stop's bay was laid out (the one bus is what bays are laid out for).
             if (!BusBay.Lay(stop.KerbAside, out _, out _curveIn, out _, out float behind, out float ahead))
             {
-                BayNote = "the bus is " + (_widthHalf * 2f).ToString("F2") + " m wide, too wide for the bay";
+                BayNote = "the bus is " + (_widthHalf * 2f).ToString("F2", CultureInfo.InvariantCulture) + " m wide, too wide for the bay";
                 return false;
             }
             _bayBehind = Mathf.Max(stop.BayBehind, behind);
             _bayAhead = Mathf.Max(stop.BayAhead, ahead);
             if (_bayBehind > stop.BayRoom + 0.01f || _bayAhead > stop.BayAhead + 0.01f)
             {
-                BayNote = "the bus reaches " + _noseAhead.ToString("F1") + " m ahead of its front axle and " + _tailBehind.ToString("F1") + " m behind it and needs "
+                BayNote = "the bus reaches " + _noseAhead.ToString("F1", CultureInfo.InvariantCulture) + " m ahead of its front axle and " + _tailBehind.ToString("F1", CultureInfo.InvariantCulture)
+                    + " m behind it and needs "
                           + _bayBehind.ToString("F0") + " m of bay to come in and " + _bayAhead.ToString("F0") + " to pull out, where the stop's has " + stop.BayRoom.ToString("F0") + " and " + stop.BayAhead.ToString("F0");
                 return false;
             }
@@ -1075,7 +1078,7 @@ namespace RealLifeOverhaul
                 bool door = DoorOnKerb();
                 if (RideRules.StandsWhereItIs(still, door, player, _driver.PathLeft))
                 {
-                    string why = "held up " + _driver.PathLeft.ToString("F1") + " m of its route short of its place by " + WaitsFor() + "; "
+                    string why = "held up " + _driver.PathLeft.ToString("F1", CultureInfo.InvariantCulture) + " m of its route short of its place by " + WaitsFor() + "; "
                                  + (door ? "a door of it by the stop's kerb" : "the player in front of it near its place") + ", it stands there";
                     StandAtStop(now, why);
                     return;
@@ -1206,7 +1209,7 @@ namespace RealLifeOverhaul
             {
                 return Describe(by) + " within " + (_driver.HeldAhead + 3f).ToString("F0") + " m of its nose";
             }
-            return _driver.Active ? "nothing in its way (its driver's pace " + _driver.CruiseSpeed.ToString("F1") + " m/s, at " + _driver.Speed.ToString("F1") + ")" : "nothing: its driver has stopped";
+            return _driver.Active ? "nothing in its way (its driver's pace " + _driver.CruiseSpeed.ToString("F1", CultureInfo.InvariantCulture) + " m/s, at " + _driver.Speed.ToString("F1", CultureInfo.InvariantCulture) + ")" : "nothing: its driver has stopped";
         }
 
         // What a collider in its way is, for the log.
@@ -1249,8 +1252,10 @@ namespace RealLifeOverhaul
             {
                 Measure(out float along, out float aside, out float angle, out _, out _);
                 bool door = DoorOnKerb();
-                where = "on its way to " + label + ", " + _driver.PathLeft.ToString("F1") + " m of its route from where it is to stand (its middle " + Mathf.Abs(along).ToString("F1") + " m "
-                        + (along >= 0f ? "past" : "short of") + " its place, " + Mathf.Abs(aside).ToString("F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
+                where = "on its way to " + label + ", " + _driver.PathLeft.ToString("F1", CultureInfo.InvariantCulture) + " m of its route from where it is to stand (its middle "
+                    + Mathf.Abs(along).ToString("F1", CultureInfo.InvariantCulture) + " m "
+                        + (along >= 0f ? "past" : "short of") + " its place, " + Mathf.Abs(aside).ToString("F1", CultureInfo.InvariantCulture) + " m "
+                        + (aside >= 0f ? "towards the kerb" : "away from the kerb")
                         + " off the lane's line, " + angle.ToString("F0") + " degrees off its direction; " + (door ? "a door by the stop's kerb" : "no door by the stop's kerb") + ")";
             }
             else

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using UI.Notification;
@@ -234,7 +235,8 @@ namespace RealLifeOverhaul
             {
                 ModState.AddModifier(ModState.MoodUp);
             }
-            _logger?.Info("Run: ended (" + (reasonKey ?? "done") + "), " + _next + "/" + Checkpoints + " checkpoints, " + minutes + " game minutes, fitness +" + gained.ToString("F1") + ".");
+            _logger?.Info("Run: ended (" + (reasonKey ?? "done") + "), " + _next + "/" + Checkpoints + " checkpoints, " + minutes + " game minutes, fitness +"
+                + gained.ToString("F1", CultureInfo.InvariantCulture) + ".");
         }
 
         public void Dispose()

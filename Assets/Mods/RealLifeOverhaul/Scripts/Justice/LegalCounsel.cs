@@ -5,7 +5,6 @@ using BigAmbitions.Characters.Skills;
 using Buildings;
 using Dialogs;
 using Entities;
-using Extensions;
 using Helpers;
 using Localizor;
 using Streets;
@@ -22,20 +21,12 @@ namespace RealLifeOverhaul
         public int Number;
         public int Stars;       // 1 to 5
         public bool Own;        // the player's own firm: no fee
-        public bool Chambers;   // not one of the game's law firm businesses: rooms in an office building (a city with no firm)
+        public bool Chambers;   // rooms in an office building, in a city with no law firm
 
         public string Address => new Address(Street, Number).ToFormattedString();
     }
 
-    /// <summary>
-    /// Who can represent the player, and what they cost. The firms are the game's own law firm
-    /// businesses (<c>ba:businesstype_lawfirm</c>), read from the save's building registrations
-    /// when a list is asked for (a phone call, never a timer). The game keeps a satisfaction
-    /// score per business but leaves it at 50 for the ones it runs itself, so a firm's rating is
-    /// fixed by its address (two to five stars, the same in every session) and moved by that
-    /// score where it has one: a star for every 25 points from 50. A city with no law firm at all
-    /// gets three sets of chambers in its office buildings, picked and rated the same way.
-    /// </summary>
+    /// <summary>Who can represent the player and what they cost: the game's law firm businesses, or chambers in a city with none.</summary>
     public static class LegalCounsel
     {
         public const string LawFirmType = "ba:businesstype_lawfirm";
@@ -49,7 +40,7 @@ namespace RealLifeOverhaul
 
         private static readonly List<LawFirm> Firms = new List<LawFirm>(MostFirms);
 
-        /// <summary>The firms there are, best first. Rebuilt on every call: asked for when a conversation opens.</summary>
+        /// <summary>The firms there are, best first. Rebuilt on every call, when a conversation opens.</summary>
         public static List<LawFirm> List()
         {
             Firms.Clear();
@@ -75,6 +66,7 @@ namespace RealLifeOverhaul
 
         public static LawFirm From(BuildingRegistration registration)
         {
+            // The game keeps the satisfaction of the businesses it runs at 50: the address fixes the rating and satisfaction moves it.
             int stars = 2 + JusticeLaw.Hash(registration.StreetName + "#" + registration.StreetNumber) % 4;
             if (registration.satisfaction != null)
             {
@@ -106,7 +98,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // No law firm business anywhere: three sets of chambers in office buildings, the three whose addresses hash lowest.
+        // The office buildings whose addresses hash lowest.
         private static void Chambers()
         {
             List<Building> all = BuildingHelper.allBuildings;
@@ -121,7 +113,8 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    if (building == null || building.BuildingType != "ba:buildingtype_office" || Offices.Conversions.Holds(building) || string.IsNullOrEmpty(building.StreetName) || Taken(building))
+                    if (building == null || building.BuildingType != "ba:buildingtype_office" || Offices.Conversions.Holds(building)
+                        || string.IsNullOrEmpty(building.StreetName) || Taken(building))
                     {
                         continue;
                     }
@@ -157,9 +150,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // ---------------------------------------------------------------- the lawyer retained
-
-        /// <summary>The player's own skill in law, 0 to 100, from the game's skill system.</summary>
+        /// <summary>The player's own skill in law, 0 to 100.</summary>
         public static float LawyerSkillValue()
         {
             try
@@ -183,7 +174,7 @@ namespace RealLifeOverhaul
             return 0f;
         }
 
-        /// <summary>How good the player's representation is, 0 to 1, for a case (preparing it face to face adds 0.05).</summary>
+        /// <summary>How good the player's representation is, 0 to 1; a case prepared face to face adds 0.05.</summary>
         public static float Quality(JusticeCase c)
         {
             float quality;
@@ -209,7 +200,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>What a firm asks for the player's open cases: by the gravest of them and the firm's rating, bounded to 30 % of cash (never under 200).</summary>
+        /// <summary>A firm's fee for the player's open cases, by the gravest of them and its rating, bounded against cash.</summary>
         public static int Fee(LawFirm firm)
         {
             if (firm == null || firm.Own)
@@ -227,11 +218,11 @@ namespace RealLifeOverhaul
             int fame = 0;
             try
             {
-                fame = Justice.Bridges.Fame != null ? Mathf.Clamp(Justice.Bridges.Fame(), 0, 250) : 0;   // fame costs money in court: a little more, a quarter at most
+                fame = Justice.Bridges.Fame != null ? Mathf.Clamp(Justice.Bridges.Fame(), 0, 250) : 0;   // fame costs a little more, a quarter at most
             }
             catch (Exception)
             {
-                fame = 0;
+                // a bridge that throws adds nothing
             }
             return JusticeLaw.Bound(JusticeLaw.FirmFee(weight, firm.Stars) * (1000 + fame) / 1000, Crime.Cash, JusticeLaw.FeeShareOfCash, Prices.At(200));
         }
@@ -265,19 +256,13 @@ namespace RealLifeOverhaul
             logger?.Info("Justice: representation is now " + kind + ".");
         }
 
-        /// <summary>True if this registration is the firm the player has retained.</summary>
         public static bool IsRetained(BuildingRegistration registration)
         {
             return registration != null && JusticeState.Lawyer == LawyerKind.Firm && registration.StreetName == JusticeState.LawyerStreet
                    && registration.StreetNumber == JusticeState.LawyerNumber;
         }
 
-        // ---------------------------------------------------------------- what counsel can do before the hearing
-
-        /// <summary>
-        /// The one motion to dismiss a case allows: every charge whose evidence is under the bar (0.34, raised by up to
-        /// 0.12 by a good lawyer) is thrown out. Returns how many went; the case may be left with none.
-        /// </summary>
+        /// <summary>The one motion to dismiss: every charge under the bar, which good counsel raises, goes. Returns how many went.</summary>
         public static int Motion(JusticeCase c, float quality, List<string> dropped)
         {
             c.MotionTried = true;
@@ -296,11 +281,7 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        /// <summary>
-        /// What a plea deal would be for this case with counsel of this quality: which standing charges the prosecutor
-        /// lets go (not the main one; evidence under 0.45 + 0.2 x quality) and what the main one comes down to (if it
-        /// has a lesser form, counsel is at least 0.45 and the evidence is short of overwhelming). Changes nothing.
-        /// </summary>
+        /// <summary>The plea deal for this case and counsel, changing nothing: the charges let go, and the main one's lesser form.</summary>
         public static void DealPlan(JusticeCase c, float quality, List<JusticeCharge> drop, out JusticeCharge main, out string lesser)
         {
             drop?.Clear();
@@ -353,12 +334,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The Legal contact on the phone, and the same conversation face to face at a law firm's
-    /// office: where things stand, the Legal file, finding and retaining a lawyer, and what a
-    /// lawyer once retained says about the case and can do about it before the hearing.
-    /// Registered the way the mod's other contacts are (PhoneContacts, JobPhone).
-    /// </summary>
+    /// <summary>The Legal contact on the phone, whose conversation is also held face to face at a law firm's desk.</summary>
     public static class LegalPhone
     {
         public const string ContactId = "reallife-legal";
@@ -375,7 +351,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
+                ContactPictures.Add(ContactId);
                 Contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_legal_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
                 Contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -393,7 +369,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A text from the courts or from counsel, in the Legal contact's thread. Without the contact it is a toast.</summary>
+        /// <summary>A text from the courts or counsel in the Legal contact's thread; a toast without the contact.</summary>
         public static void Send(string key, Dictionary<string, string> data = null)
         {
             try
@@ -411,7 +387,7 @@ namespace RealLifeOverhaul
             UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, key, data, 12f);
         }
 
-        /// <summary>The conversation face to face, in the game's own dialogue panel, at a firm's office.</summary>
+        /// <summary>The conversation face to face at a firm's desk, in the game's own dialogue panel.</summary>
         public static void OpenInPerson(LawFirm firm)
         {
             LegalDialog.AtFirm = firm;
@@ -419,33 +395,9 @@ namespace RealLifeOverhaul
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new LegalDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
-
-        // A plain coloured disc with a white middle, like the mod's other contacts; the game looks icons up by sprite name == contact id.
-        private static Sprite MakeIcon()
-        {
-            const int size = 96;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            var pixels = new Color[size * size];
-            var colour = new Color(0.62f, 0.48f, 0.18f);
-            float radius = size / 2f - 2f;
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                    Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                    pixel.a = Mathf.Clamp01(radius - distance);
-                    pixels[y * size + x] = pixel;
-                }
-            }
-            texture.SetPixels(pixels);
-            texture.Apply();
-            Sprite icon = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-            icon.name = ContactId;
-            return icon;
-        }
     }
 
+    /// <summary>The Legal contact's conversation, on the phone or at a firm's desk.</summary>
     public class LegalDialog : Dialog
     {
         /// <summary>Set just before the dialog is opened at a firm's desk; null on the phone.</summary>
@@ -459,8 +411,7 @@ namespace RealLifeOverhaul
             npcNameKey = LegalPhone.ContactId;
             _here = AtFirm;
             AtFirm = null;
-            JusticeDirector director = JusticeDirector.Instance;
-            if (director == null || !Justice.Active)
+            if (!Justice.Active)
             {
                 DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_justice_call_off")));
                 return;
@@ -478,7 +429,6 @@ namespace RealLifeOverhaul
             return new DialogEntry { messageData = "reallife_justice_raw".Localize(new { text }), OnCancel = PhoneContacts.HangUp };
         }
 
-        // On the phone: where things stand, then the file or the lawyer.
         private static DialogEntry Root()
         {
             DialogEntry entry = Raw(LegalFile.Brief());
@@ -504,7 +454,6 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        // At a firm's desk: the firm retained talks about the case; any other makes its offer.
         private static DialogEntry AtDesk()
         {
             JusticeCase c = JusticeState.NextOpen;
@@ -519,13 +468,11 @@ namespace RealLifeOverhaul
             }
             if (!c.MetInPerson)
             {
-                c.MetInPerson = true;   // the case is prepared across a desk: worth a little in court
+                c.MetInPerson = true;   // prepared across a desk: worth a little in court
                 JusticeDirector.Logger?.Info("Justice: case " + c.Number + " prepared in person with " + _here.Name + ".");
             }
             return Counsel();
         }
-
-        // ---------------------------------------------------------------- finding a lawyer
 
         private static void BuildOptions()
         {
@@ -546,36 +493,33 @@ namespace RealLifeOverhaul
             Func<DialogEntry> more = () => Offer(next);
             if (index == 0)
             {
-                DialogEntry entry = Raw(JusticeText.T("reallife_justice_offer_pd"));
-                entry.ConfirmTextOverride = "reallife_justice_offer_take".Localize();
-                entry.OnConfirm = () =>
-                {
-                    LegalCounsel.RetainSimple(LawyerKind.PublicDefender, JusticeDirector.Logger);
-                    return PhoneContacts.Closing("reallife_justice_hired_pd");
-                };
-                entry.SecondOptionTextOverride = "reallife_justice_offer_next";
-                entry.OnSecondOption = more;
-                return entry;
+                return PlainOffer(JusticeText.T("reallife_justice_offer_pd"), LawyerKind.PublicDefender, "reallife_justice_hired_pd", more);
             }
             if (index == 1)
             {
                 float quality = JusticeLaw.SelfQuality(LegalCounsel.LawyerSkillValue());
-                DialogEntry entry = Raw(JusticeText.T("reallife_justice_offer_self", "skill", JusticeText.N(Mathf.FloorToInt(LegalCounsel.LawyerSkillValue())),
-                    "effect", JusticeText.Percent(JusticeLaw.CounselEffect(quality))));
-                entry.ConfirmTextOverride = "reallife_justice_offer_take".Localize();
-                entry.OnConfirm = () =>
-                {
-                    LegalCounsel.RetainSimple(LawyerKind.Self, JusticeDirector.Logger);
-                    return PhoneContacts.Closing("reallife_justice_hired_self");
-                };
-                entry.SecondOptionTextOverride = "reallife_justice_offer_next";
-                entry.OnSecondOption = more;
-                return entry;
+                string text = JusticeText.T("reallife_justice_offer_self", "skill", JusticeText.N(Mathf.FloorToInt(LegalCounsel.LawyerSkillValue())),
+                    "effect", JusticeText.Percent(JusticeLaw.CounselEffect(quality)));
+                return PlainOffer(text, LawyerKind.Self, "reallife_justice_hired_self", more);
             }
             return FirmOffer(Options[index], more);
         }
 
-        // A firm says what it is, what it costs and, honestly, what it is worth. Nobody claims more than their rating.
+        // The public defender or oneself: no fee, nothing to sign.
+        private static DialogEntry PlainOffer(string text, LawyerKind kind, string hiredKey, Func<DialogEntry> more)
+        {
+            DialogEntry entry = Raw(text);
+            entry.ConfirmTextOverride = "reallife_justice_offer_take".Localize();
+            entry.OnConfirm = () =>
+            {
+                LegalCounsel.RetainSimple(kind, JusticeDirector.Logger);
+                return PhoneContacts.Closing(hiredKey);
+            };
+            entry.SecondOptionTextOverride = "reallife_justice_offer_next";
+            entry.OnSecondOption = more;
+            return entry;
+        }
+
         private static DialogEntry FirmOffer(LawFirm firm, Func<DialogEntry> more)
         {
             int fee = LegalCounsel.Fee(firm);
@@ -591,7 +535,6 @@ namespace RealLifeOverhaul
             entry.OnConfirm = () =>
             {
                 LegalCounsel.Retain(firm, JusticeDirector.Logger);
-                JusticeDirector.Instance?.Touch();
                 return PhoneContacts.Closing("reallife_justice_hired_firm", new { name = firm.Name });
             };
             if (more != null)
@@ -602,9 +545,6 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        // ---------------------------------------------------------------- the lawyer on the case
-
-        // What counsel honestly makes of it: the charge that matters, how strong it is, the odds as they would be in court today.
         private static DialogEntry Counsel()
         {
             JusticeCase c = JusticeState.NextOpen;
@@ -617,7 +557,8 @@ namespace RealLifeOverhaul
             float against = JusticeLaw.CaseAgainst(main.Evidence, Justice.Priors, quality, 0) / 1000f;
             string key = against >= 0.70f ? "reallife_justice_counsel_strong" : against >= 0.45f ? "reallife_justice_counsel_even" : "reallife_justice_counsel_thin";
             string text = JusticeText.T(key, "charge", JusticeText.Charge(main.Id), "percent", JusticeText.Percent(against))
-                          + " " + JusticeText.T(c.Stage == CaseStage.Warrant ? "reallife_justice_counsel_warrant" : "reallife_justice_counsel_date", "day", JusticeText.N(c.CourtDay));
+                          + " " + JusticeText.T(c.Stage == CaseStage.Warrant ? "reallife_justice_counsel_warrant" : "reallife_justice_counsel_date",
+                              "day", JusticeText.N(c.CourtDay));
             if (JusticeState.Lawyer == LawyerKind.Firm && !c.MetInPerson && _here == null)
             {
                 text += " " + JusticeText.T("reallife_justice_counsel_come_in");
@@ -641,7 +582,6 @@ namespace RealLifeOverhaul
                 return PhoneContacts.Closing("reallife_justice_desk_no_case");
             }
             c.DealReady = true;
-            JusticeDirector.Instance?.Touch();
             return PhoneContacts.Closing("reallife_justice_deal_offer", new { terms = LegalCounsel.DealText(c, LegalCounsel.Quality(c)) });
         }
 
@@ -654,7 +594,6 @@ namespace RealLifeOverhaul
             }
             var dropped = new List<string>(4);
             int count = LegalCounsel.Motion(c, LegalCounsel.Quality(c), dropped);
-            JusticeDirector.Instance?.Touch();
             if (count == 0)
             {
                 return PhoneContacts.Closing("reallife_justice_motion_none");

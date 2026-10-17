@@ -1,3 +1,4 @@
+using System.Globalization;
 using BAModAPI;
 using TMPro;
 using UnityEngine;
@@ -235,11 +236,11 @@ namespace RealLifeOverhaul
             }
             if (!Stop.HasBay)
             {
-                return "no bay (" + (Stop.NoBay ?? "none laid out") + "; the kerb is " + Stop.KerbAside.ToString("F2") + " m from the lane's line, "
-                       + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2") + " needed): the bus stops in the lane";
+                return "no bay (" + (Stop.NoBay ?? "none laid out") + "; the kerb is " + Stop.KerbAside.ToString("F2", CultureInfo.InvariantCulture) + " m from the lane's line, "
+                       + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2", CultureInfo.InvariantCulture) + " needed): the bus stops in the lane";
             }
             return "a bay " + Stop.BayLength.ToString("F0") + " m long (" + Stop.BayBehind.ToString("F0") + " m to come in, " + Stop.BayAhead.ToString("F0") + " to pull out), the bus "
-                   + Stop.BayOffset.ToString("F2") + " m off the lane's line in it with the kerb at " + Stop.KerbAside.ToString("F2") + ", "
+                   + Stop.BayOffset.ToString("F2", CultureInfo.InvariantCulture) + " m off the lane's line in it with the kerb at " + Stop.KerbAside.ToString("F2", CultureInfo.InvariantCulture) + ", "
                    + (_bayFree ? "free" : "taken by " + _bayTaken + " (the bus stops in the lane until it is free)")
                    + (_baySent > 0 ? ", " + _baySent + " of the game's parked cars taken in from it out of view" : "")
                    + ", " + (_marking ?? "NOT marked") + "; " + BusZones.Describe(Stop.Zone);
@@ -483,7 +484,7 @@ namespace RealLifeOverhaul
             _walkRoom = KerbFromMiddle - BackX - _radius;   // metres between the kerb's edge and the end panel's cut
             if (_walkRoom < 0.5f)
             {
-                _walkNote = "only " + _walkRoom.ToString("F2") + " m would be left between the shelter and the kerb";
+                _walkNote = "only " + _walkRoom.ToString("F2", CultureInfo.InvariantCulture) + " m would be left between the shelter and the kerb";
                 return false;
             }
             float x = -(BackX + _radius + 0.12f);
@@ -521,7 +522,7 @@ namespace RealLifeOverhaul
             if (!_shelter.gameObject.activeSelf)
             {
                 logger?.Info("Transit check (stop dressed): " + name + ": the pole" + (_modelled ? " (modelled)" : " (plain shapes)") + ", no shelter (" + (_walkNote ?? "none wanted")
-                             + "); " + BayFound() + "; walker radius " + _radius.ToString("F2") + " m; cut out of the mesh: pole " + YesNo(pole) + ": " + (pole ? "PASS" : "FAIL (the pole can be walked through)") + ".");
+                             + "); " + BayFound() + "; walker radius " + _radius.ToString("F2", CultureInfo.InvariantCulture) + " m; cut out of the mesh: pole " + YesNo(pole) + ": " + (pole ? "PASS" : "FAIL (the pole can be walked through)") + ".");
                 return;
             }
             bool back = !OnMesh(_shelter.TransformPoint(new Vector3(BackX, 0f, 0.9f)));
@@ -540,10 +541,13 @@ namespace RealLifeOverhaul
             bool past = NavMesh.SamplePosition(from, out NavMeshHit a, 0.4f, NavMesh.AllAreas) && NavMesh.SamplePosition(to, out NavMeshHit b, 0.4f, NavMesh.AllAreas)
                         && !NavMesh.Raycast(a.position, b.position, out _, NavMesh.AllAreas);
             bool pass = pole && back && end && screen && bench && seats == Seats && inside && past;
-            logger?.Info("Transit check (stop dressed): " + name + ": the pole and the shelter" + (_modelled ? " (modelled)" : " (plain shapes)") + ", bench seat " + BenchSeat.ToString("F2")
-                         + " m up; " + BayFound() + "; walker radius " + _radius.ToString("F2") + " m; cut out of the mesh: pole " + YesNo(pole) + ", back " + YesNo(back) + ", end panel " + YesNo(end)
+            logger?.Info("Transit check (stop dressed): " + name + ": the pole and the shelter" + (_modelled ? " (modelled)" : " (plain shapes)") + ", bench seat "
+                         + BenchSeat.ToString("F2", CultureInfo.InvariantCulture)
+                         + " m up; " + BayFound() + "; walker radius " + _radius.ToString("F2", CultureInfo.InvariantCulture) + " m; cut out of the mesh: pole " + YesNo(pole) + ", back "
+                         + YesNo(back) + ", end panel " + YesNo(end)
                          + ", screen " + YesNo(screen) + ", bench " + YesNo(bench) + "; still walkable: " + seats + " of " + Seats + " seat places, the open side " + YesNo(inside)
-                         + ", the way past between shelter and kerb " + YesNo(past) + " (" + _walkRoom.ToString("F2") + " m to the kerb): " + (pass ? "PASS" : "FAIL") + ".");
+                         + ", the way past between shelter and kerb " + YesNo(past) + " (" + _walkRoom.ToString("F2", CultureInfo.InvariantCulture) + " m to the kerb): " + (pass ? "PASS" : "FAIL")
+                         + ".");
         }
 
         private static string YesNo(bool value)

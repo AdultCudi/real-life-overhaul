@@ -7,30 +7,17 @@ using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The city's courthouse: one of the game's own buildings, the same one in every game on the
-    /// same map. The game has no court, so the most civic building it does have is taken: the tax
-    /// office first (the one government building), then a bank, then a school, the largest of its
-    /// kind, ties broken by address; failing all of those, the largest office building. Never one the player rents or
-    /// owns (it moves off one that becomes theirs).
-    ///
-    /// Its frontage is dressed with one sign (the modelled <c>courthouse_sign</c> when the prop
-    /// bundle has it, otherwise a plain board on two posts lettered with the game's font), stood
-    /// against the wall a few steps from the door where CitySpots found wall, pavement and room,
-    /// the way the help-wanted boards are. Hearings are attended standing in front of it; if no
-    /// place for the sign could be found the pavement in front of the door is used instead.
-    /// Looked for once per city load; nothing here runs by itself.
-    /// </summary>
+    /// <summary>The city's courthouse: the game's most civic building, never the player's, the same in every game. Ticked by the director.</summary>
     public sealed class Courthouse
     {
         public const string SignProp = "courthouse_sign";
 
         private const float FromWall = 0.30f;       // metres from the wall to the middle of the sign
-        private const float Reach = 1.7f;           // how near the attend spot the player must be
-        private const float ReachAtDoor = 2.4f;     // ...when that spot is the door front
+        private const float Reach = 1.7f;           // metres from the attend spot
+        private const float ReachAtDoor = 2.4f;     // ...when that spot is the door
         private const int WaitForProps = 25;        // ticks (seconds) to wait for the prop bundle before the plain sign is built
 
-        private static readonly float[] Aside = { 4.6f, -4.6f, 6.2f, -6.2f };   // metres along the wall from the door (help-wanted boards stand at 2.4)
+        private static readonly float[] Aside = { 4.6f, -4.6f, 6.2f, -6.2f };   // metres along the wall from the door, clear of the help-wanted board's 2.4
 
         private readonly IModLogger _logger;
         private GameObject _sign;
@@ -49,14 +36,11 @@ namespace RealLifeOverhaul
         /// <summary>True if there is a place to attend a hearing in person.</summary>
         public bool Usable { get; private set; }
 
-        public bool HasSign => _sign != null;
-
         /// <summary>Where the player stands to go in: in front of the sign, or of the door.</summary>
         public Vector3 Front { get; private set; }
 
         public Address Address { get; private set; }
 
-        /// <summary>The building that is the courthouse; null until found (it lights up on the city map: MapPlaces).</summary>
         public CityBuildingController Building { get; private set; }
 
         /// <summary>The address as the game writes it; empty until found.</summary>
@@ -73,14 +57,10 @@ namespace RealLifeOverhaul
             return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < reach * reach;
         }
 
-        /// <summary>Changes each time the courthouse is chosen (for the map).</summary>
+        /// <summary>Changes each time the courthouse is chosen, for the map.</summary>
         public int Moves { get; private set; }
 
-        /// <summary>
-        /// Once a second: until <see cref="Searched"/>, finds the building, then stands the sign; after that, every five
-        /// seconds, a courthouse whose building has become the player's moves off it. (The game's own services, which it
-        /// takes first, are never to let or for sale; only the largest office it falls back on could be.)
-        /// </summary>
+        /// <summary>Once a second: finds the building and stands the sign, then moves off a building that becomes the player's.</summary>
         public void Tick()
         {
             if (_failed)
@@ -137,10 +117,9 @@ namespace RealLifeOverhaul
                 }
                 if (Usable)
                 {
-                    // Its own name wherever the game names the building (Core/SpecialBuildings).
                     SpecialBuildings.Set("courthouse", picked, SpecialKind.Court, "reallife_justice_door_courthouse", "reallife_justice_card_type",
                         () => JusticeSettings.Enabled && JusticeSettings.Courthouse);
-                    SpecialBuildings.Boarded("courthouse", placed);   // its board is its one sign; without one the game's sign carries the name (Core/FrontSigns)
+                    SpecialBuildings.Boarded("courthouse", placed);   // without a board of its own the game's sign carries the name
                 }
                 _logger?.Info("Justice: the courthouse is " + Name + " (" + Kind(picked) + ", " + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up (" + (PropLibrary.TryGet(SignProp, out _, out _) ? "modelled" : "plain stand-in") + ")."
@@ -167,8 +146,6 @@ namespace RealLifeOverhaul
             Usable = false;
         }
 
-        // ---------------------------------------------------------------- which building
-
         private static CityBuildingController Pick(CityBuildingController[] buildings)
         {
             CityBuildingController best = null;
@@ -180,14 +157,14 @@ namespace RealLifeOverhaul
                 {
                     CityBuildingController building = buildings[i];
                     if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
-                        || GameMembers.Fenced(building.building) || SpecialBuildings.Players(building)   // (one the player rents or owns stays theirs)
-                        || Offices.Conversions.Holds(building.building)   // (a shop made an office is the player's to rent)
-                        || SpecialBuildings.ReservedFor(building.building.StreetName, building.building.StreetNumber) != null)   // (another feature's fixed building: the university's)
+                        || GameMembers.Fenced(building.building) || SpecialBuildings.Players(building)
+                        || Offices.Conversions.Holds(building.building)   // a shop made an office is the player's to rent
+                        || SpecialBuildings.ReservedFor(building.building.StreetName, building.building.StreetNumber) != null)   // another feature's fixed building
                     {
                         continue;
                     }
                     int civic = Civic(building);
-                    // First pass: civic buildings only. Second (a city with none): the largest office.
+                    // First pass: civic buildings only. Second, in a city with none: the largest office.
                     if (pass == 0 ? civic <= 0 : building.building.BuildingType != "ba:buildingtype_office")
                     {
                         continue;
@@ -225,9 +202,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the sign
-
-        // Against the wall some steps to one side of the door, facing the pavement, where nothing else stands.
         private bool Place(CityBuildingController building)
         {
             if (!Shapes.Available || !JobSpots.Front(building, out Vector3 front) || !CitySpots.Along(front, out Vector3 along))
@@ -236,7 +210,7 @@ namespace RealLifeOverhaul
             }
             for (int i = 0; i < Aside.Length; i++)
             {
-                // Measured 0.75 m out from the wall with 0.75 m of room: the strip the sign stands in is inside what was found clear.
+                // Measured 0.75 m out from the wall with 0.75 m of room, so the sign's strip lies inside what was found clear.
                 if (!CitySpots.Shopfront(front + along * Aside[i], FromWall + 0.45f, 0.75f, out Vector3 stand, out Vector3 outward))
                 {
                     continue;
@@ -261,7 +235,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // One object, shared meshes and materials, no collider, no script. Read from its +Z, like the help-wanted board.
+        // The modelled sign, or a plain board on two posts lettered in the game's font. No collider, no script; read from its +Z.
         private static GameObject Build(Vector3 at, Vector3 outward)
         {
             var sign = new GameObject("RealLifeOverhaul Courthouse Sign");
@@ -293,9 +267,8 @@ namespace RealLifeOverhaul
                 var label = new GameObject("Lettering");
                 Transform place = label.transform;
                 place.SetParent(root, false);
-                // Text is read from behind its own forward: turned to face out from the board.
                 place.localPosition = new Vector3(0f, 1.56f, 0.027f);
-                place.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                place.localRotation = Quaternion.Euler(0f, 180f, 0f);   // text reads from behind its own forward
                 var text = label.AddComponent<TextMeshPro>();
                 text.font = font;
                 text.text = JusticeText.T("reallife_justice_sign");

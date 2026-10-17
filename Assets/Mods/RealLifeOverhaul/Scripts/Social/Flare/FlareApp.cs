@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Smartphone;
@@ -312,7 +313,8 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Flare: " + _at.Screen + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                    Logger?.Info("Flare: " + _at.Screen + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
+                        + " ms.");
                 }
             }
             finally

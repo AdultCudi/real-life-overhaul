@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Helpers;
 using UI;
 using UI.MiniMenu;
@@ -244,7 +245,8 @@ namespace RealLifeOverhaul
             if (state != _panelState)
             {
                 _panelState = state;
-                Logger?.Info("Transit check (stop panel): at " + StopLabel(_served) + ", " + Mathf.Sqrt(CitySpots.Flat(_served.Sign - at)).ToString("F1") + " m from the pole (offered within "
+                Logger?.Info("Transit check (stop panel): at " + StopLabel(_served) + ", " + Mathf.Sqrt(CitySpots.Flat(_served.Sign - at)).ToString("F1", CultureInfo.InvariantCulture)
+                             + " m from the pole (offered within "
                              + Reach.ToString("F0") + " m of the pole, the waiting place, the shelter or the standing bus): "
                              + (state == 1 ? "the game's own panel is up, bus: " + PanelWords() + (_booked != null ? ", the player's stop is " + StopLabel(_booked) : "") + ": PASS"
                                  : state == 3 ? "the game's building box leaves the panel no room on any side, so it waits and is tried again while the player stands here: PASS"
@@ -630,7 +632,8 @@ namespace RealLifeOverhaul
                     }
                     Vector3 feet = shelter.SeatFeetAt(seat);
                     float away = Mathf.Sqrt(CitySpots.Flat(feet - at));
-                    Logger?.Info("Transit check (pointer): the player clicks the bench at " + StopLabel(shelter.Stop) + ", " + away.ToString("F1") + " m from seat " + (seat + 1) + ": "
+                    Logger?.Info("Transit check (pointer): the player clicks the bench at " + StopLabel(shelter.Stop) + ", " + away.ToString("F1", CultureInfo.InvariantCulture) + " m from seat "
+                                 + (seat + 1) + ": "
                                  + (away <= SitRange ? "they sit down" : "the game walks them to it first") + ": PASS.");
                     if (away <= SitRange)
                     {
@@ -653,7 +656,7 @@ namespace RealLifeOverhaul
                 }
                 bool here = AtStop(stop, at) || (stop == _served && _bus.State == TransitBus.Phase.Standing && AtBus(at));
                 Logger?.Info("Transit check (pointer): the player clicks " + (bus ? "the bus standing at " : pointer.What == TransitPointer.Kind.Bench ? "the shelter of " : "the pole of ") + StopLabel(stop)
-                             + ", " + Mathf.Sqrt(CitySpots.Flat(stop.Sign - at)).ToString("F1") + " m from the pole: " + (here ? "the list of stops is opened" : "the game walks them to the stop first") + ": PASS.");
+                             + ", " + Mathf.Sqrt(CitySpots.Flat(stop.Sign - at)).ToString("F1", CultureInfo.InvariantCulture) + " m from the pole: " + (here ? "the list of stops is opened" : "the game walks them to the stop first") + ": PASS.");
                 if (here)
                 {
                     ChooseAt(stop);
@@ -685,7 +688,7 @@ namespace RealLifeOverhaul
                 Vector3 at = PlayerHelper.GetPosition();
                 if (!AtStop(stop, at))
                 {
-                    Logger?.Info("Transit check (pointer): the walk to " + StopLabel(stop) + " ended " + Mathf.Sqrt(CitySpots.Flat(stop.Wait - at)).ToString("F1")
+                    Logger?.Info("Transit check (pointer): the walk to " + StopLabel(stop) + " ended " + Mathf.Sqrt(CitySpots.Flat(stop.Wait - at)).ToString("F1", CultureInfo.InvariantCulture)
                                  + " m from its waiting place: FAIL (nothing is opened; the panel is offered within " + Reach.ToString("F0") + " m).");
                     return;
                 }
@@ -792,8 +795,8 @@ namespace RealLifeOverhaul
         {
             bool sat = _seat.Sit(shelter, seat, out string why);
             Logger?.Info("Transit check (seat): the player sits down on seat " + (seat + 1) + " of " + BusStopDressing.Seats + " at " + StopLabel(shelter.Stop) + ", seat "
-                         + BusStopDressing.BenchSeat.ToString("F2") + " m up as the clips are made for"
-                         + (sat ? "; feet " + _seat.FeetOff.ToString("F2") + " m from where the clip wants them: " + (_seat.FeetOff < 0.12f ? "PASS" : "FAIL (the mesh does not reach the seat's place)")
+                         + BusStopDressing.BenchSeat.ToString("F2", CultureInfo.InvariantCulture) + " m up as the clips are made for"
+                         + (sat ? "; feet " + _seat.FeetOff.ToString("F2", CultureInfo.InvariantCulture) + " m from where the clip wants them: " + (_seat.FeetOff < 0.12f ? "PASS" : "FAIL (the mesh does not reach the seat's place)")
                              : ": FAIL (" + why + ")") + ".");
             _sitAt = null;
             _sitSeat = -1;
@@ -835,7 +838,8 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (stop list): the game's list is open at " + StopLabel(_served) + ": " + _trips.Count + " stops, " + direct + " further along this line and "
                          + (_trips.Count - direct) + " with a change of bus (none of another line within " + TransitTrips.WalkedTo.ToString("F0") + " m); the day pass "
                          + (TransitState.HasPass ? "is held" : "is its first entry") + "; " + _list.Made + " entries made so far; bus: " + PanelWords() + "; "
-                         + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: " + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)") + ".");
+                         + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: " + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)")
+                         + ".");
         }
 
         // The city map with the stops on it, as the game's subway entrance opens it for its stations. False if the game's
@@ -868,7 +872,8 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (stop map): the city map is open at " + StopLabel(_served) + " with the game's window for its stations beside it: " + _trips.Count + " stops, "
                          + direct + " further along this line and " + (_trips.Count - direct) + " with a change of bus, each a marker on the map; the day pass "
                          + (TransitState.HasPass ? "is held" : "is its first entry") + "; " + _picker.Made + " entries and " + _picker.Marked + " markers made so far; bus: " + PanelWords() + "; "
-                         + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: " + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)") + ".");
+                         + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: " + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)")
+                         + ".");
             return true;
         }
 
@@ -908,7 +913,7 @@ namespace RealLifeOverhaul
                 if (id == PassRow)
                 {
                     bool bought = !TransitState.HasPass && TransitState.BuyPass();
-                    Logger?.Info("Transit check (choice): the day pass, from the map at " + StopLabel(_served) + ": " + (bought ? "bought for " + TransitState.DayPass.ToString("F2") + ": PASS" : "not bought (no money, or one is held): FAIL") + ".");
+                    Logger?.Info("Transit check (choice): the day pass, from the map at " + StopLabel(_served) + ": " + (bought ? "bought for " + TransitState.DayPass.ToString("F2", CultureInfo.InvariantCulture) + ": PASS" : "not bought (no money, or one is held): FAIL") + ".");
                     if (bought)
                     {
                         Notifications.Show(NotificationType.Success, "reallife_transit_pass_bought", null, 6f);
@@ -995,7 +1000,7 @@ namespace RealLifeOverhaul
                 if (id == PassRow)
                 {
                     bool bought = !TransitState.HasPass && TransitState.BuyPass();
-                    Logger?.Info("Transit check (choice): the day pass, from the list at " + StopLabel(_served) + ": " + (bought ? "bought for " + TransitState.DayPass.ToString("F2") + ": PASS" : "not bought (no money, or one is held): FAIL") + ".");
+                    Logger?.Info("Transit check (choice): the day pass, from the list at " + StopLabel(_served) + ": " + (bought ? "bought for " + TransitState.DayPass.ToString("F2", CultureInfo.InvariantCulture) + ": PASS" : "not bought (no money, or one is held): FAIL") + ".");
                     if (bought)
                     {
                         Notifications.Show(NotificationType.Success, "reallife_transit_pass_bought", null, 6f);
@@ -1154,7 +1159,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (boarding): the player " + how + " but is not walked onto the bus (" + why + "): the ride is the fade at the stop: FAIL.");
             if (!TransitState.PayBus(out bool pass))
             {
-                Logger?.Info("Transit check (ride): the player " + how + " but cannot pay the fare of " + TransitState.BusFare.ToString("F2") + ": nobody boards: FAIL.");
+                Logger?.Info("Transit check (ride): the player " + how + " but cannot pay the fare of " + TransitState.BusFare.ToString("F2", CultureInfo.InvariantCulture) + ": nobody boards: FAIL.");
                 return false;
             }
             _changing = false;
@@ -1177,7 +1182,7 @@ namespace RealLifeOverhaul
             TapCard();
             TransitState.BusRides++;
             bool sound = to != from && minutes >= 1f;
-            string paid = pass ? "on a day pass" : "fare " + TransitState.BusFare.ToString("F2");
+            string paid = pass ? "on a day pass" : "fare " + TransitState.BusFare.ToString("F2", CultureInfo.InvariantCulture);
             if (trip.Direct)
             {
                 _text.Length = 0;
@@ -1192,7 +1197,7 @@ namespace RealLifeOverhaul
             else
             {
                 Logger?.Info("Transit check (ride): the player " + how + " and rides from " + StopLabel(from) + " to " + StopLabel(to) + " with a change of bus: about " + trip.Metres.ToString("F0")
-                             + " m of road (the straight line times " + TransitTrips.RoadFactor.ToString("F2") + "), " + minutes.ToString("F0") + " game minutes with "
+                             + " m of road (the straight line times " + TransitTrips.RoadFactor.ToString("F2", CultureInfo.InvariantCulture) + "), " + minutes.ToString("F0") + " game minutes with "
                              + TransitTrips.ChangeMinutes.ToString("F0") + " for the change, " + paid + ": " + (sound ? "PASS" : "FAIL (not a ride to another stop)") + ".");
             }
             _ride.Begin(minutes, to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived, arriveAboard: _arriveAboard ?? (_arriveAboard = ArriveAboard));
@@ -1228,7 +1233,7 @@ namespace RealLifeOverhaul
         internal void RiderBoards(TransitStop from, TransitStop to, bool pass)
         {
             Logger?.Info("Transit check (boarding): the player is at the front door of the bus at " + StopLabel(from) + " for " + StopLabel(to) + " and "
-                         + (pass ? "shows the day pass" : "pays the fare of " + TransitState.BusFare.ToString("F2")) + ": PASS.");
+                         + (pass ? "shows the day pass" : "pays the fare of " + TransitState.BusFare.ToString("F2", CultureInfo.InvariantCulture)) + ": PASS.");
             _player = PlayerStep.Riding;
         }
 
@@ -1284,7 +1289,8 @@ namespace RealLifeOverhaul
             }
             bool given = GameManager.ChangeMoneySafe(fare, new TransactionInfo("reallife_transaction_bus_fare_back"), null, null, force: true, showNotification: true);
             Notifications.Show(NotificationType.Info, "reallife_transit_fare_back", new Dictionary<string, string>(1) { { "fare", TransitText.Money(fare) } }, 6f);
-            Logger?.Info("Transit check (fare back): " + why + ": the fare of " + fare.ToString("F2") + " is given back: " + (given ? "PASS" : "FAIL (the game would not pay it)") + ".");
+            Logger?.Info("Transit check (fare back): " + why + ": the fare of " + fare.ToString("F2", CultureInfo.InvariantCulture) + " is given back: "
+                + (given ? "PASS" : "FAIL (the game would not pay it)") + ".");
         }
 
         // The bus the player stepped down from at the far end: it goes once they are clear of its door, or after a few seconds.
@@ -1304,7 +1310,8 @@ namespace RealLifeOverhaul
             }
             _offBus = null;
             bus.Depart();
-            Logger?.Info("Transit check (departure): the bus the player got off closes its doors and leaves " + StopLabel(bus.Stop) + ", the player " + clear.ToString("F1")
+            Logger?.Info("Transit check (departure): the bus the player got off closes its doors and leaves " + StopLabel(bus.Stop) + ", the player "
+                         + clear.ToString("F1", CultureInfo.InvariantCulture)
                          + " m from its door: PASS.");
         }
 
@@ -1362,7 +1369,8 @@ namespace RealLifeOverhaul
             Vector3 at = PlayerHelper.GetPosition();
             float off = Mathf.Sqrt(CitySpots.Flat(at - to.Wait));
             bool onPavement = CitySpots.Pavement(at, 0.3f, out _);
-            Logger?.Info("Transit check (put-down): the player stands " + off.ToString("F1") + " m from the waiting place of " + StopLabel(to) + ", on the pavement: " + (onPavement ? "yes" : "no")
+            Logger?.Info("Transit check (put-down): the player stands " + off.ToString("F1", CultureInfo.InvariantCulture) + " m from the waiting place of " + StopLabel(to) + ", on the pavement: "
+                         + (onPavement ? "yes" : "no")
                          + ", the stop dressed: " + (Dressed(to) ? "yes" : "no") + ": " + (off < 3f && onPavement ? "PASS" : "FAIL") + ".");
         }
 

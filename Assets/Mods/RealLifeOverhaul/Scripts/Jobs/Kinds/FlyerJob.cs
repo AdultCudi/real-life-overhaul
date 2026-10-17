@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Characters.EmojiSystem;
 using Helpers;
 using RealLifeOverhaul.GameUi;
@@ -173,7 +174,7 @@ namespace RealLifeOverhaul
             Figures(now);
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: flyers: a bundle of " + _bundle + ", the pitch is " + Pitch.ToString("F0") + " m round the player, reach " + Reach.ToString("F1")
+                Ctx.Logger?.Info("Jobs: flyers: a bundle of " + _bundle + ", the pitch is " + Pitch.ToString("F0") + " m round the player, reach " + Reach.ToString("F1", CultureInfo.InvariantCulture)
                                  + " m; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panel over the passer-by is all there is)")
                                  + ", " + ShiftRates.Minutes(Def) + " game minutes a flyer by the clock at " + ShiftRates.Percent + "%.");
             }

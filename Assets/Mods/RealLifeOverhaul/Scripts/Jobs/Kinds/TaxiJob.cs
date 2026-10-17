@@ -1,3 +1,4 @@
+using System.Globalization;
 using BigAmbitions.Characters;
 using Characters.EmojiSystem;
 using RealLifeOverhaul.GameUi;
@@ -268,8 +269,10 @@ namespace RealLifeOverhaul
                         ? vehicle.powertrain.engine.maxPower * 1000f / (body.mass * LaunchSpeed) : Grip;
                     float most = Mathf.Min(Grip, Mathf.Max(brakes, engine));
                     _harsh = Mathf.Clamp(most * Tolerated, HarshLeast, HarshG);
-                    Ctx.Logger?.Info("Jobs: taxi comfort for this car: brakes " + brakes.ToString("F1") + " m/s2, engine " + engine.ToString("F1")
-                                     + " m/s2 at " + LaunchSpeed.ToString("F0") + " m/s, " + body.mass.ToString("F0") + " kg; a hard stop is " + _harsh.ToString("F1") + " m/s2.");
+                    Ctx.Logger?.Info("Jobs: taxi comfort for this car: brakes " + brakes.ToString("F1", CultureInfo.InvariantCulture) + " m/s2, engine "
+                                     + engine.ToString("F1", CultureInfo.InvariantCulture)
+                                     + " m/s2 at " + LaunchSpeed.ToString("F0") + " m/s, " + body.mass.ToString("F0") + " kg; a hard stop is " + _harsh.ToString("F1", CultureInfo.InvariantCulture)
+                                     + " m/s2.");
                 }
             }
             catch (System.Exception e)
@@ -486,8 +489,10 @@ namespace RealLifeOverhaul
                 _passenger.StandAt(here, atDoor ? here + _doorInwards * 3f : _car.transform.position);
                 float getIn = atDoor ? Ctx.Animations.Play(_passenger.Character, _doorRight ? JobClip.CarEnter : JobClip.CarEnterLeft) : 0f;
                 Ctx.Logger?.Info(getIn > 0f
-                    ? "Jobs: the passenger gets in at the " + (_doorRight ? "right" : "left") + " rear door, " + gap.ToString("F2") + " m from where the clip is made for."
-                    : "Jobs: the passenger is in the car (no getting-in clip" + (_doorClip ? ": they stopped " + gap.ToString("F2") + " m from the door)." : " to be had)."));
+                    ? "Jobs: the passenger gets in at the " + (_doorRight ? "right" : "left") + " rear door, " + gap.ToString("F2", CultureInfo.InvariantCulture)
+                        + " m from where the clip is made for."
+                    : "Jobs: the passenger is in the car (no getting-in clip"
+                        + (_doorClip ? ": they stopped " + gap.ToString("F2", CultureInfo.InvariantCulture) + " m from the door)." : " to be had)."));
                 if (getIn > 0f)
                 {
                     _enterUntil = now + getIn;

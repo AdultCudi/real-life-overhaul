@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -427,7 +428,8 @@ namespace RealLifeOverhaul.Economy
                     float done = Time.realtimeSinceStartup;
                     Logger?.Info("Services check (day " + day + "): " + _state.Crew.Count + " on the crew, " + _state.Clients.Count + " on the round (" + ContractRules.Running(_state) + " under contract), "
                                  + _visits.Count + " visit(s) planned, " + _state.Listings.Count + " business(es) on the market with " + _state.SaleOffers.Count + " offer(s); the cleaning service "
-                                 + ((cleaned - started) * 1000f).ToString("0.0") + " ms, selling " + ((done - cleaned) * 1000f).ToString("0.0") + " ms: PASS");
+                                 + ((cleaned - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, selling "
+                                 + ((done - cleaned) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
             catch (Exception e)

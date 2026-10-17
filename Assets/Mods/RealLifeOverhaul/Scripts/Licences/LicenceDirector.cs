@@ -12,30 +12,25 @@ using Vehicles.VehicleTypes;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Driving licences: the one component that runs them. It loads and saves the record
-    /// (LicenceState), grants the licences an existing save is owed the first time it runs,
-    /// finds the driving school's desks, runs the one written or practical test that may be on,
-    /// and ticks enforcement (points, the licence asked for at a stop, the routine roadside
-    /// check).
-    /// Cost: a handful of comparisons per frame; once a second the desks and the school's car;
-    /// four times a second enforcement while out of doors. Per-frame work only while a test is
-    /// on. Anything unexpected is logged once, whatever was out is taken back, and licences stay
-    /// as they are for the rest of the session with nothing further staged.
+    /// Driving licences' one component: the record, the school's desks, the one test that may be on, and enforcement.
+    /// Cost: a few comparisons a frame while idle; once a second the desks, four times a second enforcement out of doors,
+    /// and per-frame work only while a test is driven. After a fault the school shuts for the session.
     /// </summary>
-    public class LicenceDirector : MonoBehaviour
+    public sealed partial class LicenceDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("licences", "LicenceDirector", typeof(LicenceDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("licences", "LicenceDirector", typeof(LicenceDirector));
+        private static readonly int HotUpdate = HotSpots.Slot("Licences: LicenceDirector.Update");
 
         private const string FeeTransaction = "reallife_transaction_licence_fee";
 
         public static IModLogger Logger;
         public static LicenceDirector Instance { get; private set; }
 
-        /// <summary>True while the interaction key is ours: at a desk, or while a test shows a prompt. The mod's own enter-a-door key stands aside.</summary>
+        /// <summary>True while the interact key is ours (at a desk, or a test's prompt): the mod's door key stands aside.</summary>
         public static bool TakesInteractKey =>
             Instance != null && (Instance._desk.TakesKey || Instance._theory.Active || Instance._practical.Prompting);
 
-        /// <summary>True while a written or practical test (or a lesson) is on. Other large scenes may want to wait.</summary>
+        /// <summary>True while a written or driven test or a lesson is on.</summary>
         public static bool IsActive => Instance != null && (Instance._theory.Active || Instance._practical.Active);
 
         private TheoryTest _theory;
@@ -44,9 +39,9 @@ namespace RealLifeOverhaul
         private PracticalTest _practical;
         private TestCar _car;
         private LicenceDesks _desks;
-        internal LicenceDesks Desks => _desks;   // read only, for the city map (World/MapLinks)
         private DrivingEnforcement _enforcement;
         private JobCast _cast;
+        private Action _onSave;   // made once: SaveHook compares it by reference
 
         private float _nextSlow;
         private float _nextFast;
@@ -60,32 +55,7 @@ namespace RealLifeOverhaul
         private VehicleController _lastDriven;
         private float _nextWarning;
 
-        // Firearms were taken out of the mod in 0.37: what a save still carries of them (one modData line, one phone contact) is removed once.
-        private void ForgetFirearms(GameInstance save)
-        {
-            const string contactId = "reallife-firearms-unit";
-            bool data = save.modData != null && save.modData.Remove("reallife:firearms");
-            bool contact = false;
-            if (save.Contacts != null)
-            {
-                for (int i = save.Contacts.Count - 1; i >= 0; i--)
-                {
-                    if (save.Contacts[i] != null && (save.Contacts[i].id == contactId || save.Contacts[i].id == "reallife-gunshop"))
-                    {
-                        save.Contacts.RemoveAt(i);
-                        contact = true;
-                    }
-                }
-            }
-            if (contact && save.PlayerDefaults != null && (save.PlayerDefaults.contactsLastName == contactId || save.PlayerDefaults.contactsLastName == "reallife-gunshop"))
-            {
-                save.PlayerDefaults.contactsLastName = null;   // the game's Contacts app shows an empty list for a contact that is gone
-            }
-            if (data || contact)
-            {
-                Logger?.Info("Licences: this save's firearms data was removed (the feature is no longer part of the mod).");
-            }
-        }
+        internal LicenceDesks Desks => _desks;
 
         private void Awake()
         {
@@ -126,10 +96,7 @@ namespace RealLifeOverhaul
             _desk.Dispose();
             _car.Dispose();
             _desks.Dispose();
-            if (_cast != null)
-            {
-                _cast.Dispose();
-            }
+            _cast?.Dispose();
             LicenceState.Reset();
             if (Instance == this)
             {
@@ -147,20 +114,19 @@ namespace RealLifeOverhaul
             return vehicle != null && _car != null && _car.Out && ReferenceEquals(_practical.Car, vehicle);
         }
 
-        private static readonly int HotUpdate = HotSpots.Slot("Licences: LicenceDirector.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -177,7 +143,7 @@ namespace RealLifeOverhaul
                     PlayerController alone = PlayerHelper.PlayerController;
                     if (alone != null)
                     {
-                        _car.Tick(alone.transform.position);   // a car that was out is still seen back
+                        _car.Tick(alone.transform.position);   // a car that was out still goes back
                     }
                 }
                 return;
@@ -197,7 +163,6 @@ namespace RealLifeOverhaul
                 {
                     if (_theory.Lost)
                     {
-                        // The list was taken from under the paper: it is stopped, and the fee goes back.
                         if (_theory.Abort())
                         {
                             Refund();
@@ -258,8 +223,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- once a second
-
         private void Slow(float now)
         {
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -284,7 +247,7 @@ namespace RealLifeOverhaul
             }
 
             // The game clears its event hub on every load, so the save hook is kept attached.
-            SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+            SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));
 
             if (!LicenceState.MotorcycleDecided)
             {
@@ -301,7 +264,7 @@ namespace RealLifeOverhaul
             Vector3 player = gm.playerController.transform.position;
             _car.Tick(player);
 
-            // Getting into something they hold no licence for: said once as they sit down, never policed by magic.
+            // Getting into something they hold no licence for is said once; only an officer polices it.
             VehicleController driven = PlayerHelper.IsUsingVehicle ? gm.selectedVehicle : null;
             if (!ReferenceEquals(driven, _lastDriven))
             {
@@ -327,12 +290,9 @@ namespace RealLifeOverhaul
             {
                 _desks.Tick(player);
             }
-            // The game's panel at the desk the player stands at (a few compares a second when nothing has changed).
             bool at = _desks.At >= 0 && !ThirdPersonCamera.IsUiOpen();
             _desk.Offer(at, at ? _desks.Front(_desks.At) : player, player, at ? _desks.Address(_desks.At) : null);
         }
-
-        private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
 
         private void OnSaveGame()
         {
@@ -354,7 +314,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The first time the rules run on a save: whoever already owns a vehicle already drives, and keeps doing so lawfully.
+        // The first run on a save: whoever owns a vehicle keeps driving it lawfully.
         private void FirstRun()
         {
             if (LicenceState.FirstDay > 0)
@@ -371,7 +331,7 @@ namespace RealLifeOverhaul
                 VehicleInstance instance = all[i];
                 if (instance == null || instance is DeliveryVehicleInstance || Dealerships.Stock(instance))
                 {
-                    continue;   // the game's job van is not theirs, nor is a car of a dealership's stock to drive (Core/Dealerships)
+                    continue;   // the game's job van and a dealer's stock are not theirs
                 }
                 VehicleType type = SafeType(instance.vehicleTypeName);
                 if (type == null || !type.IsMotorVehicle || type.spawnInPlayerObject)
@@ -421,8 +381,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A save from before the motorcycle class (or a new one): whoever already owns a motorbike already rides, and keeps doing so
-        // lawfully, once. The Garage reads its list a little after this feature is ready, so this is asked once a second until it answers.
+        // Whoever owns a motorbike keeps riding it lawfully. Asked once a second until the Garage, which loads later, answers.
         private void GrandfatherMotorbike()
         {
             int owns;
@@ -453,6 +412,33 @@ namespace RealLifeOverhaul
                     Licences.Toast(NotificationType.Success, "reallife_lic_grandfather_motorcycle", "days", LicenceLaw.ValidDays.ToString(), 14f);
                 }
                 Logger?.Info("Licences: the save owns a motorbike: motorcycle licence granted.");
+            }
+        }
+
+        // A save may still hold the retired firearms feature's data line and phone contact.
+        private static void ForgetFirearms(GameInstance save)
+        {
+            const string contactId = "reallife-firearms-unit";
+            bool data = save.modData != null && save.modData.Remove("reallife:firearms");
+            bool contact = false;
+            if (save.Contacts != null)
+            {
+                for (int i = save.Contacts.Count - 1; i >= 0; i--)
+                {
+                    if (save.Contacts[i] != null && (save.Contacts[i].id == contactId || save.Contacts[i].id == "reallife-gunshop"))
+                    {
+                        save.Contacts.RemoveAt(i);
+                        contact = true;
+                    }
+                }
+            }
+            if (contact && save.PlayerDefaults != null && (save.PlayerDefaults.contactsLastName == contactId || save.PlayerDefaults.contactsLastName == "reallife-gunshop"))
+            {
+                save.PlayerDefaults.contactsLastName = null;   // else the game's Contacts app opens on an empty list
+            }
+            if (data || contact)
+            {
+                Logger?.Info("Licences: this save's firearms data was removed (the feature is no longer part of the mod).");
             }
         }
 
@@ -499,9 +485,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the desk
-
-        /// <summary>The address of the desk nearest the player, for the phone to give as directions.</summary>
+        /// <summary>The address of the desk nearest the player, for directions.</summary>
         internal bool NearestDesk(out string address)
         {
             address = null;
@@ -509,35 +493,25 @@ namespace RealLifeOverhaul
             return player != null && _desks.Nearest(player.transform.position, out _, out address);
         }
 
-        /// <summary>The front of the nearest driving-school desk (for anything else that keeps a counter there).</summary>
-        internal bool NearestDesk(Vector3 from, out Vector3 front)
-        {
-            return _desks.Nearest(from, out front, out _);
-        }
-
         internal void OpenDesk()
-        {            _pendingDesk = _desks.At >= 0 ? _desks.Front(_desks.At) : PlayerHelper.GetPosition();
+        {
+            _pendingDesk = _desks.At >= 0 ? _desks.Front(_desks.At) : PlayerHelper.GetPosition();
             _desks.Away();
             _desk.HidePanel("the desk was spoken to");
             if (!_desk.Open())
             {
-                LicencePhone.OpenInPerson(null);   // the game's list could not be made: the dialogue panel asks the same things
+                LicencePhone.OpenInPerson(null);   // no list window: the dialogue panel asks the same things
             }
         }
 
-        /// <summary>
-        /// The player took a service in the conversation. Renewals and the endorsement are done on
-        /// the spot; a test or a lesson is paid for now and starts when the conversation is over.
-        /// Returns the line the school closes with (<see cref="Refused"/> tells a refusal, with nothing paid).
-        /// </summary>
+        /// <summary>The player took a service: paid for now, and a test starts once the conversation is over. Returns the school's answer.</summary>
         internal string Take(SchoolService service)
         {
             int day = TimeHelper.CurrentDay;
             int fee = DrivingSchool.Fee(service);
             if (Drives(service))
             {
-                // Before the fee: a place for the school's car and a route from it, round any lane closed for now. A road shut by
-                // an accident is said here at the desk with nothing paid (it used to be paid, refused when the car came and given back).
+                // Before the fee: a place for the school's car and a route from it, so a closed road is said with nothing paid.
                 Vector3 desk = _desks.At >= 0 ? _desks.Front(_desks.At) : _pendingDesk;
                 if (!CanDrive(out string why) || !_practical.CanStage(desk, out why))
                 {
@@ -568,7 +542,7 @@ namespace RealLifeOverhaul
                     return "reallife_school_done_taxi";
 
                 case SchoolService.Motorcycle:
-                    LicenceState.Grant(LicenceClass.Motorcycle, day);   // the ride assessment is recorded at the desk: the school has no motorbike to lend
+                    LicenceState.Grant(LicenceClass.Motorcycle, day);
                     ModState.AddModifier(ModState.MoodUp);
                     Logger?.Info("Licences: motorcycle licence issued after the desk assessment.");
                     return "reallife_school_done_motorcycle";
@@ -586,7 +560,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The conversation is over (or nearly): the test that was paid for starts, or the money goes back.
+        // The test paid for starts once the conversation is over, or the money goes back.
         private void StartPending(float now)
         {
             if (!LifeEvents.IsSafeForEvent())
@@ -614,7 +588,7 @@ namespace RealLifeOverhaul
                           && _practical.Begin(van ? LicenceClass.Commercial : LicenceClass.Car, lesson, false, _pendingFee, _pendingDesk, out reason);
                 if (started)
                 {
-                    _pendingFee = 0;   // the test has it now, and gives it back itself if it cannot go on
+                    _pendingFee = 0;   // the test refunds it itself from here
                 }
             }
             if (!started)
@@ -625,20 +599,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The services driven in the school's car: the lessons and tests for a car and for a van.
         private static bool Drives(SchoolService service)
         {
             return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan;
         }
 
-        // What Take answers when nothing was paid: the money, or why the school's car cannot go out now (CanDrive, PracticalTest.CanStage).
+        // What Take answers when nothing was paid.
         private static readonly string[] RefusalKeys =
         {
             "reallife_school_no_money", "reallife_lic_no_busy", "reallife_lic_no_on_foot", "reallife_lic_no_roads",
             TestRouteRules.NoSpotKey, TestRouteRules.NoRouteKey, TestRouteRules.ClosedKey
         };
 
-        /// <summary>Whether the line <see cref="Take"/> closed with is a refusal (nothing was paid or done): the money, or why the car cannot go out.</summary>
+        /// <summary>Whether <see cref="Take"/>'s answer is a refusal, with nothing paid or done.</summary>
         internal static bool Refused(string line)
         {
             return line == null || Array.IndexOf(RefusalKeys, line) >= 0;
@@ -662,7 +635,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void OnTheoryMarked(bool passed, int score, int of)
+        private void OnTheoryMarked(bool passed)
         {
             _pendingFee = 0;
             int day = TimeHelper.CurrentDay;
@@ -675,129 +648,6 @@ namespace RealLifeOverhaul
             else
             {
                 LicenceState.TheoryRetryDay = day + LicenceLaw.RetestWaitDays;
-            }
-        }
-
-        // ---------------------------------------------------------------- the options page
-
-        private bool Ready(string test)
-        {
-            if (!LicenceState.Loaded || PlayerHelper.PlayerController == null)
-            {
-                TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);
-                return false;
-            }
-            if (_broken)
-            {
-                TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff, 0, "switched off after an error this session");
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>Test button: gives the licence if it is not in order, takes it away if it is.</summary>
-        public void TestToggle(LicenceClass kind)
-        {
-            if (!Ready("Licence"))
-            {
-                return;
-            }
-            int day = TimeHelper.CurrentDay;
-            if (LicenceState.Valid(kind, day))
-            {
-                LicenceState.Revoke(kind);
-                Licences.Toast(NotificationType.Warning, "reallife_lic_test_revoked", "class", Licences.ClassName(kind), 6f);
-            }
-            else
-            {
-                if ((kind == LicenceClass.Commercial || kind == LicenceClass.Taxi) && !LicenceState.Valid(LicenceClass.Car, day))
-                {
-                    LicenceState.Grant(LicenceClass.Car, day);   // the van and the taxi stand on a car licence
-                }
-                LicenceState.SuspendedUntil = 0;
-                LicenceState.Grant(kind, day);
-                Licences.Toast(NotificationType.Success, "reallife_lic_test_granted", "class", Licences.ClassName(kind), 6f);
-            }
-        }
-
-        /// <summary>Test button: the written test, here and now, with nothing charged. A pass counts.</summary>
-        public void TestTheory()
-        {
-            if (!Ready("Theory test"))
-            {
-                return;
-            }
-            TestRefusal why = IsActive || _pending ? TestRefusal.SceneActive
-                : !Settings.DrivingLicence || !Settings.DrivingSchool ? TestRefusal.FeatureOff
-                : PlayerHelper.IsUsingVehicle ? TestRefusal.NotOnFoot
-                : TestRefusal.None;
-            if (why != TestRefusal.None)
-            {
-                TestRefusals.Tell(Logger, "Theory test", why);
-                return;
-            }
-            _pendingFee = 0;
-            _pending = true;
-            _pendingService = SchoolService.Theory;
-            _pendingSince = Time.unscaledTime;   // starts once the options page is closed
-        }
-
-        /// <summary>Test button: a practical test from where the player stands, with nothing charged. A pass counts.</summary>
-        public void TestPractical(LicenceClass kind)
-        {
-            if (!Ready("Practical test"))
-            {
-                return;
-            }
-            TestRefusal why = TestRefusals.Street();
-            if (why == TestRefusal.None)
-            {
-                why = IsActive || _pending ? TestRefusal.SceneActive
-                    : !Settings.DrivingLicence || !Settings.DrivingSchool ? TestRefusal.FeatureOff
-                    : PlayerHelper.IsUsingVehicle ? TestRefusal.NotOnFoot
-                    : JobDirector.OnShift ? TestRefusal.OnJob
-                    : PoliceAttention.IsBusy ? TestRefusal.PoliceBusy
-                    : TestRefusal.None;
-            }
-            if (why != TestRefusal.None)
-            {
-                TestRefusals.Tell(Logger, "Practical test", why);
-                return;
-            }
-            if (!_practical.Begin(kind, false, true, 0, PlayerHelper.GetPosition(), out string reason))
-            {
-                TestRefusals.Tell(Logger, "Practical test", TestRefusal.NothingFits, 0, reason);
-            }
-        }
-
-        /// <summary>Test button: a routine roadside check now.</summary>
-        public void TestCheck()
-        {
-            if (Ready("Roadside check"))
-            {
-                _enforcement.TestCheck();
-            }
-        }
-
-        /// <summary>Test button: four penalty points, as for driving on the pavement.</summary>
-        public void TestPoints()
-        {
-            if (Ready("Penalty points"))
-            {
-                _enforcement.Points(PointCode.Reckless);
-            }
-        }
-
-        /// <summary>Test button (and the plain way to look): the licence card on a sheet for a few seconds.</summary>
-        public void ShowCard()
-        {
-            if (!Ready("Licence card") || IsActive)
-            {
-                return;
-            }
-            if (!_desk.ShowCard())
-            {
-                Licences.Toast(NotificationType.Info, "reallife_lic_toast", "text", DrivingSchool.CardText(), 20f);
             }
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -339,7 +340,8 @@ namespace RealLifeOverhaul.Economy
                 bool balanced = !_bank.Running || OwnBankRules.Balanced(_bank);
                 Logger?.Info("Own bank check (day " + day + "): income " + _day.Income + " and costs " + _day.Costs + " cents booked at " + (hq != null ? OwnBankGame.Name(hq) : "no address")
                              + " (the day's profit " + _day.Profit + " kept in the capital, so the player's cash is unchanged); " + (market ? _quotes.Count + " quotes" : "no market")
-                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00") + " ms; the books " + (balanced ? "balance: PASS" : "DO NOT BALANCE: FAIL") + ".");
+                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms; the books "
+                             + (balanced ? "balance: PASS" : "DO NOT BALANCE: FAIL") + ".");
             }
         }
 

@@ -937,7 +937,7 @@ namespace RealLifeOverhaul
             gap.y = 0f;
             float off = _hasFace ? gap.magnitude : 0f;
             bool reached = _hasFace && Mathf.Abs(off - _reach) <= SceneClips.CprSlack;
-            ActorPool.Logger?.Info($"People: kneeling {off:F2} m from the chest of whoever is down; '{_stance}' is made for {_reach:F2} m: "
+            ActorPool.Logger?.Info(System.FormattableString.Invariant($"People: kneeling {off:F2} m from the chest of whoever is down; '{_stance}' is made for {_reach:F2} m: ")
                                    + (reached ? "played." : "not played, they kneel at work beside them instead."));
             return reached;
         }

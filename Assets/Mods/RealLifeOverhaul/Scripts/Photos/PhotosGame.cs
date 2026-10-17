@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -593,7 +594,8 @@ namespace RealLifeOverhaul.Photos
                 }
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Gallery check (a photo of " + (bytes.Length / 1024) + " KB decoded on the main thread in " + watch.Elapsed.TotalMilliseconds.ToString("0.0")
+                    Logger?.Info("Gallery check (a photo of " + (bytes.Length / 1024) + " KB decoded on the main thread in "
+                                 + watch.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture)
                                  + " ms, wanted under " + CameraRules.ReadMost.ToString("0") + "): " + (texture == null ? "no picture" : watch.Elapsed.TotalMilliseconds < CameraRules.ReadMost ? "PASS" : "slow"));
                 }
             }

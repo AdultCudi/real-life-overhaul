@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using RealLifeOverhaul.GameUi;
@@ -236,7 +237,7 @@ namespace RealLifeOverhaul.Planner
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Planner: opened. " + _director.LookSummary() + "; " + _rows.Count + " rows on tab " + _tab + "; "
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms; " + _shell.Box.Fit() + ".");
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms; " + _shell.Box.Fit() + ".");
             }
         }
 

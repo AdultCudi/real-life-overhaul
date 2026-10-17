@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using UI.Load;
@@ -483,7 +484,8 @@ namespace RealLifeOverhaul.Flare
             {
                 Logger?.Info("Flare check (city photo): " + shot.Kind.ToString().ToLowerInvariant() + (shot.Place != null ? " (" + shot.Place + ")" : string.Empty) + " in " + district + ", "
                              + light.ToString().ToLowerInvariant() + (wet ? ", in the rain" : ", dry") + (result.Written ? ", taken as photo " + id : ", not taken: " + result.Why)
-                             + "; the renders took " + result.RenderMs.ToString("0.0") + " ms of the main thread (wanted under " + FlareCityPhotoRules.SlowMs + " ms), next in "
+                             + "; the renders took " + result.RenderMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms of the main thread (wanted under " + FlareCityPhotoRules.SlowMs
+                             + " ms), next in "
                              + _photoPace.ToString("0") + " s; " + _photoToday + " of " + FlareCityPhotoRules.DayMost + " today, " + _bank.Photos.Count + " in the bank: "
                              + (result.Written || result.Why != null ? "PASS" : "FAIL"));
             }

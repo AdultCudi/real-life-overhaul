@@ -366,8 +366,9 @@ namespace RealLifeOverhaul
             if (!placed || !turned || !ClipLibrary.TryGet(SceneClips.ArrestCuffed, out CityClip cuffing)
                 || !_suspect.LeadInto(SceneClips.ArrestCuffed, SceneClips.CuffedStand))
             {
-                Crime.Logger?.Info($"Crime: cuffed by the reach, not the pair of clips (officer {off.magnitude:F2} m from the place 0.9 m behind, "
-                                   + $"allowed {SceneClips.CuffSlack:F2}; suspect turned away {turned}; clips to be had {ClipLibrary.Has(SceneClips.ArrestCuffed)}).");
+                Crime.Logger?.Info(System.FormattableString.Invariant($"Crime: cuffed by the reach, not the pair of clips (officer {off.magnitude:F2} m from the place 0.9 m behind, ")
+                                   + System.FormattableString.Invariant(
+                                       $"allowed {SceneClips.CuffSlack:F2}; suspect turned away {turned}; clips to be had {ClipLibrary.Has(SceneClips.ArrestCuffed)})."));
                 Reach(now);
                 return;
             }
@@ -379,7 +380,7 @@ namespace RealLifeOverhaul
                 _officer.Gesture(CrimeSceneGestures.Reach);   // (too heavily built for a clip with a tool, or no handcuffs in the prop bundle)
             }
             _click = now + Mathf.Clamp(cuffing.Mark(SceneClips.CuffClick, cuffing.Length * 0.6f), 0.1f, Mathf.Max(0.1f, cuffing.Length));
-            Crime.Logger?.Info($"Crime: cuffed in the pair of clips, the officer {off.magnitude:F2} m from the place they are made for"
+            Crime.Logger?.Info(System.FormattableString.Invariant($"Crime: cuffed in the pair of clips, the officer {off.magnitude:F2} m from the place they are made for")
                                + (_officerHolds ? "." : " (the officer's half could not be had: the reach instead)."));
             Go(Step.Cuffing, now, cuffing.Length);
         }
@@ -495,10 +496,12 @@ namespace RealLifeOverhaul
             if (there && ClipLibrary.TryGet(clip, out CityClip enter) && _suspect.Act(clip, ClipEnd.Hold))
             {
                 _seated = now + Mathf.Clamp(enter.Mark("seated", enter.Length), 0.5f, Mathf.Max(0.5f, enter.Length));
-                Crime.Logger?.Info($"Crime: the cuffed suspect gets in at the {(_doorRight ? "right" : "left")} rear door, {off.magnitude:F2} m from where the clip is made for.");
+                Crime.Logger?.Info(System.FormattableString.Invariant(
+                    $"Crime: the cuffed suspect gets in at the {(_doorRight ? "right" : "left")} rear door, {off.magnitude:F2} m from where the clip is made for."));
                 return;
             }
-            Crime.Logger?.Info($"Crime: the cuffed suspect is in the car with no getting-in clip (they stopped {off.magnitude:F2} m from the place it is made for, allowed {DoorExact:F2}).");
+            Crime.Logger?.Info(System.FormattableString.Invariant(
+                $"Crime: the cuffed suspect is in the car with no getting-in clip (they stopped {off.magnitude:F2} m from the place it is made for, allowed {DoorExact:F2})."));
             _doorClip = false;
             _suspect.Exit();
         }

@@ -152,6 +152,10 @@ internal static partial class Program
         FlareFaceLoad();   // Flare's faces drawn ahead: the likely ones behind the loading screen within its budget, once per look, the textures and the folder bounded, each face the person's own (FlareFaceLoadChecks.cs)
         Shared();
         Fame();
+        LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
+        JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
+        TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
+        Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();
         Infra2();
         Ventures2();

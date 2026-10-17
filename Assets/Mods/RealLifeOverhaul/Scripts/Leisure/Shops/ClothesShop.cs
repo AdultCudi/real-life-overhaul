@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using BigAmbitions.Characters;
 using Buildings;
 using Helpers;
@@ -7,14 +8,7 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Leisure
 {
-    public enum ClothesTier { Everyday, Smart, Premium }
-
-    /// <summary>
-    /// The mod's wardrobe as something that is bought: what each garment costs, which of them
-    /// this save owns, and the rule "clothes must be bought". The garments themselves, the
-    /// player's picks and how they are drawn stay where they were (Character/CharacterCatalogue,
-    /// ModLooks); this only decides what may be picked.
-    /// </summary>
+    /// <summary>The mod's garments as something bought: prices, what this save owns, and the buying rule.</summary>
     internal static class ClothesShop
     {
         public const string NotOwnedKey = "reallife_look_not_owned";
@@ -22,42 +16,21 @@ namespace RealLifeOverhaul.Leisure
         private static int _catalogueVersion = -1;
         private static int _ownedVersion = -1;
 
-        /// <summary>A browser has something on the player that is not theirs yet: the rule waits until it is closed.</summary>
+        /// <summary>Something not owned is being tried on: the rule waits until the screen closes.</summary>
         public static bool Trying;
-
-        // Tier and price are the catalogue's (one field each per garment and shoe style).
-        public static ClothesTier Tier(string id)
-        {
-            switch (CharacterCatalogue.TierOf(id))
-            {
-                case LookTier.Premium: return ClothesTier.Premium;
-                case LookTier.Smart: return ClothesTier.Smart;
-                default: return ClothesTier.Everyday;
-            }
-        }
 
         public static int Price(string id)
         {
-            return Prices.At(CharacterCatalogue.PriceOf(id));   // the catalogue's price is the start's
+            return Prices.At(CharacterCatalogue.PriceOf(id));   // the catalogue's prices are the start's
         }
 
-        public static string TierKey(ClothesTier tier)
-        {
-            switch (tier)
-            {
-                case ClothesTier.Premium: return "reallife_leisure_tier_premium";
-                case ClothesTier.Smart: return "reallife_leisure_tier_smart";
-                default: return "reallife_leisure_tier_everyday";
-            }
-        }
-
-        /// <summary>Whether this save may wear a look: always while clothes need not be bought, otherwise only what was bought. The game's own (null) is always theirs.</summary>
+        /// <summary>Whether this save may wear a look: anything unless clothes must be bought.</summary>
         public static bool Has(string id)
         {
             return id == null || !LeisureState.Loaded || !LeisureState.MustBuy || LeisureState.Owns(id);
         }
 
-        /// <summary>Whether this save may wear at least one colourway of the garment whose first entry this is.</summary>
+        /// <summary>Whether this save may wear any colourway of the garment from <paramref name="first"/>.</summary>
         public static bool HasAny(CharacterCatalogue.Slot slot, int first)
         {
             int count = CharacterCatalogue.GroupCount(slot, first);
@@ -71,7 +44,7 @@ namespace RealLifeOverhaul.Leisure
             return false;
         }
 
-        /// <summary>Whether the bundle really has this look (a row whose mesh is missing is not sold).</summary>
+        /// <summary>Whether the bundle has this look; a row whose mesh is missing is not sold.</summary>
         public static bool InStock(string id)
         {
             return id != null && ModAssets.Ready && ModAssets.Find(id) != null;
@@ -83,7 +56,7 @@ namespace RealLifeOverhaul.Leisure
             return data != null && data.gender == Gender.Female ? LookSex.Female : LookSex.Male;
         }
 
-        /// <summary>An entry by name: "garment, colour" for a garment slot, the shoe's own label otherwise. Builds a string: on a key press only.</summary>
+        /// <summary>"Garment, colour" for a garment slot, the shoe's own label otherwise. Builds a string.</summary>
         public static string NameOf(CharacterCatalogue.Slot slot, int index)
         {
             string garment = JobText.T(CharacterCatalogue.GarmentKey(slot, index));
@@ -91,43 +64,7 @@ namespace RealLifeOverhaul.Leisure
             return colour != null ? garment + ", " + JobText.T(colour) : garment;
         }
 
-        /// <summary>A garment or a shoe style by name, without its colourway ("Court sneakers, white and navy" is "Court sneakers").</summary>
-        public static string GarmentName(CharacterCatalogue.Slot slot, int first)
-        {
-            string name = JobText.T(CharacterCatalogue.GarmentKey(slot, first));
-            if (slot.Paired)
-            {
-                return name;
-            }
-            int cut = name.IndexOf(',');
-            return cut > 0 ? name.Substring(0, cut) : name;
-        }
-
-        /// <summary>A colourway by name: the palette's for a garment slot; for a shoe what stands after the comma of its label.</summary>
-        public static string ColourName(CharacterCatalogue.Slot slot, int index)
-        {
-            string colour = CharacterCatalogue.ColourKey(slot, index);
-            if (colour != null)
-            {
-                return JobText.T(colour);
-            }
-            string name = JobText.T(CharacterCatalogue.GarmentKey(slot, index));
-            int cut = name.IndexOf(", ", StringComparison.Ordinal);
-            return cut > 0 && cut + 2 < name.Length ? char.ToUpperInvariant(name[cut + 2]) + name.Substring(cut + 3) : name;
-        }
-
-        /// <summary>
-        /// Puts a look on (or takes it off, with 0). A top or trousers take a dress off, since the dress would hide them.
-        /// </summary>
-        public static void Wear(CharacterCatalogue.Slot slot, int index)
-        {
-            CharacterCatalogue.Pick(slot, index, LookSource.Wardrobe);
-        }
-
-        /// <summary>
-        /// A save read for the first time by this version: a game just begun starts with the rule on and owns what was
-        /// picked for it during character creation; a game already going starts with it off, so nobody loses what they wear.
-        /// </summary>
+        /// <summary>A new game starts with the rule on; an old one off, so nobody loses what they wear.</summary>
         public static void FirstLoad(bool newGame)
         {
             LeisureState.SetMustBuy(newGame);
@@ -145,7 +82,6 @@ namespace RealLifeOverhaul.Leisure
             Settings.SetClothesMustBeBought(LeisureState.MustBuy);
         }
 
-        /// <summary>The options toggle was moved: it speaks for the save that is loaded.</summary>
         public static void OptionChanged(bool on)
         {
             if (LeisureState.Loaded)
@@ -155,11 +91,8 @@ namespace RealLifeOverhaul.Leisure
         }
 
         /// <summary>
-        /// Keeps the rule: called by the director once a second, and does something only when a pick or what is owned
-        /// has changed. Anything picked that is not owned comes off (the game's own goes back on) with one toast, and
-        /// the options page's dropdowns name what is not owned as "not bought yet": a shoe by its colourway, a garment
-        /// when no colourway of it is owned (its colours are one dropdown for all garments, which cannot say). The game
-        /// builds a dropdown from the array it was given at start, so entries cannot be taken out of it: they are renamed.
+        /// Takes off what is not owned whenever picks or purchases change. The options page's dropdowns are built once,
+        /// so what is not owned is renamed there rather than removed.
         /// </summary>
         public static void Enforce()
         {
@@ -178,7 +111,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 for (int i = 1; i < slot.ChoiceKeys.Length; i++)
                 {
-                    // A garment slot's dropdown lists garments (entry i is garment i, whose colourways start at Ids[1 + (i - 1) * colours]).
+                    // A garment slot's entry i is garment i, whose colourways start at Ids[1 + (i - 1) * colours].
                     bool has = slot.Paired ? HasAny(slot, 1 + (i - 1) * CharacterCatalogue.Palette.Length) : Has(slot.Ids[i]);
                     slot.ChoiceKeys[i] = has ? slot.Labels[i] : NotOwnedKey;
                 }
@@ -191,7 +124,6 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>The dropdowns named as the catalogue named them: no save is loaded.</summary>
         public static void RestoreLabels()
         {
             foreach (CharacterCatalogue.Slot slot in CharacterCatalogue.Slots)
@@ -203,13 +135,7 @@ namespace RealLifeOverhaul.Leisure
         }
     }
 
-    /// <summary>
-    /// The Real Life Overhaul rack in a clothing store: one prop of the mod's own, stood on a
-    /// piece of the shop floor that was found clear and tested (room all round, nothing of the
-    /// shop's inside its footprint, walkable to from the door), for as long as the player is in
-    /// the store, and taken back when they leave. A store with no such piece of floor gets no
-    /// prop: the mod's garments are then browsed at the nearest of the store's own racks.
-    /// </summary>
+    /// <summary>The mod's rack on a clear piece of a clothing store's floor, else the store's own racks.</summary>
     public sealed class ClothesRack
     {
         private static readonly Collider[] Touching = new Collider[8];
@@ -218,7 +144,7 @@ namespace RealLifeOverhaul.Leisure
         private Building _for;
         private bool _tried;
 
-        /// <summary>Where the rack is browsed: the mod's own, or one of the store's. False if the store has neither.</summary>
+        /// <summary>Where the rack is browsed: the mod's own, or one of the store's; false if it has neither.</summary>
         public bool Find(Vector3 player, out Vector3 point)
         {
             if (_prop != null)
@@ -230,8 +156,6 @@ namespace RealLifeOverhaul.Leisure
             point = rack != null ? rack.transform.position : default;
             return rack != null;
         }
-
-        public bool Standing => _prop != null;
 
         /// <summary>Once a second while the player is in a clothing store.</summary>
         public void Tick(BuildingManager manager, LeisureProps props, Vector3 player)
@@ -250,11 +174,11 @@ namespace RealLifeOverhaul.Leisure
             {
                 if (!JobSites.FloorSpot(player, null, 0, 0f, out Vector3 spot)
                     || !NavMesh.FindClosestEdge(spot, out NavMeshHit edge, NavMesh.AllAreas) || edge.distance < 1.1f
-                    || CitySpots.Flat(spot - player) < 2.5f)
+                    || LeisureReach.Within(CitySpots.Flat(spot - player), LeisureReach.RackAway))
                 {
                     continue;
                 }
-                // Facing whoever comes from the door, and with nothing of the shop's inside its footprint.
+                // Facing whoever comes from the door, with nothing of the shop's inside its footprint.
                 Vector3 to = player - spot;
                 to.y = 0f;
                 Quaternion facing = Quaternion.LookRotation(to.sqrMagnitude > 0.01f ? to.normalized : Vector3.forward);
@@ -285,11 +209,11 @@ namespace RealLifeOverhaul.Leisure
                     solid.shape = NavMeshObstacleShape.Box;
                     solid.center = new Vector3(0f, 0.8f, 0f);
                     solid.size = new Vector3(1.5f, 1.6f, 0.6f);
-                    solid.carving = true;   // the shop's customers go round it; over a metre of floor is left on every side
+                    solid.carving = true;   // customers go round it; over a metre of floor is left on every side
                 }
                 MeshCuts.Note("a clothes rack on a shop floor");
                 _prop = prop;
-                LeisureDirector.Logger?.Info("Leisure: the rack stands on the shop floor, " + edge.distance.ToString("F1") + " m from the nearest fitting.");
+                LeisureDirector.Logger?.Info("Leisure: the rack stands on the shop floor, " + edge.distance.ToString("F1", CultureInfo.InvariantCulture) + " m from the nearest fitting.");
             }
             if (_prop == null)
             {

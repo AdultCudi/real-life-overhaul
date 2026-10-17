@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using UI.Notification;
@@ -431,8 +432,8 @@ namespace RealLifeOverhaul
             {
                 ShowOnBody();
             }
-            Logger?.Info("Home: slept " + hours.ToString("F1") + " h, quality " + (int)score + " (bed " + bedQuality + (inCar ? ", in the car" : string.Empty)
-                         + ", to bed at " + bedHour + "h), debt now " + HomeState.SleepDebt.ToString("F1") + " h.");
+            Logger?.Info("Home: slept " + hours.ToString("F1", CultureInfo.InvariantCulture) + " h, quality " + (int)score + " (bed " + bedQuality + (inCar ? ", in the car" : string.Empty)
+                         + ", to bed at " + bedHour + "h), debt now " + HomeState.SleepDebt.ToString("F1", CultureInfo.InvariantCulture) + " h.");
             return (int)score;
         }
 
@@ -467,8 +468,8 @@ namespace RealLifeOverhaul
                 HomeState.ShapeDue -= strength;
                 HomeState.FatDue -= fat;
                 look.UpdateVisuals();
-                Logger?.Info("Home: body strength " + wasStrength.ToString("F3") + " -> " + look.data.strength.ToString("F3") + ", fatness "
-                             + wasFat.ToString("F3") + " -> " + look.data.fatness.ToString("F3") + ".");
+                Logger?.Info("Home: body strength " + wasStrength.ToString("F3", CultureInfo.InvariantCulture) + " -> " + look.data.strength.ToString("F3", CultureInfo.InvariantCulture) + ", fatness "
+                             + wasFat.ToString("F3", CultureInfo.InvariantCulture) + " -> " + look.data.fatness.ToString("F3", CultureInfo.InvariantCulture) + ".");
             }
             catch (Exception e)
             {

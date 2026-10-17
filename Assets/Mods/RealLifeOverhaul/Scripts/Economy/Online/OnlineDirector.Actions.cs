@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -73,7 +74,7 @@ namespace RealLifeOverhaul.Economy
             OnlineGame.CountStock(place);
             Logger?.Info("Online shops: " + shop.Name + " opened at " + OnlineGame.NameOf(reg) + (place.Warehouse ? " (a warehouse)" : string.Empty) + ": quality " + shop.Quality + (inHouse ? ", built by the player's own web agency" : string.Empty)
                          + ", set-up " + (free ? "free (a test)" : setUp.ToString()) + ", hosting " + hosting + " a month from day " + shop.HostDue + ", " + shop.Lines.Count + " product(s) on it, "
-                         + (place.Site.PerDay / 1000f).ToString("0.0") + " order(s) a day expected.");
+                         + (place.Site.PerDay / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " order(s) a day expected.");
             Notifications.Show(NotificationType.Success, "reallife_online_note_opened", new Dictionary<string, string> { { "name", shop.Name }, { "count", shop.Lines.Count.ToString() } }, 9f, null,
                 Guard.Wrap(() => Open(TabShops, "shop:" + placeKey)), true, false);
             Changed();

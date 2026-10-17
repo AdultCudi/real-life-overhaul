@@ -214,7 +214,7 @@ namespace RealLifeOverhaul
                             suspect.Driver.PullOver(over);
                             patrol.Driver.PullOver(over * 0.7f);   // a little further out than the car it has stopped: its officer's side is covered
                             _brakeAt = now + PullInTime;
-                            CrimeDirector.Logger?.Info($"Crime: the stopped car pulls in {over:F1} m to the kerb, the patrol car behind it.");
+                            CrimeDirector.Logger?.Info(System.FormattableString.Invariant($"Crime: the stopped car pulls in {over:F1} m to the kerb, the patrol car behind it."));
                         }
                         else
                         {

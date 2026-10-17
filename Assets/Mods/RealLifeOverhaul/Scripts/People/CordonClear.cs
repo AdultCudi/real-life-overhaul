@@ -80,7 +80,7 @@ namespace RealLifeOverhaul
             }
             logger?.Info($"Cordon check (cleared): {inside} people stood inside the tape or against it as it went up ({_walkers} of the game's pedestrians, "
                          + $"{_city} of the living city's, {_presence} officer(s) only there to be seen); {_put} put at the nearest place outside it "
-                         + $"(the furthest {_furthest:F1} m from where they stood), each at least {CordonRules.Spacing:F2} m from the next"
+                         + System.FormattableString.Invariant($"(the furthest {_furthest:F1} m from where they stood), each at least {CordonRules.Spacing:F2} m from the next")
                          + (_returned > 0 ? $", {_returned} out of view given back to the game's pool" : "")
                          + (_left > 0 ? $"; {_left} with no walkable ground outside within reach, left where they stand: FAIL." : ": PASS."));
         }

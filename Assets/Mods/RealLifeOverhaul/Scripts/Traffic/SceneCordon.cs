@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
@@ -744,10 +745,11 @@ namespace RealLifeOverhaul
                 if (clear >= CrewClear - 0.02f)
                 {
                     CorridorClear = clear;
-                    Logger?.Info($"Cordon: the tape stands clear of the crew's way as it is: the nearest thing ({nearest}) is {clear:F2} m from anything of the crew ({CrewClear:F2} m wanted): PASS.");
+                    Logger?.Info(FormattableString.Invariant(
+                        $"Cordon: the tape stands clear of the crew's way as it is: the nearest thing ({nearest}) is {clear:F2} m from anything of the crew ({CrewClear:F2} m wanted): PASS."));
                     return;
                 }
-                Logger?.Info($"Cordon: the crew's way comes within {clear:F2} m of the cordon as it stands ({nearest}); the tape is run again round it.");
+                Logger?.Info(FormattableString.Invariant($"Cordon: the crew's way comes within {clear:F2} m of the cordon as it stands ({nearest}); the tape is run again round it."));
                 _oldCount = Mathf.Min(_wallCount, Walls);
                 for (int i = 0; i < _oldCount; i++)
                 {
@@ -1396,7 +1398,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                Logger?.Info($"Cordon: no side of the held vehicle(s) can be given {CrewLane:F1} m for the crews (kerb, parked cars or the open lane): {roomLeft:F1} m on the left, {roomRight:F1} m on the right.");
+                Logger?.Info(FormattableString.Invariant($"Cordon: no side of the held vehicle(s) can be given {CrewLane:F1} m for the crews (kerb, parked cars or the open lane): {roomLeft:F1} m on the left, {roomRight:F1} m on the right."));
             }
         }
 
@@ -1600,7 +1602,7 @@ namespace RealLifeOverhaul
             _carveAt = walled ? now + CarveWait : 0f;
             _carveTries = 0;
             Logger?.Info($"Cordon: tape up, {length:F0} x {width:F0} m, {_placed} post(s), {_taped} length(s) of tape, {barriers} barrier(s), "
-                         + $"{_wallCount} wall(s), open at the near end {_doorAcross - _left:F1} m from the left edge ({_doorWidth:F1} m wide: the crew's corridor) and at the far end's {(_entry > 0f ? "right" : "left")} corner"
+                         + FormattableString.Invariant($"{_wallCount} wall(s), open at the near end {_doorAcross - _left:F1} m from the left edge ({_doorWidth:F1} m wide: the crew's corridor) and at the far end's {(_entry > 0f ? "right" : "left")} corner")
                          + (_crossing ? "; a crossing runs through it, shut to people on foot while the tape is up" : "")
                          + (_barCount > 0 ? $"; {_barCount} bar(s) across an opening a walkway runs through" : "")
                          + $", kerb {(_kerbLeft ? (_kerbRight ? "both sides" : "left") : _kerbRight ? "right" : "on neither side")}"
@@ -1732,10 +1734,12 @@ namespace RealLifeOverhaul
             CorridorClear = clear;
             bool crossesNear = WayCrossing(Point(_back, _left), Point(_back, _rightEdge), CrewClear, out _, out _);
             Logger?.Info("Cordon: run round the ambulance crew's way: "
-                         + (crossesNear ? $"it comes in by the near end's opening, {_doorWidth:F1} m wide ({CrewGap - 0.2f:F1} m wanted)" : "it does not come in by the near end")
+                         + (crossesNear ? FormattableString.Invariant(
+                             $"it comes in by the near end's opening, {_doorWidth:F1} m wide ({CrewGap - 0.2f:F1} m wanted)") : "it does not come in by the near end")
                          + (_wayOpenings > 0 ? $", {_wayOpenings} more opening(s) where it crosses a side or the far end" : "")
                          + $"; {_wayRefused} place(s) for a post, cone or barrier on it left empty, {taken} thing(s) on it taken in; the nearest left ({nearest}) is "
-                         + $"{(clear == float.MaxValue ? 99f : clear):F2} m from anything of the crew ({CrewClear - 0.12f:F2} m at least, {CrewClear:F2} m wanted), {barriers} barrier(s) standing: "
+                         + FormattableString.Invariant(
+                             $"{(clear == float.MaxValue ? 99f : clear):F2} m from anything of the crew ({CrewClear - 0.12f:F2} m at least, {CrewClear:F2} m wanted), {barriers} barrier(s) standing: ")
                          + (clear >= CrewClear - 0.12f && (!crossesNear || _doorWidth >= CrewGap - 0.2f) ? "PASS." : "FAIL."));
         }
 
@@ -1887,7 +1891,7 @@ namespace RealLifeOverhaul
                 wall.gameObject.SetActive(true);
                 MeshCuts.Note("a cordon's wall told to cut at once");
             }
-            Report.Append(Report.Length > 0 ? ", " : "").Append(kind).Append(wall.size.z.ToString("F1")).Append(whole ? " m NOT cut" : " m cut");
+            Report.Append(Report.Length > 0 ? ", " : "").Append(kind).Append(wall.size.z.ToString("F1", CultureInfo.InvariantCulture)).Append(whole ? " m NOT cut" : " m cut");
         }
 
         /// <summary>

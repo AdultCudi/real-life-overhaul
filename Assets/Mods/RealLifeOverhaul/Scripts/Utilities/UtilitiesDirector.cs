@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Buildings;
@@ -557,7 +558,7 @@ namespace RealLifeOverhaul.Utilities
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Utilities check (day " + today + "): " + _state.Accounts.Count + " account(s), " + bills + " bill(s) of " + billed + "; the month began on day "
-                             + _state.MonthStart + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS.");
+                             + _state.MonthStart + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

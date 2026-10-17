@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -352,8 +353,9 @@ namespace RealLifeOverhaul
             ActorPool.Logger?.Info("People: stretcher pushed from its " + (_handle > 0f ? "foot" : "head") + " end, both hands on that rail"
                                    + (_rear != null ? "; the second of the crew is walked beside its leading end, the near hand on that rail" : "; nobody at its other end")
                                    + (_barred ? "; hands on the push bar's grips" : "; no push bar (hands on the end rail)")
-                                   + (_paced ? "; pushing clip, " + SceneClips.WalkPace.ToString("F1") + " m/s" : "; the game's walk (no pushing clip to be had)")
-                                   + $"; wheeled along its line, {path.Travel:F1} m" + (_swinging ? ", swung round to it first" : "") + (_hasFinal ? ", swung into place at the end." : "."));
+                                   + (_paced ? "; pushing clip, " + SceneClips.WalkPace.ToString("F1", CultureInfo.InvariantCulture) + " m/s" : "; the game's walk (no pushing clip to be had)")
+                                   + FormattableString.Invariant($"; wheeled along its line, {path.Travel:F1} m") + (_swinging ? ", swung round to it first" : "")
+                                   + (_hasFinal ? ", swung into place at the end." : "."));
             return true;
         }
 

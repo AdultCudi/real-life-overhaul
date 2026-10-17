@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul.Markets
@@ -134,7 +135,7 @@ namespace RealLifeOverhaul.Markets
                 TestRefusals.TellKey(Logger, test, "reallife_mkt_test_no_company");
                 return;
             }
-            Logger?.Info(test + " test: " + k.Name + " (" + k.Ticker + "), outlook now " + k.Outlook.ToString("F3") + "; the price follows at the next open.");
+            Logger?.Info(test + " test: " + k.Name + " (" + k.Ticker + "), outlook now " + k.Outlook.ToString("F3", CultureInfo.InvariantCulture) + "; the price follows at the next open.");
             OpenCompany(k.Id);
         }
 

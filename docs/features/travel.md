@@ -65,16 +65,18 @@ The cashier job pays 25 an hour; staff start at 12 to 18.
 | luxury: corner suite | 900 | bed rate, +0.6, comfort modifier | never | 70 % |
 | cottages: bedroom / whole cottage | 210 / 380 | bed rate, +0.15 / +0.35 | never | 50 % |
 
-Times the hotel's own factor (Industry City and Lower Manhattan 0.85, Murray Hill 0.95, Midtown 1.2), times 1.2 on Friday and Saturday nights, times the season (the game counts days only, so travel gives the year four seasons of 28 days starting in spring: city hotels 1.15 in summer and 0.9 in winter, the cottages 1.4 and 0.75), times the Leisure bridge's demand for the day.
+Times the hotel's own factor (Industry City and Lower Manhattan 0.85, Murray Hill 0.95, Midtown 1.2), times 1.2 on Friday and Saturday nights, times the season (the weather's own, quarters of the year the player chose, counted from spring: city hotels 1.15 in summer and 0.9 in winter, the cottages 1.4 and 0.75), times the Leisure bridge's demand for the day.
 
 Seven nights or more cost 0.8 of that every night, fourteen or more 0.72.
 On deposit the first night is paid at the desk and the rest, 5 % dearer, at checkout.
 Late checkout (16:00 instead of 11:00) is 30 % of a night, free in a luxury room.
 Eight stamps (one a night) are a free night worth up to 250.
 
-A hostel bed costs what the cheapest apartment rents for and sleeps worse, so it is a stopgap, never the better deal.
+A hostel bed costs what the cheapest apartment rents for and sleeps worse, so it is a stopgap, never the better deal: a week of it (36 a night) is still dearer than renting in Industry City.
+A mid-range room costs a day's rent of a mid-sized apartment in the same district, a luxury room a day's rent of a large one, and a beach week about twelve days of the cashier job.
 
 Extras: vending sandwich 8 (+25 hunger), room service 32 (+60) or 65 in a luxury room (full), cottage hamper 28, minibar 12 or 18 (+12 hunger, +3 energy, four a day), laundry 8 / 25 / free, dinner through the concierge 85, dinner in the village 60.
+Every amount on this page is at the start's prices: the rooms, the extras, the loyalty night's cap, the trips, a splurge, the suitcase and what a trip's event gives or takes are all asked for through `Prices.At`, so they move with the city's price level, and the room's list shows what it charges (`TravelCatalogue`, checked by EconomyCheck's TravelPriceChecks).
 Nothing pays the player anything, and every effect is capped (hunger at full, one mood a day).
 
 | trip | days | economy | first class | splurge a day | dear / cheap season |

@@ -112,7 +112,8 @@ namespace RealLifeOverhaul
             // player owes nothing and nobody comes after them for it; what the impact does to the player is as for any crash.
             bool theirFault = hitTraffic && RecklessDrivers.AtFault(struck);
             News.Report(NewsKind.PlayerCrash, Helpers.PlayerHelper.GetPosition());
-            Logger?.Info($"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{(theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty)}");
+            Logger?.Info(System.FormattableString.Invariant(
+                $"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{(theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty)}"));
 
             if (theirFault)
             {

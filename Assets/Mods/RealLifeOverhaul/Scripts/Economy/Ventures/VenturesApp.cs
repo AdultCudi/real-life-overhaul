@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using TMPro;
@@ -162,7 +163,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             _table.Show(table, _rows, _picked);
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Ventures: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                Logger?.Info("Ventures: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
+                    + " ms.");
             }
         }
 

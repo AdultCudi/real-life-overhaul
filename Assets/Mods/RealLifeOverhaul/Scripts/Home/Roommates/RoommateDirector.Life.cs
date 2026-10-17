@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Roommates
@@ -283,7 +284,8 @@ namespace RealLifeOverhaul.Roommates
                 Seen(RoommateRules.Has(m.Traits, RoomTrait.Noisy) ? RoomTrait.Noisy : RoomTrait.NightOwl);
                 if (Verbose)
                 {
-                    Logger?.Info("Roommates check (noisy night): the mood went down by the mod's own modifier and " + (slept ? RoommateRules.NoiseSleepHours.ToString("F1") + " h of sleep is owed"
+                    Logger?.Info("Roommates check (noisy night): the mood went down by the mod's own modifier and "
+                                 + (slept ? RoommateRules.NoiseSleepHours.ToString("F1", CultureInfo.InvariantCulture) + " h of sleep is owed"
                                  : "no sleep is owed (home life's sleep is off)") + ": PASS.");
                 }
             }

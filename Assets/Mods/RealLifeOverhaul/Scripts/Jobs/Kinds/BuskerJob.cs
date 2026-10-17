@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BigAmbitions.Characters;
 using Characters.EmojiSystem;
 using Entities;
@@ -219,8 +220,9 @@ namespace RealLifeOverhaul
             Figures(now);
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: busker: the pitch is " + JobSpots.Flat(_pitch, Ctx.PlayerPosition).ToString("F1") + " m from the player " + (atWall ? "with its back to a wall" : "on open pavement")
-                                 + " (the zone that takes the player is " + PitchReach.ToString("F1") + " m round it); " + _songsWanted + " songs; shown in the game's own interface: job panel "
+                Ctx.Logger?.Info("Jobs: busker: the pitch is " + JobSpots.Flat(_pitch, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture) + " m from the player " + (atWall ? "with its back to a wall" : "on open pavement")
+                                 + " (the zone that takes the player is " + PitchReach.ToString("F1", CultureInfo.InvariantCulture) + " m round it); " + _songsWanted
+                                 + " songs; shown in the game's own interface: job panel "
                                  + (_figures.Shown ? "copied" : "NOT copied (the panel over the pitch is all there is)") + ", the game's guider points at the place.");
             }
             return true;
@@ -418,8 +420,10 @@ namespace RealLifeOverhaul
             Show(JobText.T("reallife_job_busker_obj_song", "song", _songNames[choice]));
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: busker: song " + (_songs + 1) + " of " + _songsWanted + " begun: " + SongKeys[choice] + ", a strum every " + Gap[choice].ToString("F1") + " s, "
-                                 + Window[choice].ToString("F2") + " s to hit it, worth x" + Worth[choice].ToString("F2") + ", " + SongSeconds.ToString("F0") + " s long.");
+                Ctx.Logger?.Info("Jobs: busker: song " + (_songs + 1) + " of " + _songsWanted + " begun: " + SongKeys[choice] + ", a strum every "
+                                 + Gap[choice].ToString("F1", CultureInfo.InvariantCulture) + " s, "
+                                 + Window[choice].ToString("F2", CultureInfo.InvariantCulture) + " s to hit it, worth x" + Worth[choice].ToString("F2", CultureInfo.InvariantCulture) + ", "
+                                 + SongSeconds.ToString("F0") + " s long.");
             }
         }
 

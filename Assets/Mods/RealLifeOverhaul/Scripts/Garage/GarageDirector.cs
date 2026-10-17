@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Helpers;
@@ -574,7 +575,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 GarageDirector.Logger?.Info("Garage check (my vehicles): the game's list is open with " + (Titles.Count - bikes) + " car(s) with a build and " + bikes + " two-wheeler(s); "
-                                            + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                            + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

@@ -1,64 +1,36 @@
 using System;
+using System.Globalization;
 using BAModAPI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// Photo mode's selfie: the camera is the phone. It is held at arm's length in front of the
-    /// player's face, a little above the eyes, looking back at them; the player turns to face it
-    /// (their back to whatever the free camera was looking at, so that is the background) and holds
-    /// the phone out towards the lens. The mouse moves the phone round the face within a small arc,
-    /// the wheel brings it nearer or takes it farther, within what an arm reaches.
-    ///
-    /// The game has no selfie, phone-held-out or hand-sign animation: its only phone poses are
-    /// TalkingPhone (at the ear) and TextingPhone (at the chest, head down at the screen), neither
-    /// of which can face a lens in front of the face, and its faces have no expressions (the head's
-    /// blendshapes are the character creator's shapes, and its "expressions" are emoji bubbles on
-    /// the interface, which a picture never has). So the phone arm is set by hand over whatever the
-    /// body is doing, the way People/KneelPose and Crime/CuffPose set theirs (People/BonePose): the
-    /// upper arm and forearm reach for a point just in front of the lens and a little below it, and
-    /// the neck and head are turned to look into it. The hand itself is nearer the lens than the
-    /// camera draws (the near plane is put at <see cref="NearPlane"/> while the selfie is on), so
-    /// the arm leaves the picture at its edge as it does in a real selfie, and no phone is drawn.
-    /// The poses besides the plain one are the mod's own clips (CityAssets): a wave
-    /// (<c>wave_hello</c>), a fist up (<c>cheer_once</c>, held at its top) and talking to the
-    /// camera (<c>talk_a</c>); with one of those the phone goes to the left hand, since all three
-    /// are made with the right. Photo mode keeps the game paused, so the clip player is stepped
-    /// here by the real clock (ActivityAnimator.Advance and Evaluate) rather than by the game's;
-    /// in a Going Public session, where the clock goes on running, the game's own step does it.
-    /// The clip poses are offered only when the bundle is loaded and nothing of the mod's was
-    /// already playing on the player (an umbrella, say): that is left alone, and only the plain
-    /// pose is offered.
-    ///
-    /// Everything changed is put back in <see cref="End"/>: the body's facing, the camera's near
-    /// plane, the clip player (handed back at once). Nothing is left on the character.
-    ///
-    /// Cost: this component is switched off unless a selfie is on, so photo mode off (or its free
-    /// camera) costs nothing here. While it is on: per frame two clip steps when a clip pose is on,
-    /// and in LateUpdate about a dozen vector operations and five bone turns. Nothing is allocated.
+    /// Photo mode's selfie: the camera is the phone, held at arm's length and moved round the face. The game has no
+    /// selfie pose, so after the animation the arm reaches for the lens and the head turns into it. Off unless a selfie
+    /// is on; then per frame two clip steps and five bone turns, nothing allocated.
     /// </summary>
     public sealed class Selfie : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "Selfie", typeof(Selfie));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "Selfie", typeof(Selfie));
 
-        private const float Near = 0.40f;          // metres from the eyes the phone comes at nearest: the elbow well bent...
-        private const float Far = 0.85f;           // ...and at farthest: a straight arm with the phone at the fingertips
-        private const float StartDistance = 0.62f; // metres where it starts: the arm out, the elbow soft
-        private const float StartAbove = 12f;      // degrees above eye level it starts at, looking down a little
-        private const float YawMost = 40f;         // degrees round the face either way the mouse can take it
-        private const float PitchLeast = -12f;     // degrees: from a little below eye level...
-        private const float PitchMost = 42f;       // ...to well above, the classic angle
-        private const float NearPlane = 0.15f;     // metres: the hand at the lens is nearer than this and is not drawn
-        private const float EyeHeight = 0.08f;     // metres from the head joint (the top of the neck) up to the eyes...
-        private const float EyeForward = 0.05f;    // ...and forward of it
-        private const float HandBelow = 0.07f;     // metres the hand is below the lens...
-        private const float HandAside = 0.05f;     // ...to the side of the phone arm...
-        private const float HandShort = 0.10f;     // ...and short of it towards the face: the phone between them
-        private const float NeckShare = 0.4f;      // how much of the turn to the lens the neck takes; the head the rest
-        private const float ReplayGap = 0.6f;      // seconds a wave rests at its end before it starts again
-        private const float HeldSpeed = 0.01f;     // the speed a clip is held at (its least): still, to the eye
-        private const float StepMost = 0.05f;      // seconds a clip is stepped by at most in one frame
+        private const float Near = 0.40f;          // metres from the eyes at nearest: the elbow well bent
+        private const float Far = 0.85f;           // metres at farthest: a straight arm
+        private const float StartDistance = 0.62f; // metres
+        private const float StartAbove = 12f;      // degrees above eye level
+        private const float YawMost = 40f;         // degrees either way round the face
+        private const float PitchLeast = -12f;     // degrees
+        private const float PitchMost = 42f;       // degrees
+        private const float NearPlane = 0.15f;     // metres: the hand at the lens is nearer and is not drawn
+        private const float EyeHeight = 0.08f;     // metres above the head joint
+        private const float EyeForward = 0.05f;    // metres in front of it
+        private const float HandBelow = 0.07f;     // metres below the lens
+        private const float HandAside = 0.05f;     // metres to the phone arm's side
+        private const float HandShort = 0.10f;     // metres short of the lens, towards the face
+        private const float NeckShare = 0.4f;      // of the turn to the lens; the head takes the rest
+        private const float ReplayGap = 0.6f;      // seconds a wave rests before it starts again
+        private const float HeldSpeed = 0.01f;     // a clip's least speed: still, to the eye
+        private const float StepMost = 0.05f;      // seconds a clip is stepped at most in one frame
 
         private const int PoseCount = 4;
         private static readonly string[] PoseClips = { null, "wave_hello", "cheer_once", "talk_a" };
@@ -66,17 +38,17 @@ namespace RealLifeOverhaul.Leisure
         {
             "reallife_photo_pose_phone", "reallife_photo_pose_wave", "reallife_photo_pose_fist", "reallife_photo_pose_talk"
         };
-        private const string HoldMark = "top";     // the moment of cheer_once that the fist is highest (CityAssets)
+        private const string HoldMark = "top";     // cheer_once's mark where the fist is highest
 
         public static IModLogger Logger;
 
-        /// <summary>True from a successful Begin to End.</summary>
+        /// <summary>True from a successful <see cref="Begin"/> to <see cref="End"/>.</summary>
         public bool On { get; private set; }
 
-        /// <summary>How far the phone is from the eyes, in metres: photo mode's focus distance while the selfie is on.</summary>
+        /// <summary>Metres from the phone to the eyes.</summary>
         public float Distance => _distance;
 
-        /// <summary>The words for the pose that is on (a key of the locale file).</summary>
+        /// <summary>The locale key naming the pose that is on.</summary>
         public string PoseKey => PoseNames[_pose];
 
         private Camera _camera;
@@ -87,10 +59,10 @@ namespace RealLifeOverhaul.Leisure
         private Transform _upperR, _lowerR, _handR, _upperL, _lowerL, _handL;
         private Quaternion _rootBefore;
         private bool _turned;
-        private Vector3 _facing;                   // level, the way the body faces: towards where the lens starts
-        private Vector3 _headAxis, _neckAxis;      // the way the face points, in each bone's own frame
+        private Vector3 _facing;                   // level
+        private Vector3 _headAxis, _neckAxis;      // the face's direction in each bone's own frame
         private float _yaw, _pitch, _distance;
-        private Vector3 _lens;                     // where the camera is, this frame
+        private Vector3 _lens;
 
         private int _pose;
         private ActivityAnimator _clips;
@@ -110,11 +82,7 @@ namespace RealLifeOverhaul.Leisure
             End();
         }
 
-        /// <summary>
-        /// Starts a selfie for the player as they stand, with the lens in front of them on the side
-        /// <paramref name="from"/> is (the free camera). False, with nothing changed, if the player's
-        /// skeleton is not one this can pose. The caller has already ruled out a vehicle.
-        /// </summary>
+        /// <summary>The lens starts on the side of <paramref name="from"/>; false if the body cannot pose.</summary>
         public bool Begin(Camera camera, PlayerController player, Vector3 from)
         {
             End();
@@ -142,8 +110,7 @@ namespace RealLifeOverhaul.Leisure
             _animator = animator;
             _root = body.transform;
 
-            // Seated (a bench, a chair), the body stays as the seat has it and the lens comes in front of it.
-            // Standing, they turn to face the free camera: what it was looking at is behind them.
+            // Standing, they turn to the free camera, so its view is behind them; seated, they stay as they sit.
             _rootBefore = _root.rotation;
             Vector3 towards = from - _root.position;
             towards.y = 0f;
@@ -161,8 +128,7 @@ namespace RealLifeOverhaul.Leisure
                     _facing = Vector3.forward;
                 }
             }
-            // The face points along the body now: that direction, kept in each bone's own frame, is how the head
-            // is turned later from wherever the animation has it, the same every frame (nothing builds up).
+            // Kept in each bone's own frame, so the head turns the same way every frame and nothing builds up.
             _headAxis = _head.InverseTransformDirection(_facing);
             _neckAxis = _neck.InverseTransformDirection(_facing);
 
@@ -173,6 +139,7 @@ namespace RealLifeOverhaul.Leisure
             _pitch = StartAbove;
             _distance = StartDistance;
             _clips = ActivityAnimators.For(animator);
+            // Not over a clip of the mod's already on the player (an umbrella, say): only the plain pose then.
             _clipsOffered = _clips != null && ActivityAnimators.Working && _clips.Usable && !_clips.Active && ClipLibrary.Ready;
             _pose = 0;
             _clip = null;
@@ -181,17 +148,15 @@ namespace RealLifeOverhaul.Leisure
             Place();
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Photo mode: selfie check (lens " + _distance.ToString("0.00") + " m from the eyes, wanted " + Near.ToString("0.00") + " to "
-                             + Far.ToString("0.00") + "; body " + (_turned ? "turned to the free camera" : "left as it sat") + "; clip poses "
+                Logger?.Info("Photo mode: selfie check (lens " + _distance.ToString("0.00", CultureInfo.InvariantCulture) + " m from the eyes, wanted "
+                             + Near.ToString("0.00", CultureInfo.InvariantCulture) + " to "
+                             + Far.ToString("0.00", CultureInfo.InvariantCulture) + "; body " + (_turned ? "turned to the free camera" : "left as it sat") + "; clip poses "
                              + (_clipsOffered ? "offered" : "not offered (bundle not ready, or a clip of the mod's already on the player)") + "): PASS");
             }
             return true;
         }
 
-        /// <summary>
-        /// One frame of steering, from photo mode's Run: the mouse round the face, the wheel nearer or farther,
-        /// <paramref name="roll"/> in degrees as the free camera has it. Puts the camera.
-        /// </summary>
+        /// <summary>One frame of steering: the mouse round the face, the wheel nearer or farther.</summary>
         public void Steer(float mouseX, float mouseY, float wheel, float roll)
         {
             if (!On)
@@ -207,7 +172,6 @@ namespace RealLifeOverhaul.Leisure
             Place(roll);
         }
 
-        /// <summary>Back to where the lens started: in front, a little above the eyes.</summary>
         public void Recentre()
         {
             _yaw = 0f;
@@ -215,10 +179,7 @@ namespace RealLifeOverhaul.Leisure
             _distance = StartDistance;
         }
 
-        /// <summary>
-        /// The next pose there is (the plain one always; the clip poses when they were offered and the bundle
-        /// has them). Returns the key of its name.
-        /// </summary>
+        /// <summary>Moves to the next pose there is and returns the locale key of its name.</summary>
         public string NextPose()
         {
             if (!On)
@@ -242,7 +203,7 @@ namespace RealLifeOverhaul.Leisure
             return PoseKey;
         }
 
-        /// <summary>Puts back everything Begin changed. Safe to call at any time, and never throws.</summary>
+        /// <summary>Puts back everything Begin changed. Safe at any time; never throws.</summary>
         public void End()
         {
             if (!On)
@@ -277,8 +238,6 @@ namespace RealLifeOverhaul.Leisure
             _clip = null;
         }
 
-        // ---------------------------------------------------------------- the camera
-
         private Vector3 Eyes()
         {
             return _head.position + Vector3.up * EyeHeight + _facing * EyeForward;
@@ -292,8 +251,6 @@ namespace RealLifeOverhaul.Leisure
             _lens = eyes + along * _distance;
             _camera.transform.SetPositionAndRotation(_lens, Quaternion.LookRotation(-along, Vector3.up) * Quaternion.Euler(0f, 0f, roll));
         }
-
-        // ---------------------------------------------------------------- the body
 
         private void StartPose()
         {
@@ -323,21 +280,20 @@ namespace RealLifeOverhaul.Leisure
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Leisure: Selfie.Update");
-        // The clip pose, stepped by the real clock: the game's is stopped. Before the animation pass, so the engine's
-        // own evaluation this frame (which advances nothing while paused) draws where this one left it.
+        // The clip pose stepped by the real clock, before the animation pass, which advances nothing while paused.
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -349,7 +305,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 if (_body == null || _animator == null || !_body.gameObject.activeInHierarchy)
                 {
-                    End();   // the player went away under us (a scene change); photo mode sees On go false
+                    End();   // the player went away (a scene change)
                     return;
                 }
                 if (_clip == null || _clips == null)
@@ -358,7 +314,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 if (!_clips.Active)
                 {
-                    _clip = null;   // handed back by somebody else (the clip service switched off)
+                    _clip = null;   // handed back elsewhere: the clip service switched off
                     return;
                 }
                 float delta = Mathf.Min(Time.unscaledDeltaTime, StepMost);
@@ -373,13 +329,12 @@ namespace RealLifeOverhaul.Leisure
                 }
                 else if (!_clip.Loop && _clipTime >= _clip.Length + ReplayGap)
                 {
-                    _clips.Play(_clip.Clip, 0.25f, 1f, ClipEnd.Hold);   // the wave again, crossed from where it ended
+                    _clips.Play(_clip.Clip, 0.25f, 1f, ClipEnd.Hold);
                     _clipTime = 0f;
                 }
                 if (Time.timeScale <= 0f)
                 {
-                    // Paused, nothing else steps the clip player. In a Going Public session photo mode leaves the clock running
-                    // (Core/GoingPublic), and the engine and the clip service step it as on any other frame: a step here would be a second.
+                    // In a Going Public session the clock runs and the clip service steps it already.
                     _clips.Advance(delta);
                     _clips.Evaluate(delta);
                 }
@@ -393,21 +348,20 @@ namespace RealLifeOverhaul.Leisure
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Leisure: Selfie.LateUpdate");
-        // After the animation: the phone arm out to the lens, the head turned into it. Every turn is to a direction
-        // worked out afresh, so it is the same whether or not the animator wrote the bones again this frame.
+        // After the animation, from directions worked out afresh, whether or not the animator wrote the bones.
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnLateUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -430,7 +384,7 @@ namespace RealLifeOverhaul.Leisure
                     return;
                 }
                 toLens /= apart;
-                bool rightHand = _pose == 0;
+                bool rightHand = _pose == 0;   // the clip poses use the right hand, so the phone goes left
                 float side = rightHand ? 1f : -1f;
                 Vector3 bodyRight = Vector3.Cross(Vector3.up, toLens).normalized;
                 Vector3 hand = _lens - Vector3.up * HandBelow + bodyRight * (side * HandAside) - toLens * HandShort;

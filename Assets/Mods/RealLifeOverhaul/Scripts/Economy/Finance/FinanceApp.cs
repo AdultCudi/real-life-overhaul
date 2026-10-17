@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using Localizor;
@@ -258,7 +259,7 @@ namespace RealLifeOverhaul.Economy
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Finance: tab " + _tab + (table ? " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)") : ": its box written again")
-                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
             }
         }
 

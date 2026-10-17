@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Localizor;
 using RealLifeOverhaul.GameUi;
@@ -190,7 +191,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 _table.Show(table, _rows, _picked);
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Dealership: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                    Logger?.Info("Dealership: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
+                        + " ms.");
                 }
             }
             finally

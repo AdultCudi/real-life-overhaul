@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul
@@ -151,7 +152,8 @@ namespace RealLifeOverhaul
             line.Append("; the engine's own figures: ");
             if (f.GpuMs >= 0.0)
             {
-                line.Append("the graphics card ").Append(f.GpuMs.ToString("F1")).Append(" ms and the render thread ").Append(Max0(f.RenderThreadMs).ToString("F1"))
+                line.Append("the graphics card ").Append(f.GpuMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms and the render thread ")
+                    .Append(Max0(f.RenderThreadMs).ToString("F1", CultureInfo.InvariantCulture))
                     .Append(" ms at most in the last frames it has (they come a few frames late)");
             }
             else

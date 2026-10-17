@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters;
 using BigAmbitions.Characters.Appearance;
@@ -741,8 +742,9 @@ namespace RealLifeOverhaul
                 string who = (man ? "male " : "female ") + (look == ActorLook.Officer ? "officer" : "paramedic");
                 Logger?.Info(height <= 0f
                     ? $"People: a {who} could not be measured (head {(crown > 0f ? "measured" : "not measured")}); they keep the height the game gave them. (Logged once.)"
-                    : $"People: a {who} is {height:F2} m as the game builds them (crown {crown:F3} m above the head joint; the player is "
-                      + $"{(player > 0f ? player.ToString("F2") + " m" : "not measured")}); scaled by {size:F3} to {height * size:F2} m. (Logged once.)");
+                    : FormattableString.Invariant($"People: a {who} is {height:F2} m as the game builds them (crown {crown:F3} m above the head joint; the player is ")
+                      + FormattableString.Invariant(
+                          $"{(player > 0f ? player.ToString("F2", CultureInfo.InvariantCulture) + " m" : "not measured")}); scaled by {size:F3} to {height * size:F2} m. (Logged once.)"));
             }
         }
 
@@ -803,7 +805,8 @@ namespace RealLifeOverhaul
             {
                 _serviceLogged |= bit;
                 Logger?.Info("People: every " + (man ? "male" : "female") + " officer and paramedic has the same look (seed " + (man ? ManSeed : WomanSeed)
-                             + ", lightest or darkest skin tone, build: fatness " + Lean.ToString("F2") + " (lean), strength " + Strong.ToString("F1") + "), haircut "
+                             + ", lightest or darkest skin tone, build: fatness " + Lean.ToString("F2", CultureInfo.InvariantCulture) + " (lean), strength "
+                             + Strong.ToString("F1", CultureInfo.InvariantCulture) + "), haircut "
                              + (hair == null ? "as rolled (the game's styles could not be read)"
                                  : "'" + hair + "' (" + (hairNamed ? "by name" : "the one with the least hair: no style has a name that says it is short") + "), its darkest colour")
                              + "; the game's styles and their sizes in litres: " + Sizes
@@ -895,7 +898,7 @@ namespace RealLifeOverhaul
                 float volume = Mathf.Abs(box.x * box.y * box.z);
                 if (sizes != null)
                 {
-                    sizes.Append(sizes.Length > 0 ? ", " : string.Empty).Append(variant.name).Append(' ').Append(drawn ? (volume * 1000f).ToString("F1") : "(no mesh)");
+                    sizes.Append(sizes.Length > 0 ? ", " : string.Empty).Append(variant.name).Append(' ').Append(drawn ? (volume * 1000f).ToString("F1", CultureInfo.InvariantCulture) : "(no mesh)");
                 }
                 if ((drawn || bare) && volume < room)
                 {

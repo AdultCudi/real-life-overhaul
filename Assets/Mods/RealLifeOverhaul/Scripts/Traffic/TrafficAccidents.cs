@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
@@ -1203,7 +1204,7 @@ namespace RealLifeOverhaul
             _origin = rest;
             _heading = first.transform.rotation;
             _scene = _origin;
-            Logger?.Info($"Accident: the cars came to rest {moved:F1} m on from where they met, after {ShuntMaxTime - Mathf.Max(0f, _shuntEnd - now):F1} s"
+            Logger?.Info(FormattableString.Invariant($"Accident: the cars came to rest {moved:F1} m on from where they met, after {ShuntMaxTime - Mathf.Max(0f, _shuntEnd - now):F1} s")
                          + $"{(strayed ? " (frozen early: one had gone too far)" : string.Empty)}; the scene is measured from there.");
             CompleteStaging(tumbled: false);
         }
@@ -1568,7 +1569,7 @@ namespace RealLifeOverhaul
             if (clear >= need)
             {
                 DepartureCheck("planned", true, $"the ambulance leaves forwards along its own lane through the scene; the patrol car stands at the far end in the lane running the other way, "
-                    + $"{clear:F1} m from the middle of the ambulance's way out, {along:F0} m along it ({need:F1} m needed: both half widths and {PassingRoom:F1} m); "
+                    + FormattableString.Invariant($"{clear:F1} m from the middle of the ambulance's way out, {along:F0} m along it ({need:F1} m needed: both half widths and {PassingRoom:F1} m); ")
                     + "order: the ambulance first, the patrol car when it is past");
                 return;
             }
@@ -1578,7 +1579,7 @@ namespace RealLifeOverhaul
                 _police.At = Mathf.Max(_police.At, _ambulance.At + 5f);
             }
             DepartureCheck("planned", true, (clear < 0f ? "no place for the patrol car at the far end could be measured against the ambulance's way out"
-                    : $"a patrol car at the far end would stand {clear:F1} m from the middle of the ambulance's way out ({need:F1} m needed)")
+                    : FormattableString.Invariant($"a patrol car at the far end would stand {clear:F1} m from the middle of the ambulance's way out ({need:F1} m needed)"))
                 + "; it is sent up the ambulance's own lane behind it instead, after it: nothing of the mod's stands ahead of the ambulance");
         }
 
@@ -1640,7 +1641,7 @@ namespace RealLifeOverhaul
             bool ahead = along > 0f;
             bool facing = Vector3.Dot(theirForward, forward) < 0f;
             DepartureCheck("units parked", !ahead || aside >= ExitMargin,
-                ahead ? $"the patrol car stands {along:F0} m ahead of the ambulance, {(facing ? "facing it" : "facing the same way")}, {aside:F1} m clear of the side of the lane it will leave by ({ExitMargin:F2} m needed)"
+                ahead ? FormattableString.Invariant($"the patrol car stands {along:F0} m ahead of the ambulance, {(facing ? "facing it" : "facing the same way")}, {aside:F1} m clear of the side of the lane it will leave by ({ExitMargin:F2} m needed)")
                       + (aside >= ExitMargin ? "" : ": it is moved out of that lane when the ambulance goes")
                     : $"the patrol car stands {-along:F0} m behind the ambulance: nothing of the mod's is ahead of it");
         }
@@ -2533,7 +2534,7 @@ namespace RealLifeOverhaul
                 float along = Vector3.Dot(offset, facing);
                 float aside = Mathf.Abs(Vector3.Dot(offset, Vector3.Cross(Vector3.up, facing))) - halfWidth - theirHalf;
                 otherAhead = along > 0f && along < reach + 6f && aside < ExitMargin;
-                where = $"the {Name(other)} is {along:F0} m {(along >= 0f ? "ahead" : "behind")}, {aside:F1} m clear of its side ({ExitMargin:F2} m needed)";
+                where = FormattableString.Invariant($"the {Name(other)} is {along:F0} m {(along >= 0f ? "ahead" : "behind")}, {aside:F1} m clear of its side ({ExitMargin:F2} m needed)");
             }
             bool order = attendance.Police ? _ambulance.Past : true;
             string step = Name(attendance) + " set off";
@@ -2806,14 +2807,15 @@ namespace RealLifeOverhaul
                     {
                         path.RemoveRange(index, path.Count - index);
                         path.Add(point);
-                        Logger?.Info($"Accident: the place planned for the {Name(attendance)} failed its clear test ({inWay}); it stands {back:F1} m further back along its own lane instead.");
+                        Logger?.Info(FormattableString.Invariant(
+                            $"Accident: the place planned for the {Name(attendance)} failed its clear test ({inWay}); it stands {back:F1} m further back along its own lane instead."));
                     }
                     return;
                 }
                 if (inWay == null)
                 {
                     inWay = crossing ? "it lies on a crossing"
-                        : "'" + hit.name + "' on layer " + LayerMask.LayerToName(hit.gameObject.layer) + " within " + StandMargin.ToString("F1") + " m of its body";
+                        : "'" + hit.name + "' on layer " + LayerMask.LayerToName(hit.gameObject.layer) + " within " + StandMargin.ToString("F1", CultureInfo.InvariantCulture) + " m of its body";
                 }
             }
             if (inWay != null)

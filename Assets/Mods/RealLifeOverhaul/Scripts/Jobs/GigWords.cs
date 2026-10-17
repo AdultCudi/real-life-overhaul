@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Localizor;
@@ -83,9 +84,10 @@ namespace RealLifeOverhaul
                 return;
             }
             logger.Info("Jobs: offer for '" + offer.Id + "' (day " + day + ", hour " + hour + ", seed " + offer.Seed + (offer.Flat ? ", flat: the table's figures" : string.Empty) + "): "
-                        + offer.Client + " client x" + offer.ClientFactor.ToString("F3") + ", day " + offer.Day + " x" + offer.DayFactor.ToString("F3") + ", weather " + offer.Weather
-                        + " x" + offer.WeatherFactor.ToString("F2") + ", fee x" + offer.Fee.ToString("F3") + ", size " + offer.Units + ", crowd " + offer.Crowd + " x" + offer.CrowdFactor.ToString("F2")
-                        + ", tipper at " + offer.TipperAt + " (" + offer.TipperUnits.ToString("F2") + " units), speed bonus " + offer.SpeedUnits.ToString("F2") + " units, redo at " + offer.RedoAt + ".");
+                        + offer.Client + " client x" + offer.ClientFactor.ToString("F3", CultureInfo.InvariantCulture) + ", day " + offer.Day + " x"
+                        + offer.DayFactor.ToString("F3", CultureInfo.InvariantCulture) + ", weather " + offer.Weather
+                        + " x" + offer.WeatherFactor.ToString("F2", CultureInfo.InvariantCulture) + ", fee x" + offer.Fee.ToString("F3", CultureInfo.InvariantCulture) + ", size " + offer.Units + ", crowd " + offer.Crowd + " x" + offer.CrowdFactor.ToString("F2", CultureInfo.InvariantCulture)
+                        + ", tipper at " + offer.TipperAt + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units), speed bonus " + offer.SpeedUnits.ToString("F2", CultureInfo.InvariantCulture) + " units, redo at " + offer.RedoAt + ".");
         }
     }
 }

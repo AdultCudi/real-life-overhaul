@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using Extensions;
@@ -111,7 +112,7 @@ namespace RealLifeOverhaul.Law
             if (Meta.Dev.Verbose)
             {
                 _logger?.Info("Law check (desk list): the game's list is open: " + entries + " entries at " + precinct.Name + ", " + list.Made + " entries made so far; "
-                              + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                              + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

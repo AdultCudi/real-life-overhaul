@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Entities;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -512,7 +513,7 @@ namespace RealLifeOverhaul.Tech
             {
                 Logger?.Info("Tech check (professionals, day " + day + "): " + _people.Count + " professional(s)" + (made > 0 ? ", " + made + " new" : string.Empty) + ", " + reviews + " review(s), " + sick + " off sick, "
                              + approached + " approached by a rival, " + courses + " course(s) or exam(s) ended, " + left + " gone, " + payroll + " paid by the mod; "
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS");
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
 
@@ -674,7 +675,8 @@ namespace RealLifeOverhaul.Tech
                     int wage = WageRules.Mended(p.Wage, TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000));
                     if (wage < p.Wage)
                     {
-                        Logger?.Info("Tech: " + p.Name + "'s wage on the mod's payroll brought back from " + (p.Wage / 100f).ToString("F2") + " to " + (wage / 100f).ToString("F2") + ".");
+                        Logger?.Info("Tech: " + p.Name + "'s wage on the mod's payroll brought back from " + (p.Wage / 100f).ToString("F2", CultureInfo.InvariantCulture) + " to "
+                            + (wage / 100f).ToString("F2", CultureInfo.InvariantCulture) + ".");
                         p.Wage = p.GameWage = wage;
                         mended++;
                     }

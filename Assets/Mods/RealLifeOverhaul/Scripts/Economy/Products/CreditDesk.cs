@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using Localizor;
@@ -499,7 +500,8 @@ namespace RealLifeOverhaul.Economy
             Touch();
             if (Verbose)
             {
-                Logger?.Info("Economy check (account opened): " + a.Kind + " #" + a.Id + " with " + LenderName(a) + ", " + a.Owed + " owed of " + a.Agreed + " at " + (a.RateBp / 100f).ToString("0.##")
+                Logger?.Info("Economy check (account opened): " + a.Kind + " #" + a.Id + " with " + LenderName(a) + ", " + a.Owed + " owed of " + a.Agreed + " at "
+                             + (a.RateBp / 100f).ToString("0.##", CultureInfo.InvariantCulture)
                              + "% a year" + (a.Term > 0 ? ", " + a.Instalment + " a day for " + a.Term + " days" : string.Empty) + (a.Secured ? ", secured on '" + a.SecurityName + "' (" + a.Security + ") bought for " + a.SecurityValue : string.Empty)
                              + (a.Test ? " (test)" : string.Empty) + ": PASS");
             }
@@ -670,7 +672,8 @@ namespace RealLifeOverhaul.Economy
                 if (o.PenaltyEnded)
                 {
                     Note(NotificationType.Success, "reallife_econ_note_penalty_over", Data("account", name));
-                    Check("rate restored: " + a.Kind + " #" + a.Id + " back at " + (a.RateNow / 100f).ToString("0.##") + "% after three payments in a row", a.RateNow == a.RateAgreedNow);
+                    Check("rate restored: " + a.Kind + " #" + a.Id + " back at " + (a.RateNow / 100f).ToString("0.##", CultureInfo.InvariantCulture)
+                        + "% after three payments in a row", a.RateNow == a.RateAgreedNow);
                 }
                 if (o.Step != LadderStep.None)
                 {

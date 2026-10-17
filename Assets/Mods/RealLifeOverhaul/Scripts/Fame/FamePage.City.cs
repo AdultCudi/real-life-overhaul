@@ -4,14 +4,13 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Fame
 {
-    // The Standing page's requests and the council: a row each in the table (what the city asks, the changes the council
-    // could be pushed to make while the player has the influence, a push being decided), and the one picked in the white
-    // box with its buttons. The changes on offer are the council's own (FameBridges.Levers), read when the page is written.
+    // The Standing page's requests and the council: a row for each request, each push and, while the player has the
+    // influence, each change the council could be pushed to make (read from the council when the page is written).
     public static partial class FamePage
     {
         private static readonly List<FameLever> Levers = new List<FameLever>(16);
 
-        static partial void CityRows(FameDirector director, FameFile f, Func<string, TableRow> row, int day)
+        private static void CityRows(FameFile f, Func<string, TableRow> row, int day)
         {
             string kind = FameText.T(Kinds[KindRequest]);
             for (int i = f.Requests.Count - 1; i >= 0; i--)
@@ -44,7 +43,7 @@ namespace RealLifeOverhaul.Fame
             {
                 Levers.Clear();
             }
-            int chance = FameRules.Clamp(FameCity.LobbyBase(f) - (FameCity.RivalLeast + FameCity.RivalMost) / 2, FameCity.LobbyLeast, FameCity.LobbyMost);
+            int chance = LobbyChance(f);
             string fee = FameText.Money(FameCity.LobbyFee(f.Weekly));
             for (int i = 0; i < Levers.Count; i++)
             {
@@ -54,16 +53,20 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
-        static partial void CityBox(FameDirector director, FameFile f, InfoBox box, string picked, Action<string> pick, Action back, ref bool written)
+        // The chance before the other side is known: its backers at their middle.
+        private static int LobbyChance(FameFile f)
         {
-            Action close = () => pick(null);
-            int day = FameGame.Day;
+            return FameRules.Clamp(FameCity.LobbyBase(f) - (FameCity.RivalLeast + FameCity.RivalMost) / 2, FameCity.LobbyLeast, FameCity.LobbyMost);
+        }
+
+        private static bool CityBox(FameDirector director, FameFile f, InfoBox box, string picked, Action<string> pick, Action back)
+        {
             if (picked.StartsWith("request:", StringComparison.Ordinal))
             {
                 FameRequest q = FameCity.Request(f, Number(picked, 8));
                 if (q == null)
                 {
-                    return;
+                    return false;
                 }
                 box.Title(FameText.RequestTitle(q));
                 box.Chip(FameText.RequestState(q.State));
@@ -76,9 +79,8 @@ namespace RealLifeOverhaul.Fame
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_fame_accept", () => { director.AnswerRequest(id, true); pick(picked); });
                     InfoBox.Button(buttons, InfoBox.Negative, "reallife_fame_refuse", () => { director.AnswerRequest(id, false); pick(picked); });
                 }
-                Buttons(box, close, back, FameText.RequestAbout(q));
-                written = true;
-                return;
+                Buttons(box, pick, back, FameText.RequestAbout(q));
+                return true;
             }
             if (picked.StartsWith("lobby:", StringComparison.Ordinal))
             {
@@ -90,7 +92,7 @@ namespace RealLifeOverhaul.Fame
                 }
                 if (l == null)
                 {
-                    return;
+                    return false;
                 }
                 box.Title(FameText.T("reallife_fame_lobby_row"));
                 box.Chip(FameText.LobbyState(l.State));
@@ -100,48 +102,53 @@ namespace RealLifeOverhaul.Fame
                 {
                     box.Line(FameText.Fill("reallife_fame_lobby_decides", "day", FameText.N(l.DecideDay)));
                 }
-                Buttons(box, close, back);
-                written = true;
-                return;
+                Buttons(box, pick, back);
+                return true;
             }
             if (picked.StartsWith("council:", StringComparison.Ordinal))
             {
-                string[] parts = picked.Split(':');
-                int lever, position;
-                if (parts.Length < 3 || !int.TryParse(parts[1], out lever) || !int.TryParse(parts[2], out position))
-                {
-                    return;
-                }
-                position -= 1;
-                FameLever found = default(FameLever);
-                bool there = false;
-                for (int i = 0; i < Levers.Count; i++)
-                {
-                    if (Levers[i].Lever == lever && Levers[i].Position == position)
-                    {
-                        found = Levers[i];
-                        there = true;
-                    }
-                }
-                if (!there)
-                {
-                    return;
-                }
-                int chance = FameRules.Clamp(FameCity.LobbyBase(f) - (FameCity.RivalLeast + FameCity.RivalMost) / 2, FameCity.LobbyLeast, FameCity.LobbyMost);
-                box.Title(found.Name);
-                if (!string.IsNullOrEmpty(found.Effect))
-                {
-                    box.Line(found.Effect);
-                }
-                box.Note(FameText.Fill("reallife_fame_lobby_about", "influence", FameText.N(FameCity.Influence(f)), "chance", FameText.N(chance), "fee", FameText.Money(FameCity.LobbyFee(f.Weekly)),
-                    "days", FameText.N(FameCity.LobbyDecideDays)));
-                if (FameCity.MayLobby(f, day))
-                {
-                    InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_fame_lobby_do", () => { director.Lobby(lever, position); pick(null); });
-                }
-                Buttons(box, close, back);
-                written = true;
+                return CouncilBox(director, f, box, picked, pick, back);
             }
+            return false;
+        }
+
+        // A change the council could be pushed to make, as listed by CityRows ("council:lever:position+1").
+        private static bool CouncilBox(FameDirector director, FameFile f, InfoBox box, string picked, Action<string> pick, Action back)
+        {
+            string[] parts = picked.Split(':');
+            int lever, position;
+            if (parts.Length < 3 || !int.TryParse(parts[1], out lever) || !int.TryParse(parts[2], out position))
+            {
+                return false;
+            }
+            position -= 1;
+            FameLever found = default(FameLever);
+            bool there = false;
+            for (int i = 0; i < Levers.Count; i++)
+            {
+                if (Levers[i].Lever == lever && Levers[i].Position == position)
+                {
+                    found = Levers[i];
+                    there = true;
+                }
+            }
+            if (!there)
+            {
+                return false;
+            }
+            box.Title(found.Name);
+            if (!string.IsNullOrEmpty(found.Effect))
+            {
+                box.Line(found.Effect);
+            }
+            box.Note(FameText.Fill("reallife_fame_lobby_about", "influence", FameText.N(FameCity.Influence(f)), "chance", FameText.N(LobbyChance(f)),
+                "fee", FameText.Money(FameCity.LobbyFee(f.Weekly)), "days", FameText.N(FameCity.LobbyDecideDays)));
+            if (FameCity.MayLobby(f, FameGame.Day))
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_fame_lobby_do", () => { director.Lobby(lever, position); pick(null); });
+            }
+            Buttons(box, pick, back);
+            return true;
         }
     }
 }

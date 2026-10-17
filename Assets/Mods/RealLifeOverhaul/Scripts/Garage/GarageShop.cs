@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Cinemachine;
 using Helpers;
@@ -327,7 +328,7 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Garage check (custom shop list): the game's list is open left of the middle with " + _acts.Count + " entries (pay, paint, finish, lights, body, parts, all stock); "
-                                 + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                                 + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
                 }
                 return true;
             }

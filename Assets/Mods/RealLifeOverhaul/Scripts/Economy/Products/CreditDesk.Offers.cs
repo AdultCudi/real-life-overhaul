@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Entities;
 using Helpers;
 using Streets;
@@ -360,7 +361,8 @@ namespace RealLifeOverhaul.Economy
             if (Verbose)
             {
                 Logger?.Info("Economy check (business loan): " + amount + " from " + offer.Bank.Name + " against " + shop.BusinessName + " (average profit " + profit.ToString("0") + " a day over " + days
-                             + " day(s) on record, so " + offer.Most + " at most) at " + quote.AnnualRate.ToString("0.#") + "% a year: " + quote.DailyPayment + " a day and " + quote.DailyInterest
+                             + " day(s) on record, so " + offer.Most + " at most) at " + quote.AnnualRate.ToString("0.#", CultureInfo.InvariantCulture) + "% a year: " + quote.DailyPayment
+                             + " a day and " + quote.DailyInterest
                              + " interest, fee " + quote.Fee + ": " + (mark != null && amount <= offer.Most ? "PASS" : "FAIL"));
             }
             _director.TermsChanged("a business loan");   // the bank's cap in memory rises by the loan: it does not use up what the bank lends unsecured
@@ -421,7 +423,8 @@ namespace RealLifeOverhaul.Economy
             CreditLedger.Post(CreditKind.Application, amount, day, ProductCatalogue.KindSources[(int)kind]);
             if (Verbose)
             {
-                Logger?.Info("Economy check (approval): " + kind + " for up to " + amount + " with " + depositPercent + "% down over " + term + " days at " + (offer.RateBp / 100f).ToString("0.##")
+                Logger?.Info("Economy check (approval): " + kind + " for up to " + amount + " with " + depositPercent + "% down over " + term + " days at "
+                             + (offer.RateBp / 100f).ToString("0.##", CultureInfo.InvariantCulture)
                              + "% from " + offer.Bank.Name + ", paid into cash; the purchase has until the end of day " + (day + ProductCatalogue.ApprovalDays) + "; " + _ownedCount + " owned now: PASS");
             }
             _director.TermsChanged("an approval");
@@ -814,7 +817,8 @@ namespace RealLifeOverhaul.Economy
             if (Verbose)
             {
                 Logger?.Info("Economy check (consolidation): " + count + " debt(s) of " + before.Owed + " in all (" + before.Daily + " a day, " + before.Cost + " of interest still to come, " + before.Days
-                             + " days) replaced by one loan of " + quote.Amount + " from " + bank.Name + " at " + quote.AnnualRate.ToString("0.#") + "% (" + after.Daily + " a day, " + after.Cost
+                             + " days) replaced by one loan of " + quote.Amount + " from " + bank.Name + " at " + quote.AnnualRate.ToString("0.#", CultureInfo.InvariantCulture) + "% (" + after.Daily
+                             + " a day, " + after.Cost
                              + " of interest and fee, " + after.Days + " days), fee " + quote.Fee + "; " + Save.Loans.Count + " loan(s) in the game now: "
                              + (Save.Loans.Count == 1 && quote.Amount == before.Owed + quote.Fee && mark != null ? "PASS" : "FAIL"));
             }

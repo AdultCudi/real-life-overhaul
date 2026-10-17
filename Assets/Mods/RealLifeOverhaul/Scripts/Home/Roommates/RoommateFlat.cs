@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Helpers;
 using RealLifeOverhaul.Family;
@@ -410,7 +411,8 @@ namespace RealLifeOverhaul.Roommates
             if (Meta.Dev.Verbose)
             {
                 _logger?.Info("Roommates check (at home): " + s.Mate.Person.Name + " is shown " + (wasHome ? "at place " + at : "coming in at the door") + ", "
-                              + Mathf.Sqrt(CitySpots.Flat(person.Position - _entry)).ToString("F1") + " m from the door (wanted more than 0.8 m unless coming in): PASS.");
+                              + Mathf.Sqrt(CitySpots.Flat(person.Position - _entry)).ToString("F1", CultureInfo.InvariantCulture)
+                              + " m from the door (wanted more than 0.8 m unless coming in): PASS.");
             }
         }
 

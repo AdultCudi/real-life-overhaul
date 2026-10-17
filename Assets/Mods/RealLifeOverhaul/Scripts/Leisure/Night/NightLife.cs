@@ -5,24 +5,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// The city after dark, cheaply: at the door of a nightclub, cinema, theatre or the casino
-    /// that is open near the player between eight in the evening and three in the morning, two
-    /// people of the living city's pool stand outside talking, a step along the pavement from
-    /// the door. One venue at a time, two people, asked once a second by the director; they are
-    /// put there and taken away only out of the player's view, and never while the living city
-    /// has its own door scene out (the queue with its doorman, the doorman alone) or is short of
-    /// people: the larger share of its pool stays its own.
-    ///
-    /// What is deliberately not done here: brighter shop signs (the game colours and switches
-    /// each sign's own material instance itself, and a property block laid over that could not
-    /// be verified without running the game), more taxis at closing time (the traffic system
-    /// has no knob for one kind of car: its pool is filled once at start) and fewer walkers on
-    /// quiet streets (the game sets pedestrian numbers by the hour itself).
+    /// The city after dark: from 20:00 to 03:00 two people of the living city's pool talk outside an open nightclub,
+    /// cinema, theatre or casino near the player, put out of view; never while the living city has its own door scene.
     /// </summary>
     public sealed class NightLife
     {
-        private const float Near = 75f, Far = 120f;
-        private const float StayMinutes = 5f;
+        private const float StayMinutes = 5f;   // real minutes
 
         private CityPerson _first, _second;
         private Vector3 _at;
@@ -33,7 +21,6 @@ namespace RealLifeOverhaul.Leisure
 
         private static bool Evening => TimeHelper.CurrentHour >= 20 || TimeHelper.CurrentHour < 3;
 
-        /// <summary>Once a second while the player is out of doors.</summary>
         public void Tick(Vector3 player, float now)
         {
             CityLifeDirector city = CityLifeDirector.Instance;
@@ -46,7 +33,7 @@ namespace RealLifeOverhaul.Leisure
             if (Out)
             {
                 bool lost = _first == null || _second == null || _first.Lost || _second.Lost;
-                bool gone = CitySpots.Flat(_at - player) > Far;
+                bool gone = LeisureReach.Beyond(CitySpots.Flat(_at - player), LeisureReach.NightKept);
                 bool done = !wanted || now - _since > StayMinutes * 60f;
                 if (lost || gone || (done && !CitySpots.InView(_at)))
                 {
@@ -71,7 +58,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>Options-page button: the nearest venue within reach gets its two people now, whatever the hour. Says why not.</summary>
+        /// <summary>Options-page button: the nearest open venue gets its two people now, at any hour.</summary>
         public void Test(Vector3 player, float now)
         {
             CityLifeDirector city = CityLifeDirector.Instance;
@@ -84,7 +71,8 @@ namespace RealLifeOverhaul.Leisure
             CityBuildingController venue = OpenVenueNear(player);
             if (venue == null)
             {
-                TestRefusals.Tell(LeisureDirector.Logger, "Night life", TestRefusal.NothingFits, 0, "no open nightclub, cinema, theatre or casino door within " + Near + " m");
+                TestRefusals.Tell(LeisureDirector.Logger, "Night life", TestRefusal.NothingFits, 0,
+                    "no open nightclub, cinema, theatre or casino door within " + LeisureReach.NightNear + " m");
                 return;
             }
             if (city.People.Free < 2)
@@ -98,7 +86,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // The nearest door of a place people go at night that is open now. A pass over the city's buildings: once every twelve seconds at most.
+        // A pass over the city's buildings, at most once every twelve seconds.
         private static CityBuildingController OpenVenueNear(Vector3 player)
         {
             CityManager cityManager = InstanceBehavior<CityManager>.Instance;
@@ -107,7 +95,7 @@ namespace RealLifeOverhaul.Leisure
                 return null;
             }
             CityBuildingController best = null;
-            float bestSqr = Near * Near;
+            float bestSqr = LeisureReach.NightNear * LeisureReach.NightNear;
             CityBuildingController[] all = cityManager.cityBuildingControllers;
             for (int i = 0; i < all.Length; i++)
             {
@@ -146,7 +134,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 Vector3 a = front + along * (side * 2.0f);
                 Vector3 b = front + along * (side * 2.9f);
-                if (!CitySpots.Stand(a, 0.35f, out a) || !CitySpots.Stand(b, 0.35f, out b) || CitySpots.Flat(a - b) < 0.75f
+                if (!CitySpots.Stand(a, 0.35f, out a) || !CitySpots.Stand(b, 0.35f, out b) || LeisureReach.Within(CitySpots.Flat(a - b), LeisureReach.NightApart)
                     || (!inView && (CitySpots.InView(a) || CitySpots.InView(b))))
                 {
                     continue;
@@ -155,7 +143,7 @@ namespace RealLifeOverhaul.Leisure
                 CityPerson second = first != null ? city.People.Take(CityLook.Civilian, b, a) : null;
                 if (first == null || second == null || !first.Work("talk_a", city.Props) || !second.Work("talk_b", city.Props))
                 {
-                    // Both talk or neither stands there: nobody gestures at nobody.
+                    // Both talk or neither stands there.
                     if (first != null)
                     {
                         city.People.Release(first);
@@ -203,15 +191,12 @@ namespace RealLifeOverhaul.Leisure
     }
 
     /// <summary>
-    /// What drink does to driving: with two or more drinks in the blood the car the player drives
-    /// wanders, a slow uneven pull to one side and the other that has to be steered against, the
-    /// stronger the more was drunk. One small torque per physics step, and only while this
-    /// component is switched on, which the director does once a second and only while the player
-    /// is at the wheel and tipsy. Nothing is changed on the car: there is nothing to put back.
+    /// Drink at the wheel: an uneven pull to either side, stronger the more was drunk. On only while the player drives
+    /// tipsy, adding one torque per physics step; off it costs nothing a frame. Nothing on the car is changed.
     /// </summary>
     public sealed class TipsyDriving : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "TipsyDriving", typeof(TipsyDriving));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "TipsyDriving", typeof(TipsyDriving));
 
         private Rigidbody _body;
         private float _strength;
@@ -248,7 +233,7 @@ namespace RealLifeOverhaul.Leisure
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try

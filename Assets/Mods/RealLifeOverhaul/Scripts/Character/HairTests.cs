@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
@@ -186,7 +187,7 @@ namespace RealLifeOverhaul
                 }
                 data.affectsVolumetric = false;
                 UnityEngine.Object.Destroy(_lamp, LampSeconds);
-                HairLook.Logger?.Warn("Hair test: " + said + " stands " + height.ToString("F1") + " m above the player's feet, " + StreetLampOffset.ToString("F0")
+                HairLook.Logger?.Warn("Hair test: " + said + " stands " + height.ToString("F1", CultureInfo.InvariantCulture) + " m above the player's feet, " + StreetLampOffset.ToString("F0")
                                       + " m beyond the head, for " + LampSeconds.ToString("F0") + " s. " + HairLook.Describe(character));
                 Notifications.Show(NotificationType.Info, "reallife_hair_test_streetlamp", null, NoticeSeconds, null, null, true, false);
             }

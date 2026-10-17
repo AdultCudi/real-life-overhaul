@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
@@ -198,7 +199,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 Logger?.Info("Ventures check (start): file version " + (fresh ? "new" : version.ToString()) + ", " + file.Deals.Count + " deal(s), " + file.Offers.Count + " offer(s), "
                              + file.Pledges.Count + " promise(s), " + file.Holdings.Count + " holding(s), market day " + file.MarketSteps + ", name with investors " + file.Reputation
-                             + ", level " + Level + ", climate " + VenturesBridges.Climate.Phase + " at " + VenturesBridges.Climate.BankRate.ToString("0.##") + "%. " + CastLine() + ": PASS");
+                             + ", level " + Level + ", climate " + VenturesBridges.Climate.Phase + " at " + VenturesBridges.Climate.BankRate.ToString("0.##", CultureInfo.InvariantCulture) + "%. "
+                             + CastLine() + ": PASS");
             }
             Badge();
         }
@@ -229,7 +231,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 Company c = _file.Companies[i];
                 _log.Append(i > 0 ? "; " : string.Empty).Append(c.Name).Append(" (").Append(c.Sector).Append(c.Rival ? ", a rival of the game's" : string.Empty).Append(", ")
-                    .Append((c.PriceCents / 100f).ToString("0.00")).Append(", move ").Append(c.VolBp).Append(" bp, dividend ").Append(c.YieldBp).Append(" bp)");
+                    .Append((c.PriceCents / 100f).ToString("0.00", CultureInfo.InvariantCulture)).Append(", move ").Append(c.VolBp).Append(" bp, dividend ").Append(c.YieldBp).Append(" bp)");
             }
             return _log.ToString();
         }

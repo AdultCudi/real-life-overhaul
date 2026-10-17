@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
@@ -213,7 +214,7 @@ namespace RealLifeOverhaul.Careers
                 Changed();
                 if (Verbose)
                 {
-                    Logger?.Info("Careers check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS");
+                    Logger?.Info("Careers check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
             catch (Exception e)

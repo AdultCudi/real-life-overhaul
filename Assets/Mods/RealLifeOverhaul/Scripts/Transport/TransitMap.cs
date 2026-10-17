@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BAModAPI;
 using GleyTrafficSystem;
@@ -613,7 +614,7 @@ namespace RealLifeOverhaul
             }
             var text = new StringBuilder("Transit check (network): " + Lines.Count + " bus lines (" + _routes + " routes, " + bothWays + " of the lines with their other direction), "
                                          + Stops.Count + " stops at " + Places.Count + " places, " + Bays + " of the places with a bay (the bus stands out of the lane there; a bay wants the kerb "
-                                         + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2") + " m or more from the lane's line), " + _shared + " stops shared with a line laid before; places served by 1 line "
+                                         + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2", CultureInfo.InvariantCulture) + " m or more from the lane's line), " + _shared + " stops shared with a line laid before; places served by 1 line "
                                          + byLines[1] + ", by 2 " + byLines[2] + ", by 3 " + byLines[3] + ", by 4 or more " + (byLines[4] + byLines[5]) + "; " + transfers + " places where a change of bus can be made (another line there or within "
                                          + TransferWalk.ToString("F0") + " m); subway stations with a line within " + TransitPlan.ServedWithin.ToString("F0") + " m " + stationsServed + " of " + Stations.Count + ", with 3 or more "
                                          + stationsThree + " (" + station + "); " + _searches + " searches of " + (_points != null ? _points.Length : 0) + " lane points (" + _laneChanges + " lane changes offered), "
@@ -631,13 +632,13 @@ namespace RealLifeOverhaul
                     shared += line.Stops[s].At.Calls.Count > 1 ? 1 : 0;
                 }
                 text.Append(" ").Append(line.Number).Append(line.Main ? " (main)" : string.Empty).Append(" to ").Append(line.To).Append(' ')
-                    .Append((line.Metres[line.Metres.Length - 1] / 1000f).ToString("F1")).Append(" km ")
+                    .Append((line.Metres[line.Metres.Length - 1] / 1000f).ToString("F1", CultureInfo.InvariantCulture)).Append(" km ")
                     .Append(line.Stops.Count).Append(" stops (").Append(shared).Append(" shared with another line, ").Append(sheltered).Append(" with a shelter, ").Append(bays).Append(" with a bay; the kerb at");
                 // Each stop's kerb, and in a word why a stop has no bay: what a look at the street is then held against.
                 for (int s = 0; s < line.Stops.Count; s++)
                 {
                     TransitStop stop = line.Stops[s];
-                    text.Append(' ').Append(stop.KerbAside.ToString("F2"));
+                    text.Append(' ').Append(stop.KerbAside.ToString("F2", CultureInfo.InvariantCulture));
                     if (!stop.HasBay)
                     {
                         text.Append(" [").Append(stop.NoBay ?? "no bay").Append(']');
@@ -1490,7 +1491,7 @@ namespace RealLifeOverhaul
             if (!BusBay.Lay(stop.KerbAside, out float offset, out BusBay.Curve curveIn, out BusBay.Curve curveOut, out float behind, out float ahead))
             {
                 stop.NoBay = offset > 0f ? "too wide to cross in the plain lane there is"
-                    : stop.KerbAside < kerb - 0.01f ? "narrow with " + (_edgeWhat ?? "what stands") + " on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
+                    : stop.KerbAside < kerb - 0.01f ? "narrow with " + (_edgeWhat ?? "what stands") + " on the kerb's edge (the kerb " + kerb.ToString("F2", CultureInfo.InvariantCulture) + " m out, the bus may come to " + stop.KerbAside.ToString("F2", CultureInfo.InvariantCulture) + ")"
                     : "narrow";
                 return;
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
@@ -446,7 +447,8 @@ namespace RealLifeOverhaul.Tech
             if (Verbose)
             {
                 Logger?.Info("Tech check (firms, day " + day + "): " + _firms.Count + " firm(s), " + _firmsFile.Products.Count + " product(s), " + _firmsFile.Contracts.Count + " contract(s), " + _work.Count
-                             + " contract event(s), " + outages + " outage(s), " + breaches + " breach(es); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS");
+                             + " contract event(s), " + outages + " outage(s), " + breaches + " breach(es); "
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
 

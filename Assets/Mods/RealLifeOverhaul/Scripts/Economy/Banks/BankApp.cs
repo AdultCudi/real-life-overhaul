@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI;
@@ -205,7 +206,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Banks: " + (Bank != null ? Bank.Name : "no bank") + ", tab " + _tab + " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)") + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms; " + box.Fit() + ".");
+                Logger?.Info("Banks: " + (Bank != null ? Bank.Name : "no bank") + ", tab " + _tab + " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)") + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms; " + box.Fit() + ".");
             }
         }
 

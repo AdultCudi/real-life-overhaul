@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BigAmbitions.DayNightCycle;
 using Characters.EmojiSystem;
@@ -1162,7 +1163,7 @@ namespace RealLifeOverhaul
             if (bench != null)
             {
                 Offer(SocialLife.Say("reallife_social_bench_prompt", SocialLife.Data(_who)), "reallife_social_button_sit", null);
-                Seating.Check(SocialDirector.Logger, "a street bench is " + Mathf.Sqrt((bench.sittingPosition.position - player).sqrMagnitude).ToString("F1") + " m from the player on a walk: sitting down is offered", true);
+                Seating.Check(SocialDirector.Logger, "a street bench is " + Mathf.Sqrt((bench.sittingPosition.position - player).sqrMagnitude).ToString("F1", CultureInfo.InvariantCulture) + " m from the player on a walk: sitting down is offered", true);
             }
             else
             {
@@ -1494,7 +1495,8 @@ namespace RealLifeOverhaul
                 float getIn = atDoor ? D.Animations.Play(_friend.Character, _doorRight ? JobClip.CarEnter : JobClip.CarEnterLeft) : 0f;
                 SocialDirector.Logger?.Info(getIn > 0f
                     ? "Social: " + _who.Name + " gets in at the " + (_doorRight ? "right" : "left") + " rear door."
-                    : "Social: " + _who.Name + " is in the car (no getting-in clip" + (_doorClip ? ": they stopped " + gap.ToString("F2") + " m from the door)." : " to be had)."));
+                    : "Social: " + _who.Name + " is in the car (no getting-in clip"
+                        + (_doorClip ? ": they stopped " + gap.ToString("F2", CultureInfo.InvariantCulture) + " m from the door)." : " to be had)."));
                 if (getIn > 0f)
                 {
                     _enterUntil = now + getIn;
@@ -2221,8 +2223,9 @@ namespace RealLifeOverhaul
             Dictionary<string, string> title = SocialLife.Data(_who, "outing", SocialLife.T(_def.Name));
             D.ShowCard(SocialLife.Capital(SocialLife.T("reallife_social_title", title)), _text.ToString());
             SocialDirector.Logger?.Info("Social: " + _def.Kind + " with " + _who.Name + (wentWell ? " went well" : " went badly") + (_closed ? " (the place was shut: a walk)" : string.Empty)
-                                        + ": paid " + _paid + ", familiarity " + familiarity.ToString("F1") + ", affection " + affection.ToString("F1") + ", trust "
-                                        + trust.ToString("F1") + (_test ? " (test: nothing recorded)." : "."));
+                                        + ": paid " + _paid + ", familiarity " + familiarity.ToString("F1", CultureInfo.InvariantCulture) + ", affection "
+                                        + affection.ToString("F1", CultureInfo.InvariantCulture) + ", trust "
+                                        + trust.ToString("F1", CultureInfo.InvariantCulture) + (_test ? " (test: nothing recorded)." : "."));
         }
 
         private void CardLine(string key, string value)

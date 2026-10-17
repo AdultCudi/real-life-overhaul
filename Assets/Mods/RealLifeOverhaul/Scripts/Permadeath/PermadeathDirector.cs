@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using UI.Load;
 using UI.Notification;
@@ -245,8 +246,9 @@ namespace RealLifeOverhaul.Permadeath
                 }
                 if (v == Verdict.Death)
                 {
-                    Logger?.Info("Permadeath check (going without food, " + hours.ToString("F0") + " hours at the bottom of the bar, all three warnings shown): roll " + roll.ToString("F3")
-                                 + " under " + PermadeathRules.StarvePerHour.ToString("F4") + ": the end.");
+                    Logger?.Info("Permadeath check (going without food, " + hours.ToString("F0") + " hours at the bottom of the bar, all three warnings shown): roll "
+                                 + roll.ToString("F3", CultureInfo.InvariantCulture)
+                                 + " under " + PermadeathRules.StarvePerHour.ToString("F4", CultureInfo.InvariantCulture) + ": the end.");
                     PermadeathGame.Weak(0);
                     Die(DeathCause.Starvation);
                     return;
@@ -467,8 +469,9 @@ namespace RealLifeOverhaul.Permadeath
             Verdict v = PermadeathRules.Judge(cause, measure, warned, m, roll);
             if (m.Armed && PermadeathRules.Fatal(cause, measure))
             {
-                Logger?.Info("Permadeath check (" + cause + ", measure " + measure.ToString("F1") + "): allowed " + PermadeathRules.Allowed(m) + " (session " + m.InSession + ", mission or tutorial " + m.MissionOrTutorial
-                             + ", busy " + m.Busy + "), warned " + warned + ", odds " + PermadeathRules.Odds(cause, measure).ToString("P0") + ", roll " + roll.ToString("F2") + ": " + v + ".");
+                Logger?.Info("Permadeath check (" + cause + ", measure " + measure.ToString("F1", CultureInfo.InvariantCulture) + "): allowed " + PermadeathRules.Allowed(m) + " (session " + m.InSession + ", mission or tutorial " + m.MissionOrTutorial
+                             + ", busy " + m.Busy + "), warned " + warned + ", odds " + PermadeathRules.Odds(cause, measure).ToString("P0", CultureInfo.InvariantCulture) + ", roll "
+                             + roll.ToString("F2", CultureInfo.InvariantCulture) + ": " + v + ".");
             }
             return v;
         }
@@ -537,7 +540,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 if (LifeEvents.IsSafeForEvent())
                 {
-                    Logger?.Info("Permadeath check (the flu, " + hours.ToString("F0") + " hours untreated, all three warnings shown): roll " + roll.ToString("F3") + " under " + PermadeathRules.IllPerHour.ToString("F4") + ": the end.");
+                    Logger?.Info("Permadeath check (the flu, " + hours.ToString("F0") + " hours untreated, all three warnings shown): roll " + roll.ToString("F3", CultureInfo.InvariantCulture) + " under " + PermadeathRules.IllPerHour.ToString("F4", CultureInfo.InvariantCulture) + ": the end.");
                     Die(DeathCause.Illness);
                 }
                 else

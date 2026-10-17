@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -222,7 +223,7 @@ namespace RealLifeOverhaul.Tech
                 Changed();
                 if (Verbose)
                 {
-                    Logger?.Info("Tech check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS");
+                    Logger?.Info("Tech check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
             catch (Exception e)

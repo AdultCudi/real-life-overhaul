@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Events
                 return false;
             }
             _director.Cordon.Raise(now);
-            EventDirector.Logger?.Info($"Street event: {kind} staged{(test ? " (test)" : "")}: {_half * 2f:F0} m of road closed, {_width * 2f:F1} m across, {_stallCount} stall(s), {_dressing.Count} prop(s), "
+            EventDirector.Logger?.Info(System.FormattableString.Invariant($"Street event: {kind} staged{(test ? " (test)" : "")}: {_half * 2f:F0} m of road closed, {_width * 2f:F1} m across, {_stallCount} stall(s), {_dressing.Count} prop(s), ")
                                        + $"{_count} staff walking in, {_officers} officer(s).");
             return true;
         }

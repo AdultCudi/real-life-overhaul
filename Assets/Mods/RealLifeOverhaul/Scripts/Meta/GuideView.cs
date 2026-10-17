@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BaTable;
 using EnhancedUI.EnhancedScroller;
@@ -319,7 +320,7 @@ namespace RealLifeOverhaul.Meta
             if (Dev.Verbose)
             {
                 MetaLog.Info("Meta check (guide app): opened on " + (_tab == 1 && _topic != null ? "the page '" + _topic.Id + "', " : "the list of ") + _topics.Count + " pages, " + _rows.Count + " rows; "
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS.");
+                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

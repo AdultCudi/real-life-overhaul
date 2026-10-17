@@ -1,3 +1,4 @@
+using System.Globalization;
 using BigAmbitions.Characters;
 using Helpers;
 using UnityEngine;
@@ -206,7 +207,8 @@ namespace RealLifeOverhaul
             _panel.Hide();
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: cleaner: mopping spill " + (_mopped + 1) + " of " + _units + ", " + JobSpots.Flat(Ctx.Player.transform.position, _patchAt).ToString("F1")
+                Ctx.Logger?.Info("Jobs: cleaner: mopping spill " + (_mopped + 1) + " of " + _units + ", "
+                                 + JobSpots.Flat(Ctx.Player.transform.position, _patchAt).ToString("F1", CultureInfo.InvariantCulture)
                                  + " m from its middle; " + Mathf.Max(0, Mathf.CeilToInt(_endsAt - Time.time)) + " s of the floor's time left.");
             }
             float now = Time.time;
@@ -261,7 +263,7 @@ namespace RealLifeOverhaul
             _nextTry = now + 0.4f;
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: cleaner: spill mopped by hand in " + MopSeconds.ToString("F1") + " s; mopped " + _mopped + " of " + _units + ", "
+                Ctx.Logger?.Info("Jobs: cleaner: spill mopped by hand in " + MopSeconds.ToString("F1", CultureInfo.InvariantCulture) + " s; mopped " + _mopped + " of " + _units + ", "
                                  + Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) + " s of the floor's time left.");
             }
             if (_mopped >= _units)

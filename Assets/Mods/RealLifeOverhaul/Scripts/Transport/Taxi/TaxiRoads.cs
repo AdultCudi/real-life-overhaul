@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using GleyTrafficSystem;
 using GleyUrbanAssets;
 using UnityEngine;
@@ -146,7 +147,7 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 TaxiDirector.Logger?.Info("Taxi: road graph " + (_shared ? "shared with the GPS" : "made") + ": " + _points.Length + " lane points, "
-                                          + watch.Elapsed.TotalMilliseconds.ToString("F1") + " ms.");
+                                          + watch.Elapsed.TotalMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms.");
             }
             return true;
         }
