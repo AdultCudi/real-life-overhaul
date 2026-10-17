@@ -5,6 +5,7 @@ Development aids: the session record (one line a minute and one for each long fr
 ## Read first
 
 - `SessionWatch.cs`: the session record.
+- `ObjectKinds.cs`: the record's count of the mod's objects by holder and by kind, which names what grows in a long session.
 - `FrameSteps.cs`: where the frame before this one went, by engine step.
 
 ## Documentation

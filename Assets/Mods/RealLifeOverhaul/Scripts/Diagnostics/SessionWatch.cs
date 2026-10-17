@@ -37,6 +37,15 @@ namespace RealLifeOverhaul
     /// rise while each kind of scene is seen for the first time and then stand still); "over 33 ms" and "over
     /// 50 ms" are the stutters themselves, and "seen" are the long ones the player could see.
     ///
+    /// A second line a minute says what grew since the first minute, so that a leak names itself (ObjectKinds):
+    ///
+    ///   Session 12 min, what grew since minute 2: textures 1834 (+40), 612 MB (+35); the mod's holders: Civic Props
+    ///   +120 (160 now), ...; the kinds below them: Civic Props > cone +80 (100 now), ...; in the scene kept across
+    ///   loads 412 of the mod's objects (+3).
+    ///
+    /// Textures are the engine's own count of those not streamed (every one a script makes is among them); the holders
+    /// are the objects right under a root of the mod's, and the kinds those under a holder, names without their numbers.
+    ///
     /// The line for a long frame says what the mod was doing, if one of its large one-off pieces of work was
     /// under way: the places that do such work name it with <see cref="Mark"/> (a character being built, a bus
     /// stop or a precinct front being put out, a scene starting, the save being written), and those that also
@@ -137,6 +146,12 @@ namespace RealLifeOverhaul
         private readonly List<GameObject> _roots = new List<GameObject>(64);
         private readonly List<Transform> _under = new List<Transform>(512);
         private readonly StringBuilder _line = new StringBuilder(1024);
+        private readonly ObjectKinds _holders = new ObjectKinds();   // what grows, by holder and by kind, against the first minute
+        private readonly ObjectKinds _kinds = new ObjectKinds();
+        private Scene _kept;                   // the scene of the objects kept across loads (DontDestroyOnLoad), read once
+        private bool _keptRead;
+        private int _keptObjects, _keptFirst = -1;
+        private long _texturesFirst = -1, _textureBytesFirst;
 
         private float _since;
         private float _started;
@@ -886,10 +901,11 @@ namespace RealLifeOverhaul
         {
             float seconds = Time.unscaledTime - _since;
             _since = Time.unscaledTime;
+            int minute = Mathf.RoundToInt((Time.unscaledTime - _started) / 60f);
             int objects = 0, shown = 0, roots = 0;
-            CountObjects(ref objects, ref shown, ref roots);
+            CountObjects(ref objects, ref shown, ref roots, minute);
             _line.Length = 0;
-            _line.Append("Session ").Append(Mathf.RoundToInt((Time.unscaledTime - _started) / 60f)).Append(" min: frames ").Append(_frames)
+            _line.Append("Session ").Append(minute).Append(" min: frames ").Append(_frames)
                 .Append(", average ").Append((_frames > 0 ? seconds * 1000f / _frames : 0f).ToString("F1", CultureInfo.InvariantCulture))
                 .Append(" ms, worst ").Append((_worst * 1000f).ToString("F0"))
                 .Append(" ms, over 33 ms: ").Append(_over33).Append(", over 50 ms: ").Append(_over50)
@@ -929,9 +945,50 @@ namespace RealLifeOverhaul
             Went();
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());
+            Grew(minute);
             _collections = collections;
             Clear();
         }
+
+        // The second line a minute: the textures the engine holds, and the holders and kinds of the mod's objects that grew the
+        // most since the first minute (ObjectKinds), so that a leak names itself.
+        private void Grew(int minute)
+        {
+            long textures = (long)Texture.nonStreamingTextureCount, bytes = (long)Texture.nonStreamingTextureMemory;
+            if (_texturesFirst < 0)
+            {
+                _texturesFirst = textures;
+                _textureBytesFirst = bytes;
+            }
+            if (_keptFirst < 0)
+            {
+                _keptFirst = _keptObjects;
+            }
+            _line.Length = 0;
+            _line.Append("Session ").Append(minute).Append(" min, what grew since minute ").Append(_holders.FirstMinute).Append(": textures ").Append(textures)
+                .Append(" (").Append(Signed(textures - _texturesFirst)).Append("), ").Append(Megabytes(bytes)).Append(" MB (")
+                .Append(Signed(Megabytes(bytes) - Megabytes(_textureBytesFirst))).Append(')');
+            _line.Append("; the mod's holders: ");
+            Growers(_holders);
+            _line.Append("; the kinds below them: ");
+            Growers(_kinds);
+            _line.Append("; in the scene kept across loads ").Append(_keptObjects).Append(" of the mod's objects (").Append(Signed(_keptObjects - _keptFirst)).Append(")");
+            _line.Append(" (").Append(_holders.Count).Append(" holders and ").Append(_kinds.Count).Append(" kinds counted).");
+            Logger?.Info(_line.ToString());
+        }
+
+        private void Growers(ObjectKinds tally)
+        {
+            int found = tally.Rank();
+            for (int k = 0; k < found; k++)
+            {
+                tally.Top(k, out string kind, out int grown, out int now);
+                _line.Append(k > 0 ? ", " : string.Empty).Append(kind).Append(" +").Append(grown).Append(" (").Append(now).Append(" now)");
+            }
+            _line.Append(found == 0 ? "none grew" : string.Empty);
+        }
+
+        private static string Signed(long value) => value >= 0 ? "+" + value : value.ToString(CultureInfo.InvariantCulture);
 
         private static long Megabytes(long bytes) => bytes / (1024L * 1024L);
 
@@ -1015,38 +1072,86 @@ namespace RealLifeOverhaul
         }
 
         // Every object under a root object of the mod's (they are all named "RealLifeOverhaul ..."), in every loaded
-        // scene. What the mod hangs on the game's own objects (a prop in a hand, a part on a car) is not counted.
-        private void CountObjects(ref int objects, ref int shown, ref int roots)
+        // scene. What the mod hangs on the game's own objects (a prop in a hand, a part on a car) is not counted. The
+        // same walk counts them by holder and by kind; the scene kept across loads is counted for the kinds alone, so
+        // that the first line's figures mean what they always have.
+        private void CountObjects(ref int objects, ref int shown, ref int roots, int minute)
         {
+            _holders.Begin();
+            _kinds.Begin();
             for (int s = 0; s < SceneManager.sceneCount; s++)
             {
                 Scene scene = SceneManager.GetSceneAt(s);
-                if (!scene.isLoaded)
+                if (scene.isLoaded)
+                {
+                    CountScene(scene, ref objects, ref shown, ref roots);
+                }
+            }
+            Scene kept = KeptScene();
+            if (kept.IsValid() && kept.isLoaded)
+            {
+                int keptShown = 0, keptRoots = 0;
+                _keptObjects = 0;
+                CountScene(kept, ref _keptObjects, ref keptShown, ref keptRoots);
+            }
+            _holders.End(minute);
+            _kinds.End(minute);
+        }
+
+        private void CountScene(Scene scene, ref int objects, ref int shown, ref int roots)
+        {
+            scene.GetRootGameObjects(_roots);
+            for (int r = 0; r < _roots.Count; r++)
+            {
+                GameObject root = _roots[r];
+                string rootName = root != null ? root.name : null;
+                if (rootName == null || !rootName.StartsWith(RootPrefix, StringComparison.Ordinal))
                 {
                     continue;
                 }
-                scene.GetRootGameObjects(_roots);
-                for (int r = 0; r < _roots.Count; r++)
+                roots++;
+                objects++;
+                shown += root.activeInHierarchy ? 1 : 0;
+                _holders.Add(ObjectKinds.Key(rootName, null, null), 1);
+                Transform top = root.transform;
+                for (int h = 0; h < top.childCount; h++)
                 {
-                    GameObject root = _roots[r];
-                    if (root == null || !root.name.StartsWith(RootPrefix, StringComparison.Ordinal))
+                    Transform holder = top.GetChild(h);
+                    string holderName = holder.name;
+                    int held = 1;
+                    shown += holder.gameObject.activeInHierarchy ? 1 : 0;
+                    for (int b = 0; b < holder.childCount; b++)
                     {
-                        continue;
-                    }
-                    roots++;
-                    root.GetComponentsInChildren(true, _under);   // fills the list it is given
-                    objects += _under.Count;
-                    for (int i = 0; i < _under.Count; i++)
-                    {
-                        if (_under[i].gameObject.activeInHierarchy)
+                        Transform below = holder.GetChild(b);
+                        below.GetComponentsInChildren(true, _under);   // fills the list it is given
+                        for (int i = 0; i < _under.Count; i++)
                         {
-                            shown++;
+                            shown += _under[i].gameObject.activeInHierarchy ? 1 : 0;
                         }
+                        held += _under.Count;
+                        _kinds.Add(ObjectKinds.Key(rootName, holderName, below.name), _under.Count);
+                        _under.Clear();
                     }
-                    _under.Clear();
+                    objects += held;
+                    _holders.Add(ObjectKinds.Key(rootName, holderName, null), held);
                 }
-                _roots.Clear();
             }
+            _roots.Clear();
+        }
+
+        // The scene the engine keeps objects in across loads has no handle of its own: an object put there for a moment says
+        // which it is. Once.
+        private Scene KeptScene()
+        {
+            if (!_keptRead)
+            {
+                _keptRead = true;
+                var probe = new GameObject("RealLifeOverhaul Scene Probe");
+                DontDestroyOnLoad(probe);
+                _kept = probe.scene;
+                DestroyImmediate(probe);
+            }
+            return _kept;
         }
 
         // The two pools of characters: how many exist and how many are out.
