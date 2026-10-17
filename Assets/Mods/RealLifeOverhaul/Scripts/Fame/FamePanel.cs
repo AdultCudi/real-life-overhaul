@@ -133,6 +133,13 @@ namespace RealLifeOverhaul.Fame
             Free();
         }
 
+        /// <summary>With the director: the game's list window made for the scenes goes too.</summary>
+        public void Destroy()
+        {
+            End();
+            _window.Destroy(e => FameDirector.Logger?.Error(e));
+        }
+
         private void Free()
         {
             Active = false;

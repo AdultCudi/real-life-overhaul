@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Fame
             try
             {
                 StandDown(false);
+                _panel?.Destroy();
             }
             catch (Exception e)
             {
