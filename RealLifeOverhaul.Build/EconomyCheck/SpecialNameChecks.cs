@@ -82,7 +82,7 @@ internal static partial class Program
             "special names: a later feature (the university) registers the same way, by address");
 
         // ---------------------------------------------------------------- a later feature's pick leaves the others' buildings alone
-        // The owner's city: the largest office (17 7th Street) is the utilities office, so the university takes the next.
+        // A city where the largest office (17 7th Street) is the utilities office, so the university takes the next.
         string[] streets = { "7th Street", "Main Street", "Elm Street", "Bay Road", "Bay Road" };
         int[] numbers = { 17, 4, 9, 2, 1 };
         int[] sqm = { 102502, 80000, 80000, 120000, 500 };

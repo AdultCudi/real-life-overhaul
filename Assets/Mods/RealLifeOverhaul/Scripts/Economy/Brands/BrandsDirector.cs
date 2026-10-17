@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Brands
     /// the map's markers are up to date (three multiplications for each shop), with no allocation. The first second after
     /// a load reads the state and the shops (StartUp) and nothing else; the app is put on the phone (two of the game's
     /// buttons copied and its icon painted) at the second after, so the two never share a frame: together they made one
-    /// frame of about 36 ms in a player's session, each is timed under a slot of its own. The credit
+    /// frame of about 36 ms, each is timed under a slot of its own. The credit
     /// side's own handlers of the game's hour and day events call <see cref="OnHour"/> and <see cref="OnDay"/> when
     /// their own work is done (EconomyDirector.AfterHour, AfterDay), after the city's economy and the company.
     ///

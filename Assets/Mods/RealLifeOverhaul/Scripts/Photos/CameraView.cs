@@ -8,8 +8,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The viewfinder: a phone camera's own look over the whole screen (the one exception to the native rule the owner
-    /// shares with Flare; its lettering is the game's own font and its rounded shapes Flare's, Social/Flare/FlareKit).
+    /// The viewfinder: a phone camera's own look over the whole screen (an exception to the native rule it shares with
+    /// Flare; its lettering is the game's own font and its rounded shapes Flare's, Social/Flare/FlareKit).
     /// Laid out on a canvas of the game's size (3840 by 2160, matched by height), from the top:
     ///
     ///   the top bar      a dark strip 150 high: Close on the left, the camera's name ("Rear camera", "Selfie") in the

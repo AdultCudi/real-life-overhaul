@@ -10,12 +10,12 @@ using System.Text.RegularExpressions;
 // has a row of its own whose place is that building, so that the row lights it on the open map as the game lights its
 // own buildings; and nothing is put on the map before the map can take it.
 //
-// The owner's report of 15 Oct 2026: "the Hudson City University is not lighting up in the map and also not showing in
-// map filters". The university was one of three or four "Places to study" (with the game's school and the hospitals'
-// wards), under a star the sights share: the filters had no row by its name, the row's arrow flew to the nearest of
-// those places (Bellevue Hospital, in the owner's Player.log), and with that row unticked (as the owner had left it in
-// the session before) the university had no marker and no light at all. Now it has a row of its own, "Hudson City
-// University", with its own icon, there while the university's part is on.
+// The fault: the Hudson City University did not light up on the map and was not among its filters. The university was
+// one of three or four "Places to study" (with the game's school and the hospitals' wards), under a star the sights
+// share: the filters had no row by its name, the row's arrow flew to the nearest of those places (Bellevue Hospital, in
+// the Player.log), and with that row unticked (as it may be left from a session before) the university had no marker
+// and no light at all. Now it has a row of its own, "Hudson City University", with its own icon, there while the
+// university's part is on.
 //
 // What is not here: the game. Whether the building lights is the game's own work (CityBuildingController.SetHighlight);
 // the "Map links: university on the city map with 1 place(s)" and "Map places: ... row(s) added" lines of Player.log

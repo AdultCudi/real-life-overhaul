@@ -4,7 +4,7 @@ using System.IO;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Planner;
 
-// The Planner's two small helpers of 14 Oct 2026: each tab's name with how many entries it lists under its filter
+// The Planner's two small helpers: each tab's name with how many entries it lists under its filter
 // (PlannerRules.TabCount, as GameUi.TableModel lets a filter go), and the morning line, added below as it comes.
 internal static partial class Program
 {

@@ -71,22 +71,22 @@ namespace RealLifeOverhaul
             public float AlphaGain;
             /// <summary>
             /// The share of a texture's strands that must be solid; the gain is raised from <see cref="AlphaGain"/> until
-            /// it is (<see cref="HairRules.Gain"/>). 0 = the same gain for every texture, as before 11 October.
+            /// it is (<see cref="HairRules.Gain"/>). 0 = the same gain for every texture, as the first finish had it.
             /// </summary>
             public float WantedCore;
             /// <summary>
-            /// Back-light and highlight bounded against lit skin (<see cref="HairRules.Rule"/>). Off = as before
-            /// 11 October: back-light the hair colour lifted a quarter towards white, the highlight unbounded.
+            /// Back-light and highlight bounded against lit skin (<see cref="HairRules.Rule"/>). Off = as the first
+            /// finish had it: back-light the hair colour lifted a quarter towards white, the highlight unbounded.
             /// </summary>
             public bool Bounded;
             /// <summary>
             /// Under 1: the copy's colour is darkened towards this at the faint edge of every strand (<see cref="HairRules.Shade"/>).
-            /// 1 = the game's colour throughout, as before 13 October (white: hair under a strong lamp was one smooth patch).
+            /// 1 = the game's colour throughout, as the first finish had it (white: hair under a strong lamp was one smooth patch).
             /// </summary>
             public float Deep;
             /// <summary>
             /// The copy's mipmaps keep the share of the strands that is solid (<see cref="HairRules.CoverScale"/>). Off = plain
-            /// mipmaps, as before 13 October: with distance the strand cores melt into haze and the skull shows through.
+            /// mipmaps, as the first finish had them: with distance the strand cores melt into haze and the skull shows through.
             /// </summary>
             public bool KeepCover;
 
@@ -340,7 +340,7 @@ namespace RealLifeOverhaul
                 specular, secondary, glossMin, glossMax, rim, hueLuma, IsCap(source));
             if (!settings.Bounded)
             {
-                // As before 11 October, kept for the preview's "before" pictures.
+                // As the first finish had it, kept for the preview's "before" pictures.
                 Color lifted = Color.Lerp(colour, Color.white, 0.25f);
                 lifted = Color.Lerp(source.GetColor(TransmissionColorId), lifted, t);
                 rule.ThroughR = HairRules.ToLinear(lifted.r);
@@ -388,7 +388,7 @@ namespace RealLifeOverhaul
         /// The numbers of the mod's scalp underlay (a smooth cap on the skull under the game's hair, see ModLooks):
         /// drawn before every layer of the game's hair, all but matt so that it reads as the depth of the hair and
         /// never as a shiny cap, in <paramref name="colour"/>, and letting no light through: it lies on the skull.
-        /// (Until 11 October it kept the game's orange back-light: with a lamp behind the head its outline glowed
+        /// (At first it kept the game's orange back-light: with a lamp behind the head its outline glowed
         /// orange under the hair.) Numbers only; no keyword is touched. Returns what was set.
         /// </summary>
         public static HairRules.Finish Underlay(Material material, Color colour)

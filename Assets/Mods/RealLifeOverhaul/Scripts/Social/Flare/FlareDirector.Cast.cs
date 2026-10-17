@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Flare
     /// Wiring/FlareLinks), what a hire does when it goes late, off message or backfires, a hired influencer's scandal,
     /// a star the player can meet, and following accounts.
     ///
-    /// NOTIFICATIONS (the owner's rule): nothing notifies unless the player follows it. The accounts they follow send
+    /// NOTIFICATIONS: nothing notifies unless the player follows it. The accounts they follow send
     /// one notification a day at most, however many posted ("3 new posts from accounts you follow"); the others only
     /// show in the Feed. What needs the player (a hired influencer's scandal, a viral moment) is one notification a day
     /// at most (FlareRules.MayNotify); the option switches all of it off.

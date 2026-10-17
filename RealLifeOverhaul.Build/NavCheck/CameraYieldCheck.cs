@@ -8,12 +8,12 @@ using RealLifeOverhaul;
 // back (Camera/CameraYieldRules.cs, compiled here as it ships), and, over the sources, that every camera path of the mod
 // goes through it (Camera/CameraYield.cs, ThirdPersonCamera.cs, ChaseCamera.cs, BridgeHold.cs).
 //
-// The owner's words (15 Oct 2026): "In 3rd person camera, I am unable to travel to the other city via that highway, the
-// camera bugs out etc etc. Things like that are happening." The game hides a bridge, and the car on it, from a camera
-// that comes within a few metres of its deck (ViewBlockingObjectManager, BridgeController.SetCameraBlockMode,
-// CarFeatures.UpdateBridgeHiddenState); the chase camera always did on the highway. The highway case is checked here as a
-// rule (the bridges are held while the mod's close camera is looked through, and only then); that the bridge and the car
-// stay in sight in the game is for the "Camera check (bridges)" lines of Player.log.
+// In the third-person camera the highway to the other city could not be driven: the camera went wrong. The game hides a
+// bridge, and the car on it, from a camera that comes within a few metres of its deck (ViewBlockingObjectManager,
+// BridgeController.SetCameraBlockMode, CarFeatures.UpdateBridgeHiddenState); the chase camera always did on the
+// highway. The highway case is checked here as a rule (the bridges are held while the mod's close camera is looked
+// through, and only then); that the bridge and the car stay in sight in the game is for the "Camera check (bridges)"
+// lines of Player.log.
 //
 // What is not here: anything of the game. Whether a moment's camera really is one the game asks for at priority 1, and
 // whether the figures given back are the camera's again, are for the "Camera: the game's own camera is now ..." and

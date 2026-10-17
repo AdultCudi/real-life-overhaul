@@ -35,7 +35,7 @@ namespace RealLifeOverhaul
     /// bundle has them.
     ///
     /// ONLY FOR THE BUNDLE THEY WERE MADE FOR. Their UVs point into the atlas of the bundle beside them when they were
-    /// written: with any other bundle they draw with the wrong parts of its atlas (13 October 2026: a city bus in fuel price boards
+    /// written: with any other bundle they draw with the wrong parts of its atlas (a city bus in fuel price boards
     /// and fire engine lettering, from a folder an install had copied over and left behind). So newer_props.py writes the
     /// SHA-256 of the bundle file into their catalogue ("bundle"), and they are used only beside a bundle file of that
     /// hash. A folder without the stamp, or with another's, is left alone and said once in the log; the bundle's own

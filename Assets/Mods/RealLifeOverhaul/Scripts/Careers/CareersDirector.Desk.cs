@@ -11,8 +11,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A professional job is worked at the player's own desk, as the game's own job is worked at its till (the owner's
-    /// words when careers were built: "go to job, click on your desk, press work, same native ui to skip or ff"):
+    /// A professional job is worked at the player's own desk, as the game's own job is worked at its till (go to the
+    /// job, click the desk, press work, and the game's own panel to skip or fast-forward):
     ///
     ///   the desk       on coming into the employer's building, the player's desk there: one of the game's own stations
     ///                  of the kind the profession works at (DeskRules.Kinds), the seed's pick, kept free of the game's

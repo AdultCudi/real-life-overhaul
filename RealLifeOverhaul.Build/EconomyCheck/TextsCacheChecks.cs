@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.Texts;
 
-// RLO Texts on a GPU built every shader again at each start in the game (the owner's sessions, 16 Oct 2026: the 2B on an
+// RLO Texts on a GPU built every shader again at each start in the game (the 2B on an
 // RTX 5070 Ti, the first reply in 22 to 24 s, 21 s of it the server's processor time; outside the game 0.05 s). Steam
 // starts the game with variables that point the GPU driver's shader cache at its own folder of shader pre-caching
 // (__GL_SHADER_DISK_CACHE_PATH and its kin), the server inherited them, and the NVIDIA driver kept nothing there.

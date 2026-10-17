@@ -125,7 +125,7 @@ internal static partial class Program
         CampusHomeSources();
     }
 
-    // The player's save (15 Oct 2026): an older game where every office building has a business (the game's, rivals' and
+    // A player's save: an older game where every office building has a business (the game's, rivals' and
     // other mods'), the university had no building and no map row. After the load: the university and its row exist.
     private static void PlayersSave()
     {

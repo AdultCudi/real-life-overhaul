@@ -18,7 +18,7 @@ internal static partial class Program
         Check(StudyRules.On(StudyRules.Days(fork, StudyMode.FullTime), 8) && StudyRules.On(StudyRules.Days(cs, StudyMode.FullTime), 8) && !StudyRules.On(StudyRules.Days(cs, StudyMode.FullTime), 9),
             "next class: day 8 is a Monday with both courses' classes, day 9 a Tuesday without (the checks below rely on it)");
 
-        // ---------------------------------------------------------------- the owner's case: the last class gone, unattended
+        // ---------------------------------------------------------------- the case: the last class gone, unattended
         // Enrolled on day 2 (a Tuesday), attended day 3 (Wednesday), away from the school at Monday day 8's 09:00 class.
         var owner = new Enrolment { Course = fork.Id, Mode = (int)StudyMode.FullTime, Start = 2, Seen = 1, Done = 1, SettledDay = 3, Stage = (int)EnrolStage.Studying };
         Check(StudyRules.NextClass(owner, 8, 9 * 60 + 0, -1) == 8 * 1440 + forkStart && StudyRules.Held(owner, 8, 9 * 60, -1) == 1,

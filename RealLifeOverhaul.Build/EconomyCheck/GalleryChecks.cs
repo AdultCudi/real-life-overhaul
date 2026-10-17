@@ -74,8 +74,8 @@ internal static partial class Program
         string camera = Read(@"Photos\CameraApp.cs");
         string sheet = Between(camera, "internal static class GallerySheet", "\n}");
         // 0.27.0: GallerySheet.Make copied MyEmployees' ListBackground, which the game keeps switched off, and never switched
-        // the copy on; the grid of photos was its child, so it was never drawn and no click reached a photo. The owner's
-        // log shows it: a click over the grid met "Layout 30-70/Right/EmployeesList/EnhancedScroller" and the raycast
+        // the copy on; the grid of photos was its child, so it was never drawn and no click reached a photo. A Player.log
+        // shows it: a click over the grid met "Layout 30-70/Right/EmployeesList/EnhancedScroller" and the raycast
         // blocker, never the sheet or a photo, and the next click was the Gallery's own app button.
         Check(sheet.Contains("Instantiate(background.gameObject") && Regex.IsMatch(sheet, @"sheet\.SetActive\(true\);\s*(//[^\n]*)?\s*return rect;"),
             "gallery root cause: a copy of the game's switched-off list background is switched on before it is used (it held the grid of photos in 0.27.0)");

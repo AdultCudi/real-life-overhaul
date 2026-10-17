@@ -52,9 +52,9 @@ calibration\                                   the preview's version of the game
 ```
 
 A look is given the bind poses of the game's MALE head mesh, whoever wears it, exactly as the mod does
-(`PreviewLooks.WornBindposes`). Until 9 October the preview used the worn head's own, which put every look 7 mm too
-far forward on the woman (her head mesh is bound that much further along the body's depth): women's sheets older than
-that are 7 mm off; the ones in `evidence\` for the palette and the second set's last checks are not.
+(`PreviewLooks.WornBindposes`). An earlier preview used the worn head's own, which put every look 7 mm too
+far forward on the woman (her head mesh is bound that much further along the body's depth): women's sheets made
+before the change are 7 mm off; the ones in `evidence\` for the palette and the second set's last checks are not.
 
 What is exact and what is not:
 
@@ -118,7 +118,7 @@ Fresnel is 0.05 head on and goes to 1 when the light is behind the hair as the c
 (1.0, 0.37, 0.11) and highlights of 0.31 and 0.60 at gloss 0.58: up to 0.55 through and 1.06 in the highlight, whatever the
 hair colour, against 0.004 for black hair lit from the front. The game never shows this: its detailed characters only
 appear in character creation, lit from the front. The mod puts one in the street with a camera behind it.
-The finish as it was (until 11 October) set the back-light to the hair colour lifted a quarter towards white, which for
+The earlier finish set the back-light to the hair colour lifted a quarter towards white, which for
 black hair is still 0.10 (two thirds of lit skin), left the highlight unbounded (0.92 at its worst), and left the
 scalp underlay with the game's orange back-light. From play distance, where the strands blur into one mass (the head
 is 36 pixels wide), all of that adds up to a head as bright as skin in the lamp's colour.
@@ -318,8 +318,8 @@ They are picked on the options page (Top, Trousers, Dress per sex; the game's ow
 load without the mod).
 
 Judged in the preview against the game's nearest piece: level in silhouette and cleaner in make (seams, stitching,
-folds, edges with thickness), and new cuts. In the game only the shoes have been seen so far (F9 captures of
-9 October: the court sneakers draw correctly under the game's cloth shader, with the bare ankle from `skinFrom`);
+folds, edges with thickness), and new cuts. In the game only the shoes have been seen so far (F9 captures:
+the court sneakers draw correctly under the game's cloth shader, with the bare ankle from `skinFrom`);
 no garment and no tint mask has been seen in the game yet. Known weak points: sleeve and tee hems are a little uneven
 after draping; the dress print still stretches a little on the sleeve caps; in a full running lunge from behind, the
 bent leg's calf shows as a small pale triangle through the back of the evening skirt and a thin line of the pencil

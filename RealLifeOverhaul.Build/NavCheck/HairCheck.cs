@@ -124,7 +124,7 @@ internal static partial class Program
         float own = HairRules.FrontLit(LumaOf(0x241C14));
         Check(own < 0.03f * HairRules.SkinLit, "hair fault: the hair the player wore, lit from the front, sends back under 3% of what lit skin does");
 
-        // The finish as it was until 11 October: back-light the hair colour lifted a quarter towards white (in sRGB), highlight unbounded.
+        // The earlier finish: back-light the hair colour lifted a quarter towards white (in sRGB), highlight unbounded.
         float[] lifted = { HairRules.ToLinear(0x24 / 255f * 0.75f + 0.25f), HairRules.ToLinear(0x1C / 255f * 0.75f + 0.25f), HairRules.ToLinear(0x14 / 255f * 0.75f + 0.25f) };
         float was = HairRules.ThroughPeak(HairRules.Luma(lifted[0], lifted[1], lifted[2]), 0.127f);
         Check(was > 0.5f * HairRules.SkinLit && was > 25f * own,

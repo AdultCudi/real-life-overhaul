@@ -7,7 +7,7 @@ using RealLifeOverhaul;
 // Checks for the timing of the mod's own scripts that the session record reads (Core/HotSpots.cs: the frame before
 // this one by feature and method, nested scopes, the minute's sums and the heap's sampled growth under them), and for
 // when the whole scene may be searched for something that can turn up at any time (Core/SearchPace.cs), with the
-// before and after of the hair finish's search on a made-up session like the one of the 13 October log. Part of the
+// before and after of the hair finish's search on a made-up session like a real one. Part of the
 // work against long frames (HitchCheck.cs). Compiled as they ship.
 internal static partial class Program
 {
@@ -430,7 +430,7 @@ internal static partial class Program
         Check(pace.Made == 3, "pace: three searches in all (" + pace.Made + ")");
     }
 
-    // Before and after, on a made-up ten minutes like the 13 October session: on foot in the street, a door every ninety
+    // Before and after, on a made-up ten minutes like a real session: on foot in the street, a door every ninety
     // seconds (the screen black for 1.2 s), a loading screen first, a pause of half a minute. The hair finish's search of the
     // whole scene, some 90 ms in that city each time: every five seconds of play before, behind the black screen now.
     private static void PaceSession()

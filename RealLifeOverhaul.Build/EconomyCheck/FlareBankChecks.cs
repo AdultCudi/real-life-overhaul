@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using RealLifeOverhaul.Flare;
 
-// The bank of city photos (Flare/FlareCityPhotoRules, FlareDirector.Photos, FlareCityCamera): the owner's words of 16 Oct
-// 2026, "please make the NPCs post photos. Make it realistic". Held here: what the bank takes where the player is and its
+// The bank of city photos (Flare/FlareCityPhotoRules, FlareDirector.Photos, FlareCityCamera): the city's people post photos,
+// realistic ones. Held here: what the bank takes where the player is and its
 // caps (a district's streets in each light and weather, a front of a business, a sight, a day's event); the clean-up (too
 // old, a past event, past the most, the oldest first) and the picks that go with it; the fit of a post's photo (its
 // district, kind, place, light and weather: never a sunny photo for a rainy post, never a night photo for a morning one,

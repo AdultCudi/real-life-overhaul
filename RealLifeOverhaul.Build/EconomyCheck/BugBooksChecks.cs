@@ -4,7 +4,7 @@ using System.Text;
 using RealLifeOverhaul.Meta;
 
 // "Report a bug" with the staff and the money (Scripts/Meta/BugReportRules.cs StaffText and BooksText, BugReportGame Staff
-// and Books). A player's report (16 Oct, 0.28.4) said a headquarters paid over 3,000 a day where 1,000 was expected, and a
+// and Books). A report from 0.28.4 said a headquarters paid over 3,000 a day where 1,000 was expected, and a
 // save stood some 600,000 below nothing one morning; report.txt gave the money rounded and nothing else, so neither could
 // be told from it. Now it lists every employee's wage against the game's own for the skill with their hours, each
 // business's day of rota, and yesterday's and today's money in and out by kind and place, with the cash before and after.

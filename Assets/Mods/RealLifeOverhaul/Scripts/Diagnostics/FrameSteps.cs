@@ -22,7 +22,7 @@ namespace RealLifeOverhaul
     /// The frame is the one Time.unscaledDeltaTime measures: from one time update to the next. Since Unity 2022.2 the
     /// time is updated in the loop's first step, TimeUpdate.WaitForLastPresentationAndUpdateTime, after the wait for the
     /// frame before to be shown; so the sums roll over just after that step, and the wait (the graphics card, the render
-    /// thread or the display) closes the frame it was part of. Until October 2026 they rolled over just before it, and a long
+    /// thread or the display) closes the frame it was part of. They used to roll over just before it, and a long
     /// wait was counted in the next frame's sums while the delta already held it: it showed as "the rest" with no step
     /// named. The span between two roll-overs is kept too (<see cref="LastSpanMs"/>), with the time in all the timed
     /// steps, so that what lay outside every step (between two passes of the loop, or in a phase without steps) is known

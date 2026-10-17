@@ -2,7 +2,7 @@ using System;
 using RealLifeOverhaul.Flare;
 
 // Checks for liking a comment under a post that is not the player's (FlareCommentRules.LikeKey and ToggleLike, the "C"
-// lines of FlareStore): the owner's words "NPC post I can like, NPC comment I cannot". Held here: the like toggles; the
+// lines of FlareStore): a comment can be liked as a post can. Held here: the like toggles; the
 // key is the post, the slot and who (never the number the comment is shown under); it survives the save, which an older
 // version reads as before; a post that is gone, pruned or dropped with a session's host takes its likes with it; the kept
 // likes have a bound; the like touches nothing else and is sent nowhere; and no row of any kind in Flare has a button

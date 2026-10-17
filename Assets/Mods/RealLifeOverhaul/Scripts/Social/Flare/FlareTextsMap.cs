@@ -507,7 +507,7 @@ namespace RealLifeOverhaul.Flare
         /// (citizen.comment.words, the post's words in history as before): v2's thread rows answer the topic, not the post,
         /// and the 2B v5 model wrote replies that missed the post more often than not ("They put the price up and made it
         /// smaller." under "Tried the new noodle place on 5th Avenue. Worth the queue."), where on the words it answered the
-        /// post itself (the offline run of 16 Oct 2026). Who may comment (a friend who cares about the topic) still goes by
+        /// post itself (in an offline run). Who may comment (a friend who cares about the topic) still goes by
         /// the topic: <see cref="CommentTaste"/>.
         /// </summary>
         public static string Comment(FlarePost p, int niche, int data = TextIntents.DataV2)

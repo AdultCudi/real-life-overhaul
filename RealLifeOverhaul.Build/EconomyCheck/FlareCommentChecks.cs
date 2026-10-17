@@ -9,8 +9,8 @@ using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Texts;
 
 // The comments under posts that are not the player's (Flare/FlareCommentRules, FlareTextsMap.Comment and CommentCard,
-// FlareDirector.Comments, the thread in FlareApp.Screens): the owner's words "there are no comments under NPC posts. Just
-// shows n comments but when I open it is just empty", and their rule that only RLO Texts writes them. Held here: the
+// FlareDirector.Comments, the thread in FlareApp.Screens): a post that showed n comments
+// was empty when opened, and only RLO Texts writes them. Held here: the
 // comments written out never outnumber the card's count and the "more" line makes up the rest at every minute; each
 // comes in only when the count reaches it; the same post gives the same comments every time, after a save and on a
 // guest's copy in a Going Public session (only the city's people under a shared post; the host's key reaches the guest);

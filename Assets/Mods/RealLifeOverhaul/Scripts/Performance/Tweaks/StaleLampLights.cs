@@ -18,7 +18,7 @@ namespace RealLifeOverhaul
     /// The lamps are read from the game's own list of what it culls by distance, which every lamp joins in its
     /// Start, never by a search of the scene (that was a frame of 83 ms the moment the tweak came on after a load);
     /// that list is read behind the loading screen (Prewarm), and after a scene has arrived behind the next black
-    /// screen or pause (it was read in play, in a frame of 93 ms of which this director had 19.7 ms: the owner's log).
+    /// screen or pause (it was read in play, in a frame of 93 ms of which this director had 19.7 ms).
     ///
     /// Whether the game has lit a lamp since is told by its lights themselves: the game switches every light of a lamp
     /// on whenever it lights it (StreetLamp.SetLightVisibility, from InstantlyTurnOn and ChangeLightSetting), and only

@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// a second check it looks through the loaded materials when it comes on: if one has refraction or
     /// distortion switched on after all, it does nothing and says which.
     ///
-    /// That look is over every material in memory (6,628 to 6,976 in the owner's sessions of 14 Oct 2026), so it is
+    /// That look is over every material in memory (some 6,600 to 7,000 in a city), so it is
     /// never done in one frame: the list is taken behind the loading screen (Prewarm; it was taken in play, the frame
     /// the tweak came on, and logged FAIL) and gone through on a fast timer, about a third of a millisecond a tick
     /// (<see cref="WorkSlice"/>), and refraction stays as the game has it until the look is finished. A scene that is

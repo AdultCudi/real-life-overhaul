@@ -7,7 +7,7 @@ using System.Text.Json;
 using RealLifeOverhaul.Flare;
 
 // Flare's pictures (FlareAvatarRules, FlareAvatars, FlareFacePainter, FlareCityPhotoRules, FlareCityCamera,
-// FlareDirector.Photos): the owner's words "nobody has profile pictures, nobody is posting photos, only texts". Held here:
+// FlareDirector.Photos): profile pictures and posted photos, not only texts. Held here:
 // every kind of account gets a picture of the right kind (a face for a person, a logo for a business, an emblem for an
 // office, never a face for a rival tycoon), the same one every time and on every machine; the round picture is made right
 // at every edge; the kept textures have a bound and the oldest goes; the city's photos come on the share the option says,

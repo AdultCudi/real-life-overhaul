@@ -36,8 +36,8 @@ namespace RealLifeOverhaul
     /// Why a planner and not a walk: the route used to be a walk that took a random open way on at each point and
     /// stopped at the first point with none. An accident's cordon shuts every lane point of its stretch of road
     /// (Traffic/SceneCordon), so a walk that ran up to it stopped there, short of five checkpoints, and the lesson
-    /// was called off with "could not plan a route" (the owner's log of 15 Oct 2026: a cordon of 46 closed lane points
-    /// on the street of the school's only desk, and every lesson refused). This one goes back from a dead end and
+    /// was called off with "could not plan a route" (a cordon of 46 closed lane points on the street of a school's
+    /// only desk had every lesson refused). This one goes back from a dead end and
     /// tries the next way on (a search depth first, each point gone into once), so a route that turns off before
     /// the closure is found whenever one exists; and when none does, it says whether the closure is why
     /// (<see cref="RouteOutcome.Closed"/>), so the player is told the road is shut for now rather than that the

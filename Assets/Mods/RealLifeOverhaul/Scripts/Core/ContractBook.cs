@@ -26,7 +26,7 @@ namespace RealLifeOverhaul
 
         public readonly string Id;
         public readonly string Feature;
-        public readonly string English;   // for Player.log and the owner's checker
+        public readonly string English;   // for Player.log and the offline checker
 
         internal GamePart(string id, string feature, string english)
         {
@@ -227,7 +227,7 @@ namespace RealLifeOverhaul
     /// switches off only the parts that stand on it (<see cref="GamePart.Off"/>); each such part is named once in
     /// Player.log by the caller (Core/Guard), the rest of the mod runs.
     ///
-    /// No Unity or game types: the owner's checker (RealLifeOverhaul.Build/ContractCheck) compiles this file and the
+    /// No Unity or game types: the offline checker (RealLifeOverhaul.Build/ContractCheck) compiles this file and the
     /// table, checks every member against the game's assemblies on disk, and tests the switching off with types of
     /// its own. The build the mod is checked against is Core/GameBuild's MadeFor, the mod's one build number. Cost: one
     /// pass over about 140 members at start; nothing after that.

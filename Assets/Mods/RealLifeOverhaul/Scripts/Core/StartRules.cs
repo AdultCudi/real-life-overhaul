@@ -7,7 +7,7 @@ namespace RealLifeOverhaul
     /// Why a line: their timers are all started in the same frame, behind the loading screen, as the city's objects are
     /// made (Core/RealLifeOverhaulMod), so each of their ticks lands in one frame with all the others, and the first one
     /// after the load is every first load at once: some 205 ms of a frame of 1381 ms just as the loading screen went
-    /// (the owner's log of 14 Oct 2026, "coroutines and timers"). On the line each first load has a frame of its own.
+    /// (under "coroutines and timers"). On the line each first load has a frame of its own.
     ///
     /// The order is the order the directors were made in and their timers ran in until now (the economy's followers in
     /// the order they joined its second), so every director still finds what it read of another at its start already

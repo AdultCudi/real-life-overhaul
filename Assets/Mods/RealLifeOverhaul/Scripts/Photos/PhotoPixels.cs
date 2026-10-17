@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Photos
     public static class PhotoPixels
     {
         public const int PhotoWidth = 1920;     // pixels: the widest photo kept...
-        public const int PhotoHeight = 1080;    // ...and the tallest: about 1080p, as the owner asked
+        public const int PhotoHeight = 1080;    // ...and the tallest: about 1080p
         public const int SmallWidth = PhotoThumbs.Width;   // the small copy, as Flare and the Gallery read it
         public const int SmallTallest = 1024;   // pixels: a small copy's height at most (a very tall screen)
 

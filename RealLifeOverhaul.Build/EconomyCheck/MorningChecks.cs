@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
 
-// The frame a game day starts in, and the economy's hour (14 Oct 2026, "start the optimization work of this mod.
-// Completely."): the customers of the player's businesses drawn again once a business, spread over the frames that follow
-// within the hour they were asked in (Core/RedrawRules), and the economy's look-ups of a morning made by dictionaries and one
-// walk of the day's transactions (Core/LookupRules). Each index gives exactly what the walk it replaces gave, on late-game
-// figures: 300 businesses, 3,000 employees, 30,000 transactions.
+// The frame a game day starts in, and the economy's hour: the customers of the player's businesses drawn again once a
+// business, spread over the frames that follow within the hour they were asked in (Core/RedrawRules), and the economy's
+// look-ups of a morning made by dictionaries and one walk of the day's transactions (Core/LookupRules). Each index
+// gives exactly what the walk it replaces gave, on late-game figures: 300 businesses, 3,000 employees, 30,000
+// transactions.
 internal static partial class Program
 {
     private static void Morning()

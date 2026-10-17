@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.Flare;
 
-// Posting on Flare without a limit (owner, 15 Oct 2026: "It should not matter how much I post"): the two game hours between
+// Posting on Flare without a limit (however much the player posts): the two game hours between
 // posts and the three a day are gone, and so are the three reports and twelve replies a day; many posts in a row are all
 // made and shown; what they could move stays bounded (the account by the day's first three, a business or the City Office
 // by the first of the same thing a day, the council by the day's first three reports, the paper's pile-on once a day);

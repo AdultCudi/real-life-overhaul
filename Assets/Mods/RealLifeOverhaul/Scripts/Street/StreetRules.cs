@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Street
         public const float WalkAway = 4.5f;       // metres: the player this far from them ends the conversation
         public const float PoliceMetres = 35f;    // an officer this near hears a threat
 
-        // ---------------------------------------------------------------- timing (the owner's words: a spoken line must appear fast)
+        // ---------------------------------------------------------------- timing (a spoken line must appear fast)
         public const double Hold = 1.1;           // real seconds the most a line waits for the model's words (then the written line)
         public const float Beat = 0.45f;          // real seconds of turning to the player before the first line, when nothing is waited for
         public const float TurnSeconds = 0.6f;    // how long they take to turn to the player (the game's own turn)
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Street
 
         // ---------------------------------------------------------------- people
         public const int MemoryMost = 48;         // people remembered today at most (the oldest go first)
-        public const int PatienceLeast = 4;       // turns anybody who stops gives the player (the owner, 16 Oct 2026: three was the same three questions and gone)
+        public const int PatienceLeast = 4;       // turns anybody who stops gives the player (three was the same three questions and gone)
         public const int PatienceMost = 10;       // ...at most, earned turns included: somebody warm and chatty
         public const int EarnedMost = 3;          // turns a conversation earns back at most, one for each good exchange
         public const int CoolestStranger = -1;    // warmth: how cool a stranger is at worst, unless the player was rude, they know a bad name or record, or it is night

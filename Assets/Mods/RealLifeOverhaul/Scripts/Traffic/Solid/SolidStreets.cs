@@ -280,9 +280,9 @@ namespace RealLifeOverhaul
 
         // The developer diagnostics' own lines are written with the look's clock stopped (Quiet, then Loud): what the look
         // costs is then what it costs a player, who has them off. Before, the writing of each line to the log, the text made
-        // for it and any step of the collector that making the text set off were all counted as the look's work (Player.log
-        // of 13 October: 113 microseconds on average and 3311 at worst over a minute in which sixteen of these lines were
-        // written from inside the looks).
+        // for it and any step of the collector that making the text set off were all counted as the look's work (113
+        // microseconds on average and 3311 at worst over a minute in which sixteen of these lines were written from inside
+        // the looks).
         private void Quiet()
         {
             if (_timing)

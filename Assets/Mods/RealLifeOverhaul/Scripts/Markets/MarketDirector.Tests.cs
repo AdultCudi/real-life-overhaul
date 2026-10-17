@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Markets
             RemoveApp();
         }
 
-        // ---------------------------------------------------------------- the owner's test buttons
+        // ---------------------------------------------------------------- the test buttons
 
         /// <summary>Test button: the Stocks app opened on the market's tab.</summary>
         public void TestOpen()

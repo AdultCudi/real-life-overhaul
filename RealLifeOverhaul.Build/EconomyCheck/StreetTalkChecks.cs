@@ -7,7 +7,7 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Street;
 
-// Talking to anybody in the street (the owner, 16 Oct 2026: "Can you start the interacting with all NPCs?"): who somebody is
+// Talking to anybody in the street: who somebody is
 // (seeded, the same all day), whether they stop and why not (each reason, the option's frequency), warmth and patience, what
 // is offered at each point, what each choice comes to, numbers and invitations (decided as on Flare), word of mouth and its
 // cap, the day's memory and its bound, the reading of the player's own words both ways, the way to a place, the written

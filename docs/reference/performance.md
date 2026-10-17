@@ -116,7 +116,7 @@ Three sessions of Player.log with the record on (83 frames over 80 ms) sort like
 - **Handlers on the game's events.** `EventHold.Keep` with several holders on one event had each put itself back every second for ever, because each one's putting back changed the event for the others (`Core/EventHold.cs` says how it is kept now).
   It was a few kilobytes a second, not a long frame.
 
-The session of 13 October (0.9.4, half an hour on foot in the street, 16 frames over 50 ms a minute):
+A session of 0.9.4 (half an hour on foot in the street, 16 frames over 50 ms a minute):
 
 - **A search of the whole scene every five seconds of play: the mod's.** About twelve frames a minute of 84 to 124 ms, all under "scripts' Update" with nothing of the mod's named, five seconds apart to a tenth of a second.
 

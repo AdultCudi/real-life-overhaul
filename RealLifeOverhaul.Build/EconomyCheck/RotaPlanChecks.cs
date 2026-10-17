@@ -86,7 +86,7 @@ internal static partial class Program
         return into;
     }
 
-    // The owner's shop: one till, one cleaning station, a cashier who works 20 to 30 hours and a cleaner who asks for 35 to 45.
+    // A shop of one till, one cleaning station, a cashier who works 20 to 30 hours and a cleaner who asks for 35 to 45.
     private static RotaCase RotaSouvenirs()
     {
         RotaCase c = RotaShopCase(1, 1, 2);

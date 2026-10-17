@@ -11,12 +11,12 @@ using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Ledger;
 
-// The phone apps' clicks (14 Oct 2026, "start the optimization work of this mod. Completely."): a table of thousands of rows
-// written only as it scrolls (Core/GameUi/TableModel.cs: ITableSource, TableRow; Economy/Finance/CashTable.cs), checked on
-// 30,000 generated movements of money against the same table written whole as the Cash flow tab wrote it; the City Ledger's
-// pages kept for the paper they were laid out for (Ledger/LedgerPageStamp.cs); and a photo's small copy for Flare made off
-// the main thread a row at a time (Core/PhotoThumbs.cs), against PNGs made here with every filter of the format and a
-// reference drawing of the engine's.
+// The phone apps' clicks: a table of thousands of rows written only as it scrolls (Core/GameUi/TableModel.cs:
+// ITableSource, TableRow; Economy/Finance/CashTable.cs), checked on 30,000 generated movements of money against the
+// same table written whole as the Cash flow tab wrote it; the City Ledger's pages kept for the paper they were laid out
+// for (Ledger/LedgerPageStamp.cs); and a photo's small copy for Flare made off the main thread a row at a time
+// (Core/PhotoThumbs.cs), against PNGs made here with every filter of the format and a reference drawing of the
+// engine's.
 internal static partial class Program
 {
     private static void Apps()

@@ -3,7 +3,7 @@ using System.IO;
 
 // Checks, over the mod's sources as they ship, that the one-off work of the first seconds after a load stays where it
 // costs nothing to see: behind the loading screen (Core/SceneFinds.cs, ScenePrewarm), or read from the game's own lists.
-// The owner's logs of 14 Oct 2026 had a frame of 1381 ms just after a save loaded, in which the landmarks (six
+// A session's log had a frame of 1381 ms just after a save loaded, in which the landmarks (six
 // searches of the whole scene), the scooter stands, the skies (two) and the street lamps were each looked for, a frame
 // of 196 ms after it in which the far districts gathered every renderer of the city, and a frame of some 135 ms on the
 // first drive of each session, in which Empire Motors' view was looked for by a search of the scene. Each is now handed
@@ -80,7 +80,7 @@ internal static partial class Program
         Check(!empire.Contains("FindObjectOfType") && listened >= 0 && searched > listened, "prewarm: Empire Motors' view is found in the game's own list of listeners first, and searched for only through SceneFinds after that");
     }
 
-    // The work of the first minute after a load (the owner's logs of 14 Oct 2026: a frame of 394 ms as the loading screen went,
+    // The work of the first minute after a load (as measured: a frame of 394 ms as the loading screen went,
     // with 1284 KB of the GPS's graph and 1188 KB of the bus network's in it, 2 MB of contact pictures, the performance tweaks
     // all switched in one frame of up to 19.7 ms, the materials listed in play and logged FAIL, the road data searched twice
     // per load): each held behind the loading screen, or spread, or kept, here.

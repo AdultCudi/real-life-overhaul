@@ -6,13 +6,13 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Texts;
 
-// Invitations in the player's Flare messages (a player's question, 16 Oct 2026: "If I say up for a coffee will it schedule a
-// date?"): the reading of real phrasings both ways, every branch of the decision, the stranger's rule, the answer's time
-// before the plan's reminder and panel line, the same answer on a reload, a yes booked exactly once (a second invitation
-// pointing to it), the answer's key and RLO Texts intent per outcome and the yes card's facts and must, the written lines in
-// three languages with the place and the time, the names of the city's people sorted by sex, and the source guarantees:
-// somebody new met online as when they answer a post, the plan made as a call makes it, nothing sent in Going Public,
-// nothing per frame.
+// Invitations in the player's Flare messages (saying yes to a coffee schedules the meeting): the reading of real
+// phrasings both ways, every branch of the decision, the stranger's rule, the answer's time before the plan's reminder
+// and panel line, the same answer on a reload, a yes booked exactly once (a second invitation pointing to it), the
+// answer's key and RLO Texts intent per outcome and the yes card's facts and must, the written lines in three languages
+// with the place and the time, the names of the city's people sorted by sex, and the source guarantees: somebody new
+// met online as when they answer a post, the plan made as a call makes it, nothing sent in Going Public, nothing per
+// frame.
 internal static partial class Program
 {
     private static void FlareInvites()

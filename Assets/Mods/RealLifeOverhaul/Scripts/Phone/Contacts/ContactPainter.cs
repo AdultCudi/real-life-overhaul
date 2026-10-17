@@ -29,7 +29,7 @@ namespace RealLifeOverhaul
     /// the colour, and the size and date of the game's shape file (or the game's own picture and the game's build), so a
     /// shape the game changes is painted again. Every picture is written into the texture's own memory
     /// (Texture2D.GetPixelData) or through one buffer kept for the session: no array per picture, where each picture made
-    /// some 0.5 to 1.3 MB of garbage (the owner's log of 14 Oct 2026: 561 KB a second under this in the first minute).
+    /// some 0.5 to 1.3 MB of garbage (561 KB a second under this in the first minute after a load).
     ///
     /// COST. Nothing while there is nothing to paint: the component switches itself off. While there is: pictures one after
     /// another for about a millisecond of a frame (<see cref="WorkSlice"/>; eight behind a black screen), the first of a frame

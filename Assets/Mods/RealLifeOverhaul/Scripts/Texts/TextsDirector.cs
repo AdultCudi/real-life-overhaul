@@ -9,8 +9,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// RLO Texts: a small text model on the player's own PC words the city's messages (the owner's request, 15 Oct 2026:
-    /// "the social media app does not feel real since I get the same generic response for every single inbox"). The game
+    /// RLO Texts: a small text model on the player's own PC words the city's messages, so that the social app no longer
+    /// gives the same generic answer in every inbox. The game
     /// decides everything as before (who, when, what happens, every effect); the model is asked only for the words, from a
     /// card built from the game's real state (TextIntents, byte for byte the cards it was trained on), and every word is
     /// checked (TextCheck) before it is shown. Whenever the model is not there, off, loading, busy, slow, or its words fail,
@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Texts
     /// process by a job object so it ends with the game even in a crash, and is killed when the game closes, the option is
     /// switched off or the pack changes.
     ///
-    /// THE QUEUE (TextQueue, the owner's rules of 16 Oct): one queue, by priority and deadline; what can no longer be
+    /// THE QUEUE (TextQueue): one queue, by priority and deadline; what can no longer be
     /// written in time takes the written line at once; generated ahead for what the game schedules later; a budget a minute
     /// that adapts to misses (TextBudget); background work only while the game is quiet; a guess before a click face to
     /// face. SPEED (TextSpeed): a test on first load or a change of pack, device or threads; threads by the machine's cores;

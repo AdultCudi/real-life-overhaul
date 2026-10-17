@@ -211,7 +211,7 @@ internal static partial class Program
         Check(planner.Plan(town, start, 3, 7, true) == RouteOutcome.Planned && planner.Checkpoints == TestRoutePlanner.Least, "lesson route: fewer than five asked for is five");
         Check(planner.Plan(town, start, 20, 7, true) == RouteOutcome.Planned && planner.Checkpoints == TestRoutePlanner.Most, "lesson route: more than seven asked for is seven");
 
-        // The owner's case: an accident right by the desk, both directions shut (the cordon closes the lanes from 30 m before
+        // The case seen in play: an accident right by the desk, both directions shut (the cordon closes the lanes from 30 m before
         // the wrecks). From the car's lane on the desk's side nothing moves: Closed, said as the road being shut, not NoRoad.
         List<int> ab = town.Lane(a, b), ba = town.Lane(b, a);
         for (int k = 4; k < ab.Count; k++)

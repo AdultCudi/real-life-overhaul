@@ -7,8 +7,8 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Street;
 using RealLifeOverhaul.Texts;
 
-// Street talk that feels alive (the owner, 16 Oct 2026: "I get the same 3 options to talk to the NPC. Can I type my own?" and
-// "I ask the same 3 questions again and again"): the order of the choices comes from the moment, the person and what they just
+// Street talk that feels alive (not the same three options and questions again and again, and the player's own words
+// one press away): the order of the choices comes from the moment, the person and what they just
 // said, never from a fixed list, and nothing done comes round again; the follow-ups after the right answers; at least four
 // turns for anybody who stops and a turn back for a good exchange; a stranger at worst a little cool unless there is a reason;
 // the panel's three buttons with the player's own words one press away and Esc for goodbye; the turn's log line; the last

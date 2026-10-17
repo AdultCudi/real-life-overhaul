@@ -21,8 +21,8 @@ internal static partial class Program
         Check(OfficeTally.Feature("techhq_tower_2") == "the tech companies' towers" && OfficeTally.Feature("utilities_office") == "City Utilities" && OfficeTally.Feature("campus") == "the university"
               && OfficeTally.Feature("police_4") == "the police stations" && OfficeTally.Feature(null) == null, "office supply: the features named by their ids");
 
-        // ---------------------------------------------------------------- the owner's city before the towers and after
-        // A city like the player's of 14 Oct 2026: 85 office buildings, 13 of them empty, and all 13 held by City Utilities,
+        // ---------------------------------------------------------------- a city before the towers and after
+        // A city like a player's: 85 office buildings, 13 of them empty, and all 13 held by City Utilities,
         // the university and eleven headquarters (the log said 11 of the 12 companies found one). After: three towers.
         var before = new OfficeTally();
         var after = new OfficeTally();

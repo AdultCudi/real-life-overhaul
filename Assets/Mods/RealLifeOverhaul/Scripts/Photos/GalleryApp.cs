@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Gallery app on the phone: a photos app of its own look inside the game's phone (the owner's exception to the
+    /// The Gallery app on the phone: a photos app of its own look inside the game's phone (an exception to the
     /// native rule, as Flare is, with its own idea). The frame is the game's (GameUi.AppShell: the app's panel among the
     /// game's, its place and size on the full phone); inside it the Gallery draws its own two screens with the game's font:
     ///

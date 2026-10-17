@@ -727,7 +727,7 @@ internal static partial class Program
               && TextPacks.Choose(0, TextPacks.Devices("  Vulkan0: Small (4096 MiB, 3000 MiB free)"), model) == null
               && TextPacks.Choose(2, TextPacks.Devices("  Vulkan0: Small (4096 MiB, 3000 MiB free)"), model) == "Vulkan0" && TextPacks.Choose(0, new List<TextDevice>(), model) == null,
             "texts, devices: Auto takes a GPU only with ample free memory (twice the model and " + TextPacks.SpareMiB + " MiB), CPU never, GPU always when there is one");
-        // the owner's PC: the processor's Radeon counts the PC's memory as free and shows more than the RTX card
+        // a PC with both: the processor's Radeon counts the PC's memory as free and shows more than the RTX card
         List<TextDevice> both = TextPacks.Devices("Available devices:\n  Vulkan0: NVIDIA GeForce RTX 5070 Ti (15995 MiB, 15227 MiB free)\n  Vulkan1: AMD Radeon(TM) Graphics (16223 MiB, 15411 MiB free)\n");
         List<TextDevice> swapped = TextPacks.Devices("  Vulkan0: AMD Radeon(TM) Graphics (16223 MiB, 15411 MiB free)\n  Vulkan1: NVIDIA GeForce RTX 5070 Ti (15995 MiB, 15227 MiB free)\n");
         Check(TextPacks.Choose(0, both, model) == "Vulkan0" && TextPacks.Choose(2, both, model) == "Vulkan0" && TextPacks.Choose(2, swapped, model) == "Vulkan1",
@@ -792,7 +792,7 @@ internal static partial class Program
             "texts, the runner: the server listens on 127.0.0.1 only, with a key of its own, below normal priority on the processor and normal on a GPU (llama.cpp's --prio, the process and the worker), tied to the game's process, its worker a background thread");
     }
 
-    // ---------------------------------------------------------------- the review's findings (16 Oct 2026), each with its check
+    // ---------------------------------------------------------------- a review's findings, each with its check
 
     private static void TextsReview()
     {

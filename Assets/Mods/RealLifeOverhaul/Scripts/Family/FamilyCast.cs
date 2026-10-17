@@ -368,7 +368,7 @@ namespace RealLifeOverhaul.Family
     /// <summary>
     /// The family's own furniture and decorations, by id. Each is the modelled prop from the
     /// prop bundle when the bundle has one of that id, and until then a clean stand-in of plain
-    /// shapes built here (Core/Shapes): an asset agent adding "cot" to the bundle changes what
+    /// shapes built here (Core/Shapes): a model of "cot" added to the bundle changes what
     /// is shown with no change to this code. One object each, made the first time it is wanted
     /// and kept; no script on any of them.
     /// </summary>

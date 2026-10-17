@@ -88,8 +88,8 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Invitations in the player's Flare messages (a player's question, 16 Oct 2026: "If I say up for a coffee will it schedule a
-    /// date?"). The game decides, the model only words the answer:
+    /// Invitations in the player's Flare messages (one accepted becomes a plan, as one made on the phone). The game
+    /// decides, the model only words the answer:
     ///
     ///   Read     fixed rules over the typed text, English only: an invitation and its outing (coffee, a meal, drinks, the
     ///            cinema, a walk, a workout; a plain "meet up" or "hang out" is a coffee), robust to typos, slang, capitals
@@ -897,7 +897,7 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- RLO Texts
 
-        /// <summary>The outing as an invitation's card says it (the data v3 brief): coffee, dinner, drinks, the cinema, a walk, a workout.</summary>
+        /// <summary>The outing as an invitation's card says it (as data v3 has it): coffee, dinner, drinks, the cinema, a walk, a workout.</summary>
         public static string CardOuting(PlanKind kind)
         {
             switch (kind)

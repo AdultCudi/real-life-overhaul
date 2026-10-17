@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RealLifeOverhaul.Photos;
 
-// The Camera and the Gallery, the second round: a photo taken this session reaches the Gallery whatever the root's
+// The Camera and the Gallery: a photo taken this session reaches the Gallery whatever the root's
 // separators (the game's Mono gives '\' where the engine's persistentDataPath has '/'), a save's id beside its photos written
 // whole and mended, a folder whose save cannot be told never deleted, one locked folder never ending the look over the rest,
 // a folder for each id and never one for two (an earlier build's moved to it), a photo read by its path on disk from any

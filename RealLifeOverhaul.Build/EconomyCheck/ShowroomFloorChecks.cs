@@ -16,7 +16,7 @@ internal static partial class Program
         FloorWords();
     }
 
-    // A car in the workshop or out on a test drive is never looked over (the owner, 14 Oct 2026: visitors stopped at a car in the workshop).
+    // A car in the workshop or out on a test drive is never looked over (visitors used to stop at a car in the workshop).
     private static void FloorAway()
     {
         var plan = new List<FloorVisit>();

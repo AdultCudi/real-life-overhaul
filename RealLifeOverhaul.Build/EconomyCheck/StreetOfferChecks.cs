@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using RealLifeOverhaul.Street;
 
-// Who in the street is offered a talk (the owner, 16 Oct 2026: "I get no F"; "I can only talk to walking people?"): the reach
+// Who in the street is offered a talk (the F prompt, for standing people as well as walking ones): the reach
 // and the angle, the nearest roughly in front, the one offered keeping it a step further and wider, the time in front counted
 // on the same person without being reset by a missed tick, the grace that lets a passer-by be caught, who is never offered
 // (busy at something), what is changed and given back for each kind of person, nothing allocated, and by source the offer's

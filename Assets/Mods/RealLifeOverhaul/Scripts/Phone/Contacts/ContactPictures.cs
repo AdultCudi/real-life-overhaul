@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
     ///
     /// COST. Adding a contact: a look through the list (a few dozen sprites) and one texture of 256 x 256, filled with its
     /// colour in the texture's own memory (it used to be a new array of 256 KB for each: eight contacts set up in one frame
-    /// made exactly 2 MB of garbage on a heap of 800 MB, the owner's log of 14 Oct 2026). The painting is
+    /// made exactly 2 MB of garbage on a heap of 800 MB). The painting is
     /// done by <see cref="ContactPainter"/>, one picture at a time, spread over seconds; nothing runs while there is
     /// nothing to paint. A face is drawn once per look ever: it is kept as a JPEG in the portrait cache and read from there
     /// on every later load.

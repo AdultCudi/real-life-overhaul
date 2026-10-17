@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Permadeath
 {
     public sealed partial class PermadeathDirector
     {
-        // ---------------------------------------------------------------- the owner's test buttons
+        // ---------------------------------------------------------------- the test buttons
 
         private bool Ready(string test)
         {

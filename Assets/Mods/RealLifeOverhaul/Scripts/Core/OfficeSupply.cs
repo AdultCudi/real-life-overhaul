@@ -18,7 +18,7 @@ namespace RealLifeOverhaul
     /// The count of the city's buildings of one kind (offices, shops, warehouses) by who has them, and of the empty ones
     /// the mod's features hold (Core/SpecialBuildings), written once a city load (Core/OfficeCensus): how many stood empty
     /// and to let before the mod held any, how many it holds, and how many are left for the player, in all and by
-    /// district. A player found no office to rent (14 Oct 2026) because the mod held every empty one; this line says at a
+    /// district. If the mod held every empty office a player could find none to rent; this line says at a
     /// glance whether that can happen again. No Unity or game types: checked offline (EconomyCheck, SpecialNameChecks.cs).
     /// </summary>
     public sealed class OfficeTally

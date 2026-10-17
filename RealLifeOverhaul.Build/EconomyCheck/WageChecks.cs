@@ -4,7 +4,7 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Tech;
 
-// Wages the mod raises (Scripts/Core/WageRules.cs): a player, 15 Oct 2026, saw an academy's six staff paid more every day,
+// Wages the mod raises (Scripts/Core/WageRules.cs): an academy's six staff were paid more every day,
 // past 8,000 a day, after changing the cleaning; earlier, wages over 2,000 an hour where the game pays 29 to 35. A rise
 // of the Tech people part was a percentage of the wage already raised, with no cap and no limit on how often
 // (TalentGame.Rise, the Open Roles app's rise buttons). Now: at most one rise or promotion in WageRules.PeriodDays for

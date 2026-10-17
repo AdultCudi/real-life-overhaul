@@ -819,8 +819,8 @@ namespace RealLifeOverhaul
         }
 
         // A frame in which the managed heap grew by megabytes at once: how much, and how much of it under the mod's own scripts
-        // (where that frame was a sample of the heap), and under which. A third of a minute's growth came in one such frame
-        // in the 13 October log.
+        // (where that frame was a sample of the heap), and under which. A third of a minute's growth can come in one such
+        // frame.
         private void Leapt(long grown, float took)
         {
             int frame = Time.frameCount - 1;

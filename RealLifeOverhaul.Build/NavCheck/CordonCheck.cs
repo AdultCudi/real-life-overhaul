@@ -6,7 +6,7 @@ using RealLifeOverhaul;
 
 // Checks for who is inside a cordon's tape and where they are put outside it (Traffic/CordonRules.cs, compiled as it
 // ships), and, over the sources, that every cordon the mod puts up runs that rule on the frame its tape goes up.
-// The owner's report of 15 Oct 2026: at "Pedestrian down" on 4th Avenue three pedestrians stood inside the tape, on top
+// The fault: at "Pedestrian down" on 4th Avenue three pedestrians stood inside the tape, on top
 // of the casualty. The scene lay on a crossing, so its tape was left without walls ("not walled (a crossing runs
 // through it)" in Player.log), people crossed the road straight through it, and nobody already inside when the tape
 // went up was moved. Now the tape is walled at a crossing too, a bar shuts any opening a walkway runs through, and

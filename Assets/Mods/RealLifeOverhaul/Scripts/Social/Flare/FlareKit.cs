@@ -7,8 +7,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's own look, the one place the mod draws an interface of its own (the owner's exception: "the flare must look
-    /// like a social media app instead of the game's generic UI"). It stays inside the game's phone: the app's panel is the
+    /// Flare's own look, the one place the mod draws an interface of its own (an exception: Flare must look like a social
+    /// media app, not the game's generic interface). It stays inside the game's phone: the app's panel is the
     /// game's (GameUi.AppShell), the lettering is the game's own font (GameUi.GameFont), the typing is the game's own text
     /// box. Here: the colours (light, dark, and dark at night when it follows the phone), the type sizes and spacing, and
     /// the parts every screen is made of: a rounded card, a pill, a circle, an image, a text, a button.

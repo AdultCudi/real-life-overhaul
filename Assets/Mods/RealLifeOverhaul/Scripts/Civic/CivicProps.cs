@@ -13,8 +13,8 @@ namespace RealLifeOverhaul
     /// A prop is asked for by id. If the prop bundle has a model of that id it is used (shared
     /// mesh, the atlas material). If it has not, the plain stand-in registered here under the
     /// same id is used instead: boxes built to the real dimensions and merged, once, into one
-    /// mesh with one sub-mesh per colour (the shared paints of Core/Shapes). So the day an
-    /// asset agent adds `scaffold_bay` to the bundle it appears with no code change; the
+    /// mesh with one sub-mesh per colour (the shared paints of Core/Shapes). So the day a
+    /// model of `scaffold_bay` is added to the bundle it appears with no code change; the
     /// dimensions and pivots a model must keep are in the wish-list of docs/features/civic.md and in
     /// <see cref="CivicStandIns"/>.
     ///

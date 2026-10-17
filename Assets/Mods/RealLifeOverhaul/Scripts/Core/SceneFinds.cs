@@ -8,7 +8,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Every search of the whole scene the mod makes goes through here. The engine answers "every object of this
     /// kind" by going through every object it has in memory, and this game has well over a million: one such search
-    /// is a frame of about 110 ms (Player.log, three sessions: the line "Crime: road map built" was followed each time
+    /// is a frame of about 110 ms (the line "Crime: road map built" was followed each time
     /// by a frame of 112 to 117 ms, and every driving lesson began with one of 126 to 146 ms; both asked the traffic
     /// system for its road data, which it finds by such a search). So a search is never to be made while the game is
     /// being played: what it finds is found once per city, behind the loading screen (<see cref="ScenePrewarm"/>), and
