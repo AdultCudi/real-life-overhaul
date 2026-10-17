@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>A vehicle type the market can offer, as DealerGame reads it from the game: its name, its list price and its kind of car (the mod's car catalogue's, Driving/CarCatalogue).</summary>
+    /// <summary>A vehicle type the market can offer: its name, the game's list price and its kind of car (CarKind).</summary>
     public struct MarketModel
     {
         public string Type;
@@ -23,14 +23,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
     public static partial class DealerRules
     {
-        // ---------------------------------------------------------------- the morning's market
-
-        /// <summary>
-        /// The day's market, drawn afresh each morning from the seed and the day: <see cref="DealerCatalogue.WholesaleADay"/>
-        /// new cars, <see cref="DealerCatalogue.UsedADay"/> used ones offered by their owners. A sale of the trade auction is
-        /// opened apart (<see cref="OpenSale"/>). The colours are drawn by the caller's list. What the day's market was,
-        /// lots of an auction still running and bid on, stays: only the listings of the day before are replaced.
-        /// </summary>
+        /// <summary>The day's new and used cars, drawn from the seed and the day in place of yesterday's; the auction's lots stay.</summary>
         public static void Morning(DealerState s, int day, IList<MarketModel> models, IList<string> colours, int level)
         {
             for (int i = s.Market.Count - 1; i >= 0; i--)
@@ -116,7 +109,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Clamp(DealerCatalogue.Named(DealerCatalogue.Share(worth, DealerCatalogue.InspectionShare)), leastAtPrices, Math.Max(leastAtPrices, mostAtPrices));
         }
 
-        /// <summary>An inspection of a used car: its faults are known, and the owner's least comes down by what was found.</summary>
+        /// <summary>An inspection: the faults are known, and a private owner's least comes down by what was found.</summary>
         public static void Inspect(DealerListing l)
         {
             if (l.Inspected)
@@ -132,7 +125,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>The offers the player may make an owner, of their asking price: from <see cref="DealerCatalogue.HaggleLeast"/> to all of it.</summary>
+        /// <summary>How many offers the player may step through: <see cref="DealerCatalogue.HaggleLeast"/> to all of the asking price.</summary>
         public static int HaggleSteps => (1000 - DealerCatalogue.HaggleLeast) / DealerCatalogue.HaggleStep + 1;
 
         public static int HaggleAt(int asking, int step)
@@ -140,11 +133,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Named(DealerCatalogue.Share(asking, DealerCatalogue.HaggleLeast + DealerCatalogue.Clamp(step, 0, HaggleSteps - 1) * DealerCatalogue.HaggleStep));
         }
 
-        /// <summary>
-        /// The player offers an owner a price. At or above their least it is taken; under it they counter with their least
-        /// and a share of the gap above it, until the player has made <see cref="DealerCatalogue.HagglesMost"/> offers, when
-        /// they sell elsewhere. A counter is never under one they made before.
-        /// </summary>
+        /// <summary>An offer to an owner: taken at their least or last counter, else countered (never above the last) until they go.</summary>
         public static HaggleAnswer Haggle(DealerListing l, int price, out int counter)
         {
             counter = 0;
@@ -165,15 +154,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             return HaggleAnswer.Countered;
         }
 
-        // ---------------------------------------------------------------- the trade auction
-
-        /// <summary>A step of the bidding on a car of this worth.</summary>
         public static int Increment(int worth)
         {
             return DealerCatalogue.Clamp(DealerCatalogue.Named(DealerCatalogue.Share(worth, DealerCatalogue.IncrementShare)), DealerCatalogue.IncrementLeast, DealerCatalogue.IncrementMost);
         }
 
-        /// <summary>The auction house's fee on a hammer price.</summary>
         public static int BuyersFee(int hammer, int leastAtPrices)
         {
             return Math.Max(leastAtPrices, DealerCatalogue.Named(DealerCatalogue.Share(hammer, DealerCatalogue.BuyersFee)));
@@ -196,7 +181,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return true;
         }
 
-        /// <summary>A sale of <see cref="DealerCatalogue.AuctionLots"/> lots, each knocked down a few hours from now; the lots of the last sale are cleared.</summary>
+        /// <summary>A sale of <see cref="DealerCatalogue.AuctionLots"/> lots, each knocked down a few hours from now, in place of the last sale's.</summary>
         public static void OpenSale(DealerState s, int now, IList<MarketModel> models, IList<string> colours, int level)
         {
             for (int i = s.Market.Count - 1; i >= 0; i--)
@@ -238,7 +223,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return 0;
         }
 
-        /// <summary>The next bid the player may make on a lot: the opening one if nobody has bid, else a step over the current one.</summary>
+        /// <summary>The next bid on a lot: the opening one if nobody has bid, else a step over the current one.</summary>
         public static int NextBid(DealerListing l, int worth)
         {
             return l.Leader < 0 ? l.Asking : l.Asking + Increment(worth);
@@ -257,11 +242,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return true;
         }
 
-        /// <summary>
-        /// An hour of the room: on each lot still running another dealer may bid (more often while the player leads, as
-        /// they answer a bid), one or two steps up and never past the room's ceiling. Returns how many lots another dealer
-        /// took the lead on from the player.
-        /// </summary>
+        /// <summary>An hour of the room: other dealers bid on running lots up to their ceiling. Returns the lots the player was outbid on.</summary>
         public static int RoomHour(DealerState s, int now, IList<MarketModel> models, int level)
         {
             int outbid = 0;
@@ -292,7 +273,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return outbid;
         }
 
-        /// <summary>The lots knocked down by this hour, into the list given (none of them taken off the market: the caller settles each).</summary>
+        /// <summary>The lots knocked down by this hour, into the list given; the caller settles each.</summary>
         public static void KnockedDown(DealerState s, int now, List<DealerListing> into)
         {
             into.Clear();

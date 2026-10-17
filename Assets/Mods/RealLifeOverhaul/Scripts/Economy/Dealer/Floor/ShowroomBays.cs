@@ -13,11 +13,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public bool Turned;                 // facing the other way from the bay's own
     }
 
-    /// <summary>
-    /// The bays the player chose for the cars of their Car Showrooms, by the game's vehicle id. Only a choice is kept: a
-    /// car nobody chose a bay for stands where the showroom put it (DealerState's place of the car), and a car that is no
-    /// longer on the lot loses its choice when the save is written (<see cref="Prune"/>). Game-free.
-    /// </summary>
+    /// <summary>The bays the player chose, by vehicle id; game-free. A car with none stands where the showroom put it.</summary>
     public sealed class ShowroomBays
     {
         private readonly Dictionary<string, BayChoice> _byCar = new Dictionary<string, BayChoice>(StringComparer.Ordinal);
@@ -95,16 +91,8 @@ namespace RealLifeOverhaul.Economy.Dealership
     }
 
     /// <summary>
-    /// What the Car Showroom's bays keep in a save: one line under its own key, apart from the showroom's own line, so
-    /// that a save without it still loads and the save tools take it out with the mod's other lines:
-    ///
-    ///     v=1^Main%20Street~12|AbC0dE+fG/h|3|0^...
-    ///
-    /// the version, then for each choice the showroom's place, the vehicle's id, the bay and 1 if it stands turned round,
-    /// sorted by the vehicle's id so that the same choices give the same line. In a place or an id, '%', '^' and '|' are
-    /// written as %25, %5E and %7C. A line of a later version is read as far as its first four fields go (a later one
-    /// adds fields at the end of a record); one that cannot be read gives no choices and is kept in the save as it was
-    /// (Core/SaveLines). Game-free. Cost: nothing unless a save is loaded or written.
+    /// The chosen bays' save line, "v=1^Main%20Street~12|AbC0dE+fG/h|3|0^...": place, vehicle id, bay, turned; sorted by id,
+    /// '%', '^' and '|' escaped. A line that cannot be read is kept as it was (Core/SaveLines). Game-free.
     /// </summary>
     public static class ShowroomBayStore
     {
@@ -140,7 +128,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return true;
             }
             string[] parts = text.Split('^');
-            if (!parts[0].StartsWith("v=", StringComparison.Ordinal) || !int.TryParse(parts[0].Substring(2), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out version) || version < 1)
+            if (!parts[0].StartsWith("v=", StringComparison.Ordinal)
+                || !int.TryParse(parts[0].Substring(2), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out version) || version < 1)
             {
                 return false;
             }

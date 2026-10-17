@@ -11,30 +11,25 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What the cleaning service and selling a business ask of the rest of the mod. Each is optional and has a default,
-    /// so Economy/Services works alone; Scripts/Wiring/ServicesLinks.cs fills them in. It never calls another feature
-    /// of the mod directly, with one exception that is a reading and no more: the investors' valuation
-    /// (Ventures' own figures of a business), which the sale reuses so that a business has one value in the mod.
-    /// </summary>
+    /// <summary>What the services ask of the rest of the mod, set by Wiring/ServicesLinks; each is optional, with the default named on it.</summary>
     public static class ServicesBridges
     {
-        /// <summary>What buying every investor out of a business costs today (Ventures' own price). Default: nothing, nobody has a share.</summary>
+        /// <summary>What buying every investor out of a business costs today (Ventures' own price). Default: nothing.</summary>
         public static Func<BuildingRegistration, int> InvestorsOwed;
 
-        /// <summary>Buys every investor out of a business through Ventures' own buy-out. False if one could not be paid. Default: true, there is none.</summary>
+        /// <summary>Buys every investor out through Ventures' own buy-out; false if one could not be paid. Default: true.</summary>
         public static Func<BuildingRegistration, bool> PayInvestors;
 
-        /// <summary>What is owed on business loans secured on a business (the credit side's own marks). Default: nothing.</summary>
+        /// <summary>What is owed on business loans secured on a business (the credit side's marks). Default: nothing.</summary>
         public static Func<Address, int> LoansOwed;
 
-        /// <summary>Pays those loans off as the game's own pay-off does. False if one could not be paid. Default: true, there is none.</summary>
+        /// <summary>Pays those loans off as the game's own pay-off does; false if one could not be paid. Default: true.</summary>
         public static Func<Address, bool> SettleLoans;
 
-        /// <summary>Tells "running a business" that a business is no longer the player's, by its place. Default: nobody to tell.</summary>
+        /// <summary>Tells "running a business" that a business, by its place, is no longer the player's. Default: nobody.</summary>
         public static Action<string> BusinessGone;
 
-        /// <summary>A business sold, by its place, and its whole price (all its parts): the player's listed company hears of it (Markets/Listing). Default: nobody.</summary>
+        /// <summary>A business sold, by its place, and its whole price, for the player's listed company (Markets/Listing). Default: nobody.</summary>
         public static Action<string, int> Sold;
 
         public static void Reset()
@@ -55,30 +50,18 @@ namespace RealLifeOverhaul.Economy
         public string Name = string.Empty;
         public string BaseName = string.Empty;
         public EmployeeInstance Employee;
-        public BuildingRegistration Base;    // the building they are assigned to; null if to none
+        public BuildingRegistration Base;    // the building they are assigned to; null if none
         public int X, Z;                     // its door
         public int Skill, Mood;              // 0 to 100 each
-        public int Wage;                     // an hour, hundredths
+        public int Wage;                     // hundredths an hour
         public int WeekHours;                // the hours a week the game has them down for
         public int TodayFrom = -1, TodayTo;  // their cleaning shifts today, first to last minute; -1: none
         public bool Present;                 // not off sick today (or replaced)
     }
 
     /// <summary>
-    /// Everything the cleaning service reads from or does to the game, in one place (the sale's part is in
-    /// ServicesGame.Sale.cs, a visiting cleaner seen in a shop in CleaningPresence.cs).
-    ///
-    /// READ: the player's buildings the game cleans (BuildingRegistration: dirtSpots, GetCleanliness, the day's
-    /// schedule), each one's door (CityBuildingController.entranceDoors) and size; the crew (EmployeeInstance: skill,
-    /// satisfaction, wage, absence, the cleaning shifts at the building they are assigned to); businesses that are
-    /// not the player's, for contracts.
-    ///
-    /// DONE: dirt on the game's own tiles, through the game's own setter (BuildingCleanliness.SetDirtiness), by the
-    /// game's own arithmetic: taken off at a shop that is visited, and at the visiting cleaner's base put on for the
-    /// minutes they were out, just before the game takes a whole hour of their work off it. Money as dated
-    /// transactions of the mod's own. No wage, no schedule, no employee and no satisfaction is written.
-    ///
-    /// Nothing here runs per frame: on the game's hour, once a game day, and when the page is opened.
+    /// What the cleaning service reads from and does to the game: dirt on the game's own tiles by the game's own sum, and
+    /// money as the mod's own transactions; never a wage, a schedule or an employee. Nothing runs per frame.
     /// </summary>
     internal static partial class ServicesGame
     {
@@ -90,7 +73,7 @@ namespace RealLifeOverhaul.Economy
         public const string ClauseKey = "reallife_transaction_svc_clause";
         private const string DeductKey = "reallife_svc_deduct_van";
         private const string EmptyType = "ba:businesstype_empty";
-        private const int MinutesMost = 120;   // the most minutes of one visit cleaned at one hour event: this hour's, and the last hour's of a visit planned in the middle of it
+        private const int MinutesMost = 120;   // minutes of one visit cleaned at one hour event: this hour's, and the last hour's of a visit planned during it
 
         public static IModLogger Logger;
 
@@ -98,10 +81,10 @@ namespace RealLifeOverhaul.Economy
 
         public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
 
-        /// <summary>The minute of the day, by the game's clock.</summary>
+        /// <summary>The minute of the day by the game's clock.</summary>
         public static int Now => Save != null ? Save.Hour * 60 + Mathf.Clamp(Mathf.FloorToInt(Save.Minute), 0, 59) : 0;
 
-        /// <summary>The price index as these rules count it: tenths of a point, 1000 at the start (the city's economy's own figure; 1000 while that is off).</summary>
+        /// <summary>The price index in tenths of a point, 1000 at the start.</summary>
         public static int Index => Prices.Level;
 
         /// <summary>The economy as a business's value feels it: 1 a boom, 0 steady, -1 a slowdown or a recession.</summary>
@@ -114,9 +97,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- places
-
-        /// <summary>A building by its address, written as business pressure and "running a business" write a place, so that a place means the same in all three.</summary>
+        /// <summary>A building by its address, written as business pressure and "running a business" write a place.</summary>
         public static string Place(BuildingRegistration reg)
         {
             return Uri.EscapeDataString(reg.StreetName ?? string.Empty) + "~" + reg.StreetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -126,8 +107,8 @@ namespace RealLifeOverhaul.Economy
         public static BuildingRegistration Find(string place)
         {
             int at = place != null ? place.LastIndexOf('~') : -1;
-            int number;
-            if (at <= 0 || Save == null || !int.TryParse(place.Substring(at + 1), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out number))
+            if (at <= 0 || Save == null
+                || !int.TryParse(place.Substring(at + 1), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int number))
             {
                 return null;
             }
@@ -154,7 +135,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A building's door in whole metres; false while the city is not there to ask (the last door known is kept).</summary>
+        /// <summary>A building's door in whole metres; false while the city is not there to ask.</summary>
         public static bool Door(BuildingRegistration reg, out int x, out int z)
         {
             x = z = 0;
@@ -162,7 +143,8 @@ namespace RealLifeOverhaul.Economy
             {
                 CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
                 CityBuildingController controller = city != null && reg != null && reg.Address != null ? city.FindCityBuildingController(reg.Address) : null;
-                if (controller == null || controller.entranceDoors == null || controller.entranceDoors.Length == 0 || controller.entranceDoors[0] == null || controller.entranceDoors[0].doorTransform == null)
+                if (controller == null || controller.entranceDoors == null || controller.entranceDoors.Length == 0 || controller.entranceDoors[0] == null
+                    || controller.entranceDoors[0].doorTransform == null)
                 {
                     return false;
                 }
@@ -177,9 +159,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- the player's shops
-
-        /// <summary>True for a building of the player's that the game cleans (BuildingCleanlinessHelper.RunHourly: rented by the player, of a type that needs cleaning) and that has a floor to clean.</summary>
+        /// <summary>True for a building of the player's that the game cleans (BuildingCleanlinessHelper.RunHourly) and that has a floor.</summary>
         public static bool Cleaned(BuildingRegistration reg)
         {
             try
@@ -197,7 +177,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A building's cleanliness by the game's own figure (BuildingCleanliness.GetCleanliness), 0 to 100.</summary>
         public static int Cleanliness(BuildingRegistration reg)
         {
             try
@@ -230,11 +209,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// A client as it stands now. A shop of the player's: its dirtiest tile, the game's own cleanliness figure,
-        /// the cleaners its floor needs and whether the game would clean it today. A client under contract: whether
-        /// the business is still there. One walk over the shop's tiles.
-        /// </summary>
+        /// <summary>A client as it stands now: a shop's worst tile, cleanliness, force and whether the game cleans it today; a contract's whether it is still there.</summary>
         public static void Read(CleaningClient c)
         {
             BuildingRegistration reg = Find(c.Place);
@@ -255,8 +230,7 @@ namespace RealLifeOverhaul.Economy
             }
             c.Name = Name(reg);
             c.District = reg.Neighborhood ?? string.Empty;
-            int x, z;
-            if (Door(reg, out x, out z))
+            if (Door(reg, out int x, out int z))
             {
                 c.X = x;
                 c.Z = z;
@@ -271,15 +245,10 @@ namespace RealLifeOverhaul.Economy
             c.Worst = Mathf.RoundToInt(worst * 100f);
             c.Clean = Mathf.RoundToInt(reg.GetCleanliness());
             ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
-            c.Open = !reg.temporarilyClosed && today != null && today.isOpen;   // (the two things the game's own hourly cleaning asks of a building and its day)
+            c.Open = !reg.temporarilyClosed && today != null && today.isOpen;   // what the game's hourly cleaning asks of a building and its day
         }
 
-        /// <summary>
-        /// A visit's cleaning at a shop of the player's, for some minutes of an hour: every tile loses what the game
-        /// would take off it for that cleaner's work (their skill by their satisfaction over the cleaners the floor
-        /// needs), in proportion to the minutes. Returns what came off a tile, in hundredths; 0 if the game would not
-        /// clean the shop now.
-        /// </summary>
+        /// <summary>A visit's minutes of cleaning at a shop, by the game's sum; returns hundredths taken off the worst tile, 0 if the game would not clean it now.</summary>
         public static int Clean(CleaningClient c, EmployeeInstance e, int minutes)
         {
             BuildingRegistration reg = Find(c.Place);
@@ -294,27 +263,33 @@ namespace RealLifeOverhaul.Economy
             }
             BuildingCleanliness floor = reg.Cleanliness;
             List<DirtSpot> spots = reg.dirtSpots;
+            float worst = 0f;
             for (int i = 0; i < spots.Count; i++)
             {
+                worst = Mathf.Max(worst, spots[i].dirtiness);
                 floor.SetDirtiness(i, Mathf.Max(0f, spots[i].dirtiness - off));
             }
             Shown(reg);
-            return Mathf.RoundToInt(off * 100f);
+            return CleaningRules.Taken(Mathf.RoundToInt(worst * 100f), Mathf.RoundToInt(off * 100f));
+        }
+
+        /// <summary>True if a crew member is at work and on a cleaning shift at their base in an hour of today (the game's IsWorking asks of the hour now).</summary>
+        public static bool Working(CrewMember member, int hour)
+        {
+            EmployeeInstance e = member.Employee;
+            return e != null && member.Base != null && e.IsEmployeeAvailable() && OnCleaningShift(member.Base, e.id, hour);
         }
 
         /// <summary>
-        /// The base of a cleaner who was out for some minutes of the hour that is beginning. The game is about to
-        /// take a whole hour of their work off every tile there (this runs on the game's hour event, which comes
-        /// before its hourly cleaning: GameManager.RunMainGameTick), so the part of the hour they were elsewhere is
-        /// put on first, and the two cancel. Done only where the game will in fact count them: the same tests as
-        /// BuildingCleanlinessHelper.RunHourly, BuildingCleanliness.SimulateCleaning and GetCleaningSkill.
-        /// Returns what was put on a tile, in hundredths.
+        /// Puts back on a cleaner's base the minutes of the starting hour they were out, since the game's hourly cleaning
+        /// after this event counts them there a whole hour. Only where the game will; returns hundredths put on a tile.
         /// </summary>
         public static int Hold(CrewMember member, int awayMinutes)
         {
             BuildingRegistration reg = member.Base;
             EmployeeInstance e = member.Employee;
-            if (awayMinutes <= 0 || e == null || !Cleaned(reg) || reg.temporarilyClosed || !e.IsEmployeeAvailable() || !e.HasSkill(ServicesCatalogue.CleaningSkill) || !OnCleaningShift(reg, e.id, Save.Hour))
+            if (awayMinutes <= 0 || e == null || !Cleaned(reg) || reg.temporarilyClosed || !e.IsEmployeeAvailable() || !e.HasSkill(ServicesCatalogue.CleaningSkill)
+                || !OnCleaningShift(reg, e.id, Save.Hour))
             {
                 return 0;
             }
@@ -332,14 +307,14 @@ namespace RealLifeOverhaul.Economy
             return Mathf.RoundToInt(add * 100f);
         }
 
-        // What one cleaner takes off every tile of a building in an hour, in the game's points and by its own sum (BuildingCleanliness.SimulateCleaning).
+        // What one cleaner takes off every tile of a building in an hour, in the game's points (BuildingCleanliness.SimulateCleaning).
         private static float Points(EmployeeInstance e, BuildingRegistration reg)
         {
             float skill = e.GetSkillValue(ServicesCatalogue.CleaningSkill) * (e.satisfaction / 100f);
             return skill / CleaningRules.Force(BuildingHelper.GetBuildingSquareMeters(reg.Address));
         }
 
-        // True if the building's schedule has this employee on a cleaning shift in this hour of today, and the day is open.
+        // True if today's schedule, on an open day, has this employee on a cleaning shift in this hour.
         private static bool OnCleaningShift(BuildingRegistration reg, string id, int hour)
         {
             ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
@@ -355,7 +330,7 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // The floor of the building the player stands in is drawn again, as the game draws it after its own cleaning.
+        // The floor of the building the player stands in is drawn again, as after the game's own cleaning.
         private static void Shown(BuildingRegistration reg)
         {
             if (BuildingManager.IsInsideBuilding && ReferenceEquals(InstanceBehavior<BuildingManager>.Instance.buildingRegistration, reg))
@@ -364,9 +339,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- the crew
-
-        /// <summary>Everybody the player employs who has the cleaning skill, the game's order kept. Candidates and the player are left out.</summary>
+        /// <summary>Everybody the player employs with the cleaning skill, in the game's order; candidates and the player left out.</summary>
         public static void Cleaners(List<EmployeeInstance> into)
         {
             into.Clear();
@@ -384,7 +357,8 @@ namespace RealLifeOverhaul.Economy
 
         private static bool Counts(EmployeeInstance e)
         {
-            return e != null && !string.IsNullOrEmpty(e.id) && !e.IsCandidate && !e.isBeingReplaced && e.characterData != null && e.characterData.skills != null && e.HasSkill(ServicesCatalogue.CleaningSkill);
+            return e != null && !string.IsNullOrEmpty(e.id) && !e.IsCandidate && !e.isBeingReplaced && e.characterData != null && e.characterData.skills != null
+                   && e.HasSkill(ServicesCatalogue.CleaningSkill);
         }
 
         private static EmployeeInstance Self()
@@ -399,10 +373,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// The crew as the game has them now. Somebody who has left, or is no cleaner any more, is taken off the crew.
-        /// One look-up by id each, and a walk over their base's shifts of today.
-        /// </summary>
+        /// <summary>The crew as the game has them now; anyone who has left, or is no longer a cleaner, is taken off the crew.</summary>
         public static void ReadCrew(ServicesState state, List<CrewMember> into, List<CrewMember> pool, out int dropped)
         {
             dropped = 0;
@@ -454,8 +425,7 @@ namespace RealLifeOverhaul.Economy
             m.BaseName = m.Base != null ? Name(m.Base) : string.Empty;
             m.TodayFrom = -1;
             m.TodayTo = 0;
-            int x, z;
-            if (m.Base != null && Door(m.Base, out x, out z))
+            if (m.Base != null && Door(m.Base, out int x, out int z))
             {
                 m.X = x;
                 m.Z = z;
@@ -473,10 +443,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// Today's cleaning shifts of the crew as the round takes them: one entry for each shift of somebody who is
-        /// at work today, at the building they are assigned to. The entries are the caller's and are made again.
-        /// </summary>
+        /// <summary>Today's cleaning shifts of the crew who are at work, one entry each, at the building they are assigned to.</summary>
         public static void Shifts(List<CrewMember> crew, List<RoundCleaner> into)
         {
             into.Clear();
@@ -499,38 +466,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A number that changes when anything the round depends on does: who is on a cleaning shift when, who is off sick, which shops the game would clean today. Worked out once an hour.</summary>
-        public static int Signature(List<CrewMember> crew, List<CleaningClient> clients)
-        {
-            unchecked
-            {
-                int h = 17;
-                for (int m = 0; m < crew.Count; m++)
-                {
-                    EmployeeInstance e = crew[m].Employee;
-                    BuildingRegistration reg = e != null && e.IsAssignedToAnyBusiness() ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
-                    h = h * 31 + (e != null && e.IsEmployeeAvailable() ? 1 : 0);
-                    h = h * 31 + (reg != null ? reg.StreetNumber * 7 + (reg.StreetName != null ? reg.StreetName.Length : 0) : -1);
-                    ScheduleDay today = reg != null ? BuildingHelper.GetTodaySchedule(reg) : null;
-                    List<WorkShift> shifts = today != null && today.isOpen ? today.workShifts : null;
-                    for (int i = 0; e != null && shifts != null && i < shifts.Count; i++)
-                    {
-                        WorkShift shift = shifts[i];
-                        if (shift != null && shift.type == WorkShiftType.Cleaning && shift.employeeId == e.id)
-                        {
-                            h = h * 31 + shift.startingHour * 24 + shift.endingHour;
-                        }
-                    }
-                }
-                for (int i = 0; i < clients.Count; i++)
-                {
-                    h = h * 31 + (clients[i].Open ? 1 : 0) + (clients[i].Gone ? 2 : 0);
-                }
-                return h;
-            }
-        }
-
-        /// <summary>The wage the game itself would offer a cleaner of a skill, an hour, in hundredths: what "one cleaner per shop" is priced at.</summary>
+        /// <summary>The hourly wage the game would offer a cleaner of a skill, in hundredths: what a shop's own cleaner is priced at.</summary>
         public static int GoingWage(int skill)
         {
             try
@@ -543,7 +479,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>How many cleaning hours a week a shop's own schedule has, with somebody on them: what its own cleaners do there beside the service.</summary>
+        /// <summary>The cleaning hours a week, with somebody on them, in a shop's own schedule.</summary>
         public static int OwnCleaningHours(BuildingRegistration reg)
         {
             int hours = 0;
@@ -560,13 +496,7 @@ namespace RealLifeOverhaul.Economy
             return hours;
         }
 
-        // ---------------------------------------------------------------- businesses that could want a contract
-
-        /// <summary>
-        /// The city's businesses that are not the player's, are no special service (a bank, a hospital) and are of a
-        /// building type the game cleans: each with its size, the customers it has room for and its door. One pass
-        /// over the save's buildings; asked for when an offer is drawn, every few days.
-        /// </summary>
+        /// <summary>Businesses that could want a contract: not the player's, no special service, of a type the game cleans. One pass over the buildings.</summary>
         public static void Candidates(List<ContractCandidate> into)
         {
             into.Clear();
@@ -585,8 +515,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    int x, z;
-                    if (!Door(reg, out x, out z))
+                    if (!Door(reg, out int x, out int z))
                     {
                         continue;
                     }
@@ -603,9 +532,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>Takes an amount as a transaction of the mod's own. With 'deductible' it is marked as the game marks a business cost. Unless 'force', the game's call refuses a charge the cash does not cover.</summary>
+        /// <summary>Charges the mod's own transaction, 'deductible' as a business cost; without 'force' the game refuses what the cash does not cover.</summary>
         public static bool Take(int amount, string key, string name, Address address, int? day, bool deductible, bool force)
         {
             if (amount <= 0)
@@ -632,7 +559,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+        // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string key, string name)
         {
             return new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });

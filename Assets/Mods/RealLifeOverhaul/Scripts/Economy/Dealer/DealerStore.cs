@@ -6,35 +6,11 @@ using System.Text;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// The car dealership in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=2^h:...^y:...^t:...^p:...^c:...^d:...^b:...^y:...^m:...^f:...^w:...^s:...^q:...
-    ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: seed|first day|last hour worked through|last day closed|next number|market's day|no bids until
-    ///   y  a dealership: place|name|staff's floor|own finance|warranties|visitor carried|extras|reputation|missions done|
-    ///      event|its featured kind|its first day|its last day|the last day of each kind's last event (one field a kind)
-    ///   t  its tallies, for its missions: one field each
-    ///   p  its lot's places: x|y|z|facing
-    ///   c  its cars: number|vehicle id|type|colour|km|condition|faults|faults known|cost|asking|day bought|source|place|out until|
-    ///      in the workshop until
-    ///   d  its customers' offers: number|car|customer|kind|offer|ceiling|counters|made|lapses|stage|drove|wants a drive|
-    ///      wants finance|rating|deposit|term|warranty|part exchange type|its colour|its km|its condition|its allowance|extras|lift
-    ///   b  its books, today's first and then the days kept, the last first: day|visitors|served|lost|offers|sold|takings|
-    ///      bought|claims|margin|revenue|extras|spent|cars|their days|arrears|plans behind|reputation
-    ///   m  the market: number|kind|type|colour|km|condition|shown|faults|inspected|asking|least|offers|counter|ends|leader|
-    ///      ceiling|bids|gone
-    ///   f  the finance plans: number|place|customer|type|worth|owed|weekly|due|missed|paid|rating
-    ///   w  the warranties: number|place|customer|type|tier|worth|condition|until|claims|paid|rests until
-    ///   s  recent sales: day|place|customer|type|price|cost|financed|warranty|to the trade|extras
-    ///   q  cars on their way: number|place|type|colour|km|condition|faults|faults known|cost|due|told
-    /// The t, p, c, d and b parts after a y part are that dealership's. Version 1 had no t and q parts and fewer fields;
-    /// its line reads as a showroom with none of what came later.
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not. A line that cannot be read is left alone and the feature starts afresh. Nothing here is the game's: the cars
-    /// themselves are the game's vehicles, which the save keeps as it keeps every vehicle.
+    /// The car dealership's line of the save, under <see cref="Key"/>; game-free. Parts are divided by '^' and start with a
+    /// letter and a colon: h the header; y a showroom, followed by its t tallies, p places, c cars, d offers and b books
+    /// (today first, then the days kept); m the market, f finance plans, w warranties, s sales and q cars on their way.
+    /// Records are divided by ';' and fields by '|', every figure a whole number. A later version adds fields at the end
+    /// of a record or parts with new letters, which this reader skips; a version 1 line, without t and q, still reads.
     /// </summary>
     public static class DealerStore
     {
@@ -52,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return null;
             }
-            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is
         }
 
         public static string Write(DealerState s)
@@ -102,7 +78,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Book(t, y.Today);
                 for (int b = 0; b < y.Past.Length && y.Past[b].Day >= 0; b++)
                 {
-                    t.Append(';');   // (the days kept are the first ones: a day not kept yet comes only after them)
+                    t.Append(';');   // the days kept fill the first slots, so the first unused one ends them
                     Book(t, y.Past[b]);
                 }
             }
@@ -185,12 +161,12 @@ namespace RealLifeOverhaul.Economy.Dealership
                         continue;
                     }
                     string body = part.Substring(2);
-                    string[] records = body.Length == 0 ? new string[0] : body.Split(';');
+                    string[] records = body.Length == 0 ? Array.Empty<string>() : body.Split(';');
                     switch (part[0])
                     {
                         case 'h':
                         {
-                            string[] c = records.Length > 0 ? records[0].Split('|') : new string[0];
+                            string[] c = FirstRecord(records);
                             s.Seed = I(c, 0, 1);
                             s.FirstDay = I(c, 1);
                             s.LastHour = I(c, 2, -1);
@@ -203,7 +179,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                         }
                         case 'y':
                         {
-                            string[] c = records.Length > 0 ? records[0].Split('|') : new string[0];
+                            string[] c = FirstRecord(records);
                             yard = null;
                             if (c.Length < 2 || s.Yards.Count >= DealerCatalogue.YardsMost || string.IsNullOrEmpty(c[0]) || s.Yard(c[0]) != null)
                             {
@@ -225,7 +201,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                         }
                         case 't':
                         {
-                            string[] c = records.Length > 0 ? records[0].Split('|') : new string[0];
+                            string[] c = FirstRecord(records);
                             for (int k = 0; yard != null && k < yard.Tally.Length; k++)
                             {
                                 yard.Tally[k] = Math.Max(0, I(c, k));
@@ -368,6 +344,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return null;
             }
+        }
+
+        private static string[] FirstRecord(string[] records)
+        {
+            return records.Length > 0 ? records[0].Split('|') : Array.Empty<string>();
         }
 
         private static void ReadBook(string[] c, DealerBook b)

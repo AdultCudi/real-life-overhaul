@@ -6,44 +6,16 @@ using System.Text;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The property business in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=2^h:...^p:...^u:...^g:...^d:...^i:...^t:...^c:...^v:...
-    ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: seed|first day|last day|the market|months|the year's first day
-    ///   p  the buildings: place|paid|bought|spent|use|condition|level|asking rent|to let|cover|tenant|record|rent|
-    ///      deposit|until|arrears|days in arrears|notice ends|court day|days empty|work|its end|its cost|its target|
-    ///      use allowed|asking price|offer|offer lapses|sale day|sale price|sale fails|rent this year|costs this year|
-    ///      next applicant|let by the player|applicants, then six fields each: id|description|offer|record|term|lapses.
-    ///      The asking rent, to let, the tenancy (tenant to days empty) and the applicants are the first unit's.
-    ///   u  the other units (version 2): place|unit|asking rent|to let|tenant|record|rent|deposit|until|arrears|days in
-    ///      arrears|notice ends|court day|days empty|applicants, then six fields each as above. A unit that is empty,
-    ///      asks the market's rent and has nobody waiting is not written at a building the game lets.
-    ///   g  the agency: office|next id|commission|deals|lost
-    ///   d  the districts: name|reputation
-    ///   i  the instructions: id|district|sale|square metres|value|asked|stage|hours|done|day|price|fails
-    ///   t  the hotels: id|leased|paid|day|lease a day|two rates|staff|clean|rating|campaign ends|group rooms|nights|
-    ///      rate|asked rooms|nights|rate|lapses|rooms out|until|inspection|two sold|takings|costs|takings this
-    ///      year|costs this year|six reviews
-    ///   c  car hire: lot|rating|cover|takings this year|costs this year
-    ///   v  the cars: id|type|price|rate|state|day|hire days|hire rate|deposit|hire seed|x|y|z|yaw|takings|hires
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads, and a version from before units reads the first unit
-    /// as the building's one tenancy and leaves the others out. A figure out of its bounds is put inside them; a line
-    /// that cannot be read is left alone and the feature starts afresh. The lists are capped when written. Nothing
-    /// here is the game's: a save loads in the plain game with this line ignored.
-    ///
-    /// <see cref="TestKey"/> holds the same line as it was before the first test tool changed it, for as long as test
-    /// changes are in place.
+    /// The property business's line in the save's modData. Game-free. "v=" and the version, then parts divided by '^',
+    /// each a letter and a colon (h header, p buildings, u other units, g agency, d districts, i instructions, t hotels,
+    /// c car hire, v cars), records by ';' and fields by '|' as <see cref="Write"/> writes them. A later version only
+    /// adds fields at a record's end or new parts. <see cref="TestKey"/> holds the line from before the first test tool.
     /// </summary>
     public static class EstateStore
     {
         public const string Key = "reallife:economy_estate";
         public const string TestKey = "reallife:economy_estate_before_tests";
-        public const int Version = 2;   // 2: the units after the first (part u)
+        public const int Version = 2;   // 2: part u, the units after the first
 
         private const int HoldingFields = 36, UnitFields = 15, ApplicantFields = 6;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -57,7 +29,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // SaveLines keeps a line that cannot be read
         }
 
         public static string Write(EstateState s)
@@ -71,9 +43,10 @@ namespace RealLifeOverhaul.Economy
                 EstateHolding h = s.Holdings[i];
                 EstateUnit u = h.Units[0];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(h.Place)).Append('|');
-                Join(t, h.Paid, h.BoughtDay, h.Spent, h.Use, h.Cond, h.Level, u.Ask, u.ToLet ? 1 : 0, h.Cover ? 1 : 0, u.Tenant, u.Record, u.Rent, u.Deposit, u.Until, u.Arrears, u.ArrearsDays, u.NoticeEnd,
-                    u.CourtDay, u.VoidDays, h.Work, h.WorkEnd, h.WorkCost, h.WorkTo, h.PlanUse, h.List, h.Offer, h.OfferLapse, h.SaleDay, h.SalePrice, h.SaleFails ? 1 : 0, h.RentYear, h.CostYear, h.NextApplicant,
-                    h.Managed ? 1 : 0);
+                Join(t, h.Paid, h.BoughtDay, h.Spent, h.Use, h.Cond, h.Level, u.Ask, u.ToLet ? 1 : 0, h.Cover ? 1 : 0,
+                    u.Tenant, u.Record, u.Rent, u.Deposit, u.Until, u.Arrears, u.ArrearsDays, u.NoticeEnd, u.CourtDay, u.VoidDays,
+                    h.Work, h.WorkEnd, h.WorkCost, h.WorkTo, h.PlanUse, h.List, h.Offer, h.OfferLapse, h.SaleDay, h.SalePrice, h.SaleFails ? 1 : 0,
+                    h.RentYear, h.CostYear, h.NextApplicant, h.Managed ? 1 : 0);
                 Applicants(t, u);
             }
             t.Append("^u:");
@@ -86,7 +59,7 @@ namespace RealLifeOverhaul.Economy
                     EstateUnit u = h.Units[n];
                     if (!h.Managed && !u.Let && u.Applicants.Count == 0 && u.Ask == EstateCatalogue.AskStart && u.ToLet)
                     {
-                        continue;   // (a blank unit of a building the game lets: made again from the game's count)
+                        continue;   // a blank unit of a building the game lets: made again from the game's count
                     }
                     t.Append(first ? string.Empty : ";").Append(Clean(h.Place)).Append('|');
                     first = false;
@@ -117,8 +90,9 @@ namespace RealLifeOverhaul.Economy
             {
                 HotelFile f = s.Hotels[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(f.Slot)).Append('|');
-                Join(t, f.Leased ? 1 : 0, f.Paid, f.Day, f.LeaseDaily, f.Rate[0], f.Rate[1], f.Staff, f.Clean, f.Rating, f.PushEnd, f.GroupRooms, f.GroupNights, f.GroupRate, f.AskRooms, f.AskNights, f.AskRate,
-                    f.AskLapse, f.OutRooms, f.OutEnd, f.InspectDay, f.Sold[0], f.Sold[1], f.Takings, f.Costs, f.TakingsYear, f.CostsYear);
+                Join(t, f.Leased ? 1 : 0, f.Paid, f.Day, f.LeaseDaily, f.Rate[0], f.Rate[1], f.Staff, f.Clean, f.Rating, f.PushEnd,
+                    f.GroupRooms, f.GroupNights, f.GroupRate, f.AskRooms, f.AskNights, f.AskRate, f.AskLapse, f.OutRooms, f.OutEnd, f.InspectDay,
+                    f.Sold[0], f.Sold[1], f.Takings, f.Costs, f.TakingsYear, f.CostsYear);
                 for (int r = 0; r < f.Reviews.Length; r++)
                 {
                     t.Append('|').Append(f.Reviews[r].ToString(Inv));
@@ -132,7 +106,7 @@ namespace RealLifeOverhaul.Economy
             {
                 HireCar car = hire.Cars[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(car.Id)).Append('|').Append(Clean(car.Type)).Append('|');
-                Join(t, car.Price, car.Rate, car.State, car.Day, car.HireDays, car.HireRate, car.Deposit, car.HireSeed, car.X, car.Y, car.Z, car.Yaw, car.Takings, car.Hires);
+                Join(t, car.Price, car.Rate, car.State, car.Day, car.HireDays, car.HireRate, car.Deposit, car.HireSeed, car.X, car.Y, car.Z, car.Yaw, car.Takings, car.Hires, car.HireRating);
             }
             return t.ToString();
         }
@@ -173,7 +147,7 @@ namespace RealLifeOverhaul.Economy
                             s.Real = EstateCatalogue.Clamp(I(c, 3, EstateCatalogue.RealStart), EstateCatalogue.RealLeast, EstateCatalogue.RealMost);
                             s.Months = Math.Max(0, I(c, 4));
                             s.YearFrom = Math.Max(0, I(c, 5));
-                            s.TaxFrom = Math.Max(0, I(c, 6));     // (none in a line from before the trading tax: counted from the day it is read)
+                            s.TaxFrom = Math.Max(0, I(c, 6));     // 0 when absent: TradingYear starts the count
                             s.TaxTakings = Math.Max(0, I(c, 7));
                             s.TaxCosts = Math.Max(0, I(c, 8));
                             header = true;
@@ -226,13 +200,14 @@ namespace RealLifeOverhaul.Economy
                             {
                                 string[] c = record.Split('|');
                                 int id = I(c, 0), stage = I(c, 6, -1);
-                                if (c.Length >= 12 && id > 0 && stage >= 0 && stage <= (int)InstructionStage.Completing && s.Agency.Open.Count < EstateCatalogue.InstructionsMost && s.Agency.Find(id) == null)
+                                if (c.Length >= 12 && id > 0 && stage >= 0 && stage <= (int)InstructionStage.Completing
+                                    && s.Agency.Open.Count < EstateCatalogue.InstructionsMost && s.Agency.Find(id) == null)
                                 {
                                     s.Agency.Open.Add(new Instruction
                                     {
                                         Id = id, District = c[1], Sale = I(c, 2) != 0, Sqm = Math.Max(1, I(c, 3, 1)), Value = Math.Max(0, I(c, 4)),
-                                        Ask = EstateCatalogue.Clamp(I(c, 5), EstateCatalogue.OwnerAskLeast, EstateCatalogue.OwnerAskMost), Stage = stage, Hours = Math.Max(1, I(c, 7, 1)), Done = Math.Max(0, I(c, 8)),
-                                        Day = Math.Max(0, I(c, 9)), Price = Math.Max(0, I(c, 10)), Fails = I(c, 11) != 0
+                                        Ask = EstateCatalogue.Clamp(I(c, 5), EstateCatalogue.OwnerAskLeast, EstateCatalogue.OwnerAskMost), Stage = stage,
+                                        Hours = Math.Max(1, I(c, 7, 1)), Done = Math.Max(0, I(c, 8)), Day = Math.Max(0, I(c, 9)), Price = Math.Max(0, I(c, 10)), Fails = I(c, 11) != 0
                                     });
                                 }
                             }
@@ -266,9 +241,11 @@ namespace RealLifeOverhaul.Economy
                                 {
                                     s.Hire.Cars.Add(new HireCar
                                     {
-                                        Id = c[0], Type = c[1], Price = Math.Max(0, I(c, 2)), Rate = EstateCatalogue.Clamp(I(c, 3, 1000), EstateCatalogue.RateLeast, EstateCatalogue.RateMost), State = state,
+                                        Id = c[0], Type = c[1], Price = Math.Max(0, I(c, 2)),
+                                        Rate = EstateCatalogue.Clamp(I(c, 3, 1000), EstateCatalogue.RateLeast, EstateCatalogue.RateMost), State = state,
                                         Day = Math.Max(0, I(c, 5)), HireDays = Math.Max(0, I(c, 6)), HireRate = Math.Max(0, I(c, 7)), Deposit = Math.Max(0, I(c, 8)), HireSeed = I(c, 9),
-                                        X = I(c, 10), Y = I(c, 11), Z = I(c, 12), Yaw = I(c, 13), Takings = Math.Max(0, I(c, 14)), Hires = Math.Max(0, I(c, 15))
+                                        X = I(c, 10), Y = I(c, 11), Z = I(c, 12), Yaw = I(c, 13), Takings = Math.Max(0, I(c, 14)), Hires = Math.Max(0, I(c, 15)),
+                                        HireRating = EstateCatalogue.Clamp(I(c, 16, -1), -1, 1000)
                                     });
                                 }
                             }
@@ -296,7 +273,6 @@ namespace RealLifeOverhaul.Economy
             };
             int work = I(c, 20);
             h.Work = work >= 0 && work <= (int)EstateWork.Convert ? work : 0;
-            // the first unit: where a version from before units kept the building's one tenancy
             EstateUnit u = h.Units[0];
             u.Ask = EstateCatalogue.Clamp(I(c, 7, EstateCatalogue.AskStart), EstateCatalogue.AskLeast, EstateCatalogue.AskMost);
             u.ToLet = I(c, 8, 1) != 0;
@@ -305,7 +281,7 @@ namespace RealLifeOverhaul.Economy
             return h;
         }
 
-        // A unit after the first (part u): its asking rent, its tenancy and its applicants. Units in between that no record names are empty.
+        // A unit after the first (part u). Units in between that no record names stay empty.
         private static void ReadUnit(EstateHolding h, int n, string[] c)
         {
             while (h.Units.Count <= n)
@@ -334,11 +310,11 @@ namespace RealLifeOverhaul.Economy
             u.VoidDays = Math.Max(0, I(c, at + 9));
             if (u.Tenant < 0)
             {
-                u.Vacant();   // (nobody in: nothing is owed and no notice runs)
+                u.Vacant();
             }
         }
 
-        // The count of applicants at 'at' and six fields each after it. A number the building has already is the end of them.
+        // The count of applicants at 'at' and six fields each after it; a number the building has already ends them.
         private static void ReadApplicants(EstateHolding h, EstateUnit u, string[] c, int at)
         {
             int applicants = EstateCatalogue.Clamp(I(c, at), 0, EstateCatalogue.ApplicantsMost);
@@ -357,7 +333,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // A unit nothing has been read into yet (a second record for the same unit is left out).
+        // A unit nothing has been read into yet: a second record for the same unit is left out.
         private static bool IsBlank(EstateUnit u)
         {
             return !u.Let && u.Applicants.Count == 0 && u.VoidDays == 0 && u.Ask == EstateCatalogue.AskStart && u.ToLet;
@@ -416,7 +392,7 @@ namespace RealLifeOverhaul.Economy
             return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
         }
 
-        /// <summary>A text with the three dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the three dividers taken out, so it can never break the line apart.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('^', ' ');

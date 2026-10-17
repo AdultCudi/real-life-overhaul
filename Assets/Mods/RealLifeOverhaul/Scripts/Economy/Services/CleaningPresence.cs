@@ -7,32 +7,10 @@ using Helpers;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// A visiting cleaner seen at work in the shop the player stands in.
-    ///
-    /// HOW THE GAME SHOWS A CLEANER. Each cleaning station of the building the player is in looks, when the hour
-    /// turns or the building's registration changes, for a shift of this hour on itself in the building's own
-    /// schedule, and puts the employee of that shift into the room by their id alone
-    /// (EmployeeStationController.UpdateEmployee, GetEmployeeWorkShift: the employee is found with
-    /// EmployeeHelper.GetEmployeeById and is not asked where they are assigned). The character then walks from dirty
-    /// tile to dirty tile with a mop (CleanerEmployee); that is for the eye only, the cleaning itself is the hourly sum.
-    ///
-    /// WHAT THIS DOES. While a visit is on in the building the player is in, one shift of the game's own kind is put
-    /// into that building's schedule of today: this hour only, on a cleaning station nobody is at, with the visiting
-    /// cleaner's id; and the station is asked to look. That is all. The shift is the mod's and never the save's:
-    ///
-    ///   it never cleans   it covers the running hour only and is put in after that hour's cleaning has run, and it is
-    ///                     taken out on the game's hour event, which comes before the next hour's cleaning
-    ///                     (GameManager.RunMainGameTick). The visit's cleaning is the service's own, by the minute
-    ///   it is taken out   when the visit ends, when the hour turns, when the player leaves the building, before the
-    ///                     game writes a save, when the feature stops for any reason and when the city unloads
-    ///   it pays nobody    wages follow the cleaner's own building's schedule (EmployeeInstance.IsWorking)
-    ///
-    /// A shop with no cleaning station, or none that is free, shows nobody: the visit still cleans, and the page says
-    /// when the cleaner was in. A fault here switches only this off for the session.
-    ///
-    /// Cost: nothing per frame. <see cref="Show"/> is asked once a second while a visit is on in the building the
-    /// player is in (a few reference comparisons while the cleaner is already there; a walk over the building's item
-    /// controllers and today's shifts when a cleaner is first put in).
+    /// A visiting cleaner seen at work in the shop the player stands in: a station puts into the room whoever a shift of
+    /// this hour on it names, by id alone (EmployeeStationController.UpdateEmployee), so one shift of the running hour goes
+    /// on a free station. It never cleans or pays: it comes in after that hour's cleaning and out on the next hour event,
+    /// before a save and whenever the visit ends. Cost: nothing per frame; <see cref="Show"/> once a second during a visit.
     /// </summary>
     internal static class CleaningPresence
     {
@@ -54,15 +32,12 @@ namespace RealLifeOverhaul.Economy
 
         public static bool Broken => _broken;
 
-        /// <summary>
-        /// The cleaner is shown in this building for this hour, if the player is in it and a station is free.
-        /// True if they are in the room (or already were).
-        /// </summary>
+        /// <summary>Shows the cleaner in this building for this hour, if the player is in it and a station is free. True if they are in the room.</summary>
         public static bool Show(BuildingRegistration reg, EmployeeInstance e, int hour)
         {
             if (_broken || reg == null || e == null || !GoingPublic.Mine(reg))
             {
-                return false;   // (a business that is not the player's has its own people: its schedule is never touched)
+                return false;   // a business that is not the player's has its own people: its schedule is never touched
             }
             try
             {
@@ -73,7 +48,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         if (_station.employee == null)
                         {
-                            _station.UpdateEmployee();   // (the station was in the middle of a look of its own when it was first asked)
+                            _station.UpdateEmployee();   // the station was in the middle of a look of its own when first asked
                         }
                         return _station.employee != null;
                     }
@@ -108,11 +83,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// The mod's shift is taken out of the schedule. With 'leave' the station is asked to look again, so that the
-        /// character goes at once; without it the character stays until the station next looks by itself (the hour
-        /// turning, a save in the middle of a visit).
-        /// </summary>
+        /// <summary>Takes the mod's shift out of the schedule; with 'leave' the station looks again so that the character goes at once.</summary>
         public static void Clear(bool leave)
         {
             if (_shift == null)
@@ -146,7 +117,7 @@ namespace RealLifeOverhaul.Economy
             _station = null;
         }
 
-        /// <summary>A station that has still to send a visitor away is asked again. Nothing else.</summary>
+        /// <summary>Asks a station that has still to send a visitor away again.</summary>
         public static void Tidy()
         {
             if (_left == null)
@@ -179,7 +150,7 @@ namespace RealLifeOverhaul.Economy
             _broken = false;
         }
 
-        // A station that was asked to send its visitor away while it was in the middle of a look of its own is asked again.
+        // A station asked to send its visitor away during a look of its own is asked again.
         private static void Settle()
         {
             if (_left == null)
@@ -204,7 +175,7 @@ namespace RealLifeOverhaul.Economy
             return BuildingManager.IsInsideBuilding && ReferenceEquals(InstanceBehavior<BuildingManager>.Instance.buildingRegistration, reg);
         }
 
-        // A cleaning station of the building the player is in that has nobody at it and no shift of its own in this hour.
+        // A cleaning station of the building the player is in with nobody at it and no shift of its own in this hour.
         private static CleaningStationController FreeStation(ScheduleDay today, int hour)
         {
             List<ItemController> controllers = InstanceBehavior<BuildingManager>.Instance.allItemControllers;
@@ -250,7 +221,8 @@ namespace RealLifeOverhaul.Economy
             _station = null;
             _left = null;
             _leftId = null;
-            Logger?.Warn("Cleaning service: showing a visiting cleaner in the shop is switched off for this session after an error. The mod's shift is out of the schedule; visits clean as before and the page says when a cleaner was in.");
+            Logger?.Warn("Cleaning service: showing a visiting cleaner in the shop is switched off for this session after an error. "
+                         + "The mod's shift is out of the schedule; visits clean as before and the page says when a cleaner was in.");
         }
     }
 }

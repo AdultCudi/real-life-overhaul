@@ -23,12 +23,9 @@ namespace RealLifeOverhaul.Economy.Dealership
 
     public static partial class DealerRules
     {
-        // ---------------------------------------------------------------- visitors
-
         /// <summary>
-        /// Thousandths of a visitor in an hour: the customers the game's own count gives a shop of the building at its
-        /// promotion (capacity x (base + 0.75 x promotion / 100), as CustomerEntriesCalculator counts them), a dealership's
-        /// share of them, the hour of the day, how much the lot has to show, and the building's customer satisfaction.
+        /// Thousandths of a visitor in an hour: the game's count for a shop of the building (capacity x (base + 0.75 x promotion
+        /// / 100), as CustomerEntriesCalculator), the dealership's share, by hour, cars to show and satisfaction.
         /// </summary>
         public static long VisitorThousandths(in YardHour h, int hour, int cars)
         {
@@ -56,7 +53,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return whole;
         }
 
-        /// <summary>How many of them are looked after: each salesperson on shift sees <see cref="DealerCatalogue.ServePerStaff"/> an hour; with nobody there, none.</summary>
+        /// <summary>How many visitors are looked after: <see cref="DealerCatalogue.ServePerStaff"/> an hour for each salesperson on shift.</summary>
         public static int Served(int visitors, int staff)
         {
             return Math.Max(0, Math.Min(visitors, staff * DealerCatalogue.ServePerStaff));
@@ -84,10 +81,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return OfferChance(asking, worth, days, skill, 1000, 1000);
         }
 
-        /// <summary>
-        /// The same for a car of this condition (a tired one draws fewer offers: <see cref="ConditionDraw"/>), with what an
-        /// event, the featured kind and the showroom's reputation make of it (<paramref name="lift"/>, thousandths of itself).
-        /// </summary>
+        /// <summary>The same for a car of this condition, with the <paramref name="lift"/> of an event, the featured kind and the reputation.</summary>
         public static int OfferChance(int asking, int worth, int days, int skill, int condition, int lift)
         {
             int skillFactor = DealerCatalogue.SkillLeast + (DealerCatalogue.SkillMost - DealerCatalogue.SkillLeast) * DealerCatalogue.Clamp(skill, 0, 100) / 100;
@@ -96,11 +90,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return (int)Math.Min(900, c);
         }
 
-        /// <summary>
-        /// The car a visitor looks at: one of those on the lot that is not out on a test drive or in the workshop and has no
-        /// offer waiting, the more likely the better it draws (its price, its days on the lot, its condition, and the kind of
-        /// car an event features: a bit for each such car in <paramref name="featured"/>). -1 if none can be looked at.
-        /// </summary>
+        /// <summary>The car a visitor looks at, weighted by its draw; none out, in the workshop or with an offer waiting. -1 if none.</summary>
         public static int LookAt(DealerYard y, int now, int day, IList<int> worths, int featured, ref DealerDice dice)
         {
             long total = 0;
@@ -152,24 +142,14 @@ namespace RealLifeOverhaul.Economy.Dealership
             return false;
         }
 
-        // ---------------------------------------------------------------- an offer
-
-        /// <summary>
-        /// A buyer's offer on a car: who they are, what they first offer and the most they would pay (shares of the asking
-        /// price by the kind of buyer; a skilled salesperson lifts the first offer), whether they want a test drive first,
-        /// to pay over time, a warranty, and whether they bring a car of their own in part exchange.
-        /// </summary>
-        public static DealerOffer Offer(int id, StockCar car, int now, int skill, bool warranty, int financeLeastAtPrices, IList<MarketModel> models, IList<string> colours, int level, ref DealerDice dice)
+        /// <summary>A buyer's offer: who, their first offer and ceiling, and whether they want a test drive, finance, a warranty or a part exchange.</summary>
+        public static DealerOffer Offer(int id, StockCar car, int now, int skill, bool warranty, int financeLeastAtPrices, IList<MarketModel> models,
+            IList<string> colours, int level, ref DealerDice dice)
         {
             return Offer(id, car, now, skill, warranty, financeLeastAtPrices, models, colours, level, OfferMood.Plain, ref dice);
         }
 
-        /// <summary>
-        /// The same, with what the showroom's event and reputation make of the buyer (<see cref="Mood"/>): a higher first
-        /// offer, more who ask for a test drive or bring a car in part exchange and a better allowance for it, a counter
-        /// more often taken, more who take a warranty, and the extras they would take. The draws of a plain mood are the
-        /// same as the rules made before any of it.
-        /// </summary>
+        /// <summary>The same, with what the showroom's event and reputation make of the buyer (<see cref="Mood"/>), extras included.</summary>
         public static DealerOffer Offer(int id, StockCar car, int now, int skill, bool warranty, int financeLeastAtPrices, IList<MarketModel> models, IList<string> colours, int level,
             in OfferMood mood, ref DealerDice dice)
         {
@@ -217,17 +197,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             return d;
         }
 
-        /// <summary>True when the staff may close the deal on their own: the offer is at or above the dealership's floor for them, and the buyer needs no test drive first.</summary>
+        /// <summary>True when the staff may close the deal on their own: the offer reaches their floor and no test drive is owed.</summary>
         public static bool StaffClose(DealerOffer d, StockCar car, int staffFloor)
         {
             return d.Stage == OfferStage.Open && (!d.WantsDrive || d.Drove) && d.Offer >= DealerCatalogue.Share(car.Asking, staffFloor);
         }
 
-        /// <summary>
-        /// The chance a counter is taken (thousandths): certain at or under the buyer's offer, falling to
-        /// <see cref="DealerCatalogue.AcceptAtCeiling"/> at their ceiling, nothing above it; a test drive helps, and so does
-        /// an event that ran when they came (the offer's lift).
-        /// </summary>
+        /// <summary>The chance a counter is taken: certain at their offer, falling to AcceptAtCeiling at their ceiling, none above it.</summary>
         public static int AcceptChance(DealerOffer d, int counter)
         {
             if (counter <= d.Offer)
@@ -261,11 +237,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Named(d.Offer + (int)((long)(asking - d.Offer) * s / (steps - 1)));
         }
 
-        /// <summary>
-        /// The player counters. True: the buyer takes it, and the offer becomes the counter. False: they do not; after
-        /// <see cref="DealerCatalogue.CountersMost"/> counters they walk away (<paramref name="gone"/>). The answer to the
-        /// same counter at the same point of the haggle is always the same.
-        /// </summary>
+        /// <summary>The player counters: true if taken; after CountersMost refusals the buyer goes. The same counter always gets the same answer.</summary>
         public static bool Counter(DealerOffer d, int counter, int seed, out bool gone)
         {
             var dice = new DealerDice(seed, d.Id, d.Counters, counter);
@@ -300,17 +272,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             d.Expires = Math.Max(d.Expires, now + DealerCatalogue.TestDriveHours + DealerCatalogue.DealHours / 2);
         }
 
-        // ---------------------------------------------------------------- an hour
-
         /// <summary>
-        /// An hour of a dealership: visitors by the game's count for the building (with its event's points on the
-        /// promotion, never past the game's top), those the staff look after, and the offers they make, added to the
-        /// yard's offers (at most <see cref="DealerCatalogue.DealsMost"/> wait at once), the buyers as its event and
-        /// reputation make them (<see cref="Mood"/>). Test drives that are over come back. The worths of the lot's cars are
-        /// given in the cars' order. Offers that have lapsed are taken off, each a point off the reputation. The day's book
-        /// counts it all.
+        /// An hour of a showroom: lapsed offers off, test drives back, visitors, those served and their offers, all in the day's book.
+        /// <paramref name="worths"/> follow the lot's cars in order.
         /// </summary>
-        public static DealerHour Hour(DealerState s, DealerYard y, in YardHour h, int now, int day, IList<int> worths, int financeLeastAtPrices, IList<MarketModel> models, IList<string> colours, int level)
+        public static DealerHour Hour(DealerState s, DealerYard y, in YardHour h, int now, int day, IList<int> worths, int financeLeastAtPrices,
+            IList<MarketModel> models, IList<string> colours, int level)
         {
             var r = new DealerHour();
             OfferMood mood = Mood(y, day);
@@ -322,7 +289,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     if (car != null)
                     {
-                        Repute(y, -DealerCatalogue.RepLapsed);   // (a buyer left without an answer)
+                        Repute(y, -DealerCatalogue.RepLapsed);   // a buyer left without an answer
                     }
                     y.Deals.RemoveAt(i);
                     continue;
@@ -364,15 +331,21 @@ namespace RealLifeOverhaul.Economy.Dealership
                 y.Deals.Add(Offer(s.Next(), car, now, h.Skill, y.Warranty, financeLeastAtPrices, models, colours, level, mood, ref dice));
                 r.Offers++;
             }
-            if (y.Today.Day != day)
+            if (y.Today.Day < day)
             {
-                y.Today.Clear(day);
+                CloseDay(s, y, day);   // a day left open over a time off goes into the reports, not away
             }
             y.Today.Visitors += r.Visitors;
             y.Today.Served += r.Served;
             y.Today.Lost += r.Lost;
             y.Today.Offers += r.Offers;
             return r;
+        }
+
+        /// <summary>Whether it is time to tell of offers waiting again; <paramref name="told"/> is int.MinValue while never told.</summary>
+        public static bool TellDue(int now, int told)
+        {
+            return (long)now - told >= DealerCatalogue.TellEvery;   // as a long: an int would run over from int.MinValue
         }
 
         /// <summary>A text's number that is the same in every run (a string's own hash is not).</summary>
@@ -389,10 +362,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>
-        /// The day is over for a yard: what stands at its close is read off (its lot, its arrears, its reputation:
-        /// <see cref="Snapshot"/>), and its book goes first into the days kept, the oldest out.
-        /// </summary>
+        /// <summary>A showroom's day closed: read off as it stands (<see cref="Snapshot"/>) and kept first among its days.</summary>
         public static void CloseDay(DealerState s, DealerYard y, int day)
         {
             if (y.Today.Day < 0 || y.Today.Day >= day)

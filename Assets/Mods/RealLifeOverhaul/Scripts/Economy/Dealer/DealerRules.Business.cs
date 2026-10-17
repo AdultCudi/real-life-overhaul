@@ -3,10 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// What a showroom's event, its reputation and its perks make of the buyers of an hour: worked out once an hour for
-    /// each showroom (<see cref="DealerRules.Mood"/>), and with no event and no perk exactly as the rules were before.
-    /// </summary>
+    /// <summary>What a showroom's event and the perks of its reputation make of an hour's buyers (<see cref="DealerRules.Mood"/>).</summary>
     public struct OfferMood
     {
         public int Promotion;               // points on the building's promotion, for the showroom's own count of visitors
@@ -20,7 +17,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public bool Extras;                 // the showroom sells extras
         public int Featured;                // the kind of car an event features (the car catalogue's kinds); 0 none
 
-        /// <summary>No event, no perk and no extras: the buyer as the rules made one before any of them.</summary>
+        /// <summary>No event, no perk and no extras.</summary>
         public static OfferMood Plain => new OfferMood { Convert = 1000 };
     }
 
@@ -29,8 +26,6 @@ namespace RealLifeOverhaul.Economy.Dealership
 
     public static partial class DealerRules
     {
-        // ---------------------------------------------------------------- advertising events
-
         /// <summary>Whether a showroom may book an event of this kind today: none running there, and the same kind rested since its last.</summary>
         public static EventRefusal CanBook(DealerYard y, int kind, int day)
         {
@@ -52,9 +47,16 @@ namespace RealLifeOverhaul.Economy.Dealership
             return last < 0 ? -1 : last + DealerCatalogue.EventRest;
         }
 
-        /// <summary>An event booked today: it runs from today for its days. A featured kind is kept only for the event that features one.</summary>
+        /// <summary>
+        /// An event booked today: it runs from today for its days. A featured kind is kept only for the event that features one.
+        /// One that ended while nothing closed it is closed first, so its kind rests.
+        /// </summary>
         public static void Book(DealerYard y, int kind, int feature, int day)
         {
+            if (EventOver(y, day))
+            {
+                EndEvent(y);
+            }
             y.Event = kind;
             y.Feature = kind == DealerCatalogue.FeaturedKind ? Math.Max(0, feature) : 0;
             y.EventFrom = day;
@@ -62,7 +64,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             Count(y, DealerCatalogue.TallyEvents, 1);
         }
 
-        /// <summary>True once a showroom's event has had its last day.</summary>
         public static bool EventOver(DealerYard y, int day)
         {
             return y.Event >= 0 && day > y.EventUntil;
@@ -139,8 +140,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return mask;
         }
 
-        // ---------------------------------------------------------------- reputation
-
         /// <summary>The step of a reputation: 0 for a new showroom up to the last of <see cref="DealerCatalogue.RepSteps"/>.</summary>
         public static int Step(int rep)
         {
@@ -166,8 +165,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             int rep = DealerCatalogue.RepSale + (condition >= DealerCatalogue.RepGoodAt ? DealerCatalogue.RepGoodCar : 0);
             return rep - Math.Min(DealerCatalogue.RepFaultsMost, FaultCount(faults) * DealerCatalogue.RepFault);
         }
-
-        // ---------------------------------------------------------------- missions
 
         /// <summary>Something a showroom has done, counted for its missions.</summary>
         public static void Count(DealerYard y, int tally, int n)
@@ -199,10 +196,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return (y.Done & (1 << mission)) != 0;
         }
 
-        /// <summary>
-        /// The missions a showroom has reached and not had: each marked done, its reputation given. The missions newly done
-        /// go into <paramref name="done"/>, in their order. Returns the reputation they gave together.
-        /// </summary>
+        /// <summary>The missions newly reached, marked done and rewarded, into <paramref name="done"/>. Returns the reputation given.</summary>
         public static int Missions(DealerYard y, List<int> done)
         {
             done?.Clear();
@@ -221,8 +215,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             return given;
         }
-
-        // ---------------------------------------------------------------- extras
 
         /// <summary>An extra's price on a car of this price, at least its least at today's prices.</summary>
         public static int ExtraPrice(int price, int extra, int leastAtPrices)
@@ -244,7 +236,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Share(extraPrice, DealerCatalogue.ExtraCost[extra]);
         }
 
-        /// <summary>The extras a buyer would take of those offered, a bit for each: by their take-up, the perks' and more for a keen buyer.</summary>
+        /// <summary>The extras a buyer would take, a bit for each: by their take-up, the perk's and more for a keen buyer.</summary>
         public static int DrawExtras(int profile, in OfferMood mood, ref DealerDice dice)
         {
             if (!mood.Extras)
@@ -272,15 +264,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             return n;
         }
 
-        // ---------------------------------------------------------------- the wholesaler
-
         /// <summary>A new car's price for a showroom: the wholesaler's, less the perk of a respected showroom's reputation.</summary>
         public static int WholesalePrice(int listed, int rep)
         {
             return Step(rep) >= DealerCatalogue.PerkWholesaleStep ? DealerCatalogue.Named(DealerCatalogue.Share(listed, 1000 - DealerCatalogue.PerkWholesale)) : listed;
         }
-
-        // ---------------------------------------------------------------- the workshop
 
         /// <summary>How a car's condition draws buyers (thousandths): a tired one is passed by, one from 950 up draws in full.</summary>
         public static int ConditionDraw(int condition)
@@ -288,11 +276,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return Line(DealerCatalogue.ConditionDrawAt, DealerCatalogue.ConditionDraw, condition);
         }
 
-        /// <summary>
-        /// What the workshop charges: the bay and a day's labour at the start's prices (read at today's by the caller), every
-        /// fault the car has put right at what preparing charges for one, and a share of what its missing condition takes
-        /// off its worth new.
-        /// </summary>
+        /// <summary>What the workshop charges: the base, each fault as preparing charges, and a share of what missing condition costs.</summary>
         public static int WorkshopCost(int worthNew, int condition, int faults, int baseAtPrices)
         {
             int missing = Math.Max(0, 1000 - condition - FaultCondition(faults));
@@ -326,8 +310,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return car.Condition < 1000 || car.Faults != 0;
         }
 
-        // ---------------------------------------------------------------- deliveries
-
         /// <summary>The hour a lot won at this hour arrives: a few days on, in the morning. The same lot always gives the same hour.</summary>
         public static int DeliveryDue(int seed, int lot, int now)
         {
@@ -336,7 +318,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return day * 24 + DealerCatalogue.DeliveryHour;
         }
 
-        /// <summary>The deliveries due by this hour, in the order they were booked, into the list given (none taken off: the caller settles each).</summary>
+        /// <summary>The deliveries due by this hour, in the order they were booked, into the list given; the caller settles each.</summary>
         public static void Due(DealerState s, int now, List<DealerDelivery> into)
         {
             into.Clear();
@@ -349,12 +331,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the day's figures
-
-        /// <summary>
-        /// What is read off a showroom as it stands (for a day as it closes, or today so far): the cars on its lot and
-        /// their days there, what is owed on its finance plans that are behind, and its reputation.
-        /// </summary>
+        /// <summary>What is read off a showroom as it stands: its cars and their days, its plans' arrears and its reputation.</summary>
         public static void Snapshot(DealerState s, DealerYard y, int day, DealerBook into)
         {
             into.Cars = y.Cars.Count;

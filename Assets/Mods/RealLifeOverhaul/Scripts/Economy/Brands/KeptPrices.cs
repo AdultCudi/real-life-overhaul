@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Economy.Brands
         Moved = 3     // not what was written: somebody else has changed it since
     }
 
-    /// <summary>What the mod last wrote at one kept shop, product by product: how a price that something else has moved is found. Kept for the session, not saved.</summary>
+    /// <summary>What the mod last wrote at one kept shop, product by product, so that a price moved by something else is found. Not saved.</summary>
     public sealed class KeptBook
     {
         public readonly Dictionary<string, float> Written = new Dictionary<string, float>(24, StringComparer.Ordinal);
@@ -20,25 +20,8 @@ namespace RealLifeOverhaul.Economy.Brands
     }
 
     /// <summary>
-    /// Prices kept for a franchise or a brand, by rule. Game-free and whole numbers where it can be: shares are in
-    /// thousandths of the game's own market price for a product (Item.DefaultMarketPrice), which is what a city chain
-    /// judges a shop's prices against (<see cref="FranchiseRules.ChainBreach"/>: the mean of the shop's prices against
-    /// it must lie inside the chain's range). A kept price is put inside the range product by product, so the mean is
-    /// inside it whatever the shop sells.
-    ///
-    ///   a chain's price   what the district bears for the product (the game's own price index for the neighbourhood
-    ///                     and its monopoly allowance, times what the city's economy says the district's incomes and
-    ///                     spending bear), up to <see cref="BrandCatalogue.BearsOver"/> over it, where the city's economy
-    ///                     takes no customers for prices; a little lower where the game's demand for it in the
-    ///                     district is thin; never over the highest price the game's own pricing manager would set
-    ///                     there; not under the wholesale price and a tenth where the range allows; and then inside
-    ///                     the chain's range, <see cref="BrandCatalogue.ChainPriceMargin"/> in from each end, so that
-    ///                     rounding to the cent never takes it out.
-    ///   a member's price  the flagship's price for the product, times the district's adjustment when the brand's
-    ///                     owner asks for one: what the member's district bears against the flagship's, kept within
-    ///                     <see cref="BrandCatalogue.LocalBand"/> either way.
-    ///
-    /// COST: a few integer operations a product; nothing allocated.
+    /// Prices kept for a chain or a brand, by rule; game-free. Shares are thousandths of the game's market price. A chain's
+    /// shop is kept inside the range product by product, so its mean is inside whatever it sells.
     /// </summary>
     public static class KeptPrices
     {
@@ -59,7 +42,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandCatalogue.ChainPriceMost[chain] - BrandCatalogue.ChainPriceMargin;
         }
 
-        /// <summary>What a district bears for a product, thousandths of the market price: the game's price index for it (thousandths), its monopoly allowance where the player is the only seller, and what the city's economy says its customers bear (thousandths).</summary>
+        /// <summary>What a district bears for a product, thousandths of the market price: its price index and monopoly allowance times what its customers bear.</summary>
         public static int Bears(int index, int tolerance, bool monopoly)
         {
             if (index <= 0)
@@ -71,10 +54,9 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
-        /// The share of the market price a chain's shop is kept at for one product, thousandths: see the class summary.
-        /// <paramref name="bears"/> 0 for a district with nothing to judge by (then the middle of the range is aimed at);
-        /// <paramref name="demand"/> the game's demand for it there, 0 to 100, or -1 for a product without one;
-        /// <paramref name="ceiling"/> and <paramref name="cost"/> 0 for none.
+        /// A chain's shop's share of the market price for one product, thousandths: a little over what the district bears,
+        /// lower where demand is thin, within the pricing manager's ceiling and the wholesale price, inside the chain's
+        /// range. <paramref name="bears"/> 0 aims at the middle; <paramref name="demand"/> -1, <paramref name="ceiling"/> or <paramref name="cost"/> 0 for none.
         /// </summary>
         public static int ChainTarget(int chain, int bears, int demand, int ceiling, int cost)
         {
@@ -95,7 +77,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return BrandCatalogue.Clamp(want, least, most);
         }
 
-        /// <summary>The district's adjustment for a member shop, thousandths of the flagship's price: 1000 unless the owner asks for one, and then what the member's district bears against the flagship's, within the band.</summary>
+        /// <summary>A member shop's district adjustment, thousandths of the flagship's price: 1000 unless asked for, else within the band.</summary>
         public static int LocalFactor(bool local, int here, int flagship)
         {
             if (!local || here <= 0 || flagship <= 0)
@@ -115,11 +97,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return (float)(Math.Round(basis * (double)thousandths / 10.0, MidpointRounding.AwayFromZero) / 100.0);
         }
 
-        /// <summary>
-        /// A chain's shop's price for a product, in whole cents, at the share given and never outside the chain's own
-        /// range for it: the cent is rounded towards the inside of the range where the share's own cent would fall
-        /// outside. 0 for a product without a market price.
-        /// </summary>
+        /// <summary>A chain's shop's price in whole cents at the share given, rounded towards the inside of the range. 0 without a market price.</summary>
         public static float ChainPrice(float market, int target, int chain)
         {
             if (market <= 0f)
@@ -132,12 +110,11 @@ namespace RealLifeOverhaul.Economy.Brands
             double price = AtShare(market, target);
             if (low > high)
             {
-                return (float)(market * (BrandCatalogue.ChainPriceLeast[chain] + BrandCatalogue.ChainPriceMost[chain]) / 2000.0);   // (a product under a cent: no whole cent fits)
+                return (float)(market * (BrandCatalogue.ChainPriceLeast[chain] + BrandCatalogue.ChainPriceMost[chain]) / 2000.0);   // no whole cent fits
             }
             return (float)Math.Max(low, Math.Min(high, price));
         }
 
-        /// <summary>True for a price inside a chain's range for its market price.</summary>
         public static bool Inside(float price, float market, int chain)
         {
             if (market <= 0f)
@@ -153,7 +130,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public static PriceLook Look(KeptBook book, string item, float now, float want)
         {
             float written;
-            if (book == null || item == null || !book.Written.TryGetValue(item, out written))
+            if (!book.Written.TryGetValue(item, out written))
             {
                 return PriceLook.New;
             }
@@ -164,7 +141,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return Math.Abs(now - want) >= Cent ? PriceLook.Due : PriceLook.Same;
         }
 
-        /// <summary>The worse of two looks: one moved price makes the shop's look a moved one.</summary>
+        /// <summary>The worse of two looks: one moved price makes the shop's look moved.</summary>
         public static PriceLook Worse(PriceLook a, PriceLook b)
         {
             return (int)a >= (int)b ? a : b;
@@ -173,10 +150,7 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>A price has been written: it is what the next look compares with.</summary>
         public static void Wrote(KeptBook book, string item, float price)
         {
-            if (book != null && item != null)
-            {
-                book.Written[item] = price;
-            }
+            book.Written[item] = price;
         }
     }
 }

@@ -2,12 +2,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Reports tab: on the right, the chart of a figure's days for one showroom or all of them
-    /// (<see cref="DealerReportPage"/>); in the white box, the sums of the last week and of every day kept: cars sold and
-    /// their prices, the margin and the extras', the money spent on events and the workshop, visitors and the share who
-    /// bought, the lot as it stands and what is owed on finance that is behind. Worked out when the tab is written.
-    /// </summary>
+    /// <summary>The Reports tab: the chart (<see cref="DealerReportPage"/>), and the sums of the week and of every day kept.</summary>
     public sealed partial class DealerApp
     {
         private DealerReportPage _report;

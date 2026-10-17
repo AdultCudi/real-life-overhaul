@@ -4,12 +4,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// What the Car Showroom's floor needs of the showroom (Floor/): the bays the player chose for its cars, kept in the
-    /// save under a line of their own (Floor/ShowroomBays) and used by every layout of a lot (DealerGame.Park); the hour
-    /// just worked, handed to the floor of the showroom the player stands in so that its visitors follow it; and which
-    /// showroom that is. Nothing here changes how an hour is worked.
-    /// </summary>
+    /// <summary>What the showroom's floor needs of the director: the chosen bays, the hour just worked and the showroom the player is in.</summary>
     public sealed partial class DealerDirector
     {
         private struct HeardHour
@@ -22,7 +17,6 @@ namespace RealLifeOverhaul.Economy.Dealership
         private readonly Dictionary<string, HeardHour> _heard = new Dictionary<string, HeardHour>(StringComparer.Ordinal);
         private DealerYard _floorYard;      // the showroom the floor was last told the player stands in
 
-        /// <summary>The bays the player chose for the showrooms' cars.</summary>
         internal ShowroomBays Bays => _bays;
 
         /// <summary>The player's showroom they stand in now; null if none (or the feature is not running).</summary>
@@ -30,8 +24,6 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             return _running && _state != null && _laidInside != null ? _state.Yard(_laidInside) : null;
         }
-
-        // ---------------------------------------------------------------- the save
 
         private void ReadBays(GameInstance save)
         {
@@ -42,8 +34,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (!ShowroomBayStore.Read(text, _bays, out int version))
             {
-                SaveLines.Unreadable(save.modData, ShowroomBayStore.Key, "it could not be read");   // (put back as it was read at every save: Core/SaveLines)
-                Logger?.Warn("Car Showroom: the save's line of chosen bays could not be read (" + ShowroomBayStore.Key + "); every car stands where the showroom puts it, and the line is kept in the save as it is.");
+                SaveLines.Unreadable(save.modData, ShowroomBayStore.Key, "it could not be read");   // put back as it was read at every save
+                Logger?.Warn("Car Showroom: the save's line of chosen bays could not be read (" + ShowroomBayStore.Key
+                             + "); every car stands where the showroom puts it, and the line is kept in the save as it is.");
                 return;
             }
             if (version > ShowroomBayStore.Version)
@@ -66,12 +59,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the bays
-
         /// <summary>
-        /// The player puts a car of the showroom they stand in on a bay, the way round they chose: the car standing there
-        /// takes the car's old bay, and the choice is kept. Every car of the lot is then put on its bay again. False, with
-        /// the game's notice, if it cannot be.
+        /// The player puts a car on a bay, turned or not, swapping with the car there; the choice is kept. False, with a notice, if it
+        /// cannot be.
         /// </summary>
         public bool PutOnBay(int carId, int bay, bool turned)
         {
@@ -132,10 +122,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the floor
-
         // The floor told which showroom the player stands in: when it changes, or while the floor is not showing it (its
-        // option was off, or the lot was not laid out yet). The floor itself remembers a showroom it cannot show.
+        // option was off, or the lot was not laid out yet).
         private void TellFloor(DealerYard y)
         {
             ShowroomFloor floor = ShowroomFloor.Instance;
@@ -158,12 +146,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>
-        /// What an hour of a showroom brings its floor: its visitors, how many were served, whether a salesperson is on
-        /// shift, and the cars offers were made on in it (their places in the lot's list). The hour as worked if it has
-        /// been; before the first hour the showroom works while the player is in it, what it should bring, read from the
-        /// game as the hour is but worked out without changing anything.
-        /// </summary>
+        /// <summary>What an hour brings the floor: visitors, served, staffed, the cars offered on; read without working it if not yet worked.</summary>
         internal void FloorHour(DealerYard y, int hour, out int visitors, out int served, out bool staffed, List<int> offerCars)
         {
             FloorOffers(y, hour, offerCars);

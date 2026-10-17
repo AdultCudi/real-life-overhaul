@@ -4,9 +4,9 @@ The property business: buying, letting, improving and selling buildings, an esta
 
 ## Read first
 
-- `EstateDirector.cs`: keeps it going, and every effect and how it is undone.
+- `EstateDirector.cs`: keeps it going: the second, the hour, the day and the save.
 - `EstateRules.cs`: the rules (game-free).
-- `EstateGame.cs`: the game's members it reads and writes.
+- `EstateGame.cs`: the game's members it reads and writes, and what is put back when it stops.
 
 ## Documentation
 

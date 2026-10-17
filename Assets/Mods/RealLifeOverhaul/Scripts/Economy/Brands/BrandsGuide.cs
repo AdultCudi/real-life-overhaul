@@ -5,16 +5,14 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The figures the Guide's page "Brands and franchises" prints: every {name} in its text is filled from
-    /// <see cref="BrandCatalogue"/> here, so the page can never say anything the rules do not do. Called once, when
-    /// the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The figures the Guide's page "Brands and franchises" prints, from the catalogue and the rules, worked out when it opens.</summary>
     public static class BrandsGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        private const int GuideShops = 3, GuideCustomers = 100, GuideStandards = 75, GuideDays = 20;   // the example the page works through: three busy shops with good standards, a new brand, twenty days
-        private const int SpreadDistricts = 3, SpreadDays = 40;   // the second example: the same three shops, one in each of three districts, forty days
+
+        // The page's examples: three busy shops with good standards for twenty days, then one in each of three districts for forty.
+        private const int GuideShops = 3, GuideCustomers = 100, GuideStandards = 75, GuideDays = 20;
+        private const int SpreadDistricts = 3, SpreadDays = 40;
 
         public static void AddFacts(Feature f)
         {
@@ -68,14 +66,14 @@ namespace RealLifeOverhaul.Economy.Brands
                 .Fact("br_royalties", () => Choices(BrandCatalogue.RoyaltyBp, v => Hundredths(v) + "%"))
                 .Fact("br_levies", () => Choices(BrandCatalogue.LevyBp, v => Hundredths(v) + "%"))
                 .Fact("br_lengths", () => Choices(BrandCatalogue.LengthYears, Whole))
-                .Fact("br_support_base", () => Guide.Money(CompanyCatalogue.AtPrices(BrandCatalogue.SupportBase, Prices.Level)))
+                .Fact("br_support_base", () => Guide.Money(CompanyCatalogue.AtPrices(BrandCatalogue.SupportBase, PriceRules.Start)))
                 .Fact("br_support_share", () => Hundredths(BrandCatalogue.SupportBp))
-                .Fact("br_fund_idle", () => Guide.Money(CompanyCatalogue.AtPrices(BrandCatalogue.FundIdleMost, Prices.Level)))
-                .Fact("br_inspector", () => Guide.Money(FranchiseRules.InspectorFee(Prices.Level)))
+                .Fact("br_fund_idle", () => Guide.Money(CompanyCatalogue.AtPrices(BrandCatalogue.FundIdleMost, PriceRules.Start)))
+                .Fact("br_inspector", () => Guide.Money(FranchiseRules.InspectorFee(PriceRules.Start)))
                 .Fact("br_inspect_due", () => Whole(BrandCatalogue.InspectDueDays))
                 .Fact("br_fresh", () => Whole(BrandCatalogue.FreshDays))
                 .Fact("br_warn_days", () => Whole(BrandCatalogue.WarnDays))
-                .Fact("br_retrain", () => Guide.Money(FranchiseRules.RetrainFee(Prices.Level)))
+                .Fact("br_retrain", () => Guide.Money(FranchiseRules.RetrainFee(PriceRules.Start)))
                 .Fact("br_cause", () => Whole(BrandCatalogue.CauseWarnings))
                 .Fact("br_comp_share", () => Tenths(BrandCatalogue.CompensationLeastShare))
                 .Fact("br_unfair", () => Hundredths(BrandCatalogue.UnfairLoss))
@@ -129,7 +127,6 @@ namespace RealLifeOverhaul.Economy.Brands
                 .Replace("{fire}", Hundredths(BrandCatalogue.ScandalLoss[(int)Scandal.Fire]));
         }
 
-        // One line per city chain, from the tables the rules themselves read.
         private static string Chains()
         {
             var text = new StringBuilder();

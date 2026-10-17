@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
-using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
@@ -11,35 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// The car dealership: a business type of the mod's own (DealerType) that the player founds in a retail building and
-    /// runs with the game's own staff, hours and money. Its stock is real cars of the game's on the lot inside; it buys
-    /// them new from the wholesaler, from private owners (an inspection first, if the player wants one, and a haggle) and
-    /// at the trade auction against the other dealers of the room, and takes customers' cars in part exchange; it sells
-    /// them to customers whose number comes from the game's own customer count for the building, looked after by the
-    /// salespeople on shift, who make offers the staff close or the player answers; and it sells on its own finance and
-    /// with warranties. See DealerCatalogue for what it makes and what bounds it, and the Dealership app (DealerApp).
-    ///
-    /// This class keeps it going. It has no Update and no timer of its own: once a second the credit side's timer calls
-    /// <see cref="EachSecond"/> (the save is waited for, the option looked at, the app installed, the game's event for
-    /// entering a building kept, and, while the player stands in one of the dealerships, whether its lot is laid out: one
-    /// comparison), and the credit side's own handlers of the game's hour and day call <see cref="OnHour"/> and
-    /// <see cref="OnDay"/> (EconomyDirector.AfterHour, AfterDay).
-    ///
-    ///   the hour   the market's morning on a new day, an hour of the trade auction's room, and for each dealership one
-    ///              reading of the game (its hours, its building's customers and promotion, its staff on shift: one pass
-    ///              over the staff) and DealerRules.Hour; then the staff take the customers who asked out on their test
-    ///              drives and close what reaches the dealership's floor
-    ///   the day    each finance plan whose week has come, each warranty's day, and the dealerships' books
-    ///   entering   the dealership the player walks into has its lot laid out the first time and its cars held still on
-    ///              their places (DealerGame.Park)
-    ///   the save   the state is written under its own key; the cars themselves are the game's vehicles
-    ///
-    /// EVERY EFFECT AND HOW IT IS UNDONE
-    ///   cars         the game's vehicles at the dealership's address. Switched off, they stay where they are, still the
-    ///                dealership's (Dealerships.Stock), and trading resumes when it is switched on again
-    ///   money        the game's own transactions at the dealership's address; true sales and purchases, and they stay
-    ///
-    /// A fault switches the feature off for the session with one line; the game's hour and day are left alone.
+    /// The Car Showroom, a business type of the mod's own (<see cref="DealerType"/>) run with the game's staff, hours and money,
+    /// its stock real cars on the lot inside. This owns its state. Nothing per frame: the credit side's timer calls
+    /// <see cref="EachSecond"/> and its hour and day handlers call OnHour and OnDay. A fault switches it off for the session.
     /// </summary>
     public sealed partial class DealerDirector : MonoBehaviour
     {
@@ -69,7 +41,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         private PhoneApp _app;
         private Action _second, _onSave, _onHour, _onDay;
         private Action<Address> _onEnter, _enterSeen;
-        private string _laidInside;         // the dealership whose lot was last seen to while the player stood in it
+        private string _laidInside;         // the showroom whose lot was last seen to while the player stood in it
 
         public bool Running => _running;
 
@@ -91,13 +63,12 @@ namespace RealLifeOverhaul.Economy.Dealership
         private void Awake()
         {
             Instance = this;
-            DealerGame.Logger = Logger;
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
             _onEnter = Guard.Wrap<Address>(OnEnter);
-            EconomyDirector.Follow(StartSeats.Dealer, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
+            EconomyDirector.Follow(StartSeats.Dealer, _second);   // its first second after a load has a frame of its own (Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
             DealerType.Dress();
@@ -127,12 +98,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             Instance = null;
         }
 
-        // ---------------------------------------------------------------- once a second (the credit side's timer)
-
         private static readonly int HotSecond = HotSpots.Slot("Economy: DealerDirector.Second");
         private void EachSecond()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSecond);
             if (_broken)
             {
                 return;
@@ -175,7 +144,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             Inside();
         }
 
-        // While the player stands in one of the dealerships: its lot laid out once. One comparison a second otherwise.
+        // While the player stands in one of the showrooms: its lot laid out once. One comparison a second otherwise.
         private void Inside()
         {
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
@@ -205,8 +174,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             TellFloor(y);
         }
 
-        // ---------------------------------------------------------------- starting and stopping
-
         private void StartUp()
         {
             GameInstance save = Save;
@@ -231,18 +198,23 @@ namespace RealLifeOverhaul.Economy.Dealership
             DealerGame.Models(_models, _colours);
             int gone = ReadYards(), lost = Reconcile();
             int now = Now;
-            if (_state.LastHour < 0 || now - _state.LastHour > CatchUp || now < _state.LastHour)
+            bool gap = _state.LastHour < 0 || now - _state.LastHour > CatchUp || now < _state.LastHour;
+            if (gap)
             {
                 _state.LastHour = now;   // hours that went by without the feature are not worked through
             }
             if (_state.MarketDay != save.Day)
             {
                 DealerRules.Morning(_state, save.Day, _models, _colours, Prices.Level);
+                for (int y = 0; gap && y < _state.Yards.Count; y++)
+                {
+                    DealerRules.CloseDay(_state, _state.Yards[y], save.Day);   // the last day worked goes into the reports (hours worked through close their own)
+                }
             }
             RebuildIds();
-            Logger?.Info("Dealership: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + save.Day + ". " + _state.Yards.Count + " dealership(s), "
-                         + CarCount() + " car(s) in stock, " + _state.Deliveries.Count + " on their way, " + _models.Count + " kind(s) of car on the market, " + _state.Plans.Count + " finance plan(s), "
-                         + _state.Covers.Count + " warranty(ies)"
+            Logger?.Info("Dealership: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + save.Day + ". "
+                         + _state.Yards.Count + " dealership(s), " + CarCount() + " car(s) in stock, " + _state.Deliveries.Count + " on their way, "
+                         + _models.Count + " kind(s) of car on the market, " + _state.Plans.Count + " finance plan(s), " + _state.Covers.Count + " warranty(ies)"
                          + (gone > 0 ? "; " + gone + " dealership(s) no longer the player's, whose cars stay where they stand" : string.Empty)
                          + (lost > 0 ? "; " + lost + " car(s) the save no longer has taken off the stock" : string.Empty) + ".");
             if (_models.Count == 0)
@@ -295,7 +267,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Logger?.Error(second);
                 _running = false;
             }
-            Logger?.Warn("Dealership: switched off for this session after an error in " + where + ". The cars stay on their lots; the game's hour and day and the rest of the economy are not affected.");
+            Logger?.Warn("Dealership: switched off for this session after an error in " + where
+                         + ". The cars stay on their lots; the game's hour and day and the rest of the economy are not affected.");
         }
 
         private void Install()
@@ -316,7 +289,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Dealership: the game's phone is not built as this version expects, so the Dealership app is left off. The dealerships go on trading; their staff close what reaches their floor.");
+                    Logger?.Warn("Dealership: the game's phone is not built as this version expects, so the Dealership app is left off. "
+                                 + "The dealerships go on trading; their staff close what reaches their floor.");
                 }
                 return;
             }
@@ -337,12 +311,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             return null;
         }
 
-        // ---------------------------------------------------------------- the dealerships
-
         /// <summary>
-        /// The state's dealerships made the player's own as they are now: one for each of their dealerships, a new one with
-        /// the dealership's name, one whose business is no longer theirs dropped (its cars, if any are left, stay where
-        /// they stand). Returns how many were dropped.
+        /// The showrooms brought in line with the player's dealerships: new ones added, ones no longer theirs dropped (their cars stay).
+        /// Returns how many were dropped.
         /// </summary>
         private int ReadYards()
         {
@@ -432,7 +403,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             for (int r = 0; r < _regs.Count; r++)
             {
-                if (_regs[r] != null && DealerGame.Place(_regs[r]) == y.Place)
+                if (DealerGame.Place(_regs[r]) == y.Place)
                 {
                     return _regs[r];
                 }
@@ -450,8 +421,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
             }
         }
-
-        // ---------------------------------------------------------------- entering a dealership
 
         private static readonly int HotOnEnter = HotSpots.Slot("Economy: DealerDirector.OnEnter");
         private void OnEnter(Address address)
@@ -483,7 +452,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // The dealership the player stands in: its lot laid out if it has none, and its cars on their places, held still.
+        // The showroom the player stands in: its lot laid out if it has none, and its cars on their places, held still.
         private void SeeTo(DealerYard y)
         {
             bool laid = false;
@@ -493,10 +462,24 @@ namespace RealLifeOverhaul.Economy.Dealership
                 if (laid)
                 {
                     Logger?.Info("Dealership: the lot of '" + y.Name + "' is laid out with " + y.Spots.Count + " place(s).");
-                    Tell(NotificationType.Info, "reallife_dealer_note_laid", new Dictionary<string, string>(2) { { "name", y.Name }, { "places", y.Spots.Count.ToString() } }, TabLots, LotRow(y));
+                    Tell(NotificationType.Info, "reallife_dealer_note_laid", new Dictionary<string, string>(2) { { "name", y.Name }, { "places", y.Spots.Count.ToString() } },
+                        TabLots, LotRow(y));
                 }
             }
             int placed = DealerGame.Park(y, _lost, _bays);
+            DropLost(y);
+            if (Verbose)
+            {
+                Logger?.Info("Dealership check (entered '" + y.Name + "'): " + (laid ? "the lot laid out, " : string.Empty) + y.Spots.Count + " place(s), "
+                             + placed + " of " + y.Cars.Count + " car(s) held on their places"
+                             + (_lost.Count > 0 ? ", " + _lost.Count + " the save no longer has taken off" : string.Empty) + ": " + (placed == y.Cars.Count ? "PASS" : "FAIL") + ".");
+            }
+            Changed();
+        }
+
+        // The cars Park found the save no longer has, taken off the stock with their deals.
+        private void DropLost(DealerYard y)
+        {
             for (int i = 0; i < _lost.Count; i++)
             {
                 RemoveDeals(y, _lost[i].Id);
@@ -506,111 +489,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 RebuildIds();
             }
-            if (Verbose)
-            {
-                Logger?.Info("Dealership check (entered '" + y.Name + "'): " + (laid ? "the lot laid out, " : string.Empty) + y.Spots.Count + " place(s), " + placed + " of " + y.Cars.Count + " car(s) held on their places"
-                             + (_lost.Count > 0 ? ", " + _lost.Count + " the save no longer has taken off" : string.Empty) + ": " + (placed == y.Cars.Count ? "PASS" : "FAIL") + ".");
-            }
-            Changed();
         }
 
         internal static string LotRow(DealerYard y) => "lot:" + y.Place;
-
-        // ---------------------------------------------------------------- the hour
-
-        private void OnHour()
-        {
-            if (!_running || _broken || Save == null)
-            {
-                return;
-            }
-            try
-            {
-                int now = Now;
-                if (now <= _state.LastHour)
-                {
-                    return;
-                }
-                float started = Time.realtimeSinceStartup;
-                if (now - _state.LastHour > CatchUp)
-                {
-                    _state.LastHour = now - 1;   // (a gap longer than the catch-up: only this hour is worked)
-                }
-                ReadYards();
-                int offers = 0, closed = 0, drives = 0;
-                for (int hour = _state.LastHour + 1; hour <= now; hour++)
-                {
-                    StepHour(hour, ref offers, ref closed, ref drives);
-                }
-                _state.LastHour = now;
-                Changed();
-                if (Verbose && (offers > 0 || closed > 0 || drives > 0))
-                {
-                    Logger?.Info("Dealership check (hour " + Save.Hour + " of day " + Save.Day + "): " + _state.Yards.Count + " dealership(s), " + offers + " offer(s) made, " + drives + " test drive(s), "
-                                 + closed + " deal(s) closed by the staff; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms: PASS");
-                }
-            }
-            catch (Exception e)
-            {
-                Fault("the hour", e);
-            }
-        }
-
-        private void StepHour(int now, ref int offers, ref int closed, ref int drives)
-        {
-            int day = now / 24, level = Prices.Level;
-            if (_state.MarketDay != day)
-            {
-                DealerRules.Morning(_state, day, _models, _colours, level);
-                for (int y = 0; y < _state.Yards.Count; y++)
-                {
-                    DealerRules.CloseDay(_state, _state.Yards[y], day);
-                }
-            }
-            Auction(now, level);
-            Arrivals(now);
-            int financeLeast = Prices.At(DealerCatalogue.FinanceLeast);
-            for (int i = 0; i < _state.Yards.Count; i++)
-            {
-                DealerYard y = _state.Yards[i];
-                BuildingRegistration reg = RegOf(y);
-                if (reg == null)
-                {
-                    continue;
-                }
-                WorkshopHour(y, now);
-                YardHour h = DealerGame.Hour(reg);
-                Worths(y, level);
-                DealerHour got = DealerRules.Hour(_state, y, h, now, day, _worths, financeLeast, _models, _colours, level);
-                offers += got.Offers;
-                Heard(y, now, got, h);   // (for the floor the player may be watching: DealerDirector.Floor)
-                if (h.Staff <= 0 || !h.Open)
-                {
-                    continue;
-                }
-                // The staff on shift: the customers who asked go out on their test drives, and what reaches the floor is closed.
-                for (int d = y.Deals.Count - 1; d >= 0 && d < y.Deals.Count; d--)
-                {
-                    DealerOffer deal = y.Deals[d];
-                    StockCar car = y.Car(deal.Car);
-                    if (car == null || deal.Stage != OfferStage.Open)
-                    {
-                        continue;
-                    }
-                    if (deal.WantsDrive && !deal.Drove)
-                    {
-                        DealerRules.TestDrive(deal, car, now, _state.Seed);
-                        DealerGame.Wear(car);
-                        drives++;
-                        continue;
-                    }
-                    if (DealerRules.StaffClose(deal, car, y.StaffFloor) && Close(y, reg, deal, deal.Offer, true))
-                    {
-                        closed++;
-                    }
-                }
-            }
-        }
 
         // The worths of a lot's cars, in the order of its cars.
         internal void Worths(DealerYard y, int level)
@@ -631,120 +512,6 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             return DealerRules.WorthOf(l, _models, Prices.Level);
         }
-
-        // ---------------------------------------------------------------- the day
-
-        private void OnDay()
-        {
-            if (!_running || _broken || Save == null)
-            {
-                return;
-            }
-            try
-            {
-                float started = Time.realtimeSinceStartup;
-                int day = Save.Day;
-                ReadYards();
-                int paid = 0, missed = 0, defaulted = 0, finished = 0, claims = 0, claimed = 0;
-                int economy = EconomyFactor();
-                for (int i = _state.Plans.Count - 1; i >= 0; i--)
-                {
-                    DealerPlan p = _state.Plans[i];
-                    while (p.Due <= day && i < _state.Plans.Count && _state.Plans[i] == p)
-                    {
-                        PlanWeek w = DealerRules.Week(p, _state.Seed, economy, out int got);
-                        DealerYard y = _state.Yard(p.Place);
-                        BuildingRegistration reg = y != null ? RegOf(y) : null;
-                        if (got > 0)
-                        {
-                            DealerGame.Give(got, DealerLines.FinanceKey, DealerGame.Named(reg), reg);
-                            paid += got;
-                            Book(y, got, 0, 0, 0);
-                        }
-                        if (w == PlanWeek.Missed)
-                        {
-                            missed++;
-                        }
-                        else if (w == PlanWeek.Defaulted)
-                        {
-                            defaulted++;
-                            int back = DealerRules.Recovery(p.Worth);
-                            DealerGame.Give(back, DealerLines.RecoveryKey, DealerGame.Named(reg), reg);
-                            Book(y, back, 0, 0, 0);
-                            Tell(NotificationType.Warning, "reallife_dealer_note_default", new Dictionary<string, string>(3)
-                                { { "customer", p.Customer }, { "car", DealerGame.CarName(p.Type) }, { "amount", DealerText.Money(back) } }, TabFinance, null);
-                            Repute(y, -DealerCatalogue.RepTakenBack);
-                            Logger?.Info("Dealership: " + p.Customer + " stopped paying for a " + p.Type + " with " + p.Owed + " still owed; the car was taken back and sold at the trade auction for " + back + ".");
-                            _state.Plans.RemoveAt(i);
-                        }
-                        else if (w == PlanWeek.PaidOff)
-                        {
-                            finished++;
-                            _state.Plans.RemoveAt(i);
-                        }
-                    }
-                }
-                int floor = Prices.At(DealerCatalogue.ClaimFloor), ceiling = Prices.At(DealerCatalogue.ClaimCeiling);
-                for (int i = _state.Covers.Count - 1; i >= 0; i--)
-                {
-                    DealerCover c = _state.Covers[i];
-                    if (day > c.Until || c.Claims >= DealerCatalogue.ClaimsMost)
-                    {
-                        _state.Covers.RemoveAt(i);
-                        continue;
-                    }
-                    int cost = DealerRules.Claim(c, day, _state.Seed, floor, ceiling);
-                    if (cost <= 0)
-                    {
-                        continue;
-                    }
-                    DealerYard y = _state.Yard(c.Place);
-                    BuildingRegistration reg = y != null ? RegOf(y) : null;
-                    DealerGame.Take(cost, DealerLines.ClaimKey, DealerGame.Named(reg), reg, true);
-                    Book(y, 0, 0, cost, 0);
-                    Repute(y, DealerCatalogue.RepClaim);   // (a promise kept)
-                    claims++;
-                    claimed += cost;
-                }
-                EndEvents(day);
-                Changed();
-                if (Verbose)
-                {
-                    Logger?.Info("Dealership check (day " + day + "): " + _state.Plans.Count + " finance plan(s): " + paid + " paid in, " + missed + " week(s) missed, " + defaulted + " car(s) taken back, " + finished
-                                 + " paid off; " + _state.Covers.Count + " warranty(ies): " + claims + " claim(s) of " + claimed + "; the economy at " + economy + " thousandths of the usual misses; "
-                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms: PASS");
-                }
-            }
-            catch (Exception e)
-            {
-                Fault("the day", e);
-            }
-        }
-
-        // How the city's economy moves the instalments missed (thousandths of the usual): more in a slowdown or a recession.
-        private static int EconomyFactor()
-        {
-            return DealerCatalogue.CycleMisses[DealerCatalogue.Clamp((int)CityEconomy.State, 0, DealerCatalogue.CycleMisses.Length - 1)];
-        }
-
-        /// <summary>A dealership's day book: money in, money spent on stock, claims paid, margin made.</summary>
-        internal void Book(DealerYard y, int takings, int bought, int claims, int margin)
-        {
-            if (y == null || Save == null)
-            {
-                return;
-            }
-            if (y.Today.Day != Save.Day)
-            {
-                DealerRules.CloseDay(_state, y, Save.Day);
-            }
-            y.Today.Takings += takings;
-            y.Today.Bought += bought;
-            y.Today.Claims += claims;
-            y.Today.Margin += margin;
-        }
-
-        // ---------------------------------------------------------------- the save
 
         private void OnSave()
         {
@@ -785,8 +552,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- what the player is told
-
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
             Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
@@ -801,7 +566,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>The app has been opened: the dealerships are read again, so what it shows is the game's as it is now.</summary>
+        /// <summary>The app has been opened: the showrooms are read again, so what it shows is the game's as it is now.</summary>
         public bool AppOpened()
         {
             if (!_running || _broken || Save == null)
@@ -829,7 +594,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return;
             }
             int waiting = Waiting();
-            if (_waiting >= 0 && waiting > _waiting && Now - _toldHour >= DealerCatalogue.TellEvery)
+            if (_waiting >= 0 && waiting > _waiting && DealerRules.TellDue(Now, _toldHour))
             {
                 _toldHour = Now;
                 Tell(NotificationType.Info, "reallife_dealer_note_offers", new Dictionary<string, string>(1) { { "count", waiting.ToString() } }, TabOffers, null);
@@ -839,7 +604,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             _view?.Changed();
         }
 
-        /// <summary>Offers that wait for the player: under the floor the staff close at, or with nobody on shift to close them.</summary>
+        /// <summary>The offers waiting for the player's answer, at every showroom.</summary>
         internal int Waiting()
         {
             int n = 0;
@@ -858,13 +623,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- for the save tools
-
+        /// <summary>For the save tools: what is under way settled, then the state written and the feature stood down.</summary>
         public void StopAll()
         {
             try
             {
-                Settle();   // (the workshop's cars finished, the cars on their way delivered or sold: nothing paid for stays in the line)
+                Settle();
                 StandDown("the save tools asked", true, true, false);
             }
             catch (Exception e)
@@ -873,6 +637,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
+        /// <summary>For the save tools: the save's line was removed, so the state is forgotten.</summary>
         public void Forget()
         {
             try

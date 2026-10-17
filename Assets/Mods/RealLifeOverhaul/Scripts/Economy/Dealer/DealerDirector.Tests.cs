@@ -4,18 +4,11 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The test tools of the dealership (the options page). Each puts one thing in place at once and opens the Dealership
-    /// app on it. The state as it was before the first test is kept, once, and "put the dealership back" restores it,
-    /// with the cars a test put on a lot taken off again.
-    ///
-    /// What a test cannot take back is said where it happens: a deal closed during a test pays the sale in for real, and
-    /// a car sold leaves the lot. Putting the dealership back restores the stock, offers, plans and warranties, not cash.
-    /// </summary>
+    /// <summary>The entries in Options > Tests. The state before the first is kept for "put the dealership back"; cash moved stays.</summary>
     public sealed partial class DealerDirector
     {
-        private const int TestCars = 3;
-        private const int TestHours = 8;
+        private const int TestCars = 3;     // new cars the stock test puts on a lot
+        private const int TestHours = 8;    // hours of customers the customers test works through
 
         private bool TestReady(string test)
         {
@@ -141,7 +134,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 for (int d = 0; d < y.Deals.Count; d++)
                 {
                     y.Deals[d].Made = now;
-                    y.Deals[d].Expires = now + DealerCatalogue.DealHours;   // (the hours were drawn as the morning's: the offers stand from now)
+                    y.Deals[d].Expires = now + DealerCatalogue.DealHours;   // the hours were worked as the morning's: the offers stand from now
                 }
                 TestDone(TestHours + " hours of customers at '" + y.Name + "': " + visitors + " visitor(s), " + offers + " offer(s) waiting for an answer", TabOffers, null);
             });
@@ -312,7 +305,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             TestGuard(test, () =>
             {
-                DealerState before = DealerStore.Read(_beforeTests, out int version);
+                DealerState before = DealerStore.Read(_beforeTests, out _);
                 if (before == null)
                 {
                     TestRefusals.TellKey(Logger, test, "reallife_dealer_test_nothing_back");

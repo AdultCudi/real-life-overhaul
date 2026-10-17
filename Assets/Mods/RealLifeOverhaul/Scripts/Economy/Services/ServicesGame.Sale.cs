@@ -24,31 +24,9 @@ namespace RealLifeOverhaul.Economy
     public enum SaleAfter { ToRent, Rival, Owned }
 
     /// <summary>
-    /// Everything selling a business reads from or does to the game.
-    ///
-    /// READ: a business's recent profit (the investors' own figures of it, Ventures: the game's daily statements),
-    /// its stock and furniture at the game's resale price (ItemHelper.GetSellingPrice), the deposit the landlord
-    /// holds, its staff, its type and district.
-    ///
-    /// DONE, when a sale completes, in the order the game itself would do it:
-    ///   the staff     with a buyer who keeps them, each is paid what they worked today and leaves the player's
-    ///                 employ (EmployeeInstance.PayWage, RemoveEmployee: what the game's "fire" does). Otherwise they
-    ///                 stay with the player, unassigned, as the game leaves the staff of a business that is shut
-    ///   the business  BusinessHelper.ShutdownBusiness: the game's own "shut down this business" (its schedule,
-    ///                 prices, campaigns, delivery contracts, logistics, headquarters plans, tasks; the staff taken
-    ///                 off their shifts)
-    ///   the lease     ended member by member exactly as the game's own "terminate contract" ends it
-    ///                 (BizManPresentation.OnTerminateContractConfirm, which is private to that screen and tied to
-    ///                 the business it is showing, so it cannot be called): the stock and furniture are taken out of
-    ///                 the building (they went with the business: the price includes them, so they are not paid
-    ///                 for a second time), the deposit comes back under the game's own transaction, the building is
-    ///                 no longer rented by the player and is free to rent, its map marker and the guiders are updated,
-    ///                 furniture and food deliveries to it are cancelled
-    ///   the buyer     where the game has one of its own businesses of that kind for a building of that size
-    ///                 (CompetitionHelper.GetBusinessDefaultsByType, BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet),
-    ///                 it is opened there by the game's own function for a rival's new business
-    ///                 (CompetitionHelper.StartNewCompetitorBusiness). Otherwise the building stays free to rent. A
-    ///                 building the player owns stays theirs and is not given a business.
+    /// What selling a business reads from and does to the game. A sale ends the business as the game would: the staff,
+    /// the game's shut-down and the lease (as BizManPresentation.OnTerminateContractConfirm, private to its screen); where
+    /// the game has a business of that kind for the building, it opens there as a rival's.
     /// </summary>
     internal static partial class ServicesGame
     {
@@ -58,18 +36,14 @@ namespace RealLifeOverhaul.Economy
         private static readonly List<ItemInstance> Items = new List<ItemInstance>(64);
         private static readonly List<EmployeeInstance> Staff = new List<EmployeeInstance>(16);
 
-        /// <summary>The player's businesses that can be sold: the ones that take money (the Finance app's own test).</summary>
+        /// <summary>The player's businesses that can be sold: those that take money (the Finance app's own test).</summary>
         public static void Sellable(List<BuildingRegistration> into)
         {
             Books.Businesses(into);
         }
 
-        public static bool IsSellable(BuildingRegistration reg)
-        {
-            return reg != null && Books.IsBusiness(reg);
-        }
+        public static bool IsSellable(BuildingRegistration reg) => reg != null && Books.IsBusiness(reg);
 
-        /// <summary>What a business's value is worked out from, as it stands now.</summary>
         public static SaleInputs Inputs(BuildingRegistration reg)
         {
             var i = new SaleInputs { Income = 100, Phase = Phase };
@@ -103,7 +77,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     catch (Exception)
                     {
-                        // an item whose worth cannot be read is counted as worth nothing
+                        // an item whose worth cannot be read counts as nothing
                     }
                 }
             }
@@ -121,11 +95,7 @@ namespace RealLifeOverhaul.Economy
             return count;
         }
 
-        /// <summary>
-        /// What stands in the way of a sale completing now. The game does not let a lease end while the player
-        /// stands in the building (BizManPresentation.TerminateContract); a vehicle kept at the building would be
-        /// sold with it, and a special gift lost, so the player moves those first.
-        /// </summary>
+        /// <summary>What stands in the way of a sale now: the game ends no lease with the player inside, and a vehicle or gift kept there would go too.</summary>
         public static SaleBlock Blocked(BuildingRegistration reg)
         {
             if (!IsSellable(reg) || reg.Address == null)
@@ -142,10 +112,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return SaleBlock.Inside;
             }
-            // An Empire Motors dealership's cars are its stock, which only that mod can sell or take back: a sale would leave
-            // them and its records of them behind (Core/EmpireMotors). Its only dealership's stock is its own wherever it stands.
-            // One of this mod's own dealerships: its cars are its stock too, sold or sent to the trade from the Dealership app first
-            // (Economy/Dealer): they cannot go with a sale.
+            // A dealership's cars are its stock and cannot go with a sale: Empire Motors' (all, while it has one) and this mod's own.
             bool dealership = EmpireMotors.IsDealership(reg), only = dealership && EmpireMotors.DealershipCount() == 1, own = Dealership.DealerType.Is(reg);
             List<VehicleInstance> vehicles = Save.VehicleInstances;
             for (int i = 0; vehicles != null && i < vehicles.Count; i++)
@@ -192,26 +159,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The day the player took a business on (BuildingRegistration.creationDay, written by AddToPlayer and when a business is started).</summary>
-        public static int Created(BuildingRegistration reg)
-        {
-            return reg != null ? reg.creationDay : -1;
-        }
+        /// <summary>The day the player took a business on (BuildingRegistration.creationDay).</summary>
+        public static int Created(BuildingRegistration reg) => reg != null ? reg.creationDay : -1;
 
-        /// <summary>
-        /// Ends the player's hold on a business and its building, as the summary above lists it. The money of the sale
-        /// is not moved here. Returns what became of the building; 'staffGone' is how many left with it, 'deposit'
-        /// what came back from the landlord, 'log' one line of what was done for Player.log.
-        /// </summary>
-        public static SaleAfter Complete(BuildingRegistration reg, bool keepsStaff, out int staffGone, out int deposit, out string log)
+        /// <summary>Ends the player's hold on a business and its building; the caller moves the sale's money. 'log' is a line for Player.log.</summary>
+        public static SaleAfter Complete(BuildingRegistration reg, bool keepsStaff, out int deposit, out string log)
         {
             Address address = reg.Address;
             Building building = reg.BuildingCached;
             string name = reg.BusinessName, type = reg.businessTypeName;
             bool owned = reg.BuildingOwnedByPlayer;
-            staffGone = 0;
+            int staffGone = 0;
 
-            // The staff. (The list is copied: leaving changes the game's own.)
+            // Staff is a copy: somebody leaving changes the game's own list.
             EmployeeHelper.GetEmployeeInstances(new EmployeeInstancesQueryInfo { withAssignedAddress = address }, Staff);
             int staff = Staff.Count;
             for (int i = 0; keepsStaff && i < Staff.Count; i++)
@@ -226,7 +186,7 @@ namespace RealLifeOverhaul.Economy
             }
             Staff.Clear();
 
-            // The business: the game's own shut-down, and the logo it made for the name (as BizManSettings.ShutdownBusiness does).
+            // The game's own shut-down, and the logo it made for the name (as BizManSettings.ShutdownBusiness).
             try
             {
                 string logo = LogoHelper.GetPlayerBusinessLogoPath(name);
@@ -241,7 +201,7 @@ namespace RealLifeOverhaul.Economy
             }
             BusinessHelper.ShutdownBusiness(reg);
 
-            // The lease, as BizManPresentation.OnTerminateContractConfirm ends one.
+            // The lease, as OnTerminateContractConfirm ends one; the stock and furniture go with the business, whose price includes them.
             Items.Clear();
             Items.AddRange(reg.itemInstances.Values);
             int items = Items.Count;
@@ -269,10 +229,9 @@ namespace RealLifeOverhaul.Economy
             }
             Save.FurnitureDeliveryContracts.RemoveAll(x => x.toAddress == address);
             FoodDeliveryHelper.RemoveContractsForAddress(address);
-            // (The game's code also looks whether the player still has a home, which a business never is: left out.)
-            reg.temporarilyClosed = false;   // a closure was the player's own: it does not go on to whoever has the building next (written as a field: the game's TemporarilyClose is for a business of the player's and pays its licensing fees)
+            // The game's own also checks that the player still has a home, which a business never is.
+            reg.temporarilyClosed = false;   // the player's closure does not pass to the next tenant; TemporarilyClose would pay licensing fees
 
-            // The buyer moves in, where the game has a business of that kind for a building of this size.
             SaleAfter after = owned ? SaleAfter.Owned : SaleAfter.ToRent;
             string opened = null;
             if (!owned && building != null)
@@ -288,7 +247,6 @@ namespace RealLifeOverhaul.Economy
                 }
             }
 
-            // What shows the building: its marker on the map, the guiders, and whoever listens for a change of registration.
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
@@ -309,13 +267,16 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Warn("Services: the map could not be told of the sale at " + address.ToFormattedString() + " (" + e.Message + "); it shows the change after the next load.");
             }
-            log = "'" + name + "' at " + address.ToFormattedString() + ": " + staff + " on the staff, " + (keepsStaff ? staffGone + " left with the business (paid for today, then off the payroll)" : "all unassigned and still employed")
-                  + "; the game's own shut-down run; " + items + " item(s) of stock and furniture taken out of the building; deposit " + deposit + " back under the game's own transaction; the building "
-                  + (after == SaleAfter.Rival ? "is now '" + opened + "', a business of the game's own" : after == SaleAfter.Owned ? "stays the player's property, with no business in it" : "is free to rent");
+            log = "'" + name + "' at " + address.ToFormattedString() + ": " + staff + " on the staff, "
+                  + (keepsStaff ? staffGone + " left with the business (paid for today, then off the payroll)" : "all unassigned and still employed")
+                  + "; the game's own shut-down run; " + items + " item(s) of stock and furniture taken out of the building; deposit " + deposit
+                  + " back under the game's own transaction; the building "
+                  + (after == SaleAfter.Rival ? "is now '" + opened + "', a business of the game's own"
+                      : after == SaleAfter.Owned ? "stays the player's property, with no business in it" : "is free to rent");
             return after;
         }
 
-        /// <summary>The name of the business of the game's own that would move in after a sale; null if the building would be free to rent or stay the player's. Changes nothing.</summary>
+        /// <summary>The name of the game's own business that would move in after a sale; null if the building would be free to rent or stay the player's.</summary>
         public static string BuyerFor(BuildingRegistration reg)
         {
             try
@@ -330,7 +291,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // One of the game's own businesses of the same kind whose layout is made for a building of this size (the game's own test of a fit: CompetitionHelper.GetBuildingMatchingLayout); null if there is none.
+        // A business of the game's own of this kind with a layout for a building of this size (CompetitionHelper.GetBuildingMatchingLayout).
         private static AiBusinessDefault Default(BuildingRegistration reg, Building building, string type)
         {
             if (string.IsNullOrEmpty(type) || type == EmptyType || RivalsHelper.IgnoredAddresses.Contains(reg.Address))
@@ -350,7 +311,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        // That business, opened as the game opens a rival's new business. Null, and nothing changed, if there is none or no owner for it.
+        // That business, opened as the game opens a rival's new business; null, and nothing changed, if there is none or no owner for it.
         private static string Reopen(BuildingRegistration reg, Building building, string type)
         {
             AiBusinessDefault def = Default(reg, building, type);

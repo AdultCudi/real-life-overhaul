@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
@@ -9,25 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What the Services app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance and
-    /// Company are, with the kit's table (GameUi.DataTable, the game's own BaTable). Four tabs over the table on the
-    /// right, and on the left the white box with the one thing picked:
-    ///
-    ///   Cleaning     every business on the round with what it needs, what it gets, its cleanliness and its next
-    ///                visit, and the player's other shops to add; the box: the service's cost a week against one
-    ///                cleaner per shop, the van, and for a business its visiting pattern
-    ///   Crew         every cleaner the player employs; pick one to put them on the crew or take them off
-    ///   Contracts    offers from other businesses, and the contracts that run
-    ///   Sell         offers for businesses on the market, and every business with what it is worth; pick one for
-    ///                its value line by line, an asking price, the market and a quick sale
-    ///
-    /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, with a
-    /// Back button to the tab's own page. Each tab's page is in its own file (ServicesApp.Cleaning.cs, ServicesApp.Sale.cs).
-    ///
-    /// Every table is declared once, in ServicesApp.Tables.cs, and is sorted, filtered and summed by the kit.
-    ///
-    /// Everything on it is the game's. Nothing runs while the app is closed: the rows and the page are made when it
-    /// opens, when a tab or a row is picked, and when the director says something has changed.
+    /// The Services app in the game's frame (GameUi.AppShell): four tabs over a table, and a box with the one thing picked.
+    /// Nothing runs while it is closed: a page is written when it opens, on a pick, or when the director says so.
     /// </summary>
     public sealed partial class ServicesApp
     {
@@ -41,7 +23,7 @@ namespace RealLifeOverhaul.Economy
 
         private AppShell _shell;
         private DataTable _table;
-        private TableSpec _spec = ServicesTables.Off;   // the table the page being written shows
+        private TableSpec _spec = ServicesTables.Off;   // the table of the page being written
         private int _tab, _wanted = -1;
         private string _pick, _wantPick;   // what is picked: a row's id ("cli:...", "add:...", "emp:...", "offer:...", "con:...", "sell:...", "bid:...")
         private bool _ready;               // the director has read the game for this opening
@@ -51,8 +33,6 @@ namespace RealLifeOverhaul.Economy
         {
             _director = director;
         }
-
-        // ---------------------------------------------------------------- building it from the game's parts
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
@@ -76,11 +56,9 @@ namespace RealLifeOverhaul.Economy
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening and the tabs
-
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification was clicked, or another app's button).</summary>
+        /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification, or another app's button).</summary>
         public void Want(int tab, string pick)
         {
             _wanted = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
@@ -143,7 +121,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (row.Id == _pick)
             {
-                return;   // (the kit selects the same row again after a sort or a filter)
+                return;   // the kit selects the same row again after a sort or a filter
             }
             _pick = row.Id;
             _step = -1;
@@ -162,7 +140,6 @@ namespace RealLifeOverhaul.Economy
             Refresh();
         }
 
-        // Everything the open tab shows, made again: asked for when the app opens, a tab or a row is picked, or something has changed.
         private void Refresh()
         {
             if (_shell == null || _table == null || _writing)
@@ -193,7 +170,8 @@ namespace RealLifeOverhaul.Economy
                 else
                 {
                     int day = SaveGameManager.Current.Day;
-                    UiClone.Words(_shell.Header, ServicesText.T("reallife_svc_headline", "crew", state.Crew.Count.ToString(), "businesses", state.Clients.Count.ToString(), "waiting", _director.Waiting().ToString()));
+                    UiClone.Words(_shell.Header,
+                        ServicesText.T("reallife_svc_headline", "crew", state.Crew.Count.ToString(), "businesses", state.Clients.Count.ToString(), "waiting", _director.Waiting().ToString()));
                     if (_tab == ServicesDirector.TabSale)
                     {
                         if (PartPage(_director.SaleOn, box))
@@ -239,8 +217,6 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // ---------------------------------------------------------------- rows
-
         private TableRow Row(string id)
         {
             TableRow row;
@@ -257,7 +233,7 @@ namespace RealLifeOverhaul.Economy
             return row;
         }
 
-        // A row that can be picked, of a kind for the table's filter. 'picked' says whether it is the one picked now.
+        // A row that can be picked, of a kind for the table's filter; 'picked' says whether it is the one picked now.
         private TableRow Pick(string id, int kind, ref string selected, out bool picked)
         {
             TableRow row = Row(id);
@@ -278,13 +254,7 @@ namespace RealLifeOverhaul.Economy
             row.A = words;
         }
 
-        // What follows a prefix in what is picked ("cli:" and a place); null if something else is picked.
-        private string Picked(string prefix)
-        {
-            return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
-        }
-
-        /// <summary>The foot of a picked thing's page: the way back, then the Guide's page.</summary>
+        // The foot of a picked thing's page: Back, then the Guide's page.
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", Back);

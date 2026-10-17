@@ -3,11 +3,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The figures the Guide's page "Car dealership" prints: every {name} in its text is filled from
-    /// <see cref="DealerCatalogue"/> here, so the page can never say anything the rules do not do. Called once, when the
-    /// feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>Fills the {names} of the Guide's car dealership page from <see cref="DealerCatalogue"/> when it is opened.</summary>
     public static class DealerGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -69,7 +65,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_average_days", () => Whole(DealerCatalogue.AverageDays));
         }
 
-        // One line per event: its name, its days, its cost and what it does.
         private static string Events()
         {
             var text = new System.Text.StringBuilder();
@@ -81,7 +76,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return text.ToString();
         }
 
-        // One line per step of the reputation: its name, where it starts and its perk.
         private static string Steps()
         {
             var text = new System.Text.StringBuilder();
@@ -93,7 +87,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return text.ToString();
         }
 
-        // One line per mission: what it asks and the reputation it gives.
         private static string Missions()
         {
             var text = new System.Text.StringBuilder();
@@ -105,7 +98,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return text.ToString();
         }
 
-        // One line per extra: its name, its price and how many take it.
         private static string Extras()
         {
             var text = new System.Text.StringBuilder();
@@ -117,7 +109,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return text.ToString();
         }
 
-        // One line per warranty: its name, how long it covers and its premium.
         private static string Tiers()
         {
             var text = new System.Text.StringBuilder();

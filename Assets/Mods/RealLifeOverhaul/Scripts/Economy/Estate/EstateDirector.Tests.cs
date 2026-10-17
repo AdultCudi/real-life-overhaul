@@ -4,13 +4,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The test tools of the property business (the options page). Each makes one thing that would otherwise take
-    /// days happen at once, at the first building, hotel or car it fits, and opens the Property app on it. The state
-    /// as it was before the first test is kept, once, and "Test: put property back" restores it.
-    ///
-    /// What a test cannot take back is said where it happens: the money a test moves is real (a night's takings and
-    /// costs, a hire's rent, a fee), and so is an answer the player then gives. Putting property back restores the
-    /// books, not the cash.
+    /// The test tools: each makes something that would take days happen now and opens the app on it. "Test: put property
+    /// back" restores the books as they were before the first test, not the cash.
     /// </summary>
     public sealed partial class EstateDirector
     {
@@ -29,7 +24,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // A test tool is about to change the state: the state as it is now is kept, once, to be put back.
+        // The state before the first test tool changes it is kept, once, to be put back.
         private void BeforeTest()
         {
             if (_beforeTests == null)
@@ -46,7 +41,7 @@ namespace RealLifeOverhaul.Economy
             Open(tab, pick);
         }
 
-        // The first building the player lets himself that fits; with none, the first he owns and does not use is taken on for the test.
+        // The first building the player lets himself that fits; failing that, the first he owns and does not use is taken on for it.
         private EstateHolding TestHolding(string test, Predicate<EstateHolding> fits)
         {
             int added, dropped;
@@ -75,7 +70,6 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        /// <summary>Test: a tenant applies.</summary>
         public void TestApplicant()
         {
             const string test = "reallife_estate_test_applicant";
@@ -83,7 +77,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            BeforeTest();   // (the test may take a building on for the player: that is put back with the rest)
+            BeforeTest();   // before a building is taken on, so that is put back too
             EstateHolding h = TestHolding(test, x => !x.Busy && OpenUnit(x) >= 0 && x.ApplicantCount < EstateRules.ApplicantCap(x.Units.Count) && EstateRules.MarketRent(x, _climate) > 0);
             if (h == null)
             {
@@ -113,7 +107,7 @@ namespace RealLifeOverhaul.Economy
             return -1;
         }
 
-        // The first let unit of a building; with none, the first empty one; -1 if it has neither (never: a building has a unit).
+        // The first let unit of a building, or its first unit.
         private static int LetOrEmptyUnit(EstateHolding h)
         {
             for (int u = 0; u < h.Units.Count; u++)
@@ -123,7 +117,7 @@ namespace RealLifeOverhaul.Economy
                     return u;
                 }
             }
-            return h.Units.Count > 0 ? 0 : -1;
+            return 0;
         }
 
         /// <summary>Test: a rent day with a tenant in arrears. With no tenant anywhere, one is put in first.</summary>
@@ -159,7 +153,6 @@ namespace RealLifeOverhaul.Economy
                      + (u.Let ? string.Empty : ", and the tenant has gone"), TabTenants, UnitPick(h, unit));
         }
 
-        /// <summary>Test: the works under way finish.</summary>
         public void TestWorks()
         {
             const string test = "reallife_estate_test_works";
@@ -186,7 +179,6 @@ namespace RealLifeOverhaul.Economy
             TestDone(done + " finished at " + busy.Name, TabWorks, "own:" + busy.Place);
         }
 
-        /// <summary>Test: an offer for a building that is for sale.</summary>
         public void TestOffer()
         {
             const string test = "reallife_estate_test_offer";
@@ -210,7 +202,6 @@ namespace RealLifeOverhaul.Economy
             TestDone("an offer of " + offer + " for " + listed.Name + ", asked " + listed.List, TabMine, "own:" + listed.Place);
         }
 
-        /// <summary>Test: an owner comes to the agency.</summary>
         public void TestInstruction()
         {
             const string test = "reallife_estate_test_instruction";
@@ -236,7 +227,8 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             made.Day = Save.Day + EstateCatalogue.InstructionAnswerDays;
-            TestDone("an instruction in " + made.District + ": " + (made.Sale ? "a sale" : "a letting") + " worth " + made.Value + ", " + made.Hours / 10 + " agent's hours", TabAgency, "ins:" + made.Id);
+            TestDone("an instruction in " + made.District + ": " + (made.Sale ? "a sale" : "a letting") + " worth " + made.Value + ", " + made.Hours / 10 + " agent's hours", TabAgency,
+                "ins:" + made.Id);
         }
 
         private HotelFile TestHotel(string test)
@@ -269,7 +261,6 @@ namespace RealLifeOverhaul.Economy
             TestDone("a night at " + f.Name + ": " + (f.Sold[0] + f.Sold[1]) + " room(s) sold, takings " + f.Takings + ", costs " + f.Costs, TabHotel, "hot:" + f.Slot);
         }
 
-        /// <summary>Test: a group asks for rooms at a discount.</summary>
         public void TestGroup()
         {
             const string test = "reallife_estate_test_group";
@@ -325,10 +316,10 @@ namespace RealLifeOverhaul.Economy
                 TestRefusals.TellKey(Logger, test, "reallife_estate_test_car_stays");
                 return;
             }
-            TestDone(EstateGame.CarName(idle.Type) + " went out for " + idle.HireDays + " day(s) at " + idle.HireRate + " a day; press the test again to have it come back damaged", TabHire, "car:" + idle.Id);
+            TestDone(EstateGame.CarName(idle.Type) + " went out for " + idle.HireDays + " day(s) at " + idle.HireRate + " a day; press the test again to have it come back damaged", TabHire,
+                "car:" + idle.Id);
         }
 
-        /// <summary>Test: a month passes for the property market.</summary>
         public void TestMonth()
         {
             if (!TestReady("reallife_estate_test_month", EstatePart.Property))
@@ -339,12 +330,13 @@ namespace RealLifeOverhaul.Economy
             int was = _state.Real;
             _state.Months++;
             _state.Real = EstateRules.Month(_state.Real, _state.Seed, _state.Months, _climate.Cycle, _climate.Quarters);
-            _state.FirstDay -= MacroCatalogue.MonthDays(_climate.DaysPerYear);   // (so that the day's own count does not take the month back)
+            _state.FirstDay -= MacroCatalogue.MonthDays(_climate.DaysPerYear);   // so the day's own count of months keeps this one
             int written = EstateGame.WriteValues(_state, _climate.Index);
-            TestDone("a month of the market: " + was + " to " + _state.Real + ", heading for " + EstateRules.RealTarget(_climate.Cycle, _climate.Quarters) + "; " + written + " building value(s) written", TabMarket, null);
+            TestDone("a month of the market: " + was + " to " + _state.Real + ", heading for " + EstateRules.RealTarget(_climate.Cycle, _climate.Quarters) + "; " + written
+                     + " building value(s) written", TabMarket, null);
         }
 
-        /// <summary>Test: put property back as it was before the first test. The books are restored; money that moved stays moved, and a car that is out is called back.</summary>
+        /// <summary>Test: the books as they were before the first test; money that moved stays moved, and a car that is out is called back.</summary>
         public void TestBack()
         {
             const string test = "reallife_estate_test_back";

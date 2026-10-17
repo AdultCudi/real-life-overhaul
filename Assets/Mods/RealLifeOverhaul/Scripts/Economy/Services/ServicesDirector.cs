@@ -10,38 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The cleaning service (cleaners shared between businesses, and contracts with other businesses) and selling a
-    /// business. See the Guide's pages of those names.
-    ///
-    /// This class keeps both going. It has no Update and no place of its own in the game's events: once a second the
-    /// credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the options are looked at, a
-    /// visiting cleaner is shown or sent away), and the credit side's own handlers of the game's hour and day events
-    /// call <see cref="OnHour"/> and <see cref="OnDay"/> when their own work is done (EconomyDirector.AfterHour,
-    /// AfterDay). Both come before the game's own hourly cleaning in the same tick (GameManager.RunMainGameTick), which
-    /// is what lets a visit's cleaning and the base's be written first.
-    ///
-    ///   the hour   the crew and the clients are read, the rest of today's round is planned again, and the minutes of
-    ///              this hour that a cleaner spends at a client are cleaned there (ServicesDirector.Cleaning.cs)
-    ///   the day    yesterday's van is paid, each business's daily dirt is measured, contracts have their morning and
-    ///              their week, a new contract offer may come; offers for businesses on the market come, lapse, parts
-    ///              of a price are paid, a broken clause is charged (ServicesDirector.Sale.cs). One pass, timed with
-    ///              "Developer diagnostics" on
-    ///   the save   the visiting cleaner's shift is taken out of the game's schedule; the state is written
-    ///
-    /// EVERY EFFECT AND HOW IT IS UNDONE
-    ///   dirt         written on the game's own tiles by the game's own arithmetic. It is the cleaning itself and is
-    ///                not undone, as a shift's cleaning is not
-    ///   a shift      one, of the running hour, while a visiting cleaner is shown to the player (CleaningPresence):
-    ///                taken out on every path
-    ///   money        transactions of the mod's own, dated, each with its own key and label
-    ///   a sale       the game's own shut-down and the end of the lease, after the game's own question. Not undone
-    ///
-    /// A fault in the cleaning service or in selling a business switches that one off for the session with one line
-    /// and leaves the other running; a fault outside them switches both off. Either way the mod's shift is out of
-    /// the schedule and the game's daily run and the rest of the economy are left alone.
-    ///
-    /// Cost: nothing per frame. Once a second: a few comparisons, and while the player is indoors with the service
-    /// on, a walk over today's visits (a few dozen at most).
+    /// The cleaning service and selling a business, run by the credit side's second, hour and day (the last two before the
+    /// game's hourly cleaning). The one thing it puts into the game that must come out again is a visiting cleaner's shift.
+    /// Cost: nothing per frame; once a second a few comparisons, and a walk over today's visits while the player is indoors.
     /// </summary>
     public sealed partial class ServicesDirector : MonoBehaviour
     {
@@ -49,6 +20,7 @@ namespace RealLifeOverhaul.Economy
         public const int TabCleaning = 0, TabCrew = 1, TabContracts = 2, TabSale = 3;
 
         private static readonly string[] AppGlyphs = { "Icon-PersonManage", "Icon-Shop", "Icon-Building" };
+        private static readonly int HotSecond = HotSpots.Slot("Economy: ServicesDirector.Second");
 
         public static IModLogger Logger;
         public static ServicesDirector Instance { get; private set; }
@@ -57,8 +29,8 @@ namespace RealLifeOverhaul.Economy
         private bool _running;
         private bool _broken;          // a fault outside the two parts: off for the session
         private bool _cleaningBroken, _saleBroken;
-        private bool _gaveUp;          // the game's phone is not built as expected: the app is left off, the rest runs
-        private int _parts = -1;       // which of the two were on at the last look, a bit each
+        private bool _gaveUp;          // the game's phone is not built as expected: no app, the rest runs
+        private int _parts = -1;       // which of the two parts were on at the last look, a bit each
         private ServicesApp _view;
         private PhoneApp _app;
         private Action _second, _onSave, _onHour, _onDay;
@@ -68,14 +40,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The state in use; null while the feature is not running.</summary>
         public ServicesState State => _running ? _state : null;
 
-        /// <summary>The cleaning service runs: the feature is running, its option is on and no fault has stopped it.</summary>
         public bool CleaningOn => _running && !_broken && !_cleaningBroken && Settings.EconomyCleaning;
 
-        /// <summary>
-        /// Selling a business runs. Not in a Going Public session: who rents what is the host's record there, which the
-        /// game's own ways of giving up a business tell and this sale would not (Core/GoingPublic). What is listed and
-        /// offered waits, untouched, until the game is played alone.
-        /// </summary>
+        /// <summary>Never in a Going Public session: the host keeps who rents what, which this sale would not tell. Listings wait until then.</summary>
         public bool SaleOn => _running && !_broken && !_saleBroken && Settings.EconomySale && !GoingPublic.InSession;
 
         private static GameInstance Save => SaveGameManager.Current;
@@ -90,7 +57,7 @@ namespace RealLifeOverhaul.Economy
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
-            EconomyDirector.Follow(StartSeats.Services, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
+            EconomyDirector.Follow(StartSeats.Services, _second);   // its first second after a load gets a frame of its own (Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
@@ -106,8 +73,7 @@ namespace RealLifeOverhaul.Economy
                 RemoveApp();
                 return;   // another city's director has started since: the state is its
             }
-            // The city is unloading (or the mod is being switched off). Nothing is written to the save here: what a
-            // save keeps is written when the game saves. The mod's shift, if one is in a schedule, is taken out.
+            // The city is unloading: nothing is written to the save here, only the mod's shift taken out.
             try
             {
                 StandDown("the city is unloading", false, false, true);
@@ -120,12 +86,9 @@ namespace RealLifeOverhaul.Economy
             Instance = null;
         }
 
-        // ---------------------------------------------------------------- once a second (the credit side's timer)
-
-        private static readonly int HotSecond = HotSpots.Slot("Economy: ServicesDirector.Second");
         private void EachSecond()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSecond);
             if (_broken)
             {
                 return;
@@ -177,7 +140,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 else if (cleaningCame)
                 {
-                    CleaningStart(true);   // (switched on in the middle of play: the crew and the floors are read, and nothing is measured across the time it was off)
+                    CleaningStart(true);   // switched on mid-play: nothing is measured across the time it was off
                 }
                 Changed();
                 if (Verbose)
@@ -192,8 +155,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- starting and stopping
-
         private void StartUp()
         {
             GameInstance save = Save;
@@ -202,15 +163,20 @@ namespace RealLifeOverhaul.Economy
             {
                 save.modData = new Dictionary<string, string>();
             }
-            int version;
-            ServicesState state = ServicesStore.Load(save.modData, out version);
+            ServicesState state = ServicesStore.Load(save.modData, out int version);
             bool fresh = state == null;
             if (fresh)
             {
                 state = new ServicesState { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = today, LastOfferDay = today };
             }
             bool skipped = !fresh && state.LastDay != today;
-            state.LastDay = today;   // days that passed while this was off are not counted
+            if (skipped)
+            {
+                // Days that passed while this was off are not counted, and show as nothing in the seven days' figures.
+                ServicesState.ClearDays(state.VanCost, state.LastDay, today - 1);
+                ServicesState.ClearDays(state.FeeIncome, state.LastDay + 1, today);
+            }
+            state.LastDay = today;
             _state = state;
             _running = true;
             _parts = (CleaningOn ? 1 : 0) | (SaleOn ? 2 : 0);
@@ -219,17 +185,16 @@ namespace RealLifeOverhaul.Economy
                 CleaningStart(skipped);
             }
             Logger?.Info("Services: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". Cleaning service " + (CleaningOn ? "on" : "off") + ": "
-                         + _state.Crew.Count + " on the crew, " + _state.Clients.Count + " business(es) on the round, " + ContractRules.Running(_state) + " of them under contract, " + _state.Offers.Count
-                         + " contract offer(s) open. Selling a business " + (SaleOn ? "on" : "off") + ": " + _state.Listings.Count + " on the market, " + _state.SaleOffers.Count + " offer(s), "
-                         + _state.Dues.Count + " price(s) still being paid, " + _state.Clauses.Count + " clause(s).");
+                         + _state.Crew.Count + " on the crew, " + _state.Clients.Count + " business(es) on the round, " + ContractRules.Running(_state) + " of them under contract, "
+                         + _state.Offers.Count + " contract offer(s) open. Selling a business " + (SaleOn ? "on" : "off") + ": " + _state.Listings.Count + " on the market, "
+                         + _state.SaleOffers.Count + " offer(s), " + _state.Dues.Count + " price(s) still being paid, " + _state.Clauses.Count + " clause(s).");
         }
 
-        // The feature stops: the mod's shift is out of the game's schedule. With 'keep' the state goes into the save's
-        // data first (a stop in the middle of play).
+        // The feature stops and the mod's shift leaves the schedule; with 'keep' the state is first written to the save's data.
         private void StandDown(string why, bool tell, bool keep, bool unloading)
         {
             bool was = _running;
-            if (keep && _running && Save != null && _state != null)
+            if (keep && _running && Save != null)
             {
                 Write(Save);
             }
@@ -266,7 +231,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A fault outside the two parts: one line, the mod's shift out of the schedule, and nothing more of the feature this session.</summary>
+        // A fault outside the two parts: the mod's shift out of the schedule, and nothing more of the feature this session.
         private void Fault(string where, Exception e)
         {
             _broken = true;
@@ -280,7 +245,8 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Error(second);
                 _running = false;
             }
-            Logger?.Warn("Services: switched off for this session after an error in " + where + ". No shift of the mod's is in any schedule; the game's daily run and the rest of the economy are not affected.");
+            Logger?.Warn("Services: switched off for this session after an error in " + where
+                         + ". No shift of the mod's is in any schedule; the game's daily run and the rest of the economy are not affected.");
         }
 
         private void CleaningFault(string where, Exception e)
@@ -296,7 +262,8 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Error(second);
             }
             _parts = (CleaningOn ? 1 : 0) | (SaleOn ? 2 : 0);
-            Logger?.Warn("Services: the cleaning service is switched off for this session after an error in " + where + ". No shift of the mod's is in any schedule; nothing more is cleaned or charged by it. Selling a business is not affected.");
+            Logger?.Warn("Services: the cleaning service is switched off for this session after an error in " + where
+                         + ". No shift of the mod's is in any schedule; nothing more is cleaned or charged by it. Selling a business is not affected.");
         }
 
         private void SaleFault(string where, Exception e)
@@ -304,14 +271,14 @@ namespace RealLifeOverhaul.Economy
             _saleBroken = true;
             _parts = (CleaningOn ? 1 : 0) | (SaleOn ? 2 : 0);
             Logger?.Error(e);
-            Logger?.Warn("Services: selling a business is switched off for this session after an error in " + where + ". Nothing more is offered, paid or charged by it. The cleaning service is not affected.");
+            Logger?.Warn("Services: selling a business is switched off for this session after an error in " + where
+                         + ". Nothing more is offered, paid or charged by it. The cleaning service is not affected.");
         }
 
         private void Install()
         {
             var view = new ServicesApp(this);
             GameSprites.Want(AppGlyphs);
-            bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -320,13 +287,14 @@ namespace RealLifeOverhaul.Economy
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed
-            }, out tryAgain);
+            }, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Services: the game's phone is not built as this version expects, so the Services app is left off. A round that is set up still runs, contracts still pay, and notifications still say what happens.");
+                    Logger?.Warn("Services: the game's phone is not built as this version expects, so the Services app is left off. "
+                                 + "A round that is set up still runs, contracts still pay, and notifications still say what happens.");
                 }
                 return;
             }
@@ -347,9 +315,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        // ---------------------------------------------------------------- the hour, the day, the save
-
-        // The game's hour event (every game hour, and first thing in its NewDay), after the credit side's work on it and before the game's own hourly cleaning.
+        // The game's hour event (every game hour, and first thing in its NewDay), after the credit side's work on it.
         private void OnHour()
         {
             if (!_running || _broken || Save == null)
@@ -361,7 +327,7 @@ namespace RealLifeOverhaul.Economy
                 if (Save.Day > _state.LastDay)
                 {
                     CleaningPresence.Clear(false);
-                    return;   // the hour that opens a day: the day event follows, still before the game's hourly cleaning, and does this hour with the new day's round
+                    return;   // the day event follows, still before the hourly cleaning, and does this hour with the new round
                 }
                 if (CleaningOn)
                 {
@@ -396,8 +362,13 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 float started = Time.realtimeSinceStartup;
-                bool next = day == _state.LastDay + 1;   // (a jump of many days is one pass, for today)
+                int last = _state.LastDay;
+                bool next = day == last + 1;   // a jump of many days is one pass, for today
                 _state.LastDay = day;
+                // The van's way since the last morning is charged as yesterday's, the fees as today's: the days between, or
+                // all of them with the service off, hold nothing.
+                ServicesState.ClearDays(_state.VanCost, last, day - 1);
+                ServicesState.ClearDays(_state.FeeIncome, last + 1, day);
                 if (CleaningOn)
                 {
                     try
@@ -426,9 +397,9 @@ namespace RealLifeOverhaul.Economy
                 if (Verbose)
                 {
                     float done = Time.realtimeSinceStartup;
-                    Logger?.Info("Services check (day " + day + "): " + _state.Crew.Count + " on the crew, " + _state.Clients.Count + " on the round (" + ContractRules.Running(_state) + " under contract), "
-                                 + _visits.Count + " visit(s) planned, " + _state.Listings.Count + " business(es) on the market with " + _state.SaleOffers.Count + " offer(s); the cleaning service "
-                                 + ((cleaned - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, selling "
+                    Logger?.Info("Services check (day " + day + "): " + _state.Crew.Count + " on the crew, " + _state.Clients.Count + " on the round (" + ContractRules.Running(_state)
+                                 + " under contract), " + _visits.Count + " visit(s) planned, " + _state.Listings.Count + " business(es) on the market with " + _state.SaleOffers.Count
+                                 + " offer(s); the cleaning service " + ((cleaned - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms, selling "
                                  + ((done - cleaned) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
@@ -438,13 +409,12 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The game is about to write a save. A shift of the mod's is taken out of the schedule (the schedule is part of
-        // the save) and put back within a second if the visit is still on; the state is written.
+        // Before a save: the mod's shift leaves the schedule, which is saved (the next second puts it back), and the state is written.
         private void OnSave()
         {
             try
             {
-                if (!_running || Save == null || _state == null)
+                if (!_running || Save == null)
                 {
                     return;
                 }
@@ -453,7 +423,8 @@ namespace RealLifeOverhaul.Economy
                 Write(Save);
                 if (Verbose)
                 {
-                    Logger?.Info("Services check (before a save): " + (shift ? "the visiting cleaner's shift taken out of the schedule until the save is written" : "no shift of the mod's in any schedule")
+                    Logger?.Info("Services check (before a save): "
+                                 + (shift ? "the visiting cleaner's shift taken out of the schedule until the save is written" : "no shift of the mod's in any schedule")
                                  + "; the state written under its own key: PASS");
                 }
             }
@@ -472,16 +443,13 @@ namespace RealLifeOverhaul.Economy
             save.modData[ServicesStore.Key] = ServicesStore.Write(_state);
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>A charge of the mod's own. Says so with "Developer diagnostics" on.</summary>
         private bool Charge(int amount, string key, string name, Address address, int? day, bool deductible, bool force, string how)
         {
             bool taken = ServicesGame.Take(amount, key, name, address, day, deductible, force);
             if (Verbose && amount > 0)
             {
-                Logger?.Info("Services check (transaction, " + key + ", " + name + "): " + amount + (taken ? " taken" + (deductible ? ", deductible" : string.Empty) : " could not be taken: the cash does not cover it")
-                             + "; " + how + ": PASS");
+                Logger?.Info("Services check (transaction, " + key + ", " + name + "): " + amount
+                             + (taken ? " taken" + (deductible ? ", deductible" : string.Empty) : " could not be taken: the cash does not cover it") + "; " + how + ": PASS");
             }
             return taken;
         }
@@ -495,25 +463,22 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- what the player is told
-
-        /// <summary>A notification of the game's that opens the Services app on a tab, with something picked.</summary>
+        // A notification of the game's that opens the app on a tab, with something picked.
         private void Tell(NotificationType type, string key, int tab, string pick, params string[] pairs)
         {
             Dictionary<string, string> data = null;
-            if (pairs != null && pairs.Length >= 2)
+            if (pairs.Length >= 2)
             {
-                data = new Dictionary<string, string>(pairs.Length / 2);   // (the game keeps a notification's data for as long as it lists it)
+                data = new Dictionary<string, string>(pairs.Length / 2);   // a dictionary each: the game keeps a notification's data while it lists it
                 for (int i = 0; i + 1 < pairs.Length; i += 2)
                 {
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, 11f, null, RealLifeOverhaul.Guard.Wrap(() => Open(tab, pick)), true, false);
+            Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
         }
 
-        /// <summary>Opens the app on a tab, with something picked.</summary>
-        public void Open(int tab, string pick)
+        private void Open(int tab, string pick)
         {
             if (_app != null && _view != null && _running)
             {
@@ -528,7 +493,7 @@ namespace RealLifeOverhaul.Economy
             Instance?.Open(TabCleaning, null);
         }
 
-        /// <summary>For another app's button: a business's page for selling it, by its place (as business pressure writes one).</summary>
+        /// <summary>For another app's button: a business's page for selling it, by its place.</summary>
         public static void OpenSale(string place)
         {
             Instance?.Open(TabSale, string.IsNullOrEmpty(place) ? null : "sell:" + place);
@@ -537,10 +502,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True while selling a business runs: another app shows its button for it only then.</summary>
         public static bool CanSell => Instance != null && Instance.SaleOn && Instance._app != null;
 
-        /// <summary>True while the cleaning service runs.</summary>
         public static bool CanClean => Instance != null && Instance.CleaningOn && Instance._app != null;
 
-        /// <summary>The app has been opened: the crew and the clients are read again, so that the page shows the floors as they are now.</summary>
+        /// <summary>The app has been opened: the crew and the clients are read again, so the page shows the floors as they are.</summary>
         public bool AppOpened()
         {
             if (!_running || _broken || Save == null)
@@ -563,18 +527,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Something has changed: the app's badge is made again, and the app if it is open.</summary>
-        internal void Changed()
+        private void Changed()
         {
             if (!_running || Save == null)
             {
                 return;
             }
             Badge();
-            if (_view != null)
-            {
-                _view.Changed();
-            }
+            _view?.Changed();
         }
 
         private void Badge()
@@ -585,19 +545,17 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>How many things wait for an answer from the player: contract offers and offers for a business.</summary>
+        /// <summary>How many things wait for the player's answer: contract offers and offers for a business.</summary>
         public int Waiting()
         {
-            if (!_running || _state == null)
+            if (!_running)
             {
                 return 0;
             }
             return (CleaningOn ? _state.Offers.Count : 0) + (SaleOn ? _state.SaleOffers.Count : 0);
         }
 
-        // ---------------------------------------------------------------- for the save tools
-
-        /// <summary>For the save tools: no shift of the mod's is in any schedule; the timer starts the feature again if an option is on.</summary>
+        /// <summary>For the save tools: no shift of the mod's stays in any schedule; the timer starts the feature again if an option is on.</summary>
         public void StopAll()
         {
             try

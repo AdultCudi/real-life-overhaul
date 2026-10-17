@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The figures the Guide's pages "Cleaning service" and "Selling a business" print: every {name} in their text is
-    /// filled from <see cref="ServicesCatalogue"/> here, so the pages can never say anything the rules do not do.
-    /// Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when a page is opened.
+    /// The figures the Guide's "Cleaning service" and "Selling a business" pages print: each {name} in their text is
+    /// filled from <see cref="ServicesCatalogue"/>, so the pages say what the rules do. Each is worked out when a page opens.
     /// </summary>
     public static class ServicesGuide
     {
@@ -18,7 +17,7 @@ namespace RealLifeOverhaul.Economy
             f.Fact("svc_walk", () => Tenths(ServicesCatalogue.WalkPerMinute / 10))
                 .Fact("svc_van", () => Tenths(ServicesCatalogue.VanPerMinute / 10))
                 .Fact("svc_street", () => Whole(ServicesCatalogue.StreetFactor - 100))
-                .Fact("svc_van_cost", () => Guide.Money(ServicesCatalogue.AtPrices(ServicesCatalogue.VanCostPerKm, Prices.Level)))
+                .Fact("svc_van_cost", () => Guide.Money(TravelRules.PerKm(PriceRules.Start)))   // the page says at a price index of 100
                 .Fact("svc_visit_least", () => Whole(ServicesCatalogue.VisitLeast))
                 .Fact("svc_visit_most", () => Whole(ServicesCatalogue.VisitMost))
                 .Fact("svc_visits", () => Whole(ServicesCatalogue.VisitsMost))
@@ -67,15 +66,8 @@ namespace RealLifeOverhaul.Economy
                 .Fact("sale_clause_penalty", () => Whole(ServicesCatalogue.ClausePenaltyPct));
         }
 
-        private static string Whole(int value)
-        {
-            return value.ToString(Inv);
-        }
+        private static string Whole(int value) => value.ToString(Inv);
 
-        // Tenths as a figure with one decimal: 35 is "3.5".
-        private static string Tenths(int tenths)
-        {
-            return (tenths / 10f).ToString("0.#", Inv);
-        }
+        private static string Tenths(int tenths) => (tenths / 10f).ToString("0.#", Inv);   // 35 is "3.5"
     }
 }

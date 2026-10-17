@@ -15,26 +15,26 @@ namespace RealLifeOverhaul.Economy.Brands
     {
         public int Id;
         public string Name = string.Empty;
-        public string Type = string.Empty;       // the game's business type it covers ("ba:businesstype_...")
-        public string Flagship = string.Empty;   // the place of the shop it was made from: shared prices and hours are copied from it
+        public string Type = string.Empty;       // the game's business type it covers
+        public string Flagship = string.Empty;   // the place of the shop shared prices and hours are copied from
         public int Founded;
-        public int Age;                          // the brand's own clock, in days: what "a year passes" advances
+        public int Age;                          // the brand's own clock, in days
         public int City;                         // city-wide recognition, hundredths
         public int Standards;                    // points, as last worked out
         public int Minimum;                      // the required minimum the player set, points; 0 for none
         public bool Offered;                     // on offer as a franchise
         public int Push = -1;                    // a brand campaign: BrandCatalogue.PushLocal or PushCity; -1 for none
-        public int PushFrom, PushEnd;            // brand days: runs from PushFrom up to (not including) PushEnd
+        public int PushFrom, PushEnd;            // brand days: runs from PushFrom up to, not including, PushEnd
         public string PushDistrict = string.Empty;
         public int Fund;                         // levy collected and not yet spent on a brand campaign
-        public int Ticket;                       // what a customer spends at a member shop, hundredths, from the game's own order history
-        public int Net;                          // what the franchises bring in a day after support, a moving average over a week
+        public int Ticket;                       // what a customer spends at a member shop, hundredths
+        public int Net;                          // what the franchises bring in a day after support, a week's moving average
         public int Earned;                       // royalties in all
         public int Failed;                       // franchisees that closed
-        public int Bid, BidBy, BidUntil;         // a franchisee's bid for the brand: the price, who, and the last day to answer
+        public int Bid, BidBy, BidUntil;         // a franchisee's bid for the brand: the price, who, the last day to answer
         public int AskRest;                      // no new second shop or bid before this day
-        public bool Keep;                        // the member shops are kept on the flagship's prices (KeptPrices), not only copied once
-        public bool Local;                       // ...with an adjustment for each one's district, within a small band
+        public bool Keep;                        // the member shops are kept on the flagship's prices (KeptPrices)
+        public bool Local;                       // ...with an adjustment for each one's district
         public readonly List<DistrictFile> Districts = new List<DistrictFile>(8);
 
         public bool Pushing => Push >= 0 && Age >= PushFrom && Age < PushEnd;
@@ -52,16 +52,16 @@ namespace RealLifeOverhaul.Economy.Brands
         }
     }
 
-    /// <summary>A shop of the player's that trades under a brand. The figures after the first four are read from the game each day and are not saved.</summary>
+    /// <summary>A shop of the player's under a brand. Only the first four fields are saved; the rest are read each day.</summary>
     public sealed class Member
     {
         public string Place = string.Empty;
         public int BrandId;
         public int Joined;
-        public bool Told;                        // the player has been told once that a price changed here by something else was put back
+        public bool Told;                        // told once that a price changed here by something else was put back
 
         public string District;
-        public int Satisfaction = 50, Clean = 100, Stock = 100, Skill = 50;   // the game's own figures, 0 to 100 (Stock: the share of its main goods on the shelves)
+        public int Satisfaction = 50, Clean = 100, Stock = 100, Skill = 50;   // the game's own figures, 0 to 100
         public int Standards = 50;
         public int Customers, Takings;           // yesterday, by the game's order history
         public int X, Z;                         // its door, in whole metres
@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public Temper Temper;
         public int Capital;
         public int Experience;                   // years in the trade
-        public int ShopsRun, ShopsClosed;        // their record: shops run before, and how many of those closed
+        public int ShopsRun, ShopsClosed;        // shops run before, and how many of those closed
         public int Ability;                      // 0 to 100: not shown, only what it is made of
         public string District = string.Empty;
         public int Until;                        // the last day they wait
@@ -96,15 +96,15 @@ namespace RealLifeOverhaul.Economy.Brands
         public int Ability;
         public string District = string.Empty;
         public string Place = string.Empty;      // the building, written as a business's place is
-        public string GameName = string.Empty;   // what the game calls the business there (its own name for it is kept: see BrandsGame)
+        public string GameName = string.Empty;   // the game's own name for the business there, kept (see BrandsGame)
         public Hold Hold = Hold.Books;
-        public int Born = -1;                    // the day the game has for the business's start as it was when a shop that already traded joined; put back when the agreement ends
+        public int Born = -1;                    // a converted shop's start day in the game, put back when the agreement ends
         public int X, Z;
         public bool HasSpot;
-        public int Base;                         // customers an ordinary day brings by the game's own formula for the building and the type
+        public int Base;                         // customers an ordinary day brings, by the game's own formula
         public int Signed, Until;                // game days
         public int Term;                         // the agreement's length in days: a renewal adds it again
-        public bool NoRenewal;                   // a renewal was asked for and not given: the agreement runs out on its day
+        public bool NoRenewal;                   // a renewal was asked for and not given: it runs out on its day
         public int EntryFee, RoyaltyBp, LevyBp;
         public bool Exclusive;
         public int True = 6000;                  // its standards, hundredths: what an inspection finds
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public int AskUntil, AskAmount, AskRest;
         public int Suit;                         // the court's number for a dispute; 0 for none
         public int WaivedUntil;                  // no royalty before this day
-        public int Takings, Royalty, Customers;  // yesterday
+        public int Takings, Royalty, Customers;  // yesterday; Royalty includes the levy
         public int Paid;                         // royalties and levy in all
 
         public int StandardsNow => True / 100;
@@ -133,13 +133,14 @@ namespace RealLifeOverhaul.Economy.Brands
         public int Average;                      // an ordinary day's royalty, a moving average
         public int Paid;
         public bool Keep;                        // its prices are kept inside the chain's range (KeptPrices)
-        public bool Told;                        // the player has been told once that a price changed here by something else was put back
+        public bool Told;                        // told once that a price changed here by something else was put back
+        public int Yesterday;                    // the royalty paid this morning, on yesterday's takings
 
         public int Standards = 50, Prices = 1000;   // read each day, not saved
         public bool Seen;
     }
 
-    /// <summary>Everything brands and franchises keep for one save. Plain data: a look-up is a walk over a short list (six brands, forty-eight members, sixty franchises at most).</summary>
+    /// <summary>Everything brands and franchises keep for one save. A look-up walks a short list.</summary>
     public sealed class BrandsState
     {
         public int Seed;

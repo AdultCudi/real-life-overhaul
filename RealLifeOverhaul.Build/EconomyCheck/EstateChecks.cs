@@ -47,7 +47,7 @@ internal static partial class Program
 
     private static EstateHolding Building(int value = 1000000, int use = 1, int cond = 900, bool managed = true)
     {
-        return new EstateHolding { Place = "High%20Street~" + value, Base = value, Use = use, AsBuilt = use, Income = 1000, Cond = cond, Managed = managed };
+        return new EstateHolding { Place = "High%20Street~" + value, Base = value, Use = use, Income = 1000, Cond = cond, Managed = managed };
     }
 
     // A tenant is put in at a rent, with a record.
@@ -797,7 +797,7 @@ internal static partial class Program
         Check(withGroup.Sold0 >= rooms && withGroup.Sold0 <= 40 && g.GroupNights == nights - 1 && withGroup.Takings >= rooms * groupRate, "a group's rooms are sold at its rate whatever the rate at the desk, and never more than the hotel has");
         HotelFile unanswered = Hotel();
         HotelRules.AskGroup(unanswered, 500, 1);
-        HotelNight l1 = HotelRules.Night(unanswered, 500, 3, c), l2 = HotelRules.Night(unanswered, 12345, 4, c);
+        HotelNight l1 = HotelRules.Night(unanswered, 500, 2, c), l2 = HotelRules.Night(unanswered, 12345, 3, c);
         Check(!l1.GroupLapsed && l2.GroupLapsed, "a group that is not answered within its days books elsewhere");
         HotelFile wet = Hotel();
         int bill = HotelRules.Pipe(wet, 10, 1000);
@@ -1115,7 +1115,7 @@ internal static partial class Program
         var s = new EstateState { Seed = seed, FirstDay = 1, Real = 1000 };
         for (int i = 0; i < 6; i++)
         {
-            s.Holdings.Add(new EstateHolding { Place = "Street~" + i, Base = 600000 + i * 150000, Use = i % 4, AsBuilt = i % 4, Income = 700 + i * 120, Cond = EstateRules.StreetCondition(seed, i), Managed = true, Cover = i % 2 == 0 });
+            s.Holdings.Add(new EstateHolding { Place = "Street~" + i, Base = 600000 + i * 150000, Use = i % 4, Income = 700 + i * 120, Cond = EstateRules.StreetCondition(seed, i), Managed = true, Cover = i % 2 == 0 });
         }
         s.Agency.Office = "Office~1";
         s.Agency.Capacity = 80;

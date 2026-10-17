@@ -4,7 +4,6 @@ using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
-using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -18,43 +17,19 @@ namespace RealLifeOverhaul.Economy
         Count = 3
     }
 
-    /// <summary>One thing the Planner should say about the property business: built on the day event and when the player changes something, never per frame.</summary>
+    /// <summary>One row for the Planner, made on the day event and when the player changes something.</summary>
     public struct EstateAlert
     {
-        public int A, B;        // what it is and which one: the Planner's id for the row
+        public int A, B;        // the Planner's id for the row: what it is, and which one
         public int Day;
         public string Title, What, Money, IfMissed;
     }
 
     /// <summary>
-    /// The property business: buying, letting, improving and selling buildings, an estate agency, owning a hotel
-    /// and hiring out cars. See Scripts/Economy/Estate/README.md.
-    ///
-    /// This class keeps it going. It has no Update, no timer and no place of its own in the game's events: once a
-    /// second the credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the options are looked
-    /// at: a few comparisons while nothing has changed), and the credit side's own handlers of the game's hour and
-    /// day events call <see cref="OnHour"/> and <see cref="OnDay"/> when their own work is done, after the city's
-    /// economy and the company.
-    ///
-    ///   the day    one pass: the day's climate, the buildings the player owns, then each part's day (the files
-    ///              EstateDirector.Property.cs and its neighbours), then every building's value is written where the
-    ///              game reads it and the Planner's rows are made again. The pass says how many milliseconds it took
-    ///              with "Developer diagnostics" on.
-    ///   the hour   a car that is due out or back goes or comes, if nobody is standing by; the rents put at the
-    ///              game's own for a save are put back
-    ///   the save   the rents of buildings the player lets himself are the game's own in the save; the state is written
-    ///
-    /// EVERY EFFECT AND HOW IT IS UNDONE (EstateGame has the game's members)
-    ///   values     Building.customMarketPrice of every building: the asset's own figure is put back when this stops
-    ///              for any reason, the city unloading included
-    ///   rents      RealEstate.pricePerSqm and occupancy of a building the player lets himself: the game's own (the
-    ///              market's rent, half let) before every save and when the property part stops
-    ///   cars       a car out on hire has no object in the city; its entry in the save's list never leaves it. It is
-    ///              brought back when the hire part is switched off, and is in every save
-    ///   money      transactions, dated, each with its own key and label
-    ///
-    /// A fault in one part switches that part off for the session with one line and leaves the others running; a
-    /// fault outside the parts switches the whole feature off. Either way every figure is put back.
+    /// The property business: buildings, an estate agency, a hotel and car hire. No Update and no timer, so no cost a
+    /// frame: the credit side's second, hour and day call <see cref="EachSecond"/>, <see cref="OnHour"/> and
+    /// <see cref="OnDay"/>. What it writes into the game is put back when it stops; a fault stops one part, or the
+    /// feature, for the session.
     /// </summary>
     public sealed partial class EstateDirector : MonoBehaviour
     {
@@ -73,7 +48,7 @@ namespace RealLifeOverhaul.Economy
 
         private EstateState _state;
         private EstateClimate _climate = EstateClimate.Steady;
-        private string _beforeTests;   // the state's line as it was before the first test tool changed it; null with no test change in place
+        private string _beforeTests;   // the state's line before the first test tool changed it; null with no test change in place
         private bool _running;
         private bool _broken;          // a fault outside the parts: off for the session
         private bool _holding;         // the rents are the game's own for a save: put back on the next game hour
@@ -89,7 +64,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The state in use; null while the feature is not running.</summary>
         public EstateState State => _running ? _state : null;
 
-        /// <summary>The city as it was read this morning (or when the feature started today).</summary>
+        /// <summary>The city as it was read this morning, or when the feature started today.</summary>
         public EstateClimate Climate => _climate;
 
         public IReadOnlyList<EstateAlert> Alerts => _alerts;
@@ -100,12 +75,11 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
-            EstateGame.Logger = Logger;
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
-            EconomyDirector.Follow(StartSeats.Estate, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
+            EconomyDirector.Follow(StartSeats.Estate, _second);   // its first second after a load waits for its seat (Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
@@ -121,8 +95,7 @@ namespace RealLifeOverhaul.Economy
                 RemoveApp();
                 return;   // another city's director has started since: the state and the figures are its
             }
-            // The city is unloading (or the mod is being switched off). Nothing is written to the save here; the
-            // buildings' prices are assets of the game's that outlive a city, so they are put back even now.
+            // Nothing goes into the save, but the buildings' prices are game assets that outlive a city: put back even now.
             try
             {
                 StandDown("the city is unloading", false, false, true);
@@ -134,8 +107,6 @@ namespace RealLifeOverhaul.Economy
             }
             Instance = null;
         }
-
-        // ---------------------------------------------------------------- the parts
 
         /// <summary>Whether a part runs: the feature is running, the part's option is on and no fault has stopped it.</summary>
         public bool On(EstatePart part)
@@ -179,12 +150,10 @@ namespace RealLifeOverhaul.Economy
             return list.Length > 0 ? list : "none";
         }
 
-        // ---------------------------------------------------------------- once a second (the credit side's timer)
-
         private static readonly int HotSecond = HotSpots.Slot("Economy: EstateDirector.Second");
         private void EachSecond()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSecond);
             if (_broken)
             {
                 return;
@@ -226,8 +195,7 @@ namespace RealLifeOverhaul.Economy
             int scale = EstateGame.RentScale;
             if (scale != _climate.RentScale)
             {
-                // The rental income option was moved: the market's rent of every unit, and so what is asked, offered and
-                // renewed at, follows from now on; a lease keeps the rent it was agreed at.
+                // Every unit's market rent follows the option from now on; a lease keeps the rent it was agreed at.
                 int was = EstateRules.RentShare(_climate.RentScale);
                 _climate.RentScale = scale;
                 Changed();
@@ -238,7 +206,6 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            // A part's switch was changed: what no longer applies is taken back at once.
             int before = _parts;
             _parts = parts;
             PartsChanged(before, parts, Save.Day);
@@ -249,6 +216,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // A part's switch was changed: what no longer applies is taken back at once.
         private void PartsChanged(int before, int now, int day)
         {
             bool property = (now & 1) != 0;
@@ -272,8 +240,6 @@ namespace RealLifeOverhaul.Economy
                 HireReconcile();
             }
         }
-
-        // ---------------------------------------------------------------- starting and stopping
 
         // False while the city's buildings are not there to be read: the next second tries again.
         private bool StartUp()
@@ -320,13 +286,14 @@ namespace RealLifeOverhaul.Economy
                 HireReconcile();
             }
             BuildAlerts(today);
-            Logger?.Info("Estate: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". " + EstateGame.Buildings + " building(s) in the city, " + _state.Holdings.Count
-                         + " the player's" + (added > 0 ? " (" + added + " new to the books)" : string.Empty) + (dropped > 0 ? " (" + dropped + " no longer the player's)" : string.Empty) + ", the market at "
-                         + _state.Real + ", " + _state.Hotels.Count + " hotel(s), " + _state.Hire.Cars.Count + " car(s) on hire, " + _state.Agency.Open.Count + " instruction(s), parts on: " + PartList(_parts) + ".");
+            Logger?.Info("Estate: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". " + EstateGame.Buildings + " building(s) in the city, "
+                         + _state.Holdings.Count + " the player's" + (added > 0 ? " (" + added + " new to the books)" : string.Empty)
+                         + (dropped > 0 ? " (" + dropped + " no longer the player's)" : string.Empty) + ", the market at " + _state.Real + ", " + _state.Hotels.Count + " hotel(s), "
+                         + _state.Hire.Cars.Count + " car(s) on hire, " + _state.Agency.Open.Count + " instruction(s), parts on: " + PartList(_parts) + ".");
             return true;
         }
 
-        // The property part comes on: every building's value is written where the game reads it, and the rents of the buildings the player lets himself.
+        // The property part comes on: every building's value and the rents of those the player lets himself are written.
         private void ApplyProperty(int day)
         {
             if (!_cityRead && !(_cityRead = EstateGame.ReadCity()))
@@ -339,12 +306,12 @@ namespace RealLifeOverhaul.Economy
             int rents = WriteRents(false);
             if (Verbose)
             {
-                Logger?.Info("Estate check (applied, day " + day + "): " + written + " building value(s) written at a market of " + _state.Real + " and prices of " + (_climate.Index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", "
-                             + rents + " rent(s) of buildings the player lets himself: PASS");
+                Logger?.Info("Estate check (applied, day " + day + "): " + written + " building value(s) written at a market of " + _state.Real + " and prices of "
+                             + (_climate.Index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", " + rents + " rent(s) of buildings the player lets himself: PASS");
             }
         }
 
-        // The property part goes off (or everything stops): every value and every rent is the game's own again.
+        // The property part goes off, or everything stops: every value and every rent is the game's own again.
         private void WithdrawProperty()
         {
             int rents = _state != null && Save != null ? WriteRents(true) : 0;
@@ -356,8 +323,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The feature stops: every figure it changed is the game's own again. With 'keep' the state goes into the save's
-        // data first (a stop in the middle of play).
+        // The feature stops and every figure it changed is the game's own again; with 'keep' the state goes into the save first.
         private void StandDown(string why, bool tell, bool keep, bool unloading)
         {
             bool was = _running;
@@ -371,7 +337,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (unloading)
             {
-                EstateGame.RestoreValues();   // (the save in memory goes with the city: only the game's assets are put back)
+                EstateGame.RestoreValues();   // the save in memory goes with the city: only the game's assets are put back
                 _cityRead = false;
             }
             else if (was)
@@ -415,15 +381,17 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Error(second);
                 _running = false;
             }
-            Logger?.Warn("Estate: switched off for this session after an error in " + where + ". Every building's value and rent is the game's own again, and the cars on hire are back or come back with the next load; the game's daily run and the rest of the economy are not affected.");
+            Logger?.Warn("Estate: switched off for this session after an error in " + where + ". Every building's value and rent is the game's own again, and the cars on hire are back or come back "
+                         + "with the next load; the game's daily run and the rest of the economy are not affected.");
         }
 
-        /// <summary>A fault in one part: that part is off for the session, what it wrote is taken back, the others go on.</summary>
+        /// <summary>A fault in one part: that part is off for the session and what it wrote is taken back; the others go on.</summary>
         private void PartFault(EstatePart part, string where, Exception e)
         {
             _partBroken[(int)part] = true;
             Logger?.Error(e);
-            Logger?.Warn("Estate: " + PartNames[(int)part] + " switched off for this session after an error in " + where + ". What it wrote is taken back; the other parts, the game's daily run and the rest of the economy are not affected.");
+            Logger?.Warn("Estate: " + PartNames[(int)part] + " switched off for this session after an error in " + where
+                         + ". What it wrote is taken back; the other parts, the game's daily run and the rest of the economy are not affected.");
             try
             {
                 int before = _parts;
@@ -458,7 +426,8 @@ namespace RealLifeOverhaul.Economy
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Estate: the game's phone is not built as this version expects, so the Property app is left off. The rules still run, and the Planner and the notifications still say what needs an answer.");
+                    Logger?.Warn("Estate: the game's phone is not built as this version expects, so the Property app is left off. The rules still run, and the Planner and the notifications "
+                                 + "still say what needs an answer.");
                 }
                 return;
             }
@@ -479,9 +448,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        // ---------------------------------------------------------------- the hour, the day, the save
-
-        // The game's hour event (every game hour, and first thing in its NewDay, before its daily run).
+        // The game's hour event: every game hour, and first thing in its NewDay, before its daily run.
         private void OnHour()
         {
             if (!_running || _broken || Save == null)
@@ -495,7 +462,7 @@ namespace RealLifeOverhaul.Economy
                     _holding = false;
                     if (On(EstatePart.Property))
                     {
-                        WriteRents(false);   // (the game's nightly run may follow at once: it pays what stands now)
+                        WriteRents(false);   // the game's nightly run may follow at once: it pays what stands now
                     }
                 }
                 if (_state.Hire.Cars.Count > 0)
@@ -516,7 +483,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The game's day event (after its daily run), after the credit side, the city's economy and the company.
+        // The game's day event, after its daily run, the credit side, the city's economy and the company.
         private void OnDay()
         {
             if (!_running || _broken || Save == null)
@@ -532,9 +499,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 float started = Time.realtimeSinceStartup;
                 _holding = false;
-                _state.LastDay = day;   // (a jump of many days is one pass, for today)
+                _state.LastDay = day;   // a jump of many days is one pass, for today
                 _climate = EstateGame.Climate(day);
-                if (day - _state.YearFrom >= _climate.DaysPerYear)
+                if (EstateRules.YearTurned(_state.YearFrom, day, _climate.DaysPerYear))
                 {
                     NewYear(day);
                 }
@@ -557,16 +524,16 @@ namespace RealLifeOverhaul.Economy
                 }
                 catch (Exception e)
                 {
-                    Logger?.Error(e);   // (the year's figures are kept: the next morning tries again)
+                    Logger?.Error(e);   // the year's figures are kept: the next morning tries again
                     Logger?.Warn("Estate: the tax on the hotels and car hire could not be settled today; it is tried again tomorrow.");
                 }
                 Changed();
                 if (Verbose)
                 {
-                    Logger?.Info("Estate check (day " + day + "): " + _state.Holdings.Count + " building(s), the market " + _state.Real + ", prices " + (_climate.Index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", cycle " + _climate.Cycle
-                                 + ", " + _state.Agency.Open.Count + " instruction(s), " + _state.Hotels.Count + " hotel(s), " + _state.Hire.Count(HireState.Out) + " of " + _state.Hire.Cars.Count
-                                 + " car(s) out, " + _alerts.Count + " row(s) for the Planner; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture)
-                                 + " ms in all: PASS");
+                    Logger?.Info("Estate check (day " + day + "): " + _state.Holdings.Count + " building(s), the market " + _state.Real + ", prices "
+                                 + (_climate.Index / 10f).ToString("0.0", CultureInfo.InvariantCulture) + ", cycle " + _climate.Cycle + ", " + _state.Agency.Open.Count + " instruction(s), "
+                                 + _state.Hotels.Count + " hotel(s), " + _state.Hire.Count(HireState.Out) + " of " + _state.Hire.Cars.Count + " car(s) out, " + _alerts.Count
+                                 + " row(s) for the Planner; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms in all: PASS");
                 }
             }
             catch (Exception e)
@@ -591,63 +558,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The game's tax year turns (TaxHelper: at the end of each day that is a multiple of the year, on the same day as
-        // the game's own tax): the year's trading of the hotels and car hire, which no daily statement holds, is taxed as
-        // the game taxes a business (EstateRules.TradingTax), and the next year is counted from tomorrow. A jump over a
-        // turn settles every day counted so far at the first pass after it.
-        private void TradingYear(int day)
-        {
-            int year = Math.Max(1, _climate.DaysPerYear);
-            if (_state.TaxFrom <= 0)
-            {
-                _state.TaxFrom = EstateRules.TaxYearFirst(day, year);
-            }
-            int last = EstateRules.TaxYearLast(_state.TaxFrom, year);
-            if (day < last)
-            {
-                return;
-            }
-            long sales = EstateGame.BusinessSales(last - year + 1, last);
-            int profit = _state.TaxTakings - _state.TaxCosts;
-            int tax = EstateRules.TradingTax(_state.TaxTakings, _state.TaxCosts, sales, _climate.TaxPercent);
-            if (tax > 0)
-            {
-                Cost(tax, EstateGame.TradingTaxKey, EstateText.T("reallife_estate_trading_year", "day", last.ToString()), null,
-                    "tax on the year's hotels and car hire: " + _climate.TaxPercent + "% of " + _state.TaxTakings + " taken less " + _state.TaxCosts + " spent", true, false);
-                Tell(NotificationType.Info, "reallife_estate_note_trading_tax", Data("amount", EstateText.Money(tax), "profit", EstateText.Money(profit), "rate", _climate.TaxPercent + "%"), TabHotel, null);
-            }
-            if (Verbose)
-            {
-                Logger?.Info("Estate check (the tax year to day " + last + "): the hotels and car hire took " + _state.TaxTakings + " and spent " + _state.TaxCosts + "; the businesses' statements "
-                             + sales + "; the game's threshold " + EstateCatalogue.TaxThreshold + "; tax " + tax + " at " + _climate.TaxPercent + "%: PASS");
-            }
-            _state.TaxTakings = _state.TaxCosts = 0;
-            _state.TaxFrom = day / year * year + 1;
-        }
-
-        // The hotels' and car hire's money, counted for their own tax (TradingYear) and so never among the game's deductions.
-        private static bool Trading(string key)
-        {
-            return key == EstateGame.HotelTakingsKey || key == EstateGame.HotelCostsKey || key == EstateGame.HireRentKey || key == EstateGame.HireCostsKey;
-        }
-
-        // The year's figures begin again.
-        private void NewYear(int day)
-        {
-            _state.YearFrom = day;
-            for (int i = 0; i < _state.Holdings.Count; i++)
-            {
-                _state.Holdings[i].RentYear = _state.Holdings[i].CostYear = 0;
-            }
-            for (int i = 0; i < _state.Hotels.Count; i++)
-            {
-                _state.Hotels[i].TakingsYear = _state.Hotels[i].CostsYear = 0;
-            }
-            _state.Hire.TakingsYear = _state.Hire.CostsYear = 0;
-        }
-
-        // The game is about to write a save. The rents of buildings the player lets himself are put at the game's own
-        // (the entries that hold them are part of the save) and stay so until the next game hour; the state is written.
+        // The rents of buildings the player lets himself are in the save's entries: the game's own until the next game hour.
         private void OnSave()
         {
             try
@@ -691,197 +602,6 @@ namespace RealLifeOverhaul.Economy
                 save.modData.Remove(EstateStore.TestKey);
             }
         }
-
-        // ---------------------------------------------------------------- money
-
-        /// <summary>
-        /// A cost of the property business: taken as a transaction of its own, marked deductible (a hotel's or the car
-        /// hire's running cost is deducted in their own tax instead: TradingYear). Unless 'force', false (and nothing is
-        /// taken) if the cash does not cover it.
-        /// </summary>
-        internal bool Cost(int amount, string key, string name, string place, string how, bool force = false, bool deductible = true)
-        {
-            bool trading = Trading(key);
-            bool taken = EstateGame.Take(amount, key, name, place, deductible && !trading, force);
-            if (taken && trading && deductible && amount > 0 && _state != null)
-            {
-                _state.TaxCosts = (int)Math.Min(int.MaxValue / 4, (long)_state.TaxCosts + amount);
-            }
-            if (Verbose && amount > 0)
-            {
-                Logger?.Info("Estate check (transaction, " + key + ", " + name + "): " + amount + (taken ? " taken" : " could not be taken: the cash does not cover it") + "; " + how + ": PASS");
-            }
-            return taken;
-        }
-
-        /// <summary>Money paid to the player (a hotel's or the car hire's takings counted for their own tax: TradingYear).</summary>
-        internal void Pay(int amount, string key, string name, string place, string how)
-        {
-            EstateGame.Give(amount, key, name, place);
-            if (Trading(key) && amount > 0 && _state != null)
-            {
-                _state.TaxTakings = (int)Math.Min(int.MaxValue / 4, (long)_state.TaxTakings + amount);
-            }
-            if (Verbose && amount > 0)
-            {
-                Logger?.Info("Estate check (transaction, " + key + ", " + name + "): " + amount + " paid to the player; " + how + ": PASS");
-            }
-        }
-
-        // ---------------------------------------------------------------- what the player is told
-
-        /// <summary>A notification of the game's that opens the Property app on a tab, with something picked.</summary>
-        internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
-        {
-            Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
-        }
-
-        internal static Dictionary<string, string> Data(string name, string value, string name2 = null, string value2 = null, string name3 = null, string value3 = null)
-        {
-            var data = new Dictionary<string, string>(3) { { name, value ?? string.Empty } };
-            if (name2 != null)
-            {
-                data[name2] = value2 ?? string.Empty;
-            }
-            if (name3 != null)
-            {
-                data[name3] = value3 ?? string.Empty;
-            }
-            return data;
-        }
-
-        public void Open(int tab, string pick)
-        {
-            if (_app != null && _view != null && _running)
-            {
-                _view.Want(tab, pick);
-                _app.Open();
-            }
-        }
-
-        /// <summary>The app has been opened: the buildings, the agency's staff and the hotels' rates are read again, so that what was done in the game's own apps since the morning shows.</summary>
-        public bool AppOpened()
-        {
-            if (!_running || _broken || Save == null)
-            {
-                return false;
-            }
-            try
-            {
-                if (On(EstatePart.Property))
-                {
-                    int added, dropped;
-                    EstateGame.ReadHoldings(_state, out added, out dropped);
-                    EstateGame.ReadAgency(_state.Agency);
-                    if (added > 0 || dropped > 0)
-                    {
-                        EstateGame.WriteValues(_state, _climate.Index);
-                        WriteRents(false);
-                        BuildAlerts(Save.Day);
-                    }
-                }
-                ReadHotels(Save.Day);
-                _state.Hire.Spaces = _state.Hire.Running ? EstateGame.Spaces(_state.Hire.Lot) : 0;
-                Badge();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Fault("opening the app", e);
-                return false;
-            }
-        }
-
-        /// <summary>Something has changed: the Planner's rows and the app's badge are made again, and the app if it is open.</summary>
-        internal void Changed()
-        {
-            if (!_running || Save == null)
-            {
-                return;
-            }
-            BuildAlerts(Save.Day);
-            Badge();
-            if (_view != null)
-            {
-                _view.Changed();
-            }
-            EstateBridges.Changed?.Invoke();
-        }
-
-        private void Badge()
-        {
-            if (_app != null)
-            {
-                _app.SetBadge(_app.Showing ? 0 : Waiting());
-            }
-        }
-
-        /// <summary>How many things wait for an answer from the player.</summary>
-        public int Waiting()
-        {
-            if (!_running || _state == null || Save == null)
-            {
-                return 0;
-            }
-            int day = Save.Day, waiting = 0;
-            if (On(EstatePart.Property))
-            {
-                for (int i = 0; i < _state.Holdings.Count; i++)
-                {
-                    EstateHolding h = _state.Holdings[i];
-                    waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0) + EstateRules.UnitsToAnswer(h, day);
-                }
-                for (int i = 0; i < _state.Agency.Open.Count; i++)
-                {
-                    waiting += _state.Agency.Open[i].Stage == (int)InstructionStage.Offered ? 1 : 0;
-                }
-            }
-            for (int i = 0; On(EstatePart.Hotel) && i < _state.Hotels.Count; i++)
-            {
-                waiting += _state.Hotels[i].AskRooms > 0 ? 1 : 0;
-            }
-            return waiting;
-        }
-
-        // ---------------------------------------------------------------- the Planner's rows
-
-        partial void PropertyAlerts(int day);
-        partial void HotelAlerts(int day);
-        partial void HireAlerts(int day);
-
-        private void BuildAlerts(int day)
-        {
-            _alerts.Clear();
-            try
-            {
-                if (On(EstatePart.Property))
-                {
-                    PropertyAlerts(day);
-                }
-                if (On(EstatePart.Hotel))
-                {
-                    HotelAlerts(day);
-                }
-                if (On(EstatePart.Hire))
-                {
-                    HireAlerts(day);
-                }
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);   // (a row that cannot be made is left out: the rules are not touched)
-            }
-        }
-
-        internal void Alert(int a, int b, int day, string title, string what, string money, string ifMissed)
-        {
-            if (_alerts.Count < EstateCatalogue.AlertsMost)
-            {
-                _alerts.Add(new EstateAlert { A = a, B = b, Day = day, Title = title, What = what, Money = money, IfMissed = ifMissed });
-            }
-        }
-
-        // ---------------------------------------------------------------- for the save tools
 
         /// <summary>For the save tools: every figure is the game's own again; the timer starts it again if an option is on.</summary>
         public void StopAll()

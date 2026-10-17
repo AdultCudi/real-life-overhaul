@@ -1,16 +1,9 @@
-using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Offers tab: customers' offers waiting for an answer, and the cars sold lately. An offer that is picked says who
-    /// the buyer is and what they want (a test drive, the dealership's finance, a warranty, a car of their own in part
-    /// exchange) and what would come in today; the player takes it, counters at a price between the offer and the asking
-    /// price, or turns it down. The Finance tab: the cars sold on the dealership's own finance with what is still owed,
-    /// and the warranties sold with what they have paid out.
-    /// </summary>
+    /// <summary>The Offers tab (customers' offers and the cars sold lately) and the Finance tab (plans and warranties).</summary>
     public sealed partial class DealerApp
     {
         private const string DealRow = "deal:";
@@ -38,7 +31,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                     row.Set(2, yard.Name);
                     Money(row, 3, deal.Offer);
                     Money(row, 4, car.Asking);
-                    row.NoTotal = false;
                     row.Set(5, Extras(deal));
                     int left = Mathf.Max(0, deal.Expires - now);
                     row.Set(6, DealerText.Hours(left), left, left <= 3 ? TableRow.Red : TableRow.Plain);
@@ -70,7 +62,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (picked != null)
             {
-                WriteDeal(box, pickedYard, picked, now);
+                WriteDeal(box, state, pickedYard, picked, now);
                 return DealerColumns.Offers;
             }
             _picked = null;
@@ -115,7 +107,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return t.ToString();
         }
 
-        // What the extras a buyer would take come to at this price, and what the showroom pays for them.
         private static int ExtrasPrice(int extras, int price, out int cost)
         {
             int sell = 0;
@@ -132,7 +123,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return sell;
         }
 
-        private void WriteDeal(InfoBox box, DealerYard yard, DealerOffer d, int now)
+        private void WriteDeal(InfoBox box, DealerState state, DealerYard yard, DealerOffer d, int now)
         {
             StockCar car = yard.Car(d.Car);
             box.Title(d.Customer);
@@ -155,15 +146,17 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 bool lends = yard.Finance && DealerRules.Lends(d.Score);
                 box.Line(DealerText.Fill(lends ? "reallife_dealer_deal_finance" : yard.Finance ? "reallife_dealer_deal_finance_refused" : "reallife_dealer_deal_finance_off",
-                    "deposit", d.Deposit.ToString(), "weeks", ((d.Term + DealerCatalogue.WeekDays - 1) / DealerCatalogue.WeekDays).ToString(), "grade", FinanceText.Grade(CreditCatalogue.GradeOf(d.Score))));
+                    "deposit", d.Deposit.ToString(), "weeks", ((d.Term + DealerCatalogue.WeekDays - 1) / DealerCatalogue.WeekDays).ToString(),
+                    "grade", FinanceText.Grade(CreditCatalogue.GradeOf(d.Score))));
             }
             if (d.TradeType != null)
             {
                 box.Line(DealerText.Fill("reallife_dealer_deal_trade", "car", DealerGame.CarName(d.TradeType), "km", DealerText.Km(d.TradeKm), "allowance", DealerText.Money(d.TradeAllowance)));
             }
-            if (d.Tier >= 0 && yard.Warranty)
+            if (DealerRules.Tier(yard.Warranty, d.Tier, state) >= 0)   // the warranty the sale would take: none when no more can be kept
             {
-                box.Line(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium", DealerText.Money(DealerRules.Premium(d.Offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast)))));
+                int premium = DealerRules.Premium(d.Offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast));
+                box.Line(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium", DealerText.Money(premium)));
             }
             if (d.Extras != 0 && yard.Extras)
             {
@@ -224,8 +217,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- the Finance tab
-
         private TableSpec WriteFinance(InfoBox box, DealerState state)
         {
             int owed = 0, weekly = 0, missed = 0, paidOut = 0;
@@ -242,7 +233,9 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Money(row, 3, p.Owed);
                 Money(row, 4, p.Weekly);
                 row.Set(5, FinanceText.Day(p.Due), p.Due);
-                row.Set(6, p.Missed > 0 ? DealerText.T("reallife_dealer_plan_missed", "weeks", p.Missed.ToString()) : DealerText.T("reallife_dealer_plan_paying", "grade", FinanceText.Grade(CreditCatalogue.GradeOf(p.Score))),
+                row.Set(6, p.Missed > 0
+                        ? DealerText.T("reallife_dealer_plan_missed", "weeks", p.Missed.ToString())
+                        : DealerText.T("reallife_dealer_plan_paying", "grade", FinanceText.Grade(CreditCatalogue.GradeOf(p.Score))),
                     p.Missed > 0 ? TableRow.Red : TableRow.Plain);
                 owed += p.Owed;
                 weekly += p.Weekly;
@@ -267,7 +260,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             box.Title(DealerText.T("reallife_dealer_finance_title"));
             box.Section("reallife_ibox_sec_now");
-            box.Line(DealerText.Fill("reallife_dealer_finance_plans", "plans", state.Plans.Count.ToString(), "owed", DealerText.Money(owed), "weekly", DealerText.Money(weekly), "missed", missed.ToString()));
+            box.Line(DealerText.Fill("reallife_dealer_finance_plans", "plans", state.Plans.Count.ToString(), "owed", DealerText.Money(owed), "weekly", DealerText.Money(weekly),
+                "missed", missed.ToString()));
             box.Line(DealerText.Fill("reallife_dealer_finance_covers", "covers", state.Covers.Count.ToString(), "paid", DealerText.Money(paidOut)));
             box.Note(DealerText.T("reallife_dealer_finance_about"));
             Meta.Guide.Point(box, GuideTitle);

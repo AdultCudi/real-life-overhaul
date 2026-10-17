@@ -3,25 +3,17 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The showroom's business beyond buying and selling: the advertising events the player books, its reputation with
-    /// buyers and the missions that build it, the workshop that brings a car's condition back, and the cars won at the
-    /// trade auction on their way. The rules are DealerRules.Business; this keeps the money, the cars and the notices.
-    /// Nothing runs per frame: the events end on the day, the workshop and the deliveries are seen to on the hour, and
-    /// the rest on the player's word or a sale.
-    /// </summary>
+    /// <summary>The showroom's events, reputation, missions, workshop and deliveries: the money, the cars and the notices.</summary>
     public sealed partial class DealerDirector
     {
         private readonly List<DealerDelivery> _due = new List<DealerDelivery>(4);
         private readonly List<int> _done = new List<int>(4);
+        private readonly DealerBook _sum = new DealerBook(), _scratch = new DealerBook();
 
-        internal static string GrowthRow(string kind, int n) => kind + n;
         internal static string RepRow(DealerYard y) => "rep:" + y.Place;
         internal static string MissionRow(DealerYard y, int mission) => "mission:" + mission + ":" + y.Place;
         internal static string EventRow(int kind) => "event:" + kind;
         internal static string DeliveryRow(DealerDelivery q) => "way:" + q.Id;
-
-        // ---------------------------------------------------------------- reputation and missions
 
         /// <summary>A change to a showroom's reputation; a step reached is said, with its perk.</summary>
         internal void Repute(DealerYard y, int change)
@@ -67,9 +59,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- advertising events
-
-        /// <summary>What an event of this kind costs now.</summary>
         internal static int EventCost(int kind)
         {
             return kind >= 0 && kind < DealerCatalogue.EventKinds ? Prices.At(DealerCatalogue.EventCost[kind]) : 0;
@@ -84,6 +73,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(_running ? DealerRefusal.Gone : DealerRefusal.Off);
             }
+            EndEvents(Save.Day);   // one that ended while the feature was off is closed first, with its notice, and its kind rests
             EventRefusal no = DealerRules.CanBook(y, kind, Save.Day);
             if (no != EventRefusal.None)
             {
@@ -119,14 +109,11 @@ namespace RealLifeOverhaul.Economy.Dealership
                 DealerReport.Sum(_state, y.Place, y.EventFrom, y.EventUntil, day, _sum, _scratch);
                 Tell(NotificationType.Info, "reallife_dealer_note_event_over", new Dictionary<string, string>(4)
                     { { "event", DealerText.Event(y.Event, y.Feature) }, { "name", y.Name }, { "visitors", _sum.Visitors.ToString() }, { "sold", _sum.Sold.ToString() } }, TabReports, null);
-                Logger?.Info("Dealership: the event at '" + y.Name + "' is over: " + _sum.Visitors + " visitor(s), " + _sum.Offers + " offer(s), " + _sum.Sold + " sold over days " + y.EventFrom + " to " + y.EventUntil + ".");
+                Logger?.Info("Dealership: the event at '" + y.Name + "' is over: " + _sum.Visitors + " visitor(s), " + _sum.Offers + " offer(s), " + _sum.Sold
+                             + " sold over days " + y.EventFrom + " to " + y.EventUntil + ".");
                 DealerRules.EndEvent(y);
             }
         }
-
-        private readonly DealerBook _sum = new DealerBook(), _scratch = new DealerBook();
-
-        // ---------------------------------------------------------------- extras
 
         public void OfferExtras(string place, bool on)
         {
@@ -138,19 +125,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // ---------------------------------------------------------------- the workshop
-
-        /// <summary>What the workshop would charge for a car now.</summary>
         internal int WorkshopCost(StockCar c)
         {
             return DealerRules.WorkshopCost(DealerRules.Worth(DealerGame.ListPrice(c.Type), Prices.Level, 0, 1000), c.Condition, c.Faults, Prices.At(DealerCatalogue.WorkshopBase));
         }
 
-        /// <summary>
-        /// A car into the showroom's workshop: paid now, off show until the work is done (any offer on it is withdrawn), and
-        /// back with every fault put right and most of its missing condition. Refused while it is out on a test drive, in the
-        /// workshop already, with nothing to do, or with every bay taken.
-        /// </summary>
+        /// <summary>A car into the workshop: paid now, off show, its offer withdrawn. Refused while out, in already, needing nothing or with no bay free.</summary>
         public bool Workshop(int car)
         {
             DealerYard yard = null;
@@ -187,7 +167,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             RemoveDeals(yard, c.Id);
             Book(yard, 0, cost, 0, 0);
             yard.Today.Spent += cost;
-            Logger?.Info("Dealership: a " + c.Type + " of '" + yard.Name + "' into the workshop for " + cost + " until hour " + c.ShopUntil + " (condition " + c.Condition + ", faults " + c.Faults + ").");
+            Logger?.Info("Dealership: a " + c.Type + " of '" + yard.Name + "' into the workshop for " + cost + " until hour " + c.ShopUntil
+                         + " (condition " + c.Condition + ", faults " + c.Faults + ").");
             Changed();
             return true;
         }
@@ -226,9 +207,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             Advance(y);
         }
 
-        // ---------------------------------------------------------------- deliveries
-
-        /// <summary>A lot won and paid for, booked to arrive at a showroom with room for it a few days on.</summary>
         private DealerDelivery Ship(DealerListing l, DealerYard y, int cost, int now)
         {
             var q = new DealerDelivery
@@ -300,13 +278,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             DealerGame.Give(price, DealerLines.SoldType, DealerGame.Sold(q.Type, reg), reg);
             _state.Deliveries.Remove(q);
             Logger?.Info("Dealership: the " + q.Type + " on its way had no showroom to go to; sold to the trade for " + price + ".");
-            Tell(NotificationType.Info, "reallife_dealer_note_way_sold", new Dictionary<string, string>(2) { { "car", DealerGame.CarName(q.Type) }, { "price", DealerText.Money(price) } }, TabStock, null);
+            Tell(NotificationType.Info, "reallife_dealer_note_way_sold",
+                new Dictionary<string, string>(2) { { "car", DealerGame.CarName(q.Type) }, { "price", DealerText.Money(price) } }, TabStock, null);
         }
 
-        // ---------------------------------------------------------------- for the save tools
-
-        // Before the save is prepared for removing the mod: the workshop's cars are finished, and the cars on their way
-        // are put on a lot with room or, failing that, sold to the trade, so that nothing paid for is left in the mod's line.
+        // Before the save tools take the mod out: the workshop's cars finished, and the cars on their way put on a lot or
+        // sold to the trade, so that nothing paid for is left in the mod's line.
         private void Settle()
         {
             if (!_running || _state == null || Save == null)

@@ -20,17 +20,12 @@ namespace RealLifeOverhaul.Economy
         public int Review;          // the review written tonight; 0 for none
     }
 
-    /// <summary>
-    /// Owning a hotel by rule: how many rooms sell on a night, what the night takes and costs, what guests then
-    /// think of the place, and what is asked for one. Game-free; every draw is <see cref="EstateRules.Roll"/>.
-    /// The rooms and their going rates are Travel's own (two types to a hotel); the counts are this catalogue's.
-    /// </summary>
+    /// <summary>Owning a hotel by rule: rooms sold, takings, costs, the rating and the price. Game-free; the going rates are Travel's.</summary>
     public static class HotelRules
     {
         private const int ForNoise = 51, ForPipe = 52, ForGroup = 53, ForGroupRooms = 54, ForGroupNights = 55, ForReview = 56;
 
-        /// <summary>Review codes: 1 clean, 2 not clean, 3 good staff, 4 poor staff, 5 good value, 6 dear.</summary>
-        public const int ReviewClean = 1, ReviewDirty = 2, ReviewStaff = 3, ReviewNoStaff = 4, ReviewValue = 5, ReviewDear = 6;
+        public const int ReviewClean = 1, ReviewDirty = 2, ReviewStaff = 3, ReviewNoStaff = 4, ReviewValue = 5, ReviewDear = 6;   // saved
 
         public static int Rooms(int tier, int type)
         {
@@ -53,11 +48,7 @@ namespace RealLifeOverhaul.Economy
             return EstateCatalogue.RatingDemandLeast + EstateCatalogue.Clamp(rating, 0, 1000) * EstateCatalogue.RatingDemandSpan / 1000;
         }
 
-        /// <summary>
-        /// The share of a type's rooms that guests want on a night, thousandths (it can be over 1000: more want a
-        /// room than there are). Each input moves it one way only: a better season, a weekend, an event, a better
-        /// economy, a richer district, a lower rate, a better rating and a campaign never lose a guest.
-        /// </summary>
+        /// <summary>The share of a type's rooms guests want on a night, thousandths, over 1000 when more want one than there are.</summary>
         public static int Demand(int tier, int season, int weekday, int evt, int cycle, int income, int rate, int rating, bool campaign, int noise)
         {
             int[] seasons = tier == EstateCatalogue.HotelTiers - 1 ? EstateCatalogue.SeasonCottage : EstateCatalogue.SeasonCity;
@@ -80,20 +71,20 @@ namespace RealLifeOverhaul.Economy
             return EstateCatalogue.Clamp((int)(((long)Math.Max(0, rooms) * Math.Max(0, demand) + 500) / 1000), 0, Math.Max(0, rooms));
         }
 
-        /// <summary>The rate a guest pays for a type tonight.</summary>
         public static int Rate(int going, int rate)
         {
             return Math.Max(1, EstateCatalogue.Share(going, EstateCatalogue.Clamp(rate, EstateCatalogue.RateLeast, EstateCatalogue.RateMost)));
         }
 
-        /// <summary>A night's costs: reception round the clock, housekeeping by rooms sold, maintenance, laundry, breakfast, utilities and wear, at today's prices.</summary>
+        /// <summary>A night's costs at today's prices: reception round the clock, and what each room and each room sold costs.</summary>
         public static int Costs(int tier, int staff, int sold, int index)
         {
             int level = EstateCatalogue.Clamp(staff, 0, EstateCatalogue.StaffLevels - 1);
             int rooms = Rooms(tier);
             long cost = 24L * EstateCatalogue.ReceptionWage[level] + (long)sold * EstateCatalogue.HousekeepingPerRoom[level] + (long)rooms * EstateCatalogue.MaintenancePerRoom[level];
             cost = cost * EstateCatalogue.StaffTier[EstateCatalogue.Clamp(tier, 0, EstateCatalogue.HotelTiers - 1)] / 1000;
-            cost += (long)sold * (EstateCatalogue.LaundryPerRoom + EstateCatalogue.BreakfastPerRoom[EstateCatalogue.Clamp(tier, 0, EstateCatalogue.HotelTiers - 1)] + EstateCatalogue.UtilitiesPerSold + EstateCatalogue.WearPerSold);
+            cost += (long)sold * (EstateCatalogue.LaundryPerRoom + EstateCatalogue.BreakfastPerRoom[EstateCatalogue.Clamp(tier, 0, EstateCatalogue.HotelTiers - 1)]
+                                  + EstateCatalogue.UtilitiesPerSold + EstateCatalogue.WearPerSold);
             cost += (long)rooms * EstateCatalogue.UtilitiesPerRoom;
             return (int)(cost * EstateCatalogue.Clamp(index, 500, 4000) / 1000);
         }
@@ -106,12 +97,13 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Where a rating heads: cleanliness, staffing and the price against the going rate.</summary>
         public static int RatingTarget(int clean, int staff, int rate)
         {
-            long t = (long)EstateCatalogue.Clamp(clean, 0, 1000) * EstateCatalogue.RatingClean + (long)EstateCatalogue.StaffScore[EstateCatalogue.Clamp(staff, 0, EstateCatalogue.StaffLevels - 1)] * EstateCatalogue.RatingStaff
+            long t = (long)EstateCatalogue.Clamp(clean, 0, 1000) * EstateCatalogue.RatingClean
+                     + (long)EstateCatalogue.StaffScore[EstateCatalogue.Clamp(staff, 0, EstateCatalogue.StaffLevels - 1)] * EstateCatalogue.RatingStaff
                      + (long)PriceScore(rate) * EstateCatalogue.RatingPrice;
             return (int)(t / 1000);
         }
 
-        /// <summary>What a hotel is asked for as a going concern: so many years of its ordinary takings, as the property market stands.</summary>
+        /// <summary>What a hotel is asked for as a going concern: years of its ordinary takings, by the property market.</summary>
         public static int Price(int tier, int going0, int going1, int real, int daysPerYear)
         {
             long night = (long)Rooms(tier, 0) * Math.Max(0, going0) + (long)Rooms(tier, 1) * Math.Max(0, going1);
@@ -132,6 +124,19 @@ namespace RealLifeOverhaul.Economy
         public static int CampaignCost(int tier, int index)
         {
             return EstateCatalogue.Share((long)Rooms(tier) * EstateCatalogue.CampaignPerRoom, EstateCatalogue.Clamp(index, 500, 4000));
+        }
+
+        /// <summary>A week's campaign paid for today: it runs from today, and is spent this year.</summary>
+        public static void Campaign(HotelFile f, int day, int cost)
+        {
+            f.PushEnd = day + EstateCatalogue.CampaignDays - 1;
+            f.CostsYear += Math.Max(0, cost);
+        }
+
+        /// <summary>What giving up a hotel brings: a lease its deposit; a hotel bought a little under its price now, or under what was paid when Travel no longer prices it.</summary>
+        public static int SoldBack(bool leased, int paid, int priceNow)
+        {
+            return leased ? paid : EstateCatalogue.Share(priceNow > 0 ? priceNow : paid, EstateCatalogue.HotelSellShare);
         }
 
         public static int Stars(int rating)
@@ -157,7 +162,7 @@ namespace RealLifeOverhaul.Economy
             f.AskRooms = f.AskNights = f.AskRate = f.AskLapse = 0;
         }
 
-        /// <summary>A pipe bursts: a tenth of the larger type's rooms are out of use for two nights. Returns the bill.</summary>
+        /// <summary>A pipe bursts: some of the larger type's rooms are out of use for two nights. Returns the bill.</summary>
         public static int Pipe(HotelFile f, int day, int index)
         {
             f.OutRooms = Math.Max(1, EstateCatalogue.Share(Rooms(f.Tier, 0), EstateCatalogue.PipeRoomsShare));
@@ -173,7 +178,8 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             int key = EstateRules.Hash(f.Slot);
-            f.AskRooms = Math.Max(1, EstateCatalogue.Share(Rooms(f.Tier, 0), EstateRules.Between(EstateRules.Roll(seed, day, ForGroupRooms, key), EstateCatalogue.GroupLeast, EstateCatalogue.GroupMost)));
+            int share = EstateRules.Between(EstateRules.Roll(seed, day, ForGroupRooms, key), EstateCatalogue.GroupLeast, EstateCatalogue.GroupMost);
+            f.AskRooms = Math.Max(1, EstateCatalogue.Share(Rooms(f.Tier, 0), share));
             f.AskNights = EstateRules.Between(EstateRules.Roll(seed, day, ForGroupNights, key), EstateCatalogue.GroupNightsLeast, EstateCatalogue.GroupNightsMost);
             f.AskRate = Math.Max(1, EstateCatalogue.Share(f.Going[0], 1000 - EstateCatalogue.GroupDiscount));
             f.AskLapse = day + EstateCatalogue.GroupAnswerDays;
@@ -189,11 +195,7 @@ namespace RealLifeOverhaul.Economy
             f.Reviews[0] = review;
         }
 
-        /// <summary>
-        /// One night. A group that is staying has its rooms first, at its own rate, out of the larger type; rooms
-        /// out of use are not sold; the rest sell by <see cref="Demand"/>. Then the costs, the lease, cleanliness
-        /// and the rating, a review, and what may happen: a burst pipe, a group that asks, an inspection.
-        /// </summary>
+        /// <summary>One night: a staying group's rooms first, the rest by <see cref="Demand"/>, then the costs, the rating and what happens.</summary>
         public static HotelNight Night(HotelFile f, int seed, int day, EstateClimate c)
         {
             var n = new HotelNight();
@@ -229,7 +231,7 @@ namespace RealLifeOverhaul.Economy
                 f.OutRooms = f.OutEnd = 0;
             }
 
-            // cleanliness goes to what the contract keeps up, less on a night that is all but full; the rating follows
+            // Cleanliness heads for what the staffing keeps up, less on a night that is all but full; the rating follows.
             int cleanTarget = EstateCatalogue.CleanTarget[EstateCatalogue.Clamp(f.Staff, 0, EstateCatalogue.StaffLevels - 1)]
                               - (sellable > 0 && (long)total * 1000 >= (long)sellable * EstateCatalogue.FullHouseShare ? EstateCatalogue.FullHouseClean : 0);
             f.Clean = EstateCatalogue.Clamp(f.Clean + EstateCatalogue.Share(cleanTarget - f.Clean, 200), 0, 1000);
@@ -261,15 +263,13 @@ namespace RealLifeOverhaul.Economy
                 n.Review = review;
             }
 
-            // a burst pipe: a bill, and a tenth of the larger type out of use for two nights
             if (EstateRules.Roll(seed, day, ForPipe, key) < EstateCatalogue.PipeChance)
             {
                 n.Pipe = true;
                 n.PipeCost = Pipe(f, day, c.Index);
             }
 
-            // a group that asks: so many rooms for so many nights at a discount, to be answered within two days
-            if (f.AskRooms > 0 && day > f.AskLapse)
+            if (f.AskRooms > 0 && day >= f.AskLapse)   // the night of its last day: it could be answered all that day
             {
                 RefuseGroup(f);
                 n.GroupLapsed = true;
@@ -279,7 +279,6 @@ namespace RealLifeOverhaul.Economy
                 n.GroupAsks = AskGroup(f, seed, day);
             }
 
-            // the inspector, every thirty days
             if (f.InspectDay > 0 && day >= f.InspectDay)
             {
                 f.InspectDay = day + EstateCatalogue.InspectionEvery;

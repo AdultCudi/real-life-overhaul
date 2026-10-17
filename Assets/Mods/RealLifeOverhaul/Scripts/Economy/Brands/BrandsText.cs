@@ -3,11 +3,7 @@ using Localizor;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
-    /// <summary>
-    /// The words of brands and franchises: every figure they show is written here, the same way in the Brands app,
-    /// the Planner and a notification. Every text is a key of en.json; money is written as the Finance app writes it.
-    /// Called when something is shown or said, never otherwise.
-    /// </summary>
+    /// <summary>The words of brands and franchises: every figure they show is written here, the same everywhere, from keys of en.json.</summary>
     public static class BrandsText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -15,8 +11,14 @@ namespace RealLifeOverhaul.Economy.Brands
         public static readonly string[] TemperKeys = { "reallife_brand_temper_careful", "reallife_brand_temper_ambitious", "reallife_brand_temper_cutting" };
         public static readonly string[] TemperAboutKeys = { "reallife_brand_app_temper_about_0", "reallife_brand_app_temper_about_1", "reallife_brand_app_temper_about_2" };
         public static readonly string[] HoldKeys = { "reallife_brand_hold_opened", "reallife_brand_hold_converted", "reallife_brand_hold_books" };
-        public static readonly string[] AskKeys = { "reallife_brand_ask_none", "reallife_brand_ask_help", "reallife_brand_ask_second", "reallife_brand_ask_renewal", "reallife_brand_ask_dispute", "reallife_brand_ask_bid" };
-        public static readonly string[] RefusalKeys = { "reallife_brand_answer_yes", "reallife_brand_answer_dear", "reallife_brand_answer_capital", "reallife_brand_answer_territory", "reallife_brand_answer_full" };
+        public static readonly string[] AskKeys =
+        {
+            "reallife_brand_ask_none", "reallife_brand_ask_help", "reallife_brand_ask_second", "reallife_brand_ask_renewal", "reallife_brand_ask_dispute", "reallife_brand_ask_bid"
+        };
+        public static readonly string[] RefusalKeys =
+        {
+            "reallife_brand_answer_yes", "reallife_brand_answer_dear", "reallife_brand_answer_capital", "reallife_brand_answer_territory", "reallife_brand_answer_full"
+        };
         public static readonly string[] ChainKeys = { "reallife_brand_chain_0", "reallife_brand_chain_1", "reallife_brand_chain_2" };
         public static readonly string[] PushKeys = { "reallife_brand_push_local", "reallife_brand_push_city" };
         public static readonly string[] ScandalKeys = { "reallife_brand_scandal_inspection", "reallife_brand_scandal_strike", "reallife_brand_scandal_fire", "reallife_brand_scandal_influencer" };
@@ -57,24 +59,19 @@ namespace RealLifeOverhaul.Economy.Brands
             return FinanceText.Day(day);
         }
 
-        public static string N(int value)
-        {
-            return value.ToString(Inv);
-        }
-
         /// <summary>Recognition kept in hundredths, as whole points: "49".</summary>
         public static string Points(int hundredths)
         {
             return (hundredths / 100).ToString(Inv);
         }
 
-        /// <summary>Recognition kept in hundredths, to a tenth, as the Brands table shows it: "8.9", "0.4" (whole points hid a day's gain).</summary>
+        /// <summary>Recognition kept in hundredths, to a tenth, as the Brands table shows it: "8.9".</summary>
         public static string Rec(int hundredths)
         {
             return (BrandRules.Shown(hundredths) / 10f).ToString("0.0", Inv);
         }
 
-        /// <summary>Hundredths of a point with one decimal, for what a scandal cost: "4", "1.5".</summary>
+        /// <summary>Hundredths of a point with one decimal at most: "4", "1.5".</summary>
         public static string Lost(int hundredths)
         {
             return (hundredths / 100f).ToString("0.#", Inv);
@@ -134,7 +131,6 @@ namespace RealLifeOverhaul.Economy.Brands
             return T(ScandalKeys[BrandCatalogue.Clamp((int)kind, 0, ScandalKeys.Length - 1)]);
         }
 
-        /// <summary>A city chain's name.</summary>
         public static string Chain(int chain)
         {
             return T(ChainKeys[BrandCatalogue.Clamp(chain, 0, ChainKeys.Length - 1)]);
@@ -152,7 +148,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return string.IsNullOrEmpty(district) ? T("reallife_brand_district_none") : LocalizorManager.IsLocalizedKey(district) ? district.GetLocalization() : district;
         }
 
-        /// <summary>A franchised shop by its brand and who runs it: what the map and the Planner call it.</summary>
+        /// <summary>A franchised shop by its brand and who runs it, as the map and the Planner call it.</summary>
         public static string Shop(Brand b, Franchise f)
         {
             return T("reallife_brand_shop_name", "brand", b != null ? b.Name : "?", "who", f.Name);

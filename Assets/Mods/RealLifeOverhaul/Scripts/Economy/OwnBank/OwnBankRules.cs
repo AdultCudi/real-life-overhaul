@@ -287,6 +287,12 @@ namespace RealLifeOverhaul.Economy
             return b.Reserves + b.Lent + b.InArrears + b.FundCost == b.Savings + b.Capital;
         }
 
+        /// <summary>Whether the regulator's watch may be told again: once a month at most; <paramref name="told"/> is int.MinValue while never told.</summary>
+        public static bool WatchDue(int day, int told, int monthDays)
+        {
+            return (long)day - told >= monthDays;   // as a long: an int would run over from int.MinValue
+        }
+
         // ---------------------------------------------------------------- trust
 
         /// <summary>

@@ -209,4 +209,4 @@ Readers of a statement take its takings as today's: an insurance premium's base 
 
 The property business's hotels and car hire are in no statement (a hotel is held in the mod's books, the hire lot is no business of the game's), so they pay their own tax when the game's tax year turns, on the same day as the game's: its rate on the year's takings less their running costs, nothing on a loss, and nothing while the year's business income in all is under the game's threshold (`EstateRules.TradingTax`, `EstateDirector.TradingYear`).
 
-Their running costs are counted there and are not marked deductible, so nothing is deducted twice.
+Their running costs are counted there and are not marked deductible, so nothing is deducted twice. The figures the Property app gives for this year (a building's rent and costs, a hotel's and the hire's takings and costs) start again on that same day (`EstateRules.YearTurned`).

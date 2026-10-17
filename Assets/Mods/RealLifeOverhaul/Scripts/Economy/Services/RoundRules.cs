@@ -11,8 +11,8 @@ namespace RealLifeOverhaul.Economy
         public int From, To;             // the shift at their base, minutes of today
         public int X, Z;                 // the base's door
         public int Skill, Mood;          // the cleaning skill and the satisfaction, each 0 to 100
-        public int FreeFrom;             // busy until this minute: a visit that is under way when the round is planned again
-        public bool Out;                 // ...and then at AtX, AtZ, not at base
+        public int FreeFrom;             // busy until this minute with a visit under way when the round is planned again
+        public bool Out;                 // ...and then at AtX, AtZ rather than at base
         public int AtX, AtZ;
 
         // What the plan gave them.
@@ -22,10 +22,10 @@ namespace RealLifeOverhaul.Economy
         public int HomeMetres, HomeMinutes;  // the way home from the last visit
     }
 
-    /// <summary>One visit that is due: a fixed hour of a client's, or a client whose floor has fallen under its threshold.</summary>
+    /// <summary>One visit that is due: a fixed hour of a client's, or a client whose floor is under its threshold.</summary>
     public sealed class RoundJob
     {
-        public int Client;               // its place in the list of clients
+        public int Client;               // its index in the list of clients
         public int Slot = -1;            // which of its fixed visits; -1: as needed
         public int X, Z;
         public int Force = 1;
@@ -35,10 +35,10 @@ namespace RealLifeOverhaul.Economy
         public int Why;                  // why nobody takes it: RoundRules.NoCleaner and its neighbours
     }
 
-    /// <summary>A visit of the round: who, where, and when.</summary>
+    /// <summary>A visit of the round: who, where and when.</summary>
     public struct RoundVisit
     {
-        public int Cleaner;              // their place in the list of shifts
+        public int Cleaner;              // their index in the list of shifts
         public int Client;
         public int Slot;
         public int Leave;                // the minute they set out for it
@@ -48,19 +48,8 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The day's round. Game-free and deterministic: the same clients, crew and hour always give the same round.
-    ///
-    /// WHAT IT DOES. Of all the visits that are due and all the shifts of the crew, it takes the pair that can start
-    /// soonest (the cleaner's way there counted, and the visit's own hour), gives that visit to that cleaner, and
-    /// asks again until nothing more fits. A visit fits a cleaner if they can reach it, clean for the shortest visit
-    /// at least, and be back at their base before their shift ends. Ties go to the visit that was due first, then to
-    /// the shorter way, then to the order of the lists.
-    ///
-    /// WHAT IT OPTIMISES. How soon each due visit begins. It does not look for the shortest way round: a place whose
-    /// hour has come is not left waiting for a neater route.
-    ///
-    /// Cost: for J visits and C shifts, J x J x C looks at a kept distance; a day of 96 visits and 12 shifts is about
-    /// a hundred thousand of them, once when the round is planned.
+    /// The day's round, game-free and deterministic: again and again the due visit and shift that can start soonest, so it
+    /// optimises how soon each visit begins, not the length of the way. Cost: J x J x C kept distances, once per planning.
     /// </summary>
     public static class RoundRules
     {
@@ -68,12 +57,7 @@ namespace RealLifeOverhaul.Economy
         public const int TooFar = 2;     // further than anybody goes
         public const int NoTime = 3;     // nobody can get there, clean and be back before their shift ends
 
-        /// <summary>
-        /// The visits that are due from a minute of today on. A client with fixed hours gets one for each hour that
-        /// has not passed and was not already made; a client served as needed gets one now if its floor is under its
-        /// threshold and no visit is already under way. A shop the game would not clean today (shut, or closed on
-        /// this day of the week) gets none.
-        /// </summary>
+        /// <summary>The visits due from now: each fixed hour not passed or made, or, as needed, one now under the threshold with none under way.</summary>
         public static void Jobs(List<CleaningClient> clients, int now, List<RoundJob> into)
         {
             into.Clear();
@@ -110,10 +94,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// Plans the round from a minute of today on: adds a visit to the list for every job somebody can take, in
-        /// the order they begin, and says of each job that nobody takes why not. Returns how many were taken.
-        /// </summary>
+        /// <summary>Plans the round from now: a visit for every job somebody can reach, clean and be back from in their shift. Returns how many.</summary>
         public static int Plan(List<RoundCleaner> cleaners, List<RoundJob> jobs, TravelCache cache, bool van, int now, List<RoundVisit> visits)
         {
             int taken = 0;
@@ -204,10 +185,10 @@ namespace RealLifeOverhaul.Economy
                     who.Metres += metres;
                     who.HomeMetres = metres;
                     who.HomeMinutes = TravelRules.Minutes(metres, van);
-                    who.AwayTo = Math.Min(Math.Max(who.To, who.FreeFrom), who.FreeFrom + TravelRules.Minutes(metres, van));
+                    who.AwayTo = Math.Min(Math.Max(who.To, who.FreeFrom), who.FreeFrom + who.HomeMinutes);
                     if (who.AwayFrom < 0)
                     {
-                        who.AwayFrom = Math.Max(who.From, now);   // (out when the round was planned again and nothing more to do: only the way home is left)
+                        who.AwayFrom = Math.Max(who.From, now);   // out when planned again with nothing more to do: only the way home
                     }
                 }
             }
@@ -221,7 +202,7 @@ namespace RealLifeOverhaul.Economy
             return taken;
         }
 
-        // Why nobody takes a visit, the first reason that holds for everybody: no shift left, too far, or no time.
+        // Why nobody takes a visit: the first reason that holds for everybody.
         private static int Why(List<RoundCleaner> cleaners, RoundJob job, TravelCache cache, bool van)
         {
             bool anyShift = false, anyNear = false;
@@ -239,25 +220,18 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>The minutes two spans of time share.</summary>
-        public static int Overlap(int from, int to, int otherFrom, int otherTo)
-        {
-            return Math.Max(0, Math.Min(to, otherTo) - Math.Max(from, otherFrom));
-        }
+        public static int Overlap(int from, int to, int otherFrom, int otherTo) => Math.Max(0, Math.Min(to, otherTo) - Math.Max(from, otherFrom));
 
-        /// <summary>
-        /// The minutes of a visit to clean at the hour that begins at a minute: everything of it up to the end of that
-        /// hour that has not been cleaned yet. Usually that hour's own minutes (the game, too, cleans an hour of a
-        /// shift at the hour's start); a visit planned in the middle of the hour before brings that hour's with it.
-        /// </summary>
-        public static int Due(int start, int end, int done, int hourStart)
-        {
-            return Math.Max(0, Overlap(start, end, 0, hourStart + 60) - Math.Max(0, done));
-        }
+        /// <summary>The minutes of a visit to clean at the hour beginning at hourStart: all of it up to that hour's end not cleaned yet.</summary>
+        public static int Due(int start, int end, int done, int hourStart) => Math.Max(0, Overlap(start, end, 0, hourStart + 60) - Math.Max(0, done));
 
-        /// <summary>The minutes of the hour that begins at a minute that a cleaner is away from base.</summary>
-        public static int Away(RoundCleaner who, int hourStart)
-        {
-            return who.AwayFrom < 0 ? 0 : Overlap(who.AwayFrom, who.AwayTo, hourStart, hourStart + 60);
-        }
+        /// <summary>Whether a visit stays when the round is planned again at a minute: one set out for (its way counted, or some of it cleaned) is never planned twice.</summary>
+        public static bool Kept(int leave, bool walked, int done, int now) => leave <= now || walked || done > 0;
+
+        /// <summary>The hour of today the minutes of a visit still to clean begin in: a visit planned in an hour's middle is cleaned when the next begins.</summary>
+        public static int HourOf(int start, int done) => (start + Math.Max(0, done)) / 60;
+
+        /// <summary>The minutes of the hour beginning at hourStart that a cleaner is away from base.</summary>
+        public static int Away(RoundCleaner who, int hourStart) => who.AwayFrom < 0 ? 0 : Overlap(who.AwayFrom, who.AwayTo, hourStart, hourStart + 60);
     }
 }
