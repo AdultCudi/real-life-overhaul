@@ -10107,7 +10107,7 @@
   "reallife_online_button_days": "Jour après jour",
   "reallife_online_days_title": "{name} : jour après jour",
   "reallife_online_days_today": "{day} (aujourd'hui)",
-  "reallife_online_days_note": "Le tableau : les sept derniers jours et aujourd'hui, avec leurs totaux. Un en-tête de colonne le trie.",
+  "reallife_online_days_note": "Le tableau : aujourd'hui et les six jours précédents, avec leurs totaux. Un en-tête de colonne le trie.",
   "reallife_svc_cleaning_enabled": "Service de nettoyage",
   "reallife_svc_sale_enabled": "Vente d'une entreprise",
   "reallife_meta_title_economy_cleaning": "Service de nettoyage",

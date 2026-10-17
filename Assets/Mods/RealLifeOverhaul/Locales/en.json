@@ -10107,7 +10107,7 @@
   "reallife_online_button_days": "Day by day",
   "reallife_online_days_title": "{name}: day by day",
   "reallife_online_days_today": "{day} (today)",
-  "reallife_online_days_note": "The table: the last seven days and today, with their totals. A column heading orders it.",
+  "reallife_online_days_note": "The table: today and the six days before it, with their totals. A column heading orders it.",
   "reallife_svc_cleaning_enabled": "Cleaning service",
   "reallife_svc_sale_enabled": "Selling a business",
   "reallife_meta_title_economy_cleaning": "Cleaning service",

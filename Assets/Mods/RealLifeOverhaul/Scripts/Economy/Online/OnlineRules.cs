@@ -335,18 +335,36 @@ namespace RealLifeOverhaul.Economy
         {
             var count = new HourCount();
             Returns(s, shop, site, hour, put, ref count);
-            Deliver(s, shop, site, hour, ref count);
+            Deliver(s, shop, site, hour, ref count, put);
             count.Came = Arrive(s, shop, site, hour);
             Pick(shop, site, hour, pickers, take, ref count);
             Rounds(s, shop, site, hour, ref count);
             return count;
         }
 
-        /// <summary>Hands the day's book to <paramref name="closed"/>, keeps it in the week's ring and opens the book of <paramref name="day"/>.</summary>
+        /// <summary>
+        /// Hands the day's book to <paramref name="closed"/>, less what a stop earlier that day paid in, keeps it in the
+        /// week's ring and opens the book of <paramref name="day"/>. On the book's own day (a stop in the middle of it) only
+        /// the money not yet paid in is handed over, and the day stays open with all its figures.
+        /// </summary>
         public static void CloseDay(WebShop shop, int day, DayBook closed)
         {
             DayBook t = shop.Today;
+            if (t.Day == day && day > 0)
+            {
+                closed.Clear(day);
+                closed.Takings = t.Takings - t.PaidTakings;
+                closed.Refunds = t.Refunds - t.PaidRefunds;
+                closed.Delivery = t.Delivery - t.PaidDelivery;
+                t.PaidTakings = t.Takings;
+                t.PaidRefunds = t.Refunds;
+                t.PaidDelivery = t.Delivery;
+                return;
+            }
             closed.CopyFrom(t);
+            closed.Takings -= t.PaidTakings;
+            closed.Refunds -= t.PaidRefunds;
+            closed.Delivery -= t.PaidDelivery;
             if (t.Day > 0)
             {
                 int slot = t.Day % 7;
@@ -370,10 +388,12 @@ namespace RealLifeOverhaul.Economy
                     shop.Lines[l].WeekUnits[slot] = shop.Lines[l].WeekMissed[slot] = 0;
                 }
             }
+            int opens = day % 7;   // the day that opens takes the slot of the day a week before it, which leaves the week
             for (int l = 0; l < shop.Lines.Count; l++)
             {
                 WebLine line = shop.Lines[l];
                 line.Units = line.Takings = line.Cost = line.Missed = 0;
+                line.WeekUnits[opens] = line.WeekMissed[opens] = 0;
             }
             if (shop.AdEnd > 0 && day >= shop.AdEnd)
             {
@@ -396,6 +416,29 @@ namespace RealLifeOverhaul.Economy
             {
                 s.Vans[v].FreeAt = 0;
             }
+        }
+
+        /// <summary>The shop's own price of a product in cents at a price level: the game's price is the start's (Core/Prices).</summary>
+        public static int ShopCents(float price, int level)
+        {
+            return (int)Math.Round(price * (level / 1000f) * 100f);
+        }
+
+        /// <summary>
+        /// A site's sums waiting for the game's statement: the takings (each line's, never under nothing) and the cost of
+        /// goods, which goods back on the shelves can take under nothing. False with nothing to enter.
+        /// </summary>
+        public static bool Unbooked(WebShop shop, out long takings, out long cost)
+        {
+            takings = cost = 0;
+            bool costs = false;
+            for (int l = 0; l < shop.Lines.Count; l++)
+            {
+                takings += Math.Max(0, shop.Lines[l].BookTakings);
+                cost += shop.Lines[l].BookCost;
+                costs |= shop.Lines[l].BookCost != 0;
+            }
+            return takings != 0 || costs;
         }
 
         public static bool HostingDue(WebShop shop, int day)

@@ -204,8 +204,11 @@ namespace RealLifeOverhaul.Economy
             o.Arrive = (now + OnlineCatalogue.LoadMinutes + travel + OnlineCatalogue.StopMinutes * door + 59) / 60;
         }
 
-        /// <summary>Orders reach their doors, a late one with part of its value refunded; a packed order no van took is refunded in full.</summary>
-        public static void Deliver(OnlineState s, WebShop shop, Site site, int hour, ref HourCount count)
+        /// <summary>
+        /// Orders reach their doors, a late one with part of its value refunded; a packed order no van took is refunded in
+        /// full and its goods put back on the shelves through <paramref name="put"/>, as far as there is room.
+        /// </summary>
+        public static void Deliver(OnlineState s, WebShop shop, Site site, int hour, ref HourCount count, StockBack put = null)
         {
             DayBook book = shop.Today;
             for (int i = 0; i < shop.Orders.Count; i++)
@@ -237,9 +240,29 @@ namespace RealLifeOverhaul.Economy
                     shop.BookRefunds += o.Total;
                     book.Missing++;
                     count.Missing++;
+                    Restock(shop, o, put);
                     Rate(shop, OnlineCatalogue.ScoreLost, o.Tilt);
                     Drop(shop, i--);
                 }
+            }
+        }
+
+        // A packed order that never left: each product back on the shelves at what it cost, as far as there is room, and off the day's goods.
+        private static void Restock(WebShop shop, WebOrder o, StockBack put)
+        {
+            for (int j = 0; put != null && j < o.Count; j++)
+            {
+                if (o.Got[j] <= 0 || o.Line[j] < 0 || o.Line[j] >= shop.Lines.Count)
+                {
+                    continue;
+                }
+                WebLine line = shop.Lines[o.Line[j]];
+                int unit = o.Paid[j] / o.Got[j];
+                int back = OnlineCatalogue.Clamp(put(line.Item, o.Got[j], unit), 0, o.Got[j]);
+                int worth = back * unit;
+                shop.Today.Goods -= worth;
+                line.Cost -= worth;
+                line.BookCost -= worth;
             }
         }
 

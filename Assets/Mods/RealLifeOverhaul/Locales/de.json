@@ -10107,7 +10107,7 @@
   "reallife_online_button_days": "Tag für Tag",
   "reallife_online_days_title": "{name}: Tag für Tag",
   "reallife_online_days_today": "{day} (heute)",
-  "reallife_online_days_note": "Die Tabelle zeigt die letzten sieben Tage und heute mit ihren Summen. Ein Klick auf eine Spaltenüberschrift sortiert sie.",
+  "reallife_online_days_note": "Die Tabelle zeigt heute und die sechs Tage davor mit ihren Summen. Ein Klick auf eine Spaltenüberschrift sortiert sie.",
   "reallife_svc_cleaning_enabled": "Reinigungsdienst",
   "reallife_svc_sale_enabled": "Verkauf eines Unternehmens",
   "reallife_meta_title_economy_cleaning": "Reinigungsdienst",

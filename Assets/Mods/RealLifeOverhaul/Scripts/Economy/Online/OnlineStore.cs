@@ -107,7 +107,8 @@ namespace RealLifeOverhaul.Economy
 
         private static void Book(StringBuilder t, DayBook b)
         {
-            Join(t, b.Day, b.Orders, b.Picked, b.Units, b.Takings, b.Goods, b.Delivery, b.Refunds, b.Hosting, b.OnTime, b.Late, b.Short, b.Cancelled, b.Missing, b.Returned, b.Turned);
+            Join(t, b.Day, b.Orders, b.Picked, b.Units, b.Takings, b.Goods, b.Delivery, b.Refunds, b.Hosting, b.OnTime, b.Late, b.Short, b.Cancelled, b.Missing, b.Returned, b.Turned,
+                b.PaidTakings, b.PaidRefunds, b.PaidDelivery);
         }
 
         /// <summary>Reads a line. Null for one that is not this feature's.</summary>
@@ -319,6 +320,9 @@ namespace RealLifeOverhaul.Economy
             b.Missing = Math.Max(0, I(c, 13));
             b.Returned = Math.Max(0, I(c, 14));
             b.Turned = Math.Max(0, I(c, 15));
+            b.PaidTakings = OnlineCatalogue.Clamp(I(c, 16), 0, b.Takings);   // none in a line written before a stop could pay part of a day in
+            b.PaidRefunds = OnlineCatalogue.Clamp(I(c, 17), 0, b.Refunds);
+            b.PaidDelivery = OnlineCatalogue.Clamp(I(c, 18), 0, b.Delivery);
         }
 
         private static string[] Records(string body)

@@ -63,8 +63,8 @@ namespace RealLifeOverhaul.Economy
             {
                 text.Append("- ").Append("reallife_guide_economy_online_site".GetLocalization()
                     .Replace("{name}", OnlineText.Quality(q))
-                    .Replace("{setup}", Guide.Money(OnlineCatalogue.SetUp[q]))
-                    .Replace("{hosting}", Guide.Money(OnlineCatalogue.Hosting[q]))
+                    .Replace("{setup}", Guide.Money(OnlineRules.SetUpCost(q, false, Prices.Level)))
+                    .Replace("{hosting}", Guide.Money(OnlineRules.HostingCost(q, Prices.Level)))
                     .Replace("{orders}", Whole(OnlineCatalogue.OrdersADay[q]))
                     .Replace("{most}", Whole(OnlineCatalogue.OrdersMost[q]))).Append('\n');
             }

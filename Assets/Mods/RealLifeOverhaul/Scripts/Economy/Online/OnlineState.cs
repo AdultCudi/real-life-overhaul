@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Economy
         public int Picked, Units;
         public int Takings, Goods, Delivery, Refunds, Hosting;
         public int OnTime, Late, Short, Cancelled, Missing, Returned, Turned;
+        public int PaidTakings, PaidRefunds, PaidDelivery;   // of today's, paid in already by a stop in the middle of the day
 
         public int PaidIn => Takings - Refunds - Delivery - Hosting;
         public int Profit => PaidIn - Goods;
@@ -96,6 +97,7 @@ namespace RealLifeOverhaul.Economy
             Day = day;
             Orders = Picked = Units = Takings = Goods = Delivery = Refunds = Hosting = 0;
             OnTime = Late = Short = Cancelled = Missing = Returned = Turned = 0;
+            PaidTakings = PaidRefunds = PaidDelivery = 0;
         }
 
         public void Add(DayBook other)
@@ -185,7 +187,7 @@ namespace RealLifeOverhaul.Economy
             return count;
         }
 
-        /// <summary>The closed days of the last week and today, added up into the caller's book.</summary>
+        /// <summary>The six closed days before today and today, added up into the caller's book.</summary>
         public void WeekInto(DayBook into, int today)
         {
             into.Clear(today);

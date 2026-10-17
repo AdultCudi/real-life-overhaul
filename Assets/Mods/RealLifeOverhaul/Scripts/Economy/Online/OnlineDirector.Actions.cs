@@ -84,6 +84,7 @@ namespace RealLifeOverhaul.Economy
             }
             string name = place.Shop.Name;
             CloseBook(place, Save.Day);
+            OnlineGame.Book(place, Save.Day - 1, out _, out _, true);   // its sales not yet in a statement go into the latest
             _state.Shops.Remove(place.Shop);
             ReadPlaces();
             PlanAll(Save.Day);   // the sites left share the city between fewer

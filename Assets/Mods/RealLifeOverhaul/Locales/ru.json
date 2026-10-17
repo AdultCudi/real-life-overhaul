@@ -10107,7 +10107,7 @@
   "reallife_online_button_days": "По дням",
   "reallife_online_days_title": "{name}: по дням",
   "reallife_online_days_today": "{day} (сегодня)",
-  "reallife_online_days_note": "Таблица: последние семь дней и сегодня с итогами. Заголовок столбца задаёт порядок.",
+  "reallife_online_days_note": "Таблица: сегодня и шесть предыдущих дней с итогами. Заголовок столбца задаёт порядок.",
   "reallife_svc_cleaning_enabled": "Услуга уборки",
   "reallife_svc_sale_enabled": "Продажа бизнеса",
   "reallife_meta_title_economy_cleaning": "Услуга уборки",

@@ -221,6 +221,7 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 CloseBook(place, Save.Day);
+                OnlineGame.Book(place, Save.Day - 1, out _, out _, true);   // its sales not yet in a statement go into the latest
                 Notifications.Show(NotificationType.Warning, "reallife_online_note_gone", new Dictionary<string, string> { { "name", place.Shop.Name } }, 9f, null, null, true, false);
                 Logger?.Info("Online shops: " + place.Shop.Name + " closed: its business is no longer the player's. Its day's book was paid in; its open orders are dropped.");
                 _state.Shops.Remove(place.Shop);
@@ -288,6 +289,7 @@ namespace RealLifeOverhaul.Economy
         {
             _broken = true;
             Logger?.Error(e);
+            PayInAfterFault();
             try
             {
                 StandDown("a fault", false, false, false);
@@ -299,6 +301,22 @@ namespace RealLifeOverhaul.Economy
             }
             Logger?.Warn("Online shops: switched off for this session after an error in " + where
                          + ". The game's hour and day and the rest of the economy are not affected; open orders are kept as they were last saved.");
+        }
+
+        // The goods of orders already picked have left the building: their takings are paid in, each site on its own, before everything stops.
+        private void PayInAfterFault()
+        {
+            for (int i = 0; _running && Save != null && _state != null && i < _places.Count; i++)
+            {
+                try
+                {
+                    CloseBook(_places[i], Save.Day);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
         }
 
         private void Install()

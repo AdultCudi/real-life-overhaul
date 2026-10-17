@@ -295,13 +295,13 @@ namespace RealLifeOverhaul.Economy
             int rank = place.Reg != null && !place.Warehouse ? MacroCatalogue.TypeRank(place.Reg.businessTypeName) : -1;
             site.Kind = rank >= 0 ? MacroCatalogue.KindOfTypeIs[rank] : MacroCatalogue.General;
             float index = PriceIndex(state);
-            float level = Prices.Level / 1000f;   // the game's prices are the start's; the shop's takings are raised to today's the same way
+            float level = Prices.Level / 1000f;   // the game's prices are the start's; the going price is raised to today's as the shop's is
             List<ProductMarketEntry> market = Save != null ? Save.productMarketEntries : null;
             for (int l = 0; l < lines; l++)
             {
                 WebLine line = shop.Lines[l];
                 Item item = ItemsGetter.GetByName(line.Item, true);
-                int own = item != null && place.Reg != null ? Mathf.RoundToInt(ItemHelper.GetPrice(line.Item, place.Reg) * level * 100f) : 0;
+                int own = item != null && place.Reg != null ? OnlineRules.ShopCents(ItemHelper.GetPrice(line.Item, place.Reg), Prices.Level) : 0;
                 site.Ask[l] = line.Price > 0 ? line.Price : own;
                 site.Going[l] = item != null ? Mathf.Max(1, Mathf.RoundToInt(item.DefaultMarketPrice * index * level * 100f)) : 0;
                 ProductMarketEntry entry = null;
@@ -342,10 +342,10 @@ namespace RealLifeOverhaul.Economy
             return count > 0 ? sum / count : 1.4f;
         }
 
-        /// <summary>The business's own price of a product in cents: its retail price, or the market price where it set none.</summary>
+        /// <summary>The business's own price of a product in cents at today's prices, as the site charges it: its retail price, or the market price where it set none.</summary>
         public static int ShopPrice(WebPlace place, string item)
         {
-            return place.Reg != null && ItemsGetter.GetByName(item, true) != null ? Mathf.RoundToInt(ItemHelper.GetPrice(item, place.Reg) * 100f) : 0;
+            return place.Reg != null && ItemsGetter.GetByName(item, true) != null ? OnlineRules.ShopCents(ItemHelper.GetPrice(item, place.Reg), Prices.Level) : 0;
         }
 
         public static string ItemName(string item)
@@ -421,34 +421,34 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Enters a site's unbooked sales, less refunds, and their cost in the game's statement of the business for a day,
-        /// so its tax and takings pages count them once. False if the game has no such statement: the sums wait.
+        /// Enters a site's unbooked sales, less refunds, and their cost in the game's statement of the business for a day
+        /// (with <paramref name="orEarlier"/>, the latest it has up to that day: a site closing), so its tax and takings
+        /// pages count them once. False if the game has no such statement: the sums wait.
         /// </summary>
-        public static bool Book(WebPlace place, int day, out int sales, out int goods)
+        public static bool Book(WebPlace place, int day, out int sales, out int goods, bool orEarlier = false)
         {
             sales = goods = 0;
             WebShop shop = place.Shop;
-            long takings = 0, cost = 0;
-            for (int l = 0; l < shop.Lines.Count; l++)
-            {
-                takings += Math.Max(0, shop.Lines[l].BookTakings);
-                cost += Math.Max(0, shop.Lines[l].BookCost);
-            }
-            if (takings == 0 && cost == 0)
+            if (!OnlineRules.Unbooked(shop, out long takings, out long cost))
             {
                 return true;   // refunds alone wait for takings to come off
             }
             List<FinancialSummary> summaries = Save != null ? Save.financialSummaries : null;
             FinancialSummary summary = null;
-            for (int i = summaries != null ? summaries.Count - 1 : -1; i >= 0 && summary == null; i--)
-            {
-                summary = summaries[i] != null && summaries[i].dayNumber == day ? summaries[i] : null;
-            }
             FinancialSummary.BusinessIncomeStatement statement = null;
-            for (int b = 0; summary != null && summary.businessIncomeStatements != null && place.Address != null && b < summary.businessIncomeStatements.Count && statement == null; b++)
+            for (int i = summaries != null ? summaries.Count - 1 : -1; i >= 0 && statement == null; i--)
             {
-                FinancialSummary.BusinessIncomeStatement s = summary.businessIncomeStatements[b];
-                statement = s != null && s.Address == place.Address ? s : null;
+                FinancialSummary s = summaries[i];
+                if (s == null || s.dayNumber > day || (!orEarlier && s.dayNumber != day))
+                {
+                    continue;
+                }
+                statement = StatementOf(s, place);
+                summary = s;
+                if (!orEarlier)
+                {
+                    break;   // the day's own statement or none
+                }
             }
             if (statement == null)
             {
@@ -471,9 +471,9 @@ namespace RealLifeOverhaul.Economy
                 {
                     Entry(statement.Sales, line.Item).Amount += (float)((double)line.BookTakings * net / takings / 100.0);
                 }
-                if (line.BookCost > 0)
+                if (line.BookCost != 0)
                 {
-                    Entry(statement.Resources, line.Item).Amount += line.BookCost / 100f;
+                    Entry(statement.Resources, line.Item).Amount += line.BookCost / 100f;   // under nothing: goods back on the shelves
                     line.BookCost = 0;
                 }
                 line.BookTakings = 0;
@@ -487,6 +487,26 @@ namespace RealLifeOverhaul.Economy
             sales = (int)net;
             goods = (int)cost;
             return true;
+        }
+
+        // The site's business's statement in a day's summary, by its address, or by its place once the business is gone; null if none.
+        private static FinancialSummary.BusinessIncomeStatement StatementOf(FinancialSummary summary, WebPlace place)
+        {
+            for (int b = 0; summary.businessIncomeStatements != null && b < summary.businessIncomeStatements.Count; b++)
+            {
+                FinancialSummary.BusinessIncomeStatement s = summary.businessIncomeStatements[b];
+                if (s != null && s.Address != null && (place.Address != null ? s.Address == place.Address : PlaceOf(s.Address) == place.Shop.Place))
+                {
+                    return s;
+                }
+            }
+            return null;
+        }
+
+        // An address written as Place writes a business's.
+        private static string PlaceOf(Address address)
+        {
+            return Uri.EscapeDataString(address.streetName ?? string.Empty) + "~" + address.streetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         private static FinancialSummary.BusinessIncomeStatement.TransactionGroupEntry Entry(List<FinancialSummary.BusinessIncomeStatement.TransactionGroupEntry> list, string item)

@@ -134,11 +134,11 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // The table lists the site's last seven days and today, newest first; the box says what the week came to.
+        // The table lists the site's week, today and the six days before it, newest first; the box says what it came to.
         private void WriteDays(InfoBox box, WebPlace place, int day)
         {
             WebShop shop = place.Shop;
-            for (int back = 7; back >= 0; back--)
+            for (int back = 6; back >= 0; back--)
             {
                 DayBook book = back == 0 ? shop.Today : shop.Week[(day - back) % 7];
                 if (day - back <= 0 || book.Day != day - back)
