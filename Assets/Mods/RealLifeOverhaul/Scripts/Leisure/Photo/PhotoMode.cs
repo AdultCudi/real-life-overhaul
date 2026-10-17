@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Leisure
     /// <summary>
     /// Photo mode: the game paused and the camera free, with exposure, filters and depth of field through a Volume that
     /// exists only while it is on, and a <see cref="Selfie"/>. Everything touched is put back on every way out. In a
-    /// Going Public session the shared clock runs on. Idle it costs one key test a frame.
+    /// Going Public session the shared clock runs on. Idle it costs one key test a frame; on, it runs every frame and
+    /// allocates only for a notification.
     /// </summary>
     public sealed class PhotoMode : MonoBehaviour
     {
