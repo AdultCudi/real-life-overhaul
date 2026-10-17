@@ -62,13 +62,13 @@ Checked by: StandardCheck (English), `locales.py` (translations).
 "Fine paid - the car is yours again."    bad
 ```
 
-### RLO-TXT-007: No exclamation marks
+### RLO-TXT-007: One exclamation mark at most, and only in speech
 
-**MUST NOT** use an exclamation mark in a new text, in speech or anywhere else.
+**MUST NOT** use more than one exclamation mark in a text, or any outside speech: a line a character says or writes, such as a text message or a pitch. Status lines, buttons, prompts, the mod's own notices and the Guide have none.
 
-Why: the mod's voice is plain; 169 older lines of speech that have one are in the baseline, and a translation may not add one (`locales.py`).
+Why: the mod's voice is plain, and a person may raise their voice where a screen does not. A translation may not add one (`locales.py`).
 
-Checked by: StandardCheck, `locales.py`.
+Checked by: StandardCheck (more than one), `locales.py`, review (speech only).
 
 ### RLO-TXT-008: A notification fits in 240 characters
 

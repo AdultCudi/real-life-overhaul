@@ -36,9 +36,10 @@ internal static partial class Program
             {
                 Hit("RLO-TXT-006", subject, 0, "a dash: " + kv.Value);
             }
-            if (kv.Value.IndexOf('!') >= 0)
+            // RLO-TXT-007: one exclamation mark at most; whether the text is speech is for review.
+            if (kv.Value.IndexOf('!') != kv.Value.LastIndexOf('!'))
             {
-                Hit("RLO-TXT-007", subject, 0, "an exclamation mark: " + kv.Value);
+                Hit("RLO-TXT-007", subject, 0, "more than one exclamation mark: " + kv.Value);
             }
         }
         Appended(rel, en);

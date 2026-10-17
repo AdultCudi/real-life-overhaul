@@ -75,7 +75,7 @@ Checked by: review.
 - [ ] Every screen is the game's own interface ([RLO-ARC-013](architecture.md#rlo-arc-013-the-games-own-interface-only)).
 - [ ] Saved state is under `reallife:`, versioned, and an older save loads ([RLO-ARC-014](architecture.md#rlo-arc-014-per-save-state-under-reallife-keys)).
 - [ ] It is safe in a Going Public session ([multiplayer.md](multiplayer.md)).
-- [ ] New texts are in `en`, `pt` and `zh-cn`, at the end, in British English, without dashes or exclamation marks ([texts.md](texts.md)).
+- [ ] New texts are in `en`, `pt` and `zh-cn`, at the end, in British English, without dashes, with an exclamation mark only in speech ([texts.md](texts.md)).
 - [ ] New rules have offline checks, and each failed once ([RLO-TST-005](testing.md#rlo-tst-005-a-new-check-fails-once)).
 - [ ] Comments say why, and none tells history ([comments.md](comments.md)).
 - [ ] The pull request says how it was tested ([RLO-TST-010](testing.md#rlo-tst-010-say-how-it-was-tested)).

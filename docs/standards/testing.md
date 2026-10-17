@@ -15,7 +15,7 @@ Each checker is a console program in `RealLifeOverhaul.Build` that compiles the 
 | `ContractCheck` | The mod against the installed game: every game type and member it names, the guard on every entry point, the game's keys, the game's build |
 | `StandardCheck` | The rules of this standard that a program can check |
 | `Workshop/locales.py` | Every translation against `en.json`: keys, order, byte order mark, placeholders, dashes; ends `LOCALES OK` |
-| `Workshop/check.pl` | Text style faults in the files you give it |
+| `Workshop/check.pl` | Text style faults in `en.json`; every count 0, apart from the hits listed in `check-allow.txt` |
 
 358 of the mod's 1,315 source files are compiled into at least one checker today, and all 99 rules files and all 35 stores are among them.
 

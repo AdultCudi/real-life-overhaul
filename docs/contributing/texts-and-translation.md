@@ -31,13 +31,13 @@ Every word the player reads is a locale key. This page says where the texts live
 [The style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md) is the rule for every text a player can read, and [the texts standard](../standards/texts.md) holds the rules a change is reviewed against. In short:
 
 - Plain British English, short sentences, no jargon, nothing that describes how the code works.
-- No em or en dashes and no spaced hyphen as punctuation. No exclamation marks.
+- No em or en dashes and no spaced hyphen as punctuation. One exclamation mark at most, and only in speech.
 - Numbers, money, dates and times through the game's own formatting, never written into a text.
 - A text never names a key: it carries `{key}`, which the code fills with the player's own binding.
 - A notification is at most 240 characters in English (NoticeCheck and `locales.py` fail it otherwise).
 - Every statement must be true of the code. If you change a price, a fine or a key, change the text that names it. The Guide's figures are `{facts}` filled from the code, so they cannot go out of date.
 
-`perl RealLifeOverhaul.Build/Workshop/check.pl -v Assets/Mods/RealLifeOverhaul/Locales/en.json` lists the mechanical faults the style sheet names, for you to look over.
+`perl RealLifeOverhaul.Build/Workshop/check.pl -v Assets/Mods/RealLifeOverhaul/Locales/en.json` lists the mechanical faults the style sheet names. The gate fails on any hit that is not in `check-allow.txt` beside it: fix the text, or, where the text is right as it is (a film shoot, a parking meter), add a line there under the reason that fits.
 
 ## The Guide's pages
 

@@ -1,9 +1,17 @@
 #!/usr/bin/perl
 # Mechanical text checks over en.json (line-oriented "key": "value") or plain text files.
 # usage: check.pl [-v] file...   (-v lists every hit)
+# check-allow.txt beside this script lists hits a reviewer has accepted, one "rule key" per line (rule is the
+# two-digit number); an accepted hit is not counted, and an entry that no longer matches a hit is counted as stale.
 use strict; use warnings; use utf8;
 binmode(STDOUT, ':utf8');
 my $v = 0; if (@ARGV && $ARGV[0] eq '-v') { $v = 1; shift; }
+die "usage: check.pl [-v] file...\n" unless @ARGV;
+my %allow; my %used;
+my $dir = $0; $dir =~ s{[^\\/]*\z}{};
+if (open(my $al, '<:encoding(UTF-8)', $dir . 'check-allow.txt')) {
+  while (<$al>) { s/#.*//; s/^\s+|\s+$//g; $allow{$_} = 1 if length; }
+}
 my @stock = map { qr/$_/i } (
  '\bseamless', '\bimmersi', '\brobust\b', '\belevate', '\bdelve', '\bdive[sd]? in(to)?\b', '\bdiving into\b', '\bwhether you', '\bnot just\b', '\bnot only\b', 'it\'?s worth noting', '\bworth noting\b',
  '\bin order to\b', '\brest assured\b', '\btapestry\b', '\btestament\b', '\bvibrant\b', '\bbustling\b', '\bunleash', '\bunlock the\b', '\bgame[- ]chang', '\bcutting[- ]edge\b', '\bstate[- ]of[- ]the[- ]art\b',
@@ -20,7 +28,7 @@ my @stock = map { qr/$_/i } (
 my @jargon = map { qr/$_/i } ('\bmodData\b', '\bnavmesh\b', '\bnavigation mesh\b', '\bprefabs?\b', '\bbridges?\b', '\bstand-?ins?\b', '\bfallbacks?\b', '\bpooled\b', '\bcolliders?\b', '\bclips?\b', '\bdirectors?\b', '\bbundles?\b', '\bagents?\b', '\bkinematic\b', '\bnull\b', '\blogged\b',
  '\brigidbod', '\braycast', '\bcoroutine', '\bGameObject', '\bshader', '\bmesh(es)?\b', '\bLOD\b', '\bspawn', '\bdespawn', '\bNPCs?\b', '\bPlayerPrefs\b', '\bAPI\b', '\bhook(s|ed)?\b', '\bruntime\b', '\binstantiat', '\bplaceholder', '\bskeleton\b', '\brig(ged)?\b', '\bbake[ds]?\b(?! (beans|potato))', '\bpool\b', '\bcached?\b', '\bdebug', '\bsingleton', '\bcallback', '\bframe time\b', '\bdraw calls?\b', '\btexture streaming\b');
 my @american = map { qr/$_/ } ('\b[Cc]olor', '\b[Ll]icense[sd]?\b(?! plate)', '\b[Ll]icensing\b', '\b[Cc]urb', '\b[Tt]ires?\b', '\b[Cc]enter', '\b[Nn]eighbor', '\b[Ff]avor', '\b[Hh]onor', '\b[Bb]ehavior', '\b[Gg]ray\b', '\b[Jj]ewelry', '\b[Tt]raveler|[Tt]raveled|[Tt]raveling', '\b[Cc]anceled|[Cc]anceling', '\b[Oo]rganiz', '\b[Rr]ealiz', '\b[Rr]ecogniz', '\b[Aa]pologiz', '\b[Dd]efense\b', '\b[Oo]ffense', '\b[Pp]rogram\b', '\b[Aa]nalyz', '\b[Mm]eters?\b(?! reading)', '\b[Ll]iters?\b', '\b[Tt]heater', '\b[Ss]pecializ', '\b[Aa]luminum', '\b[Pp]ajamas', '\b[Ss]keptic', '\b[Pp]low', '\b[Hh]arbor', '\b[Ll]abor\b', '\b[Rr]umor', '\b[Hh]umor\b', '\b[Ff]ulfill\b', '\b[Ee]nroll\b', '\b[Jj]udgment', '\b[Mm]aneuver', '\b[Cc]ozy', '\b[Aa]irplane', '\b[Ss]idewalk', '\b[Gg]as station', '\b[Gg]asoline', '\b[Ee]levator', '\b[Vv]acation', '\b[Dd]iaper', '\b[Mm]ath\b', '\b[Ss]occer', '\b[Tt]akeout', '\b[Mm]ovie', '\b[Ss]avor', '\b[Vv]apor', '\b[Pp]arlor', '\b[Cc]ataloge?d?\b', '\b[Dd]ialog\b', '\b[Cc]hecks? (for|of) \$', '\b[Ss]tandardiz', '\b[Mm]inimiz', '\b[Mm]aximiz', '\b[Cc]ustomiz', '\b[Ee]mphasiz', '\b[Aa]uthoriz', '\b[Pp]rioritiz', '\b[Ss]ummariz', '\b[Mm]emoriz', '\b[Cc]riticiz', '\b[Ff]inaliz', '\b[Pp]enaliz', '\b[Mm]old\b', '\b[Ss]tory\b(?= building)', '\b[Tt]otaled\b', '\b[Ll]abeled\b', '\b[Mm]odeled\b', '\b[Ff]ueled\b', '\b[Ss]ignaled\b', '\b[Jj]ewelers?\b', '\b[Cc]hili\b', '\b[Ww]oolen\b', '\b[Ss]kill?ful\b(?<!skilful)');
-my @gun = map { qr/$_/i } ('\bguns?\b', '\bfirearm', '\bshoot-?out', '\bweapon', '\bpistol', '\brifle', '\bshotgun', '\bammo\b', '\bammunition', '\bshooting range', '\bgunshop', '\bholster', '\barmed\b', '\bshoot(s|ing)?\b', '\bbullet', '\bgunfire', '\bgunman', '\bgunshot', '\bshots? fired\b', '\brevolver', '\bhandgun', '\bconcealed carry');
+my @gun = map { qr/$_/i } ('\bguns?\b', '\bfirearm', '\bshoot-?out', '\bweapon', '\bpistol', '\brifle', '\bshotgun', '\bammo\b', '\bammunition', '\bshooting range', '\bgunshop', '\bholster', '\barmed\b', '\bshoot(s|ing)?\b', '\bbullets?\b','\bgunfire', '\bgunman', '\bgunshot', '\bshots? fired\b', '\brevolver', '\bhandgun', '\bconcealed carry');
 my @rules = (
  ['01 em dash', sub { $_[0] =~ /\x{2014}/ }], ['02 en dash', sub { $_[0] =~ /\x{2013}/ }],
  ['03 " - " used as a dash', sub { my $t = $_[0]; $t =~ s/(^|\\n)- //g; $t =~ / - / }],
@@ -45,13 +53,18 @@ for my $file (@ARGV) {
     my ($key, $val);
     if ($isjson) { next unless $line =~ /^\s*"([^"]+)":\s*"(.*)",?\s*$/; ($key, $val) = ($1, $2); $val =~ s/\\"/"/g; }
     else { my $short = $file; $short =~ s/.*[\\\/]//; ($key, $val) = ("$short:$n", $line); }
+    $val =~ s/<\/?[a-z]+(=[^>]*)?>//g; # rich text tags such as <color=#7CE08A> are markup, not words
     for my $rule (@rules) {
       my ($name, $test) = @$rule;
       my $r = $test->($val);
+      my $id = substr($name, 0, 2) . " $key";
+      if ($r && $allow{$id}) { $used{$id} = 1; next; }
       if ($r) { $count{$name}++; push @{$hits{$name}}, "$key" . ($r ne '1' ? " [$r]" : '') . ($v ? ": " . substr($val, 0, 400) : ''); }
     }
   }
 }
+my @stale = (grep { /\.json$/ } @ARGV) ? (grep { !$used{$_} } sort keys %allow) : ();
+push @rules, ['19 stale entry in check-allow.txt', undef]; $count{'19 stale entry in check-allow.txt'} = @stale; $hits{'19 stale entry in check-allow.txt'} = \@stale;
 for my $rule (@rules) {
   my $name = $rule->[0];
   printf "%-32s %d\n", $name, $count{$name} // 0;

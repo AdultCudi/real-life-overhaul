@@ -72,7 +72,7 @@ The standard starts from Microsoft's [C# coding conventions](https://learn.micro
 | One class per file | Implied | Prefer one core class | One main type, small companions allowed ([RLO-STY-006](code-style.md#rlo-sty-006-a-file-is-named-after-its-main-type)) | 410 files keep a small struct or enum beside the type that uses it. |
 | User interface | Not covered | Not covered | The game's own interface only ([RLO-ARC-013](architecture.md#rlo-arc-013-the-games-own-interface-only)) | Players should not be able to tell the mod's screens from the game's. |
 | Patching the host | Not covered | Not covered | No Harmony ([RLO-ARC-011](architecture.md#rlo-arc-011-no-harmony-patches)) | See [ADR-0001](decisions/0001-no-harmony.md). |
-| Player texts | Not covered | Not covered | British English, no dashes, no exclamation marks ([texts.md](texts.md)) | The mod's style sheet, `RealLifeOverhaul.Build/Workshop/STYLE.md`. |
+| Player texts | Not covered | Not covered | British English, no dashes, an exclamation mark only in speech ([texts.md](texts.md)) | The mod's style sheet, `RealLifeOverhaul.Build/Workshop/STYLE.md`. |
 | Determinism | Not covered | Not covered | Shared results identical on every machine ([multiplayer.md](multiplayer.md)) | Going Public runs one city on several machines. |
 
 ## How the standard changes

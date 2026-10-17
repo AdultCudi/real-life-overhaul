@@ -17,7 +17,7 @@ The short list. Every pull request is held to it. Each rule says why in one line
 5. **Use the game's own interface.** No canvas, panel or prompt of the mod's own: copy or drive the game's through `Scripts/Core/GameUi`. Something done at a place is started by clicking the thing at that place.
    - Why: the mod should look as if the game's makers had added it.
    - More: [RLO-ARC-013, the game's own interface only](../standards/architecture.md#rlo-arc-013-the-games-own-interface-only); the building blocks are in [The game's own interface](../reference/game-interface.md).
-6. **Texts in all three locales, in the house style.** Every player text is a key, appended at the end of `en.json`, `pt.json` and `zh-cn.json` in the same commit; British English, short sentences, no dashes, no exclamation marks; a notification of at most 240 characters.
+6. **Texts in all three locales, in the house style.** Every player text is a key, appended at the end of `en.json`, `pt.json` and `zh-cn.json` in the same commit; British English, short sentences, no dashes, an exclamation mark only in speech; a notification of at most 240 characters.
    - Why: the mod ships in seven languages, and a missing key shows the player a raw key.
    - More: [the texts standard](../standards/texts.md) (RLO-TXT-002, 005 to 008); how to add one is in [Texts and translation](texts-and-translation.md).
 7. **No game files.** Never commit the game's DLLs, models, textures, sounds or decompiled code, or assets you have no right to share.

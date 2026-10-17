@@ -1,0 +1,155 @@
+# Hits of check.pl that a reviewer has read and accepted. One "rule key" per line, grouped by rule with the reason.
+# Add a line only for a text that is right as it is; fix the text otherwise. check.pl counts a line that no longer
+# matches a hit as stale, so remove a line when its text changes.
+
+# 06: Three dots where a spoken line or a fade caption trails off, as STYLE.md allows.
+06 reallife_crime_custody_fade
+06 reallife_event_blackout
+06 reallife_event_film_quiet_b
+06 reallife_family_child_yes_another
+06 reallife_family_propose_ask_1
+06 reallife_family_propose_waited
+06 reallife_garage_fade
+06 reallife_social_askout_yes_2
+06 reallife_social_borrow_no_2
+06 reallife_social_greet_acq_2
+06 reallife_social_tm_business
+06 reallife_social_tm_cinema
+06 reallife_social_tm_coffee
+06 reallife_social_tm_drinks
+06 reallife_social_tm_meal
+06 reallife_social_tm_workout
+06 reallife_social_topic_theirjob_ra
+06 reallife_subway_fade
+06 reallife_subway_fade_delayed
+06 reallife_transit_ride_fade
+
+# 07: Market figures laid out in columns: the spaces are the layout.
+07 reallife_mkt_box_index
+07 reallife_mkt_box_rate
+07 reallife_mkt_chart_candle
+07 reallife_mkt_chart_index
+07 reallife_mkt_ticket_quote
+
+# 10: Plain, literal use ("in today's paper", "whether you buy it or not", "the next level" of followers, "serves as many customers"), not a stock phrase.
+10 reallife_biz_feature_done
+10 reallife_changes_027_7
+10 reallife_changes_028_1
+10 reallife_dealer_q_inspect
+10 reallife_family_school_play_invite
+10 reallife_family_topic_sick
+10 reallife_flare_test_followers
+10 reallife_guide_economy_rota
+10 reallife_guide_tech_people
+10 reallife_justice_parole_open
+10 reallife_opt_tip_economy_estate_rent
+10 reallife_street_number_later_3
+
+# 11: Ordinary words in their everyday sense: a bridge, a fishing hook, a swimming pool, a travel or estate agent, a bundle of flyers, mesh alloy wheels, baking.
+11 reallife_changes_006_0
+11 reallife_changes_027_2
+11 reallife_civic_labour_go
+11 reallife_civic_party_8
+11 reallife_civic_volunteer_status
+11 reallife_ev_fm05_n1
+11 reallife_ev_mn18
+11 reallife_ev_tr21
+11 reallife_garage_wheels_mesh
+11 reallife_guide_endscale
+11 reallife_guide_jobs
+11 reallife_guide_leisure
+11 reallife_guide_tech_startups
+11 reallife_guide_travel
+11 reallife_job_flyers_obj
+11 reallife_job_flyers_pitch
+11 reallife_leisure_fishing_no_water
+11 reallife_leisure_fishing_scared_off
+11 reallife_leisure_landmark_bridge
+11 reallife_leisure_landmark_swimming_pool
+11 reallife_news_filler_29
+11 reallife_news_shop_none_1
+11 reallife_transaction_tech_venture_bridge_interest
+11 reallife_transaction_tech_venture_bridge_loan
+11 reallife_travel_button_agent
+11 reallife_travel_day_miami_1
+11 reallife_travel_prompt_agent
+11 reallife_travel_room_body_single
+11 reallife_vc_bridge_owed
+11 reallife_vc_button_bridge
+
+# 12: Correct British usage: "judgment" in law, a parking or taxi "meter", "tire" as a verb, "license" and "licensing" as the verb, "program" in computing.
+12 reallife-dmv
+12 reallife-firearms-unit
+12 reallife_career_cab_pitch
+12 reallife_career_food_rank_2
+12 reallife_changes_006_0
+12 reallife_changes_006_1
+12 reallife_changes_007_4
+12 reallife_changes_011_3
+12 reallife_civic_policy_parking_down_say
+12 reallife_civic_policy_parking_up_say
+12 reallife_econ_debt_civil
+12 reallife_econ_event_judgment
+12 reallife_econ_stands_legal_judgments
+12 reallife_econ_tip_legal
+12 reallife_ev_st21
+12 reallife_guide_economy
+12 reallife_guide_economy_rota
+12 reallife_guide_licences
+12 reallife_guide_permadeath
+12 reallife_guide_tech_sector
+12 reallife_health_symptom_burnout
+12 reallife_health_symptom_cold
+12 reallife_health_symptom_flu
+12 reallife_health_symptom_food
+12 reallife_infra_cloud_state
+12 reallife_justice_file_debt_civil
+12 reallife_lic_grandfather_both
+12 reallife_lic_grandfather_car
+12 reallife_lic_grandfather_motorcycle
+12 reallife_lic_warn_expired
+12 reallife_ob_why_closed_integrity
+12 reallife_pd_starve_2
+12 reallife_rota_day_fee
+12 reallife_rota_sum_fees
+12 reallife_school_pitch_card
+12 reallife_tab_factor_about_legal
+12 reallife_tech_needs_licence
+12 reallife_tech_product_licence
+12 reallife_text_dmv_welcome
+12 reallife_text_justice_suit_default
+12 reallife_text_justice_suit_injury
+12 reallife_text_justice_suit_property
+12 reallife_text_legal_welcome
+12 reallife_transaction_licence_fee
+12 reallife_transaction_licence_fee_label
+12 reallife_travel_ev_explore_12
+
+# 13: Not about guns, or the game's own gun shop and licence: a film shoot, a photo shoot.
+13 reallife-firearms-unit
+13 reallife-gunshop
+13 reallife_changes_027_0
+13 reallife_event_film_watched
+13 reallife_event_name_film
+13 reallife_event_open_film_b
+13 reallife_event_today_film
+13 reallife_event_tomorrow_film
+13 reallife_events_test_film
+13 reallife_flare_dm_invite_maybe_influencer
+13 reallife_guide_events
+13 reallife_opt_tip_phone_camera_grid
+13 reallife_opt_tip_street_events
+13 reallife_transaction_gun_licence
+13 reallife_transaction_gun_licence_label
+13 reallife_transaction_gunshop
+13 reallife_transaction_gunshop_label
+13 reallife_transaction_gunshop_sale
+13 reallife_transaction_gunshop_sale_label
+
+# 16: Fragments joined to another text at run time, where the space is the join.
+16 reallife_guide_job_metre
+16 reallife_net_list_last
+16 reallife_tech_firm_spare
+
+# 17: A receptionist's ordinary greeting, not a sales pitch.
+17 reallife_travel_desk_greet_4
