@@ -1,52 +1,30 @@
 using System.Collections.Generic;
-using Helpers;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A lender's civil claim for a debt, filed with the courts from outside the justice system (the economy, through
-    /// Wiring/EconomyLinks). It is one of Justice's own civil suits and nothing else: it is listed in the Legal file
-    /// with the others, answered there (settled or contested) or left unanswered, judged by Justice on the day after
-    /// its date, and what is then owed is one of Justice's civil debts, collected as Justice collects every debt.
-    /// This file adds the three things an outside feature needs and Justice had no entry for: file one for a stated
-    /// amount, ask whether it is still before the court, and withdraw it.
-    ///
-    /// Nothing here runs on a timer. A claim is only taken while the justice system is on, has read the save and is
-    /// working; otherwise <see cref="File"/> returns 0 and the lender keeps its debt.
-    /// </summary>
+    /// <summary>A lender's civil claim for a debt, one of Justice's own civil suits once filed. Nothing here runs on a timer.</summary>
     public static class DebtClaims
     {
-        /// <summary>Days to answer a claim, as for the claims Justice files itself.</summary>
         public const int AnswerDays = 5;
 
-        public static bool Available
-        {
-            get
-            {
-                JusticeDirector director = JusticeDirector.Instance;
-                return JusticeSettings.Enabled && JusticeState.Loaded && director != null && director.Working;
-            }
-        }
+        /// <summary>True while the justice system is on, has read the save and is working: only then is a claim taken.</summary>
+        public static bool Available => Justice.Active;
 
-        /// <summary>Files a claim for an amount. Returns its number in the court's books, or 0 if there is no court to file with.</summary>
+        /// <summary>Files a claim for an amount. Returns its number, or 0 if there is no court to file with.</summary>
         public static int File(int amount)
         {
             if (!Available || amount <= 0)
             {
                 return 0;
             }
-            int today = TimeHelper.CurrentDay;
-            int number = JusticeState.NextNumber++;
-            JusticeState.Suits.Add(new JusticeSuit
-            {
-                Number = number, Claim = amount, DueDay = today + AnswerDays, Injury = false, Seed = JusticeLaw.Hash("debt" + number) ^ (today * 7919)
-            });
+            JusticeSuit suit = Lodge(amount, "debt");
             LegalPhone.Send("reallife_text_justice_suit_debt", new Dictionary<string, string>
             {
-                { "amount", JusticeText.Money(amount) }, { "day", JusticeText.N(today + AnswerDays) }
+                { "amount", JusticeText.Money(amount) }, { "day", JusticeText.N(suit.DueDay) }
             });
-            JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for a debt of " + amount + " filed by a lender, answer by day " + (today + AnswerDays) + ".");
-            return number;
+            JusticeDirector.Logger?.Info("Justice: civil claim " + suit.Number + " for a debt of " + amount + " filed by a lender, answer by day "
+                                         + suit.DueDay + ".");
+            return suit.Number;
         }
 
         /// <summary>True while a claim with this number is still before the court.</summary>
@@ -63,22 +41,42 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>The lender withdraws a claim that has not been judged (the debt behind it has been written off). True if there was one.</summary>
+        /// <summary>The lender withdraws a claim not yet judged (the debt was written off). True if there was one.</summary>
         public static bool Withdraw(int number)
+        {
+            if (!Remove(number, out int amount))
+            {
+                return false;
+            }
+            LegalPhone.Send("reallife_text_justice_suit_withdrawn", new Dictionary<string, string> { { "amount", JusticeText.Money(amount) } });
+            JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for a debt of " + amount + " was withdrawn by the lender.");
+            return true;
+        }
+
+        /// <summary>A new suit due in <see cref="AnswerDays"/>, seeded by its claimant's tag and its number.</summary>
+        internal static JusticeSuit Lodge(int amount, string seedTag)
+        {
+            int today = TimeHelper.CurrentDay;
+            var suit = new JusticeSuit { Number = JusticeState.NextNumber++, Claim = amount, DueDay = today + AnswerDays };
+            suit.Seed = JusticeLaw.Hash(seedTag + suit.Number) ^ (today * 7919);
+            JusticeState.Suits.Add(suit);
+            return suit;
+        }
+
+        /// <summary>Takes a suit not yet judged off the books. False if there was none with this number.</summary>
+        internal static bool Remove(int number, out int amount)
         {
             List<JusticeSuit> suits = JusticeState.Suits;
             for (int i = suits.Count - 1; number > 0 && i >= 0; i--)
             {
-                if (suits[i].Number != number)
+                if (suits[i].Number == number)
                 {
-                    continue;
+                    amount = suits[i].Claim;
+                    suits.RemoveAt(i);
+                    return true;
                 }
-                int amount = suits[i].Claim;
-                suits.RemoveAt(i);
-                LegalPhone.Send("reallife_text_justice_suit_withdrawn", new Dictionary<string, string> { { "amount", JusticeText.Money(amount) } });
-                JusticeDirector.Logger?.Info("Justice: civil claim " + number + " for a debt of " + amount + " was withdrawn by the lender.");
-                return true;
             }
+            amount = 0;
             return false;
         }
     }

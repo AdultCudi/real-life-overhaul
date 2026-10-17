@@ -1,19 +1,20 @@
 using System;
 using System.Text;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>Where a page of the justice panel is set.</summary>
     public enum JusticeScene
     {
-        Court,      // the bench, the prosecutor, the defence
-        Cell,       // bars; an officer and another inmate
-        Office      // a file on a desk: the Legal file, letters, summaries
+        Court,
+        Cell,
+        Office      // the Legal file, letters, summaries
     }
 
+    /// <summary>Who stands on a page of the justice panel.</summary>
     public enum JusticeFace
     {
         None,
@@ -35,7 +36,7 @@ namespace RealLifeOverhaul
         public JusticeFace Left, Middle, Right;
         public string LeftName, MiddleName, RightName;
         public int Speaker = -1;        // 0 left, 1 middle, 2 right; -1 nobody
-        public string SpeakerName;      // written above the text
+        public string SpeakerName;
         public string Body;
         public readonly string[] Choices = new string[JusticePanel.MostChoices];
         public readonly string[] Hints = new string[JusticePanel.MostChoices];
@@ -53,21 +54,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The justice system's one screen: the hearing, bail, the cell, the prison days and the Legal file are all pages of it,
-    /// shown in the window the game lists its subway stations in (<see cref="TravelList"/> through a <see cref="DeskList"/>).
-    /// A page is the list filled again: the title and who is there under the headline, what is said as a note (the speaker's
-    /// name over the words), and an entry with a button for each answer, its hint under its name. Nothing is drawn by the mod.
-    ///
-    /// While the player is held (the hearing, bail, the cell, prison) the list cannot be left with the cancel key
-    /// (<see cref="TravelList.Locked"/>): every page has its own way on. The Legal file, which holds nobody, can be put
-    /// away with it. When the screen has been faded to black by the game (prison, custody) the list stands on the canvas of
-    /// the game's black cover, which would otherwise hide it, and goes back to the HUD's when the cover is gone.
-    ///
-    /// The cost: a page is written once when it is shown. Nothing runs per frame. If the game's window cannot be copied
-    /// the justice system switches itself off for the session with one line in the log: the player is let go and cases and
-    /// sentences stay in the save.
-    /// </summary>
+    /// <summary>The justice system's one screen, a copy of the game's station list. A page is written when shown; nothing runs per frame.</summary>
     public sealed class JusticePanel
     {
         public const int MostChoices = 3;
@@ -102,8 +89,6 @@ namespace RealLifeOverhaul
 
         /// <summary>True while a page is on screen.</summary>
         public static bool IsShowing => _instance != null && _instance._open && _instance._window.IsOpen;
-
-        // ---------------------------------------------------------------- showing
 
         public void Show(JusticePage page, Action<int> answer)
         {
@@ -166,7 +151,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // On the game's black cover while the screen is faded (the cover is on a canvas of its own), on the HUD's otherwise.
+        // While the screen is faded the game's black cover, on a canvas of its own, would hide the list: it stands on that canvas.
         private void Stand(TravelList list)
         {
             bool cover = UiFader.isFading;
@@ -220,7 +205,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // An answer that fails must not leave its page up with the player held behind it: the director lets go of everything.
+                // A failed answer must not leave its page up with the player held behind it.
                 Close();
                 if (JusticeDirector.Instance != null)
                 {
@@ -229,8 +214,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The list was closed. By Close it is already put away; by the cancel key (the Legal file only) the file is closed as its own
-        // "close" answer would.
+        // The list was closed: by Close, nothing more to do; by the cancel key (the Legal file only), the file is closed too.
         private void Closed()
         {
             if (_onCover)
