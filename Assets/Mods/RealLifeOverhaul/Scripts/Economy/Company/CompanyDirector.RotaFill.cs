@@ -83,11 +83,11 @@ namespace RealLifeOverhaul.Economy
                     // The hours kept cannot hold somebody's least hours: said with the figures, and the plan that can is offered.
                     RotaLeft left = sheet.Ladder.FillLeft[0];
                     RotaRung can = RotaRungOf(sheet, 1);
-                    can = can != null && can.Left.Count == 0 ? can : null;
+                    can = can != null && can.Left.Count == 0 && left.Why != RotaClash.Service ? can : null;
                     string who = left.Worker < sheet.Workers.Count ? RotaGame.WorkerName(sheet.Workers[left.Worker]) : "?";
-                    GameConfirm.Show("reallife_rota_tab".Localize(), (can != null ? "reallife_rota_confirm_short_plan" : "reallife_rota_confirm_short").Localize(new
+                    GameConfirm.Show("reallife_rota_tab".Localize(), (RotaShortKey(left) + (can != null ? "_plan" : string.Empty)).Localize(new
                     {
-                        name = who, least = left.Least, room = left.Why == RotaClash.Shared ? left.Held : left.Room, count = sheet.Ladder.FillLeft.Count,
+                        name = who, least = left.Least, room = left.Room, asked = left.Asked, held = left.Held, count = sheet.Ladder.FillLeft.Count,
                         now = sheet.Ladder.Rungs[0].Sum.Hours, after = can != null ? can.Sum.Hours : sheet.Ladder.Rungs[0].Sum.Hours
                     }), () => RotaConfirmed(place, can != null ? JobFillHours : kind, can != null ? 1 : -1, stamp), null, null, null, false, false);
                     return;
@@ -109,6 +109,13 @@ namespace RealLifeOverhaul.Economy
             {
                 RotaFault("the fill button", e);
             }
+        }
+
+        // The "too few hours" dialogue by why somebody is left out, as the plans table says it (RotaClash); "_plan" offers the plan that holds them.
+        internal static string RotaShortKey(RotaLeft left)
+        {
+            return left.Why == RotaClash.Shared ? "reallife_rota_confirm_short_shared" : left.Why == RotaClash.Service ? "reallife_rota_confirm_short_service"
+                : "reallife_rota_confirm_short";
         }
 
         private void RotaConfirmed(string place, int kind, int rung, long stamp)

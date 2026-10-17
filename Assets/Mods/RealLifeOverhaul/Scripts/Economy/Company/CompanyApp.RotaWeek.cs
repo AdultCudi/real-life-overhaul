@@ -155,6 +155,18 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
+        private static bool RotaOpensOn(bool[] open, int day)
+        {
+            for (int h = 0; h < RotaCatalogue.Hours; h++)
+            {
+                if (open[day * RotaCatalogue.Hours + h])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static void RotaSumLine(InfoBox box, string key, long amount)
         {
             if (amount != 0)
@@ -230,16 +242,16 @@ namespace RealLifeOverhaul.Economy
             RotaShop shop = sheet.Shop;
             RotaRung r = sheet.Ladder.Rungs[index];
             string place = sheet.Place.Place;
-            int stations = shop.Stations, cap = RotaServes(shop), come = 0, served = 0;
+            int stations = shop.Stations, come = 0, served = 0;
             long earns = 0, costs = 0;
             _spec = CompanyTables.RotaDay;
             for (int h = 0; h < RotaCatalogue.Hours; h++)
             {
                 int cell = d * RotaCatalogue.Hours + h, wanting = System.Math.Max(shop.Customers[cell], shop.Wanting[cell]);
                 bool now = shop.Open[cell], open = r.Open[cell];
-                if (wanting <= 0 && !now && !open)
+                if (wanting <= 0 && !now && !open && r.Cost[cell] == 0)
                 {
-                    continue;
+                    continue;   // (an hour shut that still pays somebody on a shift is listed: its cost is in the day's)
                 }
                 come += r.Come[cell];
                 served += r.Served[cell];
@@ -249,7 +261,8 @@ namespace RealLifeOverhaul.Economy
                 row.A = RotaHour(h);
                 row.B = !open ? CompanyText.T("reallife_rota_hour_shut", "come", wanting.ToString())
                     : r.Served[cell] == 0 && r.Come[cell] > 0 ? CompanyText.T("reallife_rota_hour_nobody", "come", r.Come[cell].ToString())
-                    : CompanyText.T("reallife_rota_hour_come", "come", r.Come[cell].ToString(), "cap", cap.ToString(), "served", r.Served[cell].ToString());
+                    : CompanyText.T("reallife_rota_hour_come", "come", r.Come[cell].ToString(), "cap", RotaAdvisor.Serves(shop, cell, r.Plan.At).ToString(),
+                        "served", r.Served[cell].ToString());
                 row.C = open || r.Cost[cell] != 0
                     ? CompanyText.T("reallife_rota_hour_money", "earn", RotaMoney(r.Earn[cell]), "cost", RotaMoney(r.Cost[cell])) : string.Empty;
                 string who = string.Empty;
@@ -271,9 +284,9 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_rota_day_now", RotaHours(shop.Open, d));
             box.Row("reallife_rota_day_plan", RotaHours(r.Open, d));
             box.Line(CompanyText.Fill("reallife_rota_day_sum", "served", served.ToString(), "come", come.ToString(), "earn", RotaMoney(earns), "cost", RotaMoney(costs)));
-            if (shop.DayFee[d] > 0)
+            if (shop.DayFee[d] > 0 && RotaOpensOn(r.Open, d))
             {
-                box.Row("reallife_rota_day_fee", RotaMoney(shop.DayFee[d]));
+                box.Row("reallife_rota_day_fee", RotaMoney(shop.DayFee[d]));   // charged only on a day it opens (RotaLadder.Evaluate)
             }
             box.Note(CompanyText.T("reallife_rota_day_explain"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_rota_day_back", () =>

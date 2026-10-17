@@ -113,6 +113,7 @@ ba:skill_lawyer
 ba:skill_logisticsmanager
 ba:skill_negotiation
 ba:skill_programmer
+ba:skill_securityguard
 ba:towdestination_autorepairshop
 ba:transaction_autotowservice
 ba:transaction_boatyearlymaintenance

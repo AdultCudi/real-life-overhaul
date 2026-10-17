@@ -389,6 +389,35 @@ namespace RealLifeOverhaul.Economy
             return services > 0 ? least : anyone ? least : 0;
         }
 
+        /// <summary>
+        /// What the stations manned in an hour serve between them, by a rota (<paramref name="at"/>, may be null) and those left
+        /// alone: the smallest service group's sum, the game's limit; 0 with no service group.
+        /// </summary>
+        public static int Serves(RotaShop shop, int cell, short[] at)
+        {
+            int stations = shop.Stations, least = -1;
+            for (int g = 0; g < shop.Groups; g++)
+            {
+                if (shop.GroupKind[g] != RotaGroupKind.Service)
+                {
+                    continue;
+                }
+                int sum = 0;
+                bool any = false;
+                for (int s = 0; s < stations; s++)
+                {
+                    int i = cell * stations + s;
+                    if (shop.Group[s] == g)
+                    {
+                        any = true;
+                        sum += shop.Taken[i] || (at != null && at[i] >= 0) ? shop.Cap[s] : 0;
+                    }
+                }
+                least = any && (least < 0 || sum < least) ? sum : least;
+            }
+            return least < 0 ? 0 : least;
+        }
+
         /// <summary>A week in money: sales less wages and day fees. Hours nobody is rostered for yet are counted at the station's wage.</summary>
         public long Profit(RotaShop shop, RotaProblem problem, bool[] open, short[] at, bool fill)
         {

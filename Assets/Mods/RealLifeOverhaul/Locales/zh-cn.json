@@ -19741,5 +19741,8 @@
   "reallife_changes_030_1_title": "0.30.1",
   "reallife_changes_030_1": "已修复：驾驶课或驾驶考试期间发生的街头场景（例如行人被车撞倒）不再导致检查点无法显示。",
   "reallife_rota_confirm_plan_less": "使用此方案？企业现在每周营业 {now} 小时，之后将营业 {after}。此方案每周约少赚 {gain}，但会有更多员工得到他们要求的工时。营业时间和排班表将被覆盖。在关闭公司应用之前，你可以恢复旧的排班表。",
-  "reallife_rota_advice_best_less": "建议：现有员工下的最佳一周。它每周比现状少赚约 {amount}，但会有更多员工得到他们要求的工时。"
+  "reallife_rota_advice_best_less": "建议：现有员工下的最佳一周。它每周比现状少赚约 {amount}，但会有更多员工得到他们要求的工时。",
+  "reallife_rota_confirm_short_shared": "{name} 要求每周至少 {least} 小时，但同一岗位的人合计要求 {asked} 小时，而这些岗位只容纳 {held}。技能更高的人优先获得工时，因此此排班表不给 {name} 任何工时。没有工时的人：{count}。要写入吗？在关闭公司应用之前，你可以恢复旧的排班表。",
+  "reallife_rota_confirm_short_shared_plan": "{name} 要求每周至少 {least} 小时，但同一岗位的人合计要求 {asked} 小时，而这些岗位只容纳 {held}，因此按这些时段编排的排班表不给 {name} 任何工时。“用现有员工的最佳方案”能给每个人他们的工时：每周营业 {after} 小时，现在为 {now} 小时。使用该方案吗？营业时间和排班表将被覆盖。在关闭公司应用之前，你可以恢复旧的排班表。",
+  "reallife_rota_confirm_short_service": "{name} 要求每周至少 {least} 小时，但保洁服务负责这里的清洁，因此没有清洁工作给他们，此排班表不给他们任何工时。没有工时的人：{count}。要写入吗？在关闭公司应用之前，你可以恢复旧的排班表。"
 }

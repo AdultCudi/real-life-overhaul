@@ -15,6 +15,7 @@ internal static partial class Program
         RotaFixState();
         RotaFixLadder();
         RotaFixGoods();
+        RotaFixPage();
     }
 
     private static void RotaFixState()
@@ -334,5 +335,54 @@ internal static partial class Program
             }
         }
         return line.Length > 0;
+    }
+
+
+    private static void RotaFixPage()
+    {
+        // An hour's line on the day's page: what the stations manned that hour serve, beside those served.
+        RotaShop two = RotaTills(2);
+        var at = new short[RotaCatalogue.Cells * 2];
+        for (int i = 0; i < at.Length; i++)
+        {
+            at[i] = -1;
+        }
+        at[12 * 2] = 0;
+        Check(RotaAdvisor.Serves(two, 12, at) == 20 && RotaAdvisor.Serves(two, 13, at) == 0 && RotaAdvisor.Serves(two, 12, null) == 0,
+            "rota page: with one of two tills manned, the stations serve 20 that hour, not the 40 of both (" + RotaAdvisor.Serves(two, 12, at) + ")");
+        at[12 * 2 + 1] = 1;
+        two.Taken[13 * 2 + 1] = true;
+        Check(RotaAdvisor.Serves(two, 12, at) == 40 && RotaAdvisor.Serves(two, 13, at) == 20, "rota page: both manned serve 40, and somebody left alone at a till counts");
+        string week = CompanySource("CompanyApp.RotaWeek.cs");
+        string day = CompanyMethod(week, "private void RotaDay(");
+        Check(day.Contains("\"cap\", RotaAdvisor.Serves(shop, cell, r.Plan.At).ToString()") && !day.Contains("cap = RotaServes(shop)"),
+            "rota page: the hour's line gives what that hour's stations serve");
+        Check(day.Contains("if (wanting <= 0 && !now && !open && r.Cost[cell] == 0)"), "rota page: an hour shut that still pays somebody is listed, so the day's wages and theft add up");
+        Check(day.Contains("if (shop.DayFee[d] > 0 && RotaOpensOn(r.Open, d))"), "rota page: a day's licensing fee is shown only for a day the plan opens, as the week counts it");
+
+        // The "too few hours" dialogue says why, as the plans table does.
+        string fill = CompanySource("CompanyDirector.RotaFill.cs");
+        Check(InOrder(CompanyMethod(fill, "internal static string RotaShortKey(RotaLeft left)"), "RotaClash.Shared ? \"reallife_rota_confirm_short_shared\"",
+                "RotaClash.Service ? \"reallife_rota_confirm_short_service\"", "\"reallife_rota_confirm_short\"")
+              && fill.Contains("(RotaShortKey(left) + (can != null ? \"_plan\" : string.Empty)).Localize(") && fill.Contains("room = left.Room, asked = left.Asked, held = left.Held"),
+            "rota page: somebody left out for the stations' sake or the cleaning service's is told so, not that the hours hold the stations' total");
+        Check(RotaFixKeys("reallife_rota_confirm_short_shared", "reallife_rota_confirm_short_shared_plan", "reallife_rota_confirm_short_service")
+              && RotaFixValues("reallife_rota_confirm_short_shared", "{asked}", "{held}", "{count}") && RotaFixValues("reallife_rota_confirm_short_shared_plan", "{asked}", "{held}", "{after}", "{now}")
+              && RotaFixValues("reallife_rota_confirm_short_service", "cleaning service", "{count}"),
+            "rota page: the three dialogues are in English, Portuguese and Chinese, with the figures each needs");
+
+        // The game reads at today's prices and by the hours they apply to.
+        string read = CompanySource("RotaGame.Read.cs");
+        Check(CompanyMethod(read, "private static int StationWage(").Contains("CompanyCatalogue.Share(Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(skills[0], 50f) * 100f), Prices.Level)"),
+            "rota page: the wage of a station nobody can stand at is at today's prices, as everybody else's");
+        string deep = CompanySource("RotaGame.Deep.cs");
+        string theft = CompanyMethod(deep, "private static void ReadTheft(");
+        Check(theft.Contains("Mathf.Min(Prices.At(BreakInCap), onShelves * BreakInShare)") && theft.Contains("+ Prices.At(BreakInRepair);"),
+            "rota page: a night's break-in risk takes the cap and the repair at today's prices, as Crime's own break-in does");
+        Check(InOrder(theft, "Security(reg, out float open, out float shut);", "float security = Mathf.Clamp01(open / 100f)", "float exposure = 1f - Mathf.Clamp01(shut / 100f)")
+              && InOrder(CompanyMethod(deep, "private static void Security("), "(e.isAbsent && !e.isReplaced)", "all += skill;", "atWork += e.IsWorking() ? skill : 0f;",
+                  "shut = Mathf.Max(0f, now - GuardShare(atWork, ideal));", "open = Mathf.Min(100f, shut + GuardShare(all, ideal));"),
+            "rota page: theft is counted with the guards at work while the business is open and a break-in with none, whatever hour the page is read");
+        Check(deep.Contains("SignSkips = 0.06f"), "rota page: a security sign spares a shelf 6 times in 100, as the game's Random.Range(0, 100) <= 5 does");
     }
 }

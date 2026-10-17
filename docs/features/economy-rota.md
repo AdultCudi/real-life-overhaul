@@ -225,7 +225,7 @@ So within a day a busier hour never has fewer people at the tills than a quieter
 - **A till's customers an hour are a hard limit, and skill does not change it.** `RetailBusinessSimulator.cs:214` (`GetMaxCustomerCapacityThisHour`) sums `Item.addedCustomersPerHour` of the manned stations of each group and takes the smallest group; customers beyond it are marked completed and lost (:176).
   Skill enters only as the order's service quality: `Entities/EmployeeInstance.cs:1037` (skill x satisfaction x 0.01).
 
-  The forecast itself stops at what all stations serve (`registration.customerCapacity`), so the page shows the uncapped figure beside it ("36 come, the stations serve 20") and what one more station would serve.
+  The forecast itself stops at what all stations serve (`registration.customerCapacity`), so the page shows the uncapped figure beside it, against what the stations manned in that hour serve ("36 come, the stations serve 20"), and what one more station would serve.
 
 - **Satisfaction and sales.** `Helpers/BusinessHelper.cs:822` (`UpdateSatisfaction`): overall = (service + pricing + cleanliness + facility) / 4, the last three over orders with a paid entry.
   `AI.Customers.CustomerEntries/CustomerEntriesCalculator.cs:43`: what customers buy goes with (overall - 50) / 100 + 1.
@@ -235,10 +235,12 @@ So within a day a busier hour never has fewer people at the tills than a quieter
 
   Theft (`Helpers/BusinessSecurityHelper.cs:133`, `SimulateTheft`) follows the customers of the last hour, not the time of day: thieves a shelf = customers x 0.04 x (1 - security); under one it is the chance that one unit goes from a stocked shelf, and from one on the code takes nothing (`num2` is only set in the branch under one).
   The customers it counts are the hour's orders (`GetAmountOfCustomersThisHour`), one for each customer the game sent and took in, served or not, so the planner counts it on the forecast, which stops at what the stations serve, and not on those who would come past them.
-  The security level counts guards only while they are on a shift (:82, `IsWorking`).
+  The security level counts guards only while they are on a shift (:82, `IsWorking`), so read as it stands it would depend on the hour the page is opened.
+  The planner takes it apart by the game's own weights (guards 0.55 of it, against the protection the business's size and prices call for): theft is counted with every guard of the business at work while it is open, a break-in with none.
+  A security sign spares an unsecured shelf 6 times in 100 (`Random.Range(0, 100) <= 5f`).
 
   The mod's break-ins (`Scripts/Crime/OffscreenCrimes.cs:77`, `BreakIn` :120) are rolled once a night in the small hours and only hit a shop that is shut then, so an hour open at 01:00 removes that risk.
-  The planner counts the expected loss of each night shut (chance 4 per cent x the frequency option x exposure, shared among the player's shops, times a quarter of the shelves up to 2,500 and the repair).
+  The planner counts the expected loss of each night shut (chance 4 per cent x the frequency option x exposure, shared among the player's shops, times a quarter of the shelves up to 2,500 and the repair, both at today's prices as the break-in takes them).
 
   The late opening permit bars the hours from 22:00 and before 05:00 as before.
   `HasNoShiftBetweenHours` demands are read as limits as before.

@@ -623,7 +623,9 @@ namespace RealLifeOverhaul.Economy
             string[] skills = sheet.Stations[station].ItemCached.suitableSkills;
             try
             {
-                return skills != null && skills.Length > 0 ? Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(skills[0], 50f) * 100f) : 0;
+                return skills != null && skills.Length > 0
+                    ? CompanyCatalogue.Share(Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(skills[0], 50f) * 100f), Prices.Level)   // at today's prices, as the people's
+                    : 0;
             }
             catch (Exception)
             {

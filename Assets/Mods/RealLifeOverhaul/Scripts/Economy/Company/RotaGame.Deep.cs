@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using BigAmbitions.Characters.Skills;
 using BigAmbitions.Items;
 using BigAmbitions.Tags;
+using Buildings;
 using Entities;
 using Helpers;
 using UnityEngine;
@@ -15,9 +17,11 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class RotaGame
     {
-        private const float ThievesPerCustomer = 0.04f, SignSkips = 0.05f;                      // BusinessSecurityHelper.SimulateTheft
-        private const float BreakInChance = 0.04f, BreakInCap = 2500f, BreakInShare = 0.25f;     // Crime/OffscreenCrimes: a night, money, of the shelves
-        private const int BreakInRepair = 205;                                                   // money: the middle of its repair bill
+        private const float ThievesPerCustomer = 0.04f, SignSkips = 0.06f;  // BusinessSecurityHelper.SimulateTheft: Random.Range(0, 100) <= 5 is 6 in 100
+        private const float BreakInChance = 0.04f, BreakInCap = 2500f, BreakInShare = 0.25f;     // Crime/OffscreenCrimes: a night, money at the start's prices, of the shelves
+        private const int BreakInRepair = 205;                                                   // money at the start's prices: the middle of its repair bill
+        private const string GuardSkill = "ba:skill_securityguard";
+        private const float GuardsWeight = 0.55f;       // of the security level (BusinessSecurityHelper.UpdateSecurityLevel)
         private static readonly StringBuilder Words = new StringBuilder(96);
 
         /// <summary>Fills in a sheet just read; <paramref name="market"/> is StaffRules.Market, thousandths.</summary>
@@ -75,7 +79,8 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            float security = Mathf.Clamp01(reg.securityLevelPercentage / 100f), exposed = 0f, onShelves = 0f;
+            Security(reg, out float open, out float shut);
+            float security = Mathf.Clamp01(open / 100f), exposed = 0f, onShelves = 0f;
             bool sign = false;
             foreach (ItemInstance item in reg.itemInstances.Values)
             {
@@ -111,9 +116,57 @@ namespace RealLifeOverhaul.Economy
                 BusinessType kind = other != null && GoingPublic.Mine(other) && other.businessTypeName != Empty ? BusinessTypeHelper.GetData(other) : null;
                 shops += kind != null && kind.HasTag(TagRef.Businesstag.allowtheft) ? 1 : 0;
             }
-            float exposure = 1f - security, frequency = Mathf.Lerp(0.5f, 2f, Mathf.InverseLerp(1f, 10f, Settings.CrimeFrequency));
-            float loss = Mathf.Min(BreakInCap, onShelves * BreakInShare) * Mathf.Lerp(0.25f, 1f, exposure) + BreakInRepair;
+            // A break-in comes at night, when no guard is on a shift; its cap and repair follow prices as Crime's own do.
+            float exposure = 1f - Mathf.Clamp01(shut / 100f), frequency = Mathf.Lerp(0.5f, 2f, Mathf.InverseLerp(1f, 10f, Settings.CrimeFrequency));
+            float loss = Mathf.Min(Prices.At(BreakInCap), onShelves * BreakInShare) * Mathf.Lerp(0.25f, 1f, exposure) + Prices.At(BreakInRepair);
             shop.NightRisk = Mathf.RoundToInt(BreakInChance * frequency * Mathf.Max(exposure, 0.08f) / Mathf.Max(1, shops) * loss * 100f);
+        }
+
+        // The game's security level counts a guard only while they are on a shift (GetSecurityGuardsProtection), so as it
+        // stands it depends on the hour it is read. Taken apart by the game's own weights: the cameras' and panels' part as it
+        // is, with every guard of the business at work while it is open (the plans want a guard every open hour), and none at night.
+        private static void Security(BuildingRegistration reg, out float open, out float shut)
+        {
+            float now = Mathf.Clamp(reg.securityLevelPercentage, 0f, 100f), ideal = IdealProtection(reg), atWork = 0f, all = 0f;
+            List<EmployeeInstance> staff = Save.EmployeeInstances;
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                EmployeeInstance e = staff[i];
+                if (e == null || e.assignedAddress == null || e.assignedAddress != reg.Address || (e.isAbsent && !e.isReplaced) || !e.HasSkill(GuardSkill))
+                {
+                    continue;   // as the game's own query leaves them out (excludeAbsentsNotReplaced, withSkills)
+                }
+                float skill = e.GetSkillValue(GuardSkill);
+                all += skill;
+                atWork += e.IsWorking() ? skill : 0f;
+            }
+            shut = Mathf.Max(0f, now - GuardShare(atWork, ideal));
+            open = Mathf.Min(100f, shut + GuardShare(all, ideal));
+        }
+
+        // The guards' points of the security level: their skills halved, a hundred at most, against the protection the business wants.
+        private static float GuardShare(float skills, float ideal)
+        {
+            return ideal > 0f ? Mathf.Min(skills / 2f, 100f) * GuardsWeight * 100f / ideal : 0f;
+        }
+
+        // The protection a business wants by its size and its prices (BusinessSecurityHelper.GetIdealSecurityProtection).
+        private static float IdealProtection(BuildingRegistration reg)
+        {
+            float size = Mathf.Min(BuildingSizeHelper.GetData(reg).squareMeters / 500f, 1f), prices = 0f;
+            int counted = 0;
+            List<string> products = reg.cachedAvailableProducts;
+            for (int i = 0; products != null && i < products.Count; i++)
+            {
+                Item item = ItemsGetter.GetByName(products[i], true);
+                if (item == null || (item.type & ItemType.RetailProduct) != 0)
+                {
+                    prices += ItemHelper.GetPrice(products[i], reg);
+                    counted++;
+                }
+            }
+            prices = counted > 0 ? prices / counted : 0f;
+            return Mathf.Min((size + Mathf.Min(prices / 100f, 2f) * 3f) / 4f, 1f) * 100f;
         }
 
         /// <summary>Somebody's skills as the game names them: "Customer Service 62, Cleaning 40".</summary>
