@@ -1,8 +1,7 @@
-0.32.0
+0.32.1
 
 Fixed
-- Your own bank no longer runs the days it stood still when it is switched back on, keeps the extra capital asked after a closure, brings back what is written off within the months the Guide says, founds and sells only at the sums you confirmed, gives the licence back if the capital cannot be paid, and remembers the regulator's watch notice across a load.
-- The city's economy books a day's refunds before its charges, lowers your tax deduction when it refunds rent or wages, notes the goods of a business whose prices it cannot judge, keeps a Going Public guest's hourly work going, and remembers a rival that opened when the test tools put it back.
-- The Web shop shows and steps prices at the city's price level, as the site charges them, counts this week as today and the six days before it, puts the goods of a packed order no van took back on the shelves, keeps a day's figures when the feature stops during it, enters a closed site's last sales in its statement, pays in picked orders after a fault, and the Guide gives set-up and hosting at today's prices.
-- Investors never take you past eight deals, one new business pays one promise, their sums, targets and budgets follow the city's prices, a business opened in the last hour of a promise's last day is found, more money is no longer asked of an investor at their largest sum, a business that is gone is bought out for what is owed, the Raise money page keeps the business you clicked, and with no court a called sum says so.
-- The Finance app names an approval's interest before you take it and asks before a cancel, leaves the approval out of net worth, counts the city's change to tomorrow's rent, starts loan amounts at the least a bank lends, keeps a picked loan picked, and names the step a missed payment takes during a payment plan.
+- Buying on finance charges the approval's interest only on the part the lender finances and only for the days before you buy, as the new account charges its own from that day, and the approval's question, its page and the Guide say so.
+- A card's minimum paid before its due day counts as a payment on time, the student loan stays in your credit rating when the economy is switched off and on again, and a bank app asks before it cancels an approval and keeps the loan you picked when another is paid off.
+- Changing the game's interest multiplier keeps each loan at the rate it was taken at, consolidation is no longer offered while the game's own bankruptcy quest runs, and the private lender names the fee for more time before you agree to it.
+- Switching Investors off no longer stops the deals you have: shares are still paid and called sums still collected, and only new offers, pitches and meetings stop.
