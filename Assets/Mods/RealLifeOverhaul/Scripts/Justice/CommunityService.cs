@@ -7,35 +7,20 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A community service shift, played: eight pieces of litter on the pavements round where
-    /// the shift was begun, one at a time. A marker leads to the next; standing by it, the
-    /// interaction key picks it up: the game walks the player the last step to the place the
-    /// litter_pick clip is made for (the pile 0.55 m ahead and 0.05 m to the right of the middle,
-    /// where its right hand closes), they are turned square to it and held while the clip plays,
-    /// and the litter is gone at the clip's own "grip" moment. Without that clip it is the mod's
-    /// kneeling clip from where they stand, as before. A whole shift is four of the hours owed;
-    /// one given up part of the way counts half an hour a piece.
-    ///
-    /// Its own small loop, not the Jobs framework: one prop made once and moved from place to
-    /// place, a spot asked of CitySpots (pavement, clear, reachable on foot) when a piece is laid,
-    /// a tick five times a second while a shift is on and nothing at all otherwise. It ends, and
-    /// puts everything back, when the hours are done, when the player goes indoors or drives off,
-    /// when the police want them, after ten minutes, and on any fault.
-    /// </summary>
+    /// <summary>A community service shift, played: each piece of litter picked up with the litter_pick clip. Ticked five times a second during a shift only.</summary>
     public sealed class CommunityService
     {
-        private const float Reach = 1.0f;
-        private const float PickSeconds = 1.8f;        // of a clip that does not say (litter_pick says: its length)
-        private const float GoneAt = 1.1f;             // into the pick: the litter is in the bag (litter_pick says: its "grip" mark)
+        private const float Reach = 1.0f;              // metres
+        private const float PickSeconds = 1.8f;        // for a clip that does not say its own length
+        private const float GoneAt = 1.1f;             // seconds into the pick when the litter is in the bag, unless the clip marks "grip"
         private const string PickClip = "litter_pick";
-        private const float PickAhead = 0.55f;         // metres ahead of the feet at which litter_pick's right hand closes on the ground (CityAssets/README.md)
+        private const float PickAhead = 0.55f;         // metres ahead of the feet where litter_pick's right hand closes on the ground
         private const float PickRight = 0.05f;         // ...and to the right of the middle
-        private const float StandSlack = 0.10f;        // nearer the place it is made for than this is there: every piece of the pile lies within 0.23 m of its middle
+        private const float StandSlack = 0.10f;        // metres from that place that count as there: the pile lies within 0.23 m of its middle
         private const float StepSeconds = 2.5f;        // given to the game to walk them that last step
-        private const int StepTries = 2;               // steps that never arrived after which a shift stops asking for them
+        private const int StepTries = 2;               // steps that never arrived before a shift stops asking for them
         private const float ShiftMostSeconds = 600f;
-        private const float TooFar = 150f;
+        private const float TooFar = 150f;             // metres from the litter that end the shift
         private const NavigationBlocker Blocker = NavigationBlocker.JobOfferPanel;
 
         private static readonly string[] Clips = { PickClip, "kneel_work" };   // the first the bundle has
@@ -46,7 +31,7 @@ namespace RealLifeOverhaul
         private int _picked;
         private float _startedAt, _pickEnds, _goneAt;
         private bool _picking, _inReach;
-        private bool _stepping;        // the key was pressed and the game is walking them to where the clip is made for
+        private bool _stepping;        // the game is walking them to where the clip is made for
         private Vector3 _stand;        // ...which is here
         private float _stepUntil;
         private int _stepFailures;     // this shift
@@ -56,7 +41,7 @@ namespace RealLifeOverhaul
         private string _label;
         private readonly DoorPanel _door;          // the game's own panel over the litter, with one button
         private readonly GuideMark _mark = new GuideMark("community service");
-        private readonly Action _onPick;           // made once: the panel's button
+        private readonly Action _onPick;
         private readonly Func<string> _doorWhat;
         private ShiftCard _card;                   // a copy of the game's job panel: the pieces picked and the hours owed
         private bool _cardTried;
@@ -71,7 +56,7 @@ namespace RealLifeOverhaul
             _doorWhat = () => "litter";
         }
 
-        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        /// <summary>The marker goes with this component, destroyed or stopped by the guard.</summary>
         internal void KeptBy(Behaviour host)
         {
             _mark.Keep(host);
@@ -79,10 +64,8 @@ namespace RealLifeOverhaul
 
         public bool Active { get; private set; }
 
-        /// <summary>True while the panel's key would pick a piece up.</summary>
         public bool WantsKey => Active && (_door.TakesKey || (_inReach && !_picking && !_stepping));
 
-        /// <summary>Begins a shift where the player stands. Says why not if it cannot.</summary>
         public JusticeRefusal Start(PlayerController player)
         {
             if (Active)
@@ -115,7 +98,6 @@ namespace RealLifeOverhaul
             return JusticeRefusal.None;
         }
 
-        /// <summary>Five times a second while a shift is on: the shift itself, then what is on screen for it.</summary>
         public void Tick(float now, PlayerController player)
         {
             if (!Active)
@@ -129,8 +111,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The marker leads to the litter and the panel stands over it while it can be picked up; both are told only what changed
-        // (a panel the game refused is tried again on the next tick).
+        // A panel the game refused is tried again on the next tick.
         private void Present(PlayerController player)
         {
             if (_picking || _stepping)
@@ -156,7 +137,6 @@ namespace RealLifeOverhaul
 
         private const string ButtonPick = "reallife_justice_button_pick";
 
-        // The panel's button: the key was pressed by the litter.
         private void PickPressed()
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -208,7 +188,6 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            // One more in the bag.
             _picking = false;
             Free();
             _picked++;
@@ -225,8 +204,7 @@ namespace RealLifeOverhaul
             Status();
         }
 
-        // The key was pressed by the litter. With the clip made for it they are first walked, by the game itself, to
-        // the place that clip is measured from; anywhere near enough already, or with no such clip, it begins at once.
+        // With the clip made for it, the game first walks them to the place the clip is measured from.
         private void Pick(PlayerController player)
         {
             _inReach = false;
@@ -238,7 +216,7 @@ namespace RealLifeOverhaul
                 Vector3 facing = to;
                 if (facing.sqrMagnitude < 0.15f * 0.15f)
                 {
-                    facing = player.transform.forward;   // standing on it: back along the way they face
+                    facing = player.transform.forward;   // standing on it: the way they face
                     facing.y = 0f;
                 }
                 facing = facing.sqrMagnitude > 0.0001f ? facing.normalized : Vector3.forward;
@@ -262,8 +240,6 @@ namespace RealLifeOverhaul
             Bend(player);
         }
 
-        // Five times a second while they are walked that step: there, and down to it; steered away or never there, and
-        // the prompt is back (a shift whose steps do not arrive stops asking for them and picks from where they stand).
         private void Step(float now, PlayerController player, float flatToLitter)
         {
             Vector3 gap = _stand - player.transform.position;
@@ -288,8 +264,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Held, turned so that the litter is where the clip's hand closes, and down to it: only with a clip made for the
-        // game's skeleton, never a pose set by hand.
+        // Only ever with a clip made for the game's skeleton, never a pose set by hand.
         private void Bend(PlayerController player)
         {
             _picking = true;
@@ -307,13 +282,13 @@ namespace RealLifeOverhaul
                 float reach = to.magnitude;
                 if (reach > 0.1f)
                 {
-                    // (The pile a little to the right of the way they face, by the hand's 5 cm.)
+                    // The pile a hand's width to the right of the way they face.
                     Quaternion square = Quaternion.LookRotation(to / reach, Vector3.up)
                                         * Quaternion.Euler(0f, -Mathf.Asin(Mathf.Clamp01(PickRight / reach)) * Mathf.Rad2Deg, 0f);
                     player.transform.rotation = square;
                     if (player.Character != null)
                     {
-                        player.Character.ForceToRotation(square);   // (as the home routines turn them to their furniture)
+                        player.Character.ForceToRotation(square);
                     }
                 }
                 ThirdPersonCharacter body = player.Character;
@@ -331,7 +306,7 @@ namespace RealLifeOverhaul
                             _animator = animator;
                             if (!clip.Loop)
                             {
-                                // The clip's own moments: the litter goes as the fingers close on it, and they are let go as it ends.
+                                // The clip's own moments: the litter goes as the fingers close, and they are let go as it ends.
                                 _pickEnds = now + clip.Length;
                                 _goneAt = now + Mathf.Clamp(clip.Mark("grip", GoneAt), 0.1f, clip.Length);
                             }
@@ -346,7 +321,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Lets the player go and stands them up again. Safe when they were not held.
         private void Free()
         {
             try
@@ -433,8 +407,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The shift's figures on the copy of the game's job panel: the pieces picked and the hours still owed. Without that copy
-        // the pieces picked are sent as a notification each time, as the line used to be shown.
+        // The pieces picked and the hours owed on the copy of the game's job panel, or as a notification without it.
         private void Status()
         {
             string pieces = JusticeText.T("reallife_justice_cs_status", "done", JusticeText.N(_picked), "pieces", JusticeText.N(JusticeLaw.CommunityShiftPieces));
@@ -444,7 +417,8 @@ namespace RealLifeOverhaul
                 _card = ShiftCard.Make(_logger);
                 if (Meta.Dev.Verbose)
                 {
-                    _logger?.Info("Justice check (community card): " + (_card != null ? "a copy of the game's job panel is ready: PASS" : "the game's job panel could not be copied; the pieces are sent as notifications: FAIL") + ".");
+                    _logger?.Info("Justice check (community card): " + (_card != null ? "a copy of the game's job panel is ready: PASS"
+                        : "the game's job panel could not be copied; the pieces are sent as notifications: FAIL") + ".");
                 }
             }
             if (_card == null)
@@ -471,7 +445,6 @@ namespace RealLifeOverhaul
             _card.Show(true);
         }
 
-        // The next piece: on pavement between 9 and 36 m away, clear of everything, somewhere the player can walk to.
         private bool Lay(Vector3 from)
         {
             for (int attempt = 0; attempt < 14; attempt++)
@@ -496,7 +469,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The modelled litter if the prop bundle has it; otherwise a crumpled sheet, a drinks can on its side and a flattened carton.
         private static GameObject Build()
         {
             if (!Shapes.Available)

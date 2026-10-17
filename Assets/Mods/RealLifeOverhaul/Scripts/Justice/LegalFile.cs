@@ -1,19 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Helpers;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The Legal file: the page the Legal contact on the phone opens. Open cases with their
-    /// charges and court dates, who represents the player, what is owed and on what plan,
-    /// probation, the licence, community service, any civil suit, and the record; and from it,
-    /// whatever can be done about any of that today (pay off, answer a suit, appeal, start a
-    /// shift of community service, attend by video link where there is no courthouse to go to).
-    /// Pages of the justice panel; built when opened and when an answer changes something.
-    /// </summary>
+    /// <summary>The Legal file: where the player stands with the courts, and what can be done about it today. Built when shown.</summary>
     public sealed class LegalFile
     {
         private sealed class Act
@@ -30,8 +22,6 @@ namespace RealLifeOverhaul
         {
             _director = director;
         }
-
-        // ---------------------------------------------------------------- the short form, for the phone
 
         /// <summary>Where things stand in two or three sentences: what the Legal contact says when rung.</summary>
         public static string Brief()
@@ -75,8 +65,6 @@ namespace RealLifeOverhaul
             }
             return text.ToString();
         }
-
-        // ---------------------------------------------------------------- pages
 
         private static JusticePage Page(string body)
         {
@@ -138,12 +126,13 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < JusticeState.Debts.Count; i++)
                 {
                     JusticeDebt debt = JusticeState.Debts[i];
-                    _text.Append("\n  - ").Append(JusticeText.T(
-                        debt.Kind == JusticeDebt.Fee ? "reallife_justice_file_debt_fee" : debt.Kind == JusticeDebt.Civil ? "reallife_justice_file_debt_civil" : "reallife_justice_file_debt_fine",
-                        "left", JusticeText.Money(debt.Left), "perday", JusticeText.Money(Mathf.Min(debt.PerDay, debt.Left))));
+                    string key = debt.Kind == JusticeDebt.Fee ? "reallife_justice_file_debt_fee"
+                        : debt.Kind == JusticeDebt.Civil ? "reallife_justice_file_debt_civil" : "reallife_justice_file_debt_fine";
+                    _text.Append("\n  - ").Append(JusticeText.T(key, "left", JusticeText.Money(debt.Left), "perday", JusticeText.Money(Mathf.Min(debt.PerDay, debt.Left))));
                     if (debt.Missed > 0)
                     {
-                        _text.Append(' ').Append(JusticeText.T("reallife_justice_file_debt_missed", "missed", JusticeText.N(debt.Missed), "most", JusticeText.N(JusticeLaw.MissedInstalmentsMost)));
+                        _text.Append(' ').Append(JusticeText.T("reallife_justice_file_debt_missed", "missed", JusticeText.N(debt.Missed),
+                            "most", JusticeText.N(JusticeLaw.MissedInstalmentsMost)));
                     }
                 }
             }
@@ -157,7 +146,8 @@ namespace RealLifeOverhaul
                 : JusticeText.T("reallife_justice_file_licence_ok"));
             if (JusticeState.CommunityHours > 0)
             {
-                _text.Append('\n').Append(JusticeText.T("reallife_justice_file_community", "hours", JusticeText.N(JusticeState.CommunityHours), "day", JusticeText.N(JusticeState.CommunityDue)));
+                _text.Append('\n').Append(JusticeText.T("reallife_justice_file_community", "hours", JusticeText.N(JusticeState.CommunityHours),
+                    "day", JusticeText.N(JusticeState.CommunityDue)));
             }
             for (int i = 0; i < JusticeState.Suits.Count; i++)
             {
@@ -193,7 +183,8 @@ namespace RealLifeOverhaul
             });
         }
 
-        private static string ChargeList(JusticeCase c)
+        /// <summary>The charges still standing, as shown, comma separated.</summary>
+        internal static string ChargeList(JusticeCase c)
         {
             var names = new List<string>(c.Charges.Count);
             for (int i = 0; i < c.Charges.Count; i++)
@@ -208,7 +199,6 @@ namespace RealLifeOverhaul
 
         private void ShowRecord()
         {
-            int day = TimeHelper.CurrentDay;
             _text.Length = 0;
             if (JusticeState.Record.Count == 0)
             {
@@ -225,8 +215,8 @@ namespace RealLifeOverhaul
                 }
                 if (JusticeSettings.Aftermath && JusticeState.Priors > 0)
                 {
-                    _text.Append("\n\n").Append(JusticeText.T("reallife_justice_record_seal_when", "day", JusticeText.N(JusticeState.LastConvictionDay + JusticeLaw.SealAfterCleanDays),
-                        "days", JusticeText.N(JusticeLaw.SealAfterCleanDays)));
+                    _text.Append("\n\n").Append(JusticeText.T("reallife_justice_record_seal_when",
+                        "day", JusticeText.N(JusticeState.LastConvictionDay + JusticeLaw.SealAfterCleanDays), "days", JusticeText.N(JusticeLaw.SealAfterCleanDays)));
                 }
             }
             for (int i = JusticeState.Cases.Count - 1, shown = 0; i >= 0 && shown < 4; i--)
@@ -263,8 +253,6 @@ namespace RealLifeOverhaul
                 default: return "reallife_justice_outcome_none";
             }
         }
-
-        // ---------------------------------------------------------------- what can be done today
 
         private void BuildActs()
         {
@@ -336,7 +324,8 @@ namespace RealLifeOverhaul
                 _acts.Add(new Act
                 {
                     Label = JusticeText.T("reallife_justice_act_community"),
-                    Hint = JusticeText.T("reallife_justice_act_community_hint", "hours", JusticeText.N(JusticeState.CommunityHours), "shift", JusticeText.N(JusticeLaw.CommunityShiftHours)),
+                    Hint = JusticeText.T("reallife_justice_act_community_hint", "hours", JusticeText.N(JusticeState.CommunityHours),
+                        "shift", JusticeText.N(JusticeLaw.CommunityShiftHours)),
                     Do = () =>
                     {
                         _director.CloseFile();
@@ -347,7 +336,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Two things to do at a time, or one and "more"; the third answer always goes back.
+        // Two acts a page, or one and "more"; the last answer always goes back.
         private void ShowActs(int from)
         {
             if (_acts.Count == 0)
@@ -392,7 +381,7 @@ namespace RealLifeOverhaul
 
         private void Run(Act act)
         {
-            string said = null;
+            string said;
             try
             {
                 said = act.Do();
@@ -404,7 +393,7 @@ namespace RealLifeOverhaul
             }
             if (said == null)
             {
-                return;   // the action took the panel over, or closed it
+                return;   // the act took the panel over, or closed it
             }
             JusticePanel.Instance.Show(Page(said).Add(JusticeText.T("reallife_justice_continue")), _ => ShowMain());
         }

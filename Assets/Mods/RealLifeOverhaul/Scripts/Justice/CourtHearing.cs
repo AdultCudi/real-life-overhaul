@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Text;
-using Helpers;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -12,23 +11,9 @@ namespace RealLifeOverhaul
         public CaseOutcome Outcome;
         public JusticeSentence Sentence;
         public int FineDue;             // the fine less what was paid at the roadside
-        public int Compensation;        // paid to the player (a dismissal)
-        public int Refunded;            // bail and roadside fines given back
     }
 
-    /// <summary>
-    /// One hearing, played on the justice panel: the case is called, the charges are read (the
-    /// prosecutor withdraws what the evidence cannot carry, and a case left with nothing is
-    /// dismissed with an apology), the plea (guilty, not guilty, or the deal counsel negotiated),
-    /// for a trial three or four rounds of evidence with a choice of how to answer each, the
-    /// verdict with the sum that produced it, and the sentence with the reasons for every part.
-    ///
-    /// Nothing here is decided by a fresh roll of dice: the jury's doubt on each charge and the
-    /// fate of an objection come from the case's own seed, so a hearing replayed after a reload
-    /// goes the same way for the same choices. Money, the record and the sentence are settled by
-    /// the director only once the last page has been answered, in one go: a hearing cut short
-    /// leaves the case open (charges withdrawn or reduced on the way stay so).
-    /// </summary>
+    /// <summary>One hearing on the justice panel. Every chance comes from the case's seed, so a reload replays it the same way.</summary>
     public sealed class CourtHearing
     {
         private enum Beat { Officer, Witness, Camera, Flight, Character, Closing }
@@ -56,7 +41,7 @@ namespace RealLifeOverhaul
 
         private float _quality;
         private int _beat;
-        private int _choices;           // thousandths added to (or taken off) the case against the accused by their own choices
+        private int _choices;           // thousandths the accused's own answers added to (or took off) the case against them
         private float _mitigation;
         private float _factor = 1f;
         private bool _testified, _friendCalled, _footageShown;
@@ -81,8 +66,6 @@ namespace RealLifeOverhaul
         /// <summary>Set when the last page has been answered; null while the hearing is on or if it was cut short.</summary>
         public HearingResult Result => _result;
 
-        // ---------------------------------------------------------------- pages
-
         private JusticePage Page(int speaker, string body)
         {
             var page = new JusticePage
@@ -95,7 +78,7 @@ namespace RealLifeOverhaul
                 Right = JusticeState.Lawyer == LawyerKind.Self || JusticeState.Lawyer == LawyerKind.None ? JusticeFace.None : JusticeFace.Counsel,
                 RightName = LegalCounsel.Name(),
                 Speaker = speaker,
-                SpeakerName = speaker == 0 ? _prosecutor : speaker == 1 ? _judge : speaker == 2 ? LegalCounsel.Name() : string.Empty,   // (nobody: the page tells what happened)
+                SpeakerName = speaker == 0 ? _prosecutor : speaker == 1 ? _judge : speaker == 2 ? LegalCounsel.Name() : string.Empty,
                 Body = body
             };
             if (page.Right == JusticeFace.None && speaker == 2)
@@ -132,7 +115,6 @@ namespace RealLifeOverhaul
 
         private void Charges()
         {
-            // The prosecutor goes through the file one last time: what the evidence cannot carry is withdrawn here.
             var withdrawn = new List<string>(2);
             if (!_case.Reviewed)
             {
@@ -177,7 +159,8 @@ namespace RealLifeOverhaul
 
         private static string ClassKey(ChargeClass weight)
         {
-            return weight == ChargeClass.Grave ? "reallife_justice_class_grave" : weight == ChargeClass.Felony ? "reallife_justice_class_felony" : "reallife_justice_class_misdemeanour";
+            return weight == ChargeClass.Grave ? "reallife_justice_class_grave"
+                : weight == ChargeClass.Felony ? "reallife_justice_class_felony" : "reallife_justice_class_misdemeanour";
         }
 
         private void Plea()
@@ -188,7 +171,7 @@ namespace RealLifeOverhaul
             _text.Length = 0;
             _text.Append(JusticeText.T("reallife_justice_court_plea"));
             _text.Append("\n\n").Append(JusticeText.T("reallife_justice_court_aside", "charge", JusticeText.Charge(main.Id), "percent", JusticeText.Percent(against)));
-            bool deal = _case.DealReady || _case.Remand;   // someone brought up from the cells had no chance to ring anybody: counsel asks at the door
+            bool deal = _case.DealReady || _case.Remand;   // brought up from the cells with no chance to ring anybody: counsel asks at the door
             JusticePage page = Page(1, _text.ToString())
                 .Add(JusticeText.T("reallife_justice_plea_guilty"), JusticeText.T("reallife_justice_plea_guilty_hint"))
                 .Add(JusticeText.T("reallife_justice_plea_not_guilty"),
@@ -251,9 +234,6 @@ namespace RealLifeOverhaul
             Sentence(CaseOutcome.Deal, JusticeText.T("reallife_justice_verdict_deal", "terms", terms));
         }
 
-        // ---------------------------------------------------------------- the trial
-
-        // Three or four rounds: the officer's account, up to two more pieces of evidence the case really has, and the closing.
         private void BuildBeats()
         {
             _beats.Clear();
@@ -302,23 +282,26 @@ namespace RealLifeOverhaul
             JusticePage page = Page(beat == Beat.Closing ? 1 : 0, _text.ToString());
             if (beat == Beat.Closing)
             {
-                page.Add(JusticeText.T("reallife_justice_close_speak"), JusticeText.T(StrongCase ? "reallife_justice_close_speak_hint_strong" : "reallife_justice_close_speak_hint_weak"))
-                    .Add(JusticeText.T("reallife_justice_close_counsel"), JusticeText.T("reallife_justice_close_counsel_hint", "points", JusticeText.N(Mathf.RoundToInt(_quality * 8f))))
+                page.Add(JusticeText.T("reallife_justice_close_speak"),
+                        JusticeText.T(StrongCase ? "reallife_justice_close_speak_hint_strong" : "reallife_justice_close_speak_hint_weak"))
+                    .Add(JusticeText.T("reallife_justice_close_counsel"),
+                        JusticeText.T("reallife_justice_close_counsel_hint", "points", JusticeText.N(Mathf.RoundToInt(_quality * 8f))))
                     .Add(JusticeText.T("reallife_justice_close_nothing"), JusticeText.T("reallife_justice_close_nothing_hint"));
                 JusticePanel.Instance.Show(page, Closing);
                 return;
             }
-            // First answer: testify, once; after that, object.
+            // The first answer testifies, once; after that it objects. The third is whatever the court has not yet seen.
             if (!_testified)
             {
-                page.Add(JusticeText.T("reallife_justice_answer_testify"), JusticeText.T(StrongCase ? "reallife_justice_answer_testify_hint_strong" : "reallife_justice_answer_testify_hint_weak"));
+                page.Add(JusticeText.T("reallife_justice_answer_testify"),
+                    JusticeText.T(StrongCase ? "reallife_justice_answer_testify_hint_strong" : "reallife_justice_answer_testify_hint_weak"));
             }
             else
             {
                 page.Add(JusticeText.T("reallife_justice_answer_object"), JusticeText.T("reallife_justice_answer_object_hint", "percent", JusticeText.Percent(_quality)));
             }
-            page.Add(JusticeText.T("reallife_justice_answer_silent"), JusticeText.T("reallife_justice_answer_silent_hint", "points", JusticeText.N(Mathf.RoundToInt(_quality * 6f))));
-            // Third answer: whatever the accused can bring that the court has not yet seen.
+            page.Add(JusticeText.T("reallife_justice_answer_silent"),
+                JusticeText.T("reallife_justice_answer_silent_hint", "points", JusticeText.N(Mathf.RoundToInt(_quality * 6f))));
             int special = Special();
             if (special == 1)
             {
@@ -326,12 +309,13 @@ namespace RealLifeOverhaul
             }
             else if (special == 2)
             {
-                page.Add(JusticeText.T("reallife_justice_answer_footage"), JusticeText.T(_case.InTheAct ? "reallife_justice_answer_footage_hint_act" : "reallife_justice_answer_footage_hint"));
+                page.Add(JusticeText.T("reallife_justice_answer_footage"),
+                    JusticeText.T(_case.InTheAct ? "reallife_justice_answer_footage_hint_act" : "reallife_justice_answer_footage_hint"));
             }
             JusticePanel.Instance.Show(page, choice => Answer(choice, special));
         }
 
-        // 1: a friend as character witness (Social bridge); 2: the footage and receipts of a business of the player's that has cameras; 0: nothing.
+        // 1: a friend as character witness; 2: the footage and receipts of a business of the player's with cameras; 0: nothing.
         private int Special()
         {
             if (!_friendCalled)
@@ -351,8 +335,7 @@ namespace RealLifeOverhaul
             return !_footageShown && OwnCameras() ? 2 : 0;
         }
 
-        /// <summary>Whether the player runs a business with security cameras: its footage and receipts can be put before the court.</summary>
-        public static bool OwnCameras()
+        private static bool OwnCameras()
         {
             var save = SaveGameManager.Current;
             if (save == null || save.BuildingRegistrations == null)
@@ -381,7 +364,7 @@ namespace RealLifeOverhaul
             }
             else if (choice == 0)
             {
-                // Sustained or overruled: from the case's seed, as likely as counsel is good.
+                // Sustained as often as counsel is good.
                 bool sustained = JusticeLaw.Roll(_case.Seed, 40 + _beat) < Mathf.RoundToInt(_quality * 1000f);
                 change = sustained ? -40 : 10;
                 outcome = JusticeText.T(sustained ? "reallife_justice_result_object_sustained" : "reallife_justice_result_object_overruled");
@@ -444,7 +427,6 @@ namespace RealLifeOverhaul
             AfterAnswer(change, outcome);
         }
 
-        // What the answer did, in words and as a number, and where the case stands now. Then the next round, or the verdict.
         private void AfterAnswer(int change, string outcome)
         {
             _choices += change;
@@ -489,7 +471,8 @@ namespace RealLifeOverhaul
                     _convicted.Add(def);
                 }
                 _text.Append('\n').Append(JusticeText.T(charge.Convicted ? "reallife_justice_verdict_line_guilty" : "reallife_justice_verdict_line_not_guilty",
-                    "charge", JusticeText.T(def.NameKey), "evidence", JusticeText.Percent(charge.Evidence), "against", JusticeText.N(against / 10)).Replace("{doubt}", JusticeText.N(doubt / 10)));
+                        "charge", JusticeText.T(def.NameKey), "evidence", JusticeText.Percent(charge.Evidence), "against", JusticeText.N(against / 10))
+                    .Replace("{doubt}", JusticeText.N(doubt / 10)));
             }
             _text.Append("\n\n").Append(JusticeText.T("reallife_justice_verdict_rule"));
             string explanation = _text.ToString();
@@ -508,8 +491,6 @@ namespace RealLifeOverhaul
             return value > 0 ? "+" + JusticeText.N(value) : JusticeText.N(value);
         }
 
-        // ---------------------------------------------------------------- the sentence
-
         private void Sentence(CaseOutcome outcome, string lead)
         {
             float mitigation = _mitigation + (_case.Complied ? 0.15f : 0f);
@@ -524,10 +505,10 @@ namespace RealLifeOverhaul
                 sentence.CommunityHours = 0;
             }
             int due = Mathf.Max(0, sentence.Fine - _case.PaidAtScene);
-            // Hours already sat in a cell for this (at the precinct after the arrest, or on remand) are time served.
+            // Hours already sat in a cell for this, after the arrest or on remand, are time served.
             int served = Mathf.Min(sentence.JailHours, Mathf.Max(0, _case.HeldHours));
             sentence.JailHours -= served;
-            _result =new HearingResult { Case = _case, Outcome = outcome, Sentence = sentence, FineDue = due };
+            _result = new HearingResult { Case = _case, Outcome = outcome, Sentence = sentence, FineDue = due };
 
             _text.Length = 0;
             _text.Append(lead).Append("\n\n").Append(JusticeText.T("reallife_justice_sentence_head")).Append('\n');
@@ -550,7 +531,8 @@ namespace RealLifeOverhaul
             }
             if (sentence.PrisonDays > 0)
             {
-                _text.Append('\n').Append(JusticeText.T("reallife_justice_sentence_prison", "days", JusticeText.N(sentence.PrisonDays), "cap", JusticeText.N(JusticeSettings.PrisonCap)));
+                _text.Append('\n').Append(JusticeText.T("reallife_justice_sentence_prison", "days", JusticeText.N(sentence.PrisonDays),
+                    "cap", JusticeText.N(JusticeSettings.PrisonCap)));
             }
             if (sentence.PrisonCommuted)
             {
@@ -566,7 +548,8 @@ namespace RealLifeOverhaul
             }
             if (sentence.CommunityHours > 0)
             {
-                _text.Append('\n').Append(JusticeText.T("reallife_justice_sentence_community", "hours", JusticeText.N(sentence.CommunityHours), "days", JusticeText.N(JusticeLaw.CommunityDeadlineDays)));
+                _text.Append('\n').Append(JusticeText.T("reallife_justice_sentence_community", "hours", JusticeText.N(sentence.CommunityHours),
+                    "days", JusticeText.N(JusticeLaw.CommunityDeadlineDays)));
                 if (sentence.FirstOffence)
                 {
                     _text.Append(' ').Append(JusticeText.T("reallife_justice_sentence_first"));
@@ -580,7 +563,6 @@ namespace RealLifeOverhaul
             {
                 _text.Append('\n').Append(JusticeText.T("reallife_justice_sentence_suspension", "days", JusticeText.N(sentence.SuspensionDays)));
             }
-            // Why it is what it is: every weight on the scale is named.
             _text.Append("\n\n").Append(JusticeText.T(_factor <= JusticeLaw.DealFactor ? "reallife_justice_reason_deal"
                 : _factor < 1f ? "reallife_justice_reason_guilty" : "reallife_justice_reason_trial"));
             if (_priors > 0)
@@ -606,7 +588,7 @@ namespace RealLifeOverhaul
             JusticePanel.Instance.Show(Page(1, _text.ToString()).Add(Continue), _ => Finish());
         }
 
-        // Nothing left to answer: the apology. The compensation is worked out and paid by the director.
+        // Nothing left to answer: the apology. The director works out and pays the compensation.
         private void Dismissed()
         {
             _result = new HearingResult { Case = _case, Outcome = CaseOutcome.Dismissed };

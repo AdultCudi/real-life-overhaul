@@ -8,10 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The justice system's options (group "Justice" on the options page), read from PlayerPrefs at
-    /// game start like every other option of the mod, and its test buttons.
-    /// </summary>
+    /// <summary>The justice system's options and test buttons (group "Justice"), read from PlayerPrefs at game start.</summary>
     public static class JusticeSettings
     {
         public const string EnabledId = "justice";
@@ -25,11 +22,11 @@ namespace RealLifeOverhaul
         public const string PhoneId = "justice_phone";
 
         public static bool Enabled = true;        // cases, bail, court dates, verdicts and sentences
-        public static bool Lawyers = true;        // the city's law firms can be retained (off: the public defender or yourself)
-        public static bool Courthouse = true;     // hearings are attended in person at the courthouse (off: by video link from the Legal file)
-        public static bool NoPrison = false;      // "No prison: fines and custody only"
-        public static int PrisonCap = JusticeLaw.PrisonCapDefault;   // the longest prison term, in-game days (3 to 14)
-        public static bool Community = true;      // community service is a played shift (off: it becomes a fine)
+        public static bool Lawyers = true;        // off: the public defender or yourself
+        public static bool Courthouse = true;     // off: hearings by video link from the Legal file
+        public static bool NoPrison = false;      // fines and custody only
+        public static int PrisonCap = JusticeLaw.PrisonCapDefault;   // in-game days, 3 to 14
+        public static bool Community = true;      // off: the hours become a fine
         public static bool Civil = true;          // victims of the player's crashes may sue
         public static bool Aftermath = true;      // appeals, record sealing, compensation for a wrongful arrest
         public static bool Phone = true;          // the Legal contact and file on the phone
@@ -47,7 +44,6 @@ namespace RealLifeOverhaul
             Phone = Bool(modId, PhoneId, Phone);
         }
 
-        /// <summary>The "Justice" block of the options page: toggles, the prison cap, and the test buttons.</summary>
         public static ModOptions AddJustice(this ModOptions options)
         {
             return options
@@ -77,33 +73,30 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_justice_test_clear", () => JusticeDirector.Instance?.TestClear());
         }
 
-        // Same key format the game uses when it saves mod options (as in Core/Settings).
+        // The key the game saves mod options under (as in Core/Settings).
         private static string Key(string modId, string id) => "m:" + modId + ":" + id;
 
         private static bool Bool(string modId, string id, bool fallback) => UnityEngine.PlayerPrefs.GetInt(Key(modId, id), fallback ? 1 : 0) != 0;
     }
 
-    /// <summary>
-    /// Why a justice test button (or a shift of community service) did not start. The causes every test of the mod
-    /// shares are told through Core/TestRefusal (not loaded, option off, the police have the player); the justice
-    /// system's own each have one sentence in en.json, the same contract.
-    /// </summary>
+    /// <summary>Why a justice test button, or a shift of community service, did not start.</summary>
     public enum JusticeRefusal
     {
         None,
-        NotLoaded,      // no save, or the mod's part of it is not ready                  (Core: TestRefusal.NotLoaded)
-        FeatureOff,     // the justice system is switched off                              (Core: TestRefusal.FeatureOff)
-        PoliceBusy,     // the police already have business with the player                (Core: TestRefusal.PoliceBusy)
-        PartOff,        // the part the button tests is switched off, or "No prison" is on
-        Broken,         // it switched itself off after an error this session
+        NotLoaded,      // told as Core's TestRefusal.NotLoaded
+        FeatureOff,     // told as Core's TestRefusal.FeatureOff
+        PoliceBusy,     // told as Core's TestRefusal.PoliceBusy
+        PartOff,        // the part tested is switched off, or "No prison" is on
+        Broken,         // switched itself off after an error this session
         Busy,           // a hearing, a custody, a shift or the limit of open cases is in the way
-        NoCase,         // there is no open case
-        InPrison,       // not while serving a term
-        Indoors,        // the shift is worked on foot in the street
-        NoPavement,     // no clear pavement near enough to put litter on
-        Night           // the litter crews do not work at night
+        NoCase,
+        InPrison,
+        Indoors,        // a shift is worked on foot in the street
+        NoPavement,     // nowhere clear near enough to put litter
+        Night
     }
 
+    /// <summary>Tells a <see cref="JusticeRefusal"/>: the causes all tests share through Core/TestRefusal, the rest as a notice of its own.</summary>
     public static class JusticeRefusals
     {
         public static void Tell(IModLogger logger, string test, JusticeRefusal why, string detail = null)
@@ -140,11 +133,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// Text for the justice system's own screens. Every call builds a string, so these are for
-    /// when a page or a prompt changes, never per frame. {key} in any text is the interaction key
-    /// as bound now (Core/Keys).
-    /// </summary>
+    /// <summary>Texts for the justice system's screens, built when a page changes, never per frame. {key} is the interaction key.</summary>
     public static class JusticeText
     {
         public static string T(string key)
@@ -184,7 +173,7 @@ namespace RealLifeOverhaul
             return N(Mathf.RoundToInt(share * 100f));
         }
 
-        /// <summary>The name of a charge as shown.</summary>
+        /// <summary>A charge's name as shown; the id itself for one this build does not know.</summary>
         public static string Charge(string id)
         {
             ChargeDef def = JusticeLaw.Find(id);
@@ -193,7 +182,7 @@ namespace RealLifeOverhaul
 
         public static string Stars(int stars)
         {
-            return N(Mathf.Clamp(stars, 1, 5)) + "/5";   // (the game's font is not sure to have a star)
+            return N(Mathf.Clamp(stars, 1, 5)) + "/5";   // the game's font may lack a star
         }
 
         public static void Toast(NotificationType type, string key, float seconds = 9f)
@@ -203,7 +192,7 @@ namespace RealLifeOverhaul
 
         public static void Toast(NotificationType type, string key, string name, string value, float seconds = 9f)
         {
-            // A new dictionary each time: the game keeps hold of it for as long as the toast is listed.
+            // A new dictionary each time: the game keeps it for as long as the toast is listed.
             Notifications.Show(type, key, new Dictionary<string, string>(1) { { name, value } }, seconds);
         }
 
