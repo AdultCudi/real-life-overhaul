@@ -1,4 +1,6 @@
-0.30.1
+0.30.2
 
 Fixed
-- A street scene during a driving lesson or test, such as a pedestrian hit by traffic, no longer stops the checkpoints from showing.
+- The street chess player now stays at the table while you walk over to it, and the people talking outside a nightclub, cinema, theatre or casino in the evening stay until you are 120 m away.
+- Leisure activities now keep the distances they were made with, so a game of chess, a drink, a dance or fishing no longer ends when you move a step, chess and the clothes rack are offered from a few metres away, and fishing is offered within 320 m of a waterside landmark.
+- A hotel dinner now costs what the room's list says, and room service, the minibar, laundry, a splurge on a trip and the free loyalty night now follow the city's prices as rooms and trips do.
