@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         private bool _running;         // the file is open
         private bool _broken;          // a fault: off for the session
         private bool _gaveUp;          // the game's phone is not as expected: no app, the rest runs
+        private bool _offLooked;       // with the option off, the save has been looked at once for anything that carries on
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openInvestors;
         private Func<int, int> _fileClaim;
 
@@ -43,6 +44,9 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         /// <summary>The save's file; null while Ventures is not running.</summary>
         public VenturesFile File => _running ? _file : null;
+
+        /// <summary>The save's file may yet be opened: the option is on, or it is off and the one look for deals that carry on has not been made.</summary>
+        public bool Opening => !_running && !_broken && (Settings.VenturesInvestors || !_offLooked);
 
         /// <summary>How demanding investors are: the option the presets set.</summary>
         public static int Level => VenturesCatalogue.Level(Settings.VenturesLevel);
@@ -108,7 +112,9 @@ namespace RealLifeOverhaul.Economy.Ventures
         }
 
         private static readonly int HotTick = HotSpots.Slot("Economy: VenturesDirector.Tick");
-        // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers and the app.
+        // Once a second: start when the save is ready, hold the handlers and the app. With the option off no offer, pitch or
+        // meeting is new, but deals, promises and offers already made carry on: the file stays open until none is left, and a
+        // save opened with the option off is looked at once for them.
         private void Slow()
         {
             using var hotSpot = HotSpots.Time(HotTick);
@@ -118,15 +124,31 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             if (!Settings.VenturesInvestors)
             {
-                if (_running)
+                if (_running && !_file.CarriesOn)
                 {
                     StandDown(true);
+                    _offLooked = true;
                 }
-                return;
+                if (!_running)
+                {
+                    if (_offLooked)
+                    {
+                        return;
+                    }
+                    _offLooked = true;
+                    if (!StartUp(true))
+                    {
+                        return;
+                    }
+                }
             }
-            if (!_running)
+            else
             {
-                StartUp();
+                _offLooked = false;
+                if (!_running)
+                {
+                    StartUp(false);
+                }
             }
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
@@ -141,10 +163,16 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        private void StartUp()
+        // Opens the save's file, a new one if it has none; with 'carryOnly' (the option off) only a file with deals, promises or
+        // offers that carry on. True if it is open.
+        private bool StartUp(bool carryOnly)
         {
             int today = Save.Day, version;
             VenturesFile file = VenturesStore.Load(Save.modData, out version);
+            if (carryOnly && (file == null || !file.CarriesOn))
+            {
+                return false;
+            }
             bool fresh = file == null;
             if (fresh)
             {
@@ -179,10 +207,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 Logger?.Info("Ventures check (start): file version " + (fresh ? "new" : version.ToString()) + ", " + file.Deals.Count + " deal(s), " + file.Offers.Count + " offer(s), "
                              + file.Pledges.Count + " promise(s), " + file.Holdings.Count + " holding(s), market day " + file.MarketSteps + ", name with investors " + file.Reputation
-                             + ", level " + Level + ", climate " + VenturesBridges.Climate.Phase + " at " + VenturesBridges.Climate.BankRate.ToString("0.##", CultureInfo.InvariantCulture) + "%. "
-                             + CastLine() + ": PASS");
+                             + ", level " + Level + ", climate " + VenturesBridges.Climate.Phase + " at " + VenturesBridges.Climate.BankRate.ToString("0.##", CultureInfo.InvariantCulture) + "%"
+                             + (carryOnly ? " (the option is off: what was agreed carries on, nothing new comes). " : ". ") + CastLine() + ": PASS");
             }
             Badge();
+            return true;
         }
 
         // The game's named rivals, each under a company name made from its own.
