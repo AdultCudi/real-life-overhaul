@@ -64,7 +64,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/FrontSignRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobSpots.cs	1
@@ -218,7 +217,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/CreditModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/Shark.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.Tables.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/Ladder.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesApp.Tables.cs	1
@@ -317,7 +315,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.City.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Lending/BankTerms.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
@@ -463,12 +460,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineDirector.T
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineDirector.cs	16
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineStore.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankApp.cs	14
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankCatalogue.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankGame.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankGuide.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankRules.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Offers.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Tests.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.cs	11
