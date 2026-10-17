@@ -7,7 +7,7 @@ using RealLifeOverhaul.Economy;
 //   1. in a debt arrangement every account was frozen and its buttons hidden, so the card could only be paid by the
 //      arrangement's daily payment; now a frozen debt can be paid by hand, that counts under the arrangement, and the
 //      arrangement ends cleared the moment the last of it is paid, by whatever route, once;
-//   2. a missed minimum was tried again each day and every failed day was a new miss (Banking/Accounts/CreditAccount.cs Card):
+//   2. a missed minimum was tried again each day and every failed day was a new miss (Banking/Accounts/AccountRules.cs Card):
 //      a player with no cash went from a reminder to the collections call in five days; now one miss a statement;
 //   3. a new statement put its own minimum in place of one still unpaid, so what was overdue was due no longer; now it
 //      is carried into the new minimum.
