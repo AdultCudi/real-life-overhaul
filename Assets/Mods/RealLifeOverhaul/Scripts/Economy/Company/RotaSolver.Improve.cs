@@ -2,16 +2,10 @@ using System;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The solver's improving pass, every move of which is counted against a fixed budget, and the rating of a rota:
-    /// what it covers, what it costs, which demands it leaves unmet and why, which hours nobody covers and why.
-    /// </summary>
+    /// <summary>The solver's improving pass, each move counted against a fixed budget, and the rating of a rota.</summary>
     public sealed partial class RotaSolver
     {
-        // ---------------------------------------------------------------- 5: improving
-
-        // The uncovered hours of one day at one station (the driver takes them the most valuable first, and all of them a second
-        // time if anything was covered): each is covered if a move that loses nothing does it.
+        // The uncovered hours of one day at one station, each covered if a move that loses nothing does it.
         private bool CoverLane(int level, int i)
         {
             int lane = _lanes[i], s = lane % _s, d = lane / _s;
@@ -46,8 +40,8 @@ namespace RealLifeOverhaul.Economy
                 int now = _pos[w * Cells + cell];
                 if (now >= 0)
                 {
-                    // They stand elsewhere this hour: they come over if it is the first or last hour of that shift (a shift is not
-                    // cut in two), and the hour they leave is taken by another or is worth less.
+                    // They stand elsewhere this hour: they come over if it is an end of that shift (a shift is not cut in
+                    // two), and the hour they leave is taken by another or is worth less.
                     if (Swap(level, w, cell, now, cell, s, value))
                     {
                         return true;
@@ -58,7 +52,7 @@ namespace RealLifeOverhaul.Economy
                 int before = RunBack(w, d, s, h), after = RunOn(w, d, s, h + 1);
                 if (!dayFull && !weekFull && before + after >= RotaCatalogue.ShiftCap)
                 {
-                    // Their shift here is as long as a shift may be: it moves along by an hour, the hour at its far end given up.
+                    // Their shift here is as long as a shift may be: it moves along by an hour, giving up its far end.
                     if ((before > 0 && Swap(level, w, cell - before, s, cell, s, value)) || (after > 0 && Swap(level, w, cell + after, s, cell, s, value)))
                     {
                         return true;
@@ -67,9 +61,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (!dayFull && !weekFull)
                 {
-                    continue;   // (held back by their number of days: an hour given up elsewhere does not help)
+                    continue;   // held back by their number of days: an hour given up elsewhere does not help
                 }
-                // They are free this hour but at a limit of the day or the week: an hour at the edge of another shift is given up for it.
+                // At a limit of the day or the week: an hour at the edge of another shift is given up for this one.
                 for (int d2 = dayFull ? d : 0; d2 < (dayFull ? d + 1 : Days) && _steps > 0; d2++)
                 {
                     uint busy = _busy[w * Days + d2];
@@ -85,8 +79,8 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // Somebody gives up one hour (at the edge of a shift) to take another that is uncovered. Kept if the hour given up is
-        // taken by another, or is worth less than the hour gained; undone otherwise.
+        // Somebody gives up an hour at the edge of a shift to take an uncovered one. Kept if the hour given up is taken by
+        // another or is worth less than the one gained; undone otherwise.
         private bool Swap(int level, int w, int from, int fromStation, int to, int toStation, int value)
         {
             int d = from / Hours, h = from % Hours, row = w * Cells + d * Hours;
@@ -115,7 +109,7 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // Who should take one free hour at a station: whoever already stands there the hour before or after, then whose demands it helps, then the cheapest.
+        // Who should take one free hour at a station: whoever stands there next to it, then whose demands it helps, then the cheapest.
         private int BestFree(int level, int d, int h, int s)
         {
             int best = -1, bestKey = 0;
@@ -139,7 +133,8 @@ namespace RealLifeOverhaul.Economy
             return best;
         }
 
-        // One day at one station, shift by shift: a shift goes to somebody else if that leaves fewer demands unmet, or the same and it costs less, or the same again and they do it better.
+        // One day at one station, shift by shift: a shift goes to somebody else if that leaves fewer demands unmet, or as
+        // many for less, or the same again done better.
         private void HandLane(int level, int i)
         {
             int lane = _lanes[i], s = lane % _s, d = lane / _s;
@@ -176,7 +171,8 @@ namespace RealLifeOverhaul.Economy
                     Move(d, s, x, y, holder);
                     int wage = (_p.Worker[w].Wage - _p.Worker[holder].Wage) * (y - x);
                     bool better = unmet < 0 || (unmet == 0 && (wage < 0 || (wage == 0 && _p.Can[w * _s + s] > _p.Can[holder * _s + s])));
-                    if (better && (best < 0 || unmet < bestUnmet || (unmet == bestUnmet && (wage < bestWage || (wage == bestWage && _p.Can[w * _s + s] > _p.Can[best * _s + s])))))
+                    if (better && (best < 0 || unmet < bestUnmet
+                        || (unmet == bestUnmet && (wage < bestWage || (wage == bestWage && _p.Can[w * _s + s] > _p.Can[best * _s + s])))))
                     {
                         best = w;
                         bestUnmet = unmet;
@@ -198,8 +194,6 @@ namespace RealLifeOverhaul.Economy
                 Assign(to, d * Hours + h, s);
             }
         }
-
-        // ---------------------------------------------------------------- what it comes to
 
         private void Rate()
         {
@@ -241,7 +235,8 @@ namespace RealLifeOverhaul.Economy
                         {
                             if (plan.Gaps.Count < RotaCatalogue.ReasonsMost)
                             {
-                                plan.Gaps.Add(new RotaGap { Day = d, From = gapFrom, To = h, Station = s, Reason = _canStart[s + 1] == _canStart[s] ? RotaReason.NoSkill : RotaReason.Stretched });
+                                RotaReason why = _canStart[s + 1] == _canStart[s] ? RotaReason.NoSkill : RotaReason.Stretched;
+                                plan.Gaps.Add(new RotaGap { Day = d, From = gapFrom, To = h, Station = s, Reason = why });
                             }
                             gapFrom = -1;
                         }
@@ -259,7 +254,7 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     plan.UnmetCount++;
-                    plan.UnmetWeight += Weight(demands[i].Priority);
+                    plan.UnmetWeight += RotaCatalogue.Weight(demands[i].Priority);
                     if (plan.Unmet.Count < RotaCatalogue.ReasonsMost)
                     {
                         int day, station;
@@ -270,7 +265,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The first hour of the week in which a demand about days, hours or kinds of shift is not kept: the day, and the station they stand at then.
+        // For a demand about days, hours or kinds of shift: the first hour of the week that breaks it, its day and station.
         private void Where(int w, ref RotaDemand q, out int day, out int station)
         {
             day = station = -1;
@@ -285,7 +280,9 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                bool here = q.Kind == RotaDemandKind.FreeDays ? ((q.Mask >> (cell / Hours)) & 1UL) != 0 : q.Kind == RotaDemandKind.NoHours ? ((q.Mask >> (cell % Hours)) & 1UL) != 0 : ((q.Mask >> _p.Kind[s]) & 1UL) != 0;
+                bool here = q.Kind == RotaDemandKind.FreeDays ? ((q.Mask >> (cell / Hours)) & 1UL) != 0
+                    : q.Kind == RotaDemandKind.NoHours ? ((q.Mask >> (cell % Hours)) & 1UL) != 0
+                    : ((q.Mask >> _p.Kind[s]) & 1UL) != 0;
                 if (here)
                 {
                     day = cell / Hours;

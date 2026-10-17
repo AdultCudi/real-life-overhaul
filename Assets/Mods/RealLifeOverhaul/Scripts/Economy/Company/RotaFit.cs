@@ -6,38 +6,15 @@ namespace RealLifeOverhaul.Economy
     public static class RotaClash
     {
         public const int None = 0;
-        public const int Hours = 1;     // the hours they may work here (opening hours less their free days and the hours they do not work, a day no longer than the game allows) are fewer than they ask for
+        public const int Hours = 1;     // too few hours they may work here: open, on days and at hours they allow, a day within the game's
         public const int Shared = 2;    // those who can stand at the same stations ask for more hours between them than the stations hold
         public const int Service = 3;   // the cleaning service cleans the business: there is no cleaning for them to do
     }
 
     /// <summary>
-    /// The two compulsory ends of an hours demand, and shifts that follow the customers. Game-free; works on a rota
-    /// the solver has made, in place.
-    ///
-    /// THE RULE: whoever asks for a number of hours a week (the game's HoursWorkingPerWeek, part-time or full-time)
-    /// works no fewer than its least and no more than its most, or does not work in this rota at all and is named.
-    /// The most is a limit of the solver already (RotaLadder gives every hours demand the game's high priority, which
-    /// never gives way). This class brings everybody up to their least (<see cref="Reach"/>):
-    ///   1  an hour at a station they can stand at that is open and empty: a wanted one first, then the busiest;
-    ///      next to a shift they have, or as the start of a new one that the next hour then lengthens (a shift of
-    ///      one hour is left only when nothing else keeps the rules)
-    ///   2  an hour taken over from a colleague who has more than their own least, at an end of that colleague's shift
-    /// and never breaks what the solver never breaks: skill, one place at a time, a shift of at most
-    /// <see cref="RotaCatalogue.ShiftCap"/> hours, a day of at most <see cref="RotaCatalogue.DayCap"/>, and the
-    /// person's own limits (most hours, number of days, free days, hours not worked, kinds of shift).
-    ///
-    /// SHIFTS FOLLOW THE CUSTOMERS (<see cref="Slide"/>): a shift at a station that serves customers is moved an
-    /// hour at a time towards the busier end while the hour it would gain has more customers and fewer people at
-    /// that group of stations than the hour it would give up. So within a day a busier hour is never staffed thinner
-    /// than a quieter one unless a rule above forbids the move.
-    ///
-    /// THE BETTER FIRST: people are brought to their least hours in the order of how well they do the job (the game's
-    /// skill, a percentage), the best first, so the best has the first choice of the busiest hours that are left.
-    /// Whoever a week leaves with no hours is tried once more at the end (<see cref="Rescue"/>), in the same order,
-    /// on the hours nobody stands at: the quieter ones. Only somebody the stations have no hours for stays without.
-    ///
-    /// Cost: nothing unless asked; a step is one person, or one pass of moves. Nothing is allocated once grown.
+    /// Keeps the hours demand on a rota the solver made, in place: whoever asks for hours is brought up to their least,
+    /// the better at the job first (the most is a limit of the solver already); then one-hour shifts are mended and
+    /// shifts slide towards the customers. Breaks nothing the solver keeps. Game-free; a step is one person or one pass.
     /// </summary>
     public sealed class RotaFit
     {
@@ -56,15 +33,15 @@ namespace RealLifeOverhaul.Economy
         private short[] _before = new short[0];    // the rota before a last try, to put back if it comes to nothing
         private short[] _where = new short[0];     // [worker * Cells + cell] the station they are at, plus one; 0: nowhere
 
-        public int Moves;       // hours added, taken over or slid (the self-check)
-        public int Given => _given;     // people the last try gave a week
+        /// <summary>People the last <see cref="Rescue"/> or run of <see cref="RescueStep"/> gave a week.</summary>
+        public int Given => _given;
 
         public void RescueBegin()
         {
             _rescueAt = _given = 0;
         }
 
-        /// <summary>The least and the most hours a week somebody asks for; 0 and a very large number where they ask for none.</summary>
+        /// <summary>The least and the most hours a week somebody asks for; 0 and int.MaxValue where they ask for none.</summary>
         public static void Range(RotaWorker worker, out int least, out int most)
         {
             least = 0;
@@ -93,7 +70,7 @@ namespace RealLifeOverhaul.Economy
             return _hours[worker];
         }
 
-        /// <summary>How well somebody does the job: the game's skill at the station they are best at, a percentage; 0 for somebody who can stand nowhere.</summary>
+        /// <summary>The game's skill, a percentage, at the station somebody is best at; 0 for somebody who can stand nowhere.</summary>
         public static int Skill(RotaProblem problem, int worker)
         {
             int skill = 0;
@@ -104,7 +81,7 @@ namespace RealLifeOverhaul.Economy
             return skill;
         }
 
-        /// <summary>Takes a rota and what it was made for. <paramref name="problem"/> holds the worth of the hours (a wanted hour has one) and everybody's demands.</summary>
+        /// <summary>Takes a rota and what it was made for: <paramref name="problem"/> holds the worth of the hours and everybody's demands.</summary>
         public void Begin(RotaShop shop, RotaProblem problem, bool[] open, RotaPlan plan)
         {
             _shop = shop;
@@ -116,7 +93,6 @@ namespace RealLifeOverhaul.Economy
             _next = 0;
             _slid = _moved = _mended = false;
             _slideDay = _rounds = 0;
-            Moves = 0;
             if (_hours.Length < _w)
             {
                 _hours = new int[_w];
@@ -146,7 +122,7 @@ namespace RealLifeOverhaul.Economy
                     _not[w] |= d.Kind == RotaDemandKind.NoHours ? d.Mask : 0UL;
                     _kinds[w] |= d.Kind == RotaDemandKind.NoShiftKind ? d.Mask : 0UL;
                 }
-                // (the hours are counted below: until then that array holds the skill, for the order)
+                // _hours holds the skill for the sort until Count fills it with the hours.
                 int skill = _hours[w] = Skill(problem, w), j = w;
                 while (j > 0 && _hours[_order[j - 1]] < skill)
                 {
@@ -158,7 +134,6 @@ namespace RealLifeOverhaul.Economy
             Count();
         }
 
-        // Everybody's hours, days and places, counted from the rota as it stands.
         private void Count()
         {
             Array.Clear(_hours, 0, _hours.Length);
@@ -179,7 +154,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>One step more: one person brought up to their least, then the passes that move shifts towards the customers. True when done.</summary>
+        /// <summary>One step more: one person brought up to their least, then the mending, then the passes towards the customers. True when done.</summary>
         public bool Step()
         {
             if (_next < _w)
@@ -197,7 +172,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return true;
             }
-            // One station's shifts of one day a step; the week is gone over until a whole round moves nothing.
+            // One station of one day a step; the week is gone over until a whole round moves nothing.
             _moved |= SlideAt(_slideDay / Math.Max(1, _s), _slideDay % Math.Max(1, _s));
             if (++_slideDay >= Days * _s)
             {
@@ -208,15 +183,13 @@ namespace RealLifeOverhaul.Economy
             return _slid;
         }
 
-        // ---------------------------------------------------------------- the rules nobody's rota breaks
-
-        // True if somebody may be given an hour at a station, the station being empty or not (who stands there is the caller's matter).
+        // True if somebody may be given an hour at a station by every rule; who stands there now is the caller's matter.
         private bool May(int w, int cell, int s)
         {
             int d = cell / Hours, h = cell % Hours;
             if (_shop.Cleaned && _shop.GroupKind[_shop.Group[s]] == RotaGroupKind.Cleaning)
             {
-                return false;   // (the cleaning service cleans here: nobody is given a cleaning hour)
+                return false;   // the cleaning service cleans here
             }
             if (!_open[cell] || _p.Can[w * _s + s] == 0 || _p.Whole[s] || _shop.Taken[cell * _s + s] || _where[w * Cells + cell] != 0 || _hours[w] >= _most[w])
             {
@@ -255,7 +228,6 @@ namespace RealLifeOverhaul.Economy
             return cell >= 0 && cell < Cells && _at[cell * _s + s] == w;
         }
 
-        // True if an hour at a station is next to one this person works there on the same day.
         private bool Beside(int w, int cell, int s)
         {
             int h = cell % Hours;
@@ -278,8 +250,6 @@ namespace RealLifeOverhaul.Economy
             _day[w * Days + cell / Hours]--;
         }
 
-        // ---------------------------------------------------------------- the least hours
-
         /// <summary>Brings one person up to the least hours they ask for, as far as the rules allow.</summary>
         public void Reach(int w)
         {
@@ -290,7 +260,7 @@ namespace RealLifeOverhaul.Economy
                 bool takes = false;
                 for (int pass = 0; pass < 2 && best < 0; pass++)
                 {
-                    // First an empty place; with none, an hour a colleague can spare.
+                    // An empty place first (a wanted hour, then the busiest); with none, an hour a colleague can spare.
                     for (int cell = 0; cell < Cells; cell++)
                     {
                         for (int s = 0; s < _s; s++)
@@ -303,7 +273,7 @@ namespace RealLifeOverhaul.Economy
                             bool beside = Beside(w, cell, s);
                             if (_frag[w] >= 0 ? !(beside && (cell == _frag[w] - 1 || cell == _frag[w] + 1)) : !beside && (_day[w * Days + cell / Hours] > 0 || (need >= 2 && !Grows(w, cell, s))))
                             {
-                                continue;   // (an hour alone is no shift: the hour that started one is lengthened first, and a second shift on a day is not begun)
+                                continue;   // an hour alone is no shift: the hour that began one is lengthened first, and no second shift is begun on a day
                             }
                             long score = (_p.Value[cell * _s + s] > 0 ? 1L << 40 : 0L) + ((long)_shop.Customers[cell] << 16) + (beside ? 1L << 8 : 0L) - cell;
                             if (score > most)
@@ -318,7 +288,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (best < 0 && _frag[w] >= 0)
                 {
-                    _frag[w] = -1;      // (the hour that began a shift cannot be lengthened after all: it stays, and the search goes on elsewhere)
+                    _frag[w] = -1;      // the hour that began a shift cannot be lengthened after all: it stays, and the search goes on elsewhere
                     continue;
                 }
                 if (best < 0)
@@ -332,11 +302,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 Put(w, best, bestStation);
                 _frag[w] = starts && need >= 2 ? best : -1;
-                Moves++;
             }
         }
 
-        /// <summary>Takes every hour somebody has: they stand nowhere in this rota.</summary>
         public void Drop(int w)
         {
             for (int cell = 0; cell < Cells && _hours[w] > 0; cell++)
@@ -351,23 +319,19 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Whoever has no hours and asks for some, the better at the job first: the hours nobody stands at (the
-        /// quieter ones, the busier being taken) and the hours colleagues can spare, up to their least. Whoever
-        /// these do not bring to their least stays without, and the rota is as it was before they were tried: the
-        /// stations have no hours for them. Only the first
-        /// <paramref name="people"/> are looked at. Returns how many were given a week; if any, <see cref="Step"/>
-        /// has the passes towards the customers to do again.
+        /// Tries once more each of the first <paramref name="people"/> who has no hours and asks for some, the better first;
+        /// a try that falls short of their least is undone. Returns how many were given a week.
         /// </summary>
         public int Rescue(int people)
         {
-            _rescueAt = _given = 0;
+            RescueBegin();
             while (!RescueStep(people))
             {
             }
             return _given;
         }
 
-        /// <summary>The same a person at a time, after <see cref="RescueBegin"/>. True when everybody has been looked at; <see cref="Given"/> says how many have a week of it.</summary>
+        /// <summary>The same a person at a time, after <see cref="RescueBegin"/>. True when everybody has been looked at.</summary>
         public bool RescueStep(int people)
         {
             int given = 0;
@@ -387,12 +351,12 @@ namespace RealLifeOverhaul.Economy
                 Reach(w);
                 if (_hours[w] < _least[w])
                 {
-                    // (the hours colleagues gave up for nothing go back to them)
+                    // The hours colleagues gave up for nothing go back to them.
                     Array.Copy(_before, _at, Cells * _s);
                     Count();
                     _frag[w] = -1;
                     _rescueAt++;
-                    break;      // (a try that came to nothing is a step of its own)
+                    break;      // a try that came to nothing is a step of its own
                 }
                 given++;
             }
@@ -410,7 +374,7 @@ namespace RealLifeOverhaul.Economy
         {
             int h = cell % Hours;
             bool grows = false;
-            short there = _at[cell * _s + s];     // (a colleague, where the hour would be taken over: put back below)
+            short there = _at[cell * _s + s];     // a colleague, where the hour would be taken over: put back below
             Put(w, cell, s);
             grows |= h > 0 && Free(cell - 1, s, there) && May(w, cell - 1, s);
             grows |= h < Hours - 1 && Free(cell + 1, s, there) && May(w, cell + 1, s);
@@ -419,14 +383,14 @@ namespace RealLifeOverhaul.Economy
             return grows;
         }
 
-        // True if an hour at a station is empty, or is the next hour of the colleague an hour is being taken over from and they can spare that too.
+        // True if an hour at a station is empty, or the colleague an hour is being taken from holds it and can spare it too.
         private bool Free(int cell, int s, int from)
         {
             int v = _at[cell * _s + s];
             return v < 0 || (v == from && from < _w && _hours[from] - 2 >= _least[from]);
         }
 
-        // True if a colleague can give up an hour: they stay at or above their own least, it is an end of their shift, and what is left of that shift is no single hour.
+        // True if a colleague can give up an hour: they keep their least, it ends their shift, and no single hour is left.
         private bool Spares(int v, int cell, int s)
         {
             if (v < 0 || v >= _w || _hours[v] - 1 < _least[v] || _p.Whole[s])
@@ -445,12 +409,9 @@ namespace RealLifeOverhaul.Economy
             return (before == 0 || after == 0) && before + after != 1;
         }
 
-        /// <summary>
-        /// Shifts of a single hour: each is lengthened by the busier hour beside it where the rules allow, and
-        /// otherwise given up if its holder stays at or above their least hours without it (or has no other hour).
-        /// One is left only where neither can be done.
-        /// </summary>
-        public void Mend()
+        // One-hour shifts: each is lengthened by the busier hour beside it where allowed, else given up if its holder keeps
+        // their least without it or has no other hour.
+        private void Mend()
         {
             for (int cell = 0; cell < Cells; cell++)
             {
@@ -468,18 +429,14 @@ namespace RealLifeOverhaul.Economy
                     if (to >= 0)
                     {
                         Put(w, to, s);
-                        Moves++;
                     }
                     else if (_hours[w] - 1 >= _least[w] || _hours[w] == 1)
                     {
                         Take(w, cell, s);
-                        Moves++;
                     }
                 }
             }
         }
-
-        // ---------------------------------------------------------------- towards the customers
 
         // The people at a group of stations in an hour.
         private int Level(int cell, int group)
@@ -506,7 +463,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // One station of one day: each shift at a station that serves customers, later by an hour, earlier by an hour, or an end hour lent to a busier hour.
+        // One day at a station that serves customers: each shift an hour later, earlier, or an end hour lent to a busier hour.
         private bool SlideAt(int d, int s)
         {
             bool moved = false;
@@ -521,7 +478,7 @@ namespace RealLifeOverhaul.Economy
                     int cell = d * Hours + h, w = _at[cell * _s + s];
                     if (w < 0 || w >= _w || (h > 0 && _at[(cell - 1) * _s + s] == w))
                     {
-                        continue;   // (not the first hour of a shift)
+                        continue;   // not the first hour of a shift
                     }
                     int end = h;
                     while (end < Hours && _at[(d * Hours + end) * _s + s] == w)
@@ -532,14 +489,13 @@ namespace RealLifeOverhaul.Economy
                     here = here || (h > 0 && Shift(w, s, d * Hours + end - 1, cell - 1));
                     here = here || (end - h >= 3 && (Lend(w, s, cell) || Lend(w, s, d * Hours + end - 1)));
                     moved |= here;
-                    h = here ? Hours : end - 1;   // (the next shift may begin in the very next hour; after a move the day is looked at again in the next round)
+                    h = here ? Hours : end - 1;   // the next shift may begin in the very next hour; after a move the next round looks again
                 }
             }
             return moved;
         }
 
-        // Gives up an end hour of a shift of three hours or more for an hour beside another hour the same person works (on any
-        // day) that is busier and thinner staffed: the week's hours go where the customers are, and no shift is left a single hour.
+        // An end hour of a shift of three or more moves to a busier, thinner staffed hour beside another of theirs, any day.
         private bool Lend(int w, int s, int from)
         {
             int group = _shop.Group[s], level = Level(from, group), best = -1, bestStation = -1;
@@ -566,12 +522,11 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Put(w, best, bestStation);
-            Moves++;
             return true;
         }
 
-        // An empty hour between two shifts of the same person, left empty because one shift may not be that long: the break is
-        // moved to the quietest hour of the two shifts that leaves both whole (two hours or more, twelve at most), if that is quieter.
+        // An hour left empty between two shifts of one person (one shift may not be so long): the break moves to the
+        // quietest hour that leaves both shifts two to twelve hours long.
         private bool Bridge(int to, int s)
         {
             int w = _at[(to - 1) * _s + s];
@@ -608,11 +563,10 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Put(w, to, s);
-            Moves++;
             return true;
         }
 
-        // Gives up one end hour of a shift for the hour beyond its other end, if that hour is busier and thinner staffed and the rules allow.
+        // Gives up one end hour of a shift for the hour beyond its other end, if that is busier and thinner staffed and allowed.
         private bool Shift(int w, int s, int from, int to)
         {
             int group = _shop.Group[s];
@@ -627,16 +581,10 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Put(w, to, s);
-            Moves++;
             return true;
         }
 
-        // ---------------------------------------------------------------- why somebody cannot be given their hours
-
-        /// <summary>
-        /// The most hours a week somebody could be given in these opening hours were nobody else there: each day
-        /// they may work, the open hours they may work at a station they can stand at, no more than the game's day.
-        /// </summary>
+        /// <summary>The most hours a week somebody could be given in these opening hours were nobody else there.</summary>
         public static int Room(RotaShop shop, RotaProblem problem, bool[] open, int worker)
         {
             int stations = problem.Stations, least, most, daysMost = Days, sum = 0, used = 0;
@@ -652,7 +600,7 @@ namespace RealLifeOverhaul.Economy
                 not |= d.Kind == RotaDemandKind.NoHours ? d.Mask : 0UL;
                 kinds |= d.Kind == RotaDemandKind.NoShiftKind ? d.Mask : 0UL;
             }
-            // Each day's room, then the days with the most room, as many as they work.
+            // Each day's room, six bits a day (a day holds no more than fourteen), then the days with the most, as many as they work.
             for (int d = 0; d < Days; d++)
             {
                 int room = 0;
@@ -667,7 +615,6 @@ namespace RealLifeOverhaul.Economy
                     room += can ? 1 : 0;
                 }
                 room = Math.Min(room, RotaCatalogue.DayCap);
-                // (kept in the bits of one number, six to a day: a day holds no more than fourteen)
                 rooms |= (long)room << (d * 6);
             }
             for (int taken = 0; taken < daysMost; taken++)
