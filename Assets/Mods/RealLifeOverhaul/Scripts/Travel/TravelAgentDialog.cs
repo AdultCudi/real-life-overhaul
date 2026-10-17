@@ -8,7 +8,7 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>The travel agent, by phone or at an agency's door: trips, ways to travel, then the ticket.</summary>
-    public class TravelAgentDialog : Dialog
+    public sealed class TravelAgentDialog : Dialog
     {
         internal static Holidays Host;
 

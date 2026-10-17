@@ -1,5 +1,4 @@
 using System;
-using BigAmbitions.DayNightCycle;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -51,10 +50,10 @@ namespace RealLifeOverhaul
             switch (id)
             {
                 case Sleep:
-                    _director.Run(SleepRoutine(room, hotel, SleepGoal(), true));
+                    _director.Run(SleepRoutine(room, SleepGoal(), true));
                     return;
                 case Nap:
-                    _director.Run(SleepRoutine(room, hotel, Capped(TimeHelper.GetTimeInHours(2)), false));
+                    _director.Run(SleepRoutine(room, Capped(TimeHelper.GetTimeInHours(2)), false));
                     return;
                 case Wake:
                     TravelState.WakeHour = TravelState.WakeHour >= 10 ? 5 : TravelState.WakeHour + 1;
@@ -361,7 +360,7 @@ namespace RealLifeOverhaul
             TravelList list = _director.Window.Take(this);
             if (list == null)
             {
-                Plain(room, hotel);
+                Plain(room);
                 return;
             }
             if (_sleeping)
@@ -483,7 +482,7 @@ namespace RealLifeOverhaul
         }
 
         // No window to show: the night is slept, then the player is outside again, so that a stay can never trap anyone.
-        private void Plain(RoomType room, HotelSlot hotel)
+        private void Plain(RoomType room)
         {
             if (_sleeping)
             {
@@ -493,7 +492,7 @@ namespace RealLifeOverhaul
             {
                 _plain = true;
                 _director.Log("Travel check (room list): the game's list could not be made; the night is slept at once and the other choices are not offered: FAIL.");
-                _director.Run(SleepRoutine(room, hotel, SleepGoal(), true));
+                _director.Run(SleepRoutine(room, SleepGoal(), true));
                 return;
             }
             LeaveRoom();

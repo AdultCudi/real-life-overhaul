@@ -482,7 +482,7 @@ namespace RealLifeOverhaul
                 ModState.AddModifier(TravelEffects.TradeFair);
                 hours = 0;   // a trade fair is work
             }
-            TakeBreak(trip, away, hours, trip.JetLag);
+            TakeBreak(away, hours, trip.JetLag);
             TravelState.Souvenirs += TravelState.AwaySouvenirs + (TravelState.Suitcase && TravelState.AwaySouvenirs > 0 ? 1 : 0);   // a proper case brings one more home whole
             GiveSouvenirs();
             TravelState.AddPast(trip.Id, TravelState.AwayStartDay, away);
@@ -495,7 +495,7 @@ namespace RealLifeOverhaul
         }
 
         // What a holiday leaves behind: rested for days, the grind forgotten, perhaps jet lag, the companion closer.
-        private static void TakeBreak(Trip trip, int days, int restedHours, bool jetLag)
+        private static void TakeBreak(int days, int restedHours, bool jetLag)
         {
             if (restedHours > 0)
             {

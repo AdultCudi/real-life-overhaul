@@ -313,7 +313,8 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        private static bool Door(CityBuildingController building, out Vector3 door)
+        /// <summary>Where a building's first entrance door is; false if it has none.</summary>
+        internal static bool Door(CityBuildingController building, out Vector3 door)
         {
             door = default;
             if (building == null || building.entranceDoors == null)

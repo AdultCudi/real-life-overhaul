@@ -55,7 +55,7 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>The Trips page: what is booked now, past trips and loyalty, the way to the nearest hotel, a ticket used.</summary>
-    public class TripsDialog : Dialog
+    public sealed class TripsDialog : Dialog
     {
         public TripsDialog()
         {

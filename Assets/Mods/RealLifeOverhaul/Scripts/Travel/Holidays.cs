@@ -59,18 +59,10 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 CityBuildingController building = city.FindCityBuildingController(new Address(registration.StreetName, registration.StreetNumber));
-                if (building == null || building.entranceDoors == null)
+                if (Hotels.Door(building, out Vector3 door))
                 {
-                    continue;
-                }
-                for (int door = 0; door < building.entranceDoors.Length; door++)
-                {
-                    if (building.entranceDoors[door] != null && building.entranceDoors[door].doorTransform != null)
-                    {
-                        _agencies.Add(registration);
-                        _agencyDoors.Add(building.entranceDoors[door].doorTransform.position);
-                        break;
-                    }
+                    _agencies.Add(registration);
+                    _agencyDoors.Add(door);
                 }
             }
         }
@@ -347,7 +339,7 @@ namespace RealLifeOverhaul
             if (nightsSlept > 0)
             {
                 int hours = 36 + 12 * nightsSlept + (TravelState.TicketFirst ? 12 : 0);
-                TakeBreak(trip, nightsSlept, hours, false);
+                TakeBreak(nightsSlept, hours, false);
                 TravelState.AddPast(trip.Id, TravelState.TicketDay, trip.Days);
                 TravelText.Toast(NotificationType.Success, TravelText.T(trip.ReturnKey), 12f);
             }

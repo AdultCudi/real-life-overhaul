@@ -117,7 +117,7 @@ namespace RealLifeOverhaul
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }

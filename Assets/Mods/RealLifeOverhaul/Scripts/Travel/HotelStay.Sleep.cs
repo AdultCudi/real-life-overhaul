@@ -65,7 +65,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        private IEnumerator SleepRoutine(RoomType room, HotelSlot hotel, Timestamp goal, bool night)
+        private IEnumerator SleepRoutine(RoomType room, Timestamp goal, bool night)
         {
             if (CannotSkip(goal))
             {

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>Reception in the game's dialogue panel, when <see cref="HotelReception"/>'s list cannot be made.</summary>
-    public class HotelDeskDialog : Dialog
+    public sealed class HotelDeskDialog : Dialog
     {
         internal static HotelSite Site;
         internal static HotelStay Stay;

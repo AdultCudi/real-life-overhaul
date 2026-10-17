@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>The test entries on the mod's options page.</summary>
     public sealed partial class TravelDirector
     {
         private bool TestReady(string test, bool featureOn)
