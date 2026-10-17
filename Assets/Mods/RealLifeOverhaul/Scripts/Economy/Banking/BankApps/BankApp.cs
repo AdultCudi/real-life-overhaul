@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Economy
         private CreditDesk Desk => _director.Desk;
         private bool IsHouse => Bank != null && BankTerms.House != null && Bank.Rank == BankTerms.House.Rank;
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
-        private static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
+        private static float Multiplier => GameLoans.Multiplier;
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)

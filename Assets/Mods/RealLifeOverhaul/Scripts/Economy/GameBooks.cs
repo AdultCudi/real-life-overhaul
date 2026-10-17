@@ -24,7 +24,6 @@ namespace RealLifeOverhaul.Economy
         public const string Parking = "ba:transactioncategory_parkingfees";
         public const string HealthInsurance = "ba:transactioncategory_healthinsuranceexpenses";
         public const string Headhunter = "ba:transactioncategory_headhunterreplacementfees";
-        private const string Loans = "ba:transactioncategory_loanexpenses";
         private const string SalaryIncome = "ba:transactioncategory_salaryincome";
         private const string RevenueType = "ba:transaction_revenue";
         private const string UnassignedWageType = "ba:transaction_unassignedwage";
@@ -250,7 +249,7 @@ namespace RealLifeOverhaul.Economy
                 homes += home.Amount;
             }
 
-            float loans = Sum(byCategory, Loans), health = Sum(byCategory, HealthInsurance), headhunter = Sum(byCategory, Headhunter);
+            float loans = Sum(byCategory, GameLoans.ExpenseCategory), health = Sum(byCategory, HealthInsurance), headhunter = Sum(byCategory, Headhunter);
             float parking = Sum(byCategory, Parking), income = Sum(byCategory, SalaryIncome);
             if (!Mathf.Approximately(loans, summary.totalLoanExpenses) || !Mathf.Approximately(health, summary.totalHealthInsuranceExpenses)
                 || !Mathf.Approximately(headhunter, summary.totalHeadhunterReplacementFees) || !Mathf.Approximately(parking, summary.parkingFees)

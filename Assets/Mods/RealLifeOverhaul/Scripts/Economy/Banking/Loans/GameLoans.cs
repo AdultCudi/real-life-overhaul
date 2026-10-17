@@ -11,6 +11,11 @@ namespace RealLifeOverhaul.Economy
     public sealed class GameLoans : ICreditAccount
     {
         public const string AccountKey = "loans";
+        public const string ExpenseCategory = "ba:transactioncategory_loanexpenses";   // the game's own: its statements count loan payments under it
+        public const string LoanPaidEvent = "ba:gameevent_loanpaid";                   // the game's own, as EconoView pays a loan off (LoanEntryUi.PayOffLoan)
+
+        /// <summary>The game's interest multiplier on every loan (a setting of the save); 1 without a save.</summary>
+        public static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
 
         public string Key => AccountKey;
         public string NameKey => "reallife_econ_account_loans";
@@ -107,7 +112,7 @@ namespace RealLifeOverhaul.Economy
         {
             GameInstance save = SaveGameManager.Current;
             float most = 0f;
-            if (TutorialHelper.IsTutorialEnabled() && !save.CompletedQuestEntries.Contains("tutorial_quest_establish_first_business_objective_1"))
+            if (TutorialHelper.IsTutorialEnabled() && !save.CompletedQuestEntries.Contains(BankTerms.TutorialLoanObjective))
             {
                 most = 15500f;
             }

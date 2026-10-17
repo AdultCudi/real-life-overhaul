@@ -16,6 +16,12 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>What borrowing costs in all: the interest over its days, and the fee.</summary>
         public int Cost => DailyInterest * Days + Fee;
+
+        /// <summary>The instalments until an amount is paid at a daily payment; 0 with no payment.</summary>
+        public static int DaysToPay(int amount, int dailyPayment)
+        {
+            return dailyPayment > 0 ? Mathf.CeilToInt(amount / (float)dailyPayment) : 0;
+        }
     }
 
     /// <summary>
@@ -26,7 +32,6 @@ namespace RealLifeOverhaul.Economy
     {
         public const string FeeTransaction = "reallife_transaction_loan_fee";
         private const string PayoutTransaction = "ba:transaction_loanpayout";       // the game's own
-        private const string LoanExpenses = "ba:transactioncategory_loanexpenses";  // the game's own category, so its summaries count the fee
         private const string NewLoanEvent = "ba:gameevent_newloan";
 
         /// <summary>The most this lender lends the player now: its cap for the rating less what it is owed, within the game's own means test.</summary>
@@ -47,8 +52,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The annual rate this lender offers at this rating, as the bank's dialogue would show it.</summary>
         public static float RateOffered(Lender lender, int score)
         {
-            float multiplier = SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
-            return BankTerms.Wanted(lender.Settings, score).AnnualRate * multiplier;
+            return BankTerms.Wanted(lender.Settings, score).AnnualRate * GameLoans.Multiplier;
         }
 
         /// <summary>The figures for an amount by the game's formulas, with the rating's terms written on the banks first: what the bank in person would quote now.</summary>
@@ -63,7 +67,7 @@ namespace RealLifeOverhaul.Economy
                 DailyPayment = LoanHelper.CalculateDailyPayment(amount, lender.Settings),
                 Fee = BankRules.Fee(amount, lender.Rank)
             };
-            quote.Days = quote.DailyPayment > 0 ? Mathf.CeilToInt(amount / (float)quote.DailyPayment) : 0;
+            quote.Days = LoanQuote.DaysToPay(amount, quote.DailyPayment);
             return quote;
         }
 
@@ -94,7 +98,7 @@ namespace RealLifeOverhaul.Economy
             SaveGameManager.Current.Loans.Add(loan);
             // a dictionary each: the game keeps a transaction's data for as long as it lists the transaction
             GameManager.ChangeMoneySafe(amount, new TransactionInfo(PayoutTransaction, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
-            GameManager.ChangeMoneySafe(-fee, new TransactionInfo(FeeTransaction, LoanExpenses, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
+            GameManager.ChangeMoneySafe(-fee, new TransactionInfo(FeeTransaction, GameLoans.ExpenseCategory, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
             GameEvent.Invoke(NewLoanEvent);
             return loan;
         }

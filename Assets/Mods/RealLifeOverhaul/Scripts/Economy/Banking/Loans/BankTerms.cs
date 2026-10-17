@@ -28,8 +28,8 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public static class BankTerms
     {
-        private const string TutorialLoanObjective = "tutorial_quest_establish_first_business_objective_1";
-        private const string BankruptcyQuest = "SQBankruptcy";
+        internal const string TutorialLoanObjective = "tutorial_quest_establish_first_business_objective_1";   // the game's own
+        internal const string BankruptcyQuest = "SQBankruptcy";   // the game's own side quest: SideQuestHelper.BankruptcyQuestId
 
         private struct Own
         {

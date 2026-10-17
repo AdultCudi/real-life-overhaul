@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Economy
                 DailyPayment = LoanHelper.CalculateDailyPayment(amount, bank.Settings),
                 Fee = BankRules.Fee(amount, bank.Rank)
             };
-            quote.Days = quote.DailyPayment > 0 ? Mathf.CeilToInt(amount / (float)quote.DailyPayment) : 0;
+            quote.Days = LoanQuote.DaysToPay(amount, quote.DailyPayment);
             return quote;
         }
 

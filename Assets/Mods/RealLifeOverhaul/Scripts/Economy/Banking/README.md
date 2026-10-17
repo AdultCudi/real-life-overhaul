@@ -27,6 +27,7 @@ Every number is a constant of `Terms/CreditCatalogue.cs` (the rating and a bank'
 | A product's limit and rate at a rating | `Terms/ProductTerms` (`OverdraftLimit`, `CardLimit`, `FinanceMost`, `RateBp`, `WithBase`, `FixedRateBp`, `BusinessRate`) |
 | Each bank's difference | `Terms/BankRules` (points on rates, share of limits and of the fee), applied by `Desk/CreditDesk.Banks` (`LimitAt`, `AgreedAt`) |
 | A loan's daily interest | the game's own `LoanHelper` at the rate written on its bank; where the mod sets the rate (a business loan, the penalty rate), `Terms/GameLoanMath` |
+| The game's interest multiplier, and its keys for loans | `Loans/GameLoans` (`Multiplier`, `ExpenseCategory`, `LoanPaidEvent`); the quest ids in `Loans/BankTerms` |
 | An account's daily interest | `Accounts/AccountRules.Interest` (whole money, the rest carried), at `CreditAccount.RateNow` |
 | Approval money held, the private lender | `Terms/ProductTerms.AdvanceCharge`, `Debt/SharkRules.ADay` |
 | Fees | phone fee `LendingTerms.PhoneFee` / `BankRules.Fee`; card cash `AccountRules.CashFee`; late fee `AccountRules.LateFee`; claim costs `LadderRules.ClaimCosts`; consolidation `ProductTerms.ConsolidationFee`; extension `SharkRules.ExtendFee` |

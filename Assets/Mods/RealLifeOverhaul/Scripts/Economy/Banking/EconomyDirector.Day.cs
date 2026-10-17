@@ -10,8 +10,6 @@ namespace RealLifeOverhaul.Economy
     /// <summary>The credit side's hour and day: the game's loans read against the file, each instalment settled, the record, the banks' terms.</summary>
     public sealed partial class EconomyDirector
     {
-        private const string LoanPaidEvent = "ba:gameevent_loanpaid";   // the game's own, as EconoView pays a loan off (LoanEntryUi.PayOffLoan)
-
         private static readonly int HotOnHour = HotSpots.Slot("Economy: EconomyDirector.OnHour");
         private static readonly int HotOnDay = HotSpots.Slot("Economy: EconomyDirector.OnDay");
         private static readonly int HotOnGameEvent = HotSpots.Slot("Economy: EconomyDirector.OnGameEvent");
@@ -150,7 +148,7 @@ namespace RealLifeOverhaul.Economy
         private void OnGameEvent(string gameEvent)
         {
             using var hotSpot = HotSpots.Time(HotOnGameEvent);
-            if (gameEvent != LoanPaidEvent || !_running || _broken || Save == null)
+            if (gameEvent != GameLoans.LoanPaidEvent || !_running || _broken || Save == null)
             {
                 return;
             }

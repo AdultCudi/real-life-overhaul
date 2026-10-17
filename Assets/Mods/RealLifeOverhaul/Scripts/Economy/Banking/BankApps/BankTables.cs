@@ -8,11 +8,7 @@ namespace RealLifeOverhaul.Economy
         // the kinds of thing the Apply tab lists, in its order (the keys are the Finance app's)
         public const int Loan = 0, Overdraft = 1, Card = 2, Business = 3, Car = 4, Home = 5, Consolidate = 6, OfferCount = 7;
 
-        public static readonly string[] OfferKinds =
-        {
-            "reallife_econ_kind_loan", "reallife_econ_kind_overdraft", "reallife_econ_kind_card", "reallife_econ_kind_business", "reallife_econ_kind_car", "reallife_econ_kind_home",
-            "reallife_econ_kind_consolidate"
-        };
+        public static readonly string[] OfferKinds = FinanceTables.OfferKinds;
 
         public const int Band = 0, Yours = 1;   // the Rating tab's rows
         public static readonly string[] RatingKinds = { "reallife_bank_kind_band", "reallife_bank_kind_yours" };

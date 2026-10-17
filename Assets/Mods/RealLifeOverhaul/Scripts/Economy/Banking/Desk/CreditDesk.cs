@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Economy
         private static IModLogger Logger => EconomyDirector.Logger;
         private static bool Verbose => Meta.Dev.Verbose;
         private static GameInstance Save => SaveGameManager.Current;
-        private static float Multiplier => Save != null && Save.gameVariables != null ? Save.gameVariables.bankInterestMultiplier : 1f;
+        private static float Multiplier => GameLoans.Multiplier;
         private static int Today => Save != null ? Save.Day : 0;
 
         /// <summary>An account's name for the player: its kind, and what it is secured on if anything.</summary>

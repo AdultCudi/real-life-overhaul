@@ -8,12 +8,10 @@ namespace RealLifeOverhaul.Economy
     /// <summary>The credit desk's ways out of debt: debt advice, a debt arrangement and bankruptcy. The advice call itself is <see cref="DebtPhone"/>'s.</summary>
     public sealed partial class CreditDesk
     {
-        private const string GameBankruptcyQuest = "SQBankruptcy";   // the game's own side quest: SideQuestHelper.BankruptcyQuestId
-
         private readonly List<DebtLine> _lines = new List<DebtLine>(6);
 
         /// <summary>True while the game's own bankruptcy quest is on: the mod's bankruptcy is not offered, and the player is pointed to the game's.</summary>
-        public static bool GameBankruptcy => SideQuestHelper.IsSideQuestActive(GameBankruptcyQuest);
+        public static bool GameBankruptcy => SideQuestHelper.IsSideQuestActive(BankTerms.BankruptcyQuest);
 
         // A debt an arrangement takes: anything not secured on something the borrower still has, never a test account.
         private static bool Unsecured(CreditAccount a)

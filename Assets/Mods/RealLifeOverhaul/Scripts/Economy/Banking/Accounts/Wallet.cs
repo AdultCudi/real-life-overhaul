@@ -9,8 +9,6 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed class Wallet : IWallet
     {
-        private const string LoanExpenses = "ba:transactioncategory_loanexpenses";   // the game's own category
-
         public int? BookDay;   // the day transactions are dated on (the day's run books on the day that ended); null for now
 
         public int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
@@ -48,7 +46,7 @@ namespace RealLifeOverhaul.Economy
         private static TransactionInfo Info(string why, string name, bool expense)
         {
             var data = new Dictionary<string, string>(1) { { "name", name ?? string.Empty } };
-            return expense && (why == Money.Payment || why == Money.LateFee) ? new TransactionInfo(why, LoanExpenses, data) : new TransactionInfo(why, data);
+            return expense && (why == Money.Payment || why == Money.LateFee) ? new TransactionInfo(why, GameLoans.ExpenseCategory, data) : new TransactionInfo(why, data);
         }
     }
 }

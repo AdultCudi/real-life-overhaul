@@ -16,7 +16,6 @@ namespace RealLifeOverhaul.Economy
     public sealed partial class CreditDesk
     {
         private const string LoanPayOff = "ba:transaction_loanpayoff";   // the game's own, as EconoView pays a loan off
-        private const string LoanPaidEvent = "ba:gameevent_loanpaid";
 
         /// <summary>An overdraft's or a card's limit, or the most put into a vehicle or a building, at one bank at a rating.</summary>
         public static int LimitAt(ProductKind kind, int score, Lender bank)
@@ -141,7 +140,7 @@ namespace RealLifeOverhaul.Economy
             if (paidOff)
             {
                 Save.Loans.Remove(loan);
-                GameEvent.Invoke(LoanPaidEvent);
+                GameEvent.Invoke(GameLoans.LoanPaidEvent);
             }
             _director.BringUpToDate("a payment from " + bank + "'s app");
             if (Verbose)
