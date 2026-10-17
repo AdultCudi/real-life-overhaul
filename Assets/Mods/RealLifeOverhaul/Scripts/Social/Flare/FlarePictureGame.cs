@@ -154,6 +154,19 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>True while the player is in a vehicle: a city photo waits (its renders are a frame of 10 to 30 ms, felt most at the wheel).</summary>
+        public static bool Driving()
+        {
+            try
+            {
+                return PlayerHelper.IsUsingVehicle;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>True while it rains as the game shows it (wet streets, the rain falling or the mist after it).</summary>
         public static bool Raining()
         {

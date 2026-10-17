@@ -299,9 +299,9 @@ namespace RealLifeOverhaul.Flare
                 BankWrite();
             }
             float t = Time.realtimeSinceStartup;
-            if (t < _photoNext || _photoBusy || Settings.FlareCityPhotos <= 0)
+            if (t < _photoNext || _photoBusy || Settings.FlareCityPhotos <= 0 || FlarePictureGame.Driving())
             {
-                return;
+                return;   // (in a vehicle the photo waits, its pace not spent: it comes in the first second on foot)
             }
             _photoNext = t + _photoPace;
             if (_photoDay != day)
