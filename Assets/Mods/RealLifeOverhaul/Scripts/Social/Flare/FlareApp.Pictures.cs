@@ -243,13 +243,19 @@ namespace RealLifeOverhaul.Flare
                     int width = FlareRules.ThumbWidth, height = Mathf.Max(1, full.height * width / full.width);
                     RenderTexture rt = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
                     RenderTexture before = RenderTexture.active;
-                    Graphics.Blit(full, rt);
-                    RenderTexture.active = rt;
-                    small = new Texture2D(width, height, TextureFormat.RGB24, false);
-                    small.ReadPixels(new Rect(0, 0, width, height), 0, 0, false);
-                    small.Apply(false, true);   // no longer readable: the copy in main memory is let go
-                    RenderTexture.active = before;
-                    RenderTexture.ReleaseTemporary(rt);
+                    try
+                    {
+                        Graphics.Blit(full, rt);
+                        RenderTexture.active = rt;
+                        small = new Texture2D(width, height, TextureFormat.RGB24, false);
+                        small.ReadPixels(new Rect(0, 0, width, height), 0, 0, false);
+                        small.Apply(false, true);   // no longer readable: the copy in main memory is let go
+                    }
+                    finally
+                    {
+                        RenderTexture.active = before;   // on a fault too: the target is not kept, nor drawn into again
+                        RenderTexture.ReleaseTemporary(rt);
+                    }
                 }
             }
             catch (Exception e)
