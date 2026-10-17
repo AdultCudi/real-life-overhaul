@@ -473,7 +473,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("drink_soft", () => Guide.Money(Leisure.BarDrinks.DrinkPrice(2)))
                 .Owns(Settings.LeisureId, Settings.ClothesShopsId, Settings.NightLifeId, Settings.AmbientSoundId, Settings.PhotoModeId)
                 .Data("reallife:leisure_*")
-                .Objects("RealLifeOverhaul Shift Card", "RealLifeOverhaul Clothes")
+                .Objects("RealLifeOverhaul Shift Card")
                 .Rows("reallife_leisure_test_records")   // the records and landmarks card: the player's, not a test
                 .Fact("leisure_tipsy_from", () => Guide.Number(Leisure.BarDrinks.TipsyFrom))
                 .Cleanup(() =>
@@ -658,7 +658,6 @@ namespace RealLifeOverhaul.Meta
                 .StandsAside(GoingPublic.ClockSentence, Settings.HolidaysId)   // days away cannot pass for one player of a session (Core/GoingPublic)
                 .Data(TravelState.SaveKey)
                 .Contact(TravelPhone.TripsId, TravelPhone.AgentId)
-                .Objects("RealLifeOverhaul Travel UI")
                 .Cleanup(HotelStay.EndSleepEffects)
                 .ResetData(TravelState.Reset)
                 .Repair(TravelPhone.Setup);
@@ -797,7 +796,6 @@ namespace RealLifeOverhaul.Meta
                 .OnFrom(Settings.RoadsideChecksId, Intensity.Standard)
                 .Data(LicenceState.Key, TestCar.Key)
                 .Contact(LicencePhone.ContactId)
-                .Objects("RealLifeOverhaul Licence HUD")
                 .Fact("lic_theory_fee", () => Guide.Money(LicenceLaw.TheoryFee))
                 .Fact("lic_lesson_fee", () => Guide.Money(LicenceLaw.LessonFee))
                 .Fact("lic_test_fee", () => Guide.Money(LicenceLaw.CarTestFee))
@@ -889,8 +887,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("bb_build_most", () => Guide.Money(Utilities.BroadbandRules.BuildCostRange(Prices.Level, EndScaleGuide.Scale, true)))
                 .Fact("bb_build_months", () => Utilities.BroadbandCatalogue.BuildMonths.ToString(CultureInfo.InvariantCulture))
                 .Fact("bb_trust_months", () => Utilities.BroadbandCatalogue.TrustMonths.ToString(CultureInfo.InvariantCulture))
-                .Fact("bb_sale_multiple", () => Utilities.BroadbandCatalogue.SaleMultiple.ToString(CultureInfo.InvariantCulture))
-                .Objects("RealLifeOverhaul Utilities Sign");
+                .Fact("bb_sale_multiple", () => Utilities.BroadbandCatalogue.SaleMultiple.ToString(CultureInfo.InvariantCulture));
 
             Features.Add("family", "reallife_meta_title_family")
                 .Group("reallife_family_header")
