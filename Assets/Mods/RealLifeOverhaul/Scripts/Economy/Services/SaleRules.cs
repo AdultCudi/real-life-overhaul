@@ -304,7 +304,10 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            var clause = new SaleClause { Type = type, District = district ?? string.Empty, Name = name ?? string.Empty, FromDay = takenToday ? day : day - 1, Until = day + days, Price = Math.Max(0, price) };
+            var clause = new SaleClause
+            {
+                Type = type, District = district ?? string.Empty, Name = name ?? string.Empty, FromDay = takenToday ? day : day - 1, Until = day + days, Price = Math.Max(0, price)
+            };
             if (s.Clauses.Count >= ServicesCatalogue.ClausesMost)
             {
                 s.Clauses.RemoveAt(0);
