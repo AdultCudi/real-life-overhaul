@@ -1,33 +1,21 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The player's bank in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=1^s:...^d:...^l:...^f:...^m:...
-    ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   s  the bank: state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|
-    ///      rebalance|scare|run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|
-    ///      last income|last costs|month lost|last lost|lost in all|recovered in all|history count|founded by a test|
-    ///      banks closed by the regulator (a line without it that has a closed bank counts one)
+    /// The player's bank as one line of the save's modData, under <see cref="Key"/>: "v=1", then parts divided by '^',
+    /// each a letter and a colon, its records divided by ';' and fields by '|'.
+    ///   s  state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|rebalance|scare|
+    ///      run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|last income|last costs|
+    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures
     ///   d  each kind of saver: deposits|points over the rivals
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
     ///   m  the months' profit, the oldest first
-    ///   e  the end game's scale (Core/EndScale): the day it began to come in|tellers|relationship managers|loan officers|
-    ///      compliance officers|the least capital it was founded under (a line without it: no day, so a bank that runs is
-    ///      phased in, no crews, and the old least)
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written; a name is escaped so that no
-    /// divider can break the line. A NEWER VERSION adds fields at the end of a record or a part with a new letter; this
-    /// reader takes the fields it knows and skips parts it does not. A figure out of its bounds is put inside them; a
-    /// line that cannot be read gives no bank (the feature starts afresh), and a save without the line has none. Nothing
-    /// here is the game's: a save loads in the plain game with this line ignored.
+    ///   e  the end game's scale: the day it began|tellers|managers|loan officers|compliance officers|the least capital founded under
+    /// A later version adds fields at the end of a record or a part with a new letter; an older line's missing fields read as none.
     /// </summary>
     public static class OwnBankStore
     {
@@ -77,8 +65,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < b.Holdings.Count && i < HoldingsMost; i++)
             {
                 FundHolding h = b.Holdings[i];
-                t.Append(i > 0 ? ";" : string.Empty).Append(h.StockId.ToString(Inv)).Append('|').Append(Escape(h.Ticker)).Append('|').Append(Escape(h.Name)).Append('|').Append(h.Qty.ToString(Inv))
-                    .Append('|').Append(h.CostCents.ToString(Inv)).Append('|').Append(h.LastCents.ToString(Inv)).Append('|').Append(h.DpsCents.ToString(Inv));
+                t.Append(i > 0 ? ";" : string.Empty).Append(h.StockId.ToString(Inv)).Append('|').Append(Escape(h.Ticker)).Append('|').Append(Escape(h.Name)).Append('|')
+                    .Append(h.Qty.ToString(Inv)).Append('|').Append(h.CostCents.ToString(Inv)).Append('|').Append(h.LastCents.ToString(Inv)).Append('|').Append(h.DpsCents.ToString(Inv));
             }
             t.Append("^m:");
             for (int i = 0; i < b.History.Length; i++)
@@ -232,15 +220,12 @@ namespace RealLifeOverhaul.Economy
             b.Closures = Clamp(I(c, 32), 0, 1000);
             if (b.Closures == 0 && b.State == OwnBankState.Closed && !b.Test)
             {
-                b.Closures = 1;   // (a save from before the count: its bank was closed once)
+                b.Closures = 1;   // a line written before closures were counted: its bank was closed once
             }
             return true;
         }
 
-        /// <summary>
-        /// A line read back that no longer balances (edited by hand, or written by a version that counted otherwise): the
-        /// reserves are made what the books say they are, so that the identity holds again. True if it had to be.
-        /// </summary>
+        /// <summary>A line read back that no longer balances has its reserves made what the books say. True if it had to be.</summary>
         public static bool Mend(OwnBank b)
         {
             if (!b.Running || OwnBankRules.Balanced(b))
@@ -250,8 +235,6 @@ namespace RealLifeOverhaul.Economy
             b.Reserves = b.Savings + b.Capital - b.Lent - b.InArrears - b.FundCost;
             return true;
         }
-
-        // ---------------------------------------------------------------- fields
 
         private static int I(string[] c, int i)
         {
@@ -275,7 +258,7 @@ namespace RealLifeOverhaul.Economy
             return least + (v - least) / step * step;
         }
 
-        // '%', '^', ';' and '|' written as %25, %5E, %3B, %7C.
+        // '%', '^', ';' and '|' written as %25, %5E, %3B and %7C.
         private static string Escape(string s)
         {
             if (string.IsNullOrEmpty(s))
