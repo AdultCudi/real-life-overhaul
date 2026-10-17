@@ -1114,12 +1114,23 @@ namespace RealLifeOverhaul
                     CountScene(scene, ref objects, ref shown, ref roots);
                 }
             }
-            Scene kept = KeptScene();
-            if (kept.IsValid() && kept.isLoaded)
+            try
             {
-                int keptShown = 0, keptRoots = 0;
-                _keptObjects = 0;
-                CountScene(kept, ref _keptObjects, ref keptShown, ref keptRoots);
+                Scene kept = KeptScene();
+                if (kept.IsValid() && kept.isLoaded)
+                {
+                    int keptShown = 0, keptRoots = 0;
+                    _keptObjects = 0;
+                    CountScene(kept, ref _keptObjects, ref keptShown, ref keptRoots);
+                }
+            }
+            catch (Exception e)
+            {
+                _keptRead = true;
+                _kept = default;   // an engine that will not list that scene: left out from now on, the rest of the record goes on
+                _roots.Clear();
+                _under.Clear();
+                Logger?.Warn("Session: the objects kept across loads cannot be counted in this build (" + e.GetType().Name + ").");
             }
             _holders.End(minute);
             _kinds.End(minute);
