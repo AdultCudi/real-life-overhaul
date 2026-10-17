@@ -23,11 +23,27 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The capital a new bank must pay in after this many closures: the least, and AgainCapital more for each.</summary>
         public static long CapitalLeast(int level, int closures, int share)
         {
-            return At(LeastAt(share) * (1000 + Math.Max(0, closures) * OwnBankCatalogue.AgainCapital) / 1000, level);
+            return At(LeastAt(share, closures), level);
         }
 
         /// <summary>The least capital at the start's prices at a share of the scale: what a bank founded now is held to.</summary>
         public static long LeastAt(int share) => EndScaleRules.Mix(OwnBankCatalogue.CapitalLeastCents, OwnBankCatalogue.CapitalLeastCentsScale, share);
+
+        /// <summary>The same after so many closures, AgainCapital more for each: what a bank founded now pays in and keeps (<see cref="MostOut"/>).</summary>
+        public static long LeastAt(int share, int closures) => LeastAt(share) * (1000 + Math.Max(0, closures) * OwnBankCatalogue.AgainCapital) / 1000;
+
+        /// <summary>
+        /// The bank read back as the feature starts: after a stand-down (<see cref="OwnBank.Still"/>) the days it stood
+        /// still are not run; otherwise up to <paramref name="catchUp"/> days not yet run (a long jump) are.
+        /// </summary>
+        public static void Resume(OwnBank b, int today, int catchUp)
+        {
+            if (b.Running)
+            {
+                b.LastDay = Math.Max(b.LastDay, today - 1 - (b.Still ? 0 : catchUp));
+            }
+            b.Still = false;
+        }
 
         public const string AgainWaitKey = "reallife_ob_why_closed_before", AgainIntegrityKey = "reallife_ob_why_closed_integrity";
 
@@ -271,6 +287,8 @@ namespace RealLifeOverhaul.Economy
             b.Why = ClosedWhy.None;
             b.LastDay = day - 1;   // the founding day is its first
             b.Test = false;
+            b.WatchTold = int.MinValue;
+            b.Still = false;
             b.Capital = Math.Max(0, capital);
             b.Reserves = b.Capital;
             for (int k = 0; k < OwnBankCatalogue.Savers; k++)

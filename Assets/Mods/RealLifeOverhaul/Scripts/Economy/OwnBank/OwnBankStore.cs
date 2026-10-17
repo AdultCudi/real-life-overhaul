@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Economy
     /// each a letter and a colon, its records divided by ';' and fields by '|'.
     ///   s  state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|rebalance|scare|
     ///      run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|last income|last costs|
-    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures
+    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures|watch told|stood still
     ///   d  each kind of saver: deposits|points over the rivals
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Economy
             {
                 (int)b.State, 0, b.Seed, b.FoundedDay, b.EndDay, b.EndCents, (int)b.Why, b.LastDay, b.Capital, b.Reserves, b.Strategy, b.FundLimit, b.Rebalance ? 1 : 0, b.Scare,
                 b.Run ? 1 : 0, b.RunFrom, (int)b.Stage, b.Deadline, b.Strikes, b.FinedCents, b.MonthFrom, b.Month, b.MonthIncome, b.MonthCosts, b.LastIncome, b.LastCosts,
-                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures
+                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures, b.WatchTold, b.Still ? 1 : 0
             };
             for (int f = 0; f < head.Length; f++)
             {
@@ -188,11 +188,11 @@ namespace RealLifeOverhaul.Economy
             b.State = (OwnBankState)Clamp(I(c, 0), 0, (int)OwnBankState.Closed);
             b.Name = Unescape(c[1]);
             b.Seed = I(c, 2);
-            b.FoundedDay = Math.Max(0, I(c, 3));
+            b.FoundedDay = I(c, 3);   // the test tools' rewind can take a bank's days under nothing
             b.EndDay = Math.Max(0, I(c, 4));
             b.EndCents = Math.Max(0, L(c, 5));
             b.Why = (ClosedWhy)Clamp(I(c, 6), 0, (int)ClosedWhy.Run);
-            b.LastDay = Math.Max(0, I(c, 7));
+            b.LastDay = I(c, 7);
             b.Capital = L(c, 8);
             b.Reserves = L(c, 9);
             b.Strategy = Clamp(I(c, 10), 0, OwnBankCatalogue.Strategies - 1);
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Economy
             b.Deadline = Math.Max(0, I(c, 17));
             b.Strikes = Clamp(I(c, 18), 0, OwnBankCatalogue.StrikesClose);
             b.FinedCents = Math.Max(0, L(c, 19));
-            b.MonthFrom = Math.Max(0, I(c, 20));
+            b.MonthFrom = I(c, 20);
             b.Month = Math.Max(0, I(c, 21));
             b.MonthIncome = Math.Max(0, L(c, 22));
             b.MonthCosts = Math.Max(0, L(c, 23));
@@ -222,6 +222,8 @@ namespace RealLifeOverhaul.Economy
             {
                 b.Closures = 1;   // a line written before closures were counted: its bank was closed once
             }
+            b.WatchTold = c.Length > 33 ? I(c, 33) : int.MinValue;   // a line written before it was kept: never told
+            b.Still = I(c, 34) != 0;
             return true;
         }
 

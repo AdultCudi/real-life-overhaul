@@ -38,7 +38,6 @@ namespace RealLifeOverhaul.Economy
         private OwnBankApp _view;
         private Action _second, _onSave, _onDay;
         private int _warnedDay = -1;
-        private int _watchTold = int.MinValue;   // the day the regulator's watch was last told, as a ratio may hover on the line
         private bool _keepLine;                  // the save's line could not be read: it is kept as it is (Core/SaveLines)
         private string _beforeTests;             // the bank's line before the session's first test
         private readonly BankDay _day = new BankDay();
@@ -160,10 +159,7 @@ namespace RealLifeOverhaul.Economy
             }
             bank = bank ?? new OwnBank();
             bool mended = OwnBankStore.Mend(bank);
-            if (bank.Running)
-            {
-                bank.LastDay = Math.Max(bank.LastDay, save.Day - 1 - CatchUpDays);   // days it stood still beyond the catch-up week are not run
-            }
+            OwnBankRules.Resume(bank, save.Day, CatchUpDays);
             _bank = bank;
             _running = true;
             _paper.Clear();
@@ -175,6 +171,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (keep && _running && Save != null)
             {
+                _bank.Still = true;   // read back on the next start, so the days off are not run then
                 Write(Save);
             }
             _running = false;
@@ -344,9 +341,9 @@ namespace RealLifeOverhaul.Economy
                 Tell(NotificationType.Success, "reallife_ob_toast_cured", TabBank, "bank", name);
                 Print("reallife_ob_news_cured", "bank", name);
             }
-            if (_day.Watched && OwnBankRules.WatchDue(day, _watchTold, city.MonthDays))
+            if (_day.Watched && OwnBankRules.WatchDue(day, _bank.WatchTold, city.MonthDays))
             {
-                _watchTold = day;
+                _bank.WatchTold = day;
                 Tell(NotificationType.Warning, "reallife_ob_toast_watch", TabBank, "ratio", OwnBankText.Ratio(OwnBankRules.Ratio(_bank)));
             }
             if (_day.FireSold > 0)
@@ -399,8 +396,11 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The bank founded with the least capital, the licence and the capital paid from the player's cash. False with a reason key if it cannot be.</summary>
-        public bool Found(string name, out string why)
+        /// <summary>
+        /// The bank founded with the least capital, the licence and the capital paid from the player's cash. False with a
+        /// reason key if it cannot be, or if either sum is no longer the one the player confirmed.
+        /// </summary>
+        public bool Found(string name, long licenceAsked, long capitalAsked, out string why)
         {
             why = Ready();
             if (why != null)
@@ -419,6 +419,10 @@ namespace RealLifeOverhaul.Economy
             }
             int level = Prices.Level, share = EndScaleRules.Buying(Settings.EndScale);
             long licence = OwnBankRules.Licence(level, share), capital = OwnBankRules.CapitalLeast(level, _bank.Closures, share);
+            if (why == null && (licence != licenceAsked || capital != capitalAsked))
+            {
+                why = ChangedKey;   // a day passed under the question: the sums are asked again
+            }
             if (why == null && licence + capital > OwnBankGame.Cash)
             {
                 why = "reallife_ob_why_no_cash";
@@ -427,14 +431,20 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            if (!OwnBankGame.Pay(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing) || !OwnBankGame.Pay(capital, OwnBankCatalogue.CapitalInKey, hq, null))
+            if (!OwnBankGame.Pay(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing))
             {
+                why = "reallife_ob_why_no_cash";
+                return false;
+            }
+            if (!OwnBankGame.Pay(capital, OwnBankCatalogue.CapitalInKey, hq, null))
+            {
+                OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing);   // the game refused the capital: no bank, so no licence
                 why = "reallife_ob_why_no_cash";
                 return false;
             }
             int today = Save.Day;
             OwnBankRules.Found(_bank, today, new System.Random().Next(1, int.MaxValue), capital, Named(name, hq));
-            _bank.FoundedLeast = OwnBankRules.LeastAt(share);
+            _bank.FoundedLeast = OwnBankRules.LeastAt(share, _bank.Closures);
             Tell(NotificationType.Success, "reallife_ob_toast_founded", TabBank, "bank", _bank.Name, "capital", OwnBankText.Money(capital));
             Print("reallife_ob_news_founded", "bank", _bank.Name, "place", OwnBankGame.Name(hq));
             Logger?.Info("Own bank: " + _bank.Name + " founded on day " + today + " at " + OwnBankGame.Name(hq) + ", the licence " + licence / 100 + " and the capital " + capital / 100 + " paid.");
@@ -454,6 +464,9 @@ namespace RealLifeOverhaul.Economy
         }
 
         public const int NameMost = 40;
+
+        /// <summary>The reason given when a sum confirmed in the game's question has changed since: a day passed while it was open.</summary>
+        public const string ChangedKey = "reallife_ob_why_changed";
 
         /// <summary>Capital put in from the player's cash, to the step. False with a reason key if it cannot be.</summary>
         public bool PutIn(long cents, out string why)
@@ -500,10 +513,14 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>The bank sold for what a buyer pays. False with a reason key if no buyer will take it.</summary>
-        public bool Sell(out string why)
+        /// <summary>The bank sold for what a buyer pays. False with a reason key if no buyer will take it, or the price is no longer the one confirmed.</summary>
+        public bool Sell(long priceAsked, out string why)
         {
             why = Ready() ?? (!_bank.Running ? "reallife_ob_why_none" : _bank.Test ? "reallife_ob_why_test" : !OwnBankRules.Sellable(_bank) ? "reallife_ob_why_no_buyer" : null);
+            if (why == null && OwnBankRules.SaleValue(_bank) != priceAsked)
+            {
+                why = ChangedKey;
+            }
             if (why != null)
             {
                 return false;

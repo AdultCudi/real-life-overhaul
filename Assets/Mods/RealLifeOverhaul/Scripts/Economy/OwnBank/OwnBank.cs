@@ -52,6 +52,8 @@ namespace RealLifeOverhaul.Economy
         public int LastDay;                     // the last day run
         public bool Test;                       // founded by a test tool: it pays nothing out
         public int Closures;                    // the player's banks the regulator has closed: each raises the next one's capital
+        public int WatchTold = int.MinValue;    // the day the regulator's watch was last told, once a month at most; int.MinValue: never
+        public bool Still;                      // written while the feature stood down: the days until it is on again are not run
 
         public long Capital, Reserves;
         public readonly long[] Deposits = new long[OwnBankCatalogue.Savers];

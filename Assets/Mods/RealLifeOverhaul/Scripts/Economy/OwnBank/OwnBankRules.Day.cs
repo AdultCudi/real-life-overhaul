@@ -99,6 +99,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     long back = b.Recovering[j] < 100 * m ? b.Recovering[j] : b.Recovering[j] / Math.Max(1, b.Recover[j]);
                     b.Recovering[j] -= back;
+                    b.Recover[j] = Math.Max(1, b.Recover[j] - 1);   // the days left: the last write-off is all back by the end of its months
                     b.Reserves += back;
                     into.Recovered += back;
                 }
@@ -345,6 +346,7 @@ namespace RealLifeOverhaul.Economy
             b.LastDay -= days;
             b.Deadline = b.Deadline > 0 ? b.Deadline - days : 0;
             b.RunFrom = b.RunFrom > 0 ? b.RunFrom - days : 0;
+            b.WatchTold = b.WatchTold == int.MinValue ? int.MinValue : b.WatchTold - days;
         }
     }
 }

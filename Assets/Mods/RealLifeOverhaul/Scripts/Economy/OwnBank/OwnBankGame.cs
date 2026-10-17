@@ -142,10 +142,10 @@ namespace RealLifeOverhaul.Economy
             return cents <= 0 || (cents <= Cash && Book(-cents, key, hq, category, null, false, false));
         }
 
-        /// <summary>Money into the player's cash from the bank: a dividend, a sale, what a winding up left.</summary>
-        public static void Give(long cents, string key, BuildingRegistration hq)
+        /// <summary>Money into the player's cash from the bank: a dividend, a sale, what a winding up left; a payment given back in its category.</summary>
+        public static void Give(long cents, string key, BuildingRegistration hq, string category = null)
         {
-            Book(cents, key, hq, null, null, false, false);
+            Book(cents, key, hq, category, null, false, false);
         }
 
         private static bool Book(long cents, string key, BuildingRegistration hq, string category, int? day, bool deductible, bool force)

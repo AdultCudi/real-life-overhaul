@@ -343,7 +343,7 @@ namespace RealLifeOverhaul.Economy
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_ob_box_sell", () => Ask("reallife_ob_confirm_sell_title".Localize(new { bank = b.Name }),
                     "reallife_ob_confirm_sell_body".Localize(new { price = OwnBankText.Money(value), years = OwnBankCatalogue.SaleYears.ToString() }), "reallife_ob_box_sell", true,
-                    () => _director.Sell(out string why) ? null : why));
+                    () => _director.Sell(value, out string why) ? null : why));
             }
             Meta.Guide.Point(box, GuideTitle);
         }
@@ -557,7 +557,7 @@ namespace RealLifeOverhaul.Economy
         {
             Ask("reallife_ob_confirm_found_title".Localize(new { bank = name }),
                 "reallife_ob_confirm_found_body".Localize(new { licence = OwnBankText.Money(licence), capital = OwnBankText.Money(capital) }),
-                "reallife_ob_box_found", false, () => _director.Found(name, out string why) ? null : why);
+                "reallife_ob_box_found", false, () => _director.Found(name, licence, capital, out string why) ? null : why);
         }
 
         // An amount in whole money typed into the game's text box; the action it is for checks it.
