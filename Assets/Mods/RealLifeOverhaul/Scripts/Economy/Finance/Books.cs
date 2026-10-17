@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>What leaves tomorrow at the day's end, as the Finance app's Overview adds it up.</summary>
+    /// <summary>What leaves in the next daily run, as the Finance app's Overview adds it up.</summary>
     public struct Obligations
     {
         public float Loans;         // the game's loans: each one's payment and interest
@@ -21,15 +21,8 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The game's own figures that the economy reads: what leaves tomorrow, which businesses the player runs and what
-    /// each has made, what a building the player owns brings in, what the player is worth as the Overview shows it (the
-    /// market asks for it through the wiring). Every figure is read from the save when it is asked for
-    /// (when the app opens, once an hour before the day's run, once a day), never per frame. What is kept is only where to
-    /// find things (Core/LookupRules ListIndex): a business and a building by the key an account keeps, made again when
-    /// the save's lists change or the day turns; a business's statement in a day's statements, made again when that day's
-    /// list changes. The same answers as a walk of the save's lists (a business found by its key is the player's still,
-    /// or the walk is made), a look-up each: Flare and Standing ask for every business's yesterday and week, the credit
-    /// desk for every secured loan each hour.
+    /// The game's own figures the economy reads from the save when asked, never per frame: what leaves tonight, the
+    /// player's businesses and their statements, what accounts are secured on, and net worth. Only look-ups are kept.
     /// </summary>
     public static class Books
     {
@@ -37,7 +30,7 @@ namespace RealLifeOverhaul.Economy
         private const string Residential = "ba:buildingtype_residential";
         private const string RentFreeUntil = "tutorial_quest_get_some_sleep_objective_4";
         private const string Salaries = "ba:transactioncategory_salaryexpenses";
-        private const int StatementDaysKept = 64;   // days of statements whose look-ups are kept at once (more than any reader asks for; then they start afresh)
+        private const int StatementDaysKept = 64;   // days of statement look-ups kept before they start afresh
 
         private static readonly List<DebtLine> Debts = new List<DebtLine>(6);
         private static readonly ListIndex<BuildingRegistration, string> BusinessKeys = new ListIndex<BuildingRegistration, string>(BusinessKey, StringComparer.Ordinal);
@@ -45,20 +38,13 @@ namespace RealLifeOverhaul.Economy
         private static readonly Dictionary<FinancialSummary, ListIndex<FinancialSummary.BusinessIncomeStatement, Address>> StatementsOf
             = new Dictionary<FinancialSummary, ListIndex<FinancialSummary.BusinessIncomeStatement, Address>>(16, ReferenceComparer<FinancialSummary>.Instance);
 
-        /// <summary>
-        /// What leaves at the next day's end: the loans as the game's run takes them (LoanHelper.RunDaily), the mod's
-        /// accounts, fines and court debts, rent as the game's run takes it (BusinessHelper.RunDaily: every rented
-        /// building the player does not own) and wages as the game paid them yesterday (it works them out as it pays).
-        /// </summary>
+        /// <summary>What leaves in tonight's run: the game's loans and rent, the mod's accounts, fines, and last night's wages.</summary>
         public static Obligations Tomorrow(CreditFile file)
         {
             return Tomorrow(file, SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0);
         }
 
-        /// <summary>
-        /// The same as of a given day. The hour event that opens a new day comes after the game has moved its day on
-        /// and before its run, so what "leaves tonight" there is asked as of the day before.
-        /// </summary>
+        /// <summary>As of a day: the hour event opening a day comes after the game moves its day on, before its run, so it asks as of the day before.</summary>
         public static Obligations Tomorrow(CreditFile file, int today)
         {
             var o = new Obligations();
@@ -97,7 +83,7 @@ namespace RealLifeOverhaul.Economy
                     o.Rent += r.RentPerDay;
                 }
             }
-            List<Transaction> paid = GameBooks.Day(today - 1);   // (the day's transactions, as the morning's readers share them)
+            List<Transaction> paid = GameBooks.Day(today - 1);   // last night's run, filed under the day it ended
             for (int i = 0; i < paid.Count; i++)
             {
                 Transaction t = paid[i];
@@ -110,11 +96,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// What the player is worth as the Overview of the Finance app shows it: the game's own figure (PlayerHelper: cash,
-        /// its investment funds, vehicles, boats and property, less its loans; the cash alone if it cannot be read) less what
-        /// is owed on the mod's own accounts the Overview counts (<see cref="Owing"/>) and to a private lender, and less the
-        /// other debts the rest of the mod keeps (fines and court debts: EconomyBridges.OtherDebts). Nothing on the stock
-        /// market is in it: the market adds its own where it asks (Wiring/MarketLinks). Read on a click, never per frame.
+        /// Net worth as the Overview shows it: the game's figure (cash alone if it cannot be read) less the mod's accounts,
+        /// the private lender, fines and court debts. Shares are left to the market, which adds its own (Wiring/MarketLinks).
         /// </summary>
         public static long NetWorth()
         {
@@ -151,10 +134,7 @@ namespace RealLifeOverhaul.Economy
             return (long)Math.Floor(worth - owed);
         }
 
-        /// <summary>
-        /// Whether one of the mod's own accounts is a debt on the Overview: open, not the test tools', and owing something (a
-        /// card or an overdraft with nothing on it is none). The Overview's table and <see cref="NetWorth"/> both ask this.
-        /// </summary>
+        /// <summary>An account the Overview and <see cref="NetWorth"/> count: open, not a test's, a card or overdraft only if drawn on.</summary>
         public static bool Owing(CreditAccount a)
         {
             return a != null && !a.Closed && !a.Test && (a.Owed > 0 || !ProductCatalogue.Revolving(a.Kind));
@@ -192,10 +172,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// A business's average daily profit over the last days of the game's own daily statements (the figures
-        /// EconoView's business page shows), and on how many of those days it has a statement.
-        /// </summary>
+        /// <summary>Average daily profit over the last days' statements, a day without one counting as nothing; and how many had one.</summary>
         public static float AverageProfit(Address address, int days, out int onRecord)
         {
             onRecord = 0;
@@ -249,18 +226,11 @@ namespace RealLifeOverhaul.Economy
             return 0f;
         }
 
-        /// <summary>
-        /// A business's statement in one day's statements: the first whose address is the business's (the game's own
-        /// test, Address ==), as a walk along them finds it; null if it has none. A look-up in that day's index; an address
-        /// that is the game's "no address" (which a statement with none matches) is walked for.
-        /// </summary>
-        public static FinancialSummary.BusinessIncomeStatement StatementOf(FinancialSummary day, Address address)
+        // The first at the address by the game's own Address ==, from the day's index; the game's empty address, which
+        // also matches a statement without one, is walked for.
+        private static FinancialSummary.BusinessIncomeStatement StatementOf(FinancialSummary day, Address address)
         {
-            List<FinancialSummary.BusinessIncomeStatement> statements = day != null ? day.businessIncomeStatements : null;
-            if (statements == null || address == null)
-            {
-                return null;
-            }
+            List<FinancialSummary.BusinessIncomeStatement> statements = day.businessIncomeStatements;
             if (string.IsNullOrEmpty(address.streetName) && address.streetNumber == 0)
             {
                 for (int b = 0; b < statements.Count; b++)
@@ -302,11 +272,7 @@ namespace RealLifeOverhaul.Economy
             return owned.address != null ? Key(owned.address) : null;
         }
 
-        /// <summary>
-        /// A business of the player's by its key; null if they do not run it (any more). The first business rented by the
-        /// player under the key, if it is the player's own; otherwise (none listed, another player's, rented since the list
-        /// was made) the walk of the save's buildings, as it always was.
-        /// </summary>
+        /// <summary>A business of the player's by its key; null if they do not run it (any more).</summary>
         public static BuildingRegistration Business(string key)
         {
             GameInstance save = SaveGameManager.Current;
@@ -316,6 +282,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return first;
             }
+            // None under the key, another player's, or rented since the look-up was made.
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].HasValidAddress && Key(all[i].Address) == key)
