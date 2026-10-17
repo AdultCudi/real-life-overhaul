@@ -174,15 +174,27 @@ namespace RealLifeOverhaul.Economy
             return gone;
         }
 
+        // What a counter asks: a tenth more, the asking price at most, never under the offer.
+        private static int CounterWant(SaleOffer o, int asking)
+        {
+            return Math.Min(Math.Max(asking, o.Price), ServicesCatalogue.Round10(ServicesCatalogue.Pct(o.Price, 100 + ServicesCatalogue.CounterStepPct)));
+        }
+
+        /// <summary>Whether an offer may be countered: once, and only while a counter would ask for more than it gives.</summary>
+        public static bool CanCounter(SaleOffer o, int asking)
+        {
+            return o != null && !o.Countered && CounterWant(o, asking) > o.Price;
+        }
+
         /// <summary>The one counter an offer allows: a tenth more, the asking price at most; met, met half way, refused, or the buyer walks away.</summary>
         public static CounterResult Counter(ServicesState s, SaleOffer o, int asking)
         {
-            if (o == null || o.Countered)
+            if (!CanCounter(o, asking))
             {
-                return CounterResult.Refused;
+                return CounterResult.Refused;   // nothing to ask for: the offer stands as it was
             }
             o.Countered = true;
-            int want = Math.Min(Math.Max(asking, o.Price), ServicesCatalogue.Round10(ServicesCatalogue.Pct(o.Price, 100 + ServicesCatalogue.CounterStepPct)));
+            int want = CounterWant(o, asking);
             int half = ServicesCatalogue.Round10(((long)o.Price + want) / 2);
             if (want > o.Price && want <= o.Ceiling)
             {
@@ -222,6 +234,12 @@ namespace RealLifeOverhaul.Economy
             m.Short = (int)Math.Max(0, owed - m.Now - Math.Max(0, cash));
             m.Gain = Math.Max(0, price - b.Fixtures);
             return m;
+        }
+
+        /// <summary>How many parts a price is paid in: at once while as many prices as are kept are still being paid.</summary>
+        public static int Parts(ServicesState s, int parts)
+        {
+            return s.Dues.Count >= ServicesCatalogue.DuesMost ? Math.Min(parts, 1) : parts;   // Due would drop the oldest, whose parts would never come
         }
 
         /// <summary>The parts of a price still to come; null if it was paid at once.</summary>
@@ -275,14 +293,18 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(int.MaxValue / 2, sum);
         }
 
-        /// <summary>A promise to stay out of a trade in a district for some days; null for none.</summary>
-        public static SaleClause Clause(ServicesState s, string type, string district, string name, int price, int days, int day)
+        /// <summary>
+        /// A promise to stay out of a trade in a district for some days; null for none. A business of the kind taken on later on
+        /// the day of the sale breaks it too, unless one was already taken on that day (<paramref name="takenToday"/>), which the
+        /// day alone cannot tell from a later one.
+        /// </summary>
+        public static SaleClause Clause(ServicesState s, string type, string district, string name, int price, int days, int day, bool takenToday)
         {
             if (days <= 0 || string.IsNullOrEmpty(type))
             {
                 return null;
             }
-            var clause = new SaleClause { Type = type, District = district ?? string.Empty, Name = name ?? string.Empty, FromDay = day, Until = day + days, Price = Math.Max(0, price) };
+            var clause = new SaleClause { Type = type, District = district ?? string.Empty, Name = name ?? string.Empty, FromDay = takenToday ? day : day - 1, Until = day + days, Price = Math.Max(0, price) };
             if (s.Clauses.Count >= ServicesCatalogue.ClausesMost)
             {
                 s.Clauses.RemoveAt(0);

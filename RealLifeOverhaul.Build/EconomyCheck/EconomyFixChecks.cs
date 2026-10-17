@@ -8,6 +8,7 @@ internal static partial class Program
     private static void EconomyFixes()
     {
         BrandFixes();
+        ServicesFixes();
     }
 
     // A file of Scripts/Economy as text, comments and all.

@@ -139,7 +139,8 @@ namespace RealLifeOverhaul.Economy
             SaleListing l = state.Listing(o.Place);
             BuildingRegistration reg = ServicesGame.Find(o.Place);
             SaleBreakdown b = _director.Value(reg);
-            SaleMoney m = SaleRules.Settle(o.Price, o.Parts, b, ServicesGame.Cash);
+            SaleMoney m = SaleRules.Settle(o.Price, SaleRules.Parts(state, o.Parts), b, ServicesGame.Cash);
+            bool counter = SaleRules.CanCounter(o, l != null ? l.Asking : o.Price);
             int share = b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0;
             box.Title(ServicesText.T("reallife_svc_bid_title", "business", l != null ? l.Name : "?"));
             box.Subtitle(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
@@ -147,11 +148,11 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Chip(ServicesText.T("reallife_ibox_chip_final"), CellTone.Yellow);
             }
-            box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()),
-                CellTone.Yellow);
+            string until = o.Countered ? "reallife_svc_bid_until_final" : counter ? "reallife_svc_bid_until" : "reallife_svc_bid_until_asking";
+            box.Line(ServicesText.T(until, "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()), CellTone.Yellow);
             box.Section("reallife_ibox_sec_offer");
             box.Row("reallife_svc_bid_price", ServicesText.T("reallife_svc_bid_price_value", "amount", ServicesText.Money(o.Price), "share", ServicesText.Percent(share)));
-            box.Line(o.Parts > 1
+            box.Line(m.PartsLeft > 0
                 ? ServicesText.T("reallife_svc_bid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString())
                 : ServicesText.T("reallife_svc_bid_once"));
             box.Section("reallife_ibox_sec_terms");
@@ -166,7 +167,7 @@ namespace RealLifeOverhaul.Economy
             }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_svc_bid_accept", () => _director.Accept(id));
-            if (!o.Countered)
+            if (counter)
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_svc_bid_counter", () => _director.Counter(id));
             }

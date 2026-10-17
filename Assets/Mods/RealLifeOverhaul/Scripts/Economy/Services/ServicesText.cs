@@ -38,8 +38,8 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A minute of the day as the game writes a time (its own 12 or 24 hour option).</summary>
         public static string Clock(int minute)
         {
-            int hour = ServicesCatalogue.Clamp(minute, 0, 24 * 60 - 1) / 60;
-            return hour.GetFormattedTime(minute % 60);
+            ServicesCatalogue.Clock(minute, out int hour, out int minutes);
+            return hour.GetFormattedTime(minutes);
         }
 
         public static string Hour(int hour) => Clock(ServicesCatalogue.Clamp(hour, 0, 23) * 60);

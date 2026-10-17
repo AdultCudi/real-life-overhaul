@@ -170,7 +170,13 @@ namespace RealLifeOverhaul.Economy
                 state = new ServicesState { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = today, LastOfferDay = today };
             }
             bool skipped = !fresh && state.LastDay != today;
-            state.LastDay = today;   // days that passed while this was off are not counted
+            if (skipped)
+            {
+                // Days that passed while this was off are not counted, and show as nothing in the seven days' figures.
+                ServicesState.ClearDays(state.VanCost, state.LastDay, today - 1);
+                ServicesState.ClearDays(state.FeeIncome, state.LastDay + 1, today);
+            }
+            state.LastDay = today;
             _state = state;
             _running = true;
             _parts = (CleaningOn ? 1 : 0) | (SaleOn ? 2 : 0);
@@ -356,8 +362,13 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 float started = Time.realtimeSinceStartup;
-                bool next = day == _state.LastDay + 1;   // a jump of many days is one pass, for today
+                int last = _state.LastDay;
+                bool next = day == last + 1;   // a jump of many days is one pass, for today
                 _state.LastDay = day;
+                // The van's way since the last morning is charged as yesterday's, the fees as today's: the days between, or
+                // all of them with the service off, hold nothing.
+                ServicesState.ClearDays(_state.VanCost, last, day - 1);
+                ServicesState.ClearDays(_state.FeeIncome, last + 1, day);
                 if (CleaningOn)
                 {
                     try

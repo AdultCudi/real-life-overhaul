@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Economy
             c.Open = !reg.temporarilyClosed && today != null && today.isOpen;   // what the game's hourly cleaning asks of a building and its day
         }
 
-        /// <summary>A visit's minutes of cleaning at a shop, by the game's sum; returns hundredths taken off a tile, 0 if the game would not clean it now.</summary>
+        /// <summary>A visit's minutes of cleaning at a shop, by the game's sum; returns hundredths taken off the worst tile, 0 if the game would not clean it now.</summary>
         public static int Clean(CleaningClient c, EmployeeInstance e, int minutes)
         {
             BuildingRegistration reg = Find(c.Place);
@@ -263,12 +263,21 @@ namespace RealLifeOverhaul.Economy
             }
             BuildingCleanliness floor = reg.Cleanliness;
             List<DirtSpot> spots = reg.dirtSpots;
+            float worst = 0f;
             for (int i = 0; i < spots.Count; i++)
             {
+                worst = Mathf.Max(worst, spots[i].dirtiness);
                 floor.SetDirtiness(i, Mathf.Max(0f, spots[i].dirtiness - off));
             }
             Shown(reg);
-            return Mathf.RoundToInt(off * 100f);
+            return CleaningRules.Taken(Mathf.RoundToInt(worst * 100f), Mathf.RoundToInt(off * 100f));
+        }
+
+        /// <summary>True if a crew member is at work and on a cleaning shift at their base in an hour of today (the game's IsWorking asks of the hour now).</summary>
+        public static bool Working(CrewMember member, int hour)
+        {
+            EmployeeInstance e = member.Employee;
+            return e != null && member.Base != null && e.IsEmployeeAvailable() && OnCleaningShift(member.Base, e.id, hour);
         }
 
         /// <summary>

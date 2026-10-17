@@ -84,7 +84,8 @@ namespace RealLifeOverhaul.Economy
             ReadAll();
             if (otherDay)
             {
-                // Today's figures begin now: nothing is measured across the gap since the save was written.
+                // Today's figures begin now: nothing is measured across the gap since the save was written. The van's
+                // way before it is still owed, and is charged with the next morning's.
                 for (int i = 0; i < _state.Clients.Count; i++)
                 {
                     CleaningClient c = _state.Clients[i];
@@ -93,7 +94,6 @@ namespace RealLifeOverhaul.Economy
                     c.WorstStart = c.Worst;
                     c.CleanBefore = c.Now;
                 }
-                _state.VanMetres = 0;
             }
             Replan("the service started");
         }
@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Economy
             int now = ServicesGame.Now, before = _visits.Count;
             for (int i = _visits.Count - 1; i >= 0; i--)
             {
-                if (_visits[i].Leave > now)
+                if (!RoundRules.Kept(_visits[i].Leave, _visits[i].Walked, _visits[i].Done, now))
                 {
                     _visitPool.Add(_visits[i]);
                     _visits.RemoveAt(i);
@@ -347,6 +347,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
+                int from = RoundRules.HourOf(v.Start, v.Done);   // a visit planned in an hour's middle is cleaned at the next, its shift maybe over
                 v.Done += m;
                 CrewMember member = Member(v.CleanerId);
                 CleaningClient c = _state.Client(v.Place);
@@ -354,7 +355,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                if (!member.Employee.IsWorking(true, WorkShiftType.Cleaning))
+                if (!ServicesGame.Working(member, from))
                 {
                     v.Skipped = true;   // off sick, or their shift at base is no longer what it was when they were sent
                     skipped++;
@@ -513,7 +514,7 @@ namespace RealLifeOverhaul.Economy
         private void CleaningDay(int day, bool next)
         {
             int slot = ((day % 7) + 7) % 7, slotBefore = (((day - 1) % 7) + 7) % 7;
-            int cost = _state.Van ? TravelRules.Cost(_state.VanMetres, ServicesGame.Index) : 0;
+            int cost = TravelRules.Cost(_state.VanMetres, ServicesGame.Index);   // driven only while the van was kept, and owed if it went since
             if (cost > 0)
             {
                 Charge(cost, ServicesGame.VanKey, ServicesText.Distance(_state.VanMetres), null, day - 1, true, true,

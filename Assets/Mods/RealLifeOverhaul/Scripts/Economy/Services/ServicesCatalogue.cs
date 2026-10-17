@@ -99,6 +99,14 @@ namespace RealLifeOverhaul.Economy
         /// <summary>An amount of money at a price index in tenths of a point (1000 at the start).</summary>
         public static int AtPrices(long amount, int index) => (int)Math.Min(int.MaxValue / 2, (amount * Clamp(index, 500, 4000) + 500) / 1000);
 
+        /// <summary>A minute of the day as an hour and a minute, within the day (the end of the day, 1440, is 23:59).</summary>
+        public static void Clock(int minute, out int hour, out int minutes)
+        {
+            minute = Clamp(minute, 0, 24 * 60 - 1);
+            hour = minute / 60;
+            minutes = minute % 60;
+        }
+
         /// <summary>Money rounded down to the ten, as people name a price.</summary>
         public static int Round10(long amount) => (int)Math.Max(0, Math.Min(int.MaxValue / 2, amount / 10 * 10));
 

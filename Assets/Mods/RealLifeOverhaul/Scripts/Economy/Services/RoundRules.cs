@@ -225,6 +225,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The minutes of a visit to clean at the hour beginning at hourStart: all of it up to that hour's end not cleaned yet.</summary>
         public static int Due(int start, int end, int done, int hourStart) => Math.Max(0, Overlap(start, end, 0, hourStart + 60) - Math.Max(0, done));
 
+        /// <summary>Whether a visit stays when the round is planned again at a minute: one set out for (its way counted, or some of it cleaned) is never planned twice.</summary>
+        public static bool Kept(int leave, bool walked, int done, int now) => leave <= now || walked || done > 0;
+
+        /// <summary>The hour of today the minutes of a visit still to clean begin in: a visit planned in an hour's middle is cleaned when the next begins.</summary>
+        public static int HourOf(int start, int done) => (start + Math.Max(0, done)) / 60;
+
         /// <summary>The minutes of the hour beginning at hourStart that a cleaner is away from base.</summary>
         public static int Away(RoundCleaner who, int hourStart) => who.AwayFrom < 0 ? 0 : Overlap(who.AwayFrom, who.AwayTo, hourStart, hourStart + 60);
     }

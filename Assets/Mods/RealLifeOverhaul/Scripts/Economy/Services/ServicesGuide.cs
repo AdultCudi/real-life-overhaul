@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Economy
             f.Fact("svc_walk", () => Tenths(ServicesCatalogue.WalkPerMinute / 10))
                 .Fact("svc_van", () => Tenths(ServicesCatalogue.VanPerMinute / 10))
                 .Fact("svc_street", () => Whole(ServicesCatalogue.StreetFactor - 100))
-                .Fact("svc_van_cost", () => Guide.Money(ServicesCatalogue.AtPrices(ServicesCatalogue.VanCostPerKm, Prices.Level)))
+                .Fact("svc_van_cost", () => Guide.Money(TravelRules.PerKm(PriceRules.Start)))   // the page says at a price index of 100
                 .Fact("svc_visit_least", () => Whole(ServicesCatalogue.VisitLeast))
                 .Fact("svc_visit_most", () => Whole(ServicesCatalogue.VisitMost))
                 .Fact("svc_visits", () => Whole(ServicesCatalogue.VisitsMost))

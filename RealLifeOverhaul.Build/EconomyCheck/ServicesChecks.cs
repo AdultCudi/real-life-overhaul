@@ -727,8 +727,8 @@ internal static partial class Program
     private static void ServicesClause()
     {
         var state = new ServicesState { Seed = 1 };
-        Check(SaleRules.Clause(state, "ba:businesstype_giftshop", "north", "Gifts", 50000, 0, 10) == null && state.Clauses.Count == 0, "clause: a buyer who asks for none leaves none");
-        SaleClause c = SaleRules.Clause(state, "ba:businesstype_giftshop", "north", "Gifts", 50000, 30, 10);
+        Check(SaleRules.Clause(state, "ba:businesstype_giftshop", "north", "Gifts", 50000, 0, 10, true) == null && state.Clauses.Count == 0, "clause: a buyer who asks for none leaves none");
+        SaleClause c = SaleRules.Clause(state, "ba:businesstype_giftshop", "north", "Gifts", 50000, 30, 10, true);
         Check(c != null && c.Until == 40 && state.Clauses.Count == 1, "clause: thirty days from the day of the sale");
         Check(SaleRules.Breaks(c, "ba:businesstype_giftshop", "north", 25), "clause: the same trade in the same district within the days breaks it");
         Check(!SaleRules.Breaks(c, "ba:businesstype_giftshop", "south", 25) && !SaleRules.Breaks(c, "ba:businesstype_coffeeshop", "north", 25), "clause: another district or another trade does not");

@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, van2 ? "reallife_svc_van_off" : "reallife_svc_van_on", () => _director.SetVan(!van2));
             }
             box.Line(ServicesText.T(state.Van ? "reallife_svc_van_says_on" : "reallife_svc_van_says_off", "cost",
-                ServicesText.Money(ServicesCatalogue.AtPrices(ServicesCatalogue.VanCostPerKm, ServicesGame.Index))));
+                ServicesText.Money(TravelRules.PerKm(ServicesGame.Index))));
             if (state.Crew.Count > 0)
             {
                 box.Note(ServicesText.T("reallife_svc_service_pick"));

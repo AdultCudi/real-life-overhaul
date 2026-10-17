@@ -48,6 +48,9 @@ namespace RealLifeOverhaul.Economy
             return worst;
         }
 
+        /// <summary>What a visit took off a floor's worst tile, in hundredths: what it would take off, as far as there was dirt there.</summary>
+        public static int Taken(int worst, int off) => Math.Max(0, Math.Min(worst, off));   // tiles stop at nothing
+
         /// <summary>A tile at a cleaner's base with their minutes away put back on, before the game takes a whole hour of their work off it.</summary>
         public static int Hold(int dirt, int rate, int awayMinutes) => Math.Min(ServicesCatalogue.DirtMost, dirt + Off(rate, Math.Min(60, awayMinutes)));
 
@@ -109,6 +112,9 @@ namespace RealLifeOverhaul.Economy
             int pace = van ? ServicesCatalogue.VanPerMinute : ServicesCatalogue.WalkPerMinute;
             return metres <= 0 ? 0 : (int)(((long)metres * 100 + pace - 1) / pace);
         }
+
+        /// <summary>What the van costs a kilometre at a price index, as it is charged (to the cent: 4.5 at an index of 112.5).</summary>
+        public static float PerKm(int index) => ServicesCatalogue.VanCostPerKm * ServicesCatalogue.Clamp(index, 500, 4000) / 1000f;
 
         /// <summary>What a day's driving costs at a price index in tenths of a point.</summary>
         public static int Cost(int metres, int index)

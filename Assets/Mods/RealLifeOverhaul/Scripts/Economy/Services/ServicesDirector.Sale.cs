@@ -155,6 +155,7 @@ namespace RealLifeOverhaul.Economy
         {
             SaleGuard("asking before a sale", () =>
             {
+                parts = SaleRules.Parts(_state, parts);
                 BuildingRegistration reg = ServicesGame.Find(place);
                 if (!MaySell(reg, price, parts, out SaleMoney m))
                 {
@@ -217,6 +218,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
+            parts = SaleRules.Parts(_state, parts);
             BuildingRegistration reg = ServicesGame.Find(place);
             if (!MaySell(reg, price, parts, out SaleMoney m))
             {
@@ -251,7 +253,8 @@ namespace RealLifeOverhaul.Economy
                 _state.Clients.Remove(client);
             }
             SaleDue due = SaleRules.Due(_state, name, buyer, m, day);
-            SaleClause clause = SaleRules.Clause(_state, type, district, name, price, clauseDays, day);
+            bool takenToday = clauseDays > 0 && TakenToday(type, district, day);
+            SaleClause clause = SaleRules.Clause(_state, type, district, name, price, clauseDays, day, takenToday);
             SaleRules.Record(_state, name, price, m.Gain, day);
             try
             {
@@ -423,6 +426,20 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Services check (the market, day " + day + "): " + _state.Listings.Count + " business(es) on the market, " + _state.SaleOffers.Count + " offer(s) standing, "
                              + lapsed + " lapsed today, " + _state.Dues.Count + " price(s) still being paid, " + _state.Clauses.Count + " clause(s) running: PASS");
             }
+        }
+
+        // Whether a business of the player's of a kind and district was taken on today: a clause cannot tell it from one taken on after the sale.
+        private bool TakenToday(string type, string district, int day)
+        {
+            ServicesGame.Sellable(_regs);
+            bool taken = false;
+            for (int r = 0; r < _regs.Count && !taken; r++)
+            {
+                ServicesGame.Trade(_regs[r], out string kind, out string where);
+                taken = ServicesGame.Created(_regs[r]) == day && string.Equals(kind, type, StringComparison.Ordinal) && string.Equals(where, district ?? string.Empty, StringComparison.Ordinal);
+            }
+            _regs.Clear();
+            return taken;
         }
 
         // A listing's turn for an offer, its value taken afresh from today's figures. The offer, or null if this turn brings none.

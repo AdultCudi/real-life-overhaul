@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Economy
         public string Type = string.Empty;       // the game's business type
         public string District = string.Empty;
         public string Name = string.Empty;       // the business that was sold
-        public int FromDay, Until;
+        public int FromDay, Until;               // one of the kind taken on after FromDay, until Until, breaks it
         public int Price;                        // the sale's price: the penalty is a share of it
     }
 
@@ -219,6 +219,15 @@ namespace RealLifeOverhaul.Economy
                 {
                     SaleOffers.RemoveAt(i);
                 }
+            }
+        }
+
+        /// <summary>Empties the days from..to of a figure kept by day of the week (a week of them at most): no sum holds a day from a week before.</summary>
+        public static void ClearDays(int[] days, int from, int to)
+        {
+            for (int d = Math.Max(from, to - 6); d <= to; d++)
+            {
+                days[((d % 7) + 7) % 7] = 0;
             }
         }
 
