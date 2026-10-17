@@ -7,12 +7,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Shops tab. The table lists every site and, under them, the businesses and warehouses that have none. A
-    /// site that is picked has four pages in the white box: its figures for today and the week (orders, takings,
-    /// cost of goods, delivery, refunds, what is left, the queue), the same day by day (the table then lists its last
-    /// seven days and today, with their totals), its rating with what is moving it and what sold best and ran out,
-    /// and its settings (who delivers, what is promised, a better site, advertising, hosting, its name, closing it).
-    /// A business that is picked has the page that opens a site for it.
+    /// The Web shop app, part: the Shops tab. The table lists every site and then the businesses and warehouses with
+    /// none. A picked site has four pages (its figures, day by day, its rating, its settings); a picked business has
+    /// the page that opens a site for it.
     /// </summary>
     public sealed partial class OnlineApp
     {
@@ -80,7 +77,7 @@ namespace RealLifeOverhaul.Economy
                 switch (_page)
                 {
                     case PageRating: WriteRating(box, picked, day); break;
-                    case PageSettings: WriteSettings(box, picked, state, day); break;
+                    case PageSettings: WriteSettings(box, picked, state); break;
                     default: WriteFigures(box, picked, day, now); break;
                 }
                 return OnlineColumns.Shops;
@@ -90,7 +87,7 @@ namespace RealLifeOverhaul.Economy
                 WriteOpen(box, opening, state);
                 return OnlineColumns.Shops;
             }
-            // (nothing is picked, or what was picked is no longer in the list)
+            // Nothing is picked, or what was picked is no longer listed.
             _picked = null;
             box.Title(OnlineText.T("reallife_online_app"));
             box.Section("reallife_ibox_sec_now");
@@ -103,8 +100,6 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Shops;
         }
-
-        // ---------------------------------------------------------------- a site: today and the week
 
         private void WriteFigures(InfoBox box, WebPlace place, int day, int now)
         {
@@ -126,9 +121,10 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_fig_refunds", Both(OnlineText.Money(today.Refunds), OnlineText.Money(week.Refunds)));
             box.Row("reallife_online_fig_profit", Both(OnlineText.Money(today.Profit), OnlineText.Money(week.Profit)), week.Profit >= 0 ? CellTone.Green : CellTone.Red);
             box.Section("reallife_ibox_sec_orders");
-            box.Line(OnlineText.Fill("reallife_online_fig_queue", "waiting", shop.Count(OrderStage.Waiting).ToString(), "packed", shop.Count(OrderStage.Picked).ToString(), "out", shop.Count(OrderStage.Out).ToString(),
-                "late", shop.Overdue(now).ToString(), "pickers", place.Pickers.ToString()));
-            box.Note(OnlineText.Fill("reallife_online_fig_what", "business", place.Business, "quality", OnlineText.Quality(shop.Quality), "way", OnlineText.Way(shop.Way), "promise", OnlineText.Promise(shop.Promise)));
+            box.Line(OnlineText.Fill("reallife_online_fig_queue", "waiting", shop.Count(OrderStage.Waiting).ToString(), "packed", shop.Count(OrderStage.Picked).ToString(),
+                "out", shop.Count(OrderStage.Out).ToString(), "late", shop.Overdue(now).ToString(), "pickers", place.Pickers.ToString()));
+            box.Note(OnlineText.Fill("reallife_online_fig_what", "business", place.Business, "quality", OnlineText.Quality(shop.Quality), "way", OnlineText.Way(shop.Way),
+                "promise", OnlineText.Promise(shop.Promise)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_rating", () => Page(PageRating));
             InfoBox.Button(buttons, InfoBox.Additional, "bizman_menu_settings", () => Page(PageSettings));
@@ -138,18 +134,16 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- a site: day by day
-
-        // The table lists the site's last seven days and today, newest first, with their totals; the box says what the week came to.
+        // The table lists the site's week, today and the six days before it, newest first; the box says what it came to.
         private void WriteDays(InfoBox box, WebPlace place, int day)
         {
             WebShop shop = place.Shop;
-            for (int back = 7; back >= 0; back--)
+            for (int back = 6; back >= 0; back--)
             {
                 DayBook book = back == 0 ? shop.Today : shop.Week[(day - back) % 7];
                 if (day - back <= 0 || book.Day != day - back)
                 {
-                    continue;   // (a day the site was not open, or not running)
+                    continue;   // a day the site was not open or not running
                 }
                 TableRow row = Row("day:" + book.Day);
                 row.Pick = false;
@@ -170,8 +164,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_fig_profit", OnlineText.Money(_week.Profit));
             box.Row("reallife_online_fig_takings", OnlineText.Money(_week.Takings));
             box.Row("reallife_online_fig_orders", _week.Orders.ToString());
-            box.Line(OnlineText.Fill("reallife_online_rate_week", "good", _week.OnTime.ToString(), "late", _week.Late.ToString(), "short", _week.Short.ToString(), "lost", (_week.Cancelled + _week.Missing).ToString(),
-                "back", _week.Returned.ToString()));
+            WeekLine(box, _week);
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_online_button_back", () => Page(PageFigures));
             box.Note(OnlineText.T("reallife_online_days_note"));
             Meta.Guide.Point(box, GuideTitle);
@@ -182,7 +175,11 @@ namespace RealLifeOverhaul.Economy
             return OnlineText.T("reallife_online_fig_both", "today", today, "week", week);
         }
 
-        // ---------------------------------------------------------------- a site: its rating and what moves it
+        private static void WeekLine(InfoBox box, DayBook week)
+        {
+            box.Line(OnlineText.Fill("reallife_online_rate_week", "good", week.OnTime.ToString(), "late", week.Late.ToString(), "short", week.Short.ToString(),
+                "lost", (week.Cancelled + week.Missing).ToString(), "back", week.Returned.ToString()));
+        }
 
         private void WriteRating(InfoBox box, WebPlace place, int day)
         {
@@ -195,9 +192,8 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_rate_stars", before > 0
                 ? OnlineText.T("reallife_online_rate_stars_value", "stars", OnlineText.Stars(shop.Stars), "was", OnlineText.Stars(before))
                 : OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars)));
-            box.Line(OnlineText.Fill("reallife_online_rate_week", "good", week.OnTime.ToString(), "late", week.Late.ToString(), "short", week.Short.ToString(), "lost", (week.Cancelled + week.Missing).ToString(),
-                "back", week.Returned.ToString()));
-            // (the site's price factor: 826 is a tenth over the going price, where an order is marked down; 1108 a twentieth under it, where it is marked up)
+            WeekLine(box, week);
+            // A price factor of 826 is a tenth over the going price, where an order is marked down; 1108 a twentieth under, where it is marked up.
             box.Line(OnlineText.T(place.Site.Price < 830 ? "reallife_online_rate_dear" : place.Site.Price > 1100 ? "reallife_online_rate_cheap" : "reallife_online_rate_fair"),
                 place.Site.Price < 830 ? CellTone.Yellow : place.Site.Price > 1100 ? CellTone.Green : CellTone.Plain);
             box.Row("reallife_online_rate_effect", OnlineText.Share(OnlineRules.StarsFactor(shop.Stars)));
@@ -216,9 +212,7 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- a site: its settings
-
-        private void WriteSettings(InfoBox box, WebPlace place, OnlineState state, int day)
+        private void WriteSettings(InfoBox box, WebPlace place, OnlineState state)
         {
             WebShop shop = place.Shop;
             string key = shop.Place;
@@ -234,8 +228,10 @@ namespace RealLifeOverhaul.Economy
                 ready += state.Vans[v].Ready ? 1 : 0;
             }
             box.Line(shop.Way == OnlineCatalogue.OwnVans
-                ? OnlineText.Fill(ready > 0 ? "reallife_online_set_vans" : "reallife_online_set_no_vans", "count", ready.ToString(), "from", OnlineCatalogue.DriveFrom.ToString("00"), "until", OnlineCatalogue.DriveUntil.ToString("00"))
-                : OnlineText.T("reallife_online_set_courier", "base", OnlineText.Price(CompanyCatalogue.AtPrices(OnlineCatalogue.CourierBase, Prices.Level)), "km", OnlineText.Price(CompanyCatalogue.AtPrices(OnlineCatalogue.CourierPerKm, Prices.Level))));
+                ? OnlineText.Fill(ready > 0 ? "reallife_online_set_vans" : "reallife_online_set_no_vans", "count", ready.ToString(),
+                    "from", OnlineCatalogue.DriveFrom.ToString("00"), "until", OnlineCatalogue.DriveUntil.ToString("00"))
+                : OnlineText.T("reallife_online_set_courier", "base", OnlineText.Price(CompanyCatalogue.AtPrices(OnlineCatalogue.CourierBase, Prices.Level)),
+                    "km", OnlineText.Price(CompanyCatalogue.AtPrices(OnlineCatalogue.CourierPerKm, Prices.Level))));
             if (!box.HasSelector || !box.Selector(2, shop.Promise, OnlineText.Promise, i => _director.SetPromise(key, i)))
             {
                 box.Line(OnlineText.Promise(shop.Promise));
@@ -244,13 +240,15 @@ namespace RealLifeOverhaul.Economy
             bool inHouse;
             _director.Quote(shop.Quality, out setUp, out hosting, out inHouse);
             box.Section("reallife_ibox_sec_site");
-            box.Row("reallife_online_set_hosting", OnlineText.Fill("reallife_online_set_hosting_value", "quality", OnlineText.Quality(shop.Quality), "amount", OnlineText.Money(hosting * 100), "day", shop.HostDue.ToString()));
+            box.Row("reallife_online_set_hosting", OnlineText.Fill("reallife_online_set_hosting_value", "quality", OnlineText.Quality(shop.Quality), "amount", OnlineText.Money(hosting * 100),
+                "day", shop.HostDue.ToString()));
             int next = shop.Quality + 1, nextSetUp = 0, nextHosting = 0;
             bool better = !shop.Offline && shop.Quality < OnlineCatalogue.Qualities - 1;
             if (better)
             {
                 _director.Quote(next, out nextSetUp, out nextHosting, out inHouse);
-                box.Note(OnlineText.Fill("reallife_online_set_better", "quality", OnlineText.Quality(next), "amount", OnlineText.Money(Mathf.Max(0, nextSetUp - setUp) * 100), "hosting", OnlineText.Money(nextHosting * 100)));
+                box.Note(OnlineText.Fill("reallife_online_set_better", "quality", OnlineText.Quality(next), "amount", OnlineText.Money(Mathf.Max(0, nextSetUp - setUp) * 100),
+                    "hosting", OnlineText.Money(nextHosting * 100)));
             }
             box.Section("reallife_ibox_sec_campaign");
             if (shop.AdEnd > 0)
@@ -286,7 +284,8 @@ namespace RealLifeOverhaul.Economy
             {
                 // The game's own text box, as BizMan names a business with it.
                 InfoBox.Button(second, InfoBox.Additional, "reallife_online_button_rename", () =>
-                    uis.textInputUi.Show("reallife_online_rename_placeholder", "common_confirm", text => UiClone.Safe(() => _director.Rename(key, text)), null, shop.Name, false, OnlineCatalogue.NameMost));
+                    uis.textInputUi.Show("reallife_online_rename_placeholder", "common_confirm", text => UiClone.Safe(() => _director.Rename(key, text)), null, shop.Name, false,
+                        OnlineCatalogue.NameMost));
             }
             InfoBox.Button(second, InfoBox.Negative, "reallife_online_button_shut", () => GameConfirm.Show(
                 "reallife_online_confirm_shut_title".Localize(new { name = shop.Name }), "reallife_online_confirm_shut_body".Localize(new { orders = shop.Orders.Count.ToString() }),
@@ -298,8 +297,6 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_online_button_back", () => Page(PageFigures));
             Meta.Guide.Point(box, GuideTitle);
         }
-
-        // ---------------------------------------------------------------- a business without a site: opening one
 
         private void WriteOpen(InfoBox box, BuildingRegistration reg, OnlineState state)
         {
@@ -323,7 +320,8 @@ namespace RealLifeOverhaul.Economy
                 box.Note(OnlineText.T("reallife_online_open_agency", "share", OnlineText.Share(OnlineCatalogue.AgencyDiscount)));
             }
             box.Row("reallife_online_open_hosting", OnlineText.T("reallife_online_open_hosting_value", "amount", OnlineText.Money(hosting * 100), "days", _director.MonthDays.ToString()));
-            box.Row("reallife_online_open_orders", OnlineText.T("reallife_online_open_orders_value", "orders", OnlineCatalogue.OrdersADay[quality].ToString(), "most", OnlineCatalogue.OrdersMost[quality].ToString()));
+            box.Row("reallife_online_open_orders", OnlineText.T("reallife_online_open_orders_value", "orders", OnlineCatalogue.OrdersADay[quality].ToString(),
+                "most", OnlineCatalogue.OrdersMost[quality].ToString()));
             box.Section("reallife_ibox_sec_delivery");
             if (!box.HasSelector || !box.Selector(OnlineCatalogue.Ways, _way, OnlineText.Way, i => _way = i))
             {

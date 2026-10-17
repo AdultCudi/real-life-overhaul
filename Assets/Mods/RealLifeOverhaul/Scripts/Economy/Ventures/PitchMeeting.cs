@@ -8,22 +8,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// A meeting with an investor, in the game's own list window (<see cref="TravelList"/> through a
-    /// <see cref="DeskList"/>, as the written driving test and a court hearing are): the investor's question and
-    /// "Question 3 of 7" under the headline, an entry for each answer, and "Leave the meeting". The window cannot be
-    /// put away with the cancel key until the meeting is over (<see cref="TravelList.Locked"/>) and the player stands
-    /// still for it. After each answer a notification says how it was taken; the last one ends in a page with the
-    /// decision in two or three sentences and, where there is an offer, the three things that can be done with it.
-    ///
-    /// The rules are <see cref="Pitch"/>'s; this class shows them. Nothing runs by itself: a click on an entry does it
-    /// all. The director looks once a second whether the window is still there (the game's interface goes with the
-    /// city) and ends a meeting whose window has gone.
-    /// </summary>
+    /// <summary>A meeting with an investor in the game's own list window, locked until it is over. It runs only on clicks: no frame cost.</summary>
     internal sealed class PitchMeeting
     {
-        private const NavigationBlocker Blocker = (NavigationBlocker)7303;   // a value of our own, so nobody else's is ever lifted
-        private const float InputDelay = 0.4f;                               // seconds after a page appears before an answer counts: no double presses
+        private const NavigationBlocker Blocker = (NavigationBlocker)7303;   // our own value, so nobody else's is ever lifted
+        private const float InputDelay = 0.4f;                               // seconds after a page appears before a click counts
         private const int Leave = 3;
         private const int TakeIt = 0, ThinkItOver = 1, Decline = 2;
         private const string ButtonSay = "reallife_ven_meet_say";
@@ -41,7 +30,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         private PlayerController _held;
         private int _count;            // answers on the page
         private int _offerId;          // the offer the decision made; 0: none
-        private bool _result;          // the page showing is the decision (or "caught"), not a question
+        private bool _result;          // the page is the decision (or "caught"), not a question
         private bool _leaving;         // closed by us
         private float _shownAt;
 
@@ -54,7 +43,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         public bool Active { get; private set; }
 
-        /// <summary>Starts the meeting. False (and nothing shown) if the game's window cannot be made or the player cannot be found.</summary>
+        /// <summary>Starts the meeting. False, and nothing shown, if the game's window cannot be made or the player cannot be found.</summary>
         public bool Begin(PitchState state, Investor investor)
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -67,7 +56,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             _offerId = 0;
             _result = false;
             Active = true;
-            // The phone goes away first: the game's list stands on the HUD, which the phone's full screen hides.
+            // The game's list stands on the HUD, which the phone's full screen hides.
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis != null && uis.fullMenu != null && FullMenu.IsOpen)
             {
@@ -85,7 +74,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return true;
         }
 
-        // The question the meeting is at, its answers in the order of this meeting. False if the game's window cannot be made.
+        // The question the meeting is at, its answers in this meeting's order. False if the game's window cannot be made.
         private bool Show()
         {
             TravelList list = _window.Take(this);
@@ -121,7 +110,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             _shownAt = Time.unscaledTime;
         }
 
-        // A figure as an answer: money as the game writes it, days and counts as numbers, and "none" where less is better and there is nothing.
+        // A figure as an answer: money as the game writes it, days and counts as numbers, "none" where less is better.
         private static string Figure(Fact fact, long value)
         {
             if (value == 0 && Pitch.LowerBetter(fact))
@@ -176,15 +165,12 @@ namespace RealLifeOverhaul.Economy.Ventures
                 AnswerResult result = Pitch.Answer(file, _state, _investor, option, VenturesDirector.Level, day);
                 if (Meta.Dev.Verbose)
                 {
-                    int sum = 0;
-                    for (int i = 0; i < _state.Points.Count; i++)
-                    {
-                        sum += _state.Points[i];
-                    }
-                    VenturesDirector.Logger?.Info("Ventures check (pitch " + _state.Number + ", question " + _state.Index + " of " + _state.Questions.Count + "): " + q.Key + " (" + q.Kind + "), answer "
-                                                  + (option + 1) + (q.Kind == QuestionKind.Fact ? " = " + said + " against the true " + Pitch.Truth(q.Fact, _state.Facts) : string.Empty) + ": "
-                                                  + (result.Untrue ? "untrue, chance " + result.Chance + "%, roll " + result.Roll + (result.Caught ? ", CAUGHT" : ", not caught") : "true or a matter of opinion")
-                                                  + ", " + result.Points + " point(s), " + sum + " of " + _state.Points.Count * VenturesCatalogue.PointsMost + " so far.");
+                    VenturesDirector.Logger?.Info("Ventures check (pitch " + _state.Number + ", question " + _state.Index + " of " + _state.Questions.Count + "): " + q.Key + " (" + q.Kind
+                                                  + "), answer " + (option + 1)
+                                                  + (q.Kind == QuestionKind.Fact ? " = " + said + " against the true " + Pitch.Truth(q.Fact, _state.Facts) : string.Empty) + ": "
+                                                  + (result.Untrue ? "untrue, chance " + result.Chance + "%, roll " + result.Roll + (result.Caught ? ", CAUGHT" : ", not caught")
+                                                      : "true or a matter of opinion")
+                                                  + ", " + result.Points + " point(s), " + Sum() + " of " + _state.Points.Count * VenturesCatalogue.PointsMost + " so far.");
                 }
                 if (result.Caught)
                 {
@@ -209,7 +195,16 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // An untrue figure was caught: the meeting is over.
+        private int Sum()
+        {
+            int sum = 0;
+            for (int i = 0; i < _state.Points.Count; i++)
+            {
+                sum += _state.Points[i];
+            }
+            return sum;
+        }
+
         private void ShowCaught(Question q)
         {
             TravelList list = _window.Take(this);
@@ -230,7 +225,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             Open(list);
         }
 
-        // The last answer has been given: the decision, why, and what can be done with an offer.
         private void ShowDecision(VenturesFile file, int day)
         {
             TravelList list = _window.Take(this);
@@ -250,7 +244,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                         "name", _investor.Name, "amount", amount, "share", share, "business", _state.Business);
                     break;
                 case Verdict.TooSmall:
-                    verdict = FinanceText.T("reallife_ven_verdict_small", "name", _investor.Name, "least", FinanceText.Money(_investor.ChequeLeast));
+                    verdict = FinanceText.T("reallife_ven_verdict_small", "name", _investor.Name, "least", FinanceText.Money(_investor.Least));
                     break;
                 case Verdict.NoProfit:
                     verdict = FinanceText.T("reallife_ven_verdict_no_profit", "name", _investor.Name, "business", _state.Business);
@@ -265,7 +259,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     verdict = FinanceText.T("reallife_ven_verdict_low", "name", _investor.Name);
                     break;
             }
-            // What helped most and what counted against the founder: the best and the worst answer of the meeting, where they stand out.
+            // The best and the worst answer of the meeting, where they stand out.
             string why = string.Empty;
             if (d.Best >= 0 && _state.Points[d.Best] >= 6)
             {
@@ -286,11 +280,12 @@ namespace RealLifeOverhaul.Economy.Ventures
                 offer.TypeName = _state.TypeName;
                 offer.Budget = _state.Facts.Budget;
                 offer.Test = _state.Test;
-                file.Unseen = Mathf.Max(0, file.Unseen - 1);   // (it is being shown now)
+                file.Unseen = Mathf.Max(0, file.Unseen - 1);   // it is being shown now
                 _offerId = offer.Id;
                 string take = forNew
                     ? FinanceText.Fill("reallife_ven_meet_take_new", "amount", amount, "share", share, "type", _state.Business, "days", VenturesCatalogue.PledgeDays.ToString())
-                    : FinanceText.Fill("reallife_ven_meet_take", "amount", amount, "share", share, "business", _state.Business, "growth", offer.TargetPct.ToString(), "days", offer.TargetDays.ToString());
+                    : FinanceText.Fill("reallife_ven_meet_take", "amount", amount, "share", share, "business", _state.Business, "growth", offer.TargetPct.ToString(),
+                        "days", offer.TargetDays.ToString());
                 string think = FinanceText.T("reallife_ven_meet_think_detail", "day", offer.LapseDay.ToString());
                 list.Add(TakeIt, FinanceText.T("reallife_ven_meet_take_title"), take, ButtonDo, true, list.HeightFor(take.Length, true));
                 list.Add(ThinkItOver, FinanceText.T("reallife_ven_meet_think"), think, ButtonDo, true, list.HeightFor(think.Length, true));
@@ -302,32 +297,28 @@ namespace RealLifeOverhaul.Economy.Ventures
                 list.Add(ThinkItOver, FinanceText.T("reallife_ven_meet_close"), again, ButtonDo, true, list.HeightFor(again.Length, true));
             }
             _result = true;
-            int sum = 0;
-            for (int i = 0; i < _state.Points.Count; i++)
-            {
-                sum += _state.Points[i];
-            }
-            VenturesDirector.Logger?.Info("Ventures: pitch " + _state.Number + " to " + _investor.Name + " about " + _state.Business + ": " + sum + " of " + _state.Points.Count * VenturesCatalogue.PointsMost
-                                          + " points, score " + d.Score + " (needs " + d.Needed + "): " + d.Verdict + (d.Verdict == Verdict.Invest ? ", " + d.Amount + " for " + d.ShareBp + " bp" : string.Empty) + ".");
+            VenturesDirector.Logger?.Info("Ventures: pitch " + _state.Number + " to " + _investor.Name + " about " + _state.Business + ": " + Sum() + " of "
+                                          + _state.Points.Count * VenturesCatalogue.PointsMost + " points, score " + d.Score + " (needs " + d.Needed + "): " + d.Verdict
+                                          + (d.Verdict == Verdict.Invest ? ", " + d.Amount + " for " + d.ShareBp + " bp" : string.Empty) + ".");
             if (Meta.Dev.Verbose)
             {
-                VenturesDirector.Logger?.Info("Ventures check (pitch " + _state.Number + ", decision): points " + string.Join(",", _state.Points) + "; liked sector " + _investor.LikesSector(_state.Facts.Sector)
-                                              + " (+" + VenturesCatalogue.LikedScore + "), name with investors " + file.Reputation + "; score " + d.Score + " against " + d.Needed + "; "
+                VenturesDirector.Logger?.Info("Ventures check (pitch " + _state.Number + ", decision): points " + string.Join(",", _state.Points) + "; liked sector "
+                                              + _investor.LikesSector(_state.Facts.Sector) + " (+" + VenturesCatalogue.LikedScore + "), name with investors " + file.Reputation
+                                              + "; score " + d.Score + " against " + d.Needed + "; "
                                               + (forNew ? "budget " + _state.Facts.Budget : "recent profit " + _state.Facts.AvgProfit7.ToString("0") + " a day valued at " + d.ValueDays + " days")
-                                              + (d.OnFounder ? ", backed on the founder" : string.Empty) + ", sums " + _investor.ChequeLeast + " to " + _investor.ChequeMost + ": " + d.Verdict + " "
-                                              + d.Amount + " for " + d.ShareBp + " bp; best answer " + (d.Best + 1) + ", worst " + (d.Worst + 1) + ".");
+                                              + (d.OnFounder ? ", backed on the founder" : string.Empty) + ", sums " + _investor.Least + " to " + _investor.Most + ": "
+                                              + d.Verdict + " " + d.Amount + " for " + d.ShareBp + " bp; best answer " + (d.Best + 1) + ", worst " + (d.Worst + 1) + ".");
             }
             Open(list);
         }
 
-        // What a question of this meeting was about, in a few words (the last part of its line).
+        // What a question of this meeting was about, in a few words: the last part of its line.
         private string Topic(int index)
         {
             string[] parts = FinanceText.T(Pitch.Bank[_state.Questions[index]].Key).Split('|');
             return parts[parts.Length - 1];
         }
 
-        // A click on the decision's page.
         private void Decided(int id)
         {
             int offer = _offerId;
@@ -355,7 +346,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>Called once a second by the director: a meeting whose window has gone with the game's interface is ended.</summary>
+        /// <summary>Once a second, from the director: a meeting whose window has gone with the game's interface is ended.</summary>
         public void Watch()
         {
             if (Active && !_window.OpenFor(this))

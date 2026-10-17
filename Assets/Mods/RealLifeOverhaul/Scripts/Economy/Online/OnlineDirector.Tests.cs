@@ -1,23 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The test tools of the online shops (the options page). Each puts one thing in place at once and opens the Web
-    /// shop app on it. The state as it was before the first test is kept, once, and "Test: put online shops back"
-    /// restores it.
-    ///
-    /// What a test cannot take back is said where it happens: the stock a test order is picked from really leaves the
-    /// building, and the money a test pays in or refunds really moves. Putting the shops back restores the sites,
-    /// their ratings, books and open orders, not stock or cash.
-    /// </summary>
+    /// <summary>The online shops' director, part: the test tools. The state before the first test is kept to be put back; stock and money stay moved.</summary>
     public sealed partial class OnlineDirector
     {
-        private const int TestOrdersCount = 10;     // "Test: ten orders"
-        private const int TestSalt = 0x5bd1e995;    // test orders are drawn from another seed, so that they are not the hour's own orders a second time
+        private const int TestOrdersCount = 10;
+        private const int TestSalt = 0x5bd1e995;    // test orders come from another seed, so they are not the hour's own orders again
 
         private bool TestReady(string test)
         {
@@ -34,9 +25,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // A test tool is about to change the state: the state as it is now is kept, once, to be put back. Each site's
-        // book of the day so far is paid in first, so that the kept state holds no money still to be paid and putting
-        // it back can never pay anything a second time.
+        // Keeps the state once before a test changes it. Each site's day is paid in first, so putting it back can never pay twice.
         private void BeforeTest()
         {
             if (_beforeTests != null)
@@ -70,7 +59,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The first site, with its day worked out now; a refusal that says so if the player has none.
+        // The first site, its day worked out now; null with a refusal if the player has none.
         private WebPlace TestSite(string test)
         {
             if (_places.Count == 0)
@@ -82,7 +71,7 @@ namespace RealLifeOverhaul.Economy
             return _places[0];
         }
 
-        // One order drawn now from the test's own seed and picked at once from the real stock. Null, with a refusal, if nothing is on the site or nothing of the order is in stock.
+        // One order drawn from the test's seed and picked at once from the real stock; null with a refusal if nothing could be.
         private WebOrder TestOrder(string test, WebPlace place, int number)
         {
             WebShop shop = place.Shop;
@@ -111,7 +100,7 @@ namespace RealLifeOverhaul.Economy
             return o;
         }
 
-        /// <summary>"Test: open a test web shop on my busiest business": a Standard site with a courier and a next-day promise, free, at the business that took most over its counter and has no site yet.</summary>
+        /// <summary>"Test: open a test web shop on my busiest business": a free Standard site with a courier and a next-day promise.</summary>
         public void TestOpen()
         {
             if (!TestReady("Online open"))
@@ -134,11 +123,12 @@ namespace RealLifeOverhaul.Economy
                     TestRefusals.TellKey(Logger, "Online open", "reallife_online_test_no_business");
                     return;
                 }
-                TestDone("a Standard site opened free at " + place.Business + " with " + place.Shop.Lines.Count + " product(s) from its stock; " + (place.Site.PerDay / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " order(s) a day expected", TabShops, "shop:" + key);
+                TestDone("a Standard site opened free at " + place.Business + " with " + place.Shop.Lines.Count + " product(s) from its stock; "
+                         + (place.Site.PerDay / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " order(s) a day expected", TabShops, "shop:" + key);
             });
         }
 
-        /// <summary>"Test: ten orders": ten orders come in at the first site now, whatever its demand. They wait to be picked like any others.</summary>
+        /// <summary>"Test: ten orders": they come in at the first site now, whatever its demand, and wait to be picked.</summary>
         public void TestOrders()
         {
             if (!TestReady("Online orders"))
@@ -173,11 +163,12 @@ namespace RealLifeOverhaul.Economy
                     TestRefusals.TellKey(Logger, "Online orders", "reallife_online_test_nothing_on");
                     return;
                 }
-                TestDone(came + " order(s) came in at " + shop.Name + "; " + place.Pickers + " member(s) of staff picked there in the last hour, and each picks " + OnlineCatalogue.PickPerHour + " an hour", TabOrders, null);
+                TestDone(came + " order(s) came in at " + shop.Name + "; " + place.Pickers + " member(s) of staff picked there in the last hour, and each picks "
+                         + OnlineCatalogue.PickPerHour + " an hour", TabOrders, null);
             });
         }
 
-        /// <summary>"Test: a late delivery": one order is picked from the real stock now and reaches its door two hours after its promise: a quarter of it is refunded and the rating takes the mark.</summary>
+        /// <summary>"Test: a late delivery": one order picked from the real stock now reaches its door two hours after its promise.</summary>
         public void TestLate()
         {
             if (!TestReady("Online late"))
@@ -204,12 +195,13 @@ namespace RealLifeOverhaul.Economy
                 o.Arrive = now;
                 var count = new HourCount();
                 OnlineRules.Deliver(_state, shop, place.Site, now, ref count);
-                TestDone("order " + id + " of " + Cents(total) + " at " + shop.Name + " came two hours late: " + Cents(shop.Today.Refunds - refunds) + " refunded (wanted " + Cents(OnlineCatalogue.Share(total, OnlineCatalogue.LateRefund))
-                         + "), the rating " + stars + " to " + shop.Stars + " thousandths; its goods really left the stock", TabShops, "shop:" + shop.Place);
+                TestDone("order " + id + " of " + Cents(total) + " at " + shop.Name + " came two hours late: " + Cents(shop.Today.Refunds - refunds) + " refunded (wanted "
+                         + Cents(OnlineCatalogue.Share(total, OnlineCatalogue.LateRefund)) + "), the rating " + stars + " to " + shop.Stars
+                         + " thousandths; its goods really left the stock", TabShops, "shop:" + shop.Place);
             });
         }
 
-        /// <summary>"Test: a returned order": one order is picked from the real stock now, delivered on time and sent back at once: it is refunded, and its goods go back into stock if they are fit to sell again.</summary>
+        /// <summary>"Test: a returned order": one order picked from the real stock now comes back at once, refunded, its goods restocked if fit.</summary>
         public void TestReturn()
         {
             if (!TestReady("Online return"))
@@ -257,17 +249,15 @@ namespace RealLifeOverhaul.Economy
                 OnlineRules.Returns(_state, shop, place.Site, Save.Day * 24 + 23, _put, ref count);
                 _stockAt = null;
                 int after = OnlineGame.InStock(place.Reg, item);
-                TestDone("order " + id + " at " + shop.Name + " came back: " + units + " of " + item + ", " + Cents(refund) + " refunded; " + (after - before) + " unit(s) went back into stock (" + before + " to " + after + ") and "
-                         + (units - (after - before)) + " were written off, the cost of goods " + Cents(goods) + " to " + Cents(shop.Today.Goods) + " (goods of kind " + place.Site.Kind + " go back "
-                         + OnlineCatalogue.ResaleShare[OnlineCatalogue.Clamp(place.Site.Kind, 0, OnlineCatalogue.ResaleShare.Length - 1)] / 10 + "% of the time)", TabShops, "shop:" + shop.Place);
+                TestDone("order " + id + " at " + shop.Name + " came back: " + units + " of " + item + ", " + Cents(refund) + " refunded; " + (after - before)
+                         + " unit(s) went back into stock (" + before + " to " + after + ") and " + (units - (after - before)) + " were written off, the cost of goods "
+                         + Cents(goods) + " to " + Cents(shop.Today.Goods) + " (goods of kind " + place.Site.Kind + " go back "
+                         + OnlineCatalogue.ResaleShare[OnlineCatalogue.Clamp(place.Site.Kind, 0, OnlineCatalogue.ResaleShare.Length - 1)] / 10 + "% of the time)",
+                    TabShops, "shop:" + shop.Place);
             });
         }
 
-        /// <summary>
-        /// "Test: a day of orders passes": the last twenty-four hours are worked through again at every site, from the
-        /// test's own seed and with today's staff and vans, and the day's books are paid in at once. Stock really
-        /// leaves and money really moves.
-        /// </summary>
+        /// <summary>"Test: a day of orders passes": the last twenty-four hours again at every site from the test's seed, the books paid in at once.</summary>
         public void TestDay()
         {
             if (!TestReady("Online day"))
@@ -306,7 +296,7 @@ namespace RealLifeOverhaul.Economy
                 _state.Seed = seed;
                 for (int v = 0; v < _state.Vans.Count; v++)
                 {
-                    _state.Vans[v].Day = now / 24;   // (the vans' day is today again: what they drove in the test counts against it)
+                    _state.Vans[v].Day = now / 24;   // what the vans drove in the test counts against today
                 }
                 int open = 0;
                 for (int i = 0; i < _places.Count; i++)
@@ -315,12 +305,13 @@ namespace RealLifeOverhaul.Economy
                     CloseBook(_places[i], Save.Day);
                 }
                 PlanAll(Save.Day);
-                TestDone("twenty-four hours worked through at " + _places.Count + " site(s): " + came + " order(s) came, " + picked + " picked from real stock, " + lost + " cancelled or given up, " + arrived + " at the door of which "
-                         + late + " late, " + open + " still open; the books were paid in and the game's cash moved by " + (Save.Money - cash).ToString("0.00", CultureInfo.InvariantCulture), TabShops, "shop:" + _places[0].Shop.Place);
+                TestDone("twenty-four hours worked through at " + _places.Count + " site(s): " + came + " order(s) came, " + picked + " picked from real stock, " + lost
+                         + " cancelled or given up, " + arrived + " at the door of which " + late + " late, " + open + " still open; the books were paid in and the game's cash moved by "
+                         + (Save.Money - cash).ToString("0.00", CultureInfo.InvariantCulture), TabShops, "shop:" + _places[0].Shop.Place);
             });
         }
 
-        /// <summary>"Test: put online shops back": the sites, their ratings, books and open orders are what they were before the first test tool changed them. Stock and money that have moved since stay moved.</summary>
+        /// <summary>"Test: put online shops back": the state from before the first test returns; stock and money that moved stay moved.</summary>
         public void TestBack()
         {
             if (Save == null || !ModState.Loaded)
@@ -354,8 +345,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    // A night has passed since the state was kept: its day is closed (it was paid in before it was
-                    // kept) and what it still had to enter in the game's statement was entered that night.
+                    // A night has passed since it was kept: that day was paid in, and its sales went into the statement.
                     OnlineRules.CloseDay(shop, Save.Day, _closed);
                     shop.BookRefunds = 0;
                     for (int l = 0; l < shop.Lines.Count; l++)

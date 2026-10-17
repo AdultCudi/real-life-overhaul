@@ -162,7 +162,7 @@ Every phone contact the mod adds has an id that starts `reallife-`. The save too
 | `reallife-jobs` | `Jobs/JobPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-ledger` | `Phone/Contacts/ContactCatalogue.cs`, `Social/SocialPhone.cs` |
 | `reallife-legal` | `Justice/LegalCounsel.cs`, `Phone/Contacts/ContactCatalogue.cs` |
-| `reallife-lender` | `Economy/Debt/DebtPhone.cs`, `Economy/Finance/FinanceApp.Accounts.cs` and 1 more |
+| `reallife-lender` | `Economy/Debt/DebtPhone.cs`, `Economy/Finance/FinanceApp.Accounts.cs` and 2 more |
 | `reallife-mom` | `Family/Relatives.cs`, `Meta/FeatureList.cs` and 3 more |
 | `reallife-partner` | `Family/FamilyPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-people` | `Phone/Contacts/ContactCatalogue.cs`, `Social/SocialPhone.cs` |

@@ -2,16 +2,12 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// The Ventures app's tables, declared as data (GameUi.TableSpec): for each tab and each page of a pitch its
-    /// columns, how each sorts, which are summed, what its rows can be filtered by, and the sentence shown when a
-    /// filter leaves nothing. The numbers beside each are the columns, for whoever writes the rows.
-    /// </summary>
+    /// <summary>The Ventures app's tables as data (GameUi.TableSpec); each summary numbers the columns for whoever writes the rows.</summary>
     internal static class VenturesTables
     {
         private static readonly string[] InvestorKinds = { "reallife_ven_kind_angel", "reallife_ven_kind_tycoon", "reallife_ven_kind_firm" };
 
-        // ---- how far an investor's money has got (the second filter of the Investors tab)
+        // How far an investor's money has got: the Investors tab's second filter.
         public const int IsOffer = 0, IsPledge = 1, IsDeal = 2, IsCalled = 3;
         private static readonly string[] Stages = { "reallife_tab_ven_stage_offer", "reallife_tab_ven_stage_pledge", "reallife_tab_ven_stage_deal", "reallife_tab_ven_stage_called" };
 

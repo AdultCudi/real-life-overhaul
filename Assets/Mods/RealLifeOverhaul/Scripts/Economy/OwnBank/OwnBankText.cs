@@ -2,11 +2,7 @@ using System.Globalization;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The words of the player's bank: every figure it shows is written here, the same way on its page and in a
-    /// notification. Every text is a key of en.json; money is written as the Finance app writes it (from cents),
-    /// rates and shares with one decimal. Called when something is shown or said, never otherwise.
-    /// </summary>
+    /// <summary>The bank's words and figures, written alike on its page and in its notifications.</summary>
     public static class OwnBankText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -32,18 +28,12 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.Fill(key, pairs);
         }
 
-        public static string Pair(string labelKey, string value)
-        {
-            return FinanceText.Pair(labelKey, value);
-        }
-
-        /// <summary>An amount in cents as the game writes money.</summary>
         public static string Money(long cents)
         {
             return FinanceText.Money(cents / 100f);
         }
 
-        /// <summary>An amount that may be less than nothing, written so that it reads as one.</summary>
+        /// <summary>An amount that may be less than nothing.</summary>
         public static string Signed(long cents)
         {
             return cents < 0 ? "-" + Money(-cents) : Money(cents);
@@ -75,7 +65,7 @@ namespace RealLifeOverhaul.Economy
             return (thousandths / 10.0).ToString("0.#", Inv) + "%";
         }
 
-        /// <summary>A share of a whole, thousandths of it, with one decimal: "4.7%".</summary>
+        /// <summary>A part of a whole as a percentage with one decimal: "4.7%"; "-" for no whole.</summary>
         public static string Share(long part, long whole)
         {
             return whole > 0 ? (part * 1000.0 / whole / 10.0).ToString("0.#", Inv) + "%" : "-";
@@ -106,7 +96,6 @@ namespace RealLifeOverhaul.Economy
             return T(b.Stage == Regulator.Watch ? "reallife_ob_stage_watch" : "reallife_ob_stage_clear");
         }
 
-        /// <summary>The key of why the regulator closed a bank.</summary>
         public static string WhyKey(ClosedWhy why)
         {
             switch (why)

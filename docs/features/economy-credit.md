@@ -35,10 +35,10 @@ Economy/
     GameLoans         the game's loans as an ICreditAccount; the game's own means test read from its public members
     PhoneLending      a loan made from the phone exactly as the bank's dialogue makes one, plus the fee
   Finance/
-    FinanceApp        the tabs (five since the second part) and the white box's pages
-    FinanceTable      the table (the game's BaTable) and its row
+    FinanceApp        the app: a part for each tab (.Overview, .Credit, .Borrow, .Products, .CashFlow, .Accounts) and each page it hosts (.City, .Standing, .Rivals)
+    FinanceTables     the app's tables as data (GameUi.TableSpec)
     FinanceText       the words; money as the game's loan pages write it
-    CashFlow          one pass over the game's transaction history for a period
+    CashFlow          one pass over the game's transaction history for a period; CashTable lists it as it scrolls
   EconomyBridges    what the economy asks of the rest of the mod (filled in by Wiring/EconomyLinks); Finance.Open
   EconomyDirector   keeps it going: the save's line, the game's hour and day events, the banks' terms, the app, the tests
 ```
@@ -133,7 +133,7 @@ Nothing runs while it is closed; rows and figures are made when it opens, when a
 
 | tab | what it shows | from |
 |---|---|---|
-| Overview | cash; owed in all; loan payments, fines and rent tomorrow; wages paid yesterday; net worth; the rating; every debt as a row | `GameInstance.Money`, `Loans`; `EconomyBridges.OtherDebts`; rent by the rule of `BusinessHelper.RunDaily` over `BuildingRegistrations`; yesterday's transactions in the category `ba:transactioncategory_salaryexpenses`; `PlayerHelper.GetPersonalWealth().CurrentWealth` |
+| Overview | cash; owed in all; loan payments, fines and rent tomorrow; wages paid yesterday; net worth; the rating; every debt as a row | `GameInstance.Money`, `Loans`; `EconomyBridges.OtherDebts`; rent by the rule of `BusinessHelper.RunDaily` over `BuildingRegistrations`, with the city's change to it and what it carried (`CityEconomyDirector.RentWithCity`); yesterday's transactions in the category `ba:transactioncategory_salaryexpenses`; `Books.NetWorth`: `PlayerHelper.GetPersonalWealth().CurrentWealth` (cash alone if it cannot be read) less the mod's debts and an approval's money, which goes back |
 | Credit | score, grade, the threshold, the one or two things that would raise it most, each factor in a plain word; the last 30 events | `CreditLedger.Score`, `CreditScoring.Tips`, `CreditFile.Events` |
 | Borrow | each bank: rate offered, most it lends now, what is owed to it; an amount (steps, or typed into the game's text box); payment, interest, days, fee, cost; the game's question box | `BankTerms.Lenders`, `PhoneLending.Quote` (the game's `LoanHelper`), `HudConfirm` |
 | Cash flow | money in and out by the game's kinds of transaction for yesterday, 7 days or 30, and the five largest | `GameInstance.Transactions` (`CashFlow`: no second history is kept) |

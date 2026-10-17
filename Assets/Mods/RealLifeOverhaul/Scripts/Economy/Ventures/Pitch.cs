@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
+    /// <summary>What a question of the pitch is about: a figure, the plan or the founder.</summary>
     public enum QuestionKind { Fact = 0, Judgement = 1, Founder = 2 }
 
     /// <summary>A figure an investor can check against the game's own records.</summary>
@@ -11,6 +12,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         None = 0, SalesYesterday, SalesWeek, ProfitYesterday, ProfitWeek, Staff, Age, Cash, Rating, Owed, Convictions, ProfitableDays, Businesses, Missed, Payments
     }
 
+    /// <summary>How a figure is written.</summary>
     public enum FactUnit { Money, Count, Days }
 
     /// <summary>The manner of an answer about the plan: each temperament likes a different one.</summary>
@@ -32,6 +34,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public Claim Claim;
     }
 
+    /// <summary>A question of the bank, with three answers unless it asks for a figure.</summary>
     public sealed class Question
     {
         public const int Running = 1, New = 2, Both = 3;
@@ -39,19 +42,19 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int Id;
         public QuestionKind Kind;
         public string Key;       // en.json: "question|answer|answer|answer|topic" (a fact: "question|topic")
-        public int Fits;         // a business that is running, one not yet open, or both
+        public int Fits;         // Running, New or Both
         public Fact Fact;
         public AnswerDef[] Answers;
     }
 
-    /// <summary>What an investor can find out about the business and its founder: the true figures, read by the director when a meeting starts.</summary>
+    /// <summary>The true figures about the business and its founder, read when a meeting starts.</summary>
     public struct PitchFacts
     {
-        public bool Running;         // a business the player runs (else one not yet open)
+        public bool Running;         // else a business not yet open
         public Sector Sector;
         public long SalesYesterday, SalesWeek, ProfitYesterday, ProfitWeek;
         public float AvgProfit7;     // the figure a valuation is made from
-        public int Staff, AgeDays, ProfitableDays;
+        public int Staff, AgeDays, ProfitableDays;   // Staff: -1 if the game's list could not be read
         public long Cash, Owed, Payments;
         public int Rating;           // 0: there is no credit file
         public int Convictions, Businesses, Missed;
@@ -59,26 +62,28 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int Budget;           // a business not yet open: what the player says it will cost
     }
 
+    /// <summary>An investor's decision after a pitch.</summary>
     public enum Verdict { Invest, LowScore, TooSmall, NoProfit, NoRoom, NotOpen }
 
+    /// <summary>The decision of a pitch and the terms it gives.</summary>
     public struct PitchDecision
     {
         public Verdict Verdict;
         public int Score, Needed;
         public int Amount, ShareBp, ValueDays;
         public bool OnFounder;       // an angel backing a young business on its founder, not its profit
-        public int Best, Worst;      // which question helped most and which hurt most (their place in the meeting); -1: none
+        public int Best, Worst;      // the place in the meeting of the answer that helped most and hurt most; -1: none
     }
 
-    /// <summary>What became of one answer: its points, and for a figure that was not the true one, the check.</summary>
+    /// <summary>What became of one answer: its points and, for an untrue figure, the check.</summary>
     public struct AnswerResult
     {
         public int Points;
         public bool Untrue, Bold, Caught;
-        public int Chance, Roll;     // the chance of being caught, in per cent, and the roll against it (caught under it)
+        public int Chance, Roll;     // per cent; caught when the roll is under the chance
     }
 
-    /// <summary>A meeting in progress. Kept in memory only: a meeting does not survive a load.</summary>
+    /// <summary>A meeting in progress, in memory only: it does not survive a load.</summary>
     public sealed class PitchState
     {
         public int InvestorId, Number;
@@ -88,30 +93,14 @@ namespace RealLifeOverhaul.Economy.Ventures
         public readonly List<int> Points = new List<int>(8);
         public int Index;
         public bool Caught;
-        public bool Test;            // held by the test tools: what it leads to is marked as a test's
+        public bool Test;            // held by the test tools: what it leads to is a test's
     }
 
-    /// <summary>
-    /// The pitch: the bank of questions, which of them an investor asks, what an answer is worth, whether an untrue
-    /// figure is caught, and the decision. Game-free.
-    ///
-    ///   A FACT is offered as the true figure (rounded as people say figures) and one or two that sound better. The
-    ///   true one scores from <see cref="VenturesCatalogue.TruthBase"/> to the most by how strong it is; an untrue
-    ///   one scores as if it were true, unless it is caught: by a chance that is the investor's diligence times 45%
-    ///   (a little better) or 90% (much better). Being caught ends the meeting.
-    ///   An answer about THE PLAN has points for each kind of investor, moved by their temperament and, for some, by
-    ///   the business's sector: the best answer is not the same for every investor.
-    ///   An answer about THE FOUNDER says something the save can show or not: said without the record behind it, it
-    ///   scores one point.
-    ///
-    /// The score is the points as a share of the most, plus a little for a sector the investor likes and for a good
-    /// name with investors. At or over what the investor needs, they invest: the better the score, the more days of
-    /// profit they value the business at and the smaller the share they take.
-    /// </summary>
+    /// <summary>The pitch, game-free: the bank of questions, which are asked, what an answer is worth, the check of a figure and the decision.</summary>
     public static class Pitch
     {
-        public const int Unsupported = 1;        // an answer about the founder that the record does not bear out
-        public const int GoodCreditFrom = 670, SteadyDays = 12, LongRunDays = 60, BuiltDays = 30;
+        public const int Unsupported = 1;        // points for a claim about the founder the record does not bear out
+        public const int GoodCreditFrom = 670, SteadyDays = 12, LongRunDays = 60, BuiltDays = 30;   // a credit score, then days
 
         private static readonly int[][] StyleByTemper =
         {
@@ -120,13 +109,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             new[] { -1, 2, -1, -1 }    // demanding
         };
 
-        // The figure at which a fact is as strong as it gets (for the ones where less is better: at which it is as weak as it gets).
+        // By Fact: the figure at which it is as strong as it gets (where less is better, as weak).
         private static readonly long[] Full = { 0, 4000, 28000, 2000, 2000, 6, 45, 60000, 0, 150000, 2, 0, 4, 4, 3000 };
 
         private const int Street = (1 << (int)Sector.Retail) | (1 << (int)Sector.Food) | (1 << (int)Sector.Leisure);
         private const int Trade = (1 << (int)Sector.Office) | (1 << (int)Sector.Industry);
 
-        // Every question's text, by name (the locale check looks for each key as it is written here).
+        // Written out in full: the locale check looks for each key as it is here.
         private static readonly string[] FactKeys =
         {
             "reallife_ven_q_f01", "reallife_ven_q_f02", "reallife_ven_q_f03", "reallife_ven_q_f04", "reallife_ven_q_f05", "reallife_ven_q_f06", "reallife_ven_q_f07",
@@ -158,7 +147,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     Fits = Array.IndexOf(running, (Fact)f) >= 0 ? Question.Running : Question.Both
                 });
             }
-            // The plan. Points with an angel, a tycoon, a fund; then the manner; then the sectors it suits.
+            // The plan: points with an angel, a tycoon, a fund; the manner; the sectors it suits.
             Plan(bank, 1, A(7, 7, 5, Style.Careful), A(4, 6, 8, Style.Bold), A(2, 1, 0, Style.Reckless));
             Plan(bank, 2, A(7, 7, 6, Style.Careful), A(5, 6, 8, Style.Bold), A(8, 5, 4, Style.Personal));
             Plan(bank, 3, A(6, 6, 5, Style.Careful, Street), A(6, 6, 7, Style.Bold, Trade), A(2, 2, 1, Style.Reckless));
@@ -177,7 +166,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Plan(bank, 16, A(8, 6, 3, Style.Personal), A(6, 8, 6, Style.Careful), A(3, 5, 9, Style.Bold));
             Plan(bank, 17, A(7, 7, 4, Style.Careful), A(4, 6, 9, Style.Bold), A(2, 1, 0, Style.Reckless));
             Plan(bank, 18, A(8, 8, 6, Style.Careful), A(5, 6, 8, Style.Bold), A(2, 2, 2, Style.Reckless));
-            // The founder. The same, then what the save must show for the answer to be believed.
+            // The founder: the same, then what the save must show for the answer to be believed.
             Founder(bank, 1, C(7, 8, 8, Style.Bold, Claim.BuiltThis), C(7, 8, 9, Style.Bold, Claim.SeveralBusinesses), C(7, 5, 3, Style.Personal, Claim.None));
             Founder(bank, 2, C(7, 5, 4, Style.Personal, Claim.FirstBusiness), C(8, 8, 9, Style.Bold, Claim.SeveralBusinesses), C(7, 8, 8, Style.Careful, Claim.LongRun));
             Founder(bank, 3, C(8, 8, 7, Style.Careful, Claim.None), C(5, 7, 7, Style.Bold, Claim.GoodCredit), C(6, 5, 5, Style.Bold, Claim.SteadyProfit));
@@ -210,8 +199,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             bank.Add(new Question { Id = bank.Count, Kind = QuestionKind.Founder, Key = FounderKeys[number - 1], Fits = Question.Both, Answers = new[] { a, b, c } });
         }
 
-        // ---------------------------------------------------------------- facts
-
         public static FactUnit UnitOf(Fact fact)
         {
             switch (fact)
@@ -230,7 +217,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>True for a figure that is better the smaller it is: debts, convictions, missed payments, what loans cost a day.</summary>
         public static bool LowerBetter(Fact fact)
         {
             return fact == Fact.Owed || fact == Fact.Convictions || fact == Fact.Missed || fact == Fact.Payments;
@@ -258,13 +244,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>
-        /// The figures offered as answers: the true one first (money as people say it), then one that sounds a little
-        /// better and one that sounds much better. Two or three of them; fewer than two means the true figure is
-        /// already as good as it gets and the question is not asked.
-        /// </summary>
+        /// <summary>The figures offered: the truth (money as people say it), then better-sounding ones; under two, the question is not asked.</summary>
         public static int Options(Fact fact, in PitchFacts f, long[] values)
         {
+            if (fact == Fact.Staff && f.Staff < 0)
+            {
+                return 1;   // the staff could not be counted: nothing true to ask about
+            }
             long truth = Truth(fact, f);
             bool money = UnitOf(fact) == FactUnit.Money;
             long shown = money ? VenturesCatalogue.Round2(truth) : truth;
@@ -298,7 +284,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             else if (money)
             {
-                long full = Full[(int)fact];
+                long full = FullAt(fact);
                 stretch = truth > 0 ? Math.Max(VenturesCatalogue.Round2(truth * 1.3), shown + 1) : VenturesCatalogue.Round2(full * 0.2);
                 bold = truth > 0 ? Math.Max(VenturesCatalogue.Round2(truth * 1.8), stretch + 1) : VenturesCatalogue.Round2(full * 0.6);
             }
@@ -318,8 +304,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             return 3;
         }
 
-        /// <summary>How strong a figure is, from 0 to 1.</summary>
-        public static double Strength(Fact fact, long value)
+        // How strong a figure is, from 0 to 1.
+        private static double Strength(Fact fact, long value)
         {
             double part;
             switch (fact)
@@ -327,11 +313,18 @@ namespace RealLifeOverhaul.Economy.Ventures
                 case Fact.Rating: part = (value - 500) / 300.0; break;
                 case Fact.ProfitableDays: part = (value - 6) / 8.0; break;
                 default:
-                    part = (double)value / Full[(int)fact];
+                    part = (double)value / FullAt(fact);
                     part = LowerBetter(fact) ? 1.0 - part : part;
                     break;
             }
             return part < 0.0 ? 0.0 : part > 1.0 ? 1.0 : part;
+        }
+
+        // The figure at which a fact is as strong as it gets, money at today's prices.
+        private static long FullAt(Fact fact)
+        {
+            long full = Full[(int)fact];
+            return UnitOf(fact) == FactUnit.Money ? Prices.At((int)full) : full;
         }
 
         /// <summary>What a figure is worth when it is believed: never under <see cref="VenturesCatalogue.TruthBase"/>.</summary>
@@ -340,7 +333,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return VenturesCatalogue.TruthBase + (int)Math.Round((VenturesCatalogue.PointsMost - VenturesCatalogue.TruthBase) * Strength(fact, value));
         }
 
-        /// <summary>The chance, in per cent, that this investor catches a figure that is not the true one.</summary>
+        /// <summary>The chance, in per cent, that this investor catches an untrue figure.</summary>
         public static int CatchChance(Investor investor, int level, int reputation, bool bold)
         {
             int diligence = investor.Diligence + VenturesCatalogue.DiligenceShift[VenturesCatalogue.Level(level)] + Math.Max(0, (VenturesCatalogue.ReputationStart - reputation) / 2);
@@ -349,13 +342,10 @@ namespace RealLifeOverhaul.Economy.Ventures
             return Math.Max(VenturesCatalogue.CatchLeastPct, Math.Min(VenturesCatalogue.CatchMostPct, chance));
         }
 
-        /// <summary>The check's roll for one question of one meeting, from 0 to 99: under the chance, the figure is caught.</summary>
-        public static int Roll(int seed, int meeting, int question)
+        private static int Roll(int seed, int meeting, int question)
         {
             return VenturesRandom.Percent(seed, meeting * 16 + question, 9001);
         }
-
-        // ---------------------------------------------------------------- the plan and the founder
 
         public static bool Holds(Claim claim, in PitchFacts f)
         {
@@ -396,7 +386,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return Math.Max(0, Math.Min(VenturesCatalogue.PointsMost, points));
         }
 
-        /// <summary>The answer worth most to this investor (the first of them if two are worth the same).</summary>
+        /// <summary>The answer worth most to this investor; the first of equals.</summary>
         public static int Best(Question q, Investor investor, in PitchFacts f)
         {
             int best = 0;
@@ -410,8 +400,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             return best;
         }
 
-        // ---------------------------------------------------------------- the meeting
-
         public static bool Askable(Question q, in PitchFacts f, long[] scratch)
         {
             if ((q.Fits & (f.Running ? Question.Running : Question.New)) == 0)
@@ -421,11 +409,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return q.Kind != QuestionKind.Fact || Options(q.Fact, f, scratch) >= 2;
         }
 
-        /// <summary>
-        /// The questions of one meeting: so many facts, so many about the plan and so many about the founder for this
-        /// kind of investor, drawn from those that fit the business; where there are too few of one sort, more about
-        /// the plan. The same for the same seed, meeting and investor.
-        /// </summary>
+        /// <summary>The questions of one meeting, the same for the same seed, meeting and investor; questions on the plan make up a short sort.</summary>
         public static void Draw(int seed, int meeting, Investor investor, in PitchFacts f, List<int> into)
         {
             into.Clear();
@@ -472,10 +456,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>
-        /// A meeting begins: it is counted (its checks are its own), the investor has been approached today, and the
-        /// questions are drawn. The facts are the true ones, read by the caller.
-        /// </summary>
+        /// <summary>A meeting begins: it is counted (its rolls are its own), the investor is approached today and the questions are drawn.</summary>
         public static PitchState Begin(VenturesFile file, Investor investor, in PitchFacts facts, string place, string business, string typeName, int day)
         {
             file.Pitches++;
@@ -493,12 +474,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return state.Caught || state.Index >= state.Questions.Count;
         }
 
-        /// <summary>
-        /// The answer to the question the meeting is at: for a fact, 0 is the true figure, the last is the one that
-        /// sounds much better and one between them a little better; for the others, the answer's place in the bank.
-        /// A figure that is not true is checked: caught, the meeting is over, the investor sees nobody for sixty days
-        /// and the founder's name with every investor falls.
-        /// </summary>
+        /// <summary>The answer to the current question ('option' for a figure: 0 the truth, the last the boldest); an untrue figure caught ends the meeting.</summary>
         public static AnswerResult Answer(VenturesFile file, PitchState state, Investor investor, int option, int level, int day)
         {
             var result = new AnswerResult();
@@ -533,12 +509,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 state.Caught = true;
                 investor.ClosedUntil = day + VenturesCatalogue.CaughtCloseDays;
-                file.MoveReputation(VenturesCatalogue.ReputationCaught);
+                file.MoveReputation(VenturesCatalogue.ReputationCaught, state.Test);
             }
             return result;
         }
 
-        /// <summary>The order one question's answers are shown in, for one meeting.</summary>
         public static void Order(int seed, int meeting, int question, int count, int[] order)
         {
             var random = new VenturesRandom((int)VenturesRandom.Hash(seed, meeting * 16 + question, 9002));
@@ -555,7 +530,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>The score of a meeting, of 100: the points as a share of the most, a little more for a sector the investor likes, and more or less for the founder's name with investors.</summary>
+        /// <summary>The score of a meeting, of 100: the points as a share of the most, more for a liked sector, more or less for reputation.</summary>
         public static int Score(List<int> points, Investor investor, in PitchFacts f, int reputation)
         {
             int sum = 0;
@@ -569,20 +544,12 @@ namespace RealLifeOverhaul.Economy.Ventures
             return Math.Max(0, Math.Min(100, score));
         }
 
-        /// <summary>The score this investor wants at this level.</summary>
         public static int Needed(Investor investor, int level)
         {
             return VenturesCatalogue.ScoreNeeded[(int)investor.Kind] + VenturesCatalogue.ThresholdShift[VenturesCatalogue.Level(level)];
         }
 
-        /// <summary>
-        /// The decision. Under the score they want, no. At or over it: a business that is running is valued at 40 to
-        /// 90 days of its true recent profit and the investor takes from the most to the least of their range of
-        /// shares, both by how far over the score is; the sum is their share of that value, inside their smallest and
-        /// largest sums. A business not yet open gets 30% to 70% of its budget from an angel or a fund; a tycoon backs
-        /// none that is not open. An angel backs a business under thirty days old with their smallest sum whatever
-        /// its profit.
-        /// </summary>
+        /// <summary>The decision: the further over the score wanted, the more days of profit and the smaller the share; an angel backs a young business anyway.</summary>
         public static PitchDecision Decide(VenturesFile file, Investor investor, in PitchFacts f, string place, List<int> points, int level, int day)
         {
             var d = new PitchDecision { Score = Score(points, investor, f, file.Reputation), Needed = Needed(investor, level), Best = -1, Worst = -1 };
@@ -593,7 +560,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             if (!f.Running && investor.Kind == InvestorKind.Tycoon)
             {
-                d.Verdict = Verdict.NotOpen;   // a tycoon's money is for a business that already earns
+                d.Verdict = Verdict.NotOpen;   // a tycoon's money is only for a business that earns
                 return d;
             }
             if (d.Score < d.Needed)
@@ -607,12 +574,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             d.ValueDays = VenturesCatalogue.Lerp(VenturesCatalogue.ValueDaysLeast, VenturesCatalogue.ValueDaysMost, over);
             if (!f.Running)
             {
-                int sum = (int)Math.Min(investor.ChequeMost, (long)f.Budget * VenturesCatalogue.Lerp(VenturesCatalogue.BudgetShareLeastPct, VenturesCatalogue.BudgetShareMostPct, over) / 100) / 100 * 100;
+                int budgetPct = VenturesCatalogue.Lerp(VenturesCatalogue.BudgetShareLeastPct, VenturesCatalogue.BudgetShareMostPct, over);
+                int sum = (int)Math.Min(investor.Most, (long)f.Budget * budgetPct / 100) / 100 * 100;
                 if (file.Pledges.Count >= VenturesCatalogue.PledgesMost || file.Offers.Count >= VenturesCatalogue.OffersMost)
                 {
                     d.Verdict = Verdict.NoRoom;
                 }
-                else if (sum < investor.ChequeLeast)
+                else if (sum < investor.Least)
                 {
                     d.Verdict = Verdict.TooSmall;
                 }
@@ -637,7 +605,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             if (investor.Kind == InvestorKind.Angel && f.AgeDays < VenturesCatalogue.YoungDays)
             {
-                d.Amount = investor.ChequeLeast;
+                d.Amount = investor.Least;
                 d.ShareBp = Math.Min(share, room);
                 d.OnFounder = true;
                 return d;

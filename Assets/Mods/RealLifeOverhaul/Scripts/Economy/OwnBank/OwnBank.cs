@@ -24,12 +24,12 @@ namespace RealLifeOverhaul.Economy
     {
         None = 0,
         Strikes = 1,    // a breach left standing past its second deadline
-        Insolvent = 2,  // its capital is gone
-        Collapse = 3,   // its ratio fell under half the law's
-        Run = 4         // it could not pay its savers
+        Insolvent = 2,  // no capital left
+        Collapse = 3,   // a ratio under half the law's
+        Run = 4         // savers it could not pay
     }
 
-    /// <summary>One company the bank's fund holds: its shares, what they cost, and the last figures the market gave for it.</summary>
+    /// <summary>One company the bank's fund holds.</summary>
     public sealed class FundHolding
     {
         public int StockId;
@@ -37,65 +37,57 @@ namespace RealLifeOverhaul.Economy
         public long Qty;
         public long CostCents;       // what the shares held cost in all, commission apart
         public int LastCents;        // the last price seen
-        public int DpsCents;         // its last quarterly dividend a share
+        public int DpsCents;         // the last quarterly dividend, a share
     }
 
-    /// <summary>
-    /// The player's bank: its balance sheet (in cents), the rates and choices the player has set, the city's trust and
-    /// the regulator's view, its fund and its months. The rules are <see cref="OwnBankRules"/>; it is kept in the save
-    /// by <see cref="OwnBankStore"/>. The balance sheet always balances: reserves, loans, arrears and the fund at cost
-    /// are the deposits and the capital (OwnBankRules.Balanced, which EconomyCheck checks after every day).
-    /// </summary>
+    /// <summary>The player's bank: its balance sheet in cents, its choices, the regulator's view, its fund and its months.</summary>
     public sealed class OwnBank
     {
         public OwnBankState State;
         public string Name = string.Empty;
         public int Seed;
-        public int FoundedDay, EndDay;          // EndDay: sold or closed on
+        public int FoundedDay, EndDay;          // EndDay: the day it was sold or closed
         public long EndCents;                   // what the player had for it then
         public ClosedWhy Why;
         public int LastDay;                     // the last day run
-        public bool Test;                       // founded by a test tool, its capital the test's: it pays nothing out
-        public int Closures;                    // banks of the player's the regulator has closed (kept when a new one is founded): the next one's capital is higher
+        public bool Test;                       // founded by a test tool: it pays nothing out
+        public int Closures;                    // the player's banks the regulator has closed: each raises the next one's capital
+        public int WatchTold = int.MinValue;    // the day the regulator's watch was last told, once a month at most; int.MinValue: never
+        public bool Still;                      // written while the feature stood down: the days until it is on again are not run
 
-        // ---- the balance sheet, cents
         public long Capital, Reserves;
         public readonly long[] Deposits = new long[OwnBankCatalogue.Savers];
         public readonly long[] Loans = new long[OwnBankCatalogue.Segments];      // performing
         public readonly long[] Arrears = new long[OwnBankCatalogue.Segments];    // paying nothing
-        public readonly long[] Recovering = new long[OwnBankCatalogue.Segments]; // written off, still to come back (not on the books)
-        public readonly int[] Recover = new int[OwnBankCatalogue.Segments];      // the days over which what is recovering comes back
+        public readonly long[] Recovering = new long[OwnBankCatalogue.Segments]; // written off, still to come back (off the books)
+        public readonly int[] Recover = new int[OwnBankCatalogue.Segments];      // days: each day brings back this part of what is recovering
 
-        // ---- the player's choices
         public readonly int[] SaverOffset = new int[OwnBankCatalogue.Savers];   // hundredths of a point over the rivals' rate
-        public readonly int[] LoanOffset = new int[OwnBankCatalogue.Segments];
+        public readonly int[] LoanOffset = new int[OwnBankCatalogue.Segments];  // hundredths of a point over the rivals' rate
         public readonly bool[] Lending = new bool[OwnBankCatalogue.Segments];
-        public int Strategy;                    // OwnBankCatalogue.StrategyKeys
+        public int Strategy;                    // an index of OwnBankCatalogue.StrategyKeys
         public int FundLimit;                   // thousandths of the deposits
-        public bool Rebalance;                  // a choice changed: the fund is traded to it at the next day
+        public bool Rebalance;                  // a choice changed: the fund is traded to it on the next day
 
-        // ---- the city and the regulator
         public int Scare;                       // thousandths, fading
         public bool Run;
         public int RunFrom;
         public Regulator Stage;
         public int Deadline, Strikes;
-        public long FinedCents;                 // in all, for the page
+        public long FinedCents;                 // in all
 
-        // ---- the fund
         public readonly List<FundHolding> Holdings = new List<FundHolding>(12);
 
-        // ---- the months
         public int MonthFrom;                   // the first day of the month being added up
-        public int Month;                       // months turned since it was founded (each month's luck is drawn from it)
+        public int Month;                       // months since it was founded: each month's luck is drawn from it
         public long MonthIncome, MonthCosts, LastIncome, LastCosts;
         public long MonthLost, LastLost, LostAll, RecoveredAll;   // written off, and come back, in all
         public readonly long[] History = new long[OwnBankCatalogue.HistoryMonths];   // each month's profit, the oldest first
         public int HistoryCount;
-        // ---- the end game's scale (Core/EndScale)
-        public int ScaleFrom = EndScaleRules.Unset;   // the day it began to come in for the bank
-        public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];   // tellers, relationship managers, loan officers, compliance
-        public long FoundedLeast;               // the least capital that applied when it was founded, cents at the start's prices (0: founded before the scale, the old least)
+
+        public int ScaleFrom = EndScaleRules.Unset;   // the day the end game's scale began to come in
+        public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];
+        public long FoundedLeast;               // the least capital when it was founded, cents at the start's prices (0: the least before the scale)
 
         public bool Running => State == OwnBankState.Running;
         public bool Exists => State != OwnBankState.None;
@@ -139,7 +131,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>What the fund cost (its book value), cents.</summary>
+        /// <summary>What the fund cost: its book value.</summary>
         public long FundCost
         {
             get
@@ -153,7 +145,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>What the fund is worth at the last prices seen, cents.</summary>
+        /// <summary>What the fund is worth at the last prices seen.</summary>
         public long FundValue
         {
             get
@@ -180,25 +172,22 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// The city as the bank's day reads it, from the rest of the mod (Wiring/OwnBankLinks, by the director): game-free, so
-    /// that the day can be run offline exactly as in the game.
-    /// </summary>
+    /// <summary>The city as the bank's day reads it (OwnBankGame.City): game-free, so a day runs offline as in the game.</summary>
     public struct BankCity
     {
         public int YearDays, MonthDays;
         public int Level;               // the price level (Core/Prices), tenths of a point
         public int CityRateBp;          // the bank rate: CityRateStart and the central bank's points
-        public int BasePointsQuarter;   // the central bank's points in quarters (CityEconomy.BasePoints x 4)
-        public int HouseRate;           // the largest rival bank's own rate, whole per cent (BankTerms.House)
+        public int BasePointsQuarter;   // the central bank's points, in quarters
+        public int HouseRate;           // the largest rival bank's own rate, whole per cent
         public int Multiplier;          // the game's interest multiplier, thousandths
         public CycleState Cycle;
         public int InflationBp;         // a year
         public int Trouble;             // business pressure's chance in this economy, thousandths (CityModel.Trouble)
-        public int Integrity;           // the player's integrity as an owner, 0 to 100 (Standing: 50 while it is off)
+        public int Integrity;           // the player's integrity as an owner, 0 to 100
         public int Tax, Grants, Wages, Rent;   // the council's levers: -1, 0 or 1
         public bool Courts;             // the justice system takes a lender's claims
-        public int Scale;               // the end game's share for the bank (Core/EndScale): 0 every figure as before, 1000 at scale
+        public int Scale;               // the end game's share (Core/EndScale): 0 as before, 1000 at scale
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)
@@ -206,15 +195,13 @@ namespace RealLifeOverhaul.Economy
             return new BankCity
             {
                 YearDays = yearDays, MonthDays = MacroCatalogue.MonthDays(yearDays), Level = PriceRules.Start, CityRateBp = OwnBankCatalogue.CityRateStart,
-                HouseRate = OwnBankCatalogue.HouseRateDefault, Multiplier = 1000, Cycle = CycleState.Steady, InflationBp = MacroCatalogue.InflationTarget, Trouble = 1000, Integrity = 50
+                HouseRate = OwnBankCatalogue.HouseRateDefault, Multiplier = 1000, Cycle = CycleState.Steady, InflationBp = MacroCatalogue.InflationTarget,
+                Trouble = 1000, Integrity = 50
             };
         }
     }
 
-    /// <summary>
-    /// What a day did, in cents: the money the headquarters' books show (each as a transaction of the game's, BankGame),
-    /// and what the player is told of. The day's profit is what came in less what went; it is kept in the bank's capital.
-    /// </summary>
+    /// <summary>What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's capital.</summary>
     public sealed class BankDay
     {
         public long Interest, Reserve, Dividends, Recovered, Gains;    // in: takings
@@ -224,7 +211,7 @@ namespace RealLifeOverhaul.Economy
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
         public ClosedWhy Why;
-        public long WoundUp;                    // what winding it up left for the player, when it was closed
+        public long WoundUp;                    // what winding it up left for the player
 
         public long Income => Interest + Reserve + Dividends + Recovered + Gains;
         public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine + Systems;
@@ -242,7 +229,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>One listed company as the bank's fund sees it on a day (from the Stocks app's market, Wiring/OwnBankLinks).</summary>
+    /// <summary>One listed company as the bank's fund sees it on a day (Wiring/OwnBankLinks, from the Stocks app's market).</summary>
     public struct FundQuote
     {
         public int StockId;
@@ -250,7 +237,7 @@ namespace RealLifeOverhaul.Economy
         public int LastCents;
         public int DpsCents;
         public long Shares;
-        public int Size;                // MarketSize: 0 large, 1 mid, 2 small (Markets/MarketModel)
+        public int Size;                // MarketSize: 0 large, 1 mid, 2 small
         public int Distress;            // thousandths
         public bool Listed, UnderBid;
         public int GoneCents;           // gone from the market: what each share was paid out at

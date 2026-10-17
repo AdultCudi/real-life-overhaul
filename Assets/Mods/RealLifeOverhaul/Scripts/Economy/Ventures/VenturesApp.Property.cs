@@ -8,14 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// The Property tab. The game already lets every building the player owns: tenants come and go by the rent set in
-    /// BizMan, the rent is paid in each night, and a building for sale is sold to a competitor
-    /// (Helpers.RealEstateHelper). So nothing is added to that: this tab only brings the game's own figures together
-    /// as an investment is read: what a building cost, what it is worth now, how much of it is let, what it has
-    /// brought in over seven and thirty days, the yield on the price paid, and the mortgage on it if there is one.
-    /// Everything is read from the game when the tab is written; nothing is kept and nothing is changed.
-    /// </summary>
+    /// <summary>The Property tab: the game's own figures of the player's buildings, read as an investment. Nothing is kept or changed.</summary>
     public sealed partial class VenturesApp
     {
         private const string EstateRow = "est:";
@@ -31,7 +24,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             float week = 0f, month = 0f;
             RealEstate picked = null;
             int pick = Picked(_picked, EstateRow);
-            List<string> districts = VenturesTables.Property.Filters[0].Names;   // the filter's kinds: the districts the buildings stand in
+            List<string> districts = VenturesTables.Property.Filters[0].Names;   // the filter's kinds: the buildings' districts
             districts.Clear();
             for (int i = 0; i < count; i++)
             {
@@ -95,7 +88,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return VenturesTables.Property;
         }
 
-        // What a building brings in a day now, as the game works it out (nothing for a house that is lived in, not let).
+        // What a building brings in a day now, as the game works it out (nothing for a home lived in).
         private static float DailyRent(RealEstate e)
         {
             try
@@ -104,11 +97,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             catch (System.Exception)
             {
-                return 0f;   // (the building is no longer in the city: no rent)
+                return 0f;   // the building is no longer in the city
             }
         }
 
-        // What the game says a building is worth now and how much of it is let; nothing for a figure the game cannot give.
+        // What the game says a building is worth and how much of it is let; 0 for a figure it cannot give.
         private static void Worth(RealEstate e, out float worth, out int let)
         {
             worth = 0f;
@@ -120,7 +113,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             catch (System.Exception)
             {
-                worth = 0f;   // (the building is no longer in the city)
+                worth = 0f;   // the building is no longer in the city
             }
         }
 
@@ -162,7 +155,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // Rents are set, and buildings bought and sold, where the game has them: BizMan.
+        // Rents are set and buildings bought and sold in the game's BizMan.
         private void OpenBizMan()
         {
             if (_menu != null)

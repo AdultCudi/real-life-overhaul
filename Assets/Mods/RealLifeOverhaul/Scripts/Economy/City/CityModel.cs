@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Economy
     public sealed class CityDistrict
     {
         public string Name;
-        public int Start;       // tenths of a point, from the game's own class shares; never changed
+        public int Start;       // tenths of a point, from the game's own class shares
         public int Income;      // tenths of a point, 600 to 1400
         public int Before;      // what it was a month ago
     }
@@ -45,10 +45,7 @@ namespace RealLifeOverhaul.Economy
         public int ShockAnnounced;  // the kind of goods a shortage or a glut was drawn for, or -1
     }
 
-    /// <summary>
-    /// The city's economy as it stands: everything the save keeps of it (<see cref="CityStore"/>). Game-free.
-    /// Every figure is a whole number (see <see cref="MacroCatalogue"/>).
-    /// </summary>
+    /// <summary>The city's economy as it stands: everything the save keeps of it (<see cref="CityStore"/>). Game-free.</summary>
     public sealed class CityState
     {
         public int Seed;
@@ -97,23 +94,33 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// How the city's economy moves. Game-free and exact: nothing is random but numbers drawn from the save's seed, the
-    /// purpose and the day or month they are for, so the same seed and the same days give the same history
-    /// (RealLifeOverhaul.Build/EconomyCheck runs twenty years of it from many seeds).
-    ///
-    /// ONE DAY (<see cref="Day"/>): a month turns if it is time (<see cref="Month"/>); a shortage or a glut that has run
-    /// its days ends; today's price factors are worked out from the season, the weather, the city's events and what is
-    /// running; a shortage or a glut may be drawn for tomorrow; and on the last day of a month the central bank
-    /// decides, for tomorrow (<see cref="Decide"/>). So a decision and a shock are both known, and in the paper, a day
-    /// before they take effect.
-    ///
-    /// ONE MONTH: the decision announced yesterday takes effect; the cycle counts a month and may change state;
-    /// inflation moves towards where the cycle, a slow pressure, the month's surprise and the rate of the month before
-    /// push it, and the index rises by a twelfth of it; each district drifts.
-    /// </summary>
+    /// <summary>How the city's economy moves, day by day. Game-free and seeded: the same seed and days give the same history.</summary>
     public static class CityModel
     {
+        /// <summary>
+        /// What putting the state from before the tests back keeps of the state now: what was really carried since and is
+        /// still owed, and a rival that opened since, so its rest and its piece in the paper stand.
+        /// </summary>
+        public static void KeepReal(CityState back, CityState now)
+        {
+            back.CarryRent = now.CarryRent;
+            back.CarryWages = now.CarryWages;
+            back.CarryTakings = now.CarryTakings;
+            back.CarryLiving = now.CarryLiving;
+            if (now.LastCopycatDay <= back.LastCopycatDay)
+            {
+                return;
+            }
+            back.LastCopycatDay = now.LastCopycatDay;
+            for (int i = 0; i < now.News.Count; i++)
+            {
+                if (now.News[i].Kind == CityNewsKind.Rival && now.News[i].Day == now.LastCopycatDay && !back.News.Contains(now.News[i]))
+                {
+                    back.News.Add(now.News[i]);
+                }
+            }
+        }
+
         private const int PurposeCycle = 11, PurposeMonths = 12, PurposeJitter = 13, PurposePressure = 21, PurposeShock = 22,
             PurposeDistrict = 31, PurposeSupply = 41, PurposeSupplyKind = 42, PurposeSupplyWhich = 43, PurposeSupplySize = 44, PurposeSupplyDays = 45;
 
@@ -132,7 +139,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // A whole number between two bounds, both included.
+        // Both bounds included.
         private static int Between(int seed, int purpose, int n, int least, int most)
         {
             return least + Draw(seed, purpose, n, most - least + 1);
@@ -143,8 +150,6 @@ namespace RealLifeOverhaul.Economy
         {
             return value * MacroCatalogue.Swing(level) / 100;
         }
-
-        // ---------------------------------------------------------------- opening
 
         /// <summary>A new economy for a save: steady for its first three months, the rate the banks' own, prices at 100.</summary>
         public static CityState Open(int seed, int gameDay)
@@ -160,7 +165,8 @@ namespace RealLifeOverhaul.Economy
             {
                 return MacroCatalogue.IncomeMiddle;
             }
-            int tenths = (Math.Max(0, working) * MacroCatalogue.ClassWorking + Math.Max(0, middle) * MacroCatalogue.ClassMiddle + Math.Max(0, upper) * MacroCatalogue.ClassUpper) * 10 / all;
+            int tenths = (Math.Max(0, working) * MacroCatalogue.ClassWorking + Math.Max(0, middle) * MacroCatalogue.ClassMiddle
+                          + Math.Max(0, upper) * MacroCatalogue.ClassUpper) * 10 / all;
             return MacroCatalogue.Clamp(tenths, MacroCatalogue.IncomeLeast, MacroCatalogue.IncomeMost);
         }
 
@@ -185,21 +191,15 @@ namespace RealLifeOverhaul.Economy
             return MacroCatalogue.Clamp(income, least, most);
         }
 
-        // ---------------------------------------------------------------- a day
-
         /// <summary>The month of the model a state is in, from 0.</summary>
         public static int MonthNumber(CityState state, int monthDays)
         {
             return state.Age / Math.Max(1, monthDays);
         }
 
-        public const int DecisionEveHour = 18;   // hour of the game's day: "the bank rate decision is tomorrow" comes from the evening before it takes effect
+        public const int DecisionEveHour = 18;   // hour of the game's day the evening notice of tomorrow's rate decision is due from
 
-        /// <summary>
-        /// True if the evening notice of tomorrow's rate decision is due: a decision is announced (<see cref="CityState.Pending"/>)
-        /// and takes effect tomorrow, it is <see cref="DecisionEveHour"/> or later, and it has not been sent today
-        /// (<paramref name="told"/>: the day it was last sent, kept in the player's own line of the save).
-        /// </summary>
+        /// <summary>True if a decision takes effect tomorrow, it is <see cref="DecisionEveHour"/> or later, and the notice was last <paramref name="told"/> another day.</summary>
         public static bool DecisionEve(CityState state, int monthDays, int day, int hour, int told)
         {
             return state != null && state.Pending && DaysToTurn(state, monthDays) == 1 && hour >= DecisionEveHour && told != day;
@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Economy
             return monthDays - state.Age % monthDays;
         }
 
-        /// <summary>One game day. <paramref name="gameDay"/> is the day that has begun; the pieces for its paper are added to the state.</summary>
+        /// <summary>One game day, <paramref name="gameDay"/> having begun; a decision and a shock are announced, and in the paper, the day before they start.</summary>
         public static CityTick Day(CityState state, int gameDay, CityDay env, int level, int monthDays)
         {
             var tick = new CityTick { ShockAnnounced = -1 };
@@ -234,7 +234,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (state.Cycle == CycleState.Recession && !MacroCatalogue.Recessions(level))
             {
-                // The strength was set to Relaxed in a recession: it is over now.
+                // The strength was set to Relaxed in a recession: it ends now.
                 CycleState was = state.Cycle;
                 state.Cycle = CycleState.Slowdown;
                 state.MonthsIn = 1;
@@ -255,14 +255,7 @@ namespace RealLifeOverhaul.Economy
             return tick;
         }
 
-        // ---------------------------------------------------------------- the central bank
-
-        /// <summary>
-        /// The decision for next month, from this month's inflation and the state of the cycle. It raises when
-        /// inflation is over the target's band and cuts when it is under; a slowdown or a recession takes a quarter or
-        /// a half point off whatever that gives; with nothing pressing, the rate goes a quarter point back towards the
-        /// banks' own. One point at most, and never outside -2 to +6.
-        /// </summary>
+        /// <summary>Announces the decision for next month from this month's inflation and the cycle (<see cref="Rule"/>).</summary>
         public static void Decide(CityState state)
         {
             RateReason reason;
@@ -272,7 +265,7 @@ namespace RealLifeOverhaul.Economy
             state.PendingReason = move == 0 ? RateReason.Hold : reason;
         }
 
-        /// <summary>The rule itself: the move in quarter points for an inflation, a state and a rate.</summary>
+        /// <summary>The central bank's move in quarter points: against inflation off target, lower in hard times, else back towards the banks' own.</summary>
         public static int Rule(int inflation, CycleState cycle, int baseNow, out RateReason reason)
         {
             int gap = inflation - MacroCatalogue.InflationTarget;
@@ -310,14 +303,12 @@ namespace RealLifeOverhaul.Economy
             return move;
         }
 
-        // ---------------------------------------------------------------- a month
-
         private static void Month(CityState state, int gameDay, int level, int monthDays, ref CityTick tick)
         {
             int month = state.Age / monthDays;
             tick.MonthTurned = true;
 
-            // Yesterday's decision takes effect. What inflation feels this month is the rate of the month before last.
+            // What inflation feels this month is the rate of the month before last.
             int lag = state.BaseBefore;
             state.BaseBefore = state.Base;
             state.LastMove = 0;
@@ -334,7 +325,6 @@ namespace RealLifeOverhaul.Economy
                 tick.RateMoved = state.LastMove;
             }
 
-            // The cycle.
             state.MonthsLeft--;
             state.MonthsIn++;
             if (state.MonthsLeft <= 0)
@@ -350,18 +340,19 @@ namespace RealLifeOverhaul.Economy
                 }
             }
 
-            // Prices.
             state.Pressure = MacroCatalogue.Clamp(state.Pressure - state.Pressure * MacroCatalogue.PressureFade / 100
                                                  + Between(state.Seed, PurposePressure, month, -MacroCatalogue.PressureStep, MacroCatalogue.PressureStep),
                 MacroCatalogue.PressureLeast, MacroCatalogue.PressureMost);
             int surprise = Between(state.Seed, PurposeShock, month, MacroCatalogue.ShockLeast, MacroCatalogue.ShockMost);
-            int pushed = MacroCatalogue.InflationTarget + Swung(MacroCatalogue.CyclePush[(int)state.Cycle] + state.Pressure + surprise, level) - MacroCatalogue.RateEffectPerQuarter * lag;
-            state.Inflation = MacroCatalogue.Clamp(state.Inflation + (pushed - state.Inflation) * MacroCatalogue.InflationFollow / 100, MacroCatalogue.InflationLeast, MacroCatalogue.InflationMost);
+            int pushed = MacroCatalogue.InflationTarget + Swung(MacroCatalogue.CyclePush[(int)state.Cycle] + state.Pressure + surprise, level)
+                         - MacroCatalogue.RateEffectPerQuarter * lag;
+            state.Inflation = MacroCatalogue.Clamp(state.Inflation + (pushed - state.Inflation) * MacroCatalogue.InflationFollow / 100,
+                MacroCatalogue.InflationLeast, MacroCatalogue.InflationMost);
             state.MonthChange = Rounded(state.Inflation, MacroCatalogue.MonthsPerYear);
             state.Index = MacroCatalogue.Clamp((int)(state.Index + (long)state.Index * state.MonthChange / 10000L), MacroCatalogue.IndexLeast, MacroCatalogue.IndexMost);
             state.News.Add(new CityNews { Day = gameDay, Kind = CityNewsKind.Prices, A = state.Index, B = state.MonthChange });
 
-            // The districts: the one that moved most makes the paper, if it moved enough.
+            // The district that moved most makes the paper, if it moved enough.
             CityDistrict most = null;
             for (int i = 0; i < state.Districts.Count; i++)
             {
@@ -387,7 +378,7 @@ namespace RealLifeOverhaul.Economy
             return a >= 0 ? (a + b / 2) / b : -((-a + b / 2) / b);
         }
 
-        /// <summary>The state that follows another, by the save's own table. Relaxed never enters a recession: where the table says one, the slowdown goes on.</summary>
+        /// <summary>The state that follows another, by the save's own table. On Relaxed a recession drawn is a slowdown.</summary>
         public static CycleState Next(int seed, CycleState from, int month, int level)
         {
             int row = (int)from;
@@ -413,8 +404,6 @@ namespace RealLifeOverhaul.Economy
             }
             return next == CycleState.Recession && !MacroCatalogue.Recessions(level) ? CycleState.Slowdown : next;
         }
-
-        // ---------------------------------------------------------------- supply
 
         private static void Supply(CityState state, int gameDay, CityDay env, int level, ref CityTick tick)
         {
@@ -443,7 +432,7 @@ namespace RealLifeOverhaul.Economy
                     announced |= line.Announced(state.Age);
                 }
             }
-            // At most one is drawn a day, for tomorrow, and never while two are already running or announced.
+            // One drawn a day at most, for tomorrow, and none while one is announced or two are running.
             if (announced || busy >= MacroCatalogue.ShocksAtOnce || Draw(state.Seed, PurposeSupply, state.Age, 1000) >= MacroCatalogue.ShockChance)
             {
                 return;
@@ -461,7 +450,7 @@ namespace RealLifeOverhaul.Economy
             tick.ShockAnnounced = kind;
         }
 
-        /// <summary>A shortage or a glut of a kind of goods from tomorrow, with its piece for today's paper. (Also what the test tools call.)</summary>
+        /// <summary>A shortage or a glut of a kind of goods from tomorrow, with its piece for today's paper. The test tools call it too.</summary>
         public static void Announce(CityState state, int gameDay, int kind, SupplyShock shock, int size, int days, int level)
         {
             ref SupplyLine line = ref state.Supply[kind];
@@ -480,14 +469,12 @@ namespace RealLifeOverhaul.Economy
             state.News.Add(new CityNews { Day = gameDay, Kind = CityNewsKind.Supply, A = kind, B = (int)shock, C = line.Days, D = ShockPercent(line, level) });
         }
 
-        /// <summary>What a shock does to its kind's prices at a strength, in whole per cent (a glut's is under nothing).</summary>
+        /// <summary>What a shock does to its kind's prices at a strength, in whole per cent (a glut's is negative).</summary>
         public static int ShockPercent(in SupplyLine line, int level)
         {
             int size = Swung(line.Size, level);
             return line.Shock == SupplyShock.None ? 0 : Rounded(line.Shock == SupplyShock.Shortage ? size : -size, 10);
         }
-
-        // ---------------------------------------------------------------- what the state means
 
         /// <summary>The rate in points on top of the banks' own.</summary>
         public static float BasePoints(CityState state)
@@ -525,10 +512,7 @@ namespace RealLifeOverhaul.Economy
             return income * Spend(state.Cycle, level) / 1000;
         }
 
-        /// <summary>
-        /// What a district bears at one business, thousandths: the district's tolerance with the business's own part on it
-        /// (its interior, Scripts/Interiors), that part kept to a tenth either way whatever is asked.
-        /// </summary>
+        /// <summary>What a district bears at one business, in thousandths: the tolerance with the business's interior on it, that kept to a tenth either way.</summary>
         public static int WithBears(int tolerance, int bears)
         {
             return (int)((long)tolerance * (1000 + Math.Max(-100, Math.Min(100, bears))) / 1000);
@@ -546,7 +530,7 @@ namespace RealLifeOverhaul.Economy
             return against > 1000 + MacroCatalogue.OverBand;
         }
 
-        /// <summary>Customers lost or gained for prices, in per cent: nothing lost up to 2% over, 0.8% for each per cent over after that, 10% at most; 2% gained at or under.</summary>
+        /// <summary>Customers lost or gained for prices, in per cent: nothing up to 2% over, then 0.8% for each per cent over, 10% at most; 2% gained at or under.</summary>
         public static int PriceFootfall(int against)
         {
             if (against <= 0)
@@ -602,14 +586,10 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// The arithmetic of an adjustment (rents, wages, takings): the game's own figure for the day times how far the
-    /// mod's factor is from one. Nothing within 1% of one; whole money, halves away from nothing; a charge is never
-    /// taken beyond the cash in hand, and what could not be taken is carried to the next day as it is. Game-free.
-    /// </summary>
+    /// <summary>The arithmetic of the rent, wage and takings adjustments, in whole money. Game-free.</summary>
     public static class CityAdjust
     {
-        /// <summary>The adjustment of a figure by a factor in thousandths; more than nothing means the figure grew.</summary>
+        /// <summary>The adjustment of a figure by a factor in thousandths, halves away from nothing; positive when the figure grew.</summary>
         public static int Of(float figure, int factor)
         {
             if (figure <= 0f || Math.Abs(factor - 1000) < MacroCatalogue.AdjustQuiet)
@@ -621,10 +601,7 @@ namespace RealLifeOverhaul.Economy
             return whole > int.MaxValue / 2 ? int.MaxValue / 2 : whole < int.MinValue / 2 ? int.MinValue / 2 : (int)whole;
         }
 
-        /// <summary>
-        /// What is taken now of a charge and of what was carried, given the cash in hand; the rest is carried.
-        /// A charge of less than nothing (a refund) first pays off what was carried, and is returned as less than nothing.
-        /// </summary>
+        /// <summary>What is taken now of a charge and what was carried, never beyond the cash; a refund (negative) pays off the carried first.</summary>
         public static int Take(int charge, int cash, ref int carried)
         {
             long want = (long)Math.Max(0, carried) + charge;
@@ -638,12 +615,42 @@ namespace RealLifeOverhaul.Economy
             return take;
         }
 
+        /// <summary>A figure of the game's with the city's adjustment of it and what was carried from before: what a night takes.</summary>
+        public static float With(float figure, int factor, int carried)
+        {
+            return figure + Of(figure, factor) + Math.Max(0, carried);
+        }
+
         /// <summary>
-        /// A whole amount shared out by weights (the parts' own figures), whole money each and summing to the amount
-        /// exactly: each part its share cut towards nothing, and the units left over to the parts whose shares lost the
-        /// most in the cutting. Weights of opposite signs (a refund among charges) take shares of opposite signs. With
-        /// nothing to share by (no weights, or weights that come to nothing), it is all the first part's.
+        /// Each share booked through <paramref name="book"/> (its index and amount, positive paid to the player), the
+        /// refunds first, as the cash they bring may be what pays the charges beside them; what was booked in all.
         /// </summary>
+        public static int BookParts(int[] parts, Func<int, int, bool> book)
+        {
+            int booked = 0;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    int part = parts[i];
+                    if (part != 0 && (part > 0) == (pass == 0) && book(i, part))
+                    {
+                        booked += part;
+                    }
+                }
+            }
+            return booked;
+        }
+
+        /// <summary>A deduction lowered by what is left of a refund, never under nothing; what it could not take stays in <paramref name="left"/>.</summary>
+        public static float Lowered(float deduction, ref float left)
+        {
+            float take = Math.Min(Math.Max(0f, deduction), Math.Max(0f, left));
+            left -= take;
+            return deduction - take;
+        }
+
+        /// <summary>An amount shared out by weights in whole money that sums exactly, the units left over going to the shares cut most.</summary>
         public static int[] Split(int amount, float[] weights)
         {
             int n = weights != null ? weights.Length : 0;

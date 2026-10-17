@@ -124,19 +124,23 @@ The bank's rivals are the game's banks by their own rate (`BankTerms.House`), pr
   Balances move a share of a month's way to it each day; a run (confidence under 450 until it is back over 550) takes 3% of people's and 6% of businesses' savings a day.
   Defaults a year by kind, moved by the cycle (people) or `CityModel.Trouble` (business pressure, firms), inflation against the target, the council's business tax, grants, wage floor and rents, the adverse selection of a dear rate and each month's luck (seeded).
 
-  Arrears settle over a month: a part put right, the rest written off, a part of that coming back over two months (more, over four, through the courts, for 5% in costs).
+  Arrears settle over a month: a part put right, the rest written off, a part of that coming back evenly over two months (more, over four, through the courts, for 5% in costs).
   The capital ratio is the capital (with the fund at market prices) against the assets weighted by risk.
 
   Lending and buying stop at 13%, the regulator watches under 12.5%, under 10% is a breach with a month's deadline, a deadline missed is fined and the second closes the bank, as do no capital or a ratio under 5%, or savers it cannot pay after the fund is sold under the market.
   A closed bank is wound up: savers first, the regulator's tenth, the rest the player's.
+  The next bank pays in half as much capital again for each closure, and a dividend never takes the capital under what it was founded with (`FoundedLeast`).
 
   The balance sheet balances after every day (`OwnBankRules.Balanced`).
 
 - **The day** (`OwnBankDirector`, after the credit side's day, `EconomyDirector.AfterDay`).
   Each day ended since the last (a week at most) is run with the city now (`OwnBankGame.City`) and the market's quotes (`OwnBankBridges.Quotes`) and booked at the headquarters, dated on it (`OwnBankGame.BookDay`): takings (`TakingsKey`, in the statement's takings through `EconomyBridges.Takings`), savers' interest and losses as rows among its goods (`CostRow`), staff as salaries, all deductible; a fine is not.
+  Days the bank stood still (its option or the credit side off) are not run: the line written on standing down says so (`OwnBank.Still`), and the first start after it runs from that day on (`OwnBankRules.Resume`).
 
   Then the day's profit is kept in the bank's capital (`KeptKey`) or its loss met from it (`CoveredKey`), so the player's cash nets to nothing; neither is in any statement category.
   The licence (licensing fees) and capital in come from the player's cash; a dividend, a sale and what a winding up leaves go into it.
+  Founding and a sale go ahead only at the sums the game's question showed (a day may pass while it is open); if the game refuses the capital, the licence is given back.
+  The day the regulator's watch was last told is saved with the bank, so a ratio on the line is told once a month across loads.
   `GameBooks.Refresh(day - 1)` puts the day into the statement the game made for it.
 
 - **The rest of the mod** (`Wiring/OwnBankLinks`): integrity (Standing), the council's levers (Civic), the courts (`DebtClaims.Available`), the market's quotes (Markets), integrity lost for a fine (3) or a closure (8) and a little for a breach in the papers; the paper's pieces (`News.Extra`, chained after the company's; `LedgerCatalogue` kinds `_ob_news_*`, Business section).

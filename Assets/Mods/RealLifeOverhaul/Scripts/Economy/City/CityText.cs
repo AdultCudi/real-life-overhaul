@@ -4,24 +4,29 @@ using System.Globalization;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The city's economy in words: every figure it shows is written here, the same way in the Finance app, the paper,
-    /// the Planner and a notification. Every text is a key of en.json. Called when something is shown, never otherwise.
-    /// </summary>
+    /// <summary>The city's economy in words, the same in the Finance app, the paper, the Planner and a notification.</summary>
     public static class CityText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        public static readonly string[] StateKeys = { "reallife_macro_state_boom", "reallife_macro_state_steady", "reallife_macro_state_slowdown", "reallife_macro_state_recession" };
+        public static readonly string[] StateKeys =
+        {
+            "reallife_macro_state_boom", "reallife_macro_state_steady", "reallife_macro_state_slowdown", "reallife_macro_state_recession"
+        };
         public static readonly string[] KindKeys =
         {
-            "reallife_macro_kind_fresh", "reallife_macro_kind_groceries", "reallife_macro_kind_clothing", "reallife_macro_kind_electronics", "reallife_macro_kind_home", "reallife_macro_kind_general"
+            "reallife_macro_kind_fresh", "reallife_macro_kind_groceries", "reallife_macro_kind_clothing", "reallife_macro_kind_electronics",
+            "reallife_macro_kind_home", "reallife_macro_kind_general"
         };
         private static readonly string[] ReasonKeys =
         {
-            "reallife_macro_reason_hold", "reallife_macro_reason_prices_high", "reallife_macro_reason_prices_low", "reallife_macro_reason_slowdown", "reallife_macro_reason_recession", "reallife_macro_reason_normal"
+            "reallife_macro_reason_hold", "reallife_macro_reason_prices_high", "reallife_macro_reason_prices_low", "reallife_macro_reason_slowdown",
+            "reallife_macro_reason_recession", "reallife_macro_reason_normal"
         };
-        private static readonly string[] CycleNewsKeys = { "reallife_macro_news_cycle_boom", "reallife_macro_news_cycle_steady", "reallife_macro_news_cycle_slowdown", "reallife_macro_news_cycle_recession" };
+        private static readonly string[] CycleNewsKeys =
+        {
+            "reallife_macro_news_cycle_boom", "reallife_macro_news_cycle_steady", "reallife_macro_news_cycle_slowdown", "reallife_macro_news_cycle_recession"
+        };
 
         public static string State(CycleState state)
         {
@@ -106,13 +111,11 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a shortage or a glut does, in a sentence: "Wholesale prices for it rise by about 30% for 5 days."</summary>
         public static string ShockEffect(SupplyShock shock, int percent, int days)
         {
-            return FinanceText.T(shock == SupplyShock.Shortage ? "reallife_macro_shock_rise" : "reallife_macro_shock_fall", "percent", Math.Abs(percent).ToString(Inv), "days", days.ToString(Inv));
+            return FinanceText.T(shock == SupplyShock.Shortage ? "reallife_macro_shock_rise" : "reallife_macro_shock_fall",
+                "percent", Math.Abs(percent).ToString(Inv), "days", days.ToString(Inv));
         }
 
-        /// <summary>
-        /// One piece for the paper: its key and what fills it. A new dictionary each time (the paper keeps it).
-        /// <paramref name="district"/> gives a district's name as the game writes it.
-        /// </summary>
+        /// <summary>One piece for the paper: its key, and what fills it in a new dictionary, which the paper keeps.</summary>
         public static string News(in CityNews news, int rateNow, Func<string, string> district, out Dictionary<string, string> data)
         {
             data = new Dictionary<string, string>(4);

@@ -32,7 +32,8 @@ Economy/City/       the first four are game-free and compiled by EconomyCheck
   CityGame            THE GAME SIDE: districts from the game's neighbourhoods, the goods and their wholesale prices, the
                       player's businesses and their prices, the day's rent, wages and takings; CityBridges; CityShop
   CityText            the words: one way of writing each figure for the app, the paper, the Planner and a notification
-  CityEconomyDirector keeps it going and applies it: the day, the hour, the save, the tests
+  CityEconomyDirector keeps it going and applies it: the day, the hour, the save; its parts .Money (the rent, wages
+                      and takings adjustments), .Rivals, .News (notifications and the paper) and .Tests
 Economy/Finance/FinanceApp.City.cs   three lines on the Overview and the page "The city"
 Wiring/CityLinks.cs                  the calendar and the weather, business pressure (footfall, rivals), the paper, the Planner's rows
 ```
@@ -192,6 +193,8 @@ A charge under rent or salaries stays on those lines; a purchase at a wholesaler
 `CityGame.DayFigures` passes over the mod's own transactions, which are at today's prices already.
 
 Each of the city's lines is booked where the game's own figures were (`DayLine`: by address, by the category the statement keeps them under, and deductible where the game's tax deducts them), shared out by those figures in whole money that always sums to the line (`CityAdjust.Split`; a carried amount goes with the day it is taken).
+A line's refund shares are booked before its charges, so the cash they bring pays the charges beside them (`CityAdjust.BookParts`).
+The game's tax counts charges alone, so a refund of rent or wages lowers the deduction the game kept under the name of the charges it adjusts (`CityGame.LowerDeduction`).
 
 `GameBooks.Refresh` is called by the city once its lines are booked and again when the mod's day is done.
 It sums the day's statement as the game sums it: a business's four lines by category, and its takings as the game's sales and the city's line on them.

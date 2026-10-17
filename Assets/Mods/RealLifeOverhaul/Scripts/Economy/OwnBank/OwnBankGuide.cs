@@ -3,12 +3,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The bank's entry in the mod's feature list, and the figures the Guide's page "Your own bank" prints: every {name} in
-    /// its text is filled from <see cref="OwnBankCatalogue"/> and <see cref="OwnBankRules"/> here, so the page can never
-    /// say anything the rules do not do. Called once, when the feature list is built (Meta/FeatureList); each figure is
-    /// worked out when the page is opened.
-    /// </summary>
+    /// <summary>The bank's feature entry, and its Guide page's figures, filled from the catalogue and the rules when the page opens.</summary>
     public static class OwnBankGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -19,7 +14,8 @@ namespace RealLifeOverhaul.Economy
                 .About("reallife_guide_economy_ownbank_about").Help("reallife_guide_economy_ownbank")
                 .Owns(Settings.EconomyBankId)
                 .Data(OwnBankStore.Key, OwnBankDirector.TestKey)
-                .Test("reallife_ob_test_found", "reallife_ob_test_month", "reallife_ob_test_hard", "reallife_ob_test_run", "reallife_ob_test_deadline", "reallife_ob_test_fund", "reallife_ob_test_back")
+                .Test("reallife_ob_test_found", "reallife_ob_test_month", "reallife_ob_test_hard", "reallife_ob_test_run", "reallife_ob_test_deadline", "reallife_ob_test_fund",
+                    "reallife_ob_test_back")
                 .Fact("ob_licence", () => Money(OwnBankRules.Licence(Prices.Level, EndScaleGuide.Scale)))
                 .Fact("ob_capital", () => Money(OwnBankRules.CapitalLeast(Prices.Level, 0, EndScaleGuide.Scale)))
                 .Fact("ob_again_capital", () => Money(OwnBankRules.CapitalLeast(Prices.Level, 1, EndScaleGuide.Scale)))
@@ -59,7 +55,7 @@ namespace RealLifeOverhaul.Economy
                 .Fact("ob_sale_years", () => Whole(OwnBankCatalogue.SaleYears))
                 .Fact("ob_staff", () => Money(OwnBankRules.At(OwnBankCatalogue.StaffDayCents, Prices.Level)))
                 .Cleanup(() => OwnBankDirector.Instance?.StopAll(), -3)
-                .ResetData(() => OwnBankDirector.Instance?.Forget());   // the director opens the feature afresh from the (now empty) save on its next second
+                .ResetData(() => OwnBankDirector.Instance?.Forget());   // the director reads the now empty save afresh on its next second
         }
 
         private static string Money(long cents)

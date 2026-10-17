@@ -6,25 +6,9 @@ using System.Text;
 namespace RealLifeOverhaul.Economy.Ventures
 {
     /// <summary>
-    /// Ventures in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=1~h:...~i:...~o:...~p:...~d:...~c:...~s:...
-    ///
-    /// Parts are divided by '~' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: the numbers of <see cref="VenturesFile"/>, in the order of <see cref="Write"/>
-    ///   i  the investors: id|kind|temperament|first name|last name|sectors liked|smallest sum|largest sum|diligence|closed until|last approached
-    ///   o  the offers open (four at most): thirteen numbers, then the business's key, its name and, for a business not yet open, its type
-    ///   p  money promised for a business not yet open (three at most): eleven numbers, then the type
-    ///   d  the deals (eight at most): twenty-four numbers, then the business's key and its name
-    ///   c  the companies (twelve): id|sector|rival|name index|price|ordinary move|dividend|last move|its cause, what it is
-    ///      worth, a rival's name, and its last thirty closing prices divided by commas
-    ///   s  the shares held: company|shares|cost|dividends received|test
-    ///
-    /// The line is capped by those counts: at its fullest it is a few kilobytes. A NEWER VERSION adds fields at the end
-    /// of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does not, so
-    /// a save written by a later version still loads. A change that cannot be read that way raises
-    /// <see cref="Version"/> and gets a step in <see cref="Upgrade"/>. A line that cannot be read at all is left
-    /// alone and Ventures starts afresh for the save.
+    /// Ventures in the save, game-free: one line of modData, parts by '~' (h, i, o, p, d, c, s), records by ';', fields by '|'
+    /// in the order of <see cref="Write"/>. A later version adds fields or parts, which this reader skips; any other change
+    /// raises <see cref="Version"/> and gets a step in <see cref="Upgrade"/>.
     /// </summary>
     public static class VenturesStore
     {
@@ -44,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             try
             {
-                VenturesFile file = SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+                VenturesFile file = SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it was
                 if (file != null)
                 {
                     Upgrade(file, version);
@@ -66,7 +50,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        /// <summary>What an older version's file needs before this version uses it. There is no older version yet.</summary>
+        /// <summary>What an older version's file needs before this one uses it; there is no older version.</summary>
         private static void Upgrade(VenturesFile file, int from)
         {
             file.NextId = Math.Max(1, file.NextId);
@@ -76,7 +60,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             var t = new StringBuilder(2048);
             t.Append("v=").Append(Version).Append("~h:");
-            // (while the test tools have moved the market, the save keeps the market as it stood before them)
+            // While a test has moved the market, the save keeps the market as it was before.
             List<Company> companies = f.Backup != null ? f.Backup.Companies : f.Companies;
             Join(t, f.Seed, f.StartDay, f.Reputation, f.NextId, f.Pitches, f.OfferDay, f.SettledDay, f.Backup != null ? f.Backup.Steps : f.MarketSteps,
                 f.Backup != null ? f.Backup.Day : f.MarketDay, f.DividendsTotal, f.PaidOutTotal,
@@ -278,7 +262,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                         break;
                 }
             }
-            // What points at something that is not there is dropped: a share in no company, an offer or a deal with no investor.
+            // Whatever points at something not there is dropped: a share in no company, an offer or a deal with no investor.
             f.Holdings.RemoveAll(h => f.Company(h.CompanyId) == null);
             f.Offers.RemoveAll(o => f.Investor(o.InvestorId) == null);
             f.Pledges.RemoveAll(p => f.Investor(p.InvestorId) == null);

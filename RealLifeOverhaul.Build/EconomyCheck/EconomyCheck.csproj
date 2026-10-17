@@ -91,7 +91,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesCatalogue.cs" Link="Mod\VenturesCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesModel.cs" Link="Mod\VenturesModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Cast.cs" Link="Mod\Cast.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Deals.cs" Link="Mod\Deals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\OfferRules.cs" Link="Mod\OfferRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\DealRules.cs" Link="Mod\DealRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Pitch.cs" Link="Mod\Pitch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Market.cs" Link="Mod\Market.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesStore.cs" Link="Mod\VenturesStore.cs" />
@@ -121,8 +122,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateBalance.cs" Link="Mod\EstateBalance.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateStore.cs" Link="Mod\EstateStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineCatalogue.cs" Link="Mod\OnlineCatalogue.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineModel.cs" Link="Mod\OnlineModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineState.cs" Link="Mod\OnlineState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineRules.cs" Link="Mod\OnlineRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineRules.Delivery.cs" Link="Mod\OnlineRules.Delivery.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineStore.cs" Link="Mod\OnlineStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesCatalogue.cs" Link="Mod\ServicesCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesState.cs" Link="Mod\ServicesState.cs" />
@@ -314,8 +316,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitSearch.cs" Link="Mod\TransitSearch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RouteSearch.cs" Link="Mod\RouteSearch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankCatalogue.cs" Link="Mod\OwnBankCatalogue.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankModel.cs" Link="Mod\OwnBankModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBank.cs" Link="Mod\OwnBank.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.Day.cs" Link="Mod\OwnBankRules.Day.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />
@@ -337,6 +340,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RedrawRules.cs" Link="Mod\RedrawRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LookupRules.cs" Link="Mod\LookupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\FinanceTables.cs" Link="Mod\FinanceTables.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerPageStamp.cs" Link="Mod\LedgerPageStamp.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PhotoThumbs.cs" Link="Mod\PhotoThumbs.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\PhotoStoreRules.cs" Link="Mod\PhotoStoreRules.cs" />

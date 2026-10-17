@@ -5,13 +5,13 @@ using System.Text;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>Something that happened in the city that a share price answers to. The numbers are in saves (a company's last cause).</summary>
+    /// <summary>News a share price answers to. Saved as a number (a company's last cause).</summary>
     public enum MarketCause
     {
         None = 0, Storm, Rain, HeatWave, ColdSnap, Ice, StreetMarket, Parade, Protest, FilmShoot, Crime, BreakIn, Accident, Policy, Election, RivalMove, BankRate, Count
     }
 
-    /// <summary>One piece of the day's news, as the bridges in Scripts/Wiring hand it over.</summary>
+    /// <summary>One piece of the day's news.</summary>
     public struct MarketNews
     {
         public MarketCause Cause;
@@ -20,26 +20,17 @@ namespace RealLifeOverhaul.Economy.Ventures
         public string Company;   // a rival's move: the name of the rival that made it
     }
 
-    /// <summary>The market as it stood before the test tools moved it, so that they can put it back and a save never keeps a test's prices.</summary>
+    /// <summary>The market before a test moved it, so it can be put back and a save never keeps a test's prices.</summary>
     public sealed class MarketBackup
     {
         public readonly List<Company> Companies = new List<Company>(VenturesCatalogue.Companies);
         public int Steps, Day;
     }
 
+    /// <summary>How a trade went.</summary>
     public enum TradeAnswer { Done, NoCash, OverLimit, NoShares, Nothing }
 
-    /// <summary>
-    /// The city's stock market. Game-free. A price moves once a day:
-    ///
-    ///     move = drift + the company's ordinary move x a seeded bell-shaped number + pull back towards what the
-    ///            company is worth + the day's news for its sector (capped) + the city's climate
-    ///
-    /// What a company is worth rises by the drift each day, so prices follow it over the years and wander about it
-    /// in between. The news of one day can move a company by 1.5% at most, less than the 2% it costs to sell and buy
-    /// back, so knowing the news before the market moves is worth nothing. Dividends are paid every fifteen market
-    /// days on the price of that day. Every purchase and sale costs 1%, five at least.
-    /// </summary>
+    /// <summary>Ventures' old stock market, game-free: what a saved holding is worth, and the model the offline checks run.</summary>
     public static class Market
     {
         public const int RivalMoveBp = 60;       // a rival that makes a move: its own shares
@@ -84,15 +75,15 @@ namespace RealLifeOverhaul.Economy.Ventures
             "reallife_ven_cause_rate"
         };
 
-        /// <summary>What one piece of news does to one company, in basis points, before the cap.</summary>
-        public static int Effect(in MarketNews news, Company company)
+        // What one piece of news does to one company, in basis points, before the cap.
+        private static int Effect(in MarketNews news, Company company)
         {
             int cause = (int)news.Cause;
             if (cause <= 0 || cause >= Effects.Length)
             {
                 return 0;
             }
-            // (a rival is listed under a company name made from its own: the news names the rival)
+            // A rival is listed under a name made from its own; the news names the rival.
             if (news.Cause == MarketCause.RivalMove && company.Rival && !string.IsNullOrEmpty(news.Company) && company.RivalName.IndexOf(news.Company, StringComparison.Ordinal) >= 0)
             {
                 return RivalMoveBp;
@@ -101,7 +92,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return row == null ? 0 : row[(int)company.Sector] * (news.Scale == 0 ? 100 : news.Scale) / 100;
         }
 
-        /// <summary>The day's news for one company: every piece added up and held to the cap. Says which piece moved it most.</summary>
+        /// <summary>The day's news for one company, added up and held to the cap, and the cause that moved it most.</summary>
         public static int NewsFor(Company company, List<MarketNews> news, out int cause)
         {
             int sum = 0, strongest = 0;
@@ -119,7 +110,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return Math.Max(-VenturesCatalogue.NewsCapBp, Math.Min(VenturesCatalogue.NewsCapBp, sum));
         }
 
-        // A bell-shaped number about nothing, at most 3.5 either way: four seeded numbers added up.
+        // A bell-shaped number around 0, at most 3.5 either way: four seeded numbers added up.
         private static double Bell(int seed, int step, int company)
         {
             double sum = 0.0;
@@ -130,7 +121,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return (sum - 2.0) * 1.7320508;
         }
 
-        /// <summary>One day of the market. The same for the same seed, day of the market and news, whatever else has happened.</summary>
+        /// <summary>One day of the market: the same for the same seed, market day and news, whatever else has happened.</summary>
         public static void Step(VenturesFile file, int day, int phase, List<MarketNews> news, StringBuilder log)
         {
             file.MarketSteps++;
@@ -157,14 +148,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // ---------------------------------------------------------------- dividends
-
         public static bool DividendDue(VenturesFile file)
         {
             return file.MarketSteps > 0 && file.MarketSteps % VenturesCatalogue.DividendEveryDays == 0;
         }
 
-        /// <summary>The market days until the next dividend.</summary>
         public static int DaysToDividend(VenturesFile file)
         {
             return VenturesCatalogue.DividendEveryDays - file.MarketSteps % VenturesCatalogue.DividendEveryDays;
@@ -175,7 +163,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             return (int)((long)shares * company.PriceCents * company.YieldBp / 1000000L);
         }
 
-        /// <summary>Pays every holding its dividend. Returns the total.</summary>
         public static int PayDividends(VenturesFile file, IWallet wallet)
         {
             int total = 0;
@@ -194,8 +181,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             file.DividendsTotal += total;
             return total;
         }
-
-        // ---------------------------------------------------------------- trading
 
         /// <summary>What so many shares fetch: whole units, rounded down.</summary>
         public static int Value(Company company, int shares)
@@ -291,9 +276,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return worth;
         }
 
-        // ---------------------------------------------------------------- for the test tools
-
-        public static Company Copy(Company c)
+        private static Company Copy(Company c)
         {
             var copy = new Company
             {

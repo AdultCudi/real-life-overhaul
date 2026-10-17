@@ -635,7 +635,7 @@ internal static partial class Program
         string line = OwnBankStore.Write(b);
         OwnBank back = OwnBankStore.Read(line, out _);
         Check(back != null && back.Closures == 2 && back.State == OwnBankState.Closed && back.EndDay == 400 && OwnBankStore.Write(back) == line, "own bank, again: the closures are kept in the save");
-        string old = line.Replace("|2^d:", "^d:");
+        string old = line.Replace("|2|" + int.MinValue + "|0^d:", "^d:");   // without the closures and the fields after them
         OwnBank older = OwnBankStore.Read(old, out _);
         Check(old != line && older != null && older.Closures == 1 && OwnBankRules.AgainWhy(older, 400 + BankYear - 1, BankYear, false, 50) == wait
               && OwnBankRules.AgainWhy(older, 400 + BankYear, BankYear, false, 50) == null && OwnBankRules.CapitalLeast(c.Level, older.Closures) == OwnBankRules.CapitalLeast(c.Level, 1),

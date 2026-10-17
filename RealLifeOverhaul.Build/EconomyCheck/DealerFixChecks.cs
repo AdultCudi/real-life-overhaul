@@ -116,7 +116,7 @@ internal static partial class Program
     {
         string director = EconomySource(@"Dealer\DealerDirector.cs"), clock = EconomySource(@"Dealer\DealerDirector.Clock.cs"), actions = EconomySource(@"Dealer\DealerDirector.Actions.cs");
         string business = EconomySource(@"Dealer\DealerDirector.Business.cs"), bank = EconomySource(@"OwnBank\OwnBankDirector.cs");
-        Check(director.Contains("DealerRules.TellDue(Now, _toldHour)") && bank.Contains("OwnBankRules.WatchDue(day, _watchTold, city.MonthDays)"), "dealer fix: both notices ask their rule whether they are due");
+        Check(director.Contains("DealerRules.TellDue(Now, _toldHour)") && bank.Contains("OwnBankRules.WatchDue(day, _bank.WatchTold, city.MonthDays)"), "dealer fix: both notices ask their rule whether they are due");
         string startUp = MemberText(director, "private void StartUp("), book = MemberText(clock, "internal void Book(");
         Check(startUp.Contains("DealerRules.CloseDay(_state, _state.Yards[y], save.Day);") && book.Contains("int day = _working >= 0 ? _working : Save.Day;") && book.Contains("DealerRules.CloseDay(_state, y, day);")
               && MemberText(clock, "private void StepHour(").Contains("_working = day;"),

@@ -3,26 +3,23 @@ using RealLifeOverhaul.GameUi;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Web shop app's tables, all declared in this one place as data (GameUi.TableSpec): for each tab and page its
-    /// columns, how each sorts, which are summed in the totals line, what its rows can be filtered by, the order it
-    /// opens in and the sentence shown when a filter leaves nothing. The numbers beside each are the columns, for
-    /// whoever writes the rows. Only money is summed: the kit writes every total as money, so counts are added up in the
-    /// white box instead. Read when a tab is written; nothing runs otherwise.
+    /// The Web shop app's tables as data (GameUi.TableSpec): columns, sorting, totals, filters and order. Only money is
+    /// summed, as the kit writes every total as money; counts are added up in the white box instead.
     /// </summary>
     public static class OnlineColumns
     {
-        // ---- whether a business has an online shop (the filter of the Shops tab)
+        // The Shops tab's filter.
         public const int HasShop = 0, NoShop = 1;
         private static readonly string[] ShopKinds = { "reallife_online_kind_has", "reallife_online_kind_none" };
 
-        // ---- where an order stands (the first filter of the Orders tab); an order past its promise is late whatever its stage
+        // The Orders tab's first filter. An order past its promise is late whatever its stage.
         public const int Waiting = 0, Packed = 1, Out = 2, Late = 3, ComingBack = 4;
         private static readonly string[] OrderKinds =
         {
             "reallife_online_stage_waiting", "reallife_online_stage_picked", "reallife_online_stage_out", "reallife_online_kind_late", "reallife_online_kind_back"
         };
 
-        // ---- the two filters of the Catalogue tab
+        // The Catalogue tab's two filters.
         public const int InStock = 0, OutOfStock = 1;
         private static readonly string[] StockKinds = { "reallife_online_kind_in_stock", "reallife_online_kind_out_stock" };
         public const int Offered = 0, NotOffered = 1;

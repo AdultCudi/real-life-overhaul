@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>Takes units of a product out of the real stock of the building. Answers how many it got and, in <paramref name="cost"/>, what they cost the shop in cents.</summary>
+    /// <summary>Takes units out of the building's real stock: how many it got, and in <paramref name="cost"/> what they cost the shop in cents.</summary>
     public delegate int StockTake(string item, int wanted, out int cost);
 
-    /// <summary>Puts returned units back into the building's stock at their cost. Answers how many found room.</summary>
+    /// <summary>Puts returned units back into the building's stock at their cost: how many found room.</summary>
     public delegate int StockBack(string item, int units, int unitCost);
 
     /// <summary>What one hour did at one site, for the log.</summary>
@@ -16,23 +16,14 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The online shops by rule: how many orders come in an hour and what is in them, picking, the rounds of the
-    /// player's vans and the courier, lateness, the rating, returns and the day's book. Game-free: stock is reached
-    /// through two delegates, and every draw is a function of the save's seed, the site and the hour, so the same save
-    /// gives the same orders whenever and in whatever order the hours are worked through.
-    ///
-    /// Cost: one hour of one site is a handful of passes over its open orders (80 at most) and its catalogue (12 at
-    /// most), with no allocation (orders are taken from and given back to a pool). Nothing here is ever called per
-    /// frame: the director calls <see cref="Hour"/> on the game's hour event.
+    /// The online shops by rule, game-free: demand, orders, the hour and the day (picking and delivery are in
+    /// OnlineRules.Delivery). Every draw is a function of the seed, the site and the hour, so a save gives the same
+    /// orders however its hours are worked through. An hour of a site is a few passes with no allocation.
     /// </summary>
-    public static class OnlineRules
+    public static partial class OnlineRules
     {
         private static readonly Stack<WebOrder> Pool = new Stack<WebOrder>(64);
-        private static readonly Stack<WebReturn> ReturnPool = new Stack<WebReturn>(16);
 
-        // ---------------------------------------------------------------- draws
-
-        /// <summary>A number from the seed and three more, the same every time.</summary>
         public static uint Mix(int seed, int a, int b, int c)
         {
             unchecked
@@ -55,7 +46,6 @@ namespace RealLifeOverhaul.Economy
             return below <= 1 ? 0 : (int)(Mix(seed, a, b, c) % (uint)below);
         }
 
-        /// <summary>A number for a site that is always the same for it.</summary>
         public static int Key(string place)
         {
             unchecked
@@ -69,8 +59,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- demand
-
         /// <summary>What the width of the catalogue does: one product brings four tenths of the orders eight do.</summary>
         public static int Breadth(int lines)
         {
@@ -81,17 +69,13 @@ namespace RealLifeOverhaul.Economy
             return lines >= OnlineCatalogue.BreadthLines ? 1000 : OnlineCatalogue.BreadthLeast + (1000 - OnlineCatalogue.BreadthLeast) * (lines - 1) / (OnlineCatalogue.BreadthLines - 1);
         }
 
-        /// <summary>The game's own demand for the catalogue's products over all districts (0 to 100), as a factor.</summary>
+        /// <summary>The game's own demand for the catalogue (0 to 100) as a factor.</summary>
         public static int NeedFactor(int need)
         {
             return OnlineCatalogue.Clamp(need * 1000 / OnlineCatalogue.NeedMiddle, OnlineCatalogue.NeedLeast, OnlineCatalogue.NeedMost);
         }
 
-        /// <summary>
-        /// What a price does to sales, by its ratio to the going price in thousandths: the inverse square (ten per cent
-        /// dearer sells a sixth less, ten per cent cheaper a quarter more), no more than double however cheap, and
-        /// nothing at all from sixty per cent over the going price.
-        /// </summary>
+        /// <summary>What a price does to sales, by its ratio to the going price in thousandths: the inverse square, capped, and nothing from the ceiling up.</summary>
         public static int PriceFactor(int ratio)
         {
             if (ratio <= 0 || ratio >= OnlineCatalogue.PriceCeiling)
@@ -107,7 +91,7 @@ namespace RealLifeOverhaul.Economy
             return OnlineCatalogue.StarsFloorFactor + OnlineCatalogue.Clamp(stars, OnlineCatalogue.StarsLeast, OnlineCatalogue.StarsMost) / 5;
         }
 
-        /// <summary>Advertising online (per cent) and half of a campaign that runs at the business itself.</summary>
+        /// <summary>Advertising online (per cent) and half of a campaign at the business itself.</summary>
         public static int MarketingFactor(int ads, int campaign)
         {
             return 1000 + 10 * OnlineCatalogue.Clamp(ads, 0, OnlineCatalogue.AdMost) + 10 * OnlineCatalogue.Clamp(campaign, 0, CompanyCatalogue.CampaignMost) * OnlineCatalogue.CampaignShare / 1000;
@@ -119,11 +103,7 @@ namespace RealLifeOverhaul.Economy
             return 1000 * 1000 / (1000 + OnlineCatalogue.CrowdStep * (Math.Max(1, shops) - 1));
         }
 
-        /// <summary>
-        /// The orders a site takes in a day, in thousandths of an order: its quality's figure by every factor, and
-        /// never more than the bound. Each factor only ever moves it its own way: a better site, a wider catalogue,
-        /// more demand, a lower price, a sooner promise, a better rating and more marketing never give fewer orders.
-        /// </summary>
+        /// <summary>Orders a day in thousandths: the quality's figure by every factor, never over the bound.</summary>
         public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops)
         {
             int q = OnlineCatalogue.Quality(quality);
@@ -141,11 +121,7 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(v, OnlineCatalogue.OrdersMost[q] * 1000L);
         }
 
-        /// <summary>
-        /// Works a site's day out from what was read into <paramref name="site"/> (prices, the going prices, the
-        /// game's demand by district): each product's price factor, each district's share of the orders, and the
-        /// orders a day. A site whose hosting is unpaid, or with nothing on offer that anybody would buy, takes none.
-        /// </summary>
+        /// <summary>Works out a site's price factors, district shares and orders a day from what was read into <paramref name="site"/>.</summary>
         public static void Plan(WebShop shop, Site site, int day, int campaign, int cycle, int season, int shops)
         {
             int lines = Math.Min(shop.Lines.Count, site.Lines), districts = site.Districts, on = 0;
@@ -173,7 +149,7 @@ namespace RealLifeOverhaul.Economy
             }
             for (int l = 0; l < lines; l++)
             {
-                // What each district wants of each product at its price, worked out once here so that drawing an order only adds up; nothing of one nobody would buy.
+                // Worked out once here so that drawing an order only adds up.
                 for (int d = 0; d < districts; d++)
                 {
                     site.Want[l * districts + d] = site.Factor[l] <= 0 ? 0 : site.Demand[l * districts + d] * site.Factor[l] / 1000 + 1;
@@ -189,8 +165,6 @@ namespace RealLifeOverhaul.Economy
             site.Crowd = shops;
             site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops);
         }
-
-        // ---------------------------------------------------------------- orders
 
         public static WebOrder NewOrder()
         {
@@ -214,11 +188,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        public static WebReturn NewReturn()
-        {
-            return ReturnPool.Count > 0 ? ReturnPool.Pop() : new WebReturn();
-        }
-
         /// <summary>The hour an order placed at an hour is promised for.</summary>
         public static int Due(int promise, int hour)
         {
@@ -237,10 +206,7 @@ namespace RealLifeOverhaul.Economy
             return expected / 1000 + (Roll(seed, key, hour, 1, 1000) < expected % 1000 ? 1 : 0);
         }
 
-        /// <summary>
-        /// The orders of an hour come in. No more are taken in a day than the site's bound, and none while the site
-        /// already holds as many open orders as it can (those are turned away and counted).
-        /// </summary>
+        /// <summary>The hour's orders come in, up to the day's bound; while the site holds all it can, they are turned away.</summary>
         public static int Arrive(OnlineState s, WebShop shop, Site site, int hour)
         {
             if (site.PerDay <= 0 || shop.Offline)
@@ -268,10 +234,7 @@ namespace RealLifeOverhaul.Economy
             return came;
         }
 
-        /// <summary>
-        /// One order: a district by the districts' shares, one to three products by what that district wants of each
-        /// at its price, and a few of each (fewer of a dear one). Null with nothing on offer that sells.
-        /// </summary>
+        /// <summary>One order: a district by its share, one to three products by what it wants at their price, fewer of a dear one. Null with nothing that sells.</summary>
         public static WebOrder Draw(OnlineState s, WebShop shop, Site site, int hour, int key, int k)
         {
             int lines = Math.Min(shop.Lines.Count, site.Lines), districts = site.Districts, sellable = 0;
@@ -362,366 +325,17 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // What a district wants of a product at its price (OnlineRules.Plan).
         private static int Wanted(Site site, int line, int district)
         {
             return site.Want[line * site.Districts + district];
         }
 
-        // ---------------------------------------------------------------- picking
-
-        /// <summary>
-        /// The staff on shift pick, the oldest order first, six orders each in the hour. What is picked leaves the real
-        /// stock and is charged; what is not there is left out (a short order), and an order with nothing of it there
-        /// is cancelled. With a courier a picked order is collected at once; with the player's own vans it waits for a
-        /// round. An order nobody picked by a day after its promise is given up by the customer.
-        /// </summary>
-        public static void Pick(WebShop shop, Site site, int hour, int pickers, StockTake take, ref HourCount count)
-        {
-            int room = Math.Max(0, pickers) * OnlineCatalogue.PickPerHour;
-            bool left = false;
-            DayBook book = shop.Today;
-            for (int i = 0; i < shop.Orders.Count; i++)
-            {
-                WebOrder o = shop.Orders[i];
-                if (o.Stage != OrderStage.Waiting)
-                {
-                    continue;
-                }
-                if (hour > o.Due + OnlineCatalogue.WaitMost)
-                {
-                    book.Cancelled++;
-                    count.Cancelled++;
-                    Rate(shop, OnlineCatalogue.ScoreLost, o.Tilt);
-                    Drop(shop, i--);
-                    continue;
-                }
-                if (room <= 0)
-                {
-                    left = true;
-                    continue;
-                }
-                room--;
-                if (!PickOrder(shop, site, hour, i, take, ref count))
-                {
-                    i--;
-                }
-            }
-            shop.Idle = left && pickers <= 0 ? shop.Idle + 1 : 0;
-        }
-
-        /// <summary>
-        /// One order is picked: each product is taken out of the real stock, as much of it as is there; the order is
-        /// charged for what was picked and handed to the courier or set by for a van. False if nothing of it was
-        /// there: it is cancelled, marked against the rating and dropped.
-        /// </summary>
-        public static bool PickOrder(WebShop shop, Site site, int hour, int index, StockTake take, ref HourCount count)
-        {
-            WebOrder o = shop.Orders[index];
-            DayBook book = shop.Today;
-            int total = 0, units = 0, asked = 0, goods = 0;
-            for (int j = 0; j < o.Count; j++)
-            {
-                WebLine line = o.Line[j] >= 0 && o.Line[j] < shop.Lines.Count ? shop.Lines[o.Line[j]] : null;
-                int cost = 0;
-                int got = line != null && take != null ? OnlineCatalogue.Clamp(take(line.Item, o.Qty[j], out cost), 0, o.Qty[j]) : 0;
-                cost = got > 0 ? Math.Max(0, cost) : 0;
-                o.Got[j] = got;
-                o.Paid[j] = cost;
-                asked += o.Qty[j];
-                units += got;
-                total += got * o.Unit[j];
-                goods += cost;
-                if (line != null)
-                {
-                    line.Units += got;
-                    line.Takings += got * o.Unit[j];
-                    line.Cost += cost;
-                    line.Missed += o.Qty[j] - got;
-                    line.BookTakings += got * o.Unit[j];
-                    line.BookCost += cost;
-                }
-            }
-            if (units == 0)
-            {
-                book.Cancelled++;
-                count.Cancelled++;
-                Rate(shop, OnlineCatalogue.ScoreLost, o.Tilt);
-                Drop(shop, index);
-                return false;
-            }
-            o.Short = units < asked;
-            o.Total = total;
-            book.Short += o.Short ? 1 : 0;
-            book.Picked++;
-            book.Units += units;
-            book.Takings += total;
-            book.Goods += goods;
-            count.Picked++;
-            if (shop.Way == OnlineCatalogue.Courier)
-            {
-                int metres = Metres(site, o.District);
-                o.Stage = OrderStage.Out;
-                o.Arrive = hour + CourierTime(metres);
-                book.Delivery += CourierFee(metres);
-                count.Sent++;
-            }
-            else
-            {
-                o.Stage = OrderStage.Picked;
-            }
-            return true;
-        }
-
-        private static void Drop(WebShop shop, int index)
-        {
-            Recycle(shop.Orders[index]);
-            shop.Orders.RemoveAt(index);
-        }
-
-        private static int Metres(Site site, int district)
-        {
-            return district >= 0 && district < site.Districts ? Math.Max(0, site.Metres[district]) : 0;
-        }
-
-        // ---------------------------------------------------------------- delivery
-
-        /// <summary>What a courier charges for a parcel, cents: a base and so much a kilometre of road.</summary>
-        public static int CourierFee(int metres)
-        {
-            // (The catalogue's cents are the start's: at the city's price level, Core/Prices.)
-            return CompanyCatalogue.AtPrices(OnlineCatalogue.CourierBase + (int)((long)OnlineCatalogue.CourierPerKm * Math.Max(0, metres) / 1000), Prices.Level);
-        }
-
-        /// <summary>Hours from collection to the door.</summary>
-        public static int CourierTime(int metres)
-        {
-            return OnlineCatalogue.CourierHours + Math.Max(0, metres) / OnlineCatalogue.CourierMetresPerHour;
-        }
-
-        /// <summary>Minutes a van takes one way.</summary>
-        public static int Travel(int metres)
-        {
-            return Math.Max(1, (int)((long)Math.Max(0, metres) * 60 / OnlineCatalogue.VanMetresPerHour));
-        }
-
-        /// <summary>What a round there and back costs in fuel and wear, cents.</summary>
-        public static int VanCost(int metres)
-        {
-            return CompanyCatalogue.AtPrices((int)(2L * Math.Max(0, metres) * OnlineCatalogue.VanCostPerKm / 1000), Prices.Level);
-        }
-
-        /// <summary>
-        /// The player's vans take rounds: each van that is back, in the hours rounds leave, takes the packed order
-        /// promised soonest and with it the others for the same district, as many as it holds and as its driver's day
-        /// still stretches to. The van is away for loading, the way there and back and five minutes a door.
-        /// </summary>
-        public static void Rounds(OnlineState s, WebShop shop, Site site, int hour, ref HourCount count)
-        {
-            int h = hour % 24, day = hour / 24, now = hour * 60;
-            if (shop.Way != OnlineCatalogue.OwnVans || h < OnlineCatalogue.DriveFrom || h >= OnlineCatalogue.DriveUntil)
-            {
-                return;
-            }
-            for (int v = 0; v < s.Vans.Count; v++)
-            {
-                Van van = s.Vans[v];
-                if (van.Day != day)
-                {
-                    van.Day = day;
-                    van.Used = 0;
-                }
-                if (!van.Ready || van.Capacity <= 0 || van.FreeAt > now)
-                {
-                    continue;
-                }
-                int first = -1;
-                for (int i = 0; i < shop.Orders.Count; i++)
-                {
-                    if (shop.Orders[i].Stage == OrderStage.Picked && (first < 0 || shop.Orders[i].Due < shop.Orders[first].Due))
-                    {
-                        first = i;
-                    }
-                }
-                if (first < 0)
-                {
-                    return;   // nothing is packed
-                }
-                int district = shop.Orders[first].District, metres = Metres(site, district), travel = Travel(metres);
-                int room = Math.Min(van.Capacity, (OnlineCatalogue.DriverMinutes - van.Used - OnlineCatalogue.LoadMinutes - 2 * travel) / OnlineCatalogue.StopMinutes);
-                if (room <= 0)
-                {
-                    continue;   // what is left of this driver's day does not stretch to that district
-                }
-                int taken = 0;
-                Send(shop.Orders[first], now, travel, ++taken);
-                for (int i = 0; i < shop.Orders.Count && taken < room; i++)
-                {
-                    WebOrder o = shop.Orders[i];
-                    if (o.Stage == OrderStage.Picked && o.District == district)
-                    {
-                        Send(o, now, travel, ++taken);
-                    }
-                }
-                int minutes = OnlineCatalogue.LoadMinutes + 2 * travel + OnlineCatalogue.StopMinutes * taken;
-                van.FreeAt = now + minutes;
-                van.Used += minutes;
-                shop.Today.Delivery += VanCost(metres);
-                count.Sent += taken;
-            }
-        }
-
-        private static void Send(WebOrder o, int now, int travel, int door)
-        {
-            o.Stage = OrderStage.Out;
-            o.Arrive = (now + OnlineCatalogue.LoadMinutes + travel + OnlineCatalogue.StopMinutes * door + 59) / 60;
-        }
-
-        /// <summary>
-        /// Orders reach their doors. One that comes after its promise has a quarter of its value paid back; one that
-        /// was packed and never taken by a van is refunded in full a day after its promise. Each moves the rating, and
-        /// a share of the delivered ones, by the kind of goods, will come back.
-        /// </summary>
-        public static void Deliver(OnlineState s, WebShop shop, Site site, int hour, ref HourCount count)
-        {
-            DayBook book = shop.Today;
-            for (int i = 0; i < shop.Orders.Count; i++)
-            {
-                WebOrder o = shop.Orders[i];
-                if (o.Stage == OrderStage.Out && o.Arrive <= hour)
-                {
-                    bool late = o.Arrive > o.Due;
-                    if (late)
-                    {
-                        int refund = OnlineCatalogue.Share(o.Total, OnlineCatalogue.LateRefund);
-                        book.Refunds += refund;
-                        shop.BookRefunds += refund;
-                        book.Late++;
-                        count.Late++;
-                    }
-                    else
-                    {
-                        book.OnTime++;
-                    }
-                    count.Arrived++;
-                    Rate(shop, late ? OnlineCatalogue.ScoreLate : o.Short ? OnlineCatalogue.ScoreShort : OnlineCatalogue.ScoreGood, o.Tilt);
-                    ComesBack(s, shop, site, o, hour / 24, late);
-                    Drop(shop, i--);
-                }
-                else if (o.Stage == OrderStage.Picked && hour > o.Due + OnlineCatalogue.MissingHours)
-                {
-                    book.Refunds += o.Total;
-                    shop.BookRefunds += o.Total;
-                    book.Missing++;
-                    count.Missing++;
-                    Rate(shop, OnlineCatalogue.ScoreLost, o.Tilt);
-                    Drop(shop, i--);
-                }
-            }
-        }
-
-        // Whether a delivered order will be sent back: a draw from the order's own number against the share for the kind of goods. The first product of it comes back.
-        private static void ComesBack(OnlineState s, WebShop shop, Site site, WebOrder o, int day, bool late)
-        {
-            int kind = OnlineCatalogue.Clamp(site.Kind, 0, OnlineCatalogue.ReturnShare.Length - 1);
-            if (shop.Returns.Count >= OnlineCatalogue.ReturnsMost || Roll(s.Seed, o.Id, o.Placed, 11, 1000) >= OnlineCatalogue.ReturnShare[kind])
-            {
-                return;
-            }
-            for (int j = 0; j < o.Count; j++)
-            {
-                if (o.Got[j] <= 0 || o.Line[j] < 0 || o.Line[j] >= shop.Lines.Count)
-                {
-                    continue;
-                }
-                WebReturn r = NewReturn();
-                r.Day = day + OnlineCatalogue.ReturnDays;
-                r.Item = shop.Lines[o.Line[j]].Item;
-                r.Qty = o.Got[j];
-                r.Refund = OnlineCatalogue.Share((long)o.Got[j] * o.Unit[j], late ? 1000 - OnlineCatalogue.LateRefund : 1000);   // (a late order has had a quarter back already)
-                r.Cost = o.Paid[j] / o.Got[j];
-                shop.Returns.Add(r);
-                return;
-            }
-        }
-
-        /// <summary>
-        /// Returns that are back are dealt with, from ten in the morning: the customer has the money back, and the
-        /// goods go back into stock if they are fit to sell again (a draw by the kind of goods) and there is room;
-        /// otherwise they are written off.
-        /// </summary>
-        public static void Returns(OnlineState s, WebShop shop, Site site, int hour, StockBack put, ref HourCount count)
-        {
-            if (shop.Returns.Count == 0 || hour % 24 < OnlineCatalogue.ReturnHour)
-            {
-                return;
-            }
-            int day = hour / 24, kind = OnlineCatalogue.Clamp(site.Kind, 0, OnlineCatalogue.ResaleShare.Length - 1), key = Key(shop.Place);
-            DayBook book = shop.Today;
-            for (int i = 0; i < shop.Returns.Count; i++)
-            {
-                WebReturn r = shop.Returns[i];
-                if (r.Day > day)
-                {
-                    continue;
-                }
-                book.Refunds += r.Refund;
-                shop.BookRefunds += r.Refund;
-                book.Returned++;
-                count.Returned++;
-                bool fit = Roll(s.Seed, key, r.Day * 64 + r.Qty, r.Refund, 1000) < OnlineCatalogue.ResaleShare[kind];
-                int back = fit && put != null ? OnlineCatalogue.Clamp(put(r.Item, r.Qty, r.Cost), 0, r.Qty) : 0;
-                if (back > 0)
-                {
-                    int worth = back * r.Cost;
-                    book.Goods -= worth;
-                    WebLine line = shop.Line(r.Item);
-                    if (line != null)
-                    {
-                        line.Cost -= worth;
-                        line.BookCost -= worth;
-                    }
-                }
-                shop.Returns.RemoveAt(i--);
-                if (ReturnPool.Count < 64)
-                {
-                    ReturnPool.Push(r);
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------- the rating
-
-        /// <summary>
-        /// One order's mark moves the rating a twentieth of the way to it: five for on time and whole, three for
-        /// short, two for late, one for cancelled or never delivered; half a star less for a dear order, a quarter
-        /// more for a cheap one. The rating stays between one and five stars and moves 0.2 at the very most.
-        /// </summary>
-        public static void Rate(WebShop shop, int score, int tilt)
-        {
-            if (tilt > OnlineCatalogue.DearAbove)
-            {
-                score -= OnlineCatalogue.DearCost;
-            }
-            else if (tilt > 0 && tilt < OnlineCatalogue.CheapBelow)
-            {
-                score += OnlineCatalogue.CheapGain;
-            }
-            score = OnlineCatalogue.Clamp(score, OnlineCatalogue.StarsLeast, OnlineCatalogue.StarsMost);
-            shop.Stars = OnlineCatalogue.Clamp(shop.Stars + (score - shop.Stars) / OnlineCatalogue.RatingWeight, OnlineCatalogue.StarsLeast, OnlineCatalogue.StarsMost);
-        }
-
-        // ---------------------------------------------------------------- the hour and the day
-
-        /// <summary>
-        /// One hour at one site, in the order things happen: returns are dealt with, orders reach their doors, new
-        /// orders come in, the staff pick, the vans leave.
-        /// </summary>
+        /// <summary>One hour at one site, in the order things happen: returns, deliveries, new orders, picking, rounds.</summary>
         public static HourCount Hour(OnlineState s, WebShop shop, Site site, int hour, int pickers, StockTake take, StockBack put)
         {
             var count = new HourCount();
             Returns(s, shop, site, hour, put, ref count);
-            Deliver(s, shop, site, hour, ref count);
+            Deliver(s, shop, site, hour, ref count, put);
             count.Came = Arrive(s, shop, site, hour);
             Pick(shop, site, hour, pickers, take, ref count);
             Rounds(s, shop, site, hour, ref count);
@@ -729,14 +343,28 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The day's book is closed and the book of <paramref name="day"/> opened: the closed one is copied to
-        /// <paramref name="closed"/> for whoever pays it in, and kept as one of the week's seven with the rating at
-        /// its close and each product's units. An advertising campaign whose days are over is ended.
+        /// Hands the day's book to <paramref name="closed"/>, less what a stop earlier that day paid in, keeps it in the
+        /// week's ring and opens the book of <paramref name="day"/>. On the book's own day (a stop in the middle of it) only
+        /// the money not yet paid in is handed over, and the day stays open with all its figures.
         /// </summary>
         public static void CloseDay(WebShop shop, int day, DayBook closed)
         {
             DayBook t = shop.Today;
+            if (t.Day == day && day > 0)
+            {
+                closed.Clear(day);
+                closed.Takings = t.Takings - t.PaidTakings;
+                closed.Refunds = t.Refunds - t.PaidRefunds;
+                closed.Delivery = t.Delivery - t.PaidDelivery;
+                t.PaidTakings = t.Takings;
+                t.PaidRefunds = t.Refunds;
+                t.PaidDelivery = t.Delivery;
+                return;
+            }
             closed.CopyFrom(t);
+            closed.Takings -= t.PaidTakings;
+            closed.Refunds -= t.PaidRefunds;
+            closed.Delivery -= t.PaidDelivery;
             if (t.Day > 0)
             {
                 int slot = t.Day % 7;
@@ -751,7 +379,7 @@ namespace RealLifeOverhaul.Economy
             }
             for (int skipped = Math.Max(t.Day + 1, day - 7); skipped < day; skipped++)
             {
-                // (days on which nothing ran: what the ring still holds for them is from a week or more before)
+                // Days nothing ran on: their slots still hold a week or more before.
                 int slot = skipped % 7;
                 shop.Week[slot].Clear(0);
                 shop.StarLog[slot] = 0;
@@ -760,10 +388,12 @@ namespace RealLifeOverhaul.Economy
                     shop.Lines[l].WeekUnits[slot] = shop.Lines[l].WeekMissed[slot] = 0;
                 }
             }
+            int opens = day % 7;   // the day that opens takes the slot of the day a week before it, which leaves the week
             for (int l = 0; l < shop.Lines.Count; l++)
             {
                 WebLine line = shop.Lines[l];
                 line.Units = line.Takings = line.Cost = line.Missed = 0;
+                line.WeekUnits[opens] = line.WeekMissed[opens] = 0;
             }
             if (shop.AdEnd > 0 && day >= shop.AdEnd)
             {
@@ -773,11 +403,7 @@ namespace RealLifeOverhaul.Economy
             t.Clear(day);
         }
 
-        /// <summary>
-        /// The site was not running for some hours (the option was off, or the save was played without the mod):
-        /// nobody is blamed for them. Orders not yet picked are dropped unrated; what was packed or on its way counts
-        /// as delivered on time, since it was charged.
-        /// </summary>
+        /// <summary>After hours the site did not run nobody is blamed: unpicked orders go unrated, packed or sent ones count as on time.</summary>
         public static void Resume(OnlineState s, WebShop shop)
         {
             for (int i = shop.Orders.Count - 1; i >= 0; i--)
@@ -792,14 +418,34 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- hosting, advertising, the catalogue
+        /// <summary>The shop's own price of a product in cents at a price level: the game's price is the start's (Core/Prices).</summary>
+        public static int ShopCents(float price, int level)
+        {
+            return (int)Math.Round(price * (level / 1000f) * 100f);
+        }
+
+        /// <summary>
+        /// A site's sums waiting for the game's statement: the takings (each line's, never under nothing) and the cost of
+        /// goods, which goods back on the shelves can take under nothing. False with nothing to enter.
+        /// </summary>
+        public static bool Unbooked(WebShop shop, out long takings, out long cost)
+        {
+            takings = cost = 0;
+            bool costs = false;
+            for (int l = 0; l < shop.Lines.Count; l++)
+            {
+                takings += Math.Max(0, shop.Lines[l].BookTakings);
+                cost += shop.Lines[l].BookCost;
+                costs |= shop.Lines[l].BookCost != 0;
+            }
+            return takings != 0 || costs;
+        }
 
         public static bool HostingDue(WebShop shop, int day)
         {
             return day >= shop.HostDue;
         }
 
-        /// <summary>A month's hosting was taken: the site is up for the month.</summary>
         public static void HostingPaid(WebShop shop, int day, int cents, int monthDays)
         {
             shop.Today.Hosting += Math.Max(0, cents);
@@ -807,7 +453,7 @@ namespace RealLifeOverhaul.Economy
             shop.Offline = false;
         }
 
-        /// <summary>The cash did not cover it: the site is down, takes no orders, and the fee is asked for again each day.</summary>
+        /// <summary>The cash did not cover hosting: the site takes no orders, and the fee stays due each day.</summary>
         public static void HostingMissed(WebShop shop)
         {
             shop.Offline = true;
@@ -824,11 +470,7 @@ namespace RealLifeOverhaul.Economy
             return CompanyCatalogue.AtPrices(OnlineCatalogue.Hosting[OnlineCatalogue.Quality(quality)], index);
         }
 
-        /// <summary>
-        /// Advertising online is one of the company's campaigns in all but where it works: a price that follows the
-        /// city's prices, a number of days from tomorrow, more orders by the economy (CompanyCatalogue.CampaignCycle)
-        /// and less for a repeat too soon (CampaignRules.Repeat).
-        /// </summary>
+        /// <summary>Advertising is priced and weighed as the company's campaigns are: by the economy, and less for a repeat too soon.</summary>
         public static void AdQuote(WebShop shop, int day, int index, int cycle, out int cost, out int percent)
         {
             cost = CompanyCatalogue.AtPrices(OnlineCatalogue.AdCost, index);
@@ -842,6 +484,7 @@ namespace RealLifeOverhaul.Economy
             return shop.AdEnd <= 0;
         }
 
+        /// <summary>A campaign from tomorrow.</summary>
         public static void Advertise(WebShop shop, int day, int percent)
         {
             shop.AdFrom = day + 1;
@@ -849,7 +492,7 @@ namespace RealLifeOverhaul.Economy
             shop.AdPercent = OnlineCatalogue.Clamp(percent, 0, OnlineCatalogue.AdMost);
         }
 
-        /// <summary>A new site, with its first month's hosting in the set-up.</summary>
+        /// <summary>A new site, its first month's hosting in the set-up. Null when it cannot be opened.</summary>
         public static WebShop Open(OnlineState s, string place, string name, int quality, int way, int promise, bool inHouse, int day, int monthDays)
         {
             if (s.Shops.Count >= OnlineCatalogue.ShopsMost || string.IsNullOrEmpty(place) || s.Shop(place) != null)
@@ -866,7 +509,7 @@ namespace RealLifeOverhaul.Economy
             return shop;
         }
 
-        /// <summary>Puts a product in the catalogue (or offers it again). Null when the catalogue is full.</summary>
+        /// <summary>Puts a product in the catalogue, or offers it again. Null when the catalogue is full.</summary>
         public static WebLine Offer(WebShop shop, string item)
         {
             WebLine line = shop.Line(item);
@@ -883,10 +526,7 @@ namespace RealLifeOverhaul.Economy
             return line;
         }
 
-        /// <summary>
-        /// Products no longer offered are taken out of the catalogue once nothing hangs on them: no order still to be
-        /// picked, nothing sold today, nothing waiting to be entered in the books. Orders keep their products' places.
-        /// </summary>
+        /// <summary>Takes products no longer offered out once no open order, sale or unbooked sum hangs on them; orders' indexes follow.</summary>
         public static int Prune(WebShop shop)
         {
             int removed = 0;

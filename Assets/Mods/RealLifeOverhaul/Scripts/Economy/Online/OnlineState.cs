@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>Where an order stands. Saved as a number. An order that is delivered, cancelled or refunded is counted in the day's book and kept no longer.</summary>
+    /// <summary>Where an order stands, saved as a number. A finished order is counted in the day's book and dropped.</summary>
     public enum OrderStage
     {
         Waiting = 0,    // to be picked
-        Picked = 1,     // packed, waiting for one of the player's vans
+        Picked = 1,     // packed, waiting for a van
         Out = 2         // on its way
     }
 
@@ -15,13 +15,13 @@ namespace RealLifeOverhaul.Economy
     public sealed class WebLine
     {
         public string Item = string.Empty;  // the game's name for the product
-        public int Price;                   // the online price in cents; 0 follows the shop's own price
+        public int Price;                   // cents; 0 follows the shop's own price
         public bool On = true;              // offered now
 
-        public int Units, Takings, Cost, Missed;        // today: units sold, what they brought and cost (cents), units asked for that were not there
-        public readonly int[] WeekUnits = new int[7];   // units sold on each of the last seven days that closed, by the day's number
+        public int Units, Takings, Cost, Missed;        // today; money in cents, Missed = units asked for and not there
+        public readonly int[] WeekUnits = new int[7];   // by the day's number mod 7
         public readonly int[] WeekMissed = new int[7];
-        public int BookTakings, BookCost;               // not yet entered in the game's statement of the business (cents)
+        public int BookTakings, BookCost;               // cents not yet in the game's statement of the business
 
         public int SoldWeek => Sum(WeekUnits) + Units;
         public int MissedWeek => Sum(WeekMissed) + Missed;
@@ -41,19 +41,20 @@ namespace RealLifeOverhaul.Economy
     public sealed class WebOrder
     {
         public int Id;
-        public int District;            // its place in the state's list of districts
-        public int Placed, Due, Arrive; // hours counted from day 0 (day x 24 + the hour)
+        public int District;            // index into OnlineState.Districts
+        public int Placed, Due, Arrive; // hours counted from day 0
         public OrderStage Stage;
         public int Count;               // products in it
-        public readonly int[] Line = new int[OnlineCatalogue.OrderLines];   // each one's place in the catalogue
+        public readonly int[] Line = new int[OnlineCatalogue.OrderLines];   // index into the catalogue
         public readonly int[] Qty = new int[OnlineCatalogue.OrderLines];    // asked for
         public readonly int[] Got = new int[OnlineCatalogue.OrderLines];    // picked
-        public readonly int[] Unit = new int[OnlineCatalogue.OrderLines];   // the price of one when it was ordered, cents
-        public readonly int[] Paid = new int[OnlineCatalogue.OrderLines];   // what the picked ones cost the shop, cents
-        public int Total;               // what the customer paid for what was picked, cents
+        public readonly int[] Unit = new int[OnlineCatalogue.OrderLines];   // cents, the price when ordered
+        public readonly int[] Paid = new int[OnlineCatalogue.OrderLines];   // cents the picked units cost the shop
+        public int Total;               // cents paid for what was picked
         public int Tilt;                // its prices against the going price when ordered, thousandths
         public bool Short;              // something asked for was not there
 
+        /// <summary>Cents for everything asked for.</summary>
         public int Asked
         {
             get
@@ -75,27 +76,28 @@ namespace RealLifeOverhaul.Economy
         public string Item = string.Empty;
         public int Qty;
         public int Refund;      // cents
-        public int Cost;        // what one cost the shop, cents
+        public int Cost;        // cents one cost the shop
     }
 
-    /// <summary>One day of one site, in cents. What was paid in is takings less refunds, delivery and hosting.</summary>
+    /// <summary>One day of one site, in cents.</summary>
     public sealed class DayBook
     {
         public int Day;
         public int Orders;              // placed on the day
-        public int Picked, Units;       // picked on the day, and the units in them
+        public int Picked, Units;
         public int Takings, Goods, Delivery, Refunds, Hosting;
         public int OnTime, Late, Short, Cancelled, Missing, Returned, Turned;
+        public int PaidTakings, PaidRefunds, PaidDelivery;   // of today's, paid in already by a stop in the middle of the day
 
         public int PaidIn => Takings - Refunds - Delivery - Hosting;
         public int Profit => PaidIn - Goods;
-        public int Asked => OnTime + Late + Cancelled + Missing;    // orders that came to an end on the day
 
         public void Clear(int day)
         {
             Day = day;
             Orders = Picked = Units = Takings = Goods = Delivery = Refunds = Hosting = 0;
             OnTime = Late = Short = Cancelled = Missing = Returned = Turned = 0;
+            PaidTakings = PaidRefunds = PaidDelivery = 0;
         }
 
         public void Add(DayBook other)
@@ -130,17 +132,17 @@ namespace RealLifeOverhaul.Economy
         public string Place = string.Empty;     // the business, written as the company writes a place
         public string Name = string.Empty;
         public int Quality;                     // 0 Basic, 1 Standard, 2 Professional
-        public int Way = OnlineCatalogue.Courier;   // who delivers
+        public int Way = OnlineCatalogue.Courier;
         public int Promise = 1;                 // 0 same day, 1 next day
         public bool InHouse;                    // built by the player's own web development agency
         public int OpenDay;
         public int HostDue;                     // the day the next month's hosting is taken
-        public bool Offline;                    // hosting unpaid: the site takes no orders until it is
+        public bool Offline;                    // hosting unpaid: no orders until it is
         public int Stars = OnlineCatalogue.StarsStart;
-        public readonly int[] StarLog = new int[7];     // the rating at the close of each of the last seven days, by the day's number; 0 for a day not yet closed
-        public int AdFrom, AdEnd, AdPercent, AdEnded;   // an advertising campaign: its days, what it adds, and the day the last one ended
-        public int Idle;                        // hours running with orders waiting and nobody to pick them
-        public int BookRefunds;                 // refunds not yet taken off the takings in the game's statement, cents
+        public readonly int[] StarLog = new int[7];     // the rating at each day's close, by the day's number mod 7; 0 for none
+        public int AdFrom, AdEnd, AdPercent, AdEnded;   // an advertising campaign: its days, per cent, and the day the last one ended
+        public int Idle;                        // hours with orders waiting and nobody to pick them
+        public int BookRefunds;                 // cents not yet taken off the takings in the game's statement
 
         public readonly List<WebLine> Lines = new List<WebLine>(OnlineCatalogue.LinesMost);
         public readonly List<WebOrder> Orders = new List<WebOrder>(32);
@@ -185,7 +187,7 @@ namespace RealLifeOverhaul.Economy
             return count;
         }
 
-        /// <summary>The last seven closed days and today, added up into a book of the caller's.</summary>
+        /// <summary>The six closed days before today and today, added up into the caller's book.</summary>
         public void WeekInto(DayBook into, int today)
         {
             into.Clear(today);
@@ -215,12 +217,12 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>One of the player's vans with its driver, as the rounds keep it. Its free time is one for all sites.</summary>
+    /// <summary>One of the player's vans with its driver. Its free time is shared by all sites.</summary>
     public sealed class Van
     {
         public string Driver = string.Empty;    // the driver's id in the game
-        public int FreeAt;                      // the minute (counted from day 0) it is back from its round
-        public int Used;                        // minutes driven on <see cref="Day"/>
+        public int FreeAt;                      // minutes counted from day 0
+        public int Used;                        // minutes driven on Day
         public int Day;
         public int Capacity;                    // not saved: parcels, read from the game each hour
         public bool Ready;                      // not saved: vehicle and driver are there this hour
@@ -233,7 +235,7 @@ namespace RealLifeOverhaul.Economy
         public int FirstDay;
         public int LastHour = -1;       // the last hour worked through, counted from day 0; -1 before the first
         public int NextOrder = 1;
-        public readonly List<string> Districts = new List<string>(16);  // the city's districts by the game's names; an order keeps its place in this list
+        public readonly List<string> Districts = new List<string>(16);  // by the game's names; orders keep the index
         public readonly List<WebShop> Shops = new List<WebShop>(4);
         public readonly List<Van> Vans = new List<Van>(4);
 
@@ -275,26 +277,24 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// What a site's demand is worked out from, read from the game once a day (and when the player changes the
-    /// catalogue): nothing of it is saved. Arrays are as long as the catalogue or the list of districts and are kept
-    /// between days.
+    /// What a site's demand is worked out from, read from the game once a day and when the catalogue changes; not
+    /// saved. The arrays are kept between days and grow with the districts.
     /// </summary>
     public sealed class Site
     {
-        public int Kind = 5;            // the kind of goods (MacroCatalogue's six): general goods unless the business says otherwise
-        public bool Warehouse;
-        public int PerDay;              // orders a day in thousandths, every factor in
+        public int Kind = 5;            // MacroCatalogue's kind of goods: general unless the business says otherwise
+        public int PerDay;              // orders a day, thousandths
         public int Lines, Districts;
-        public int[] Ask = new int[OnlineCatalogue.LinesMost];      // each product's online price, cents
-        public int[] Going = new int[OnlineCatalogue.LinesMost];    // ...the going price in the city, cents
-        public int[] Factor = new int[OnlineCatalogue.LinesMost];   // ...what its price does to its sales, thousandths
-        public int[] Stock = new int[OnlineCatalogue.LinesMost];    // ...units in the building when last counted
-        public int[] Demand = new int[OnlineCatalogue.LinesMost * 16];   // the game's demand for each product in each district (product x districts + district)
-        public int[] Want = new int[OnlineCatalogue.LinesMost * 16];     // ...and what that comes to at the product's price, as the weight it is drawn by
+        public int[] Ask = new int[OnlineCatalogue.LinesMost];      // cents, the online price
+        public int[] Going = new int[OnlineCatalogue.LinesMost];    // cents, the going price in the city
+        public int[] Factor = new int[OnlineCatalogue.LinesMost];   // thousandths, what the price does to sales
+        public int[] Stock = new int[OnlineCatalogue.LinesMost];    // units in the building when last counted
+        public int[] Demand = new int[OnlineCatalogue.LinesMost * 16];   // the game's demand, [line x districts + district]
+        public int[] Want = new int[OnlineCatalogue.LinesMost * 16];     // Demand at the line's price: the weight it is drawn by
         public int[] Weight = new int[16];      // each district's share of the orders
-        public int[] Metres = new int[16];      // road from the building to each district's middle
-        public bool[] Measured = new bool[16];  // ...measured along the roads, not yet a straight line's guess
-        public int Need, Price, Stars, Ads, Campaign, Cycle, Season, Crowd;   // the parts of PerDay as they were worked out, for the page
+        public int[] Metres = new int[16];      // road to each district's middle
+        public bool[] Measured = new bool[16];  // measured along the roads, not a straight line's guess
+        public int Need, Price, Stars, Ads, Campaign, Cycle, Season, Crowd;   // the parts of PerDay, for the page and the log
 
         public void Size(int lines, int districts)
         {
