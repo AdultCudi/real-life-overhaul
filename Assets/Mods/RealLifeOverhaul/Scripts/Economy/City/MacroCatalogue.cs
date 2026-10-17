@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Economy
         Normal = 5          // nothing presses: the rate goes back towards the banks' own
     }
 
-    /// <summary>The weather as supply sees it. What the mod's weather says is turned into this by Wiring.</summary>
+    /// <summary>The weather as supply sees it; Wiring turns the mod's weather into this.</summary>
     public enum CityWeather
     {
         Fair = 0,
@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Economy
         Ice = 4
     }
 
-    /// <summary>A city event as supply sees it. What the mod's calendar says is turned into this by Wiring.</summary>
+    /// <summary>A city event as supply sees it; Wiring turns the mod's calendar into this.</summary>
     public enum CityEvent
     {
         None = 0,
@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Economy
         Fireworks = 7
     }
 
-    /// <summary>What kind of piece the city's economy has for the paper. Saved as a number; <see cref="MacroCatalogue.NewsRank"/> says which is printed first.</summary>
+    /// <summary>What kind of piece the city's economy has for the paper. Saved as a number.</summary>
     public enum CityNewsKind
     {
         Supply = 0,         // a shortage or a glut from tomorrow: A the kind of goods, B the shock, C its days, D its size in per cent
@@ -74,23 +74,17 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// Every number of the city's economy: the central bank, prices, the cycle, the districts, supply, what each does
-    /// to the player, and the rivals. The model, the director, the Finance app, the Guide's page and the offline check
-    /// all read these; nothing else writes a figure of its own. Game-free: compiled as it is by
-    /// RealLifeOverhaul.Build/EconomyCheck.
-    ///
-    /// The model counts in whole numbers so that the same seed and the same days always give the same history and a
-    /// save holds exactly what was in memory: the rate in quarter points, inflation in hundredths of a per cent a year,
-    /// the price index in thousandths, a district's income in tenths of a point, a price factor in thousandths.
+    /// Every number of the city's economy, game-free. Whole numbers, so a seed always gives the same history: the rate in
+    /// quarter points, inflation in hundredths of a per cent a year, an income in tenths of a point, the index and factors in
+    /// thousandths.
     /// </summary>
     public static class MacroCatalogue
     {
-        // ---------------------------------------------------------------- strength (the option's four steps, as the presets set them)
-
+        // The option's four steps, as the presets set them.
         public const int Relaxed = 0, Standard = 1, Realistic = 2, Hardcore = 3;
         public const int LevelDefault = Standard;
 
-        /// <summary>How wide every swing is, in per cent of the figures below: Relaxed halves them, Hardcore widens them by a quarter.</summary>
+        /// <summary>How wide every swing is at each step, in per cent of the figures below.</summary>
         public static readonly int[] SwingPercent = { 50, 100, 110, 125 };
 
         public static int Level(int level)
@@ -109,10 +103,8 @@ namespace RealLifeOverhaul.Economy
             return Level(level) != Relaxed;
         }
 
-        // ---------------------------------------------------------------- time
-
         public const int MonthsPerYear = 12;
-        public const int MonthDaysLeast = 3;
+        public const int MonthDaysLeast = 3;        // game days
 
         /// <summary>A month in game days: a twelfth of the game's year, three days at least.</summary>
         public static int MonthDays(int daysPerYear)
@@ -120,8 +112,7 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(MonthDaysLeast, daysPerYear / MonthsPerYear);
         }
 
-        // ---------------------------------------------------------------- the central bank (quarter points on top of the banks' own rates)
-
+        // The central bank: quarter points on top of the banks' own rates.
         public const int QuartersPerPoint = 4;
         public const int BaseStart = 0;
         public const int BaseLeast = -8;            // -2 points
@@ -132,8 +123,7 @@ namespace RealLifeOverhaul.Economy
         public const int MoveRecession = -2;        // ...a recession half a point
         public const int MoveNormal = 1;            // with nothing pressing, a quarter point back towards the banks' own
 
-        // ---------------------------------------------------------------- prices (hundredths of a per cent a year; the index in thousandths)
-
+        // Prices: hundredths of a per cent a year; the index in thousandths.
         public const int InflationTarget = 200;     // 2% a year
         public const int InflationBand = 50;        // within half a point of the target is on target
         public const int InflationLeast = -100;     // -1% a year
@@ -148,8 +138,6 @@ namespace RealLifeOverhaul.Economy
         public const int IndexStart = 100000;       // 100.0
         public const int IndexLeast = 50000;
         public const int IndexMost = 400000;
-
-        // ---------------------------------------------------------------- the cycle
 
         public const int StateCount = 4;
         public const int StateMonthsLeast = 2, StateMonthsMost = 6;
@@ -167,15 +155,14 @@ namespace RealLifeOverhaul.Economy
         // The two outcomes of each row that the jitter moves a share between (the first gains what the second loses).
         public static readonly int[][] JitterPair = { new[] { 1, 2 }, new[] { 0, 2 }, new[] { 1, 3 }, new[] { 1, 2 } };
 
-        // The state's four numbers, by state.
+        // By state: boom, steady, slowdown, recession.
         public static readonly int[] StateFootfall = { 6, 0, -5, -12 };          // per cent of customers
         public static readonly int[] StateSpend = { 1040, 1000, 970, 930 };      // what a customer spends, in thousandths
         public static readonly int[] StateTrouble = { 850, 1000, 1150, 1350 };   // the chance of the mod's own business troubles, in thousandths
         public static readonly int[] StateProperty = { 1100, 1000, 950, 850 };   // property values, in thousandths
         public static readonly int[] StateUndercut = { 1000, 1000, 1500, 2000 }; // how often a rival undercuts, in thousandths (not moved by the strength)
 
-        // ---------------------------------------------------------------- districts (income in tenths of a point)
-
+        // Districts: income in tenths of a point.
         public const int IncomeLeast = 600, IncomeMost = 1400, IncomeMiddle = 1000;
         public const int ClassWorking = 70, ClassMiddle = 100, ClassUpper = 135;   // a district starts at the mean of these by the game's own class shares
         public static readonly int[] IncomeDrift = { 10, 0, -8, -16 };             // a month's push by state
@@ -187,21 +174,17 @@ namespace RealLifeOverhaul.Economy
         public const int TolerancePerPoint = 5;     // thousandths of price a district bears more (or less) for each point its income is over (or under) its start
         public const int PropertyPerPoint = 4;      // thousandths of value for each point a district is over (or under) its start
 
-        // ---------------------------------------------------------------- prices against what a district bears
-
-        public const int OverBand = 20;             // up to 2% over is not over
+        // Prices against what a district bears.
+        public const int OverBand = 20;             // thousandths: up to 2% over is not over
         public const int OverLossPerPercent = 800;  // thousandths of a per cent of customers lost for each per cent over (0.8)
         public const int OverLossMost = 10;         // per cent of customers at most
         public const int UnderGain = 2;             // per cent of customers gained for prices at or under what the district bears
         public const int MonopolyAllowance = 300;   // thousandths the game itself lets a monopoly charge more (ItemHelper)
 
-        // ---------------------------------------------------------------- footfall in all
-
         public const int FootfallLeast = -25, FootfallMost = 15;   // per cent of customers, district, cycle and prices together
         public const int FootfallQuiet = 2;                        // under this either way nothing is changed
 
-        // ---------------------------------------------------------------- supply (price factors in thousandths)
-
+        // Supply: price factors in thousandths.
         public const int SupplyKinds = 6;
         public const int Fresh = 0, Groceries = 1, Clothing = 2, Electronics = 3, Home = 4, General = 5;
         public const int FactorLeast = 700, FactorMost = 1500;
@@ -267,7 +250,7 @@ namespace RealLifeOverhaul.Economy
             new[] { 0, 0, 0, 10, 10 },
             new[] { 0, 0, 0, 10, 10 }
         };
-        // A city event's push by kind: none, a street market, the farmers' market, a parade, a protest, a fun run, a film shoot, fireworks.
+        // A city event's push by kind: none, market, farmers' market, parade, protest, fun run, film shoot, fireworks.
         public static readonly int[][] EventPush =
         {
             new[] { 0, 0, -50, 0, 10, 0, 0, 0 },
@@ -278,17 +261,11 @@ namespace RealLifeOverhaul.Economy
             new[] { 0, -20, 0, 0, 10, 0, 0, 0 }
         };
 
-        // ---------------------------------------------------------------- rents, wages and takings
+        public const int AdjustQuiet = PriceRules.Quiet;   // thousandths: within 1% of nothing no rent, wage or takings adjustment is made
 
-        public const int AdjustQuiet = PriceRules.Quiet;   // within 1% of nothing, no adjustment is made (and every price is the start's: Core/Prices)
-
-        // ---------------------------------------------------------------- rivals
-
-        public const int CopycatDays = 14;          // days running a business must have made a profit to draw one
+        public const int CopycatDays = 14;          // days running a business must have made a profit to draw a rival
         public const int CopycatChance = 60;        // thousandths a day, for the business that made the most
         public const int CopycatRestDays = 21;      // days before the next
-
-        // ---------------------------------------------------------------- the paper
 
         public const int NewsADay = 2;
         public const int NewsKinds = 6;

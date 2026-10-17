@@ -2,23 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The city's economy as the rest of the mod may read it. Read-only, game-free, and safe at any time: while the
-    /// city's economy is off, not started yet or stopped by a fault, every member answers as a city with no economy of
-    /// the mod's would (a steady state, the banks' own rates, prices at 100, every district at 100) and
-    /// <see cref="MonthTurned"/> is not raised.
-    ///
-    ///     CityEconomy.Running                 true while the model is live
-    ///     CityEconomy.State                   the cycle: Boom, Steady, Slowdown or Recession
-    ///     CityEconomy.BasePoints              the central bank's rate in points on top of the banks' own (-2 to +6, in quarters)
-    ///     CityEconomy.PriceIndex              the price index (100 at the start)
-    ///     CityEconomy.InflationPercent        inflation in per cent a year (-1 to +12)
-    ///     CityEconomy.DistrictIncome(name)    a district's income level, 60 to 140, by the game's own name for the neighbourhood
-    ///     CityEconomy.Bears(name)             what a district's customers bear against the game's own price for it, thousandths
-    ///     CityEconomy.MonthTurned             raised once when a month of the model turns, after the new figures are in place
-    ///
-    /// Nothing here may be written by a reader; the director alone sets <see cref="Live"/>.
-    /// </summary>
+    /// <summary>The city's economy as other features read it: game-free and safe at any time; while it is not running, every member answers as a city without one.</summary>
     public static class CityEconomy
     {
         /// <summary>The state in use, or null. Set by the city's economy director only.</summary>
@@ -31,40 +15,39 @@ namespace RealLifeOverhaul.Economy
 
         public static CycleState State => Live != null ? Live.Cycle : CycleState.Steady;
 
+        /// <summary>The central bank's rate in points on top of the banks' own, -2 to +6 in quarters.</summary>
         public static float BasePoints => Live != null ? CityModel.BasePoints(Live) : 0f;
 
+        /// <summary>The price index, 100 at the start.</summary>
         public static float PriceIndex => Live != null ? Live.Index / 1000f : MacroCatalogue.IndexStart / 1000f;
 
-        /// <summary>What the game's own costs are adjusted by, in tenths of a point (the price level of every price of the mod's: Core/Prices).</summary>
+        /// <summary>What the game's own costs are adjusted by, in tenths of a point: the price level of every price of the mod's (Core/Prices).</summary>
         public static int CostFactor => Live != null ? CityModel.Costs(Live) : PriceRules.Start;
 
+        /// <summary>Inflation in per cent a year.</summary>
         public static float InflationPercent => Live != null ? Live.Inflation / 100f : MacroCatalogue.InflationTarget / 100f;
 
         /// <summary>The month of the state the cycle is in, from 1.</summary>
         public static int MonthOfState => Live != null ? Live.MonthsIn : 1;
 
-        /// <summary>A district's income level by the game's own name for the neighbourhood ("ba:neighborhood_..."); 100 for one that is not known or while the economy is off.</summary>
+        /// <summary>A district's income level, 60 to 140, by the game's name for the neighbourhood; 100 for one not known.</summary>
         public static float DistrictIncome(string name)
         {
             CityDistrict d = Live != null && name != null ? Live.District(name) : null;
             return d != null ? d.Income / 10f : MacroCatalogue.IncomeMiddle / 10f;
         }
 
-        /// <summary>
-        /// What a district's customers bear against the game's own price for it (the default market price times the
-        /// neighbourhood's price index), in thousandths: its income against its start and what customers spend in the
-        /// cycle, as the city's economy judges every business's prices (CityModel.Tolerance). 1000 while the economy is
-        /// off; a district that is not known is judged by the cycle alone, as the city's economy judges one.
-        /// </summary>
+        /// <summary>What a district's customers bear against the game's own price, in thousandths (<see cref="CityModel.Tolerance"/>); 1000 while not running.</summary>
         public static int Bears(string name)
         {
             CityState s = Live;
             return s != null ? CityModel.Tolerance(s, name != null ? s.District(name) : null, Level) : 1000;
         }
 
-        /// <summary>A month of the model has turned. Raised on the game's day event, once, after the month's figures are in place. A handler must not throw; one that does is not allowed to stop the others.</summary>
+        /// <summary>A month of the model has turned: raised once, on the game's day event, after its figures are in place.</summary>
         public static event Action MonthTurned;
 
+        // Each handler on its own, so one that throws stops none of the others.
         internal static void RaiseMonthTurned(Action<Exception> fault)
         {
             Action handlers = MonthTurned;

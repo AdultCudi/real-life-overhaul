@@ -446,11 +446,8 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.Loans.cs	
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BanksDirector.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/CreditDesk.Banks.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityEconomy.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityEconomyDirector.cs	23
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityGame.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityStore.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityText.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/CreditDesk.Relief.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/DebtPhone.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	6

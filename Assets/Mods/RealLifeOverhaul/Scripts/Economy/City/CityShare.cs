@@ -2,20 +2,10 @@ using System;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The city's economy in a Going Public session (Core/SharedCity, part E): what of a <see cref="CityState"/> is the
-    /// city's, and how a guest's state takes the host's. Game-free (RealLifeOverhaul.Build/EconomyCheck).
-    ///
-    /// The city's: the seed and the model's days, the cycle, the bank rate and the central bank's decisions, the price
-    /// index, inflation and the month's change, every district's income, the supply of the six kinds of goods with their
-    /// shortages and gluts, and the pieces for the paper about them. The player's own, never sent and never overwritten:
-    /// what is carried of the rent, the wages, the takings and the game's shops and services, the day a rival last
-    /// opened beside one of the player's businesses (and the paper's piece on it), and the kinds of goods the player's
-    /// businesses stock. The text is <see cref="CityStore"/>'s own line, so a newer version reads an older one's.
-    /// </summary>
+    /// <summary>The city's economy shared in a Going Public session (Core/SharedCity, part E): a guest takes the host's city, keeping its own figures. Game-free.</summary>
     public static class CityShare
     {
-        /// <summary>The city's part of a state, as a line of the save: the player's own figures left out.</summary>
+        /// <summary>The city's part of a state, as a <see cref="CityStore"/> line: what is carried, the rival and the goods stocked left out.</summary>
         public static string Write(CityState s)
         {
             var city = new CityState();
@@ -30,11 +20,7 @@ namespace RealLifeOverhaul.Economy
             return CityStore.Write(city);
         }
 
-        /// <summary>
-        /// The host's line applied to a guest's state: the city's part is the host's from now on, the player's own is
-        /// kept. False (and the state untouched) for a line that cannot be read. <paramref name="tick"/> says what the
-        /// guest is to hear of it: a month turned, the rate moved, the cycle changed, a shortage or a glut announced.
-        /// </summary>
+        /// <summary>The host's line applied to a guest's state; false, the state untouched, for a line that cannot be read.</summary>
         public static bool Apply(CityState mine, string text, int monthDays, out CityTick tick)
         {
             tick = new CityTick { ShockAnnounced = -1 };
@@ -73,13 +59,13 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>True when two states have the same city: every figure of the city's equal (the player's own not looked at).</summary>
+        /// <summary>True when every figure of the city's is equal in the two states (the player's own are not compared).</summary>
         public static bool SameCity(CityState a, CityState b)
         {
-            if (a.Seed != b.Seed || a.Age != b.Age || a.LastDay != b.LastDay || a.Cycle != b.Cycle || a.MonthsLeft != b.MonthsLeft || a.MonthsIn != b.MonthsIn || a.Base != b.Base
-                || a.BaseBefore != b.BaseBefore || a.Pending != b.Pending || a.PendingMove != b.PendingMove || a.PendingReason != b.PendingReason || a.LastMove != b.LastMove
-                || a.LastReason != b.LastReason || a.Index != b.Index || a.Inflation != b.Inflation || a.Pressure != b.Pressure || a.MonthChange != b.MonthChange
-                || a.Districts.Count != b.Districts.Count)
+            if (a.Seed != b.Seed || a.Age != b.Age || a.LastDay != b.LastDay || a.Cycle != b.Cycle || a.MonthsLeft != b.MonthsLeft || a.MonthsIn != b.MonthsIn
+                || a.Base != b.Base || a.BaseBefore != b.BaseBefore || a.Pending != b.Pending || a.PendingMove != b.PendingMove || a.PendingReason != b.PendingReason
+                || a.LastMove != b.LastMove || a.LastReason != b.LastReason || a.Index != b.Index || a.Inflation != b.Inflation || a.Pressure != b.Pressure
+                || a.MonthChange != b.MonthChange || a.Districts.Count != b.Districts.Count)
             {
                 return false;
             }
@@ -102,7 +88,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // The city's figures from one state into another; the player's own of 'to' are not touched.
+        // The city's figures only; the player's own of 'to' are left alone.
         private static void Copy(CityState from, CityState to)
         {
             to.Seed = from.Seed;
