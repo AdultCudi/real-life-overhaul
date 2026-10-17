@@ -455,7 +455,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	6
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.Accounts.cs	13
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.City.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineApp.Shops.cs	10
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankApp.cs	14
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankCatalogue.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankDirector.cs	1

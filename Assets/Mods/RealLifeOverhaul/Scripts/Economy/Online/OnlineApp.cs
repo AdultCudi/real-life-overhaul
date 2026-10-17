@@ -8,29 +8,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What the Web shop app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance,
-    /// Ventures, the Company app, the Planner and the Guide are. It is an app of its own and not a tab of the Company
-    /// app: that app's bar already holds six tabs, and a site has three subjects of its own. Three tabs over the
-    /// table on the right, and on the left the white box:
-    ///
-    ///   Shops       every site with today's orders and its rating, and under them the businesses and warehouses that
-    ///               have none; pick a site for its figures, its rating and its settings, or a business to open one
-    ///               (OnlineApp.Shops.cs)
-    ///   Orders      the queue: every open order with its district, its goods, its promise and where it stands
-    ///   Catalogue   one site's products with stock, price and sales, and what else the place stocks; pick one to
-    ///               price it or to put it on or off the site (OnlineApp.Lists.cs)
-    ///
-    /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked. The
-    /// table is the kit's (GameUi.DataTable over the game's own BaTable): it sorts by a click on a column heading,
-    /// filters by kind and ends in a line of totals. Every table is declared in OnlineColumns.
-    ///
-    /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
-    /// opens, when a tab is picked and when the player changes something in it.
+    /// The Web shop app in the game's frame (GameUi.AppShell): Shops, Orders and Catalogue tabs over a table, and the
+    /// white box for what is picked. Nothing runs while it is closed.
     /// </summary>
     public sealed partial class OnlineApp
     {
         private static readonly string[] TabKeys = { "reallife_online_tab_shops", "reallife_online_tab_orders", "reallife_online_tab_catalogue" };
-        private const string GuideTitle = "reallife_meta_title_economy_online";   // the Guide's page every page of the app points to at its foot
+        private const string GuideTitle = "reallife_meta_title_economy_online";   // the Guide's page every page points to
 
         public static IModLogger Logger;
 
@@ -44,7 +28,7 @@ namespace RealLifeOverhaul.Economy
         private int _tab, _wanted = -1;
         private string _wantPick;
         private bool _ready;        // the director is running for this opening
-        private bool _writing;      // a page is being written: a change it causes does not write it again
+        private bool _writing;      // a change a page causes while it is written does not write it again
         private string _picked;     // the row picked on the tab that shows
         private int _page;          // the page of a site in the white box
 
@@ -53,12 +37,10 @@ namespace RealLifeOverhaul.Economy
             _director = director;
         }
 
-        // ---------------------------------------------------------------- building it from the game's parts
-
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            using var piece = SessionWatch.Piece("online shops: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("online shops: the app being built from the game's MyEmployees");   // once a city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, OnlineDirector.AppId);
             _table = DataTable.On(_shell, "Web shop");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(OnlineColumns.Off))
@@ -76,8 +58,6 @@ namespace RealLifeOverhaul.Economy
             }
             return _shell.Root;
         }
-
-        // ---------------------------------------------------------------- opening and the tabs
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
@@ -135,7 +115,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Everything the open tab shows, made again: asked for when the app opens, a tab is picked or something has changed.
         private void Refresh()
         {
             if (_shell == null || _table == null || _writing)
@@ -175,7 +154,7 @@ namespace RealLifeOverhaul.Economy
                     switch (_tab)
                     {
                         case OnlineDirector.TabOrders: table = WriteOrders(box, state, day, now); break;
-                        case OnlineDirector.TabCatalogue: table = WriteCatalogue(box, state, day); break;
+                        case OnlineDirector.TabCatalogue: table = WriteCatalogue(box); break;
                         default: table = WriteShops(box, state, day, now); break;
                     }
                 }
@@ -220,19 +199,18 @@ namespace RealLifeOverhaul.Economy
             row.Set(0, words);
         }
 
-        // A cell of money kept in cents: written in whole units, ordered and summed by its amount.
+        // Money kept in cents: written in whole units, ordered and summed by its amount.
         private static void Cents(TableRow row, int column, int cents, CellTone tone = TableRow.Plain)
         {
             row.Set(column, OnlineText.Money(cents), cents / 100.0, tone);
         }
 
-        // A cell of a count.
         private static void Count(TableRow row, int column, int count, CellTone tone = TableRow.Plain)
         {
             row.Set(column, count.ToString(), count, tone);
         }
 
-        // What follows a kind's mark in a row's id ("shop:Main%20St~12"), if the id is of that kind; null otherwise.
+        // What follows a kind's mark in a row's id ("shop:Main%20St~12"); null if the id is of another kind.
         private static string Picked(string id, string kind)
         {
             return id != null && id.StartsWith(kind, System.StringComparison.Ordinal) ? id.Substring(kind.Length) : null;

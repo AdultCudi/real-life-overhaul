@@ -4,19 +4,15 @@ using Localizor;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The online shops' words: every figure they show is written here, the same way in the Web shop app, the Planner
-    /// and a notification. Every text is a key of en.json; money and times are written as the game writes them.
-    /// Called when something is shown or said, never otherwise.
-    /// </summary>
+    /// <summary>The online shops' words and figures, written the same way in the app, the Planner and a notification.</summary>
     public static class OnlineText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        public static readonly string[] QualityKeys = { "reallife_online_quality_basic", "reallife_online_quality_standard", "reallife_online_quality_professional" };
-        public static readonly string[] WayKeys = { "reallife_online_way_vans", "reallife_online_way_courier" };
-        public static readonly string[] PromiseKeys = { "reallife_online_promise_same", "reallife_online_promise_next" };
-        public static readonly string[] StageKeys = { "reallife_online_stage_waiting", "reallife_online_stage_picked", "reallife_online_stage_out" };
+        private static readonly string[] QualityKeys = { "reallife_online_quality_basic", "reallife_online_quality_standard", "reallife_online_quality_professional" };
+        private static readonly string[] WayKeys = { "reallife_online_way_vans", "reallife_online_way_courier" };
+        private static readonly string[] PromiseKeys = { "reallife_online_promise_same", "reallife_online_promise_next" };
+        private static readonly string[] StageKeys = { "reallife_online_stage_waiting", "reallife_online_stage_picked", "reallife_online_stage_out" };
 
         public static string T(string key)
         {
@@ -37,11 +33,6 @@ namespace RealLifeOverhaul.Economy
         public static string Fill(string key, params string[] pairs)
         {
             return FinanceText.Fill(key, pairs);
-        }
-
-        public static string Pair(string labelKey, string value)
-        {
-            return FinanceText.Pair(labelKey, value);
         }
 
         /// <summary>A sum kept in cents, in whole units as the Finance app writes a day's figure.</summary>
@@ -66,11 +57,6 @@ namespace RealLifeOverhaul.Economy
         public static string Share(int thousandths)
         {
             return (thousandths / 10f).ToString("0.#", Inv) + "%";
-        }
-
-        public static string Km(int metres)
-        {
-            return (metres / 1000f).ToString("0.0", Inv) + " km";
         }
 
         /// <summary>An hour counted from day 0, as "17:00" today or "Day 12, 17:00", in the game's own clock.</summary>
