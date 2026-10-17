@@ -72,7 +72,7 @@ public static Func<LegalStanding> Legal;
 // Wiring/EconomyLinks.cs
 EconomyBridges.Legal = ReadLegal;
 
-// Economy/EconomyDirector.cs: the default when nothing is wired
+// Economy/Banking/EconomyDirector.cs: the default when nothing is wired
 private static readonly Func<LegalStanding> Legal = () => EconomyBridges.Legal != null ? EconomyBridges.Legal() : default(LegalStanding);
 ```
 

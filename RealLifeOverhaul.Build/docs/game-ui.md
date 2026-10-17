@@ -653,7 +653,7 @@ Proven: the bar's structure and both sprites. Inferred: how a tab without a spri
   `dailyInterest` and `dailyPayment` with `LoanHelper` each time the amount changes; the loan is made with those.
 - So the terms can be changed by writing the two fields on the settings object, and a cap of 0 makes the game
   refuse. The object is an asset: it outlives a city load and is not in the save, so whoever writes it keeps the
-  first values seen and puts them back (`Economy/Lending/BankTerms`).
+  first values seen and puts them back (`Economy/Banking/Loans/BankTerms`).
 - A dialogue has no event when it opens. `DialogController.current` is the open dialogue's controller (the counter's
   `DialogUI`, or `ContactsApp` for a call) and its public `dialog` is the `Dialog` object, a `BankDialog` at a bank.
   The game is paused during a call from the phone, so a timer that looks for it must run on the real clock.
@@ -1040,7 +1040,7 @@ something of the game's (a bank's name) is one key, "{bank}", and `TitleArgument
 (read without reflection). `PhoneApp` sets the arguments after the key on both buttons and, when the app shows, on the
 top bar before its key (two apps with one key differ only by their arguments); when the app is hidden it takes its
 arguments off the top bar if they are still there, because the game's own apps set only the key. Used by the bank
-apps (Economy/Banks).
+apps (Economy/Banking/BankApps).
 
 ### What a row of the mod options page can do, and how the page is arranged (`Meta/OptionsTree`, `OptionsLayout`)
 

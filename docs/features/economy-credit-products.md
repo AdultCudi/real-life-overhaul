@@ -6,15 +6,15 @@ More kinds of credit (an overdraft, a credit card, a purchase on finance and mor
 
 ## Where the code is
 
-- Folders: [`Scripts/Economy/Products`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/) and [`Scripts/Economy/Debt`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/). The files are listed in the code block below.
-- Read first: `Products/ProductCatalogue.cs`, `Products/CreditDesk.cs` and `Debt/Shark.cs` (the private lender).
+- Folders: [`Scripts/Economy/Banking`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/) (`Terms`, `Accounts`, `Debt`, `Loans` and `Desk`). The files are listed in the code block below.
+- Read first: `Banking/Terms/ProductCatalogue.cs`, `Banking/Desk/CreditDesk.cs` and `Banking/Debt/SharkRules.cs` (the private lender).
 
 ## How it talks to other features
 
 - Every product asks the [credit rating](economy-credit.md) first (`CreditLedger.CanBorrow`).
 - `Wiring/DebtLinks.cs` turns a lender's claim into one of Justice's civil suits, and gives the private lender what it needs from the street (whether the player is held, a free stretch of kerb, a point out of the camera's view).
 
-The second part of the economy (`Scripts/Economy/Products`, `Scripts/Economy/Debt`; options "More kinds of credit", "The private lender", "Consequences of not paying" and "How hard not paying hits").
+The second part of the economy (`Scripts/Economy/Banking`; options "More kinds of credit", "The private lender", "Consequences of not paying" and "How hard not paying hits").
 It stands on the credit rating above and changes none of its rules: every product asks `CreditLedger.CanBorrow`, so under the threshold (580) nothing is opened and nothing is drawn, on every preset; what is already owed stays owed.
 No method of the game's is patched.
 
@@ -22,19 +22,23 @@ The game's own loans stay the game's own records.
 
 ```
 Economy/
-  Products/         the first five are game-free and compiled by EconomyCheck
-    ProductCatalogue  EVERY NUMBER of this part: limits, rates, fees, the steps' counts by level, the private lender, the ways out
-    ProductTerms      the terms by rating (limits, rates, deposits, quotes), and consolidation's before and after
-    CreditAccount     ONE model for every account of the mod's (ProductKind), LadderState, IWallet, AccountRules (the arithmetic)
-    Ladder            LadderRules: what a lender does as payments go on being missed, for accounts and the game's loans alike
-    LoanHolds         what the mod writes on one of the game's loans (penalty rate, arrangement) and how it is put back exactly
-    Wallet            IWallet over GameManager.ChangeMoneySafe (the game's transaction history has every movement)
-    CreditDesk        THE GAME SIDE: the day and the hour, the steps, repossession, claims (.Offers: products and purchases;
-                      .Tests: leaving a save and the test tools; Debt/CreditDesk.Relief: collections, lender, arrangement, bankruptcy)
-  Debt/
-    Shark             game-free: the private lender's one debt and its terms (SharkDebt, SharkRules)
-    Relief            game-free: arrangement, bankruptcy, the rating's ceilings, an approval for finance (Relief, ReliefRules)
-    DebtPhone         three contacts and their conversations: Collections, Private lender, Debt advice
+  Banking/          all but the Desk and DebtPhone are game-free and compiled by EconomyCheck
+    Terms/
+      ProductCatalogue  EVERY NUMBER of this part: limits, rates, fees, the steps' counts by level, the private lender, the ways out
+      ProductTerms      the terms by rating (limits, rates, deposits, quotes), and consolidation's before and after
+    Accounts/
+      CreditAccount     ONE model for every account of the mod's (ProductKind), LadderState, IWallet, AccountRules (the arithmetic)
+      Wallet            IWallet over GameManager.ChangeMoneySafe (the game's transaction history has every movement)
+    Loans/
+      LoanHolds         what the mod writes on one of the game's loans (penalty rate, arrangement) and how it is put back exactly
+    Desk/
+      CreditDesk        THE GAME SIDE: the day and the hour, the steps, repossession, claims (.Offers: products and purchases;
+                        .Tests: leaving a save and the test tools; .Relief: collections, lender, arrangement, bankruptcy)
+    Debt/
+      LadderRules       what a lender does as payments go on being missed, for accounts and the game's loans alike
+      SharkRules        the private lender's one debt and its terms (SharkDebt, SharkRules)
+      Relief            arrangement, bankruptcy, the rating's ceilings, an approval for finance (Relief, ReliefRules)
+      DebtPhone         three contacts and their conversations: Collections, Private lender, Debt advice
   Finance/
     Books             the game's figures the economy reads: what leaves tomorrow, businesses and their statements, sales
     FinanceApp.Accounts  the Accounts tab and the product pages of Borrow

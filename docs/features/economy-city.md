@@ -113,7 +113,7 @@ While the city's economy is off, not started or stopped by a fault every member 
 
 ## Added to other features (all additive)
 
-- `Economy/Lending/LendingTerms`: `BasePoints`, and `For(score, cap, rate, basePoints)`.
+- `Economy/Banking/Terms/LendingTerms`: `BasePoints`, and `For(score, cap, rate, basePoints)`.
   `ProductTerms`: `BaseBp`, `WithBase`, `FixedRateBp`; `RateBp` is by the rating alone.
   `AccountRules`: `BaseBp`, `BaseMultiplier`.
   `CreditAccount.RateAgreedNow`.

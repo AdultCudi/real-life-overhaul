@@ -4,7 +4,7 @@ The economy: the credit rating and lending, credit products and debt, the banks,
 
 ## Read first
 
-- `EconomyDirector.cs`: the core: the credit side, whose timer and day the other parts follow.
+- `Banking/EconomyDirector.cs`: the core: the credit side, whose timer and day the other parts follow.
 - `EconomyBridges.cs`: what the economy asks of the others.
 - `GameBooks.cs`: the game's daily statement, with the mod's costs on it.
 - `Company/CompanyDirector.cs`: a complete feature to copy.

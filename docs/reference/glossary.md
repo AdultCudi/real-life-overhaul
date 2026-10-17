@@ -21,7 +21,7 @@ The mod's own words, as the code and these pages use them.
 | guard | `Core/Guard.cs`: every entry point the game calls runs inside it, so a fault stops one part of the mod and never the game's frame. |
 | host, guest | In a Going Public session, the host runs the shared city (`Core/SharedCity`); a guest takes the host's parts whole. |
 | hot spot | One of the mod's timed scopes (`Core/HotSpots`), opened by every `Update`, so the session record can name the mod's share of a frame. |
-| ladder | Several things are called a ladder: the career ladder of ranks (`Jobs/CareerCatalogue`), what a lender does as payments are missed (`Economy/Products/Ladder.cs`), the rota planner's ladder of plans (`RotaLadder.cs`), a deal's ladder in Ventures, and the Treasury ladder of bonds in the **Stocks** app. |
+| ladder | Several things are called a ladder: the career ladder of ranks (`Jobs/CareerCatalogue`), what a lender does as payments are missed (`Economy/Banking/Debt/LadderRules.cs`), the rota planner's ladder of plans (`RotaLadder.cs`), a deal's ladder in Ventures, and the Treasury ladder of bonds in the **Stocks** app. |
 | line | A feature's state in the save: one string in `modData` under its key. |
 | `MadeFor` | The game build this version of the mod is made for (`Core/GameBuild.cs`). ContractCheck fails until it is raised after a game update. |
 | map place | A place a feature puts on the city map through `Core/MapPlaces` ([Map places](map-places.md)). |

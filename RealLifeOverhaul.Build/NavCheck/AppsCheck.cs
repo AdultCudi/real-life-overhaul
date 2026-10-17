@@ -89,7 +89,7 @@ internal static partial class Program
         string finance = Source(scripts, @"Economy\Finance\FinanceApp.cs");
         Check(!Body(finance, "private void WriteCashFlow(").Contains("Row(\"cash:") && finance.Contains("_table.Show(_spec, _cash, selected)") && finance.Contains("Refresh(false)"),
             "apps: the Cash flow tab is written as it scrolls, and a filter picked writes the box again, not the table");
-        string bank = Source(scripts, @"Economy\Banks\BankApp.cs");
+        string bank = Source(scripts, @"Economy\Banking\BankApps\BankApp.cs");
         Check(!Body(bank, "private void Statement(").Contains("Row(\"cash:") && bank.Contains("_table.Show(_spec, _cash, selected)") && Body(bank, "private void Statement(").Contains("_flow.Read(_period, today, IsHouse ? null : _mine)"),
             "apps: a bank's statement reads only its own movements and is written as it scrolls");
         string cell = Source(scripts, @"Core\GameUi\DataTable.cs");

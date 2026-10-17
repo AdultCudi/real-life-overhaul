@@ -300,7 +300,7 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The game's new day has just drawn every business's customers (BusinessHelper.RunDaily) with the figure each has
         /// now: noted, so that a business whose figure the mod's features leave as the game wrote it is not drawn again.
-        /// Called first thing in the economy's day (Economy/EconomyDirector.OnDay), which is the first of the mod's handlers
+        /// Called first thing in the economy's day (Economy/Banking/EconomyDirector.OnDay), which is the first of the mod's handlers
         /// of the game's day to write a figure (Core/StartRules: the credit side's seat is the first). Left unknown, and so
         /// drawn when asked: a business whose figure was written in this frame already, and one with marketing campaigns
         /// none of which runs (the game stops them all after its draw when the marketing cannot be paid, MarketingHelper.RunDaily).
