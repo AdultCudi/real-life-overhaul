@@ -154,17 +154,6 @@ namespace RealLifeOverhaul.Economy
                     CompanyCatalogue.OvertimeHours + " extra hours each at time and a half on day " + (day - 1));
             }
             StaffRules.OvertimeDay(file, day);
-            // Where the game keeps no customer figure, extra hours would bring nobody.
-            bool busy = (file.Pushing(day) || _cycle == CycleState.Boom) && Promoted(shop);
-            if (shop.Staff > 0 && StaffRules.OvertimeOffered(file, busy, _state.Seed, _state.Age, at, day))
-            {
-                file.OvertimeAsk = day;
-                Tell(NotificationType.Info, "reallife_co_note_overtime", new Dictionary<string, string>
-                {
-                    { "business", shop.Name }, { "cost", CompanyText.Money(OvertimeCost(file.Place)) }, { "percent", CompanyCatalogue.OvertimeFootfall.ToString() },
-                    { "days", CompanyCatalogue.OvertimeDays.ToString() }
-                }, TabStaff, "ot:" + file.Place);
-            }
             if (file.StrikeFrom > 0 && day >= file.StrikeEnd)
             {
                 EndStrike(shop, StrikeAnswer.SitOut, day);
@@ -184,6 +173,18 @@ namespace RealLifeOverhaul.Economy
                                  + " or lower (" + CompanyText.Share(CompanyCatalogue.StrikeShare) + " needed), strictness " + _level + ": called for day "
                                  + file.StrikeFrom + ", back on day " + file.StrikeEnd + ": PASS");
                 }
+            }
+            // After the strike's turn, so that no overtime is offered the morning one is called. Where the game keeps no
+            // customer figure, extra hours would bring nobody.
+            bool busy = (file.Pushing(day) || _cycle == CycleState.Boom) && Promoted(shop);
+            if (shop.Staff > 0 && StaffRules.OvertimeOffered(file, busy, _state.Seed, _state.Age, at, day))
+            {
+                file.OvertimeAsk = day;
+                Tell(NotificationType.Info, "reallife_co_note_overtime", new Dictionary<string, string>
+                {
+                    { "business", shop.Name }, { "cost", CompanyText.Money(OvertimeCost(file.Place)) }, { "percent", CompanyCatalogue.OvertimeFootfall.ToString() },
+                    { "days", CompanyCatalogue.OvertimeDays.ToString() }
+                }, TabStaff, "ot:" + file.Place);
             }
         }
 

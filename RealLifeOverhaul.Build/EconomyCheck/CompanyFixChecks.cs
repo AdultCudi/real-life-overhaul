@@ -4,7 +4,9 @@ using RealLifeOverhaul.Economy;
 // Running a business (Scripts/Economy/Company): the faults found when the folder was cleaned up, each checked against a
 // scripted case that the old code got wrong. A campaign's report counts its price and its give-away once and compares
 // day for day; the day's pass reads yesterday's statement after the mod's own costs are in it; an average day is over
-// the statements there are.
+// the statements there are; a term's claims stay with a cover past a cancel; a licence renewing by itself is tried until
+// paid, and one newly needed has a grace; no overtime runs through a strike; a rival tycoon keeps the waits; a strike's
+// line names its last day.
 internal static partial class Program
 {
     private static string CompanySource(string file)
@@ -211,6 +213,8 @@ internal static partial class Program
         Check(!StaffRules.OvertimeRuns(both, 6) && StaffRules.OvertimeRuns(both, 5) && StaffRules.Footfall(both, 6) == CompanyCatalogue.StrikeFootfall,
             "company staff: a save with both on the same day pays and counts no overtime on the strike's days");
         Check(CompanySource("CompanyDirector.Staff.cs").Contains("if (StaffRules.OvertimeRuns(file, day - 1) && file.OvertimeCost > 0)"), "company staff: overtime is paid only for a day it was worked");
+        Check(InOrder(CompanyMethod(CompanySource("CompanyDirector.Staff.cs"), "private void ShopStaffDay("), "StaffRules.Call(file, _level, day);", "StaffRules.OvertimeOffered("),
+            "company staff: no overtime is offered the morning a strike is called (the strike has its turn first)");
 
         // A rival tycoon's offer keeps the waits and stays away on Relaxed.
         StaffFile wanted = Worker(1000, 1250, 90);

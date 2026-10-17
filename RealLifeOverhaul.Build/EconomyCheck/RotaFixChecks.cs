@@ -7,7 +7,10 @@ using RealLifeOverhaul.Economy;
 // The staff rota planner (Scripts/Economy/Company): the faults found when the folder was cleaned up, each checked against
 // a case the old code got wrong. A choice in a save whose rota line could not be read is kept; a fault in a page's
 // redraw stops no job; an agreed raise works the sheet out again; a confirmed plan is written only as confirmed, and a
-// fill that writes nothing says so; a week half written is put back.
+// fill that writes nothing says so; a week half written is put back. The ladder: cleaning moves, theft, staff first,
+// the next hire, a guard's wage, a plan worth less, the reason an hour closes, a hire's one-off, a day's room. The
+// goods: a round's warehouse, margins at today's prices, bags, contract limits. The page: an hour's stations, a shut
+// hour's wages, a day's fee, the dialogue's reason, and the game reads at today's prices and by their hours.
 internal static partial class Program
 {
     private static void RotaFixes()
