@@ -3,10 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// Marketing by rule: what a campaign costs, how many customers it adds where and when, and what it did, measured
-    /// from the game's own daily figures. Game-free.
-    /// </summary>
+    /// <summary>Marketing: a campaign's cost, the customers it adds, and its report. Game-free.</summary>
     public static class CampaignRules
     {
         /// <summary>One day of a business in the game's books. False if the game has no figures for that day.</summary>
@@ -18,9 +15,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// How well the district suits the business, thousandths, for a local campaign: a business that sells to the
-        /// well-off (taste +1) does better where incomes are high, one that sells on price (-1) where they are low.
-        /// A city-wide campaign and a business of neither kind are at 1000.
+        /// How well the district suits a local campaign, thousandths: a business selling to the well-off (taste +1)
+        /// does better where incomes are high, one selling on price (-1) where they are low. Otherwise 1000.
         /// </summary>
         public static int Suit(int kind, int taste, int income)
         {
@@ -28,10 +24,11 @@ namespace RealLifeOverhaul.Economy
             {
                 return 1000;
             }
-            return CompanyCatalogue.Clamp(1000 + (taste > 0 ? 1 : -1) * (income - CompanyCatalogue.IncomeMiddle) * CompanyCatalogue.SuitPerPoint, CompanyCatalogue.SuitLeast, CompanyCatalogue.SuitMost);
+            return CompanyCatalogue.Clamp(1000 + (taste > 0 ? 1 : -1) * (income - CompanyCatalogue.IncomeMiddle) * CompanyCatalogue.SuitPerPoint,
+                CompanyCatalogue.SuitLeast, CompanyCatalogue.SuitMost);
         }
 
-        /// <summary>What repeating the same kind too soon leaves of it, thousandths: half the day after the last one ended, all of it again after ten days.</summary>
+        /// <summary>What a kind repeated too soon keeps, thousandths: half the day after, all after ten days.</summary>
         public static int Repeat(int ended, int from)
         {
             if (ended <= 0)
@@ -42,17 +39,17 @@ namespace RealLifeOverhaul.Economy
             return since >= CompanyCatalogue.RepeatDays ? 1000 : 1000 - CompanyCatalogue.RepeatLoss * (CompanyCatalogue.RepeatDays - since) / CompanyCatalogue.RepeatDays;
         }
 
-        /// <summary>The customers a campaign adds, per cent: its own figure by the district, the economy and repeats; one at least, never over the most.</summary>
         public static int Effect(int kind, int suit, CycleState cycle, int repeat)
         {
             return Effect(kind, suit, cycle, repeat, 1000);
         }
 
-        /// <summary>The same for a campaign whose reach is given from outside, thousandths of the catalogue's figure (a sponsored post: by the account's followers).</summary>
+        /// <summary>The customers a campaign adds, per cent; reach from outside is in thousandths.</summary>
         public static int Effect(int kind, int suit, CycleState cycle, int repeat, int reach)
         {
             int state = CompanyCatalogue.Clamp((int)cycle, 0, CompanyCatalogue.CampaignCycle.Length - 1);
-            long effect = (long)CompanyCatalogue.CampaignFootfall[kind] * suit * CompanyCatalogue.CampaignCycle[state] / 1000 * repeat / 1000 * Math.Max(0, reach) / 1000;   // thousandths of a per cent
+            long effect = (long)CompanyCatalogue.CampaignFootfall[kind] * suit * CompanyCatalogue.CampaignCycle[state] / 1000 * repeat / 1000
+                          * Math.Max(0, reach) / 1000;   // thousandths of a per cent
             return CompanyCatalogue.Clamp((int)((effect + 500) / 1000), 1, CompanyCatalogue.CampaignMost);
         }
 
@@ -61,11 +58,7 @@ namespace RealLifeOverhaul.Economy
             return s.Push < 0;
         }
 
-        /// <summary>
-        /// What stands in the way of booking at a business: false with nothing booked there; otherwise the kind, its
-        /// first and last day, and whether it has started by the day given. One campaign at a time at a business, of
-        /// any kind, booked from the Company app or hired on Flare.
-        /// </summary>
+        /// <summary>What is booked at a business, however booked: false with nothing, else its kind and days.</summary>
         public static bool Busy(ShopFile s, int day, out int kind, out int from, out int to, out bool started)
         {
             kind = s != null ? s.Push : -1;
@@ -82,19 +75,15 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>
-        /// Whether a kind of campaign is hired on Flare (an influencer's deal) rather than booked from the Company app.
-        /// A sponsored post is priced by Flare but booked from the Company app's Marketing tab.
-        /// </summary>
+        /// <summary>An influencer's deal, hired on Flare (a sponsored post is booked in the Company app).</summary>
         public static bool HiredOnFlare(int kind)
         {
             return kind >= (int)CampaignKind.InfluencerPost && kind < CompanyCatalogue.CampaignKinds;
         }
 
         /// <summary>
-        /// A campaign cut short (an influencer's deal the player ended on Flare). One that has not started is taken
-        /// off at once, with no report and nothing counted as a repeat, and true is returned; one that has started
-        /// runs to the end of today and is reported as usual once it is over. With nothing booked, nothing happens.
+        /// A campaign cut short on Flare. Not started, it is taken off with no report and no repeat counted (true);
+        /// started, it runs to the end of today and is reported as usual.
         /// </summary>
         public static bool EndEarly(ShopFile s, int day)
         {
@@ -105,7 +94,7 @@ namespace RealLifeOverhaul.Economy
             if (day < s.PushFrom)
             {
                 s.Push = -1;
-                s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = 0;
+                s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = s.PushGiven = 0;
                 return true;
             }
             s.PushEnd = Math.Min(s.PushEnd, day + 1);
@@ -120,6 +109,15 @@ namespace RealLifeOverhaul.Economy
             s.PushEnd = s.PushFrom + CompanyCatalogue.CampaignDays[kind];
             s.PushCost = Math.Max(0, cost);
             s.PushPercent = CompanyCatalogue.Clamp(percent, 0, CompanyCatalogue.CampaignMost);
+            s.PushGiven = 0;
+        }
+
+        /// <summary>A day's give-away of a discount day or a giveaway: part of what the campaign costs.</summary>
+        public static void Gave(ShopFile s, int given)
+        {
+            given = Math.Max(0, given);
+            s.PushCost += given;
+            s.PushGiven += given;
         }
 
         public static bool Over(ShopFile s, int day)
@@ -134,10 +132,9 @@ namespace RealLifeOverhaul.Economy
                 s.PushEnded[s.Push] = s.PushEnd;
             }
             s.Push = -1;
-            s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = 0;
+            s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = s.PushGiven = 0;
         }
 
-        /// <summary>What a discount day gives away of the day's takings.</summary>
         public static int Discount(int takings)
         {
             return CompanyCatalogue.Share(Math.Max(0, takings), CompanyCatalogue.DiscountShare);
@@ -149,12 +146,17 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The report: customers, takings and profit over the campaign's days, and over the same number of days before
-        /// it, from the game's own books. A day the game has no figures for is left out and counted in neither total.
+        /// The report: its days against as many before; a day without figures counts in neither. <paramref name="cost"/>
+        /// is all the campaign cost, <paramref name="given"/> of it given away on its days. The game's statements take the
+        /// price off the day it was booked (the day before the first) and a give-away off its day: both are put back into
+        /// the profit, so that the cost counts once. The days before are scaled to as many as the days during, so that the
+        /// two compare day for day.
         /// </summary>
-        public static CampaignReport Measure(string name, int kind, int from, int days, int cost, DayBook book)
+        public static CampaignReport Measure(string name, int kind, int from, int days, int cost, int given, DayBook book)
         {
-            var r = new CampaignReport { Name = name ?? string.Empty, Kind = kind, From = from, Days = days, Cost = Math.Max(0, cost) };
+            cost = Math.Max(0, cost);
+            given = CompanyCatalogue.Clamp(given, 0, cost);
+            var r = new CampaignReport { Name = name ?? string.Empty, Kind = kind, From = from, Days = days, Cost = cost };
             for (int d = from - days; d < from + days; d++)
             {
                 int customers, takings, profit;
@@ -167,7 +169,7 @@ namespace RealLifeOverhaul.Economy
                     r.DaysBefore++;
                     r.CustomersBefore += customers;
                     r.TakingsBefore += takings;
-                    r.ProfitBefore += profit;
+                    r.ProfitBefore += profit + (d == from - 1 ? cost - given : 0);
                 }
                 else
                 {
@@ -177,10 +179,23 @@ namespace RealLifeOverhaul.Economy
                     r.ProfitDuring += profit;
                 }
             }
+            r.ProfitDuring += r.DaysDuring > 0 ? given : 0;
+            if (r.DaysBefore > 0 && r.DaysBefore != r.DaysDuring)
+            {
+                r.CustomersBefore = Math.Max(0, Scale(r.CustomersBefore, r.DaysDuring, r.DaysBefore));
+                r.TakingsBefore = Scale(r.TakingsBefore, r.DaysDuring, r.DaysBefore);
+                r.ProfitBefore = Scale(r.ProfitBefore, r.DaysDuring, r.DaysBefore);
+            }
             return r;
         }
 
-        /// <summary>The newest report is kept with the seven before it.</summary>
+        // A sum over so many days as over so many others, rounded half away from nothing.
+        private static int Scale(int sum, int to, int from)
+        {
+            long scaled = (long)sum * to * 2 / from;
+            return (int)((scaled + (scaled >= 0 ? 1 : -1)) / 2);
+        }
+
         public static void Keep(List<CampaignReport> reports, CampaignReport report)
         {
             reports.Add(report);

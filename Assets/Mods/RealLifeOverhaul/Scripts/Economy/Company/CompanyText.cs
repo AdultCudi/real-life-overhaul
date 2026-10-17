@@ -4,27 +4,28 @@ using Localizor;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The company's words: every figure it shows is written here, the same way in the Company app, the Planner, the
-    /// paper and a notification. Every text is a key of en.json; money is written as the Finance app writes it.
-    /// Called when something is shown or said, never otherwise.
-    /// </summary>
+    /// <summary>The company's words and figures, the same in the app, the Planner, the paper and a notification.</summary>
     public static class CompanyText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         public static readonly string[] CoverKeys = { "reallife_co_cover_fire", "reallife_co_cover_theft", "reallife_co_cover_liability" };
-        public static readonly string[] InsurerKeys = { "reallife_co_insurer_0", "reallife_co_insurer_1", "reallife_co_insurer_2" };
-        public static readonly string[] CampaignKeys =
+        private static readonly string[] InsurerKeys = { "reallife_co_insurer_0", "reallife_co_insurer_1", "reallife_co_insurer_2" };
+        private static readonly string[] CampaignKeys =
         {
-            "reallife_co_campaign_flyers", "reallife_co_campaign_radio", "reallife_co_campaign_discount", "reallife_co_campaign_refit", "reallife_co_campaign_sponsored",
-            "reallife_co_campaign_inf_post", "reallife_co_campaign_inf_series", "reallife_co_campaign_inf_ambassador", "reallife_co_campaign_inf_plan",
-            "reallife_co_campaign_inf_launch", "reallife_co_campaign_inf_giveaway"
+            "reallife_co_campaign_flyers", "reallife_co_campaign_radio", "reallife_co_campaign_discount", "reallife_co_campaign_refit",
+            "reallife_co_campaign_sponsored", "reallife_co_campaign_inf_post", "reallife_co_campaign_inf_series", "reallife_co_campaign_inf_ambassador",
+            "reallife_co_campaign_inf_plan", "reallife_co_campaign_inf_launch", "reallife_co_campaign_inf_giveaway"
         };
-        public static readonly string[] LicenceKeys = { "reallife_co_licence_hygiene", "reallife_co_licence_alcohol", "reallife_co_licence_late", "reallife_co_licence_signage" };
-        public static readonly string[] AccountantKeys = { "reallife_co_accountant_0", "reallife_co_accountant_1", "reallife_co_accountant_2" };
+        private static readonly string[] LicenceKeys = { "reallife_co_licence_hygiene", "reallife_co_licence_alcohol", "reallife_co_licence_late", "reallife_co_licence_signage" };
+        private static readonly string[] AccountantKeys = { "reallife_co_accountant_0", "reallife_co_accountant_1", "reallife_co_accountant_2" };
         public static readonly string[] SickKeys = { "reallife_co_sick_none", "reallife_co_sick_statutory", "reallife_co_sick_generous" };
-        public static readonly string[] CostKeys = { "reallife_co_deduct_wages", "reallife_co_deduct_premiums", "reallife_co_deduct_marketing", "reallife_co_deduct_licences", "reallife_co_deduct_accountant" };
+
+        /// <summary>The deductible costs by <see cref="CostKind"/>: the app's lines and the labels in the game's tax notice.</summary>
+        public static readonly string[] CostKeys =
+        {
+            "reallife_co_deduct_wages", "reallife_co_deduct_premiums", "reallife_co_deduct_marketing", "reallife_co_deduct_licences", "reallife_co_deduct_accountant"
+        };
 
         public static string T(string key)
         {
@@ -57,7 +58,7 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.Money(amount);
         }
 
-        /// <summary>An hourly wage kept in hundredths, as the game writes a wage: with its cents.</summary>
+        /// <summary>An hourly wage kept in hundredths, with its cents as the game writes a wage.</summary>
         public static string Wage(int hundredths)
         {
             return (hundredths / 100f).ToCurrencyFormat();

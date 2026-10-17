@@ -3,11 +3,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The licences half of the Tax and licences tab. The table: every licence each business needs, with the day it is
-    /// good to. The box: the one picked, with its fee, its term, what trading without it costs, the switch that renews
-    /// it by itself and the button that buys a term.
-    /// </summary>
+    /// <summary>The licences half of the Tax and licences tab: every licence each business needs.</summary>
     public sealed partial class CompanyApp
     {
         private static readonly string[] LicenceWhy = { "reallife_co_lic_why_hygiene", "reallife_co_lic_why_alcohol", "reallife_co_lic_why_late", "reallife_co_lic_why_signage" };
@@ -29,8 +25,10 @@ namespace RealLifeOverhaul.Economy
                     }
                     Licence l = shops[i].File.Permits[k];
                     bool valid = LicenceRules.Valid(l, day), soon = valid && l.Until - day < CompanyCatalogue.LicenceRemindDays;
-                    Pick("lic:" + shops[i].File.Place + ":" + k, shops[i].Name, CompanyText.T("reallife_co_row_licence", "licence", CompanyText.Licence(k)), valid ? CompanyText.Day(l.Until) : string.Empty,
-                        CompanyText.T(!valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"), !valid ? 2 : soon && !l.Auto ? 1 : 0, ref selected);
+                    Pick("lic:" + shops[i].File.Place + ":" + k, shops[i].Name, CompanyText.T("reallife_co_row_licence", "licence", CompanyText.Licence(k)),
+                        valid ? CompanyText.Day(l.Until) : string.Empty,
+                        CompanyText.T(!valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"),
+                        !valid ? 2 : soon && !l.Auto ? 1 : 0, ref selected);
                     Last.Kind = CompanyTables.AboutLicence;
                     Last.Kind2 = !valid ? CompanyTables.LicenceMissing : soon ? CompanyTables.LicenceSoon : CompanyTables.LicenceValid;
                     Last.Key[2] = valid ? l.Until : double.NaN;

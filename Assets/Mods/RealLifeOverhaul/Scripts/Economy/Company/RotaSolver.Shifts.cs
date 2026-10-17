@@ -2,15 +2,9 @@ using System;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The solver's placing steps: the stations that take one person for the whole week, the shifts given first to
-    /// whoever asks for a least number of hours or a number of days, and then the shifts of every day at every station,
-    /// the most valuable first. The last is used a second time when optional demands give way (see RotaSolver.cs).
-    /// </summary>
+    /// <summary>The solver's placing steps: whole-week stations, first shifts for least hours or days, then each day and station by value.</summary>
     public sealed partial class RotaSolver
     {
-        // ---------------------------------------------------------------- 2: stations with one person for the whole week
-
         private void Whole()
         {
             for (int s = 0; s < _s; s++)
@@ -72,7 +66,8 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 int wd = w * Days + d;
-                if (((_dayOk[w] >> d) & 1) == 0 || (_hourOk[w] & mask) != mask || (_busy[wd] & mask) != 0 || _dayH[wd] + Bits(mask) > RotaCatalogue.DayCap || LongestRun(mask) > RotaCatalogue.ShiftCap)
+                if (((_dayOk[w] >> d) & 1) == 0 || (_hourOk[w] & mask) != mask || (_busy[wd] & mask) != 0
+                    || _dayH[wd] + Bits(mask) > RotaCatalogue.DayCap || LongestRun(mask) > RotaCatalogue.ShiftCap)
                 {
                     return false;
                 }
@@ -87,7 +82,7 @@ namespace RealLifeOverhaul.Economy
             return a < b || (a == b && _p.Can[w * _s + s] > _p.Can[than * _s + s]);
         }
 
-        private static int Bits(uint mask)
+        internal static int Bits(uint mask)
         {
             int n = 0;
             for (; mask != 0; mask &= mask - 1)
@@ -108,10 +103,7 @@ namespace RealLifeOverhaul.Economy
             return best;
         }
 
-        // ---------------------------------------------------------------- 3: goals first
-
-        // Whoever wants a least number of hours or a number of days gets shifts first, the heaviest demand first: this puts
-        // them in that order and says how many they are.
+        // Puts whoever wants a least number of hours or a number of days in order, the heaviest demand first; returns how many.
         private int GoalsOrder()
         {
             int n = 0;
@@ -151,7 +143,7 @@ namespace RealLifeOverhaul.Economy
                 bool newDay = _dayH[w * Days + d] == 0;
                 if (newDay ? (_wantDays[w] > 0 && !days) : !hours)
                 {
-                    continue;   // (their days are made up: hours only on days they work already; their hours are made up: only a day that is still wanted)
+                    continue;   // days made up: hours only on days they work; hours made up: only a day still wanted
                 }
                 _pre[0] = 0;
                 for (int h = 0; h < Hours; h++)
@@ -168,9 +160,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- 4 and 6: shifts
-
-        // One day at one station, the i-th most valuable: its uncovered runs go out in shifts. True if anything was placed.
+        // The i-th most valuable day at a station: its uncovered runs go out in shifts. True if anything was placed.
         private bool ShiftsLane(int level, bool relaxed, int i)
         {
             int lane = _lanes[i], s = lane % _s;
@@ -188,7 +178,7 @@ namespace RealLifeOverhaul.Economy
             bool any = false;
             while (_need[lane] != 0)
             {
-                // How few could take each hour: an hour only one person can take is theirs before it is anybody's choice.
+                // How few could take each hour: an hour only one person can take is theirs before anybody's choice.
                 Array.Clear(_could, 0, Hours);
                 for (int i = _canStart[s]; i < _canStart[s + 1]; i++)
                 {
@@ -215,7 +205,7 @@ namespace RealLifeOverhaul.Economy
                     int gain = relaxed ? -Broken(w, d, s, x, y) : Gain(w, d, s, y - x);
                     if (relaxed)
                     {
-                        rare = 0;   // (who minds least comes first once demands give way)
+                        rare = 0;   // once demands give way, who minds least comes first
                     }
                     if (best < 0 || value > bestValue || (value == bestValue && (rare > bestRare || (rare == bestRare && (gain > bestGain || (gain == bestGain && (cost < bestCost
                         || (cost == bestCost && _p.Can[w * _s + s] > _p.Can[best * _s + s]))))))))
@@ -242,7 +232,7 @@ namespace RealLifeOverhaul.Economy
             return any;
         }
 
-        // The hours of a day somebody could take at a station out of those still wanted, by their limits; none if a limit of the day or the week is reached.
+        // The wanted hours of a day somebody could take at a station by their limits; none at a limit of the day or week.
         private uint Open(int level, int w, int d, int s, uint need)
         {
             int at = level * _w + w, wd = w * Days + d;
@@ -254,7 +244,7 @@ namespace RealLifeOverhaul.Economy
             return need & _hourOk[at] & ~_busy[wd];
         }
 
-        // The best shift somebody could take out of the uncovered hours of a day at a station: hours x to y. False if they can take none.
+        // The best shift somebody could take of the uncovered hours of a day at a station: hours x to y. False if none.
         private bool Window(int level, int w, int d, int s, uint need, out int x, out int y)
         {
             x = y = 0;
@@ -267,7 +257,7 @@ namespace RealLifeOverhaul.Economy
             int room = Math.Min(RotaCatalogue.DayCap - _dayH[wd], _maxHours[at] - _weekH[w]);
             if (_wantDays[w] > _daysOn[w] && _dayH[wd] == 0 && _maxHours[at] < Days * RotaCatalogue.DayCap)
             {
-                // Somebody who wants so many days and has a most for the week: the hours they have left are spread over the days they have left.
+                // A number of days and a most for the week: the hours left are spread over the days left.
                 int daysLeft = _wantDays[w] - _daysOn[w];
                 room = Math.Min(room, Math.Max(1, (_maxHours[at] - _weekH[w] + daysLeft - 1) / daysLeft));
             }
@@ -296,7 +286,7 @@ namespace RealLifeOverhaul.Economy
                 int from = a;
                 if (len < run && before == 0)
                 {
-                    // Which end of the run: the one that joins a shift they already have, then the one worth more, then the one fewer others could take.
+                    // Which end: the one that joins a shift they have, then the one worth more, then the one fewer could take.
                     int ends = _pre[b] - _pre[b - len], starts = _pre[a + len] - _pre[a];
                     if (after > 0 || ends > starts || (ends == starts && _rare[b] - _rare[b - len] > _rare[a + len] - _rare[a]))
                     {
@@ -315,7 +305,7 @@ namespace RealLifeOverhaul.Economy
             return bestValue >= 0;
         }
 
-        // What somebody's unmet demands would weigh more if they took a shift (the relaxed step asks before it places).
+        // How much more somebody's unmet demands would weigh if they took a shift.
         private int Broken(int w, int d, int s, int x, int y)
         {
             int before = Unmet(w);

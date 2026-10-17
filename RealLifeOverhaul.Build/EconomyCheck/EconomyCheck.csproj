@@ -107,7 +107,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.cs" Link="Mod\RotaSolver.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Shifts.cs" Link="Mod\RotaSolver.Shifts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Improve.cs" Link="Mod\RotaSolver.Improve.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaAdvice.cs" Link="Mod\RotaAdvice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaShop.cs" Link="Mod\RotaShop.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaOutlook.cs" Link="Mod\RotaOutlook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaAdvisor.cs" Link="Mod\RotaAdvisor.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaAdvisor.Steps.cs" Link="Mod\RotaAdvisor.Steps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateCatalogue.cs" Link="Mod\EstateCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateState.cs" Link="Mod\EstateState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.cs" Link="Mod\EstateRules.cs" />
@@ -165,6 +168,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStock.cs" Link="Mod\RotaStock.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.Steps.cs" Link="Mod\RotaLadder.Steps.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.Week.cs" Link="Mod\RotaLadder.Week.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStore.cs" Link="Mod\RotaStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaFit.cs" Link="Mod\RotaFit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCatalogue.cs" Link="Mod\BusinessCatalogue.cs" />

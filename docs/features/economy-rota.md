@@ -20,20 +20,23 @@ For every place the player runs it shows the game's own customer forecast for ea
 It keeps nothing in a save and has no Harmony patch.
 
 ```
-Economy/Company/        the first six are game-free and compiled by EconomyCheck
+Economy/Company/        the first eight are game-free and compiled by EconomyCheck
   RotaModel               the planner's numbers (the game's limits among them) and its plain data: problem, plan, demand
   RotaSolver              the rota itself: limits and goals, the start, placing an hour, a demand met or not
   RotaSolver.Shifts       whole-week stations, shifts for those with a least number of hours or days, shifts by value
   RotaSolver.Improve      the improving pass under a fixed budget of moves, and the rating of a rota
-  RotaAdvice              an hour's crew, the hours worth opening, what each hour at each station is worth, a week in
-                          money, the people a week takes, a station that is missing
+  RotaShop                one business as the arithmetic sees it: stations, customers by the hour, worth, wages
+  RotaOutlook             what the planner advises for a business and what each choice comes to in a week
+  RotaAdvisor             an hour's crew, the hours worth opening, what each hour at each station is worth, a week in
+                          money, the people a week takes; .Steps runs it a few steps a frame
   RotaLedger              what a fill may touch in a week that is there, what putting the week back restores, the stamp
   RotaGame                the places, what a business was worked out from, names; everything from the game is here
   RotaGame.Read           one business into plain numbers: stations, skills, the week it keeps, customers, worth, fees
   RotaGame.Demands        the game's rota demands, each asked of the demand itself
   RotaGame.Write          the rota and hours written, the week as it was kept and put back, as RotaLedger decides
-  CompanyDirector.Rota    the list of places, the jobs that work a business out a few steps a frame, the buttons, tests
-  CompanyApp.Rota         the tab: the places, one business's week, one day's hours
+  CompanyDirector.Rota    the list of places, the sheet kept, the player's choices; .RotaJobs the jobs that work a
+                          business out a few steps a frame; .RotaFill the buttons and writes; .RotaTests the tests
+  CompanyApp.Rota         the tab: the places; .RotaPlans one business's plans; .RotaWeek one plan's week and a day
   RotaGuide               the Guide page's figures, from RotaModel
 ```
 
@@ -103,14 +106,17 @@ Only on the player's button, after the game's own confirm dialogue where a rota 
 
 - **Put back**: the week kept (each day's switch, its opening hours, every shift) is restored where the person still works there and the station still stands; shifts of those left alone stay as they are today.
   As a fill changes no plan, that is everything a fill changed; the "idle" task of somebody who has a shift again is closed by the game.
-- **Never from a stale reading**: what was worked out carries a stamp of everything it was worked out from (every assignable item by id and whether it lacks a requirement, prices, hours, shifts, everybody assigned with wage, satisfaction, skills and demands).
+  A fault in the middle of a write switches the planner off for the session and puts the week kept back at once, with the same notice, so nothing half written stays.
+- **Never from a stale reading**: what was worked out carries a stamp of everything it was worked out from (every assignable item by id and whether it lacks a requirement, prices, hours, shifts, everybody assigned with wage, satisfaction, skills and demands, and the raises agreed in the Company app).
   The stamp is compared again in the frame that writes; a business that changed is read again, and after three such readings nothing is written and the player is told.
+  What the player confirmed is written only while the business is as it was when they were asked; one that changed since (the day turned, its customers moved) is not written, and the notice asks for the button again.
+  A fill that ends with nothing written says so, in the log and in that notice.
 - **Never in part**: a business with more than 64 stations (one bit each in the solver) or 120 employees is refused with a sentence; nothing of it is read in part and nothing of its rota is touched.
   The game's building size data is asset data and is not in the decompiled code, so the largest business the game allows is not known here.
 - **The late opening permit**: while licences are on and the business holds no permit, hours from 22:00 and before 05:00 are barred from the advice, so "Use these hours" can never put it in breach.
   The page says what the permit would add (hours and money), and says so when the business opens late without one as it stands.
 
-## The ladder of plans (`RotaLadder.cs`, `RotaLadder.Steps.cs`)
+## The ladder of plans (`RotaLadder.cs`, `RotaLadder.Steps.cs`, `RotaLadder.Week.cs`)
 
 The Rota page of a business no longer shows two extremes ("with the staff", "with all it takes").
 It shows a ladder, every rung a set of opening hours with a rota, all valued the same way (`RotaLadder.Evaluate`):
@@ -118,16 +124,18 @@ It shows a ladder, every rung a set of opening hours with a rota, all valued the
 | Rung | What it is |
 | --- | --- |
 | As it is | the hours and the rota the business has |
-| Best with the people you have | the better of: the week as it is; the hours kept with a new rota; those hours less the ones nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep. Never worse than the week as it is, by construction |
+| Best with the people you have | the better of: the week as it is; the hours kept with a new rota; those hours less the ones nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep. Never worse than the week as it is, unless it keeps more people within the hours they ask for, which comes first: the advice and the confirm dialogue then say how much a week less it is worth |
 | Hire 1, Hire 2, ... | one more person at the going wage (`StaffRules.Going` of the game's wage formula for the station's skill at a middling value), for the group of stations where that adds most (up to three groups are tried), counted for a full week of 40 hours and no more. Kept only if it adds at least 5 per cent of the week before and at least 50.00 a week. The ladder ends at the first hire that does not, and at four hires |
 
 A week is: what the customers served leave (at the cleanliness they find, and for goods only while there are some: see "Goods" below), less wages, licensing fees, the game's hourly theft, the risk of a break-in on a night shut, and what unmet demands cost.
 So a week open round the clock is shown only if every step to it pays.
+An hour is worth opening when its customers pay the smallest crew that serves them and every support station (a guard) wanted beside it.
 
 **Staff first or lean.** Staff first: every demand is a limit (the solver is given them all at the game's high priority, which never gives way), and the least hours people ask for are wanted at stations that would otherwise stand empty, as the game's own auto fill gives everybody their least hours.
 
 Lean: only hours that pay are wanted, the solver lets demands below high priority give way to an hour, and what that costs is counted.
 Left alone the planner makes the hours kept in both and takes whichever comes to more; the player's choice for a business is kept in the save under `reallife:economy_rota` (`RotaStore`, version 1; a line of another version is not read and is left untouched until a choice is made).
+There is a choice only where the two differ: somebody asks for a least number of hours, or for anything below the game's high priority.
 
 For a small shop the default comes out as staff first: losing its only cashier costs more than the hours asked for.
 
@@ -143,14 +151,15 @@ In a shop of the game's retail simulators, every product sold off a shelf (and, 
 - what its shelves hold (`CargoInstance.GetMaxStockCapacity`);
 - what is on site: the shelves, the stock containers and any vehicle parked there, as `ReStockingHelper.CountAvailableStock` counts them;
 - the box places of the business's storage less those other goods take;
-- what a customer takes of it and what a unit leaves, by the same source as what a customer is worth (the books of the last days, else the game's own arithmetic for a customer's order);
-- what the delivery contracts that repeat bring on a Monday (`DeliveryContractItem.amount`, with the weekly limit `Item.maxWholesaleOrderAmount`);
-- what the logistics managers' delivery plans top it up to each morning (`ItemAmountTarget.targetAmount`, read as `LogisticsManagerPlan.GetPlannedDeliveries` would run it, without its side effects).
+- what a customer takes of it and what a unit leaves, by the same source as what a customer is worth (the books of the last days, else the game's own arithmetic for a customer's order), at today's prices as a customer's worth is (the city's takings line), so that what a customer leaves splits into its goods without a price rise landing on what needs none;
+- what the delivery contracts that repeat bring on a Monday (`DeliveryContractItem.amount`, with the weekly limit `Item.maxWholesaleOrderAmount`, which each contract line has of its own);
+- what the logistics managers' delivery plans top it up to each morning (`ItemAmountTarget.targetAmount`, read as `LogisticsManagerPlan.GetPlannedDeliveries` would run it, without its side effects), what the warehouse of the plan holds, and what that warehouse's own repeating contracts bring it a week; a warehouse two plans come from is counted once.
 
-Each week of a plan is run hour by hour (`RotaStockRun`): the delivery plan at 2, the contract at 8 on a Monday (onto the shelves, then into storage a box at a time; what finds no room goes back, as `ItemHelper.DeliverCargoToBuilding` refunds it), then the hour's customers buy what is there.
+Each week of a plan is run hour by hour (`RotaStockRun`): the delivery plan at 2, with no more than its warehouse holds (`LogisticsManagerPlanDestination.ProcessStockTarget` takes only what is there; what finds no room goes back to the warehouse), the contract at 8 on a Monday (onto the shelves, then into storage a box at a time; what finds no room goes back, as `ItemHelper.DeliverCargoToBuilding` refunds it) and the warehouse's own at the same hour, then the hour's customers buy what is there.
+The warehouse is taken to serve this business alone: what other businesses' plans take from it is not counted.
 The shelves are filled again from storage the moment they run empty (`ItemHelper.SubtractFromStock`, `RefillSingleItemWithLimit`), so what sells out is everything on site.
 
-Without a bag nobody buys goods (`GetIdealPointOfSale`).
+Without a bag nobody buys goods (`GetIdealPointOfSale`); a customer who buys takes one bag, however much the floor's dirt lowers what they buy (`ProcessPaperBag`).
 The goods run two weeks, the first from what is there now, and the second is counted, so a plan comes to what it comes to week after week with the deliveries there are.
 
 An Urgent Order is a delivery once (the contract goes back to Mondays after it, and the game lowers its amount to what is left of the week's limit), so it is not counted; neither is a contract that does not repeat, a backorder or a shortage at the wholesaler (the page says those).
@@ -159,7 +168,7 @@ A product nothing brings is not capped: it is taken to be restocked by hand, and
 A shelf whose item takes nothing on a sale (`producerSettings.ResourcesRequired` off) is no limit.
 With no product capped the week is valued exactly as before.
 
-The page lists each product that runs out in the advised plan with the hour, what its customers would have spent and what would lift it (`RotaLift`): room for the deliveries, a higher target for the delivery plan, a larger contract or an Urgent Order, or past the weekly limit a second wholesaler or a delivery plan from a warehouse.
+The page lists each product that runs out in the advised plan with the hour, what its customers would have spent and what would lift it (`RotaLift`): room for the deliveries, a higher target for the delivery plan (and what its warehouse holds), a larger contract or an Urgent Order, or with every contract line at its wholesaler's weekly limit another wholesaler or a delivery plan from a warehouse.
 
 Where the next hire adds too little because the goods run out first, the ladder ends with that reason (`RotaEnd.Stock`).
 
@@ -173,7 +182,7 @@ Every hour a plan opens or closes is listed with its reason and what it comes to
 
 **The range.** The game's hours demand is `Entities.Employee.JobDemands.Requirements/HoursWorkingPerWeek.cs`: `MinHours` (:20) and `MaxHours` (:22) are the two ends of a slider from 0 to 50 (:17) kept in each demand's own asset (`jobdemand_parttime`, `jobdemand_fulltime`), and `Fulfilled` (:24) asks for the assigned hours to be inside both.
 
-The figures themselves are in the game's data, not its code, so they could not be read offline; the planner reads them from the game for every employee (`RotaGame.Demands.cs:89`) and uses whatever they are.
+The figures themselves are in the game's data, not its code, so they could not be read offline; the planner reads them from the game for every employee (`RotaGame.Demands.cs`, `Demand`) and uses whatever they are.
 The game's own auto fill gives exactly the least (:98).
 
 **The rule.** In every rota the planner makes (the one "Fill the rota" writes and every rung above the week as it is), whoever asks for hours a week works no fewer than the least and no more than the most, or is given no hours at all and is named with the reason.
@@ -188,7 +197,7 @@ How:
 
 - whoever still has some hours but fewer than their least is left out of that week, one person at a time, and the week is made again without them (`Fitted`); nobody is ever written short.
 
-  A rung says who it leaves without hours and why (`RotaLeft`): their own limits against the opening hours (with the hours open to them), the others at the same stations (what they ask for between them against what the stations hold), or the cleaning service.
+  A rung says who it leaves without hours and why (`RotaLeft`): their own limits against the opening hours (with the hours open to them, a day's at most one shift of twelve, as only one shift is begun for them on a day), the others at the same stations (what they ask for between them against what the stations hold), or the cleaning service.
   A rung may be used (`RotaRung.Usable`, `RotaLadder.Writable`) only if nobody in it works outside their range.
 
 **When the hours kept are too few.** The plan with the people then has one more candidate: the hours kept and more, the best paying hour beside an open one added one at a time (never an hour barred for want of a permit) until the opening hours hold the least hours of everybody who was left out (`Extend`).
@@ -216,7 +225,7 @@ So within a day a busier hour never has fewer people at the tills than a quieter
 - **A till's customers an hour are a hard limit, and skill does not change it.** `RetailBusinessSimulator.cs:214` (`GetMaxCustomerCapacityThisHour`) sums `Item.addedCustomersPerHour` of the manned stations of each group and takes the smallest group; customers beyond it are marked completed and lost (:176).
   Skill enters only as the order's service quality: `Entities/EmployeeInstance.cs:1037` (skill x satisfaction x 0.01).
 
-  The forecast itself stops at what all stations serve (`registration.customerCapacity`), so the page shows the uncapped figure beside it ("36 come, the stations serve 20") and what one more station would serve.
+  The forecast itself stops at what all stations serve (`registration.customerCapacity`), so the page shows the uncapped figure beside it, against what the stations manned in that hour serve ("36 come, the stations serve 20"), and what one more station would serve.
 
 - **Satisfaction and sales.** `Helpers/BusinessHelper.cs:822` (`UpdateSatisfaction`): overall = (service + pricing + cleanliness + facility) / 4, the last three over orders with a paid entry.
   `AI.Customers.CustomerEntries/CustomerEntriesCalculator.cs:43`: what customers buy goes with (overall - 50) / 100 + 1.
@@ -225,10 +234,13 @@ So within a day a busier hour never has fewer people at the tills than a quieter
   Nothing in `BusinessHelper.RunHourly` (:454) charges an open hour beyond wages and, for a cinema or theatre, the day's licensing fee.
 
   Theft (`Helpers/BusinessSecurityHelper.cs:133`, `SimulateTheft`) follows the customers of the last hour, not the time of day: thieves a shelf = customers x 0.04 x (1 - security); under one it is the chance that one unit goes from a stocked shelf, and from one on the code takes nothing (`num2` is only set in the branch under one).
-  The security level counts guards only while they are on a shift (:82, `IsWorking`).
+  The customers it counts are the hour's orders (`GetAmountOfCustomersThisHour`), one for each customer the game sent and took in, served or not, so the planner counts it on the forecast, which stops at what the stations serve, and not on those who would come past them.
+  The security level counts guards only while they are on a shift (:82, `IsWorking`), so read as it stands it would depend on the hour the page is opened.
+  The planner takes it apart by the game's own weights (guards 0.55 of it, against the protection the business's size and prices call for): theft is counted with every guard of the business at work while it is open, a break-in with none.
+  A security sign spares an unsecured shelf 6 times in 100 (`Random.Range(0, 100) <= 5f`).
 
   The mod's break-ins (`Scripts/Crime/OffscreenCrimes.cs:77`, `BreakIn` :120) are rolled once a night in the small hours and only hit a shop that is shut then, so an hour open at 01:00 removes that risk.
-  The planner counts the expected loss of each night shut (chance 4 per cent x the frequency option x exposure, shared among the player's shops, times a quarter of the shelves up to 2,500 and the repair).
+  The planner counts the expected loss of each night shut (chance 4 per cent x the frequency option x exposure, shared among the player's shops, times a quarter of the shelves up to 2,500 and the repair, both at today's prices as the break-in takes them).
 
   The late opening permit bars the hours from 22:00 and before 05:00 as before.
   `HasNoShiftBetweenHours` demands are read as limits as before.

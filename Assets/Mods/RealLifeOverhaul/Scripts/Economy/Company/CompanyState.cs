@@ -3,14 +3,13 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    // Everything in this file is free of the game and of the engine: RealLifeOverhaul.Build/EconomyCheck compiles it
-    // as it is. It is what "running a business" remembers of a save, and nothing else: no rule is in here.
+    // What running a business keeps of a save, and no rules. Game-free: EconomyCheck compiles this file.
 
     /// <summary>One employee as the mod knows them, by the game's own id for the employee.</summary>
     public sealed class StaffFile
     {
         public string Id;
-        public string Place;            // the business they work at, as the business feature writes a place
+        public string Place;            // the business they work at, as business pressure writes a place
         public int Standing = CompanyCatalogue.StandingStart;
         public int Raise;               // agreed through the mod, hundredths an hour on top of the game's wage
         public int UnderDays;           // days running underpaid
@@ -23,18 +22,18 @@ namespace RealLifeOverhaul.Economy
         public int LeaveDay;            // the day they go; 0 while they stay
         public string Rival = string.Empty;
 
-        // ---- as last read from the game; never saved
+        // Read from the game; never saved.
         public string Name = string.Empty;
-        public int Wage;                // the game's own hourly wage at today's prices, as the city's cost of living pays it, hundredths
-        public int Going;               // the going rate for them, hundredths
+        public int Wage;                // the game's hourly wage at today's prices, hundredths
+        public int Going;               // the going rate for them, hundredths an hour
         public int Hours;               // hundredths of an hour worked on the day that has ended
         public int DayHours;            // hundredths of an hour in one of their working days
         public int Skill;               // the game's value of their main skill
-        public int Mood;                // the game's own satisfaction, 0 to 100; -1 if it could not be read
-        public bool Sick;               // the game has them off sick: in the day's pass still on the day that has ended, read later on today
-        public bool Seen;               // found in the game on the last look
+        public int Mood;                // the game's satisfaction, 0 to 100
+        public bool Sick;               // off sick: on the day's pass, the day that has ended
+        public bool Seen;               // found in the game on the last read
 
-        /// <summary>What they are paid an hour, the game's wage and the agreed raise together.</summary>
+        /// <summary>What they are paid an hour, hundredths: the game's wage and the agreed raise.</summary>
         public int Paid => Wage + Raise;
     }
 
@@ -45,7 +44,7 @@ namespace RealLifeOverhaul.Economy
         public int Premium;             // a day, fixed for the term
         public int From;                // the day it began
         public int Until;               // the last day of the term
-        public int Claims;              // claims put in during this term
+        public int Claims;              // claims put in during this term; with no policy, those of the last term here
         public int Missed;              // days running the premium could not be taken
         public int Declined;            // insurers that will not write this cover here again, a bit each
 
@@ -56,11 +55,11 @@ namespace RealLifeOverhaul.Economy
     public sealed class Licence
     {
         public int Until;               // the last day it is good for; 0 with none
-        public bool Auto;               // renewed by itself on the day after it runs out
-        public bool Reminded;           // the reminder for this term has gone out
+        public bool Auto;               // renewed by itself from the day after it runs out, as soon as its fee can be paid
+        public bool Reminded;           // this term's reminder has gone out; renewing by itself, that its fee could not be paid
     }
 
-    /// <summary>One business of the player's as the mod knows it, by its place.</summary>
+    /// <summary>One of the player's businesses as the mod knows it, by its place.</summary>
     public sealed class ShopFile
     {
         public string Place;
@@ -74,7 +73,8 @@ namespace RealLifeOverhaul.Economy
         public int PushEnd;             // the first day without it
         public int PushCost;            // what was paid for it
         public int PushPercent;         // per cent of customers it adds
-        public readonly int[] PushEnded = new int[CompanyCatalogue.CampaignKinds];   // the first day without the last one of each kind; 0 for never
+        public int PushGiven;           // of PushCost, what a discount day or a giveaway gave away
+        public readonly int[] PushEnded = new int[CompanyCatalogue.CampaignKinds];   // the first day without the last of each kind; 0 for never
 
         public int StrikeFrom;          // its first day; 0 with none called or running
         public int StrikeEnd;           // the first day back at work
@@ -86,8 +86,7 @@ namespace RealLifeOverhaul.Economy
         public int OvertimeCost;        // a day
         public int LossRun;             // days running the game's statement showed a loss
 
-        // ---- as last read from the game; never saved
-        public bool Seen;
+        public bool Seen;               // found in the game on the last read; never saved
 
         public bool Striking(int day) => StrikeFrom > 0 && day >= StrikeFrom && day < StrikeEnd;
         public bool StrikeCalled(int day) => StrikeFrom > 0 && day < StrikeFrom;
@@ -120,7 +119,7 @@ namespace RealLifeOverhaul.Economy
         public int PayDay;
     }
 
-    /// <summary>What a campaign did, from the game's own figures. Days found may be fewer than its days if the game keeps no more.</summary>
+    /// <summary>What a campaign did, by the game's own figures; the game may keep fewer days than it ran.</summary>
     public sealed class CampaignReport
     {
         public string Name = string.Empty;
@@ -133,7 +132,7 @@ namespace RealLifeOverhaul.Economy
         public int ProfitBefore, ProfitDuring;
         public int Cost;
 
-        /// <summary>The extra profit: what the business made over the same number of days before, less what the campaign cost.</summary>
+        /// <summary>The extra profit: the campaign's days against as many days before, less its cost.</summary>
         public int Extra => ProfitDuring - ProfitBefore - Cost;
 
         /// <summary>The return on what was spent, per cent; 0 for a campaign that cost nothing.</summary>
@@ -143,13 +142,13 @@ namespace RealLifeOverhaul.Economy
         public int Footfall => CustomersBefore > 0 ? (int)Math.Max(-999L, Math.Min(9999L, ((long)CustomersDuring - CustomersBefore) * 100 / CustomersBefore)) : 0;
     }
 
-    /// <summary>Tax: the quarter, the return that is waiting, the accountant, and the cash kept off the books.</summary>
+    /// <summary>Tax: the quarter, the return that waits, the accountant, and the cash kept off the books.</summary>
     public sealed class TaxFile
     {
-        public int QuarterFrom;         // the first day of the quarter that is running
+        public int QuarterFrom;         // the first day of the running quarter
         public int Quarter = 1;         // its number, from 1
-        public readonly int[] Costs = new int[(int)CostKind.Count];   // the mod's own business costs of this quarter, by kind
-        public int ReturnDue;           // the last day to file the return that is waiting; 0 with none
+        public readonly int[] Costs = new int[(int)CostKind.Count];   // the mod's business costs this quarter, by kind
+        public int ReturnDue;           // the last day to file the waiting return; 0 with none
         public int ReturnQuarter;
         public int ReturnTakings;
         public int ReturnCosts;
@@ -161,16 +160,16 @@ namespace RealLifeOverhaul.Economy
         public int Saved;               // tax not paid on hidden takings since the last audit
         public int Owed;                // back-tax and fines found and not yet paid
         public int LastAudit;           // the day of the last audit; 0 for never
-        public int CaseNumber;          // the court's number for the case an audit brought; 0 for none
+        public int CaseNumber;          // the court's number for an audit's case; 0 for none
 
         public bool ReturnWaiting => ReturnDue > 0;
     }
 
-    /// <summary>What "running a business" keeps for a save.</summary>
+    /// <summary>What running a business keeps for a save.</summary>
     public sealed class CompanyState
     {
         public int Seed;
-        public int FirstDay;            // the day the mod first ran this in the save
+        public int FirstDay;            // the day the mod first ran in the save
         public int LastDay;             // the game's day last counted
         public int Age;                 // days counted
         public int SickPolicy = CompanyCatalogue.SickPolicyDefault;

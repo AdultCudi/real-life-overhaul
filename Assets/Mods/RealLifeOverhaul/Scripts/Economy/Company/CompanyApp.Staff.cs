@@ -3,13 +3,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The Staff tab. The table: a strike and an offer of overtime that wait, the employees who ask for a raise or
-    /// hold a rival's offer, then everybody else, each with their pay against the going rate and their standing.
-    /// The box: the one picked, with the answers; with nothing picked, the staff in a few figures and the sick pay policy.
-    /// Whatever waits for an answer has its buttons directly under the title, before the figures: the box does not
-    /// scroll, so buttons at the foot of a long page can fall below its edge where nobody can press them.
-    /// </summary>
+    /// <summary>The Staff tab: what waits for an answer, then the staff, and the sick pay policy.</summary>
     public sealed partial class CompanyApp
     {
         partial void WriteStaff(InfoBox box, CompanyState state, int day, ref string selected)
@@ -21,19 +15,21 @@ namespace RealLifeOverhaul.Economy
                 if (file.StrikeFrom > 0)
                 {
                     Pick("strike:" + file.Place, CompanyText.T("reallife_co_row_strike"), shops[i].Name,
-                        CompanyText.T(file.Striking(day) ? "reallife_co_row_strike_until" : "reallife_co_row_strike_from", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()),
+                        CompanyText.T(file.Striking(day) ? "reallife_co_row_strike_until" : "reallife_co_row_strike_from", "day",
+                            StaffRules.StrikeShown(file, day).ToString()),
                         CompanyText.T("reallife_co_row_answer"), 2, ref selected);
-                    Last.Pinned = true;   // (something to answer, not a member of staff: it stays at the head of the list)
+                    Last.Pinned = true;   // something to answer, not a member of staff: it stays at the head of the list
                 }
                 if (file.OvertimeAsk > 0)
                 {
-                    Pick("ot:" + file.Place, CompanyText.T("reallife_co_row_overtime"), shops[i].Name, CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(_director.OvertimeCost(file.Place))),
+                    Pick("ot:" + file.Place, CompanyText.T("reallife_co_row_overtime"), shops[i].Name,
+                        CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(_director.OvertimeCost(file.Place))),
                         CompanyText.T("reallife_co_row_answer"), 1, ref selected);
                     Last.Pinned = true;
                 }
             }
             int under = 0, low = 0;
-            TableFilter businesses = CompanyTables.Staff.Filters[0];   // the filter's kinds: the businesses the staff work at
+            TableFilter businesses = CompanyTables.Staff.Filters[0];   // its kinds are the businesses the staff work at
             businesses.Names.Clear();
             for (int pass = 0; pass < 2; pass++)
             {
@@ -52,7 +48,7 @@ namespace RealLifeOverhaul.Economy
                     string business = _director.ShopName(f.Place);
                     Pick("emp:" + f.Id, f.Name, business, CompanyText.T("reallife_co_row_pay", "paid", CompanyText.Wage(f.Paid), "going", CompanyText.Wage(f.Going)), stands,
                         waits || f.LeaveDay > 0 ? 2 : StaffRules.StandsLow(f) ? 1 : 0, ref selected);
-                    // What the columns are ordered by: the hourly pay, the standing, and a working day's pay (the totals line adds that up).
+                    // Sorted by the hourly pay, the standing, and a working day's pay (which the totals line adds up).
                     TableRow row = Last;
                     float aDay = f.Paid / 100f * (f.DayHours / 100f);
                     row.Kind = CompanyTables.KindOf(businesses, business);
@@ -93,7 +89,7 @@ namespace RealLifeOverhaul.Economy
                 int perHour, asks = _director.RaisesWaiting(out perHour);
                 if (asks > 1)
                 {
-                    // Many at once (a district's income rose, prices moved): one answer for all of them, each still by the rule that answers one.
+                    // Many at once (a district's income rose, prices moved): one answer for all.
                     box.Line(CompanyText.T("reallife_co_staff_asks", "count", asks.ToString(), "amount", CompanyText.Wage(perHour)), CellTone.Yellow);
                     var buttons = box.ButtonRow();
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_staff_agree_all", () => _director.AnswerAllRaises(RaiseAnswer.Agree));
@@ -104,7 +100,8 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_co_staff_under", under.ToString(), under > 0 ? CellTone.Yellow : CellTone.Plain);
                 box.Row("reallife_co_staff_low", low.ToString(), low > 0 ? CellTone.Red : CellTone.Plain);
                 box.Headline("reallife_co_staff_sick");
-                if (!box.HasSelector || !box.Selector(CompanyText.SickKeys.Length, state.SickPolicy, i => CompanyText.T(CompanyText.SickKeys[i]), i => _director.SetSickPolicy(i)))
+                if (!box.HasSelector || !box.Selector(CompanyText.SickKeys.Length, state.SickPolicy, i => CompanyText.T(CompanyText.SickKeys[i]),
+                        i => _director.SetSickPolicy(i)))
                 {
                     box.Line(CompanyText.T(CompanyText.SickKeys[state.SickPolicy]));
                 }
@@ -127,6 +124,8 @@ namespace RealLifeOverhaul.Economy
             return shop != null && shop.File.OvertimeAsk > 0 ? shop : null;
         }
 
+        // Answer buttons come straight after the title: the box does not scroll, so a button at the foot of a long
+        // page could be out of reach.
         private void WriteEmployee(InfoBox box, StaffFile f)
         {
             string skill = CompanyGame.SkillName(f.Id);
@@ -153,7 +152,8 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Headline("reallife_co_emp_asks");
                 box.Line(CompanyText.T("reallife_co_emp_ask", "wage", CompanyText.Wage(f.AskTo), "day", (f.AskDay + CompanyCatalogue.RaiseAnswerDays).ToString()));
-                box.Line(CompanyText.T("reallife_co_emp_ask_choices", "all", CompanyText.Wage(StaffRules.RaiseFor(f, RaiseAnswer.Agree)), "less", CompanyText.Wage(StaffRules.RaiseFor(f, RaiseAnswer.Less))));
+                box.Line(CompanyText.T("reallife_co_emp_ask_choices", "all", CompanyText.Wage(StaffRules.RaiseFor(f, RaiseAnswer.Agree)),
+                    "less", CompanyText.Wage(StaffRules.RaiseFor(f, RaiseAnswer.Less))));
                 var buttons = box.ButtonRow();
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_emp_agree", () => _director.AnswerRaise(id, RaiseAnswer.Agree));
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_emp_less", () => _director.AnswerRaise(id, RaiseAnswer.Less));
@@ -162,22 +162,23 @@ namespace RealLifeOverhaul.Economy
             else if (f.PoachDay > 0)
             {
                 box.Headline("reallife_co_emp_offer");
-                box.Note(CompanyText.T("reallife_co_emp_offer_what", "rival", f.Rival, "wage", CompanyText.Wage(f.PoachOffer), "day", (f.PoachDay + CompanyCatalogue.PoachAnswerDays).ToString()));
-                box.Line(CompanyText.T("reallife_co_emp_offer_choices", "raise", CompanyText.Wage(System.Math.Max(0, f.PoachOffer - f.Paid)), "days", CompanyCatalogue.PoachNoticeDays.ToString()));
+                box.Note(CompanyText.T("reallife_co_emp_offer_what", "rival", f.Rival, "wage", CompanyText.Wage(f.PoachOffer), "day",
+                    (f.PoachDay + CompanyCatalogue.PoachAnswerDays).ToString()));
+                box.Line(CompanyText.T("reallife_co_emp_offer_choices", "raise", CompanyText.Wage(System.Math.Max(0, f.PoachOffer - f.Paid)), "days",
+                    CompanyCatalogue.PoachNoticeDays.ToString()));
                 var buttons = box.ButtonRow();
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_emp_match", () => _director.AnswerOffer(id, true));
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_co_emp_let_go", () => _director.AnswerOffer(id, false));
             }
             else if (StaffRules.CanGive(f, _director.Today))
             {
-                // Nobody has asked (or a request lapsed): the player may still bring them up to the going rate, the same as agreeing to a request.
+                // Nobody asked, or a request lapsed: the player may still bring them up to the going rate.
                 box.Note(CompanyText.T("reallife_co_emp_give_what", "raise", CompanyText.Wage(f.Going - f.Paid)));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_co_emp_give", () => _director.GiveRaise(id));
             }
             else if (f.LeaveDay == 0 && f.Going > f.Paid)
             {
-                // (a raise was answered lately: one in the rest's time, as their own requests come)
-                box.Note(CompanyText.T("reallife_wage_rested_line", "day", f.AskRest.ToString()));
+                box.Note(CompanyText.T("reallife_wage_rested_line", "day", f.AskRest.ToString()));   // one raise in the rest's time
             }
             box.Section("reallife_ibox_sec_pay");
             box.Row("reallife_co_emp_wage", CompanyText.Wage(f.Wage));
@@ -187,7 +188,8 @@ namespace RealLifeOverhaul.Economy
             }
             box.Row("reallife_co_emp_going", CompanyText.Wage(f.Going), f.Going > f.Paid ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_feeling");
-            box.Meter("reallife_co_emp_standing", f.Standing / 100f, f.Standing.ToString(), f.Standing < 30 ? CellTone.Red : f.Standing < 60 ? CellTone.Yellow : CellTone.Green);
+            box.Meter("reallife_co_emp_standing", f.Standing / 100f, f.Standing.ToString(),
+                StaffRules.StandsLow(f) ? CellTone.Red : f.Standing < 60 ? CellTone.Yellow : CellTone.Green);
             box.Meter("reallife_co_emp_mood", f.Mood / 100f, f.Mood.ToString(), f.Mood < 30 ? CellTone.Red : f.Mood < 60 ? CellTone.Yellow : CellTone.Green);
             BackButton(box);
         }
@@ -198,12 +200,14 @@ namespace RealLifeOverhaul.Economy
             string place = file.Place;
             box.Title(CompanyText.T("reallife_co_strike_title", "business", shop.Name));
             box.Chip(CompanyText.T(file.Striking(day) ? "reallife_ibox_chip_striking" : "reallife_ibox_chip_called"), CellTone.Red);
-            box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_strike_on" : "reallife_co_strike_called", "from", file.StrikeFrom.ToString(), "end", file.StrikeEnd.ToString()), CellTone.Red);
+            box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_strike_on" : "reallife_co_strike_called", "from", file.StrikeFrom.ToString(),
+                "end", file.StrikeEnd.ToString()), CellTone.Red);
             box.Line(CompanyText.T("reallife_co_strike_effect", "percent", (-CompanyCatalogue.StrikeFootfall).ToString(), "hours", CompanyCatalogue.StrikeClosedHours.ToString()));
             box.Note(CompanyText.T("reallife_co_strike_why", "low", shop.Low.ToString(), "count", shop.Staff.ToString()));
             box.Headline("reallife_co_strike_ways");
             box.Line(CompanyText.T("reallife_co_strike_raise", "amount", CompanyText.Wage(_director.StrikeCost(place, StrikeAnswer.Raise))));
-            box.Line(CompanyText.T("reallife_co_strike_payment", "amount", CompanyText.Money(_director.StrikeCost(place, StrikeAnswer.Payment)), "hours", CompanyCatalogue.StrikePayHours.ToString()));
+            box.Line(CompanyText.T("reallife_co_strike_payment", "amount", CompanyText.Money(_director.StrikeCost(place, StrikeAnswer.Payment)),
+                "hours", CompanyCatalogue.StrikePayHours.ToString()));
             box.Line(CompanyText.T("reallife_co_strike_sit", "day", file.StrikeEnd.ToString()));
             var buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_strike_do_raise", () => _director.SettleStrike(place, StrikeAnswer.Raise));

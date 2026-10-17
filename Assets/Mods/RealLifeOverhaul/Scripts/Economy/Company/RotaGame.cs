@@ -1,24 +1,12 @@
-using System;
 using System.Collections.Generic;
 using AI.Customers.CustomerEntries;
 using BAModAPI;
-using BigAmbitions.Characters.Skills;
-using BigAmbitions.DayNightCycle;
 using BigAmbitions.Items;
 using BigAmbitions.Tags;
-using Buildings;
-using Buildings.Office.Headquarters;
-using Buildings.Retail.Businesses.CinemaTheater;
 using Buildings.Schedule;
 using Entities;
-using Entities.Employee.JobDemands;
-using Entities.Employee.JobDemands.Requirements;
 using Helpers;
 using Localizor;
-using PlayerActivity;
-using UI;
-using UI.Smartphone.Apps.BizMan;
-using UI.Smartphone.Apps.BizMan.Schedule;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -32,7 +20,7 @@ namespace RealLifeOverhaul.Economy
         Warehouse = 3       // no rota: the game gives the drivers their vehicles itself
     }
 
-    /// <summary>One place of the player's on the Rota tab's list: what a look at its week costs nothing to say.</summary>
+    /// <summary>One place of the player's on the Rota tab's list, with a glance at its week.</summary>
     internal sealed class RotaPlace
     {
         public BuildingRegistration Reg;
@@ -44,7 +32,7 @@ namespace RealLifeOverhaul.Economy
         public bool Shut;           // the game has it temporarily closed
     }
 
-    /// <summary>A week's rota and opening hours of a business as they were before the planner wrote over them.</summary>
+    /// <summary>A business's week as it was before the planner wrote over it.</summary>
     internal sealed class RotaUndo
     {
         public string Place;
@@ -58,82 +46,43 @@ namespace RealLifeOverhaul.Economy
     internal sealed class RotaSheet
     {
         public RotaPlace Place;
-        public BuildingRegistration Reg;    // the business it is of
-        public long Stamp;                  // what it was worked out from: a change of it means working it out again
+        public BuildingRegistration Reg;
+        public long Stamp;                  // what it was worked out from (RotaGame.Stamp): a change means working it out again
         public readonly RotaShop Shop = new RotaShop();
         public readonly RotaProblem Problem = new RotaProblem();
         public readonly RotaOutlook Outlook = new RotaOutlook();
         public readonly RotaPlan Now = new RotaPlan();          // the rota it has, rated
-        public readonly RotaLadderResult Ladder = new RotaLadderResult();   // the ladder of plans: the week as it is, the best the people there are can keep, and each person worth hiring
+        public readonly RotaLadderResult Ladder = new RotaLadderResult();
         public RotaPlan Shown;                                  // the rota the page speaks of: the one just written, else the advised one
         public readonly List<ItemInstance> Stations = new List<ItemInstance>(16);
         public readonly List<EmployeeInstance> Workers = new List<EmployeeInstance>(16);
         public readonly List<string> GroupNames = new List<string>(8);
         public readonly List<string> Broken = new List<string>(2);  // stations out of order, by name
-        public bool FromBooks;              // what a customer is worth comes from the game's books of the last days; false: from its prices
+        public bool FromBooks;              // a customer's worth is from the last days' books; false: from the prices
         public bool RequirementsMet = true; // the game sends customers only to a business that meets its requirements
-        public bool Late;                   // it opens late or early now and holds no late opening permit (the advice never does: those hours are barred from it)
-        public bool Permit;                 // it holds the mod's late opening permit, or licences are switched off: no hour is barred
-        public bool TooLarge;               // more stations or employees than the planner keeps: nothing was read and nothing is written
-        public int AllStations, AllWorkers; // how many the game has there
-        public bool[] Fixed = new bool[0];  // [worker] left exactly as they are: the holder of a headquarters desk, or somebody with a shift at a station that was not read
-        public readonly List<string> Products = new List<string>(8);    // the game's names of the goods in Shop.Stock, in its order
+        public bool Late;                   // it opens late or early now without the late opening permit
+        public bool Permit;                 // it holds the late opening permit, or licences are off: no hour is barred
+        public bool TooLarge;               // more stations or employees than the planner keeps: nothing read, nothing written
+        public bool[] Fixed = new bool[0];  // [worker] left as they are: a headquarters desk holder, or on a station not read
+        public readonly List<string> Products = new List<string>(8);    // the game's names of the goods in Shop.Stock, in order
         public int UrgentPercent;           // the surcharge of the game's Urgent Order, per cent
         public int FixedCount;
     }
 
     /// <summary>
-    /// Everything the staff rota planner reads from or writes to the game, in one place.
-    ///
-    /// READ
-    ///   customers    the game's own calculator for the business (CustomerEntriesCalculatorFactory, GetInitialCustomers,
-    ///                GetCustomersByHour): capacity, promotion, the type's day and hour factors, and for an office the
-    ///                neighbourhood's demand and the business's satisfaction. An office's figure is capped by the game
-    ///                at the desks staffed now; the uncapped figure is asked through a class of the planner's derived
-    ///                from the game's (<see cref="Probe"/>), by the game's own factors. A shop's figure stops at what
-    ///                its stations serve; who would come beyond that (for "one more till would serve") is asked of the
-    ///                game's plain calculator, the same arithmetic without that stop.
-    ///                THE MOD'S OWN CHANGES ARE ALREADY IN IT: the city's economy, a campaign, overtime and a strike
-    ///                change customers by writing the business's promotion figure (Business/BusinessGame.Footfall,
-    ///                see Wiring/CompanyLinks), which GetPromotionMultiplier reads. So nothing of the mod's is added
-    ///                here a second time. A weekday on which a campaign, a strike or one of business pressure's own
-    ///                changes will have ended or begun is asked of the game's calculator with the promotion figure the
-    ///                mod will have written by then: the director works that figure out with the very function that
-    ///                writes it (BusinessCatalogue.Written), and it stands in the business's record only for the
-    ///                length of the asking (ReadCustomers)
-    ///   worth        a customer's takings and the cost of the goods from the business's own order history of the
-    ///                last days (BuildingRegistration.orderHistory); with no history, from what it sells and its
-    ///                prices by the game's own product arithmetic (CustomerEntriesCalculatorRetail)
-    ///   stations     BuildingRegistration.GetAssignableItems, as the game's schedule screen and auto fill;
-    ///                what a station serves an hour by ItemHelper.GetItemsSortedByCapacity, the rule the game's day
-    ///                simulation uses (RetailBusinessSimulator.GetMaxCustomerCapacityThisHour)
-    ///   skills       an employee may stand at a station if one of their skills is among the item's suitable skills
-    ///                (ScheduleHelper.HasSkillForWorkstation); how well, by skill and satisfaction
-    ///                (EmployeeInstance.GetCustomerSatisfaction)
-    ///   demands      each of the game's rota demands, asked of the demand itself: its public members where it has
-    ///                them, otherwise its own Fulfilled answer for a made-up week (see <see cref="Demand"/>). No
-    ///                private member of the game is read
-    ///   fees         the cinema's and the theatre's licensing fee for a day it opens (LicensingFeesHelper)
-    ///   cleaning     the game's dirt and cleaning figures (BuildingCleanliness)
-    ///
-    /// WRITTEN, and only on the player's button: ScheduleDay.workShifts, and with "use these hours" ScheduleDay.isOpen
-    /// and openingHourSlots, followed by what the game's own auto fill and schedule screen do afterwards
-    /// (<see cref="Write"/>, which says what of that is left out and why). Shifts of people the planner does not
-    /// manage are left as they are, and so is everybody who holds a headquarters desk. A business with more
-    /// stations or employees than the planner keeps is not read in part: it is refused, and nothing of it is touched.
-    ///
-    /// Nothing here runs on a timer: when the Rota tab is opened, when a business is picked, and on a button.
-    /// Reading a business is in RotaGame.Read.cs, its employees' demands in RotaGame.Demands.cs, writing a rota and
-    /// putting one back in RotaGame.Write.cs.
+    /// Everything the staff rota planner reads from or writes to the game; this part has the places and the stamp.
+    /// The game's own customer forecast already holds the mod's footfall changes, written into the promotion figure,
+    /// so nothing of the mod's is counted twice. Nothing runs on a timer: only on the Rota tab and its buttons.
     /// </summary>
     internal static partial class RotaGame
     {
         private const string Headquarters = "ba:businesstype_headquarters", Warehouse = "ba:businesstype_warehouse", Empty = "ba:businesstype_empty";
         private const string Cleaning = "ba:skill_cleaning", CinemaScreen = "ba:itemname_screencinema";
-        private static readonly string[] Drivers = { "ba:skill_deliverydriver" };   // the game's own auto fill leaves them out (ScheduleAutoFillerHelper)
+        private static readonly string[] Drivers = { "ba:skill_deliverydriver" };   // left out by the game's own auto fill (ScheduleAutoFillerHelper)
 
-        // The game's dirt figures (BuildingCleanliness: AmountOfDirtToIncreasePerTime, PercentageOfCellsToAffectInItem, CleanersNeededPerSquareMeter).
+        // BuildingCleanliness: dirt a dirtying adds, the share of an item's spots it reaches, cleaners a square metre.
         private const float DirtPerTime = 1.2f, DirtShare = 0.66f, CleanersPerSquareMetre = 0.005f;
+        private const byte NotRead = 255;       // an assignable item that is no station of the planner's
 
         public static IModLogger Logger;
 
@@ -143,11 +92,11 @@ namespace RealLifeOverhaul.Economy
         private static readonly List<byte> ItemKinds = new List<byte>(32);
         private static readonly List<string> ItemKeys = new List<string>(32), ItemLimits = new List<string>(32);
         private static readonly List<RotaShift> Present = new List<RotaShift>(64), Counted = new List<RotaShift>(64);
-        private const byte NotRead = 255;       // an assignable item that is no station of the planner's
         private static readonly List<string> GroupKeys = new List<string>(8), GroupLimits = new List<string>(8);
-        private static readonly CustomerEntriesCalculator Plain = new CustomerEntriesCalculator();   // the game's plain calculator: a shop's figure before the cap at what its stations serve
+        private static readonly CustomerEntriesCalculator Plain = new CustomerEntriesCalculator();   // a shop's customers before the cap at what its stations serve
         private static readonly List<byte> GroupKinds = new List<byte>(8);
         private static readonly Dictionary<string, int> StationAt = new Dictionary<string, int>(32), WorkerAt = new Dictionary<string, int>(32);
+        private static readonly Dictionary<(string, int), RotaPlace> PlaceAt = new Dictionary<(string, int), RotaPlace>(32);
         private static readonly Dictionary<string, RotaDemand> Known = new Dictionary<string, RotaDemand>(32);
         private static readonly HashSet<string> Unknown = new HashSet<string>();
         private static readonly List<RotaDemand> Demands = new List<RotaDemand>(8);
@@ -159,12 +108,7 @@ namespace RealLifeOverhaul.Economy
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        // ---------------------------------------------------------------- the places
-
-        /// <summary>
-        /// Every place the player runs, of any type, with what a look at its week says. One pass over the save's
-        /// buildings and one over its employees.
-        /// </summary>
+        /// <summary>Every place the player runs: one pass over the save's buildings and one over its staff.</summary>
         public static void ReadPlaces(List<RotaPlace> into, List<RotaPlace> pool)
         {
             for (int i = 0; i < into.Count; i++)
@@ -178,7 +122,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count && into.Count < CompanyCatalogue.ShopsMost; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress
+                    || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null)
                 {
                     continue;
                 }
@@ -201,7 +146,7 @@ namespace RealLifeOverhaul.Economy
                 Week(reg, out place.OpenHours, out place.GapHours);
                 into.Add(place);
             }
-            // Each employee is counted at the first place with their street and number: a look-up each, not a walk of the places.
+            // An employee counts at the first place with their street and number.
             PlaceAt.Clear();
             for (int k = 0; k < into.Count; k++)
             {
@@ -227,8 +172,6 @@ namespace RealLifeOverhaul.Economy
             PlaceAt.Clear();
         }
 
-        private static readonly Dictionary<(string, int), RotaPlace> PlaceAt = new Dictionary<(string, int), RotaPlace>(32);
-
         private static RotaType TypeOf(BuildingRegistration reg)
         {
             if (reg.businessTypeName == Warehouse)
@@ -241,16 +184,14 @@ namespace RealLifeOverhaul.Economy
             }
             if (Tech.TechTypes.Is(reg.businessTypeName))
             {
-                // A tech firm takes money but the game sends it no customers (Tech/Firms/TechTypes): its people work the
-                // tech sector's contracts and products in the hours it keeps, so every workstation is wanted every open hour.
-                // Planned for customers, no hour would be worth a shift and the rota would leave them all idle.
+                // The game sends a tech firm no customers; planned for them, its people would be idle all week.
                 return RotaType.Work;
             }
             BusinessType type = BusinessTypeHelper.GetData(reg);
             return type != null && type.HasTag(TagRef.Businesstag.generatesrevenue) ? RotaType.Customers : RotaType.Work;
         }
 
-        // The open hours of a business's week, and how many of them have nobody on a work shift.
+        // Open hours in the week, and those with nobody on a work shift.
         private static void Week(BuildingRegistration reg, out int open, out int gaps)
         {
             open = gaps = 0;
@@ -275,8 +216,8 @@ namespace RealLifeOverhaul.Economy
                         staffed |= Mask(shift.startingHour, shift.endingHour);
                     }
                 }
-                open += Bits(hours);
-                gaps += Bits(hours & ~staffed);
+                open += RotaSolver.Bits(hours);
+                gaps += RotaSolver.Bits(hours & ~staffed);
             }
         }
 
@@ -287,24 +228,9 @@ namespace RealLifeOverhaul.Economy
             return to > from ? (uint)(((1UL << (to - from)) - 1UL) << from) : 0u;
         }
 
-        private static int Bits(uint mask)
-        {
-            int n = 0;
-            for (; mask != 0; mask &= mask - 1)
-            {
-                n++;
-            }
-            return n;
-        }
-
-        // ---------------------------------------------------------------- what a sheet was worked out from
-
         /// <summary>
-        /// A number that changes when anything a sheet is worked out from does, so that a sheet kept is never used
-        /// for a business that has changed: the day, the customer figures (promotion, satisfaction, capacity), every
-        /// assignable item by its id and whether it lacks a requirement, the prices and what is on sale, the opening
-        /// hours and every shift, and everybody assigned there with their wage, satisfaction, skills and demands.
-        /// One walk over the building's items and one over the save's employees: a few thousand additions.
+        /// A number that changes when anything a sheet is worked out from does: customers, stations, prices, goods,
+        /// hours, shifts, and everybody assigned with wage, satisfaction, skills and demands. A few thousand additions.
         /// </summary>
         public static long Stamp(RotaPlace place, int extra)
         {
@@ -361,7 +287,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; staff != null && i < staff.Count; i++)
             {
                 EmployeeInstance e = staff[i];
-                if (e == null || e.assignedAddress == null || e.assignedAddress.streetNumber != reg.StreetNumber || e.assignedAddress.streetName != reg.StreetName)
+                if (e == null || e.assignedAddress == null || e.assignedAddress.streetNumber != reg.StreetNumber
+                    || e.assignedAddress.streetName != reg.StreetName)
                 {
                     continue;
                 }
@@ -381,11 +308,9 @@ namespace RealLifeOverhaul.Economy
             return h;
         }
 
-        // ---------------------------------------------------------------- names
-
         public static string Name(ItemInstance item)
         {
-            return item == null ? string.Empty : string.IsNullOrEmpty(item.alias) ? Text(item.itemName) : item.alias;   // (as the game's schedule screen names a station)
+            return item == null ? string.Empty : string.IsNullOrEmpty(item.alias) ? Text(item.itemName) : item.alias;   // as the game's schedule screen names a station
         }
 
         public static string Text(string key)

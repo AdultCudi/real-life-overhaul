@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Economy;
 
-// The staff rota planner's checks (Scripts/Economy/Company/RotaModel.cs, RotaSolver.cs, RotaAdvice.cs): every kind of
+// The staff rota planner's checks (Scripts/Economy/Company/RotaModel.cs, RotaSolver.cs, RotaAdvisor.cs): every kind of
 // demand, the game's limits on a shift and a day, skills, one place at a time, the headquarters rule, what gives way
 // when a full rota is impossible and what is said about it, the empty cases, the hours worth opening, an hour's crew,
 // the people a week takes, that the same business always gets the same rota, how long the largest business takes,
@@ -679,7 +679,7 @@ internal static partial class Program
         guard.HasCustomers = true;
         var need2 = new bool[2];
         advisor.Crew(guard, 10, need2, out served, out wage, out count);
-        Check(need2[0] && need2[1] && served == 10 && wage == 1500, "rota crew: a guard is wanted while it is open, and is not part of the smallest crew's wages");
+        Check(need2[0] && need2[1] && served == 10 && wage == 3000 && count == 1, "rota crew: a guard is wanted while it is open, and is paid with the smallest crew (its count is of the service stations)");
     }
 
     private static void RotaOpeningHours()

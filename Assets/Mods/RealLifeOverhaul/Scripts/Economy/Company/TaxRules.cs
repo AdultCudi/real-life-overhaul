@@ -3,20 +3,14 @@ using System;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What the mod adds to the game's own tax, by rule: a return to file each quarter and what filing late costs, an
-    /// accountant, and cash sales kept off the books with the risk that grows with them. Game-free.
-    ///
-    /// The game's own tax is left exactly as it is: once a year it taxes the businesses' sales, less the expenses it
-    /// has marked deductible, if the year's income passes its threshold. The mod's own business costs are marked the
-    /// same way when they are paid, so the game's tax deducts them itself; nothing here works that out again.
+    /// What the mod adds to the game's yearly tax: a quarterly return and its penalties, an accountant, and cash kept
+    /// off the books with its audit risk. Game-free. The mod's costs are marked deductible as they are paid, so the
+    /// game's own tax deducts them and nothing here works that out again.
     /// </summary>
     public static class TaxRules
     {
         private const int PurposeAudit = 71, PurposeError = 72;
 
-        // ---------------------------------------------------------------- the quarter and its return
-
-        /// <summary>A quarter is three of the city's months.</summary>
         public static int QuarterDays(int monthDays)
         {
             return CompanyCatalogue.QuarterMonths * Math.Max(1, monthDays);
@@ -46,15 +40,12 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(int.MaxValue / 2, sum);
         }
 
-        /// <summary>
-        /// The quarter closes: its return waits to be filed, and the next quarter begins today. A return of the
-        /// quarter before that was never filed is dropped and counted as one more late return.
-        /// </summary>
+        /// <summary>The quarter closes, the next begins; a return still waiting is dropped and counted late.</summary>
         public static void Close(TaxFile t, int takings, int day)
         {
             if (t.ReturnWaiting && t.ReturnPenalties == 0)
             {
-                t.LateRun++;   // (one that already drew a penalty has been counted)
+                t.LateRun++;   // one that drew a penalty was counted then
             }
             t.ReturnQuarter = t.Quarter;
             t.ReturnTakings = Math.Max(0, takings);
@@ -66,16 +57,13 @@ namespace RealLifeOverhaul.Economy
             t.QuarterFrom = day;
         }
 
-        /// <summary>The penalty for a late return: a share of the quarter's takings, between a least and a most.</summary>
         public static int Penalty(int takings)
         {
-            return CompanyCatalogue.Clamp(CompanyCatalogue.Share(Math.Max(0, takings), CompanyCatalogue.PenaltyShare), CompanyCatalogue.PenaltyLeast, CompanyCatalogue.PenaltyMost);
+            return CompanyCatalogue.Clamp(CompanyCatalogue.Share(Math.Max(0, takings), CompanyCatalogue.PenaltyShare), CompanyCatalogue.PenaltyLeast,
+                CompanyCatalogue.PenaltyMost);
         }
 
-        /// <summary>
-        /// A day with a return waiting: the penalty that falls due today, or nothing. One on the first day late and
-        /// one more after each further five days, three at most for one return.
-        /// </summary>
+        /// <summary>Today's penalty on a waiting return, or 0: the first day late, then every few days.</summary>
         public static int LateDay(TaxFile t, int day)
         {
             if (!t.ReturnWaiting || day <= t.ReturnDue)
@@ -95,7 +83,7 @@ namespace RealLifeOverhaul.Economy
             return Penalty(t.ReturnTakings);
         }
 
-        /// <summary>The return is filed. True if that was late. A return filed on time ends a run of late ones.</summary>
+        /// <summary>The return is filed. True if late; one filed on time ends a run of late ones.</summary>
         public static bool File(TaxFile t, int day)
         {
             if (!t.ReturnWaiting)
@@ -111,7 +99,7 @@ namespace RealLifeOverhaul.Economy
             return late;
         }
 
-        /// <summary>Late returns running have brought an audit: the run starts again.</summary>
+        /// <summary>Enough late returns running bring an audit, and the count starts again.</summary>
         public static bool LateAudit(TaxFile t)
         {
             if (t.LateRun < CompanyCatalogue.LateForAudit)
@@ -122,9 +110,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // ---------------------------------------------------------------- the accountant
-
-        /// <summary>A month's fee at today's prices. The cheapest charges half as much again while cash is kept off the books.</summary>
+        /// <summary>A month's fee at today's prices; the cheapest charges more with cash off the books.</summary>
         public static int Fee(int tier, int index, bool hiding)
         {
             int fee = CompanyCatalogue.AccountantFee[tier];
@@ -137,19 +123,19 @@ namespace RealLifeOverhaul.Economy
             return hiding && tier == CompanyCatalogue.Accountants - 1;
         }
 
-        /// <summary>Whether the accountant files the return: always, unless cash is kept off the books; then only the cheapest does.</summary>
+        /// <summary>Whether the accountant files the return: with cash off the books only the cheapest does.</summary>
         public static bool Files(int tier, bool hiding)
         {
             return tier >= 0 && (!hiding || tier == 0);
         }
 
-        /// <summary>The savings an accountant finds in a quarter's deductible costs, paid as a rebate when the return is filed.</summary>
+        /// <summary>The rebate an accountant finds in the quarter's deductible costs, paid on filing.</summary>
         public static int Rebate(int tier, int costs)
         {
             return tier < 0 ? 0 : CompanyCatalogue.Share(Math.Max(0, costs), CompanyCatalogue.AccountantSaving[tier]);
         }
 
-        /// <summary>Whether the cheapest gets this quarter's return wrong; the same answer for a seed and a quarter.</summary>
+        /// <summary>Whether the cheapest gets this quarter's return wrong; the same for a seed and a quarter.</summary>
         public static bool Errs(int tier, int seed, int quarter)
         {
             return tier == 0 && CityModel.Draw(seed, PurposeError, quarter, 1000) < CompanyCatalogue.AccountantErrorChance;
@@ -160,15 +146,13 @@ namespace RealLifeOverhaul.Economy
             return CompanyCatalogue.Share(Penalty(takings), CompanyCatalogue.AccountantErrorShare);
         }
 
-        // ---------------------------------------------------------------- cash kept off the books
-
-        /// <summary>The most that may be hidden, per cent of takings: ten on Relaxed.</summary>
+        /// <summary>The most that may be hidden, per cent of takings.</summary>
         public static int HideMost(int level)
         {
             return CompanyCatalogue.Level(level) == CompanyCatalogue.Relaxed ? CompanyCatalogue.HideMostRelaxed : CompanyCatalogue.HideSteps[CompanyCatalogue.HideSteps.Length - 1];
         }
 
-        /// <summary>A share brought to the nearest step at or under it that the strictness allows.</summary>
+        /// <summary>A share brought down to the nearest step the strictness allows.</summary>
         public static int HideStep(int percent, int level)
         {
             int most = HideMost(level), step = 0;
@@ -182,19 +166,19 @@ namespace RealLifeOverhaul.Economy
             return step;
         }
 
-        /// <summary>The tax a day's hidden takings would have borne at the game's own rate: what is paid back as a rebate, and owed again if it is found.</summary>
+        /// <summary>The tax hidden takings would bear at the game's rate: paid back, and owed again if found.</summary>
         public static int Saved(int takings, int hide, int taxPercent)
         {
             return (int)Math.Min(int.MaxValue / 4, (long)Math.Max(0, takings) * Math.Max(0, hide) * Math.Max(0, taxPercent) / 10000);
         }
 
-        /// <summary>The risk after a day: up with every per cent hidden at every business, slowly down while nothing is.</summary>
+        /// <summary>The risk after a day: up with every per cent hidden, slowly down while nothing is.</summary>
         public static int RiskDay(int risk, int hidden)
         {
             return hidden > 0 ? Math.Min(CompanyCatalogue.RiskMost, risk + hidden * CompanyCatalogue.RiskPerPercent) : Math.Max(0, risk - CompanyCatalogue.RiskDecay);
         }
 
-        /// <summary>The chance of an audit today, ten-thousandths: the risk, less with an accountant on the books.</summary>
+        /// <summary>The chance of an audit today, ten-thousandths: less with an accountant on the books.</summary>
         public static int AuditChance(int risk, int tier)
         {
             return tier >= 0 && tier < CompanyCatalogue.Accountants ? CompanyCatalogue.Share(risk, CompanyCatalogue.AccountantRisk[tier]) : risk;
@@ -212,16 +196,12 @@ namespace RealLifeOverhaul.Economy
             return CompanyCatalogue.Share(Math.Max(0, backTax), CompanyCatalogue.FineShare[CompanyCatalogue.Level(level)]);
         }
 
-        /// <summary>Whether what was found goes to court: from a stated sum, and never on Relaxed.</summary>
         public static bool Court(int backTax, int level)
         {
             return CompanyCatalogue.Level(level) != CompanyCatalogue.Relaxed && backTax >= CompanyCatalogue.CourtSum;
         }
 
-        /// <summary>
-        /// An audit. Everything saved since the last one is found: it is owed again with a fine on top, the count
-        /// starts from nothing and so does the risk. Returns what is owed for it; nothing if nothing was hidden.
-        /// </summary>
+        /// <summary>An audit: all saved since the last is owed again with a fine. Returns what is owed.</summary>
         public static int Audit(TaxFile t, int level, int day, out int backTax, out int fine)
         {
             backTax = Math.Max(0, t.Saved);

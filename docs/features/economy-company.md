@@ -32,11 +32,14 @@ Economy/Company/        the first eight are game-free and compiled by EconomyChe
   LicenceRules            which licences, terms, the free first term, renewal
   CompanyStore            the save's one line, "reallife:economy_company"
   CompanyGame             everything read from or done to the game, and CompanyBridges (what it asks of the mod)
-  CompanyDirector         the timer's look, the hour, the day, the save, footfall, money, the Planner's rows
+  CompanyDirector         the timer's look, starting and standing down, faults, the app, the Planner's rows
+  CompanyDirector.Day     the reading, the hour, the day, the save
+  CompanyDirector.Effects footfall and money
   CompanyDirector.Staff / .Cover / .Marketing / .Tax / .Licences    one part each: its day, its answers, its rows
   CompanyDirector.Tests   the test tools
   CompanyApp              the frame, the tabs, the Overview
   CompanyApp.Staff / .Cover / .Marketing / .Tax / .Licences         one tab's page each
+  CompanyTables           the app's tables as data
   CompanyText             the words; CompanyGuide: the Guide page's figures, all from the catalogue
 Wiring/CompanyLinks.cs  business pressure, fires, break-ins, the courts, the paper, the Planner
 ```
@@ -71,7 +74,8 @@ The rule is the city's economy's: no game method is patched, and no figure of th
 
 Each night it is paid for the hours the game counted that day (`workedHoursToday`, read on the hour event that opens the new day, before the game's run clears it; a delivery driver's fixed day as the game pays it) as one transaction per business, "Wages, agreed raise: {business}", taken whatever the cash is, as the game takes its own wages.
 
-An employee who is no longer at a business of the player's is no longer read, and their file is dropped on the next day's pass with the raise in it.
+An employee who is no longer at a business of the player's is no longer read, and their file is dropped with the raise in it the next time the staff are read: on the day's pass, or when the Company app opens.
+So is the file of somebody who has resigned (satisfaction at nothing) or is waiting to be replaced through the headhunter: the game gives their place to the newcomer under the same id (`HeadhunterPlan.ReplaceEmployee`), and the newcomer starts afresh.
 
 **Sick pay follows the game's own absences.** `GameManager.NewDay` raises the day event before `EmployeeHelper.RunDaily` picks the new day's absences, so on the day's pass `isAbsent` still says who was off on the day that has ended: sick pay is paid for that day and dated on it.
 Nobody is made sick by the mod and `nextSickDay` is not written.
@@ -80,6 +84,14 @@ Nobody is made sick by the mod and `nextSickDay` is not written.
 The name is the cost's label as words ("Business insurance"), the way the game itself passes a business's name there, so the game's tax notice reads the same in a save the mod has left.
 
 The game keeps those sums in its own list for its tax year; that list is the one thing of the game's saved data this feature adds to, through the game's own call and by the game's own rule.
+
+**The day's books.** The game makes yesterday's statement before the mod's day, and the mod's costs booked for that day are put into it afterwards (`Economy/GameBooks.Refresh`, as often as asked, nothing counted twice).
+The day's pass brings it up to date before reading it, so the city's lines and a dealership's sales booked earlier that morning are in the takings it works from (cash off the books, a discount day).
+After the parts have booked their own costs for that day (raises, sick pay, overtime, a give-away) it brings it up to date and reads it again: the profit the app shows for yesterday and the run of losses the Planner counts are the Finance app's figures.
+An average day's takings is over the statements of the last seven days that the game has, so a business younger than a week is not taken to have taken nothing before it opened.
+
+**A campaign's report** counts what the campaign cost once, as its cost: its price, booked the day before its first day, and what a discount day or a giveaway gave away on its days are put back into the profit of the days the game's statement took them from.
+The days before are scaled to as many as the campaign's days with figures, so that the two halves compare day for day.
 
 **Cash off the books** does not touch the game's count of sales.
 The tax the hidden share would bear at `gameVariables.taxPercentage` is paid back each morning, and only while the last year's income passes the game's own threshold (`TaxHelper.MeetsIncomeTaxThreshold`), since under it the game takes nothing.
@@ -96,18 +108,18 @@ Money is at a price index of 100 where "at prices" is said, and follows `CityEco
 | A request | 4 days to answer; "offer less" gives half; 14 days before the same employee asks again |
 | Standing | starts 60, calm level 65; a day underpaid -1, a day paid fairly +1 up to calm; agree +10, less -8, refuse -18, an offer matched +5 |
 | Sick pay | none, 50% or 100% of a day's pay; standing -3, 0, +2 a sick day; statutory is the default |
-| A rival's offer | chance 0, 1.5, 2.5, 4% a day; to a skill of 50 or more, 8% or more under; the going rate and 5%; 3 days to answer, 2 days' notice; 21 days before the same employee, 7 before anybody |
+| A rival's offer | chance 0, 1.5, 2.5, 4% a day; to a skill of 50 or more, 8% or more under; the going rate and 5%; 3 days to answer, 2 days' notice; 21 days before the same employee, 7 before anybody. A rival tycoon's offer (Scripts/Rivals) keeps the same waits and never comes on Relaxed |
 | A strike | when 60% of two or more stand at 30 or lower; called a day ahead; 0, 2, 3, 4 days; 25% fewer customers, shut 8 hours from 9:00; 21 days' rest; the payment is 16 hours' pay each (+25 standing); a raise for all leaves nobody under 60; sat out, 40 |
-| Overtime | offered on 30% of busy days (a campaign running or a boom); 2 days to answer; 3 days of 2 extra hours at 150%; 4% more customers; 10 days' rest; +2 standing |
+| Overtime | offered on 30% of busy days (a campaign running or a boom); 2 days to answer; 3 days of 2 extra hours at 150%; 4% more customers; 10 days' rest; +2 standing. None through a strike: a strike called drops an offer waiting and stops agreed overtime before its first day, and none is agreed while one is called |
 | Insurers (three) | price 85, 100, 125% of list; excess 30, 15, 5% of the loss and 200, 100, 50 at least; pay 6, 4, 2 days after a claim; decline at 2, 3, 4 claims in a term |
 | Cover (fire, theft, liability) | 12, 10, 8 a day and 0.4, 0.5, 0.3% of an average day's takings, at prices; counts a loss up to 20,000, 8,000, 5,000; district 0.2, -0.3, 0.2% a point of income, between 85 and 115% |
-| Claims | 5 days to put in; each adds 25% to the next term; a term is a game year, 20 days at least; a policy lapses after 3 premiums missed running; 24 claims kept |
+| Claims | 5 days to put in; each adds 25% to the next term; a term is a game year, 20 days at least; a policy lapses after 3 premiums missed running; 24 claims kept. A term's claims stay with the place and the cover when the policy ends (cancelled, lapsed or declined): the next policy there is priced on them, and an insurer that would not renew with them will not write it |
 | Campaigns (flyers, radio, discount day, refit) | 150, 1,200, 0, 2,500 at prices; 3, 6, 1, 20 days; 5, 8, 12, 3% more customers; 12% at most |
 | Campaign factors | local kinds: 0.5% for each point of district income on the business's side, between 80 and 120%; boom 110, slowdown 85, recession 70%; the same kind again loses 50% straight away, nothing after 10 days; a discount day gives away 15% of takings; 8 reports kept |
 | The return | a quarter is three months of the city's (a twelfth of the year each, three days at least); 5 days to file; penalty 0.5% of the quarter's takings, 200 to 5,000, again after each 5 days, 3 at most; 2 late running bring an audit |
 | Accountants (three) | 300, 700, 1,500 a month at prices; a rebate of 2, 4, 7% of the quarter's deductible costs; audit risk at 100, 80, 60%; the cheapest errs on 20% of returns (half a late penalty) and charges 50% more with cash off the books |
 | Cash off the books | 0, 5, 10, 20, 30% of takings, 10% at most on Relaxed; risk +0.02 points a day for each per cent, -0.4 a day when clean, 25% a day at most; fine 25, 50, 75, 100% of the back-tax; court from 5,000, never on Relaxed |
-| Licences (food hygiene, alcohol, late opening, signage) | 400, 900, 300, 150 at prices; 30, 30, 20, 40 days; reminder 3 days before; 5 days' grace for a new business; the fine is twice the fee; shut 6 hours for the first two; an inspection is asked for on 10% of days one is missing; late is open past 22:00 or before 5:00 |
+| Licences (food hygiene, alcohol, late opening, signage) | 400, 900, 300, 150 at prices; 30, 30, 20, 40 days; reminder 3 days before; 5 days' grace for a new business, and for a licence a business comes to need; one set to renew by itself is tried each day from the day after its last until its fee is paid, and its running out is said once; the fine is twice the fee; shut 6 hours for the first two; an inspection is asked for on 10% of days one is missing; late is open past 22:00 or before 5:00 |
 | Kept | 64 businesses, 400 staff, 24 claims, 8 reports, 40 Planner rows; the game's statements are read 45 days back at most; a loss three days running is said |
 
 Which business types sell food or alcohol, and which sell to the well-off or on price (for how well a district suits a local campaign), are four short lists of the game's type names in `CompanyGame`.
@@ -115,7 +127,7 @@ A business needs the late opening permit by its own opening hours in the game (`
 
 ## In the save
 
-One line, `reallife:economy_company`: `v=1^h:...^t:...^s:...^e:...^c:...^r:...` (`CompanyStore`): the header's seven numbers, tax's twenty, a record per business (its place, twenty numbers, three policies of seven and four licences of three), a record per employee (the game's id, the place, ten numbers, a rival's name), the claims and the reports.
+One line, `reallife:economy_company`: `v=1^h:...^t:...^s:...^e:...^c:...^r:...` (`CompanyStore`): the header's seven numbers, tax's twenty, a record per business (its place, twenty numbers, three policies of seven, four licences of three, when the last campaign of each kind offered from outside ended, and what the running campaign has given away so far), a record per employee (the game's id, the place, ten numbers, a rival's name), the claims and the reports.
 Parts are divided by `^` because a place, written as business pressure writes one, contains `~`.
 Every figure is a whole number.
 

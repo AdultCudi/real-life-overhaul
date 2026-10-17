@@ -2,48 +2,45 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The staff rota planner's figures. The hard limits are the game's own, each named with where the game keeps
-    /// it; the rest is how the planner weighs things. Game-free, as every rules file of the company is.
-    /// </summary>
+    /// <summary>The rota planner's figures: the game's hard limits, each named where the game keeps it, and its own weights.</summary>
     public static class RotaCatalogue
     {
         public const int Days = 7, Hours = 24, Cells = Days * Hours;
 
-        // ---------------------------------------------------------------- the game's own limits
+        public const int ShiftCap = 12;     // hours in one shift at most (ScheduleHelper.ShiftLengthCap)
+        public const int DayCap = 14;       // hours in a day; more is overwork, which may bring a sick day (ScheduleHelper.GetOverworkedDays)
 
-        public const int ShiftCap = 12;     // the longest one shift may be (ScheduleHelper.ShiftLengthCap)
-        public const int DayCap = 14;       // hours in a day; above it the game calls the day overworked and the employee may be off sick the next (ScheduleHelper.GetOverworkedDays, EmployeeHelper's daily run)
-
-        // What an unmet demand costs an employee's satisfaction each hour, in tenths (JobDemand.Impact), by the game's priority: low, medium, high.
+        // What an unmet demand takes from satisfaction each hour, in tenths of a point, by priority low, medium, high (JobDemand.Impact).
         public static readonly int[] DemandWeight = { 2, 3, 5 };
-        public const int PriorityHigh = 2;  // the game's auto fill keeps only demands of this priority once it has to relax (ScheduleAutoFiller.PartitionProcessOptions.skipOptional)
 
-        // ---------------------------------------------------------------- how much is kept
+        /// <summary>A demand's weight by its priority, a priority out of range taken as the nearest end.</summary>
+        public static int Weight(int priority)
+        {
+            return DemandWeight[priority < 0 ? 0 : priority > PriorityHigh ? PriorityHigh : priority];
+        }
+
+        public const int PriorityHigh = 2;  // once the game's auto fill relaxes, only demands of this priority stay (ScheduleAutoFiller skipOptional)
 
         public const int StationsMost = 64;     // one bit each
         public const int WorkersMost = 120;
         public const int DemandsMost = 8;       // of one employee
         public const int ReasonsMost = 24;      // unmet demands and gaps told to the player
 
-        // ---------------------------------------------------------------- opening hours advice
+        public const int BlocksMost = 2;        // blocks of opening hours advised for a day (the game takes any number)
+        public const int BlockLeast = 2;        // hours in an advised block: a shift worth coming in for
 
-        public const int BlocksMost = 2;        // blocks of opening hours advised for one day (the game takes any number of them)
-        public const int BlockLeast = 2;        // hours in a block (the game takes one): a shift worth coming in for
+        // What an hour at a station is worth to the planner where no customers say it.
+        public const int ValueFloor = 2;        // the smallest crew in an hour without customers: the game warns of an open business with nobody at work
+        public const int ValueSupport = 1;      // a station that serves nobody itself (a guard), and an hour of cleaning
+        public const int ValueWork = 10;        // a work station where no customers come (a factory, a headquarters)
 
-        // ---------------------------------------------------------------- what an hour at a station is worth to the planner
-
-        public const int ValueFloor = 2;        // a station of the smallest crew in an hour without customers: the game warns of an open business with nobody at work
-        public const int ValueSupport = 1;      // a station that serves no customers itself (a guard), and an hour of cleaning
-        public const int ValueWork = 10;        // an hour at a work station where no customers come (a factory, a headquarters)
-
-        public const int FullWeek = 40;         // hours a week counted for somebody with no demand about hours, when people to hire are counted
-        public const int BooksDays = 7;         // the days of a business's own books that say what a customer brings...
+        public const int FullWeek = 40;         // hours a week counted for somebody with no hours demand when the people to hire are counted
+        public const int BooksDays = 7;         // days of a business's books that say what a customer brings...
         public const int BooksCustomers = 20;   // ...if they hold at least so many customers; otherwise its prices say it
-        public const int ImproveSteps = 24000;   // how many moves the improving pass may try: the same number every time, so the same rota every time
+        public const int ImproveSteps = 24000;  // moves the improving pass may try: a fixed budget, so the same rota every time
     }
 
-    /// <summary>What kind of station it is: the game's two kinds of shift (WorkShiftType), in the planner's own numbers.</summary>
+    /// <summary>The game's two kinds of shift (WorkShiftType) as the planner's numbers.</summary>
     public static class RotaKind
     {
         public const byte Work = 0, Cleaning = 1;
@@ -53,14 +50,14 @@ namespace RealLifeOverhaul.Economy
     public static class RotaGroupKind
     {
         public const byte Service = 0;      // each one staffed serves so many customers an hour
-        public const byte Support = 1;      // wanted while the business is open, serves nobody itself
+        public const byte Support = 1;      // wanted while the business is open; serves nobody itself
         public const byte Cleaning = 2;
     }
 
-    /// <summary>The demands of the game's that are about the rota, one for each of its classes (Entities.Employee.JobDemands.Requirements).</summary>
+    /// <summary>The game's rota demands, one for each of its classes (Entities.Employee.JobDemands.Requirements).</summary>
     public enum RotaDemandKind
     {
-        Hours = 0,          // HoursWorkingPerWeek: between A and B hours a week (B of nothing: no upper end)
+        Hours = 0,          // HoursWorkingPerWeek: between A and B hours a week (B of 0: no upper end)
         Days = 1,           // DaysWorkingPerWeek: exactly A days a week
         FreeDays = 2,       // FreeOnDays: no work on the days of Mask (bit 0 Monday)
         NoHours = 3,        // HasNoShiftBetweenHours: no work in the hours of Mask (bit 0 midnight to one)
@@ -81,24 +78,20 @@ namespace RealLifeOverhaul.Economy
     public sealed class RotaWorker
     {
         public int Wage;        // hundredths an hour, everything they are paid
-        public int Mood = 100;  // their satisfaction now, 0 to 100 (what an unmet demand takes from, hour by hour)
+        public int Mood = 100;  // satisfaction now, 0 to 100
         public RotaDemand[] Demands = Empty;
 
         public static readonly RotaDemand[] Empty = new RotaDemand[0];
     }
 
-    /// <summary>
-    /// A week to fill: the stations, who may stand at which, and what each hour at each station is worth. An hour
-    /// worth nothing is not wanted (the business is shut, or the station is not worth staffing then). Indexed by
-    /// cell (day * 24 + hour) and station.
-    /// </summary>
+    /// <summary>A week to fill: the stations, who may stand at which, and each hour's worth at each (0: not wanted).</summary>
     public sealed class RotaProblem
     {
         public int Stations, Workers;
-        public int[] Value = new int[0];        // [cell * Stations + station]
+        public int[] Value = new int[0];        // [cell * Stations + station], a cell being day * 24 + hour
         public byte[] Kind = new byte[0];       // [station] RotaKind
-        public bool[] Whole = new bool[0];      // [station] one person for every wanted hour of the week or nobody (a headquarters desk: the game's own rule there)
-        public byte[] Can = new byte[0];        // [worker * Stations + station] how well they do it, 1 to 100; 0: they have no skill it takes
+        public bool[] Whole = new bool[0];      // [station] one person for every wanted hour of the week or nobody (a headquarters desk: the game's rule)
+        public byte[] Can = new byte[0];        // [worker * Stations + station] how well they do it, 1 to 100; 0: no skill it takes
         public RotaWorker[] Worker = new RotaWorker[0];
 
         /// <summary>Makes room for so many stations and workers; what was there is cleared.</summary>
@@ -128,6 +121,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>An array of at least <paramref name="count"/>, all cleared: the one given if it is large enough.</summary>
         internal static T[] Room<T>(T[] have, int count)
         {
             if (have.Length < count)
@@ -169,7 +163,7 @@ namespace RealLifeOverhaul.Economy
     {
         public int Stations;
         public short[] At = new short[0];   // [cell * Stations + station] the worker, or -1
-        public int Level;                   // 0: every demand kept as a limit; 1: those the game calls optional gave way where nothing else covered an hour
+        public int Level;                   // 0: every demand kept as a limit; 1: optional ones gave way where nothing else covered an hour
         public int WantedValue, CoveredValue;
         public int WantedHours, CoveredHours;
         public int UnmetCount, UnmetWeight;

@@ -5,18 +5,14 @@ using UI.Notification;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The test tools of "running a business" (the options page). Each puts one thing in place at once, at the first
-    /// business or employee it fits, and opens the Company app on it. The state as it was before the first test is
-    /// kept, once, and "Test: put the company back" restores it.
-    ///
-    /// What a test cannot take back is said where it happens: a test moves no money by itself, but an answer the
-    /// player then gives is a real one (a claim that is put in is paid, a strike that is settled is paid for), and the
-    /// audit test really charges what it finds and may really open a court case.
+    /// The test tools on the options page: each puts one thing in place at the first business or employee it fits and
+    /// opens the app on it. The state before the first test is kept for "put the company back". Only the audit test
+    /// moves money by itself; the player's answers afterwards are real.
     /// </summary>
     public sealed partial class CompanyDirector
     {
-        private const int TestLoss = 1000;      // the fire's repair bill in "Test: a fire claim on a test policy"
-        private const int TestKeptBack = 6000;  // the tax kept back that "Test: an audit of cash off the books" finds, if there is none
+        private const int TestLoss = 1000;      // the fire's repair bill of the claim test
+        private const int TestKeptBack = 6000;  // the tax kept back the audit test finds when there is none
 
         private bool TestReady(string test, CompanyPart part)
         {
@@ -33,7 +29,6 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // A test tool is about to change the state: the state as it is now is kept, once, to be put back.
         private void BeforeTest()
         {
             if (_beforeTests == null)
@@ -44,7 +39,7 @@ namespace RealLifeOverhaul.Economy
 
         private void TestDone(string what, int tab, string pick)
         {
-            Logger?.Warn("Company test: " + what + ".");   // asked for by a button: written whether or not diagnostics are on
+            Logger?.Warn("Company test: " + what + ".");   // a button's answer: written whether or not diagnostics are on
             Changed();
             Notifications.Show(NotificationType.Info, "reallife_co_test_done", null, 7f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
             Open(tab, pick);
@@ -92,7 +87,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>"Test: a raise request": the first employee with nothing waiting asks for the going rate (or a little more than they are paid, if they are not under it).</summary>
+        /// <summary>The first employee with nothing waiting asks for the going rate, or a little more than they are paid.</summary>
         public void TestRaise()
         {
             if (!TestReady("Company raise", CompanyPart.Staff))
@@ -113,7 +108,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: a poaching offer": a rival offers the first employee with nothing waiting a twentieth over the going rate.</summary>
+        /// <summary>A rival's offer to the first employee with nothing waiting, at least a little over their pay.</summary>
         public void TestOffer()
         {
             if (!TestReady("Company offer", CompanyPart.Staff))
@@ -136,7 +131,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: a strike tomorrow": called at the first business with staff, for the length of the strictness (Standard's on Relaxed).</summary>
+        /// <summary>A strike called at the first business with staff, as long as the strictness gives (Standard's on Relaxed).</summary>
         public void TestStrike()
         {
             if (!TestReady("Company strike", CompanyPart.Staff))
@@ -158,7 +153,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: a fire claim on a test policy": the first business gets fire cover from the middle insurer if it has none, and a fire's bill of 1,000 to claim for. No fire happens and no bill is charged.</summary>
+        /// <summary>A fire claim at the first business, with fire cover from the middle insurer if it has none; no fire, no bill.</summary>
         public void TestFireClaim()
         {
             if (!TestReady("Company claim", CompanyPart.Cover))
@@ -179,11 +174,15 @@ namespace RealLifeOverhaul.Economy
                     CoverRules.Buy(p, 1, Quote(shop, (int)CoverKind.Fire, 1), Save.Day, CompanyCatalogue.TermDays(CompanyGame.DaysPerYear));
                 }
                 Claim claim = CoverRules.Open(_state, p, shop.File.Place, shop.Name, (int)CoverKind.Fire, TestLoss, Save.Day);
-                TestDone("a fire loss of " + TestLoss + " at " + shop.Name + " (no fire, no bill): insurer " + p.Insurer + " would pay " + (claim != null ? claim.Payout : 0), TabCover, claim != null ? "claim:" + claim.Id : null);
+                TestDone("a fire loss of " + TestLoss + " at " + shop.Name + " (no fire, no bill): insurer " + p.Insurer + " would pay " + (claim != null ? claim.Payout : 0),
+                    TabCover, claim != null ? "claim:" + claim.Id : null);
             });
         }
 
-        /// <summary>"Test: a campaign that ends at once": flyers at the first business as if they had run the last three days, measured from the game's real figures. Nothing is charged and no customers were added.</summary>
+        /// <summary>
+        /// A report on flyers at the first business as if run the last three days, from the game's real figures; nothing
+        /// charged, so the price is taken off the day before its first as the game's statement would have taken it.
+        /// </summary>
         public void TestCampaign()
         {
             if (!TestReady("Company campaign", CompanyPart.Marketing))
@@ -198,16 +197,20 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 BeforeTest();
-                int kind = (int)CampaignKind.Flyers, days = CompanyCatalogue.CampaignDays[kind];
-                CampaignReport report = CampaignRules.Measure(shop.Name, kind, Save.Day - days, days, CampaignRules.Cost(kind, _index),
-                    (int d, out int customers, out int takings, out int profit) => CompanyGame.DayBook(shop, d, out customers, out takings, out profit));
+                int kind = (int)CampaignKind.Flyers, days = CompanyCatalogue.CampaignDays[kind], from = Save.Day - days, price = CampaignRules.Cost(kind, _index);
+                CampaignReport report = CampaignRules.Measure(shop.Name, kind, from, days, price, 0, (int d, out int customers, out int takings, out int profit) =>
+                {
+                    bool found = CompanyGame.DayBook(shop, d, out customers, out takings, out profit);
+                    profit -= d == from - 1 ? price : 0;
+                    return found;
+                });
                 CampaignRules.Keep(_state.Reports, report);
-                TestDone("a report for flyers at " + shop.Name + " over days " + report.From + " to " + (Save.Day - 1) + " (not run, not charged): figures for " + report.DaysBefore + " day(s) before and " + report.DaysDuring
-                         + " during, extra " + report.Extra, TabMarketing, "rep:" + (_state.Reports.Count - 1));
+                TestDone("a report for flyers at " + shop.Name + " over days " + report.From + " to " + (Save.Day - 1) + " (not run, not charged): figures for "
+                         + report.DaysBefore + " day(s) before and " + report.DaysDuring + " during, extra " + report.Extra, TabMarketing, "rep:" + (_state.Reports.Count - 1));
             });
         }
 
-        /// <summary>"Test: a return due now": the quarter that is running closes today and its return waits.</summary>
+        /// <summary>The running quarter closes today and its return waits.</summary>
         public void TestReturn()
         {
             if (!TestReady("Company return", CompanyPart.Tax))
@@ -223,10 +226,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>
-        /// "Test: an audit of cash off the books": the tax office audits now. If nothing was kept back, 6,000 is put in
-        /// its way first. What it finds is really charged, with the fine, and above the court's sum a case is really opened.
-        /// </summary>
+        /// <summary>An audit now, with <see cref="TestKeptBack"/> to find if need be; its charge and any court case are real.</summary>
         public void TestAudit()
         {
             if (!TestReady("Company audit", CompanyPart.Tax))
@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: a licence that lapses now": the first business's signage permit ran out yesterday.</summary>
+        /// <summary>The first business's signage permit ran out yesterday.</summary>
         public void TestLicence()
         {
             if (!TestReady("Company licence", CompanyPart.Licences))
@@ -268,7 +268,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>"Test: put the company back": the state is what it was before the first test tool changed it. Money that has moved since stays moved.</summary>
+        /// <summary>The state as before the first test tool changed it; money that moved since stays moved.</summary>
         public void TestBack()
         {
             if (Save == null || !ModState.Loaded)
@@ -298,9 +298,10 @@ namespace RealLifeOverhaul.Economy
                 Read(Save.Day, false, false, out added, out dropped, out gone);
                 for (int i = 0; i < _shops.Count; i++)
                 {
-                    Refoot(_shops[i]);   // every figure, whether or not a test had changed it
+                    Refoot(_shops[i]);   // every figure, whether or not a test changed it
                 }
-                TestDone("the state from before the tests is back (" + _shops.Count + " business(es), " + _state.Staff.Count + " employee(s)); money that moved since stays moved", TabOverview, null);
+                TestDone("the state from before the tests is back (" + _shops.Count + " business(es), " + _state.Staff.Count + " employee(s)); money that moved since stays moved",
+                    TabOverview, null);
             });
         }
     }

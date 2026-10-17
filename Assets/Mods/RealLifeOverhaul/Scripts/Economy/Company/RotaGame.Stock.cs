@@ -11,18 +11,17 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// Reading a shop's goods into the planner's RotaStock: what is sold off a shelf, what is there, what a customer
-    /// takes, and what the deliveries and the logistics managers' rounds bring. Read only; nothing is written. Where the
-    /// game keeps each figure is said at RotaStock.
-    /// </summary>
+    /// <summary>Reading a shop's goods into <see cref="RotaStock"/>: shelves, stock, sales, deliveries.</summary>
     internal static partial class RotaGame
     {
         private static readonly Dictionary<string, int> StockIndex = new Dictionary<string, int>(32, StringComparer.Ordinal);
         private static readonly bool[] StockEndless = new bool[RotaStock.ProductsMost];
+        // The products each warehouse of a shop's rounds has been counted for, a bit each: two rounds from one count it once.
+        private static readonly Dictionary<BuildingRegistration, uint> StockCounted =
+            new Dictionary<BuildingRegistration, uint>(4, ReferenceComparer<BuildingRegistration>.Instance);
         private static bool _stockSaid;
 
-        // The goods, after what a customer is worth is known (ReadWorth): the same books or prices say what a customer takes.
+        // After ReadWorth: the same books or prices say what a customer takes.
         private static void ReadStock(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaShop shop = sheet.Shop;
@@ -32,7 +31,7 @@ namespace RealLifeOverhaul.Economy
             sheet.UrgentPercent = 0;
             StockIndex.Clear();
             Array.Clear(StockEndless, 0, StockEndless.Length);
-            if (!shop.HasCustomers || reg == null || reg.itemInstances == null)
+            if (!shop.HasCustomers || reg.itemInstances == null)
             {
                 return;
             }
@@ -41,7 +40,7 @@ namespace RealLifeOverhaul.Economy
                 BusinessType type = BusinessTypeHelper.GetData(reg);
                 if (type == null || !(type.simulator is RetailBusinessSimulator))
                 {
-                    return;   // (only the game's shops sell off shelves; an office, a factory and the like have no goods to run out)
+                    return;   // only the game's shops sell off shelves
                 }
                 bool bags = type.HasTag(TagRef.Businesstag.customersneedpaperbags);
                 ReadShelves(sheet, reg, bags);
@@ -57,7 +56,7 @@ namespace RealLifeOverhaul.Economy
             }
             catch (Exception e)
             {
-                // The goods could not be read as expected: the plans are valued as they were before, with no stock limit.
+                // The plans are then valued without a stock limit.
                 stock.Clear();
                 sheet.Products.Clear();
                 if (!_stockSaid)
@@ -69,7 +68,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The products a shelf sells (and, where the business needs them, the paper bags at the tills), with what their shelves hold.
+        // The products shelves sell, and the paper bags at the tills where needed, with what the shelves hold.
         private static void ReadShelves(RotaSheet sheet, BuildingRegistration reg, bool bags)
         {
             RotaStock stock = sheet.Shop.Stock;
@@ -78,7 +77,7 @@ namespace RealLifeOverhaul.Economy
                 Item data = item != null ? item.ItemCached : null;
                 if (data == null || item.cargoInstances == null || item.cargoInstances.Count != 1 || !data.IsStockCarrier() || ItemHelper.HasAnyMissingRequirements(item))
                 {
-                    continue;   // (the game's day passes over an item that lacks a requirement: RetailBusinessSimulator.LoadAvailableFurniture)
+                    continue;   // the game's day passes over an item that lacks a requirement (RetailBusinessSimulator.LoadAvailableFurniture)
                 }
                 bool shelf = (data.type & ItemType.ShowcaseShelf) != 0, till = (data.type & ItemType.PointOfSale) != 0;
                 CargoInstance cargo = item.cargoInstances[0];
@@ -94,7 +93,7 @@ namespace RealLifeOverhaul.Economy
                 stock.Shelf[p] += Math.Max(0, cargo.GetMaxStockCapacity(item));
                 stock.OnSite[p] += Math.Max(0, cargo.amount);
                 stock.Bag[p] |= till && bags;
-                StockEndless[p] |= data.producerSettings == null || !data.producerSettings.ResourcesRequired;   // (a sale takes nothing from such a shelf: ItemHelper.SubtractFromStock)
+                StockEndless[p] |= data.producerSettings == null || !data.producerSettings.ResourcesRequired;   // a sale takes nothing from such a shelf (ItemHelper.SubtractFromStock)
             }
         }
 
@@ -107,7 +106,7 @@ namespace RealLifeOverhaul.Economy
             RotaStock stock = sheet.Shop.Stock;
             if (stock.Products >= RotaStock.ProductsMost)
             {
-                return -1;   // (more products than are counted one by one: the rest are counted in the margin as before)
+                return -1;   // past the products counted one by one: the rest stay in the margin
             }
             p = stock.Products++;
             StockIndex[name] = p;
@@ -117,8 +116,8 @@ namespace RealLifeOverhaul.Economy
             return p;
         }
 
-        // What is there besides the shelves: the storage and any vehicle parked at the business (the game's own count for a
-        // refill: ReStockingHelper.CountAvailableStock), and the box places the storage has for these goods.
+        // What is there besides the shelves: the storage and any vehicle parked at the business, as the game counts it
+        // for a refill (ReStockingHelper.CountAvailableStock), and the box places the storage has for these goods.
         private static void ReadOnSite(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaStock stock = sheet.Shop.Stock;
@@ -130,7 +129,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                bool container = data.HasTag(TagRef.Itemtag.isstockcontainer) && !data.IsStockCarrier(), storage = data.HasTag(TagRef.Itemtag.isbusinessstorage);   // (a shelf's own stock is counted with the shelves)
+                // A shelf's own stock is counted with the shelves.
+                bool container = data.HasTag(TagRef.Itemtag.isstockcontainer) && !data.IsStockCarrier(), storage = data.HasTag(TagRef.Itemtag.isbusinessstorage);
                 if (storage)
                 {
                     places += Math.Max(0, data.cargoCapacity);
@@ -149,12 +149,12 @@ namespace RealLifeOverhaul.Economy
                     }
                     if (storage && !counted)
                     {
-                        others++;   // a box of goods the business does not sell off a shelf: its place is taken
+                        others++;   // a box of goods not sold off a shelf takes a place
                     }
                 }
             }
             stock.Boxes = Math.Max(0, places - others);
-            List<VehicleInstance> vehicles = Save != null ? Save.VehicleInstances : null;
+            List<VehicleInstance> vehicles = Save.VehicleInstances;
             for (int i = 0; vehicles != null && i < vehicles.Count; i++)
             {
                 VehicleInstance v = vehicles[i];
@@ -174,14 +174,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // What a customer served takes of each product and what a unit leaves, by the same source as what a customer is
-        // worth: the books of the last days, else the game's own arithmetic for the products on sale at the prices set.
-        // What the customer leaves is then split into these products, other goods, and what is no goods at all.
+        // What a customer takes of each product and what a unit leaves, from the same source as a customer's worth;
+        // then what a customer leaves is split into these products, other goods, and what is no goods at all.
         private static void ReadTaken(RotaSheet sheet, BuildingRegistration reg, BusinessType type)
         {
             RotaShop shop = sheet.Shop;
             RotaStock stock = shop.Stock;
             double goods = 0;
+            int factor = CityEconomyDirector.TakingsFactor;   // as ReadWorth puts a customer's margin at today's prices
             if (sheet.FromBooks)
             {
                 int today = Save.Day, customers = 0;
@@ -207,7 +207,7 @@ namespace RealLifeOverhaul.Economy
                         {
                             continue;
                         }
-                        double margin = sale.totalPrice - sale.totalWholesalePrice;
+                        double margin = RotaStock.Left(sale.totalPrice, sale.totalWholesalePrice, factor);
                         if (IsGoods(sale.itemName, type))
                         {
                             goods += margin;
@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Economy
                     stock.UnitMargin[p] = units[p] > 0 ? (int)Math.Round(left[p] * 100.0 / units[p]) : 0;
                     if (stock.Bag[p] && units[p] == 0)
                     {
-                        stock.PerCustomer[p] = 1000;   // (bags not in the books: one for each customer who buys)
+                        stock.PerCustomer[p] = 1000;   // bags are not in the books: one for each customer who buys
                     }
                 }
                 goods = customers > 0 ? goods * 100.0 / customers : 0;
@@ -241,11 +241,8 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    // The game's own arithmetic for a customer's order (CustomerEntriesCalculatorRetail.AddProductsToCustomersEntriesList), as ReadWorth.
-                    float demand = item.isADemandedProduct ? ProductMarketHelper.GetNeighborhoodDemand(products[i], reg.Neighborhood).demand : 100f;
-                    float amount = type.maxAmountPerProduct > 1f ? (type.IsPrimaryProduct(products[i]) ? (1f + type.maxAmountPerProduct) * 0.5f : 1f) : type.maxAmountPerProduct;
-                    float taken = (item.productSalesRatio == 0f ? 1f : item.productSalesRatio) * (demand / 100f) * content * type.GetProductImpact(products[i]) * amount;
-                    double margin = ItemHelper.GetPrice(products[i], reg) - item.GetWholesalePrice();
+                    float taken = Taken(item, products[i], type, reg, content);
+                    double margin = RotaStock.Left(ItemHelper.GetPrice(products[i], reg), item.GetWholesalePrice(), factor);
                     goods += taken * margin * 100.0;
                     if (StockIndex.TryGetValue(products[i], out int p))
                     {
@@ -264,7 +261,6 @@ namespace RealLifeOverhaul.Economy
             stock.Split(shop.Margin, (int)Math.Max(int.MinValue / 2, Math.Min(int.MaxValue / 2, Math.Round(goods))));
         }
 
-        // Goods: anything a customer takes away, not a service, an entrance fee or a ticket.
         private static bool IsGoods(string name, BusinessType type)
         {
             Item item = ItemsGetter.GetByName(name, true);
@@ -272,12 +268,12 @@ namespace RealLifeOverhaul.Economy
                    && !item.HasTag(TagRef.Itemtag.isticket);
         }
 
-        // The delivery contracts that repeat: what each brings on a Monday, the most the wholesaler sends of it in a week,
-        // and what the wholesaler is short of this week (said, not counted: the plans count a week like any other).
+        // The delivery contracts that repeat: what each brings on a Monday, the wholesaler's weekly limit, and what the
+        // wholesaler is short of this week (shown, not counted).
         private static void ReadDeliveries(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaStock stock = sheet.Shop.Stock;
-            List<DeliveryContract> contracts = Save != null ? Save.DeliveryContracts : null;
+            List<DeliveryContract> contracts = Save.DeliveryContracts;
             bool limits = !DeliveryHelper.AreWholesaleAndImportLimitsDisabled();
             sheet.UrgentPercent = Mathf.Max(0, Mathf.RoundToInt((DeliveryHelper.GetWholesaleUrgentFeeMultiplier() - 1f) * 100f));
             for (int i = 0; contracts != null && i < contracts.Count; i++)
@@ -295,9 +291,8 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    stock.Weekly[p] += line.amount;
                     Item item = line.ItemCached;
-                    stock.Most[p] = limits && item != null ? Math.Max(stock.Most[p], item.maxWholesaleOrderAmount) : 0;
+                    stock.Contract(p, line.amount, limits && item != null ? item.maxWholesaleOrderAmount : 0);
                     if (seller != null)
                     {
                         stock.Backorder[p] |= ProductMarketHelper.IsProductInMarketEvent(line.itemName, MarketEventType.ProductBackorder, seller.Neighborhood);
@@ -307,17 +302,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The logistics managers' rounds that come here: each product's target, and what the round's warehouse holds of it.
-        // A round counts only as the game would run it (LogisticsManagerPlan.GetPlannedDeliveries, read without its side effects):
-        // a warehouse that is still rented, a manager at work, and this business among the destinations the vehicles can serve.
+        // The logistics managers' rounds to here: each target and the warehouse's stock, counted only where the game
+        // would run the round (LogisticsManagerPlan.GetPlannedDeliveries): a manager at work, a destination served. A
+        // warehouse is counted once for a product, with what its own repeating contracts bring it a week.
         private static void ReadRounds(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaStock stock = sheet.Shop.Stock;
-            List<LogisticsManagerPlan> plans = Save != null ? Save.logisticsManagerPlans : null;
+            List<LogisticsManagerPlan> plans = Save.logisticsManagerPlans;
+            StockCounted.Clear();
             for (int i = 0; plans != null && i < plans.Count; i++)
             {
                 LogisticsManagerPlan plan = plans[i];
-                if (plan == null || plan.isFactory || plan.targetAddress == null || plan.targetAddress.IsUndefined() || plan.assignedEmployeeId == null || plan.destinations == null)
+                if (plan == null || plan.isFactory || plan.targetAddress == null || plan.targetAddress.IsUndefined() || plan.assignedEmployeeId == null
+                    || plan.destinations == null)
                 {
                     continue;
                 }
@@ -343,13 +340,40 @@ namespace RealLifeOverhaul.Economy
                             continue;
                         }
                         stock.Target[p] = Math.Max(stock.Target[p], target.targetAmount);
-                        stock.Warehouse[p] += BuildingHelper.CountTotalResourcesInStock(warehouse, target.itemName, false);
+                        StockCounted.TryGetValue(warehouse, out uint counted);
+                        if ((counted & (1u << p)) == 0)
+                        {
+                            StockCounted[warehouse] = counted | (1u << p);
+                            stock.Warehouse[p] += BuildingHelper.CountTotalResourcesInStock(warehouse, target.itemName, false);
+                            stock.Restock[p] += Restocks(warehouse, target.itemName);
+                        }
                     }
                 }
             }
+            StockCounted.Clear();
         }
 
-        // A product whose shelf never runs down is no limit on anything: it goes back into the margin with the other goods.
+        // What a warehouse's own repeating contracts bring it of a product each Monday.
+        private static int Restocks(BuildingRegistration warehouse, string item)
+        {
+            int units = 0;
+            List<DeliveryContract> contracts = Save.DeliveryContracts;
+            for (int i = 0; contracts != null && i < contracts.Count; i++)
+            {
+                DeliveryContract c = contracts[i];
+                if (c == null || !c.enabled || !c.repeatingOrder || c.businessAddress == null || c.businessAddress != warehouse.Address || c.items == null)
+                {
+                    continue;
+                }
+                for (int k = 0; k < c.items.Count; k++)
+                {
+                    units += c.items[k] != null && c.items[k].itemName == item ? Math.Max(0, c.items[k].amount) : 0;
+                }
+            }
+            return units;
+        }
+
+        // A product whose shelf never runs down limits nothing: it goes back into the margin with the other goods.
         private static void Drop(RotaSheet sheet)
         {
             RotaStock stock = sheet.Shop.Stock;
@@ -372,6 +396,7 @@ namespace RealLifeOverhaul.Economy
                     stock.Target[to] = stock.Target[p];
                     stock.Most[to] = stock.Most[p];
                     stock.Warehouse[to] = stock.Warehouse[p];
+                    stock.Restock[to] = stock.Restock[p];
                     stock.Bag[to] = stock.Bag[p];
                     stock.Backorder[to] = stock.Backorder[p];
                     stock.Shortage[to] = stock.Shortage[p];
@@ -383,11 +408,7 @@ namespace RealLifeOverhaul.Economy
             stock.Products = to;
         }
 
-        /// <summary>
-        /// What the planner's figures for a shop's goods are made from besides the day, mixed into its stamp: the delivery
-        /// contracts and rounds that serve it, and its storage. The stock itself changes with every sale and is read again
-        /// the next day, or as soon as anything here changes.
-        /// </summary>
+        // The contracts and rounds a shop's goods figures are made from, for its stamp; the stock is read again daily.
         private static long StockStamp(long h, BuildingRegistration reg)
         {
             List<DeliveryContract> contracts = Save != null ? Save.DeliveryContracts : null;

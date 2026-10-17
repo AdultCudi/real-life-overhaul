@@ -4,9 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// Business insurance by rule: what a policy costs a day, what a claim pays, when it is paid, and when an insurer
-    /// will not renew. Game-free. A loss is always the other feature's own (the fire's repair bill, the break-in's
-    /// stock and repair, the inspector's fine): a policy only pays some of it back, some days after a claim.
+    /// Business insurance: premiums, what a claim pays and when, and when an insurer will not renew. Game-free.
+    /// The loss stays the other feature's (a fire, a break-in, a fine): a policy pays some of it back later.
     /// </summary>
     public static class CoverRules
     {
@@ -18,43 +17,58 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// A day's premium: a base for the kind and a share of what the business takes on an average day (its size),
-        /// by the insurer's price, the district, each claim of the term before, and today's prices. One at least.
+        /// A day's premium: a base and a share of an average day's takings, by insurer, district, the last term's
+        /// claims and today's prices. One at least.
         /// </summary>
         public static int Premium(int kind, int insurer, int takings, int income, int claims, int index)
         {
-            // Thousandths of money: the base at today's prices, the share of the takings as they are (the game's statement has
-            // them at today's prices: the city's takings line is in it).
-            long list = (long)CompanyCatalogue.CoverBase[kind] * CompanyCatalogue.Clamp(index, 500, 4000) + (long)Math.Max(0, takings) * CompanyCatalogue.CoverTakingsShare[kind];
+            // Thousandths of money. Only the base is put at today's prices: the game's takings already are.
+            long list = (long)CompanyCatalogue.CoverBase[kind] * CompanyCatalogue.Clamp(index, 500, 4000)
+                        + (long)Math.Max(0, takings) * CompanyCatalogue.CoverTakingsShare[kind];
             list = list * CompanyCatalogue.InsurerPrice[insurer] / 1000;
             list = list * District(kind, income) / 1000;
             list = list * (1000 + (long)Math.Max(0, claims) * CompanyCatalogue.ClaimLoading) / 1000;
             return (int)Math.Max(1, Math.Min(int.MaxValue / 4, (list + 500) / 1000));
         }
 
-        /// <summary>The part of a loss the holder bears: a share of it, a stated sum at least, never more than the loss.</summary>
+        /// <summary>The holder's part of a loss: a share, a stated sum at least, never more than the loss.</summary>
         public static int Excess(int insurer, int loss)
         {
             loss = Math.Max(0, loss);
             return Math.Min(loss, Math.Max(CompanyCatalogue.InsurerExcessLeast[insurer], CompanyCatalogue.Share(loss, CompanyCatalogue.InsurerExcessShare[insurer])));
         }
 
-        /// <summary>What a claim pays: the loss, counted up to the most the cover goes to, less the excess.</summary>
+        /// <summary>What a claim pays: the loss up to the cover's most, less the excess.</summary>
         public static int Payout(int kind, int insurer, int loss)
         {
             int counted = Math.Min(Math.Max(0, loss), CompanyCatalogue.CoverMost[kind]);
             return counted - Excess(insurer, counted);
         }
 
-        /// <summary>An insurer renews unless there were too many claims in the term.</summary>
         public static bool Renews(int insurer, int claims)
         {
             return claims < CompanyCatalogue.InsurerClaimsMost[insurer];
         }
 
+        /// <summary>Whether an insurer would write this cover now: it has not declined it here, and stands the last term's claims.</summary>
         public static bool WillWrite(Policy p, int insurer)
         {
-            return (p.Declined & (1 << insurer)) == 0;
+            return !Declines(p, insurer) && Renews(insurer, Carried(p));
+        }
+
+        /// <summary>The insurer declined to renew this cover here once, and will not write it again.</summary>
+        public static bool Declines(Policy p, int insurer)
+        {
+            return (p.Declined & (1 << insurer)) != 0;
+        }
+
+        /// <summary>
+        /// The claims a new policy here is priced on, as a renewal would be: with none running, those of its last term, so
+        /// that cancelling after a claim and buying again neither drops the claim's loading nor gets past an insurer's limit.
+        /// </summary>
+        public static int Carried(Policy p)
+        {
+            return p.Active ? 0 : Math.Max(0, p.Claims);
         }
 
         public static void Buy(Policy p, int insurer, int premium, int day, int termDays)
@@ -66,11 +80,11 @@ namespace RealLifeOverhaul.Economy
             p.Claims = p.Missed = 0;
         }
 
-        /// <summary>The policy ends. Who has declined to write it here is remembered.</summary>
+        /// <summary>The policy ends; the insurers that declined are remembered, and so are the term's claims (<see cref="Carried"/>).</summary>
         public static void End(Policy p)
         {
             p.Insurer = -1;
-            p.Premium = p.From = p.Until = p.Claims = p.Missed = 0;
+            p.Premium = p.From = p.Until = p.Missed = 0;
         }
 
         public static bool Covers(Policy p, int day)
@@ -78,7 +92,7 @@ namespace RealLifeOverhaul.Economy
             return p.Active && day >= p.From && day <= p.Until;
         }
 
-        /// <summary>A day's premium was taken, or could not be. True if that was one day too many and the policy has lapsed.</summary>
+        /// <summary>A day's premium was taken or not. True when one miss too many has ended the policy.</summary>
         public static bool Charged(Policy p, bool taken)
         {
             if (taken)
@@ -100,10 +114,7 @@ namespace RealLifeOverhaul.Economy
             return p.Active && day > p.Until;
         }
 
-        /// <summary>
-        /// The term is over. The insurer writes the next one at a premium that counts this term's claims, or declines:
-        /// then the policy ends and that insurer will not write this cover here again. True if it was renewed.
-        /// </summary>
+        /// <summary>Term over: renewed counting its claims (true), or declined for good by the insurer.</summary>
         public static bool Renew(Policy p, int kind, int takings, int income, int index, int day, int termDays)
         {
             int insurer = p.Insurer;
@@ -117,9 +128,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // ---------------------------------------------------------------- claims
-
-        /// <summary>A loss a policy covers: a claim that can be put in for some days. Null if the policy does not cover that day or nothing would be paid.</summary>
+        /// <summary>A covered loss becomes a claim; null if not covered that day or nothing would be paid.</summary>
         public static Claim Open(CompanyState state, Policy p, string place, string name, int kind, int loss, int day)
         {
             if (!Covers(p, day) || loss <= 0)
@@ -141,7 +150,7 @@ namespace RealLifeOverhaul.Economy
             return claim;
         }
 
-        // Room for one more: the oldest claim that is finished goes first, then the oldest of all.
+        // Room for one more: the oldest finished claim goes, else the oldest of all.
         private static void Trim(List<Claim> claims)
         {
             while (claims.Count >= CompanyCatalogue.ClaimsMost)
@@ -159,7 +168,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The claim is put in: it is paid after the insurer's days, and it counts against the policy's term.</summary>
+        /// <summary>The claim is put in: paid after the insurer's days, and counted in the policy's term.</summary>
         public static bool File(Claim c, Policy p, int day)
         {
             if (c.Stage != ClaimStage.Open)
@@ -168,14 +177,14 @@ namespace RealLifeOverhaul.Economy
             }
             c.Stage = ClaimStage.Filed;
             c.PayDay = day + CompanyCatalogue.InsurerPayDays[c.Insurer];
-            if (p != null && p.Insurer == c.Insurer)
+            if (p != null && (p.Insurer == c.Insurer || !p.Active))
             {
-                p.Claims++;
+                p.Claims++;   // put in after the policy ended, it counts against the next one here as its term's own would
             }
             return true;
         }
 
-        /// <summary>A day for a claim. True if it is to be paid now; a claim nobody put in lapses after its days.</summary>
+        /// <summary>A day for a claim: true if it is paid now. One nobody put in lapses after its days.</summary>
         public static bool Day(Claim c, int day)
         {
             if (c.Stage == ClaimStage.Filed && day >= c.PayDay)

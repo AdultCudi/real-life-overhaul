@@ -3,44 +3,10 @@ using System;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// Fills a week's rota. Game-free and over plain arrays: the director copies a business into a
-    /// <see cref="RotaProblem"/>, this answers with a <see cref="RotaPlan"/>, and the same problem always gives the
-    /// same plan (no chance, no clock: the improving pass counts its moves).
-    ///
-    /// WHAT IS NEVER BROKEN (the game enforces or punishes each): nobody stands at a station they have no skill for,
-    /// nobody is in two places at once, no shift is longer than <see cref="RotaCatalogue.ShiftCap"/> hours, nobody
-    /// works more than <see cref="RotaCatalogue.DayCap"/> hours in a day, and a station with the headquarters rule
-    /// has one person for the whole week or nobody.
-    ///
-    /// WHAT IS WANTED, in this order: the most value covered; the most demands met (weighed as the game weighs them
-    /// against satisfaction); the lowest wages, with the better hand where wages are equal; few, long shifts.
-    ///
-    /// HOW
-    ///   1  limits     every demand that sets an upper end (most hours, most days, free days, hours not worked, kinds
-    ///                 of shift, stations asked for) is a limit; a lower end (least hours, a number of days, a station
-    ///                 at least once) is a goal
-    ///   2  whole      stations with the headquarters rule get the person who fits every hour of them
-    ///   3  goals      as the game's own first pass gives everybody their least hours: whoever asks for a least
-    ///                 number of hours or for a number of days is given shifts first, on the most valuable days
-    ///   4  shifts     day and station by day and station, the most valuable first: the uncovered run goes to whoever
-    ///                 covers the most value of it in one shift, then who is hardest to place elsewhere, then whose
-    ///                 demands it helps, then who costs least
-    ///   5  improve    an uncovered hour is covered by having somebody give up an hour worth less, or one that
-    ///                 another can take over; a shift goes to somebody whose demands it helps, or who is cheaper
-    ///   6  relax      if hours are still uncovered, the demands the game calls optional (not of high priority) stop
-    ///                 being limits, as in the game's own auto fill, and give way only where they cover an hour;
-    ///                 the plan says which gave way and where. Demands of high priority never give way; the least
-    ///                 hours of a week (the game's "semi-critical" step) are a goal throughout, reported if missed
-    ///   7  again      unless that rota covers everything and meets every demand, a second one is made from a plain
-    ///                 start (hour by hour in the order of the week, then steps 5 and 6) and the better is kept
-    ///
-    /// A rota can be made in one go (<see cref="Solve"/>) or a few steps at a time (<see cref="Start"/> and
-    /// <see cref="Step"/>): the director does the latter and spreads the steps over frames, because the game's
-    /// runtime is several times slower than the one the offline checks measure. Either way gives the same rota.
-    ///
-    /// Cost: nothing unless asked. Nothing is allocated while it runs once its arrays have grown to the largest
-    /// business seen. The steps that place shifts are in RotaSolver.Shifts.cs, the improving pass and the rating in
-    /// RotaSolver.Improve.cs.
+    /// Fills a week's rota, game-free; the same problem always gives the same plan (the improving pass counts its moves).
+    /// Never broken: skill, one place at a time, the shift and day caps, the headquarters rule. Wanted, in order: value
+    /// covered, demands met (upper ends are limits, lower ends goals), low wages, few long shifts. <see cref="Start"/>
+    /// and <see cref="Step"/> spread <see cref="Solve"/> over frames. Nothing is allocated once grown.
     /// </summary>
     public sealed partial class RotaSolver
     {
@@ -65,7 +31,6 @@ namespace RealLifeOverhaul.Economy
         private uint[] _hourOk = new uint[0];
         private ulong[] _stationOk = new ulong[0];
 
-        // The goals.
         private int[] _minHours = new int[0], _minWeight = new int[0], _wantDays = new int[0], _daysWeight = new int[0], _onWeight = new int[0];
         private ulong[] _onMask = new ulong[0], _canMask = new ulong[0];
         private bool _optional;                     // some demand that is a limit is not of high priority
@@ -81,10 +46,10 @@ namespace RealLifeOverhaul.Economy
         private int _phase = PhaseDone, _i, _pass, _goals;
         private bool _second, _any, _ever, _placed;
         private RotaPlan _first;
-        private readonly int[] _pre = new int[Hours + 1];
-        private readonly int[] _rare = new int[Hours + 1];      // like _pre, of how few could take each hour of the day at hand
+        private readonly int[] _pre = new int[Hours + 1];       // the value of a day at a station summed hour by hour
+        private readonly int[] _rare = new int[Hours + 1];      // the same of how few could take each hour
 
-        /// <summary>The rota for a problem, written into <paramref name="plan"/> (made if null) and rated: every step at once.</summary>
+        /// <summary>The rota for a problem, written into <paramref name="plan"/> (made if null) and rated, in one go.</summary>
         public RotaPlan Solve(RotaProblem problem, RotaPlan plan = null)
         {
             Start(problem, plan);
@@ -94,11 +59,7 @@ namespace RealLifeOverhaul.Economy
             return _first;
         }
 
-        /// <summary>
-        /// Begins a rota that is then made a few steps at a time by <see cref="Step"/>, so that whoever asks can
-        /// spread it over frames. The steps are the same ones in the same order however they are cut up, so the rota
-        /// is the one <see cref="Solve"/> gives. The problem must not change until the last step is done.
-        /// </summary>
+        /// <summary>Begins the rota <see cref="Solve"/> would make, for <see cref="Step"/> to make. The problem must not change until it is done.</summary>
         public RotaPlan Start(RotaProblem problem, RotaPlan plan = null)
         {
             _first = Begin(problem, plan);
@@ -107,10 +68,7 @@ namespace RealLifeOverhaul.Economy
             return _first;
         }
 
-        /// <summary>
-        /// Does so many steps more. One step is one small piece of work: one employee's first shifts, one day at one
-        /// station, one day of the plain start, one rating. True when the rota is finished.
-        /// </summary>
+        /// <summary>Does so many steps more, each a small piece such as one day at one station; true when the rota is finished.</summary>
         public bool Step(int steps)
         {
             while (steps-- > 0 && _phase != PhaseDone)
@@ -120,8 +78,7 @@ namespace RealLifeOverhaul.Economy
             return _phase == PhaseDone;
         }
 
-        // The steps in their order. Two starts are made and the better rota is kept: shifts by value, and hour by hour in the
-        // order of the week; each is then improved, relaxed if hours are left, and rated.
+        // Two starts, shifts by value and hour by hour in week order, each improved, relaxed if hours are left, and rated.
         private void One()
         {
             int lanes = Days * _s;
@@ -172,7 +129,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     else if (_any && _pass == 0)
                     {
-                        // Something was covered: the lanes are gone over once more, for what that has made possible.
+                        // Something was covered: every lane once more, for what that made possible.
                         _ever = true;
                         _pass = 1;
                         _i = 0;
@@ -221,7 +178,7 @@ namespace RealLifeOverhaul.Economy
                     Rate();
                     if (!_second && _first.Full && _first.UnmetCount == 0)
                     {
-                        _phase = PhaseDone;   // (nothing a second start could do better but wages, and the first start is the one that looks at wages)
+                        _phase = PhaseDone;   // a second start could only do better on wages, which the first already weighs
                     }
                     else if (!_second)
                     {
@@ -250,8 +207,7 @@ namespace RealLifeOverhaul.Economy
             _phase = phase;
         }
 
-        // One day of the second start: hour by hour, station by station, the hour goes to whoever stands there the hour
-        // before, else to the first who may take it.
+        // One day of the second start: each hour goes to whoever stood there the hour before, else to the first who may take it.
         private void InOrderDay(int d)
         {
             for (int h = 0; h < Hours; h++)
@@ -281,7 +237,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The order of what is wanted: value, demands, wages, shifts.
         private static bool Better(RotaPlan a, RotaPlan b)
         {
             if (a.CoveredValue != b.CoveredValue)
@@ -313,11 +268,8 @@ namespace RealLifeOverhaul.Economy
             to.Gaps.AddRange(from.Gaps);
         }
 
-        /// <summary>
-        /// Rates a rota that was made elsewhere (the one a business has now): what it covers, what it costs, which
-        /// demands it leaves unmet. <paramref name="plan"/>.At is read and its figures are written.
-        /// </summary>
-        public RotaPlan Rate(RotaProblem problem, RotaPlan plan)
+        /// <summary>Rates a rota made elsewhere: <paramref name="plan"/>.At is read (a worker out of range cleared) and its figures written.</summary>
+        public void Rate(RotaProblem problem, RotaPlan plan)
         {
             short[] given = plan.At;
             int level = plan.Level;
@@ -328,10 +280,6 @@ namespace RealLifeOverhaul.Economy
             _plan = plan;
             _at = given;
             Limits();
-            for (int i = 0; i < Days * _s; i++)
-            {
-                _need[i] = 0;
-            }
             for (int cell = 0; cell < Cells; cell++)
             {
                 for (int s = 0; s < _s; s++)
@@ -355,10 +303,7 @@ namespace RealLifeOverhaul.Economy
             plan.Gaps.Clear();
             Rate();
             plan.Level = level;
-            return plan;
         }
-
-        // ---------------------------------------------------------------- the start
 
         private RotaPlan Begin(RotaProblem problem, RotaPlan plan)
         {
@@ -468,10 +413,10 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < count; i++)
                 {
                     RotaDemand q = demands[i];
-                    int weight = Weight(q.Priority);
+                    int weight = RotaCatalogue.Weight(q.Priority);
                     bool high = q.Priority >= RotaCatalogue.PriorityHigh;
                     bool limit = true;
-                    for (int level = high ? 1 : 0; level >= 0; level--)   // (a demand of high priority is a limit at both levels, any other at the first only)
+                    for (int level = high ? 1 : 0; level >= 0; level--)   // a demand of high priority limits at both levels, any other at the first
                     {
                         int at = level * _w + w;
                         switch (q.Kind)
@@ -512,8 +457,7 @@ namespace RealLifeOverhaul.Economy
                                 }
                                 break;
                             case RotaDemandKind.OnStation:
-                                // As the game's own first sorting of people to stations: only the stations asked for. With none of them
-                                // here that they could stand at, the demand cannot be met at all and limits nothing.
+                                // Only the stations asked for, as the game first sorts people; if they can stand at none, no limit.
                                 if ((q.Mask & can) != 0)
                                 {
                                     _stationOk[at] &= q.Mask;
@@ -564,12 +508,7 @@ namespace RealLifeOverhaul.Economy
             _canStart[_s] = n;
         }
 
-        private static int Weight(int priority)
-        {
-            return RotaCatalogue.DemandWeight[priority < 0 ? 0 : priority > 2 ? 2 : priority];
-        }
-
-        // The most valuable day at a station first; equal ones in the order of the week. An insertion sort: a few hundred at most, nearly sorted by nothing.
+        // The most valuable day at a station first, ties in the order of the week. An insertion sort: a few hundred lanes at most.
         private void SortLanes()
         {
             int n = Days * _s;
@@ -584,8 +523,6 @@ namespace RealLifeOverhaul.Economy
                 _lanes[j + 1] = lane;
             }
         }
-
-        // ---------------------------------------------------------------- placing and taking away
 
         private void Count(int w, int cell, int s, int by)
         {
@@ -631,7 +568,7 @@ namespace RealLifeOverhaul.Economy
             Count(w, cell, s, -1);
         }
 
-        // How many hours they stand at this station straight before an hour, and straight from one.
+        // The hours they stand at this station straight before an hour, and straight from one on.
         private int RunBack(int w, int d, int s, int h)
         {
             int at = w * Cells + d * Hours, n = 0;
@@ -662,7 +599,6 @@ namespace RealLifeOverhaul.Economy
                    && RunBack(w, d, s, h) + RunOn(w, d, s, h + 1) < RotaCatalogue.ShiftCap;
         }
 
-        // Whether somebody may take a whole shift, hours x to y of a day at a station.
         private bool CanTake(int level, int w, int d, int s, int x, int y)
         {
             int at = level * _w + w, wd = w * Days + d, len = y - x;
@@ -672,8 +608,6 @@ namespace RealLifeOverhaul.Economy
                    && _dayH[wd] + len <= RotaCatalogue.DayCap && _weekH[w] + len <= _maxHours[at] && (_dayH[wd] > 0 || _daysOn[w] < _maxDays[at])
                    && RunBack(w, d, s, x) + RunOn(w, d, s, y) + len <= RotaCatalogue.ShiftCap;
         }
-
-        // ---------------------------------------------------------------- demands
 
         private bool Met(int w, ref RotaDemand q)
         {
@@ -724,13 +658,13 @@ namespace RealLifeOverhaul.Economy
             {
                 if (!Met(w, ref demands[i]))
                 {
-                    sum += Weight(demands[i].Priority);
+                    sum += RotaCatalogue.Weight(demands[i].Priority);
                 }
             }
             return sum;
         }
 
-        // How much a shift of so many hours helps somebody's goals: hours towards their least, a day towards their number of days, a station they ask for.
+        // How much a shift helps somebody's goals: hours towards their least, a day towards their number, a station asked for.
         private int Gain(int w, int d, int s, int len)
         {
             int gain = 0, lacking = _minHours[w] - _weekH[w];

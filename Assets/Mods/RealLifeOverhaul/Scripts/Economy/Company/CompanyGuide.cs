@@ -6,14 +6,16 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The figures the Guide's page "Running a business" prints: every {name} in its text is filled from
-    /// <see cref="CompanyCatalogue"/> here, so the page can never say anything the rules do not do. Called once, when
-    /// the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The figures of the Guide's page "Running a business", each from <see cref="CompanyCatalogue"/>, so the page
+    /// cannot say what the rules do not do. Registered once with the feature list; worked out when the page opens.
     /// </summary>
     public static class CompanyGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        private static readonly string[] LevelKeys = { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" };
+        private static readonly string[] LevelKeys =
+        {
+            "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore"
+        };
 
         public static void AddFacts(Feature f)
         {
@@ -149,7 +151,7 @@ namespace RealLifeOverhaul.Economy
         private static string Campaigns()
         {
             var text = new StringBuilder();
-            for (int k = 0; k < CompanyCatalogue.CampaignOwnKinds; k++)   // (a sponsored post is priced by Flare: its own Guide page says how)
+            for (int k = 0; k < CompanyCatalogue.CampaignOwnKinds; k++)   // the rest are priced by Flare, whose page says how
             {
                 bool free = CompanyCatalogue.CampaignCost[k] == 0;
                 text.Append("- ").Append((free ? "reallife_guide_economy_company_campaign_free" : "reallife_guide_economy_company_campaign").GetLocalization()

@@ -393,8 +393,9 @@ internal static partial class Program
         p2.Claims = 1;
         Check(CoverRules.Renew(p2, fire, 2000, 100, 1000, 70, 60) && p2.Premium == 25 && p2.From == 70 && p2.Until == 129 && p2.Claims == 0, "a claim raises the next term's premium, and the count starts again");
         p2.Claims = 3;
-        Check(!CoverRules.Renew(p2, fire, 2000, 100, 1000, 130, 60) && !p2.Active && !CoverRules.WillWrite(p2, 1) && CoverRules.WillWrite(p2, 0) && CoverRules.WillWrite(p2, 2),
-            "after three claims in a term the middle insurer declines to renew and will not write that cover there again");
+        Check(!CoverRules.Renew(p2, fire, 2000, 100, 1000, 130, 60) && !p2.Active && !CoverRules.WillWrite(p2, 1) && CoverRules.Declines(p2, 1) && !CoverRules.WillWrite(p2, 0)
+              && CoverRules.WillWrite(p2, 2),
+            "after three claims in a term the middle insurer declines to renew and will not write that cover there again; the cheap one stands no three either, the dear one does");
         Check(!CoverRules.Renews(0, 2) && CoverRules.Renews(0, 1) && CoverRules.Renews(2, 3) && !CoverRules.Renews(2, 4), "the cheap insurer stands one claim in a term, the dear one three");
     }
 
@@ -471,28 +472,35 @@ internal static partial class Program
         Check(CampaignRules.Discount(2000) == 300 && CampaignRules.Discount(0) == 0 && CampaignRules.Discount(-50) == 0, "a discount day gives away fifteen per cent of the day's takings");
     }
 
-    private static void CompanyReports()
+    // A scripted series: 100 customers, 1,000 taken and 300 made a day before; 120, 1,300 and 420 on the campaign's days.
+    // As the game's statements are, the day it was booked (the day before its first) has its price taken off, and each
+    // of its days what it gave away; the game has figures from day 'first'.
+    private static CampaignRules.DayBook CampaignBook(int from, int price, int gaveADay = 0, int first = 1)
     {
-        // A scripted series: 100 customers, 1,000 taken and 300 made a day before; 120, 1,300 and 420 on the campaign's days.
-        CampaignRules.DayBook book = (int day, out int customers, out int takings, out int profit) =>
+        return (int day, out int customers, out int takings, out int profit) =>
         {
-            bool during = day >= 11;
+            bool during = day >= from;
             customers = during ? 120 : 100;
             takings = during ? 1300 : 1000;
-            profit = during ? 420 : 300;
-            return day >= 1;
+            profit = (during ? 420 - gaveADay : 300) - (day == from - 1 ? price : 0);
+            return day >= first;
         };
-        CampaignReport r = CampaignRules.Measure("Corner Shop", (int)CampaignKind.Flyers, 11, 3, 150, book);
+    }
+
+    private static void CompanyReports()
+    {
+        CampaignReport r = CampaignRules.Measure("Corner Shop", (int)CampaignKind.Flyers, 11, 3, 150, 0, CampaignBook(11, 150));
         Check(r.DaysBefore == 3 && r.DaysDuring == 3 && r.CustomersBefore == 300 && r.CustomersDuring == 360 && r.TakingsBefore == 3000 && r.TakingsDuring == 3900 && r.ProfitBefore == 900 && r.ProfitDuring == 1260,
-            "the report adds up the campaign's days and the same number before it");
-        Check(r.Footfall == 20 && r.Extra == 210 && r.Return == 140, "20 per cent more customers, 210 extra profit after the cost of 150, a return of 140 per cent");
-        CampaignReport loss = CampaignRules.Measure("Corner Shop", (int)CampaignKind.Radio, 11, 3, 1200, book);
-        Check(loss.Extra == -840 && loss.Return == -70, "a campaign that cost more than it brought shows a loss");
-        CampaignReport free = CampaignRules.Measure("Corner Shop", (int)CampaignKind.DiscountDay, 11, 1, 0, book);
+            "the report adds up the campaign's days and the same number before it, the price put back on the day it was booked (profit before " + r.ProfitBefore + ")");
+        Check(r.Footfall == 20 && r.Extra == 210 && r.Return == 140, "20 per cent more customers, 210 extra profit after the cost of 150, a return of 140 per cent (" + r.Extra + ")");
+        CampaignReport loss = CampaignRules.Measure("Corner Shop", (int)CampaignKind.Radio, 11, 3, 1200, 0, CampaignBook(11, 1200));
+        Check(loss.Extra == -840 && loss.Return == -70, "a campaign that cost more than it brought shows a loss (" + loss.Extra + ")");
+        CampaignReport free = CampaignRules.Measure("Corner Shop", (int)CampaignKind.DiscountDay, 11, 1, 0, 0, CampaignBook(11, 0));
         Check(free.DaysBefore == 1 && free.DaysDuring == 1 && free.Extra == 120 && free.Return == 0, "a campaign that cost nothing has no return to state");
-        CampaignReport early = CampaignRules.Measure("Corner Shop", (int)CampaignKind.Flyers, 2, 3, 150, book);
-        Check(early.DaysBefore == 1 && early.DaysDuring == 3 && early.CustomersBefore == 100, "days the game has no figures for are left out and counted");
-        CampaignReport none = CampaignRules.Measure(null, (int)CampaignKind.Flyers, 11, 3, 150, null);
+        CampaignReport early = CampaignRules.Measure("Corner Shop", (int)CampaignKind.Flyers, 2, 3, 150, 0, CampaignBook(2, 150));
+        Check(early.DaysBefore == 1 && early.DaysDuring == 3 && early.CustomersBefore == 300 && early.ProfitBefore == 900 && early.Extra == 210,
+            "days the game has no figures for are left out and counted, and the one day before stands for three, day for day (" + early.CustomersBefore + ", " + early.Extra + ")");
+        CampaignReport none = CampaignRules.Measure(null, (int)CampaignKind.Flyers, 11, 3, 150, 0, null);
         Check(none.DaysBefore == 0 && none.DaysDuring == 0 && none.Footfall == 0 && none.Extra == -150 && none.Name == string.Empty, "with no figures at all the report is empty and says so");
         var kept = new List<CampaignReport>();
         for (int i = 0; i < 10; i++)
@@ -639,7 +647,7 @@ internal static partial class Program
         Check(old.Permits[hygiene].Until == 49 && old.Permits[signage].Until == 59 && old.Permits[alcohol].Until == 0 && old.Permits[late].Until == 0,
             "a business that already ran gets every licence it needs for a first term, free, and none it does not need");
         Check(LicenceRules.Missing(old, 9, 20) == 0 && LicenceRules.Missing(old, 9, 49) == 0 && LicenceRules.Missing(old, 9, 50) == 1 && LicenceRules.Missing(old, 9, 60) == 9, "a licence is good to its last day and missing from the next");
-        Check(LicenceRules.Missing(old, 13, 20) == 4, "a need that appears later (late opening) is missing until it is bought");
+        Check(LicenceRules.Missing(old, 13, 20) == 4, "a need that appears later (late opening) is missing while the business holds none (the reading gives it a grace: LicenceRules.Newly)");
         var opened = new ShopFile();
         LicenceRules.First(opened, 14, 20, false);
         Check(opened.Permits[alcohol].Until == 24 && LicenceRules.Missing(opened, 14, 24) == 0 && LicenceRules.Missing(opened, 14, 25) == 14, "a business opened later may trade five days before it needs them");

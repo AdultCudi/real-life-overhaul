@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -13,38 +14,31 @@ namespace RealLifeOverhaul.Economy
     /// <summary>How a strike ends.</summary>
     public enum StrikeAnswer
     {
-        Raise = 0,      // every employee of the business is brought up to the going rate
+        Raise = 0,      // everyone at the business is brought up to the going rate
         Payment = 1,    // a one-off payment to each
-        SitOut = 2      // nothing: it runs its length
+        SitOut = 2      // it runs its length
     }
 
     /// <summary>What a day brought for one employee.</summary>
     public enum StaffNote
     {
         None = 0,
-        Asked = 1,          // they ask for a raise
-        AskLapsed = 2,      // a request went unanswered: taken as refused
-        AskWithdrawn = 3    // they are no longer underpaid: the request is dropped
+        Asked = 1,
+        AskLapsed = 2,      // unanswered: taken as refused
+        AskWithdrawn = 3    // no longer underpaid: the request is dropped
     }
 
     /// <summary>
-    /// Staff as an economy, by rule: the going rate, who is underpaid, raises asked for and answered, a rival's offer,
-    /// a strike, overtime and sick pay. Game-free: the director reads the game's wages, skills and absences into the
-    /// files and calls these; nothing here knows the game. The game's own wage is never changed: what is agreed here
-    /// is <see cref="StaffFile.Raise"/>, paid on top of it.
+    /// Staff as an economy: the going rate, raises, a rival's offer, a strike, overtime and sick pay. Game-free.
+    /// The game's wage is never changed: what is agreed here is <see cref="StaffFile.Raise"/>, paid on top of it.
     /// </summary>
     public static class StaffRules
     {
         private const int PurposePoach = 61, PurposeOvertime = 62, PurposeWho = 63;
 
-        // ---------------------------------------------------------------- the wage market
-
         /// <summary>
-        /// The going rate against the game's own wage formula, thousandths: higher in a boom and lower in bad times, and
-        /// higher where the district's income is, within the market's bounds; then at today's prices. The city's cost of
-        /// living pays every wage at today's prices (Economy/City: the game's wages times the price level), and what
-        /// somebody is paid is counted the same way (<see cref="StaffFile.Wage"/>), so prices moving make nobody underpaid
-        /// or overpaid by themselves.
+        /// The going rate against the game's wage formula, thousandths, by the economy and the district's income.
+        /// At today's prices, as <see cref="StaffFile.Wage"/> is, so that prices alone underpay nobody.
         /// </summary>
         public static int Market(int index, CycleState cycle, int income)
         {
@@ -54,13 +48,13 @@ namespace RealLifeOverhaul.Economy
             return (int)((long)market * CompanyCatalogue.Clamp(index, 500, 4000) / CompanyCatalogue.IndexStart);
         }
 
-        /// <summary>The going hourly rate for somebody, hundredths, from what the game's own wage formula gives for their skill.</summary>
+        /// <summary>The going hourly rate, hundredths, from the game's wage formula for the skill.</summary>
         public static int Going(int formula, int market)
         {
             return CompanyCatalogue.Share(Math.Max(0, formula), market);
         }
 
-        /// <summary>How far under the going rate somebody is paid, thousandths; less than nothing if they are paid over it.</summary>
+        /// <summary>How far under the going rate somebody is paid, thousandths; negative when paid over it.</summary>
         public static int Gap(int going, int paid)
         {
             return going <= 0 ? 0 : (int)((long)(going - paid) * 1000 / going);
@@ -71,24 +65,21 @@ namespace RealLifeOverhaul.Economy
             return f.Going > 0 && Gap(f.Going, f.Paid) >= CompanyCatalogue.RaiseGap[CompanyCatalogue.Level(level)];
         }
 
-        /// <summary>Pay for a number of hours at an hourly rate, both in hundredths: whole money, rounded.</summary>
+        /// <summary>Pay for some hours at an hourly rate, both in hundredths: whole money, rounded.</summary>
         public static int Pay(int rate, int hours)
         {
             return (int)(((long)Math.Max(0, rate) * Math.Max(0, hours) + 5000) / 10000);
         }
 
-        // ---------------------------------------------------------------- one day for one employee
-
-        /// <summary>
-        /// A day: their standing drifts (down while underpaid, back up to a calm level while paid fairly), a request
-        /// nobody answered is taken as refused, and somebody underpaid for long enough asks for the going rate.
-        /// </summary>
         public static StaffNote Day(StaffFile f, int level, int day)
         {
             return Day(f, level, day, 0);
         }
 
-        /// <summary>The same, with the comfort of their workplace (0 to 10): the calm level they climb back to is that much higher.</summary>
+        /// <summary>
+        /// One employee's day: standing drifts down while underpaid, or up to a calm level (raised by the workplace's
+        /// comfort, 0 to 10) while paid fairly; an unanswered request lapses; somebody underpaid long enough asks.
+        /// </summary>
         public static StaffNote Day(StaffFile f, int level, int day, int comfort)
         {
             int calm = CompanyCatalogue.StandingCalm + CompanyCatalogue.Clamp(comfort, 0, 10);
@@ -97,11 +88,11 @@ namespace RealLifeOverhaul.Economy
             f.UnderDays = under ? f.UnderDays + 1 : 0;
             if (under)
             {
-                f.Standing = Bound(f.Standing + CompanyCatalogue.StandUnderDay);
+                MoveStanding(f, CompanyCatalogue.StandUnderDay);
             }
             else if (f.Standing < calm)
             {
-                f.Standing = Bound(f.Standing + CompanyCatalogue.StandFairDay);
+                MoveStanding(f, CompanyCatalogue.StandFairDay);
             }
             if (f.AskDay > 0)
             {
@@ -127,17 +118,13 @@ namespace RealLifeOverhaul.Economy
             return StaffNote.None;
         }
 
-        /// <summary>
-        /// Whether the player may bring somebody up to the going rate unasked today: underpaid, nothing waiting from them or a
-        /// rival, not leaving, and the rest after the last answer over (one raise in <see cref="CompanyCatalogue.RaiseRestDays"/>
-        /// days, as their own requests come).
-        /// </summary>
+        /// <summary>Whether a raise to the going rate may be given unasked: as often as they would ask.</summary>
         public static bool CanGive(StaffFile f, int day)
         {
             return f.AskDay == 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.Going > f.Paid && day >= f.AskRest;
         }
 
-        /// <summary>The raise an answer gives, hundredths an hour: all of what is asked, part of it, or nothing.</summary>
+        /// <summary>The raise an answer gives, hundredths an hour.</summary>
         public static int RaiseFor(StaffFile f, RaiseAnswer answer)
         {
             int asked = Math.Max(0, f.AskTo - f.Paid);
@@ -151,28 +138,39 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             f.Raise += RaiseFor(f, answer);
-            f.Standing = Bound(f.Standing + (answer == RaiseAnswer.Agree ? CompanyCatalogue.StandAgree : answer == RaiseAnswer.Less ? CompanyCatalogue.StandLess : CompanyCatalogue.StandRefuse));
+            MoveStanding(f, answer == RaiseAnswer.Agree ? CompanyCatalogue.StandAgree
+                : answer == RaiseAnswer.Less ? CompanyCatalogue.StandLess : CompanyCatalogue.StandRefuse);
             f.AskDay = f.AskTo = 0;
             f.UnderDays = 0;
             f.AskRest = day + CompanyCatalogue.RaiseRestDays;
         }
 
-        // ---------------------------------------------------------------- a rival's offer
-
-        /// <summary>Somebody a rival would want: good at the job by the game's own skill figure, and clearly underpaid.</summary>
         public static bool Wanted(StaffFile f, int level, int day)
         {
             return CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)] > 0 && f.Skill >= CompanyCatalogue.PoachSkill && f.Going > 0
-                   && Gap(f.Going, f.Paid) >= CompanyCatalogue.PoachGap && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0 && day >= f.PoachRest;
+                   && Gap(f.Going, f.Paid) >= CompanyCatalogue.PoachGap && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0
+                   && day >= f.PoachRest;
         }
 
-        /// <summary>Whether a rival makes an approach today; the same answer for a seed and a day.</summary>
+        /// <summary>
+        /// Whether a rival tycoon's holding may make somebody an offer today: as the company's own rivals, never on Relaxed,
+        /// nobody with something waiting and nobody within the rest after an answer. It wants the best, underpaid or not.
+        /// </summary>
+        public static bool RivalMay(StaffFile f, int level, int day)
+        {
+            return CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)] > 0 && f.Going > 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0
+                   && day >= f.PoachRest;
+        }
+
         public static bool Approach(int seed, int age, int level)
         {
             return Approach(seed, age, level, 0);
         }
 
-        /// <summary>The same, with the player's esteem as an employer (-10 to 10): a rival approaches less often an employer people think well of.</summary>
+        /// <summary>
+        /// Whether a rival approaches today, the same for a seed and a day. The player's esteem as an employer
+        /// (-10 to 10) makes it rarer.
+        /// </summary>
         public static bool Approach(int seed, int age, int level, int esteem)
         {
             int chance = CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)];
@@ -198,7 +196,7 @@ namespace RealLifeOverhaul.Economy
             return f.PoachDay > 0 && day > f.PoachDay + CompanyCatalogue.PoachAnswerDays;
         }
 
-        /// <summary>Matched: they are paid what the rival offered from now on. Not matched: they work their notice and go.</summary>
+        /// <summary>Matched, they are paid what the rival offered; not, they work their notice and go.</summary>
         public static void OfferAnswer(StaffFile f, bool match, int day)
         {
             if (f.PoachDay == 0)
@@ -208,7 +206,7 @@ namespace RealLifeOverhaul.Economy
             if (match)
             {
                 f.Raise += Math.Max(0, f.PoachOffer - f.Paid);
-                f.Standing = Bound(f.Standing + CompanyCatalogue.StandMatch);
+                MoveStanding(f, CompanyCatalogue.StandMatch);
             }
             else
             {
@@ -218,14 +216,12 @@ namespace RealLifeOverhaul.Economy
             f.PoachRest = day + CompanyCatalogue.PoachRestDays;
         }
 
-        // ---------------------------------------------------------------- a strike
-
         public static bool StandsLow(StaffFile f)
         {
             return f.Standing <= CompanyCatalogue.StrikeStanding;
         }
 
-        /// <summary>Most of a business's staff stand low with the player: a strike is due. Never on Relaxed.</summary>
+        /// <summary>Enough of a business's staff stand low for a strike. Never on Relaxed.</summary>
         public static bool StrikeDue(int low, int total, int level)
         {
             return CompanyCatalogue.StrikeDays[CompanyCatalogue.Level(level)] > 0 && total >= CompanyCatalogue.StrikeStaffLeast
@@ -237,14 +233,36 @@ namespace RealLifeOverhaul.Economy
             return s.StrikeFrom == 0 && day >= s.StrikeRest;
         }
 
-        /// <summary>Called today for tomorrow, for the length the strictness gives.</summary>
+        /// <summary>
+        /// Called today, from tomorrow, for the length the strictness gives. Staff who down tools work no extra hours: an
+        /// offer of overtime waiting is dropped, and overtime agreed stops before the strike's first day.
+        /// </summary>
         public static void Call(ShopFile s, int level, int day)
         {
             s.StrikeFrom = day + 1;
             s.StrikeEnd = s.StrikeFrom + CompanyCatalogue.StrikeDays[CompanyCatalogue.Level(level)];
+            if (s.OvertimeAsk > 0)
+            {
+                OvertimeAnswer(s, false, 0, day);
+            }
+            if (s.OvertimeFrom > 0)
+            {
+                s.OvertimeEnd = Math.Min(s.OvertimeEnd, s.StrikeFrom);
+            }
         }
 
-        /// <summary>It is over, however it ended.</summary>
+        /// <summary>Whether agreed overtime is worked on a day: not on a day of a strike.</summary>
+        public static bool OvertimeRuns(ShopFile s, int day)
+        {
+            return s.Overtime(day) && !s.Striking(day);
+        }
+
+        /// <summary>The day a line about a strike names: its last while it runs, as a campaign's line does; its first while called.</summary>
+        public static int StrikeShown(ShopFile s, int day)
+        {
+            return s.Striking(day) ? s.StrikeEnd - 1 : s.StrikeFrom;
+        }
+
         public static void End(ShopFile s, int day)
         {
             s.StrikeFrom = s.StrikeEnd = 0;
@@ -257,11 +275,11 @@ namespace RealLifeOverhaul.Economy
             switch (how)
             {
                 case StrikeAnswer.Raise:
-                    f.Raise += Math.Max(0, f.Going - f.Paid);
+                    f.Raise += StrikeRaise(f);
                     f.Standing = Math.Max(f.Standing, CompanyCatalogue.StrikeRaiseStanding);
                     break;
                 case StrikeAnswer.Payment:
-                    f.Standing = Bound(f.Standing + CompanyCatalogue.StrikePayStanding);
+                    MoveStanding(f, CompanyCatalogue.StrikePayStanding);
                     break;
                 default:
                     f.Standing = Math.Max(f.Standing, CompanyCatalogue.StrikeAfterStanding);
@@ -271,7 +289,6 @@ namespace RealLifeOverhaul.Economy
             f.AskDay = f.AskTo = 0;
         }
 
-        /// <summary>The one-off payment to one employee: so many hours at what they are paid.</summary>
         public static int StrikePayment(StaffFile f)
         {
             return Pay(f.Paid, CompanyCatalogue.StrikePayHours * 100);
@@ -283,16 +300,13 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(0, f.Going - f.Paid);
         }
 
-        // ---------------------------------------------------------------- overtime and sick pay
-
-        /// <summary>Whether a busy business's staff offer overtime today; the same answer for a seed, a day and a business.</summary>
+        /// <summary>Whether a busy business's staff offer overtime today; the same for a seed, day and shop.</summary>
         public static bool OvertimeOffered(ShopFile s, bool busy, int seed, int age, int shop, int day)
         {
             return busy && s.OvertimeAsk == 0 && s.OvertimeFrom == 0 && s.StrikeFrom == 0 && day >= s.OvertimeRest
                    && CityModel.Draw(seed, PurposeOvertime, age * CompanyCatalogue.ShopsMost + shop, 1000) < CompanyCatalogue.OvertimeChance;
         }
 
-        /// <summary>A day of overtime for one employee: the extra hours at time and a half.</summary>
         public static int OvertimePay(StaffFile f)
         {
             return Pay(CompanyCatalogue.Share(f.Paid, CompanyCatalogue.OvertimeRate), CompanyCatalogue.OvertimeHours * 100);
@@ -300,6 +314,7 @@ namespace RealLifeOverhaul.Economy
 
         public static void OvertimeAnswer(ShopFile s, bool agree, int cost, int day)
         {
+            agree &= s.StrikeFrom == 0;   // not while a strike is called or on
             s.OvertimeAsk = 0;
             if (agree)
             {
@@ -314,7 +329,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The day ends: agreed overtime that has run its days is over, and an offer nobody answered is dropped.</summary>
+        /// <summary>Overtime that has run its days is over, and an offer nobody answered is dropped.</summary>
         public static void OvertimeDay(ShopFile s, int day)
         {
             if (s.OvertimeFrom > 0 && day >= s.OvertimeEnd)
@@ -327,27 +342,41 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A day's sick pay for somebody the game has off sick, under a policy.</summary>
         public static int SickPay(StaffFile f, int policy)
         {
             policy = CompanyCatalogue.Clamp(policy, 0, CompanyCatalogue.SickShare.Length - 1);
-            return CompanyCatalogue.Share(Pay(f.Paid, f.DayHours > 0 ? f.DayHours : CompanyCatalogue.SickDayHours * 100), CompanyCatalogue.SickShare[policy]);
+            int hours = f.DayHours > 0 ? f.DayHours : CompanyCatalogue.SickDayHours * 100;
+            return CompanyCatalogue.Share(Pay(f.Paid, hours), CompanyCatalogue.SickShare[policy]);
         }
 
         public static void SickDay(StaffFile f, int policy)
         {
-            f.Standing = Bound(f.Standing + CompanyCatalogue.SickStanding[CompanyCatalogue.Clamp(policy, 0, CompanyCatalogue.SickStanding.Length - 1)]);
+            MoveStanding(f, CompanyCatalogue.SickStanding[CompanyCatalogue.Clamp(policy, 0, CompanyCatalogue.SickStanding.Length - 1)]);
         }
 
-        /// <summary>What staff add to or take from a business's customers today, per cent: a strike, overtime.</summary>
+        /// <summary>What a strike and overtime do to a business's customers today, per cent.</summary>
         public static int Footfall(ShopFile s, int day)
         {
-            return (s.Striking(day) ? CompanyCatalogue.StrikeFootfall : 0) + (s.Overtime(day) ? CompanyCatalogue.OvertimeFootfall : 0);
+            return (s.Striking(day) ? CompanyCatalogue.StrikeFootfall : 0) + (OvertimeRuns(s, day) ? CompanyCatalogue.OvertimeFootfall : 0);
         }
 
-        private static int Bound(int standing)
+        /// <summary>A number that changes when an agreed raise of anybody at a place does: the rota planner reads wages with them.</summary>
+        public static int RaisesAt(List<StaffFile> staff, string place)
         {
-            return CompanyCatalogue.Clamp(standing, 0, CompanyCatalogue.StandingMost);
+            int sum = 17;
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                if (string.Equals(staff[i].Place, place, StringComparison.Ordinal))
+                {
+                    sum = unchecked(sum * 31 + staff[i].Raise);
+                }
+            }
+            return sum;
+        }
+
+        public static void MoveStanding(StaffFile f, int points)
+        {
+            f.Standing = CompanyCatalogue.Clamp(f.Standing + points, 0, CompanyCatalogue.StandingMost);
         }
     }
 }

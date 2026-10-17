@@ -6,30 +6,11 @@ using System.Text;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// "Running a business" in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=1^h:...^t:...^s:...^e:...^c:...^r:...
-    ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: seed|first day|last day|days counted|sick pay policy|no approach before|next claim number
-    ///   t  tax: quarter from|quarter|five costs by kind|return due|its quarter|its takings|its costs|its penalties|
-    ///      late run|accountant|next fee day|risk|saved|owed|last audit|court case
-    ///   s  the businesses: place|first day|hidden per cent|campaign kind|from|end|cost|per cent|four last ends|
-    ///      strike from|end|rest|overtime asked|from|end|rest|cost|loss run|then three policies of
-    ///      insurer|premium|from|until|claims|missed|declined|and four licences of until|renews itself|reminded
-    ///   e  the staff: id|place|standing|raise|days underpaid|asked on|asked to|ask rest|offer day|offer|offer rest|leaves on|rival
-    ///   c  the claims: id|place|kind|insurer|day|loss|excess|payout|stage|pay day|name
-    ///   r  the reports: kind|from|days|days before|days during|customers before|during|takings before|during|profit before|during|cost|name
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads. A figure out of its bounds is put inside them; a line
-    /// that cannot be read is left alone and the feature starts afresh. The lists are capped when written
-    /// (<see cref="CompanyCatalogue.ShopsMost"/> and its neighbours). Nothing here is the game's: a save loads in the
-    /// plain game with this line ignored.
-    ///
-    /// <see cref="TestKey"/> holds the same line as it was before the first test tool changed it, for as long as test
-    /// changes are in place.
+    /// Running a business in the save, game-free: one line under <see cref="Key"/>, "v=1^h:header^t:tax^s:businesses
+    /// ^e:staff^c:claims^r:reports". Parts are divided by '^', records by ';' and whole-number fields by '|', in the order
+    /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter:
+    /// this reader skips what it does not know, bounds every figure and caps every list. <see cref="TestKey"/> holds the
+    /// line from before the first test tool changed it.
     /// </summary>
     public static class CompanyStore
     {
@@ -49,7 +30,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is
         }
 
         public static string Write(CompanyState s)
@@ -59,14 +40,15 @@ namespace RealLifeOverhaul.Economy
             Join(t, s.Seed, s.FirstDay, s.LastDay, s.Age, s.SickPolicy, s.PoachRest, s.NextClaim);
             TaxFile x = s.Tax;
             t.Append("^t:");
-            Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts, x.ReturnPenalties,
-                x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber);
+            Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts,
+                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber);
             t.Append("^s:");
             for (int i = 0; i < s.Shops.Count && i < CompanyCatalogue.ShopsMost; i++)
             {
                 ShopFile shop = s.Shops[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(shop.Place)).Append('|');
-                Join(t, shop.FirstDay, shop.Hide, shop.Push, shop.PushFrom, shop.PushEnd, shop.PushCost, shop.PushPercent, shop.PushEnded[0], shop.PushEnded[1], shop.PushEnded[2], shop.PushEnded[3],
+                Join(t, shop.FirstDay, shop.Hide, shop.Push, shop.PushFrom, shop.PushEnd, shop.PushCost, shop.PushPercent,
+                    shop.PushEnded[0], shop.PushEnded[1], shop.PushEnded[2], shop.PushEnded[3],
                     shop.StrikeFrom, shop.StrikeEnd, shop.StrikeRest, shop.OvertimeAsk, shop.OvertimeFrom, shop.OvertimeEnd, shop.OvertimeRest, shop.OvertimeCost, shop.LossRun);
                 for (int k = 0; k < shop.Cover.Length; k++)
                 {
@@ -82,8 +64,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 for (int k = CompanyCatalogue.CampaignOwnKinds; k < shop.PushEnded.Length; k++)
                 {
-                    t.Append('|').Append(shop.PushEnded[k].ToString(Inv));   // kinds added later: after everything an older version reads, which it leaves alone
+                    t.Append('|').Append(shop.PushEnded[k].ToString(Inv));   // after all an older version reads, so it leaves them alone
                 }
+                t.Append('|').Append(shop.PushGiven.ToString(Inv));   // after those: a kind added later goes after this
             }
             t.Append("^e:");
             for (int i = 0; i < s.Staff.Count && i < CompanyCatalogue.StaffMost; i++)
@@ -114,7 +97,7 @@ namespace RealLifeOverhaul.Economy
             return t.ToString();
         }
 
-        /// <summary>Reads a line. Null for one that is not this feature's at all.</summary>
+        /// <summary>Reads a line; null for one that is not this feature's.</summary>
         public static CompanyState Read(string text, out int version)
         {
             version = 0;
@@ -176,9 +159,9 @@ namespace RealLifeOverhaul.Economy
                                     s.Staff.Add(new StaffFile
                                     {
                                         Id = c[0], Place = c[1], Standing = CompanyCatalogue.Clamp(I(c, 2, CompanyCatalogue.StandingStart), 0, CompanyCatalogue.StandingMost),
-                                        Raise = Math.Max(0, I(c, 3)), UnderDays = Math.Max(0, I(c, 4)), AskDay = Math.Max(0, I(c, 5)), AskTo = Math.Max(0, I(c, 6)), AskRest = Math.Max(0, I(c, 7)),
-                                        PoachDay = Math.Max(0, I(c, 8)), PoachOffer = Math.Max(0, I(c, 9)), PoachRest = Math.Max(0, I(c, 10)), LeaveDay = Math.Max(0, I(c, 11)),
-                                        Rival = c.Length > 12 ? c[12] : string.Empty
+                                        Raise = Math.Max(0, I(c, 3)), UnderDays = Math.Max(0, I(c, 4)), AskDay = Math.Max(0, I(c, 5)), AskTo = Math.Max(0, I(c, 6)),
+                                        AskRest = Math.Max(0, I(c, 7)), PoachDay = Math.Max(0, I(c, 8)), PoachOffer = Math.Max(0, I(c, 9)), PoachRest = Math.Max(0, I(c, 10)),
+                                        LeaveDay = Math.Max(0, I(c, 11)), Rival = c.Length > 12 ? c[12] : string.Empty
                                     });
                                 }
                             }
@@ -188,12 +171,14 @@ namespace RealLifeOverhaul.Economy
                             {
                                 string[] c = record.Split('|');
                                 int kind = I(c, 2, -1), insurer = I(c, 3, -1), stage = I(c, 8);
-                                if (c.Length >= 10 && kind >= 0 && kind < CompanyCatalogue.CoverKinds && insurer >= 0 && insurer < CompanyCatalogue.Insurers && s.Claims.Count < CompanyCatalogue.ClaimsMost)
+                                if (c.Length >= 10 && kind >= 0 && kind < CompanyCatalogue.CoverKinds && insurer >= 0 && insurer < CompanyCatalogue.Insurers
+                                    && s.Claims.Count < CompanyCatalogue.ClaimsMost)
                                 {
                                     s.Claims.Add(new Claim
                                     {
-                                        Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Kind = kind, Insurer = insurer, Day = Math.Max(0, I(c, 4)), Loss = Math.Max(0, I(c, 5)), Excess = Math.Max(0, I(c, 6)),
-                                        Payout = Math.Max(0, I(c, 7)), Stage = stage >= 0 && stage <= (int)ClaimStage.Lapsed ? (ClaimStage)stage : ClaimStage.Lapsed, PayDay = Math.Max(0, I(c, 9)),
+                                        Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Kind = kind, Insurer = insurer, Day = Math.Max(0, I(c, 4)), Loss = Math.Max(0, I(c, 5)),
+                                        Excess = Math.Max(0, I(c, 6)), Payout = Math.Max(0, I(c, 7)),
+                                        Stage = stage >= 0 && stage <= (int)ClaimStage.Lapsed ? (ClaimStage)stage : ClaimStage.Lapsed, PayDay = Math.Max(0, I(c, 9)),
                                         Name = c.Length > 10 ? c[10] : string.Empty
                                     });
                                 }
@@ -262,10 +247,13 @@ namespace RealLifeOverhaul.Economy
                 shop.PushCost = Math.Max(0, I(c, 6));
                 shop.PushPercent = CompanyCatalogue.Clamp(I(c, 7), 0, CompanyCatalogue.CampaignMost);
             }
+            int later = ShopFields + shop.Cover.Length * PolicyFields + shop.Permits.Length * LicenceFields;   // the first field past the licences
             for (int k = 0; k < shop.PushEnded.Length; k++)
             {
-                shop.PushEnded[k] = Math.Max(0, I(c, k < CompanyCatalogue.CampaignOwnKinds ? 8 + k : ShopFields + shop.Cover.Length * PolicyFields + shop.Permits.Length * LicenceFields + k - CompanyCatalogue.CampaignOwnKinds));
+                shop.PushEnded[k] = Math.Max(0, I(c, k < CompanyCatalogue.CampaignOwnKinds ? 8 + k : later + k - CompanyCatalogue.CampaignOwnKinds));
             }
+            // A line without it (written before it was kept) gave nothing away.
+            shop.PushGiven = shop.Push >= 0 ? CompanyCatalogue.Clamp(I(c, later + shop.PushEnded.Length - CompanyCatalogue.CampaignOwnKinds), 0, shop.PushCost) : 0;
             shop.StrikeFrom = Math.Max(0, I(c, 12));
             shop.StrikeEnd = Math.Max(0, I(c, 13));
             shop.StrikeRest = Math.Max(0, I(c, 14));
@@ -281,13 +269,13 @@ namespace RealLifeOverhaul.Economy
                 Policy p = shop.Cover[k];
                 int insurer = I(c, at, -1);
                 p.Declined = I(c, at + 6) & ((1 << CompanyCatalogue.Insurers) - 1);
+                p.Claims = Math.Max(0, I(c, at + 4));   // with no policy, the last term's (written as 0 before they were kept)
                 if (insurer >= 0 && insurer < CompanyCatalogue.Insurers)
                 {
                     p.Insurer = insurer;
                     p.Premium = Math.Max(1, I(c, at + 1, 1));
                     p.From = Math.Max(0, I(c, at + 2));
                     p.Until = Math.Max(0, I(c, at + 3));
-                    p.Claims = Math.Max(0, I(c, at + 4));
                     p.Missed = CompanyCatalogue.Clamp(I(c, at + 5), 0, CompanyCatalogue.PremiumMissedMost);
                 }
             }
@@ -320,7 +308,7 @@ namespace RealLifeOverhaul.Economy
             return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
         }
 
-        /// <summary>A text with the three dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the three dividers taken out, so it can never break the line apart.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('^', ' ');

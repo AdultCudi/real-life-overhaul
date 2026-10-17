@@ -3,36 +3,21 @@ using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
-using TMPro;
 using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What the Company app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, the
-    /// Planner and the Guide are, with Finance's table (DataTable, the game's own BaTable). Six tabs over the
-    /// table on the right, and on the left the white box with the one thing picked:
-    ///
-    ///   Overview            each business: its district, yesterday's profit by the game's books, what needs an answer
-    ///   Staff               requests, offers, a strike and overtime that wait, then every employee against the going rate
-    ///   Cover               claims that wait, then each business's three kinds of cover; pick one for quotes
-    ///   Marketing           each business's campaign, then the last eight reports
-    ///   Tax and licences    the return, the accountant, cash off the books, and every licence a business needs
-    ///   Rota                every place with staff; pick one for its forecast, the hours worth opening, the people it
-    ///                       takes and the button that fills its rota; pick a day of it for that day's hours
-    ///
-    /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, with a
-    /// Back button to the tab's own page. Each tab's page is in its own file (CompanyApp.Staff.cs and its neighbours).
-    ///
-    /// Everything on it is the game's. Nothing runs while the app is closed: the rows and the page are made when it
-    /// opens, when a tab or a row is picked, and when the director says something has changed.
+    /// The Company app in the game's own frame (GameUi.AppShell): six tabs, a list in the table and the one thing picked
+    /// in the white box. Nothing runs while it is closed; a page is written on opening, a pick or a change.
     /// </summary>
     public sealed partial class CompanyApp
     {
-        // (Every table is declared in CompanyApp.Tables.cs and is sorted, filtered and summed by the kit: GameUi.DataTable.)
-        private static readonly string[] TabKeys = { "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab" };
+        private static readonly string[] TabKeys =
+        {
+            "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab"
+        };
         public static IModLogger Logger;
 
         private readonly CompanyDirector _director;
@@ -41,23 +26,21 @@ namespace RealLifeOverhaul.Economy
 
         private AppShell _shell;
         private DataTable _table;
-        private TableSpec _spec = CompanyTables.Off;   // the table the page that shows is written as
+        private TableSpec _spec = CompanyTables.Off;   // the table the showing page is written as
         private int _tab, _wanted = -1;
-        private string _pick, _wantPick;   // what is picked: a row's id ("shop:...", "emp:...", "pol:...")
+        private string _pick, _wantPick;   // a row's id: "shop:...", "emp:...", "pol:..."
         private bool _ready;               // the director has read the staff for this opening
-        private bool _writing;             // a page is being written: a change it causes does not write it again
+        private bool _writing;             // a change a page causes while it is written does not write it again
 
         public CompanyApp(CompanyDirector director)
         {
             _director = director;
         }
 
-        // ---------------------------------------------------------------- building it from the game's parts
-
-        /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
+        /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            using var piece = SessionWatch.Piece("company: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("company: the app being built from the game's MyEmployees");   // once per city
             _shell = AppShell.Make(menu, dormant, CompanyDirector.AppId);
             _table = DataTable.On(_shell, "Company");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(CompanyTables.Off))
@@ -76,11 +59,9 @@ namespace RealLifeOverhaul.Economy
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening and the tabs
-
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification was clicked).</summary>
+        /// <summary>The tab to show the next time the app opens, and what is picked on it: a notification was clicked.</summary>
         public void Want(int tab, string pick)
         {
             _wanted = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
@@ -114,7 +95,6 @@ namespace RealLifeOverhaul.Economy
             _director.RotaLeft();
         }
 
-        /// <summary>The director says something has changed: the page is written again if it is showing.</summary>
         public void Changed()
         {
             if (Showing && _ready && !_writing)
@@ -151,7 +131,6 @@ namespace RealLifeOverhaul.Economy
             Refresh();
         }
 
-        // Everything the open tab shows, made again: asked for when the app opens, a tab or a row is picked, or something has changed.
         private void Refresh()
         {
             if (_shell == null || _table == null || _writing)
@@ -236,7 +215,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Each tab's page is in its own file; a tab whose part is not built yet shows its name and nothing else.
         partial void WriteStaff(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteCover(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteMarketing(InfoBox box, CompanyState state, int day, ref string selected);
@@ -244,7 +222,7 @@ namespace RealLifeOverhaul.Economy
         partial void WriteLicences(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteRota(InfoBox box, ref string selected);
 
-        // A tab whose part is switched off, or stopped by a fault, says so and shows nothing else.
+        // A tab whose part is off, or stopped by a fault, says so and shows nothing else.
         private bool PartPage(CompanyPart part, InfoBox box)
         {
             if (_director.On(part))
@@ -258,8 +236,6 @@ namespace RealLifeOverhaul.Economy
             Say("off", CompanyText.T("reallife_co_part_off_row"));
             return false;
         }
-
-        // ---------------------------------------------------------------- rows
 
         private TableRow Row(string id)
         {
@@ -277,7 +253,7 @@ namespace RealLifeOverhaul.Economy
             return row;
         }
 
-        // A row that can be picked. Returns its id if it is the one picked now.
+        // A row that can be picked; its id, which becomes 'selected' if it is the one picked now.
         private string Pick(string id, string a, string b, string c, string d, int tone, ref string selected)
         {
             TableRow row = Row(id);
@@ -286,7 +262,7 @@ namespace RealLifeOverhaul.Economy
             row.B = b;
             row.C = c;
             row.D = d;
-            row.Tone = (CellTone)tone;   // (0 plain, 1 yellow, 2 red)
+            row.Tone = (CellTone)tone;   // 0 plain, 1 yellow, 2 red
             if (id == _pick)
             {
                 selected = id;
@@ -294,7 +270,7 @@ namespace RealLifeOverhaul.Economy
             return id;
         }
 
-        /// <summary>The row written last: for the figures its columns are ordered by, its kind and the cells past the fourth.</summary>
+        /// <summary>The row written last, for its sort keys, its kind and its cells past the fourth.</summary>
         private TableRow Last => _rows[_rows.Count - 1];
 
         private void Say(string id, string words)
@@ -304,13 +280,13 @@ namespace RealLifeOverhaul.Economy
             row.A = words;
         }
 
-        // What follows a prefix in what is picked ("emp:" and the employee's id); null if something else is picked.
+        // What follows a prefix in the pick ("emp:" and the employee's id); null if something else is picked.
         private string Picked(string prefix)
         {
             return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
         }
 
-        // The same for a place and a kind ("pol:" and "place:2"): false if something else is picked.
+        // The same for a place and a kind ("pol:" and "place:2"); false if something else is picked.
         private bool Picked(string prefix, out string place, out int kind)
         {
             place = null;
@@ -325,27 +301,23 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>The foot of a picked thing's page: the way back, then the Guide's page.</summary>
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", Back);
             Guide(box);
         }
 
-        // The Guide's page for the tab that shows: the rota planner's own, or running a business for the rest.
         private void Guide(InfoBox box)
         {
             Meta.Guide.Point(box, _tab == CompanyDirector.TabRota ? "reallife_meta_title_economy_rota" : "reallife_meta_title_economy_company");
         }
-
-        // ---------------------------------------------------------------- Overview
 
         private string WriteOverview(InfoBox box, CompanyState state, int day)
         {
             string selected = null;
             IReadOnlyList<CompanyShop> shops = _director.Shops;
             CompanyShop picked = null;
-            TableFilter districts = CompanyTables.Overview.Filters[0];   // the filter's kinds: the districts the businesses are in
+            TableFilter districts = CompanyTables.Overview.Filters[0];   // its kinds are the districts the businesses are in
             districts.Names.Clear();
             for (int i = 0; i < shops.Count; i++)
             {
@@ -353,7 +325,8 @@ namespace RealLifeOverhaul.Economy
                 int waiting = ShopWaiting(state, shop, day);
                 string district = CompanyText.District(shop.District);
                 string id = Pick("shop:" + shop.File.Place, shop.Name, district, shop.HasBooks ? CompanyText.Money(shop.Profit) : CompanyText.T("reallife_co_no_books"),
-                    waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order"), waiting > 0 ? 2 : 0, ref selected);
+                    waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order"),
+                    waiting > 0 ? 2 : 0, ref selected);
                 TableRow row = Last;
                 row.Kind = CompanyTables.KindOf(districts, district);
                 row.Key[2] = shop.HasBooks ? shop.Profit : double.NaN;
@@ -393,14 +366,20 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_co_over_staff", state.Staff.Count.ToString());
             box.Row("reallife_co_over_quarter", CompanyText.T("reallife_co_over_quarter_value", "quarter", state.Tax.Quarter.ToString(), "day", state.Tax.QuarterFrom.ToString()));
             Transform others = ServicesDirector.CanClean || OwnBankDirector.CanOpen ? box.ButtonRow() : null;
-            if (ServicesDirector.CanClean) InfoBox.Button(others, InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
-            if (OwnBankDirector.CanOpen) InfoBox.Button(others, InfoBox.Positive, "reallife_ob_open", OwnBankDirector.OpenApp);   // (the player's bank: Economy/OwnBank)
+            if (ServicesDirector.CanClean)
+            {
+                InfoBox.Button(others, InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);
+            }
+            if (OwnBankDirector.CanOpen)
+            {
+                InfoBox.Button(others, InfoBox.Positive, "reallife_ob_open", OwnBankDirector.OpenApp);
+            }
             WriteListingLine(box);
             Guide(box);
             return null;
         }
 
-        private const int AlertsShown = 4;   // the alerts at the head of the overview; the rest are counted in one line (each business's row shows what waits there)
+        private const int AlertsShown = 4;   // alerts at the head of the Overview; the rest are counted in one line
 
         // The company and the city's market (Markets/Listing): where it stands, and a button to its page in the Stocks app.
         private static void WriteListingLine(InfoBox box)
@@ -423,7 +402,6 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_lst_open_stocks", () => UiClone.Safe(CompanyBridges.OpenListing));
         }
 
-        // What waits for an answer at one business.
         private int ShopWaiting(CompanyState state, CompanyShop shop, int day)
         {
             int waiting = 0;
@@ -445,17 +423,18 @@ namespace RealLifeOverhaul.Economy
             return waiting;
         }
 
-        // One business: everything the company knows of it, in a few lines.
         private void WriteShop(InfoBox box, CompanyState state, CompanyShop shop, int day)
         {
             ShopFile file = shop.File;
             box.Title(shop.Name);
             box.Subtitle(CompanyText.District(shop.District));
             int waiting = ShopWaiting(state, shop, day);
-            box.Chip(waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order"), waiting > 0 ? CellTone.Yellow : CellTone.Green);
+            box.Chip(waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order"),
+                waiting > 0 ? CellTone.Yellow : CellTone.Green);
             if (_director.On(CompanyPart.Staff) && file.StrikeFrom > 0)
             {
-                box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()), CellTone.Red);
+                box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day",
+                    StaffRules.StrikeShown(file, day).ToString()), CellTone.Red);
             }
             box.Section("reallife_ibox_yesterday");
             if (shop.HasBooks)
@@ -496,14 +475,18 @@ namespace RealLifeOverhaul.Economy
             if (_director.On(CompanyPart.Licences))
             {
                 int missing = LicenceRules.Missing(file, shop.Needs, day);
-                box.Row("reallife_co_shop_licences", missing == 0 ? CompanyText.T("reallife_co_shop_licences_ok") : CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing)),
+                box.Row("reallife_co_shop_licences",
+                    missing == 0 ? CompanyText.T("reallife_co_shop_licences_ok") : CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing)),
                     missing == 0 ? CellTone.Green : CellTone.Red);
             }
             if (_director.On(CompanyPart.Tax) && file.Hide > 0)
             {
                 box.Row("reallife_co_shop_hidden", file.Hide + "%", CellTone.Yellow);
             }
-            if (ServicesDirector.CanSell) InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));   // (selling a business: Economy/Services)
+            if (ServicesDirector.CanSell)
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));
+            }
             BackButton(box);
         }
     }

@@ -2,37 +2,14 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// One shift of a week as the planner's numbers. Worker and Station are places in the lists the planner read, or
-    /// <see cref="RotaLedger.Unread"/> or <see cref="RotaLedger.Gone"/>.
-    /// </summary>
+    /// <summary>One shift of a week in the planner's numbers.</summary>
     public struct RotaShift
     {
         public int Day, From, To;       // the weekday (0 Monday) and the hours, the last one not counted
-        public int Worker, Station;
+        public int Worker, Station;     // places in the lists the planner read, or RotaLedger.Unread or Gone
     }
 
-    /// <summary>
-    /// What a fill may touch in a week that is already there, and what putting the old week back restores: the
-    /// decisions of RotaGame.Write and RotaGame.PutBack, kept apart from the game so that they are checked offline.
-    /// RotaGame turns the game's shifts into <see cref="RotaShift"/>s, asks here, and does what it is told.
-    ///
-    /// THE RULES
-    ///   left alone     a shift of somebody the planner did not read (a delivery driver, nobody) is never touched; and
-    ///                  somebody who is "fixed" keeps every shift they have: whoever holds a desk with the
-    ///                  headquarters rule (a fill only ever fills desks that are empty, so nobody loses a desk and with
-    ///                  it the plans the game ties to it), and whoever has a shift at a station the planner did not read
-    ///   taken out      every other shift of somebody the planner read, so that the new rota is the whole of theirs
-    ///   written        the plan's shifts, and none for a station or a person that is not there at that moment, none
-    ///                  on a closed day, and none for somebody fixed
-    ///   idle           the game's own steps for an employee left with no shift (unassigned from work, the "idle" task)
-    ///                  are taken only for somebody who had a shift before and has none now, and never for somebody
-    ///                  who holds a headquarters plan: the game has no call that would give such a plan back
-    ///   put back       the week kept is restored shift for shift where the person still works there and the station
-    ///                  still stands; shifts of those left alone stay as they are today
-    ///
-    /// Cost: nothing unless a rota is read, written or put back; then one pass over the week's shifts.
-    /// </summary>
+    /// <summary>What a fill may touch in a week already there and what a put-back restores: RotaGame's rules, game-free and checked offline.</summary>
     public static class RotaLedger
     {
         public const int Unread = -1;   // there in the game, and not among what the planner read: left alone
@@ -44,10 +21,7 @@ namespace RealLifeOverhaul.Economy
             return stations <= RotaCatalogue.StationsMost && workers <= RotaCatalogue.WorkersMost;
         }
 
-        /// <summary>
-        /// Who keeps every shift they have: the holder of a station with the whole-week rule, and anybody with a shift
-        /// at a station that is there but was not read.
-        /// </summary>
+        /// <summary>Who keeps every shift: the holder of a whole-week station (a fill only fills empty desks), and anybody at a station not read.</summary>
         public static void Fixed(List<RotaShift> present, bool[] whole, int workers, bool[] fixedWorker)
         {
             for (int w = 0; w < workers; w++)
@@ -70,11 +44,7 @@ namespace RealLifeOverhaul.Economy
             return shift.Worker >= 0 && !fixedWorker[shift.Worker];
         }
 
-        /// <summary>
-        /// The present week as the planner's grid: the hours of those a fill may move go into <paramref name="at"/>
-        /// (the rota it has, to be rated), every other hour at a station the planner read is
-        /// <paramref name="taken"/>: somebody stands there and stays.
-        /// </summary>
+        /// <summary>The present week on the grid: hours a fill may move in <paramref name="at"/>, the rest at stations read <paramref name="taken"/>.</summary>
         public static void Lay(List<RotaShift> present, bool[] fixedWorker, int stations, short[] at, bool[] taken)
         {
             for (int i = 0; i < present.Count; i++)
@@ -112,10 +82,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// The shifts a plan comes to, one for each run of hours of one person at one station. None on a day that
-        /// is closed, none for a station or a person that is not there (any more), none for somebody fixed.
-        /// </summary>
+        /// <summary>The plan's shifts, a run of hours each; none on a closed day, for a station or person gone, or for somebody fixed.</summary>
         public static void Shifts(RotaPlan plan, bool[] dayOpen, bool[] stationThere, bool[] workerThere, bool[] fixedWorker, List<RotaShift> into)
         {
             into.Clear();
@@ -144,10 +111,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// A fill on a week of plain shifts: what it takes out is gone, what the plan comes to is added. (RotaGame
-        /// does the same to the game's own lists, shift by shift, by the two rules above.)
-        /// </summary>
+        /// <summary>A fill on a week of plain shifts, as RotaGame does it to the game's own lists: what it takes out goes, the plan's shifts come.</summary>
         public static void Write(List<RotaShift> week, RotaPlan plan, bool[] dayOpen, bool[] stationThere, bool[] workerThere, bool[] fixedWorker, List<RotaShift> scratch)
         {
             for (int i = week.Count - 1; i >= 0; i--)
@@ -161,7 +125,7 @@ namespace RealLifeOverhaul.Economy
             week.AddRange(scratch);
         }
 
-        /// <summary>Whether a shift of the week kept goes back in: it is somebody's the planner may place, they still work there and the station still stands.</summary>
+        /// <summary>Whether a kept shift goes back: one of somebody the planner may place, still there, at a station still there.</summary>
         public static bool Restores(RotaShift kept)
         {
             return kept.Worker >= 0 && kept.Station != Gone;
@@ -192,20 +156,15 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// Whether the game's steps for an employee with no shift are taken after a fill: only for somebody who had
-        /// one and has none now, and who holds no headquarters plan.
-        /// </summary>
+        /// <summary>Whether the game's "idle" steps follow a fill: never for a plan holder, as the game cannot give a plan back.</summary>
         public static bool Idles(bool hadShift, bool hasShift, bool holdsPlan)
         {
             return hadShift && !hasShift && !holdsPlan;
         }
 
-        // ---------------------------------------------------------------- the stamp
-
         public const long StampStart = 1469598103934665603L;
 
-        /// <summary>One more figure into a stamp: a number that changes when anything mixed into it does, or the order of it.</summary>
+        /// <summary>One more figure into a stamp: a number that changes when anything mixed into it does, or its order.</summary>
         public static long Mix(long stamp, int value)
         {
             unchecked
@@ -219,6 +178,7 @@ namespace RealLifeOverhaul.Economy
             return Mix(stamp, Hash(text));
         }
 
+        /// <summary>A text's hash; 0 for null, so that a missing id is told from an empty one.</summary>
         public static int Hash(string text)
         {
             unchecked
