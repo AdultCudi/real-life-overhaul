@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using RealLifeOverhaul;
 
 // Checks for what a long session keeps: the session record's count of the mod's objects by holder and by kind
 // (Diagnostics/ObjectKinds.cs, compiled as it ships), which names what grows in the line a minute, and over the sources
-// that the record counts them once a minute and never in a frame.
+// that the record counts them once a minute and never in a frame; and a record of the game's pooled people
+// (Core/CacheRules.cs, People/StreetPeople.cs) that starts again once it has outgrown the pools.
 internal static partial class Program
 {
     private static void Memory()
@@ -13,6 +15,49 @@ internal static partial class Program
         KindGrowth();
         KindCap();
         KindSources();
+        PooledRecord();
+    }
+
+    // The game's pools destroy what they overflow with and make new people: a record of every id ever seen must not grow
+    // with them. Ten thousand seconds of a pool of 60 that swaps 3 people a second, looked at once a second as StreetPeople does.
+    private static void PooledRecord()
+    {
+        const int live = 60, swaps = 3;
+        var known = new HashSet<int>();
+        var pool = new List<int>(live);
+        int next = 0, most = 0, mostWithout = 0;
+        for (int i = 0; i < live; i++)
+        {
+            pool.Add(next++);
+        }
+        var without = new HashSet<int>();
+        for (int second = 0; second < 10000; second++)
+        {
+            for (int s = 0; s < swaps; s++)
+            {
+                pool[(second * 7 + s * 13) % live] = next++;   // one destroyed, a new one made in its place
+            }
+            if (CacheRules.Stale(known.Count, pool.Count))
+            {
+                known.Clear();
+            }
+            for (int i = 0; i < pool.Count; i++)
+            {
+                known.Add(pool[i]);
+                without.Add(pool[i]);
+            }
+            most = Math.Max(most, known.Count);
+            mostWithout = Math.Max(mostWithout, without.Count);
+        }
+        Check(most <= 3 * live + CacheRules.Slack && mostWithout > 100 * live,
+            "pooled record: the record of the game's pooled people stays within three times the pool (" + most + " at most), where one never started again holds every id ever seen (" + mostWithout + ")");
+        Check(!CacheRules.Stale(0, 0) && !CacheRules.Stale(2 * live + CacheRules.Slack, live) && CacheRules.Stale(2 * live + CacheRules.Slack + 1, live),
+            "pooled record: it starts again only past twice the pool and the slack");
+        string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string refresh = Body(Source(scripts, @"People\StreetPeople.cs"), "private static void Refresh(");
+        int stale = refresh.IndexOf("CacheRules.Stale(Known.Count, live)", StringComparison.Ordinal), add = refresh.IndexOf("Known[id] = human", StringComparison.Ordinal);
+        Check(stale >= 0 && add > stale && refresh.Contains("live += Pools[p] != null ? Pools[p].childCount : 0"),
+            "pooled record: StreetPeople counts what its pools hold and starts its record again before it adds to it");
     }
 
     // A kind is a name without the mod's prefix, a copy's mark and the numbers at its end.
