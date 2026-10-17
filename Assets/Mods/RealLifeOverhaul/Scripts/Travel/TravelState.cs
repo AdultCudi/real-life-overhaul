@@ -5,17 +5,12 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Everything travel remembers in a save: the room that is booked, a trip that is bought or
-    /// under way, loyalty stamps, past trips, which small events have been seen. It is one line
-    /// of text in the save's modData (key "reallife:travel"), which the base game carries
-    /// without reading: a save made with a room booked or a trip half taken loads without the
-    /// mod, the player standing in the street where they were. Free of game types.
-    /// </summary>
+    /// <summary>What travel keeps in a save, as one line of modData that the base game carries unread. Game-free.</summary>
     public static class TravelState
     {
         public const string SaveKey = "reallife:travel";
-        private const string EventPrefix = "reallife" + "_travel_ev_";   // every event key begins so; only what follows is stored
+        // Left off the saved event keys; written in two parts so the locale check does not take it for a key.
+        private const string EventPrefix = "reallife" + "_travel_ev_";
         private const int MostPastTrips = 12;
 
         // The room.
@@ -28,7 +23,7 @@ namespace RealLifeOverhaul
         public static int NightRate;           // the average night of this booking, for refunds and extras
         public static bool LateCheckout;
         public static int NightsSlept;
-        public static bool InRoom;             // up in the room (the stay panel is open); a save made there reopens it
+        public static bool InRoom;             // up in the room, its list open; a save made there reopens it
         public static bool Package;            // the room came with the Hamptons weekend
 
         // Habits and limits.
@@ -36,14 +31,14 @@ namespace RealLifeOverhaul
         public static int Stamps;
         public static int FreeNights;
         public static int NightsEver;
-        public static int TiredDay;            // the day the "too tired" prompt last showed
-        public static int HintDay;             // ...and the "nowhere to sleep" one
+        public static int TiredDay;            // the day the "too tired" notice last showed
+        public static int HintDay;             // the day the "nowhere to sleep" notice last showed
         public static int MinibarDay;
         public static int MinibarCount;
         public static int FreshDay;
         public static int LaundryDay;
         public static int RestDay;
-        public static int MorningDay;          // the day a morning in the room last brought its small event
+        public static int MorningDay;          // the day a morning in the room last brought a treat
         public static int DinnerDay;
         public static int WalkDay;
 
@@ -59,12 +54,12 @@ namespace RealLifeOverhaul
 
         // The trip under way.
         public static bool Away;
-        public static int AwayStep;            // 0 the departure card; then two per day (the choice, what came of it); then the return card
+        public static int AwayStep;            // 0 departure; two cards a day (the choice, its outcome); then the return
         public static int AwayStartDay;
         public static int AwaySpent;
         public static int AwayRelaxed;
         public static int AwaySouvenirs;
-        public static string AwayEvent;        // the event of the day being shown, so a save in the middle of it shows the same
+        public static string AwayEvent;        // the day's event being shown, so a save made then shows the same
         public static int AwayChoice;
         public static int AwayMoneyAtStart;
 
@@ -83,7 +78,7 @@ namespace RealLifeOverhaul
         /// <summary>Past trips, newest last: "id:day it began:days".</summary>
         public static readonly List<string> Past = new List<string>(MostPastTrips);
         public static readonly HashSet<string> Seen = new HashSet<string>();
-        public static string LastEvent;        // not saved: the one event never dealt twice running
+        public static string LastEvent;        // not saved: the event dealt last, never dealt twice running
 
         public static bool HasRoom => HotelId != null;
         public static bool HasTicket => TicketId != null;
@@ -125,7 +120,6 @@ namespace RealLifeOverhaul
             AwayEvent = null;
         }
 
-        /// <summary>The day (the game's day number) on which the room must be given up.</summary>
         public static int CheckoutDay => CheckInDay + Nights;
 
         public static void AddPast(string tripId, int day, int days)
@@ -296,7 +290,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A booking or a ticket that names something this version does not know is dropped whole.
+            // A booking or ticket naming something the catalogue does not know is dropped whole.
             if (HotelId != null && (TravelCatalogue.Hotel(HotelId) == null || TravelCatalogue.Room(RoomId) == null || Nights <= 0))
             {
                 ClearRoom();
@@ -336,11 +330,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A name comes from another feature: the two characters the line is built with are taken out of it.
-        private static string Clean(string value)
-        {
-            return value == null ? null : value.Replace(';', ' ').Replace('=', ' ');
-        }
+        // A name from another feature: the line's two separators are taken out of it.
+        private static string Clean(string value) => value?.Replace(';', ' ').Replace('=', ' ');
 
         private static string Text(Dictionary<string, string> data, string key)
         {
@@ -349,19 +340,14 @@ namespace RealLifeOverhaul
 
         private static int Int(Dictionary<string, string> data, string key, int fallback = 0)
         {
-            return data.TryGetValue(key, out string value) && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number) ? number : fallback;
+            return data.TryGetValue(key, out string value) && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number)
+                ? number
+                : fallback;
         }
 
-        private static bool Bool(Dictionary<string, string> data, string key)
-        {
-            return data.TryGetValue(key, out string value) && value == "1";
-        }
+        private static bool Bool(Dictionary<string, string> data, string key) => data.TryGetValue(key, out string value) && value == "1";
 
-        /// <summary>
-        /// Deals an event from a pool: one this save has not seen, never the one dealt last;
-        /// when the whole pool has been seen it starts again. <paramref name="random01"/>
-        /// returns 0 to 1. Null only for an empty pool.
-        /// </summary>
+        /// <summary>Deals an unseen event, never the last one dealt; a pool seen through starts again. Null if empty.</summary>
         public static TravelEvent Deal(TravelEvent[] pool, bool companion, Func<float> random01)
         {
             TravelEvent picked = null;
@@ -377,7 +363,7 @@ namespace RealLifeOverhaul
                 }
                 if (fresh == 0)
                 {
-                    // Everything here has been seen: only this pool is shuffled back in.
+                    // All seen: only this pool is shuffled back in.
                     for (int i = 0; i < pool.Length; i++)
                     {
                         Seen.Remove(pool[i].Key);
@@ -409,9 +395,6 @@ namespace RealLifeOverhaul
             return picked;
         }
 
-        private static bool Fits(TravelEvent e, bool companion)
-        {
-            return companion || !e.Companion;
-        }
+        private static bool Fits(TravelEvent e, bool companion) => companion || !e.Companion;
     }
 }

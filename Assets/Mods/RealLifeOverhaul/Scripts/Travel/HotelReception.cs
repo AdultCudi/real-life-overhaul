@@ -1,38 +1,24 @@
 using System;
 using System.Text;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A hotel's reception, in the window the game lists its subway stations in (<see cref="TravelList"/>): the game's
-    /// own form for "pick one of these". Page one has an entry per room type with tonight's rate, the week's rate and
-    /// how many are left in its detail line; choosing a room goes to page two, with an entry that steps the number of
-    /// nights, "Pay now", "Leave a deposit" and "Back". Booking closes the list, the result is a notification, and
-    /// the player is shown up to the room. Prices, rooms and rules are those of <see cref="HotelStay.Book"/>.
-    ///
-    /// If the game's window cannot be copied the desk is the game's dialogue panel (<see cref="HotelDeskDialog"/>),
-    /// which asks the same things one at a time.
-    ///
-    /// Built when the desk is spoken to and filled again for each page; nothing runs per frame.
-    /// </summary>
+    /// <summary>A hotel's reception in a copy of the game's subway list; <see cref="HotelDeskDialog"/> is the fallback.</summary>
     public sealed class HotelReception
     {
         private const int RowBack = -1, RowNights = -2, RowPayNow = -3, RowDeposit = -4, RowBooks = -5;   // rooms are 0 and up
-
-        /// <summary>Whether the player holds the hotel with this id as a business (Economy/Estate, through Wiring/EstateLinks): the desk then has "The books" and the room is free. Default: nobody holds one.</summary>
-        public static Func<string, bool> Owner;
-
-        /// <summary>Opens the owner's books of a hotel. Default: nothing.</summary>
-        public static Action<string> Books;
-
-        public static bool Owned(string hotelId) => Owner != null && Owner(hotelId);
         private const string ButtonChoose = "reallife_travel_list_choose";
         private const string ButtonChange = "reallife_travel_list_change";
         private const string ButtonBook = "reallife_travel_list_book";
+
+        /// <summary>Whether the player owns this hotel as a business (Economy/Estate): the desk offers its books, the room is free.</summary>
+        public static Func<string, bool> Owner;
+
+        /// <summary>Opens the owner's books of a hotel.</summary>
+        public static Action<string> Books;
 
         private readonly HotelStay _stay;
         private readonly TravelDirector _director;
@@ -41,7 +27,7 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _text = new StringBuilder(260);
         private HotelSite _site;
         private RoomType _room;       // null on page one
-        private int _nights;          // the place in the tier's night choices
+        private int _nights;          // index into the night choices
         private string _closing;
         private string _greeting;
 
@@ -55,7 +41,9 @@ namespace RealLifeOverhaul
 
         public bool IsOpen => _director.Window.OpenFor(this);
 
-        /// <summary>Opens the desk of a hotel. False if the game's window could not be made (the caller then uses the dialogue).</summary>
+        public static bool Owned(string hotelId) => Owner != null && Owner(hotelId);
+
+        /// <summary>Opens a hotel's desk. False if the game's window could not be made, and the caller uses the dialogue.</summary>
         public bool Open(HotelSite site)
         {
             TravelList list = _director.Window.Take(this);
@@ -75,8 +63,8 @@ namespace RealLifeOverhaul
                 list.Open(_onPick, _onClosed);
                 if (Meta.Dev.Verbose)
                 {
-                    TravelDirector.Instance.Log("Travel check (reception list): the game's list is open: " + rooms + " rooms at " + site.Slot.Id + ", " + list.Made + " entries made so far; "
-                                                + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                    TravelDirector.Instance.Log("Travel check (reception list): the game's list is open: " + rooms + " rooms at " + site.Slot.Id + ", "
+                                                + list.Made + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
                 }
                 return true;
             }
@@ -130,10 +118,12 @@ namespace RealLifeOverhaul
             string howLong = TravelText.T(nights >= 7 ? "reallife_travel_desk_nights_long" : "reallife_travel_desk_nights",
                 "nights", TravelText.Number(nights), "total", TravelText.Money(Mathf.Max(total - voucher, 0)),
                 "day", TravelEffects.DayName(TravelEffects.StayDay() + nights), "night", TravelText.Money(perNight));
-            list.Begin(_site.Name, TravelText.T(_room.NameKey) + (TravelState.FreeNights > 0 ? "\n<size=80%>" + TravelText.T("reallife_travel_desk_voucher") + "</size>" : string.Empty));
+            string voucherLine = TravelState.FreeNights > 0 ? "\n<size=80%>" + TravelText.T("reallife_travel_desk_voucher") + "</size>" : string.Empty;
+            list.Begin(_site.Name, TravelText.T(_room.NameKey) + voucherLine);
             list.Add(RowBack, TravelText.T("reallife_travel_list_back"), TravelText.T("reallife_travel_list_back_detail"), ButtonChoose, true);
             list.Add(RowNights, TravelText.T("reallife_travel_list_nights", "nights", TravelText.Number(nights)), howLong, ButtonChange, true, list.HeightFor(howLong.Length, true));
-            list.Add(RowPayNow, TravelText.T("reallife_travel_desk_pay_now"), TravelText.T("reallife_travel_list_pay_now", "total", TravelText.Money(Mathf.Max(total - voucher, 0))), ButtonBook, true);
+            list.Add(RowPayNow, TravelText.T("reallife_travel_desk_pay_now"),
+                TravelText.T("reallife_travel_list_pay_now", "total", TravelText.Money(Mathf.Max(total - voucher, 0))), ButtonBook, true);
             if (nights == 1)
             {
                 list.Add(RowDeposit, TravelText.T("reallife_travel_list_deposit"), TravelText.T("reallife_travel_list_deposit_one"), ButtonBook, false);
