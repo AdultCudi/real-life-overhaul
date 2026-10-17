@@ -7,22 +7,14 @@ using UnityEngine.InputSystem;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// The keys of the Car Showroom's camera and of choosing a bay, in the game's own panel of control hints (the one it
-    /// shows for driving and for placing an item: Player.HUD.ControlHints), each key drawn as the player has bound it.
-    /// Two groups of the game's kind (IControlsHintProvider), put in the game's list of them once a city, behind the
-    /// loading screen (the list is one of the game's assets, found by a search of what is in memory); the panel shows a
-    /// group while it is active. Where the game's own words fit they are its own (rotate left, rotate right, press to
-    /// cancel), so they follow the game's language.
-    ///
-    /// If the list cannot be found, or the player has the game's hints switched off, the camera says its keys once in a
-    /// notice instead (<see cref="Shown"/>). The cost: nothing per frame; a change of group is two field writes and the
-    /// game's own event.
+    /// The showroom camera's keys in the game's own panel of control hints, as the player bound them; without the panel, a
+    /// notice says them (<see cref="Shown"/>). Nothing per frame.
     /// </summary>
     internal sealed class ShowroomHints : IControlsHintProvider
     {
         public const string LookHeader = "reallife_showroom_hints_look";
         public const string PlaceHeader = "reallife_showroom_hints_place";
-        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomHints", typeof(ShowroomHints));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("economy_dealer", "ShowroomHints", typeof(ShowroomHints));
         private const int Rank = 20;   // above the game's own groups: the showroom's keys come first while they apply
 
         private static ControlsHintRegistry _registry;
@@ -46,10 +38,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         public IReadOnlyList<ControlsHint> Hints => _hints;
 
-        /// <summary>
-        /// The game's panel listens here for a change of group. Written out so that the game's own add and remove run
-        /// behind the class's guard (Core/GuardCalls), as every call of the game's into the mod does.
-        /// </summary>
+        /// <summary>The panel listens here; add and remove are written out so the game's calls run behind the guard (Core/GuardCalls).</summary>
         public event Action Changed
         {
             add
@@ -79,10 +68,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// <summary>True while the game's panel will show the keys: the groups are in its list and the player has its hints on.</summary>
         public static bool Shown => _registry != null && _look != null && PlayerPrefSettings.ControlHints;
 
-        /// <summary>
-        /// Once a city, behind the loading screen: the game's list of hint groups found and the showroom's two put in it.
-        /// True when done, whether or not it could be (the camera then says its keys in a notice).
-        /// </summary>
+        /// <summary>Behind the loading screen, once a city: the game's list of hint groups found and the two put in it. Always true.</summary>
         public static bool Prewarm()
         {
             ControlsHintRegistry[] found = SceneFinds.InMemory<ControlsHintRegistry>("showroom: the game's list of control hints");

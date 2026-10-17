@@ -8,25 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// Everything the Car Showroom's floor, its camera and its bays read from or do to the game, in one place.
-    ///
-    /// READ: the game's clock (the hour and the minute of the save), where the showroom's bays are (the lot as the
-    /// showroom laid it out), its cash register (an item of the game's of the point of sale kind: the salespeople's desk),
-    /// the floor's bounds as the game measured them (BuildingManager.interiorBounds), a car's body (its CarFeatures'
-    /// meshes) and the pointer's ray onto the floor.
-    ///
-    /// DONE, and how it is given back: the camera is the game's own camera for looking at a car
-    /// (GameManager.vehiclePreviewCamera, the one its vehicle dealer films a car bought with), pointed at a point of the
-    /// mod's own and handed back to the game's indoor camera after, its own aim and place put back as they were; the
-    /// player is kept from walking off (PlayerController's navigation blocker for a free-look camera) and the pointer's
-    /// hover and clicks on the world are held (MouseController, as the game's own placement does) until then; the wheel
-    /// does not zoom the indoor camera behind it (PedestrianCam.blockCameraZoom, as the mod's photo mode does). While a
-    /// bay is being chosen the game is paused as the game's placement pauses it (not in a Going Public session, whose
-    /// clock is everyone's), the car moved is shown on the bay under the pointer and the car that would make way is
-    /// outlined with the game's own outline layer; the showroom then puts every car back on its bay (DealerGame.Park).
-    /// The sounds are the game's for picking up, putting down and turning an item.
-    ///
-    /// Nothing here runs per frame by itself: the floor calls it on its beats, the camera while it is up.
+    /// Everything the showroom's floor, camera and bays do to the game: the game's own camera for looking at a car, with the
+    /// walk, pointer, zoom and clock held while it is up and each given back as it was. Nothing per frame by itself.
     /// </summary>
     internal static class ShowroomGame
     {
@@ -35,9 +18,10 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private static Transform _aim;              // what the camera looks at: an object of the mod's, made once a city
         private static CinemachineVirtualCameraBase _cam;
-        private static Transform _hadLookAt;
+        private static Transform _hadLookAt;        // the camera's own aim, place and turn, and the zoom block, to put back
         private static Vector3 _hadAt;
         private static Quaternion _hadTurn;
+        private static bool _hadZoomBlock;
         private static bool _taken;
         private static bool _blocked, _zoomWasBlocked, _paused, _timeHeld;
         private static readonly Plane Floor = new Plane(Vector3.up, Vector3.zero);
@@ -46,15 +30,11 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        // ---------------------------------------------------------------- the clock
-
         /// <summary>The save's hour, as the showroom counts hours (day x 24 + hour).</summary>
         public static int Hour => Save != null ? Save.Day * 24 + Save.Hour : 0;
 
         /// <summary>The minute of the hour (0 to 59).</summary>
         public static int Minute => Save != null ? Mathf.Clamp((int)Save.Minute, 0, 59) : 0;
-
-        // ---------------------------------------------------------------- the floor
 
         /// <summary>The middle of the showroom's bays, on the floor. False if it has none.</summary>
         public static bool FloorMiddle(DealerYard y, out Vector3 middle)
@@ -117,10 +97,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerGame.At(y.Spots[y.Cars[car].Spot]) + Vector3.up * Lift;
         }
 
-        /// <summary>
-        /// A place to stand and look at a car of the lot: by its left or right side, its nose or its tail (by the variant),
-        /// as it stands on its bay; the car's middle to face. False if the car has no bay.
-        /// </summary>
+        /// <summary>A place to stand by a car on its bay (side, nose or tail by <paramref name="variant"/>), and its middle to face.</summary>
         public static bool BesideCar(DealerYard y, int car, int variant, float side, float halfWidth, float halfLength, out Vector3 spot, out Vector3 middle)
         {
             spot = middle = default;
@@ -153,9 +130,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return ShopFloor.Standable(person + side * reach, 1.2f, out spot);
         }
 
-        // ---------------------------------------------------------------- a car's body
-
-        /// <summary>The middle and the length of a car's body, from its meshes; false if it has none drawn.</summary>
+        /// <summary>The middle and the length of a car's body, from its meshes; false if there is no car.</summary>
         public static bool Body(VehicleController car, out Vector3 middle, out float length)
         {
             middle = car != null ? car.transform.position + Vector3.up * Lift : Vector3.zero;
@@ -236,12 +211,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return true;
         }
 
-        // ---------------------------------------------------------------- the camera
-
-        /// <summary>
-        /// The game's camera for looking at a car, on this showroom's aim and place, made the live camera (the game's
-        /// own blend takes it there). The aim and place it had are kept to be put back. False if the game has none.
-        /// </summary>
+        /// <summary>The game's car camera made live on this aim and place, what it had kept to give back. False if the game has none.</summary>
         public static bool TakeCamera(Vector3 aim, Vector3 at)
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
@@ -283,9 +253,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return true;
         }
 
-        private static bool _hadZoomBlock;
-
-        /// <summary>The camera's aim and place this frame.</summary>
         public static void MoveCamera(Vector3 aim, Vector3 at)
         {
             if (_aim != null)
@@ -298,7 +265,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>Where the live camera stands and which way it looks round (degrees from north), to start from.</summary>
+        /// <summary>The live camera's bearing round a point (degrees from north), for the showroom's camera to start from.</summary>
         public static float CameraYaw(Vector3 round)
         {
             Camera camera = GameManager.GetMainCamera();
@@ -354,8 +321,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _aim = null;
         }
-
-        // ---------------------------------------------------------------- choosing a bay
 
         /// <summary>The game paused as its own placement pauses it, but never in a Going Public session (its clock is everyone's).</summary>
         public static void Pause()
@@ -434,7 +399,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>One of the game's sounds of placing an item, at a place.</summary>
         public static void Sound(SoundType sound, Vector3 at)
         {
             SfxManager sfx = InstanceBehavior<SfxManager>.Instance;

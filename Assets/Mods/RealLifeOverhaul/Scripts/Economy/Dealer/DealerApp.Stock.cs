@@ -3,13 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Stock tab: every car on the lots, filtered by dealership. A car that is picked shows a picture of it
-    /// (Floor/ShowroomPhotos), what it is, what it cost, its worth and its asking price with a selector to set it, and two
-    /// things to do with it: prepare it (a valet, a check and the faults known put right, which lifts its condition and so
-    /// its worth) or sell it to the trade at once. While the player stands in its showroom, two more: look round it with
-    /// the showroom's camera, and choose the bay it stands on (Floor/ShowroomView).
-    /// </summary>
+    /// <summary>The Stock tab: every car on the lots, and a picked car's price, preparing, sale to the trade and bay.</summary>
     public sealed partial class DealerApp
     {
         private const string CarRow = "car:";
@@ -60,8 +54,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (picked != null)
             {
-                _now = now;
-                WriteCar(box, pickedYard, picked, level, day);
+                WriteCar(box, pickedYard, picked, level, now);
                 return spec;
             }
             _picked = null;
@@ -89,20 +82,20 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerRules.HasDeal(yard, car.Id) ? DealerText.T("reallife_dealer_state_offer") : DealerText.T("reallife_dealer_state_on_show");
         }
 
-        private void WriteCar(InfoBox box, DealerYard yard, StockCar car, int level, int day)
+        private void WriteCar(InfoBox box, DealerYard yard, StockCar car, int level, int now)
         {
-            int worth = DealerDirector.Worth(car, level);
+            int worth = DealerDirector.Worth(car, level), day = now / 24;
             box.Title(DealerGame.CarName(car.Type));
             box.Subtitle(DealerGame.ColourName(car.Colour));
-            int at = _now;
-            box.Chip(State(yard, car, at), car.ShopUntil > at || car.OutUntil > at ? CellTone.Plain : DealerRules.HasDeal(yard, car.Id) ? CellTone.Green : CellTone.Plain);
+            box.Chip(State(yard, car, now), car.ShopUntil > now || car.OutUntil > now ? CellTone.Plain : DealerRules.HasDeal(yard, car.Id) ? CellTone.Green : CellTone.Plain);
             ShowroomPhotos.Show(box, car);
             box.Section("reallife_ibox_sec_money");
             box.RowPair("reallife_ibox_cost", DealerText.Money(car.Cost), "reallife_ibox_worth", DealerText.Money(worth));
             box.Row("reallife_ibox_trade_price", DealerText.Money(DealerRules.TradePrice(worth)));
             box.Note(DealerText.Fill("reallife_dealer_car_what", "source", DealerText.Source(car.Source), "name", yard.Name, "days", (day - car.Bought).ToString(),
                 "km", DealerText.Km(car.Km), "condition", DealerText.Condition(car.Condition)));
-            box.Row("reallife_dealer_car_faults", car.Known != 0 ? DealerText.Faults(car.Known) : DealerText.T("reallife_dealer_faults_none_known"), car.Known != 0 ? CellTone.Yellow : CellTone.Plain);
+            box.Row("reallife_dealer_car_faults", car.Known != 0 ? DealerText.Faults(car.Known) : DealerText.T("reallife_dealer_faults_none_known"),
+                car.Known != 0 ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_asking");
             int step = Choice(DealerRules.AskStepOf(worth, car.Asking));
             Choose(box, DealerRules.AskSteps, step, i => DealerText.T("reallife_dealer_car_ask", "price", DealerText.Money(DealerRules.AskAt(worth, i)),
@@ -138,7 +131,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                         Pick(null);
                     }
                 }, true));
-            WriteWorkshop(box, buttons, yard, car);
+            WriteWorkshop(box, yard, car, now);
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);
         }

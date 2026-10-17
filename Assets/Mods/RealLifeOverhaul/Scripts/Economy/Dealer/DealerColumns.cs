@@ -2,16 +2,12 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Dealership app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, which
-    /// are summed in the totals line, its filters, the order it opens in and the sentence when a filter leaves nothing.
-    /// The numbers beside each are the columns, for whoever writes the rows. Read when a tab is written.
-    /// </summary>
+    /// <summary>The app's tables as data (GameUi.TableSpec); each table's summary numbers its columns for whoever writes the rows.</summary>
     public static class DealerColumns
     {
         private const string App = "Dealership";
 
-        // ---- the Market tab's kinds (ListingKind), and the Offers tab's and the Finance tab's
+        // The filters' kinds: the Market tab's (by ListingKind), the Offers, Finance and Growth tabs'.
         public static readonly string[] MarketKinds = { "reallife_dealer_kind_wholesale", "reallife_dealer_kind_used", "reallife_dealer_kind_auction" };
         public const int Waiting = 0, Sold = 1;
         public static readonly string[] OfferKinds = { "reallife_dealer_kind_waiting", "reallife_dealer_kind_sold" };

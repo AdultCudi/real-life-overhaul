@@ -4,31 +4,14 @@ using System.Globalization;
 using BAModAPI;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UI.Smartphone;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// What the Dealership app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as the mod's other
-    /// apps are: seven tabs over the table on the right, and on the left the white box with the one thing picked.
-    ///
-    ///   Stock          every car on the dealerships' lots: what it cost, what it is asked at and worth, how long it has
-    ///                  stood; pick one to set its price, prepare it or sell it to the trade (DealerApp.Stock.cs)
-    ///   Market         the day's new cars from the wholesaler, used cars offered by their owners, and the lots of the
-    ///                  trade auction; pick one to buy it, look it over, haggle or bid (DealerApp.Market.cs)
-    ///   Offers         customers' offers waiting for an answer, and the cars sold lately (DealerApp.Offers.cs)
-    ///   Finance        the cars sold on the dealership's own finance, and the warranties sold (DealerApp.Offers.cs)
-    ///   Dealerships    each dealership's lot, staff and figures, and its settings (DealerApp.Lots.cs)
-    ///   Growth         the advertising events to book, the missions, and each showroom's reputation (DealerApp.Growth.cs)
-    ///   Reports        a chart of a figure's days in place of the table, and the sums in the box (DealerApp.Reports.cs)
-    ///
-    /// The Stock tab also lists the cars on their way from the auction, and a picked car's box the workshop
-    /// (DealerApp.Workshop.cs).
-    ///
-    /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it opens,
-    /// when a tab is picked and when the player or the dealership changes something.
+    /// The Car Showroom app in the game's frame (GameUi.AppShell, copied from MyEmployees), a part file a tab. Nothing runs
+    /// while it is closed: the rows are made when it opens, when a tab is picked and when something changes.
     /// </summary>
     public sealed partial class DealerApp
     {
@@ -53,7 +36,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         private string _picked;
         private int _choice = -1;           // the step a selector of the picked thing stands at; -1 for its own default
         private string _choiceFor;          // ...and what it is for
-        private string _yardChoice;         // the dealership a car bought goes to
+        private string _yardChoice;         // the showroom a car bought goes to
 
         public DealerApp(DealerDirector director)
         {
@@ -78,7 +61,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 UiClone.Key(_shell.TabLabels[i], TabKeys[i]);
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
-            _report = DealerReportPage.Make(_shell, this);   // (null if the game's parts are not as expected: the tab then says so)
+            _report = DealerReportPage.Make(_shell, this);   // null if the game's parts are not as expected: the tab then says so
             return _shell.Root;
         }
 
@@ -284,7 +267,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // The step the picked thing's selector stands at, or its default.
         private int Choice(int fallback)
         {
             return _choiceFor == _picked && _choice >= 0 ? _choice : fallback;
@@ -302,7 +284,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             GameConfirm.Show(titleKey.GetLocalization(), body, () => UiClone.Safe(yes), null, null, null, false, negative);
         }
 
-        // The dealership a car bought goes to: the one chosen, if it has room; a selector among those with room if there are several.
+        // The showroom a car bought goes to: the one chosen, if it has room; a selector among those with room if there are several.
         private string ChooseYard(InfoBox box, DealerState state)
         {
             var room = new List<DealerYard>(state.Yards.Count);
@@ -310,7 +292,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 if (state.Room(state.Yards[i]) > 0)
                 {
-                    room.Add(state.Yards[i]);   // (a place held for a car on its way is not free)
+                    room.Add(state.Yards[i]);   // a place held for a car on its way is not free
                 }
             }
             if (room.Count == 0)

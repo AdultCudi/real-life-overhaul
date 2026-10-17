@@ -6,13 +6,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Reports tab's page, in place of the table on the right, as the Stocks app's company page stands in place of its
-    /// table (Markets/MarketPage): a title and a line over the chart of a figure's days (<see cref="DealerChart"/>), and
-    /// under it the choices of the figure and of the showroom. Made of the game's own parts: the white box's lines and
-    /// previous/next selectors, over a copy of the table's background. Built once with the app; written only while the
-    /// Reports tab shows.
-    /// </summary>
+    /// <summary>The Reports tab's page in place of the table, as Markets/MarketPage is: a title, the chart and the choices under it.</summary>
     internal sealed class DealerReportPage
     {
         private static readonly string[] KindKeys =
@@ -60,10 +54,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                     rect.anchorMin = Vector2.zero;
                     rect.anchorMax = Vector2.one;
                     rect.offsetMin = rect.offsetMax = Vector2.zero;
-                    // The game keeps this background switched off (MyEmployees' prefab has it so, and nothing of the game's switches
-                    // it on), so its copy is switched off too: up to 0.27.0 the page stood on no sheet at all. Switched on here, white
-                    // as the white box whose dark lines, title and selectors the page is made of (and as the sheet made below when the
-                    // game has none), its rounded corners kept; it only draws: a click on it falls through as before.
+                    // The game keeps this background switched off (as MyEmployees' prefab has it), so the copy is switched on here,
+                    // white as the box whose lines and selectors the page is made of; a click on it falls through.
                     var sheet = copy.GetComponent<Image>();
                     if (sheet != null)
                     {
@@ -140,8 +132,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             rect.offsetMax = offsetMax;
             return rect;
         }
-
-        // ---------------------------------------------------------------- showing
 
         public void Hide()
         {

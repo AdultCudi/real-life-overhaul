@@ -4,12 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Growth tab: the advertising events a showroom can run, its missions, and its reputation with the perks each
-    /// step opens, filtered by which. An event that is picked says what it does and costs, and books it at the showroom
-    /// chosen (a featured event for the kind of car chosen); a mission says what it asks and gives; a showroom's
-    /// reputation lists its steps. Written with the tab, never otherwise.
-    /// </summary>
+    /// <summary>The Growth tab: the events to book, each showroom's missions and its reputation.</summary>
     public sealed partial class DealerApp
     {
         private const string EventPick = "event:", MissionPick = "mission:", RepPick = "rep:";
@@ -60,7 +55,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 row.Set(0, DealerText.Step(step));
                 row.Set(1, yard.Name);
                 row.Set(2, yard.Rep.ToString(), yard.Rep);
-                row.Set(3, step + 1 < DealerCatalogue.RepSteps.Length ? DealerCatalogue.RepSteps[step + 1].ToString() : "-", step + 1 < DealerCatalogue.RepSteps.Length ? DealerCatalogue.RepSteps[step + 1] : 0);
+                bool top = step + 1 >= DealerCatalogue.RepSteps.Length;
+                row.Set(3, top ? "-" : DealerCatalogue.RepSteps[step + 1].ToString(), top ? 0 : DealerCatalogue.RepSteps[step + 1]);
                 row.Set(4, DealerText.Perk(step));
                 row.Set(5, DealerText.T("reallife_dealer_state_missions", "done", Done(yard).ToString(), "all", DealerCatalogue.Missions.ToString()));
             }
@@ -119,7 +115,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return n;
         }
 
-        // An event picked: what it does and costs, where it is booked (and for which kind of car), and the button.
         private void WriteEvent(InfoBox box, DealerState state, int kind, int day)
         {
             box.Title(DealerText.Event(kind, 0));
@@ -178,14 +173,14 @@ namespace RealLifeOverhaul.Economy.Dealership
                 string place = yard.Place;
                 int chosen = feature;
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_dealer_button_event", () => Confirm("reallife_dealer_q_event_title",
-                    DealerText.Fill("reallife_dealer_q_event", "event", DealerText.Event(kind, chosen), "name", yard.Name, "cost", DealerText.Money(cost), "days", DealerCatalogue.EventDays[kind].ToString()),
+                    DealerText.Fill("reallife_dealer_q_event", "event", DealerText.Event(kind, chosen), "name", yard.Name, "cost", DealerText.Money(cost),
+                        "days", DealerCatalogue.EventDays[kind].ToString()),
                     () => _director.BookEvent(place, kind, chosen), false));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // The kinds of car the market deals in, each once, in the catalogue's order.
         private void Kinds(List<int> into)
         {
             into.Clear();
@@ -205,8 +200,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private bool WriteMission(InfoBox box, DealerState state)
         {
-            // "mission:<n>:<place>"
-            string rest = _picked.Substring(MissionPick.Length);
+            string rest = _picked.Substring(MissionPick.Length);   // "<mission>:<place>"
             int colon = rest.IndexOf(':');
             if (colon <= 0 || !int.TryParse(rest.Substring(0, colon), out int m) || m < 0 || m >= DealerCatalogue.Missions)
             {
@@ -238,8 +232,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             int step = DealerRules.Step(yard.Rep);
             box.Title(yard.Name);
             box.Chip(DealerText.Step(step));
-            box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", yard.Rep.ToString(), "step", DealerText.Step(step),
-                "next", step + 1 < DealerCatalogue.RepSteps.Length ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString()) : DealerText.T("reallife_dealer_rep_top")));
+            box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", yard.Rep.ToString(), "step", DealerText.Step(step), "next", NextStep(step)));
             box.Section("reallife_ibox_sec_steps");
             for (int s = 1; s < DealerCatalogue.RepSteps.Length; s++)
             {

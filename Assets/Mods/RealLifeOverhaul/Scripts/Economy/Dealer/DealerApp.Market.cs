@@ -3,13 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The Market tab: the day's new cars from the wholesaler, used cars offered by their owners and the lots of the trade
-    /// auction, filtered by kind. A new car is bought at its price; a used one can be looked over first (its faults and its
-    /// true condition are then known, and the owner's least comes down by what is found) and haggled over; a lot of the
-    /// auction can be looked over and bid on, a step at a time, against the other dealers of the room until it is knocked
-    /// down. A car bought goes onto the lot of the dealership chosen, which needs a free place.
-    /// </summary>
+    /// <summary>The Market tab: new cars, used cars from their owners and the auction's lots, to buy, haggle over or bid on.</summary>
     public sealed partial class DealerApp
     {
         private const string ListRow = "list:";
@@ -45,7 +39,9 @@ namespace RealLifeOverhaul.Economy.Dealership
                 else
                 {
                     row.Set(6, DealerText.T("reallife_dealer_today"));
-                    row.Set(7, l.Kind == ListingKind.Used ? (l.Inspected ? DealerText.T("reallife_dealer_state_inspected") : DealerText.T("reallife_dealer_state_not_inspected")) : DealerText.T("reallife_dealer_state_new"));
+                    row.Set(7, l.Kind == ListingKind.Used
+                        ? (l.Inspected ? DealerText.T("reallife_dealer_state_inspected") : DealerText.T("reallife_dealer_state_not_inspected"))
+                        : DealerText.T("reallife_dealer_state_new"));
                     news += l.Kind == ListingKind.Wholesale ? 1 : 0;
                     used += l.Kind == ListingKind.Used ? 1 : 0;
                 }
@@ -98,7 +94,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             string yard = ChooseYard(box, state);
             box.Section("reallife_ibox_sec_money");
             DealerYard to = yard != null ? state.Yard(yard) : null;
-            int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;   // (a respected showroom's perk, as the director charges it)
+            int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;   // a respected showroom's perk, as the director charges it
             box.Line(DealerText.Fill("reallife_dealer_new_money", "price", DealerText.Money(price), "worth", DealerText.Money(worth), "asking", DealerText.Money(DealerRules.Asking(worth))));
             if (price < l.Asking)
             {
@@ -130,8 +126,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Subtitle(DealerGame.ColourName(l.Colour));
             box.Chip(DealerText.T(l.Inspected ? "reallife_ibox_chip_inspected" : "reallife_ibox_chip_not_inspected"), l.Inspected ? CellTone.Green : CellTone.Yellow);
             box.Section("reallife_ibox_sec_money");
-            box.Line(DealerText.Fill("reallife_dealer_used_asking", "price", DealerText.Money(l.Asking), "counter", l.Countered > 0 ? DealerText.Money(l.Countered) : DealerText.T("reallife_dealer_none"),
-                "left", (DealerCatalogue.HagglesMost - l.Haggles).ToString()));
+            box.Line(DealerText.Fill("reallife_dealer_used_asking", "price", DealerText.Money(l.Asking),
+                "counter", l.Countered > 0 ? DealerText.Money(l.Countered) : DealerText.T("reallife_dealer_none"), "left", (DealerCatalogue.HagglesMost - l.Haggles).ToString()));
             if (l.Inspected)
             {
                 int worth = _director.Worth(l);
@@ -214,7 +210,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             int next = DealerRules.NextBid(l, worth), fee = DealerRules.BuyersFee(next, Prices.At(DealerCatalogue.BuyersFeeLeast));
             box.Section("reallife_ibox_sec_next");
-            box.Line(DealerText.Fill("reallife_dealer_lot_next", "bid", DealerText.Money(next), "fee", DealerText.Money(fee), "ends", DealerText.When(l.Ends), "left", DealerText.Hours(Mathf.Max(0, l.Ends - now))));
+            box.Line(DealerText.Fill("reallife_dealer_lot_next", "bid", DealerText.Money(next), "fee", DealerText.Money(fee), "ends", DealerText.When(l.Ends),
+                "left", DealerText.Hours(Mathf.Max(0, l.Ends - now))));
             Transform buttons = box.ButtonRow();
             if (l.Leader != 0)
             {
