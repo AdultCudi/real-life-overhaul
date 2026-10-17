@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 // itself, and MapPlaces makes none while the map is off.
 internal static partial class Program
 {
-    private static readonly Regex MarkerDestroy = new Regex(@"Destroy(Immediate)?\s*\(\s*[\w\.\[\]]*(poi|Poi|Marker)\w*\s*\.\s*gameObject", RegexOptions.Compiled);
+    private static readonly Regex MarkerDestroy = new Regex(@"Destroy(Immediate)?\s*\(\s*[\w\.\[\]]*(poi|Poi|Marker)(?![a-z])\w*\s*\.\s*gameObject", RegexOptions.Compiled);   // ("Poi" as a word: a desk's Pointer is no marker)
 
     private static void Markers(string scripts)
     {
@@ -49,8 +49,8 @@ internal static partial class Program
         Check(places.Contains("city.cityMap.pois.Remove(marker)") && places.Contains("city.UpdatePointOfInterests()") && places.Contains("cityMap.gameObject.activeInHierarchy"),
             "MapPlaces takes a marker out of the game's list before it goes, and makes none while the map is switched off");
         Check(MarkerDestroy.IsMatch("UnityEngine.Object.Destroy(place.Marker.gameObject);") && MarkerDestroy.IsMatch("Destroy(_poi.gameObject);")
-              && !MarkerDestroy.IsMatch("MapPlaces.Drop(_poi);"),
-            "the reading finds a marker destroyed directly, and not one dropped");
+              && !MarkerDestroy.IsMatch("MapPlaces.Drop(_poi);") && !MarkerDestroy.IsMatch("UnityEngine.Object.Destroy(_deskPointer.gameObject);"),
+            "the reading finds a marker destroyed directly, and not one dropped, nor a desk's pointer (no marker of the map's)");
         Console.WriteLine("   " + makers + " source(s) give the game's map markers; " + direct.Count + " destroy one directly.");
     }
 }

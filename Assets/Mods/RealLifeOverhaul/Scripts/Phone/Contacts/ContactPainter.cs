@@ -457,6 +457,14 @@ namespace RealLifeOverhaul
             Texture2D source = sprite != null ? sprite.texture : null;
             if (source == null || !source.isReadable)
             {
+                if (sprite != null)
+                {
+                    Destroy(sprite);   // the game's portrait is made for this call alone: let go, as a readable one is below
+                }
+                if (source != null)
+                {
+                    Destroy(source);
+                }
                 Requeue(p);
                 return;
             }

@@ -148,3 +148,16 @@ Checked by: StandardCheck (the summary of some part of the class mentions its fr
 /// ... The cost: nothing per frame but one comparison with the real clock; once a second, two property reads.
 /// </summary>
 ```
+
+### RLO-PERF-013: What code makes, code destroys
+
+**MUST.** Destroy every engine asset the mod makes by code when it is dropped: a `Texture2D`, `Mesh`, `Material`, `RenderTexture` (a temporary one is released), `Sprite`, `AudioClip`, a `ScriptableObject` made with `CreateInstance`, and a copy of a mesh or material made with `Instantiate`. A sprite made with `Sprite.Create` goes with its texture (`CodeAssets.DropSprite`); a volume profile goes with the settings `Add` gave it (`CodeAssets.DropProfile`). An asset kept on purpose for the session (a glyph drawn once, a business type registered with the game) is cached once in a static field and listed in StandardCheck's kept list with its reason.
+
+Why: destroying the GameObject that shows an asset does not free it, and an asset still referenced survives the game's own sweep of unused assets. A texture or a settings object made per photo, per load or per look and never destroyed is memory a long session never gets back.
+
+Checked by: StandardCheck (every site's name destroyed in its type's files, or kept on purpose with the code that shows how; a kept entry nothing matches fails).
+
+```csharp
+CodeAssets.DropProfile(profile);   // good: the profile and its exposure setting
+UnityEngine.Object.Destroy(profile);   // bad: the setting Add made stays
+```

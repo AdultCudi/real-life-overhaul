@@ -62,6 +62,7 @@ internal static partial class Program
         FitPresets();
         Cars();
         Frames();
+        Memory();        // what a long session keeps: the session record's count of the mod's objects by holder and by kind (MemoryCheck.cs)
         Starts();
         Sightseeing();
         PointGrids();

@@ -456,6 +456,9 @@ internal static partial class Program
             started = second.IndexOf("PhotoTake(", StringComparison.Ordinal);
         Check(director.Contains("PhotosSecond();") && paced >= 0 && planned > paced && started > planned && second.Contains("_photoBusy") && second.Contains("_photoToday >= FlareCityPhotoRules.DayMost"),
             "Flare photo bank sources: the bank's pass runs on the director's one-second timer, plans only after the pace, one photo at a time under the day's most");
+        int driving = second.IndexOf("FlarePictureGame.Driving()", StringComparison.Ordinal), spent = second.IndexOf("_photoNext = t + _photoPace", StringComparison.Ordinal);
+        Check(driving > paced && spent > driving && FlareMethod(game, "public static bool Driving(").Contains("PlayerHelper.IsUsingVehicle"),
+            "Flare photo bank sources: no city photo is rendered while the player is in a vehicle (a frame of 10 to 30 ms is felt most at the wheel), and the wait does not spend the pace");
         Check(FlareMethod(photos, "private void FrontsRead(").Contains("Stopwatch.Frequency * FrontsSliceMs") && FlareMethod(game, "public static bool FrontSlice(").Contains("Stopwatch.GetTimestamp() > until")
               && !game.Contains("FindObjectsByType") && !game.Contains("FindObjectsOfType"),
             "Flare photo bank sources: the businesses' fronts are read a millisecond a second, with no search of the scene");

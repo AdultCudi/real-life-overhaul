@@ -16,7 +16,9 @@ namespace RealLifeOverhaul
     /// a pooled object and lives under its pool's parent, beside the pedestrians' own. So the
     /// registry is those few parents: once a second, and only while somebody asks, their
     /// switched-on children are listed. No scene search, no physics (standing people have their
-    /// colliders switched off), nothing allocated after the first look at each person.
+    /// colliders switched off), nothing allocated after the first look at each person. The game's
+    /// pools destroy the people they overflow with and make new ones, so the record of who is who
+    /// starts again once it has outgrown the pools (CacheRules): a destroyed person is not kept.
     ///
     /// Left out on purpose: the pedestrians' own pool (use the game's list), customers and
     /// staff (their pools are only in use indoors, and seen through a doorway they are not on
@@ -60,6 +62,15 @@ namespace RealLifeOverhaul
             if (_classified != _root.childCount)
             {
                 Classify(logger);
+            }
+            int live = 0;
+            for (int p = 0; p < Pools.Count; p++)
+            {
+                live += Pools[p] != null ? Pools[p].childCount : 0;
+            }
+            if (CacheRules.Stale(Known.Count, live))
+            {
+                Known.Clear();   // people the pools destroyed since: what is still out is looked up again below
             }
             for (int p = 0; p < Pools.Count; p++)
             {

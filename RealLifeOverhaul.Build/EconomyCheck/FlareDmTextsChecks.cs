@@ -110,6 +110,13 @@ internal static partial class Program
         Check(!posts.May(12) && FlareTextsAsked<int>.Most == 3, "flare messages' words: after three asks without words the written line stays (no endless asking)");
         posts.Clear();
         Check(posts.May(12), "flare messages' words: a new account or a stop forgets what was asked");
+        posts.Asked(12);
+        posts.Asked(13);
+        posts.Ended(13, true);
+        posts.Asked(14);
+        int pruned = posts.Prune(id => id != 12 && id != 13);
+        Check(pruned == 2 && posts.May(12) && posts.May(13) && !posts.May(14),
+            "flare messages' words: the asks of posts that are gone are let go (the record lasts no longer than the feed), those still there kept");
     }
 
     private static void FlareDmTextsSources()

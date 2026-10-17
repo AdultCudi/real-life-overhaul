@@ -587,6 +587,15 @@ internal static partial class Program
         var shared = TextsAskOf("fp:9", "friend.crash", null, w => { });
         shared.Shared = true;
         Check(!hub.Ask(shared, 80), "texts, the hub: a guest is never allowed to write shared text (the director's rule: only the host or a player alone)");
+        var talk = new TextsHub(new TextQueue());
+        talk.Said("st:first", "Hello there.");
+        for (int i = 0; i < 10 * TextsHub.SpeakersMost; i++)
+        {
+            talk.Said("st:" + i, "Lovely day for it.");
+        }
+        talk.Said("st:last", "Mind how you go.");
+        Check(talk.Speakers <= TextsHub.SpeakersMost && talk.Recent("st:last") != null && talk.Recent("st:last")[0] == "Mind how you go.",
+            "texts, the hub: the words remembered for the repeat check are kept for " + TextsHub.SpeakersMost + " speakers at most (the hub lasts the whole run), the latest speaker's among them");
     }
 
     // ---------------------------------------------------------------- the save

@@ -60,6 +60,7 @@ internal static partial class Program
         StyleChecks();
         ArchitectureChecks();
         PerformanceChecks();
+        AssetChecks();
         MultiplayerChecks();
         TestingChecks();
         TextChecks();

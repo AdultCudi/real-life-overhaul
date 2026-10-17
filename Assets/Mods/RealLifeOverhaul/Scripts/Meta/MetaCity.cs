@@ -182,27 +182,43 @@ namespace RealLifeOverhaul.Meta
             {
                 if (_verbose)
                 {
+                    Counted();
                     _inner.Info(message);
                 }
             }
 
             public void Warn(string message)
             {
+                Counted();
                 _inner.Warn(message);
             }
 
             public void Error(string message)
             {
+                Counted();
                 _inner.Error(message);
             }
 
             public void Error(Exception exception)
             {
+                Counted();
                 _inner.Error(exception);
             }
         }
 
         private static bool _verbose;
+        private static int _lines;
+
+        /// <summary>
+        /// The lines the mod has written to the log this run. The session record says how many a minute: the game keeps every
+        /// line of the log in memory for the whole run (its own DebugLogCollector), so they are memory that never comes back.
+        /// </summary>
+        public static int Lines => _lines;
+
+        private static void Counted()
+        {
+            System.Threading.Interlocked.Increment(ref _lines);   // (features log from worker threads too)
+        }
 
         /// <summary>
         /// One plain Info line that goes to the log whatever the switch says: for the rare line a player's log must show
@@ -212,6 +228,7 @@ namespace RealLifeOverhaul.Meta
         {
             if (logger is GatedLogger gated)
             {
+                Counted();
                 gated.Inner.Info(message);
             }
             else

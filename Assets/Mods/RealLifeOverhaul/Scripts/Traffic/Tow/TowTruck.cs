@@ -125,7 +125,15 @@ namespace RealLifeOverhaul
                 root.layer = layer;
             }
             var truck = root.AddComponent<TowTruck>();
-            truck.Build();
+            try
+            {
+                truck.Build();
+            }
+            catch
+            {
+                UnityEngine.Object.Destroy(root);   // a truck half built is not left under the service for the next tow to build another beside
+                throw;
+            }
             return truck;
         }
 

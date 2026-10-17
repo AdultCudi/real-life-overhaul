@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Flare
         private static HDAdditionalCameraData _data;
         private static byte[] _pixels;   // the read-back, RGBA (one for the session, made with the first photo)
         private static byte[] _rows;     // ...as the small copy's RGB rows
+        private static RenderTexture _pending;   // the render target while its pixels are on their way back: let go by Clear if the photo is stopped meanwhile
 
         /// <summary>The result of one photo: whether it was written, and the main thread's time of its renders.</summary>
         public sealed class Result
@@ -82,6 +83,7 @@ namespace RealLifeOverhaul.Flare
             try
             {
                 target = RenderTexture.GetTemporary(FlareCityPhotoRules.Width, FlareCityPhotoRules.Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                _pending = target;
                 var watch = Stopwatch.StartNew();
                 using (SessionWatch.Piece("flare: a photo of the city for the bank"))   // two dozen a game day at most, one in twenty real seconds at most: two small renders
                 {
@@ -97,10 +99,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (!asked)
             {
-                if (target != null)
-                {
-                    RenderTexture.ReleaseTemporary(target);
-                }
+                Release();
                 result.Why = result.Why ?? "the city could not be rendered";
                 yield break;
             }
@@ -125,7 +124,7 @@ namespace RealLifeOverhaul.Flare
             }
             finally
             {
-                RenderTexture.ReleaseTemporary(target);
+                Release();
             }
             if (!read)
             {
@@ -273,10 +272,7 @@ namespace RealLifeOverhaul.Flare
                     exposureHost.SetActive(false);   // out of the game's volumes now, before its own camera draws the frame
                     UnityEngine.Object.Destroy(exposureHost);
                 }
-                if (profile != null)
-                {
-                    UnityEngine.Object.Destroy(profile);
-                }
+                CodeAssets.DropProfile(profile);   // its exposure setting with it: one a photo otherwise
             }
         }
 
@@ -295,9 +291,21 @@ namespace RealLifeOverhaul.Flare
             return System.IO.File.Exists(thumb);
         }
 
-        /// <summary>The camera's object destroyed: the city is unloading, or Flare stops.</summary>
+        // The render target back to the engine's pool. A photo stopped between its renders and its pixels (the city unloading)
+        // never reaches its own release: Clear lets the target go then.
+        private static void Release()
+        {
+            if (_pending != null)
+            {
+                RenderTexture.ReleaseTemporary(_pending);
+            }
+            _pending = null;
+        }
+
+        /// <summary>The camera's object destroyed, and a render target a stopped photo held let go: the city is unloading, or Flare stops.</summary>
         public static void Clear()
         {
+            Release();
             if (_made != null)
             {
                 UnityEngine.Object.Destroy(_made);

@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Law
         private readonly IModLogger _logger;
         private readonly Transform _root;
         private readonly PrecinctFrontage _frontage;
-        private Sprite _icon;
+        private static Sprite _icon;   // drawn once a session: a director of each load asks for the same badge
         private MapPlaces.Category _map;
         private bool _chosen;
         private int _nextLook;

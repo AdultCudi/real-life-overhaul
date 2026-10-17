@@ -16,7 +16,9 @@ namespace RealLifeOverhaul.GameUi
     /// tile is read once a session, each glyph once at each size, and each finished icon is kept by its name and made
     /// again only if what it is made of is not what it was (another tile, glyph, colour or size): the same pixels, the
     /// same texture and sprite settings, so the same picture. The kept textures are marked never to be unloaded with a
-    /// scene's unused assets, as the Ledger's runtime faces are (Ledger/LedgerType).
+    /// scene's unused assets, as the Ledger's runtime faces are (Ledger/LedgerType). An icon made again (after a load
+    /// that brought other pictures of the game's) destroys the one it replaces, and the reads of pictures destroyed since
+    /// are let go then.
     ///
     /// Cost: nothing per frame. The first load of a session: one read of the tile and one of each glyph; every load after
     /// it: one dictionary look-up per app.
@@ -34,6 +36,8 @@ namespace RealLifeOverhaul.GameUi
 
         private static readonly Dictionary<string, Painted> Made = new Dictionary<string, Painted>(32, StringComparer.Ordinal);
         private static readonly Dictionary<long, Color32[]> Reads = new Dictionary<long, Color32[]>(32);   // a picture read back, by sprite and size
+        private static readonly Dictionary<long, Sprite> ReadOf = new Dictionary<long, Sprite>(32);        // ...and the sprite it was read from
+        private static readonly List<long> Stale = new List<long>(8);
         private static Color32[] _work = new Color32[0];
 
         /// <summary>
@@ -55,9 +59,14 @@ namespace RealLifeOverhaul.GameUi
                 {
                     return kept.Result;
                 }
+                ForgetStale();
                 Sprite made = Draw(like, glyph, top, bottom, glyphSize, name, colour);
                 if (made != null && made != glyph)
                 {
+                    if (kept != null && kept.Result != made)
+                    {
+                        CodeAssets.DropSprite(kept.Result);   // the icon it replaces was on the buttons of an earlier load, gone with them
+                    }
                     Made[key] = new Painted { Result = made, Like = like, Glyph = glyph, Top = top, Bottom = bottom, Ink = colour, GlyphSize = glyphSize };
                 }
                 return made;
@@ -68,6 +77,25 @@ namespace RealLifeOverhaul.GameUi
                 UiClone.Fallback("the app icon could not be painted, the glyph alone is used");
                 return glyph;
             }
+        }
+
+        // The reads of pictures of the game's destroyed since (a load brings its own): only when an icon is made, never per frame.
+        private static void ForgetStale()
+        {
+            Stale.Clear();
+            foreach (KeyValuePair<long, Sprite> pair in ReadOf)
+            {
+                if (pair.Value == null)
+                {
+                    Stale.Add(pair.Key);
+                }
+            }
+            for (int i = 0; i < Stale.Count; i++)
+            {
+                Reads.Remove(Stale[i]);
+                ReadOf.Remove(Stale[i]);
+            }
+            Stale.Clear();
         }
 
         private static bool Same(Color32 a, Color32 b)
@@ -184,6 +212,7 @@ namespace RealLifeOverhaul.GameUi
                 copy.ReadPixels(new Rect(0, 0, width, height), 0, 0, false);
                 Color32[] pixels = copy.GetPixels32();
                 Reads[key] = pixels;
+                ReadOf[key] = sprite;
                 return pixels;
             }
             finally

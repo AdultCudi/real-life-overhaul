@@ -87,6 +87,8 @@ namespace RealLifeOverhaul.Flare
                 _commentsDay = day;
                 FlareFile file = _file;
                 _commentAsks.Prune(id => file.Post(id) != null);   // (the comments of posts that are gone let go, once a game day)
+                _textAsked.Prune(id => file.Post(id) != null);     // (and the record of the words asked for them and for the answers under them)
+                _textAnswers.Prune(id => file.Post(id) != null);
             }
             for (int pass = 0; pass < 2; pass++)
             {

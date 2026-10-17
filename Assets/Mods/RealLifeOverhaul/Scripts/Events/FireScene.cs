@@ -497,6 +497,10 @@ namespace RealLifeOverhaul.Events
             wreck.Park();
             _wreckStopped = true;
             SceneObstacles.Add(car, _director.transform);
+            if (_hazards != null)
+            {
+                Object.Destroy(_hazards);   // a scene that ended on a fault left its car's: a flasher has no way to go by itself
+            }
             _hazards = TrafficEffects.CreateFlasher(car, "RealLifeOverhaul Hazard Lights", TrafficEffects.BeaconHeight(car) - 0.6f, new Color(1f, 0.6f, 0.05f), new Color(1f, 0.6f, 0.05f), 0.45f);
             CloseRoad();
             // The driver: out of the driver's door, and off to the pavement to phone it in.

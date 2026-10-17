@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Texts
     public sealed class TextsHub
     {
         public const int RecentMost = 4;         // things a speaker said that a new reply must not repeat
+        public const int SpeakersMost = 256;     // speakers remembered for it: past this (a long session of street talk) they start again
 
         private sealed class Waiting
         {
@@ -287,6 +288,9 @@ namespace RealLifeOverhaul.Texts
             _queue.Clear();
         }
 
+        /// <summary>How many speakers' recent words are remembered, at most <see cref="SpeakersMost"/>.</summary>
+        public int Speakers => _recent.Count;
+
         /// <summary>The things a speaker said lately, newest last.</summary>
         public IReadOnlyList<string> Recent(string speaker)
         {
@@ -302,6 +306,10 @@ namespace RealLifeOverhaul.Texts
             }
             if (!_recent.TryGetValue(speaker, out List<string> list))
             {
+                if (_recent.Count >= SpeakersMost)
+                {
+                    _recent.Clear();   // the hub lasts the whole run, and every person talked to is a speaker of their own
+                }
                 list = new List<string>(RecentMost + 1);
                 _recent[speaker] = list;
             }

@@ -73,6 +73,10 @@ namespace RealLifeOverhaul.Flare
         {
             if (row.Post != null || row.Dm != null)
             {
+                if (_heights.Count >= HeightsMost)
+                {
+                    _heights.Clear();
+                }
                 _heights[HeightKey(row)] = height;
             }
         }

@@ -677,10 +677,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 Destroy(_volumeObject);
             }
-            if (_profile != null)
-            {
-                Destroy(_profile);
-            }
+            CodeAssets.DropProfile(_profile);   // its colour and depth of field settings with it
             _volumeObject = null;
             _profile = null;
             _color = null;

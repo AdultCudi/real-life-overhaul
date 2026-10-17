@@ -394,6 +394,10 @@ namespace RealLifeOverhaul.Careers
             _deskStation = null;
             _deskView?.End();
             _deskFit = null;
+            if (_deskPointer != null)
+            {
+                UnityEngine.Object.Destroy(_deskPointer.gameObject);   // a desk of the game's own outlives the job: the next set-up must not find a pointer on it already
+            }
             _deskPointer = null;
             DeskGame.Target = null;
             _deskAt = null;
