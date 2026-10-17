@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Economy
             r.ModeMatters = false;
             for (int w = 0; w < _base.Workers; w++)
             {
-                r.ModeMatters |= Least(_base.Worker[w]) > 0 && Home(_base, w) >= 0;
+                r.ModeMatters |= Home(_base, w) >= 0 && (Least(_base.Worker[w]) > 0 || Gives(_base.Worker[w]));
             }
             r.LeanNet = r.StaffNet = 0;
             _seq = SeqLean;
@@ -341,7 +341,9 @@ namespace RealLifeOverhaul.Economy
                 _seq = SeqDone;
                 return;
             }
-            // Who the hours worth opening still lack, with everybody there is and everybody advised so far.
+            // Who the hours worth opening still lack, with everybody there is and everybody advised so far: nobody left out
+            // as the last candidate week left them.
+            Array.Clear(_benched, 0, _benched.Length);
             Build(_hires, -1, false);
             _advisor.Grid(_shop, _outlook.Best, _work);
             _advisor.Roles(_shop, _work, _roles);
@@ -396,8 +398,10 @@ namespace RealLifeOverhaul.Economy
             rung.Staff = _base.Workers;
             Array.Copy(_hired, rung.Hire, HiresMost);
             rung.Gain = gain;
+            // Paid once for everybody the plan takes on, against what they add together over the best week without them.
+            long together = rung.Sum.Net - r.Rungs[1].Sum.Net;
             rung.OneOff = (long)_shop.HireCost * _hires;
-            rung.WeeksBack = rung.OneOff <= 0 ? 0 : (int)Math.Min(999, (rung.OneOff + gain - 1) / gain);
+            rung.WeeksBack = rung.OneOff <= 0 ? 0 : together <= 0 ? 999 : (int)Math.Min(999, (rung.OneOff + together - 1) / together);
             Changes(rung);
             r.Count++;
             r.Recommended = r.Count - 1;
@@ -480,6 +484,19 @@ namespace RealLifeOverhaul.Economy
             return least;
         }
 
+        // A demand below the game's high priority beside the hours a week: lean lets it give way, staff first never (Build).
+        private static bool Gives(RotaWorker worker)
+        {
+            for (int k = 0; k < worker.Demands.Length; k++)
+            {
+                if (worker.Demands[k].Kind != RotaDemandKind.Hours && worker.Demands[k].Priority < RotaCatalogue.PriorityHigh)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // The group of the first station somebody can stand at; -1 for somebody the planner leaves alone.
         private int Home(RotaProblem problem, int worker)
         {
@@ -488,6 +505,34 @@ namespace RealLifeOverhaul.Economy
                 if (problem.Can[worker * problem.Stations + s] != 0)
                 {
                     return _shop.Group[s];
+                }
+            }
+            return -1;
+        }
+
+        // The first service group nobody stands at in an hour of a rung; -1 if each has somebody.
+        private int Unmanned(RotaRung rung, int cell)
+        {
+            RotaShop shop = _shop;
+            int stations = shop.Stations;
+            for (int g = 0; g < shop.Groups; g++)
+            {
+                if (shop.GroupKind[g] != RotaGroupKind.Service)
+                {
+                    continue;
+                }
+                bool any = false, has = false;
+                for (int s = 0; s < stations && !has; s++)
+                {
+                    if (shop.Group[s] == g)
+                    {
+                        any = true;
+                        has = shop.Taken[cell * stations + s] || (rung.Plan.At.Length > cell * stations + s && rung.Plan.At[cell * stations + s] >= 0);
+                    }
+                }
+                if (any && !has)
+                {
+                    return g;
                 }
             }
             return -1;
@@ -516,7 +561,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         why = rung.Open[cell] ? (rung.Source == 4 && _added[cell] ? RotaWhy.Fits : RotaWhy.Opened)
                             : _barred != null && _barred[cell] ? RotaWhy.Barred
-                            : rung.Source == 2 || first.Served[cell] == 0 ? RotaWhy.NoCrew
+                            : rung.Source == 2 || (first.Served[cell] == 0 && first.Come[cell] > 0) ? RotaWhy.NoCrew
                             : _outlook.Net[cell] <= 0 ? RotaWhy.NoPay
                             : _outlook.Best[cell] ? RotaWhy.NoCrew
                             : RotaWhy.Day;
@@ -527,7 +572,11 @@ namespace RealLifeOverhaul.Economy
                     }
                     if (last != 255 && rung.Changes.Count < ChangesMost)
                     {
-                        var change = new RotaChange { Day = d, From = from, To = h, Why = last, Group = last == RotaWhy.NoCrew ? service : last == RotaWhy.Fits ? rung.FitsFor : -1 };
+                        int missing = last == RotaWhy.NoCrew ? Unmanned(first, d * Hours + from) : -1;
+                        var change = new RotaChange
+                        {
+                            Day = d, From = from, To = h, Why = last, Group = last == RotaWhy.NoCrew ? (missing >= 0 ? missing : service) : last == RotaWhy.Fits ? rung.FitsFor : -1
+                        };
                         for (int k = from; k < h; k++)
                         {
                             change.Was += (long)first.Earn[d * Hours + k] - first.Cost[d * Hours + k];

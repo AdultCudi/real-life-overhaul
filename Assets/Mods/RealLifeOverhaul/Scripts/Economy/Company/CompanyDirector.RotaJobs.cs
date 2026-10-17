@@ -305,7 +305,8 @@ namespace RealLifeOverhaul.Economy
             RotaWeekSum s = r.Sum;
             string what = r.Kind == RotaRungKind.AsItIs ? "as it is"
                 : r.Kind == RotaRungKind.Best ? "best with the people (" + (r.Source == 0 ? "the week as it is" : r.Source == 1 ? "the hours kept, a new rota"
-                    : r.Source == 2 ? "the hours kept less those nobody can keep" : "the hours worth opening") + ")"
+                    : r.Source == 2 ? "the hours kept less those nobody can keep" : r.Source == 4 ? "the hours kept and more, so everybody has their hours"
+                    : "the hours worth opening") + ")"
                 : "hire " + r.Hires;
             for (int i = 0; i < r.Hires; i++)
             {
@@ -355,6 +356,8 @@ namespace RealLifeOverhaul.Economy
                                                         + ", under the " + l.StopNeed / 100 + " a rung must"
                 : l.Stop == RotaEnd.Most ? "as many people as one ladder advises"
                 : l.Stop == RotaEnd.NoAdvice ? "no hours are advised here"
+                : l.Stop == RotaEnd.Stock ? "one more for " + RotaGame.GroupSkill(sheet, l.StopGroup) + " would add " + l.StopGain / 100 + ", under the "
+                                            + l.StopNeed / 100 + " a rung must, because the goods run out first"
                 : "everybody the paying hours take is there";
             string line = "Company check (rota plans, " + place.Name + "): " + rungs + "; recommended rung " + l.Recommended + "; ends because " + stop + "; "
                           + (l.Mode == RotaMode.StaffFirst ? "staff first" : "lean")

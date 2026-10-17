@@ -59,16 +59,18 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The crew worth having for an hour, marked in <paramref name="need"/>: one at each service group, a further station
-        /// where its customers pay for it, and every support station (left out of its wage and count beside a service crew).
+        /// where its customers pay for it, and every support station. The wage is the whole crew's, the support stations'
+        /// included, as an hour opened pays them all; the count is of its service stations.
         /// </summary>
         public void Crew(RotaShop shop, int customers, bool[] need, out int served, out int wage, out int count)
         {
             Sort(shop);
             served = wage = count = 0;
-            int stations = shop.Stations, groups = shop.Groups, services = 0;
+            int stations = shop.Stations, groups = shop.Groups, services = 0, support = 0;
             for (int s = 0; s < stations; s++)
             {
                 need[s] = shop.GroupKind[shop.Group[s]] == RotaGroupKind.Support || (!shop.HasCustomers && shop.GroupKind[shop.Group[s]] == RotaGroupKind.Service);
+                support += shop.GroupKind[shop.Group[s]] == RotaGroupKind.Support ? shop.StationWage[s] : 0;
             }
             if (!shop.HasCustomers)
             {
@@ -97,20 +99,18 @@ namespace RealLifeOverhaul.Economy
             }
             if (services == 0)
             {
-                // No station limits the customers: one person at work serves them all, the cheapest to have there.
-                int one = -1;
-                for (int s = 0; s < stations; s++)
+                // No station limits the customers: anybody at work serves them all, and every support station is wanted.
+                bool any = false;
+                for (int s = 0; s < stations && !any; s++)
                 {
-                    if (need[s] && (one < 0 || shop.StationWage[s] < shop.StationWage[one]))
-                    {
-                        one = s;
-                    }
+                    any = need[s];
                 }
-                served = one >= 0 ? customers : 0;
-                wage = one >= 0 ? shop.StationWage[one] : 0;
-                count = one >= 0 ? 1 : 0;
+                served = any ? customers : 0;
+                wage = support;
+                count = any ? 1 : 0;
                 return;
             }
+            wage += support;
             int now = Least(shop, _cap, customers);
             while (now < customers)
             {

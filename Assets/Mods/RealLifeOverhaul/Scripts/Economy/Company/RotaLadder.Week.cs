@@ -227,13 +227,14 @@ namespace RealLifeOverhaul.Economy
             int added = 0;
             if (move < Cells)
             {
-                if (way > 0 && _clean[move] < _cleanFree[move])
+                if (way > 0)
                 {
-                    _clean[move]++;
-                    _moved[0] = true;
-                    return 1;
+                    // Set either way: the round's best move, done for good, leaves it set, and a later try that finds no room must not undo it.
+                    _moved[0] = _clean[move] < _cleanFree[move];
+                    _clean[move] += _moved[0] ? 1 : 0;
+                    return _moved[0] ? 1 : 0;
                 }
-                if (way < 0 && _moved[0])
+                if (_moved[0])
                 {
                     _clean[move]--;
                     _moved[0] = false;

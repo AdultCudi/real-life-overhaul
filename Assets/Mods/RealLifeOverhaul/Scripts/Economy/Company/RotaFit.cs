@@ -600,7 +600,8 @@ namespace RealLifeOverhaul.Economy
                 not |= d.Kind == RotaDemandKind.NoHours ? d.Mask : 0UL;
                 kinds |= d.Kind == RotaDemandKind.NoShiftKind ? d.Mask : 0UL;
             }
-            // Each day's room, six bits a day (a day holds no more than fourteen), then the days with the most, as many as they work.
+            // Each day's room, six bits a day, then the days with the most, as many as they work. A day holds no more than one
+            // shift: Reach never begins a second one on a day, and a shift is twelve hours at most.
             for (int d = 0; d < Days; d++)
             {
                 int room = 0;
@@ -614,7 +615,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     room += can ? 1 : 0;
                 }
-                room = Math.Min(room, RotaCatalogue.DayCap);
+                room = Math.Min(room, RotaCatalogue.ShiftCap);
                 rooms |= (long)room << (d * 6);
             }
             for (int taken = 0; taken < daysMost; taken++)

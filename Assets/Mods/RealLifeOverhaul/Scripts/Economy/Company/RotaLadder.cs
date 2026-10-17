@@ -83,8 +83,8 @@ namespace RealLifeOverhaul.Economy
         public readonly RotaPlan Plan = new RotaPlan();
         public RotaWeekSum Sum;
         public long Gain;               // against the rung before
-        public long OneOff;             // paid once for it
-        public int WeeksBack;           // weeks until the gain has paid that; 0: at once
+        public long OneOff;             // paid once for everybody it takes on
+        public int WeeksBack;           // weeks until what they add over the best week without them has paid that; 0: at once
         public readonly int[] Come = new int[RotaCatalogue.Cells], Served = new int[RotaCatalogue.Cells];
         public readonly int[] Earn = new int[RotaCatalogue.Cells], Cost = new int[RotaCatalogue.Cells];
         public int[] HoursOf = new int[0];      // [worker] hours a week
@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Economy
         public int Recommended;
         public int Mode;                    // the one the plans are made in: RotaMode.StaffFirst or RotaMode.Lean
         public bool ModeAuto;               // chosen by what a week comes to, not by the player
-        public bool ModeMatters;            // somebody asks for a least number of hours, so the two differ
+        public bool ModeMatters;            // somebody asks for a least number of hours, or for anything below high priority, so the two differ
         public long LeanNet, StaffNet;      // the hours kept now with a new rota, in each
         public int Stop, StopGroup;
         public long StopGain, StopNeed;
@@ -331,7 +331,9 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    long theft = isOpen ? Theft(shop, come) : 0;     // the game's theft follows who came, served or not (BusinessSecurityHelper.SimulateTheft)
+                    // The game's theft follows the hour's orders, one for each customer it sends and takes in, served or not
+                    // (BusinessSecurityHelper.SimulateTheft): its forecast, which stops at the stations, not who would come past them.
+                    long theft = isOpen ? Theft(shop, shop.Customers[cell]) : 0;
                     bool manned = isOpen && advisor.Crewed(shop, cell, at);
                     sum.Hours += isOpen ? 1 : 0;
                     sum.Manned += manned ? 1 : 0;

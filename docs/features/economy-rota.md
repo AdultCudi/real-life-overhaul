@@ -124,16 +124,18 @@ It shows a ladder, every rung a set of opening hours with a rota, all valued the
 | Rung | What it is |
 | --- | --- |
 | As it is | the hours and the rota the business has |
-| Best with the people you have | the better of: the week as it is; the hours kept with a new rota; those hours less the ones nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep. Never worse than the week as it is, by construction |
+| Best with the people you have | the better of: the week as it is; the hours kept with a new rota; those hours less the ones nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep. Never worse than the week as it is, unless it keeps more people within the hours they ask for, which comes first: the advice and the confirm dialogue then say how much a week less it is worth |
 | Hire 1, Hire 2, ... | one more person at the going wage (`StaffRules.Going` of the game's wage formula for the station's skill at a middling value), for the group of stations where that adds most (up to three groups are tried), counted for a full week of 40 hours and no more. Kept only if it adds at least 5 per cent of the week before and at least 50.00 a week. The ladder ends at the first hire that does not, and at four hires |
 
 A week is: what the customers served leave (at the cleanliness they find, and for goods only while there are some: see "Goods" below), less wages, licensing fees, the game's hourly theft, the risk of a break-in on a night shut, and what unmet demands cost.
 So a week open round the clock is shown only if every step to it pays.
+An hour is worth opening when its customers pay the smallest crew that serves them and every support station (a guard) wanted beside it.
 
 **Staff first or lean.** Staff first: every demand is a limit (the solver is given them all at the game's high priority, which never gives way), and the least hours people ask for are wanted at stations that would otherwise stand empty, as the game's own auto fill gives everybody their least hours.
 
 Lean: only hours that pay are wanted, the solver lets demands below high priority give way to an hour, and what that costs is counted.
 Left alone the planner makes the hours kept in both and takes whichever comes to more; the player's choice for a business is kept in the save under `reallife:economy_rota` (`RotaStore`, version 1; a line of another version is not read and is left untouched until a choice is made).
+There is a choice only where the two differ: somebody asks for a least number of hours, or for anything below the game's high priority.
 
 For a small shop the default comes out as staff first: losing its only cashier costs more than the hours asked for.
 
@@ -194,7 +196,7 @@ How:
 
 - whoever still has some hours but fewer than their least is left out of that week, one person at a time, and the week is made again without them (`Fitted`); nobody is ever written short.
 
-  A rung says who it leaves without hours and why (`RotaLeft`): their own limits against the opening hours (with the hours open to them), the others at the same stations (what they ask for between them against what the stations hold), or the cleaning service.
+  A rung says who it leaves without hours and why (`RotaLeft`): their own limits against the opening hours (with the hours open to them, a day's at most one shift of twelve, as only one shift is begun for them on a day), the others at the same stations (what they ask for between them against what the stations hold), or the cleaning service.
   A rung may be used (`RotaRung.Usable`, `RotaLadder.Writable`) only if nobody in it works outside their range.
 
 **When the hours kept are too few.** The plan with the people then has one more candidate: the hours kept and more, the best paying hour beside an open one added one at a time (never an hour barred for want of a permit) until the opening hours hold the least hours of everybody who was left out (`Extend`).
@@ -231,6 +233,7 @@ So within a day a busier hour never has fewer people at the tills than a quieter
   Nothing in `BusinessHelper.RunHourly` (:454) charges an open hour beyond wages and, for a cinema or theatre, the day's licensing fee.
 
   Theft (`Helpers/BusinessSecurityHelper.cs:133`, `SimulateTheft`) follows the customers of the last hour, not the time of day: thieves a shelf = customers x 0.04 x (1 - security); under one it is the chance that one unit goes from a stocked shelf, and from one on the code takes nothing (`num2` is only set in the branch under one).
+  The customers it counts are the hour's orders (`GetAmountOfCustomersThisHour`), one for each customer the game sent and took in, served or not, so the planner counts it on the forecast, which stops at what the stations serve, and not on those who would come past them.
   The security level counts guards only while they are on a shift (:82, `IsWorking`).
 
   The mod's break-ins (`Scripts/Crime/OffscreenCrimes.cs:77`, `BreakIn` :120) are rolled once a night in the small hours and only hit a shop that is shut then, so an hour open at 01:00 removes that risk.

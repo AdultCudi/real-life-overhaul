@@ -19739,5 +19739,7 @@
   "reallife_changes_030_0_title": "0.30.0",
   "reallife_changes_030_0": "As aulas agora funcionam como o estudo do próprio jogo: na universidade você vai até a sua sala e se senta na mesa dela, e as aulas online e as tarefas são feitas num computador em casa, com avançar e pular o tempo.",
   "reallife_changes_030_1_title": "0.30.1",
-  "reallife_changes_030_1": "Corrigido: uma cena de rua durante uma aula ou prova de direção, como um pedestre atropelado, não impede mais que os pontos de controle apareçam."
+  "reallife_changes_030_1": "Corrigido: uma cena de rua durante uma aula ou prova de direção, como um pedestre atropelado, não impede mais que os pontos de controle apareçam.",
+  "reallife_rota_confirm_plan_less": "Usar este plano? A empresa fica aberta {now} horas por semana agora e passará a ficar {after}. O plano rende cerca de {gain} a menos por semana, mas mais pessoas do seu pessoal recebem as horas que pedem. O horário de funcionamento e a escala são substituídos. Você pode restaurar a escala antiga até fechar o aplicativo Empresa.",
+  "reallife_rota_advice_best_less": "Recomendado: a melhor semana com o pessoal que você tem. Ela rende cerca de {amount} a menos por semana do que a semana como está, mas mais pessoas do seu pessoal recebem as horas que pedem."
 }

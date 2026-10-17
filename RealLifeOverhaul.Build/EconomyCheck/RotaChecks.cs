@@ -679,7 +679,7 @@ internal static partial class Program
         guard.HasCustomers = true;
         var need2 = new bool[2];
         advisor.Crew(guard, 10, need2, out served, out wage, out count);
-        Check(need2[0] && need2[1] && served == 10 && wage == 1500, "rota crew: a guard is wanted while it is open, and is not part of the smallest crew's wages");
+        Check(need2[0] && need2[1] && served == 10 && wage == 3000 && count == 1, "rota crew: a guard is wanted while it is open, and is paid with the smallest crew (its count is of the service stations)");
     }
 
     private static void RotaOpeningHours()

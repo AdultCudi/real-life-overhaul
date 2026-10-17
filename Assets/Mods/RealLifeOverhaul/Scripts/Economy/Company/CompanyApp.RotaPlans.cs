@@ -145,7 +145,8 @@ namespace RealLifeOverhaul.Economy
             long more = advised.Sum.Net - l.Rungs[0].Sum.Net;
             box.Line(l.Recommended == 0 ? CompanyText.T("reallife_rota_advice_none")
                 : advised.Hires > 0 ? CompanyText.T("reallife_rota_advice_hire", "plan", RotaPlanName(sheet, advised), "amount", RotaMoney(more))
-                : CompanyText.T("reallife_rota_advice_best", "amount", RotaMoney(more)), l.Recommended == 0 ? CellTone.Plain : CellTone.Green);
+                : CompanyText.T(more < 0 ? "reallife_rota_advice_best_less" : "reallife_rota_advice_best", "amount", RotaMoney(System.Math.Abs(more))),
+                l.Recommended == 0 ? CellTone.Plain : CellTone.Green);
             if (l.Stop == RotaEnd.TooLittle)
             {
                 box.Line(CompanyText.T("reallife_rota_stop_little", "skill", RotaGame.GroupSkill(sheet, l.StopGroup), "amount", RotaMoney(l.StopGain),

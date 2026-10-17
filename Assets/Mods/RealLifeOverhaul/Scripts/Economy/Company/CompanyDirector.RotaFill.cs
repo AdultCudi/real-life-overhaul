@@ -97,10 +97,12 @@ namespace RealLifeOverhaul.Economy
                     GameConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1, stamp), null, null, null, true, false);
                     return;
                 }
-                // A plan that changes the opening hours is always asked about, with the hours now and after and what it brings.
-                GameConfirm.Show("reallife_rota_tab".Localize(), "reallife_rota_confirm_plan".Localize(new
+                // A plan that changes the opening hours is always asked about, with the hours now and after and what it brings;
+                // one that keeps more people within their hours may bring less, and says so.
+                long gain = plan.Sum.Net - sheet.Ladder.Rungs[0].Sum.Net;
+                GameConfirm.Show("reallife_rota_tab".Localize(), (gain < 0 ? "reallife_rota_confirm_plan_less" : "reallife_rota_confirm_plan").Localize(new
                 {
-                    now = sheet.Ladder.Rungs[0].Sum.Hours, after = plan.Sum.Hours, gain = CompanyText.Money((plan.Sum.Net - sheet.Ladder.Rungs[0].Sum.Net) / 100f)
+                    now = sheet.Ladder.Rungs[0].Sum.Hours, after = plan.Sum.Hours, gain = CompanyText.Money(Math.Abs(gain) / 100f)
                 }), () => RotaConfirmed(place, kind, rung, stamp), null, null, null, false, false);
             }
             catch (Exception e)
