@@ -6,9 +6,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The figures the Guide's page "Online shops" prints: every {name} in its text is filled from
-    /// <see cref="OnlineCatalogue"/> here, so the page can never say anything the rules do not do. Called once, when
-    /// the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The figures of the Guide's page "Online shops": every {name} in its text is filled from
+    /// <see cref="OnlineCatalogue"/>, worked out when the page opens.
     /// </summary>
     public static class OnlineGuide
     {
@@ -56,7 +55,7 @@ namespace RealLifeOverhaul.Economy
                 .Fact("online_idle", () => Whole(OnlineCatalogue.IdleAlert));
         }
 
-        // One line per quality of site: what it costs to set up and to host, the orders of an ordinary day and the most in one day.
+        // A line for each quality of site: set-up, hosting, the orders of an ordinary day and the most in one day.
         private static string Sites()
         {
             var text = new StringBuilder();
@@ -72,7 +71,7 @@ namespace RealLifeOverhaul.Economy
             return text.ToString();
         }
 
-        // One line per kind of goods: how many orders in a hundred come back and how many of those can be sold again.
+        // A line for each kind of goods: the share of orders that come back and the share of those that can be sold again.
         private static string Returns()
         {
             var text = new StringBuilder();
@@ -91,7 +90,7 @@ namespace RealLifeOverhaul.Economy
             return value.ToString(Inv);
         }
 
-        // An hour of the day as the first half of "08:00".
+        // The first half of "08:00".
         private static string Hour(int hour)
         {
             return hour.ToString("00", Inv);

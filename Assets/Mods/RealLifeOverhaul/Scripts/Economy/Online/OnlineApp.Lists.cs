@@ -6,23 +6,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Orders tab and the Catalogue tab.
-    ///
-    /// Orders: the queue of every site, an order to a row: its number, its site and district, its goods, what it is
-    /// worth, the hour it is promised for, and where it stands (waiting to be picked, packed and waiting for a van,
-    /// on its way), in the game's red once its promise has passed; and under them the returns on their way back. It
-    /// opens with the soonest promise first, and filters by state and by site. An order that has reached its door is
-    /// in the day's book and no longer a row. The white box adds the queue up and says who is picking.
-    ///
-    /// Catalogue: one site's products with stock, the three prices and the week's sales, and under them what else the
-    /// place has in stock; it filters by in stock or not and by on the site or not. A product that is picked has its page: the going price, the shop's price, the online price
-    /// on a selector from thirty per cent under the shop's price to thirty over, what that price does to its sales,
-    /// and the button that puts it on or takes it off the site.
+    /// The Web shop app, part: the Orders tab (every open order and the returns on their way, soonest promise first)
+    /// and the Catalogue tab (one site's products and what else the place stocks; a picked product's page prices it on
+    /// a selector around the shop's own price and puts it on or off the site).
     /// </summary>
     public sealed partial class OnlineApp
     {
         private const string OrderRow = "ord:", ReturnRow = "ret:", LineRow = "line:", AddRow = "add:";
-        private const int RowsMost = 120;           // orders the table lists
+        private const int RowsMost = 120;           // rows the Orders table lists
         private const int ShopPriceStep = 6;        // the selector's middle choice: the shop's own price
 
         // The online price on the selector, in per cent over or under the shop's own price.
@@ -32,13 +23,11 @@ namespace RealLifeOverhaul.Economy
         private readonly List<string> _stocked = new List<string>(32);
         private string _site;       // the site whose catalogue shows
 
-        // ---------------------------------------------------------------- the queue
-
         private TableSpec WriteOrders(InfoBox box, OnlineState state, int day, int now)
         {
             IReadOnlyList<WebPlace> places = _director.Places;
             int waiting = 0, packed = 0, sent = 0, late = 0, pickers = 0, vans = 0;
-            List<string> sites = OnlineColumns.Orders.Filters[1].Names;   // the second filter's kinds: the sites, by name
+            List<string> sites = OnlineColumns.Orders.Filters[1].Names;   // the second filter's kinds: the sites by name
             sites.Clear();
             for (int i = 0; i < places.Count; i++)
             {
@@ -75,7 +64,7 @@ namespace RealLifeOverhaul.Economy
                     WebReturn back = shop.Returns[r];
                     TableRow row = Row(ReturnRow + i + ":" + r);
                     row.Pick = false;
-                    row.NoTotal = true;   // (a refund to come, not an order's worth)
+                    row.NoTotal = true;   // a refund to come, not an order's worth
                     row.Kind = OnlineColumns.ComingBack;
                     row.Kind2 = i;
                     row.Set(1, shop.Name);
@@ -107,7 +96,7 @@ namespace RealLifeOverhaul.Economy
             return OnlineColumns.Orders;
         }
 
-        // "2 x Cola, 1 x Crisps": what was asked for, by the game's names.
+        // "2 x Cola, 1 x Crisps", by the game's names.
         private string Goods(WebShop shop, WebOrder order)
         {
             _text.Length = 0;
@@ -119,9 +108,7 @@ namespace RealLifeOverhaul.Economy
             return _text.ToString();
         }
 
-        // ---------------------------------------------------------------- the catalogue
-
-        private TableSpec WriteCatalogue(InfoBox box, OnlineState state, int day)
+        private TableSpec WriteCatalogue(InfoBox box)
         {
             IReadOnlyList<WebPlace> places = _director.Places;
             if (places.Count == 0)
@@ -214,7 +201,7 @@ namespace RealLifeOverhaul.Economy
             return OnlineColumns.Catalogue;
         }
 
-        // A product of the site: its prices, the online price on a selector, what the price does, and taking it off or putting it back.
+        // A product's page: its prices, the online price on a selector and the button that takes it off or puts it back.
         private void WriteLine(InfoBox box, WebPlace place, int index)
         {
             WebShop shop = place.Shop;
@@ -270,7 +257,7 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // A cell of a price kept in cents: written with its cents, ordered by its amount.
+        // A price kept in cents: written with its cents, ordered by its amount.
         private static void Price(TableRow row, int column, int cents)
         {
             row.Set(column, OnlineText.Price(cents), cents / 100.0);
@@ -281,7 +268,7 @@ namespace RealLifeOverhaul.Economy
             return Mathf.Max(1, Mathf.RoundToInt(own * (100 + PriceSteps[step]) / 100f));
         }
 
-        // Something the place stocks that is not on the site: putting it on.
+        // Something the place stocks that is not on the site, and the button that puts it on.
         private void WriteAdd(InfoBox box, WebPlace place, string item)
         {
             string key = place.Shop.Place;
