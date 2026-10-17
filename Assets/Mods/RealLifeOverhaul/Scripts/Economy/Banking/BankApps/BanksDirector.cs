@@ -9,28 +9,19 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The bank apps: one app on the game's phone for each of the city's three largest banks (BankTerms.Banks, ranked by
-    /// BankRules), each that bank's slice of the player's money (BankApp). A city with fewer banks has fewer apps, and one
-    /// line in Player.log says so. See docs/features/economy-banks.md.
-    ///
-    /// This class only keeps the apps on the phone. It has no Update and no save data: once a second the credit side's
-    /// timer calls <see cref="EachSecond"/>, which compares the banks wanted with the apps there (a few comparisons while
-    /// nothing has changed) and puts on at most one app a second, so building them from the game's parts never lands in
-    /// one frame together. After the credit side's hour and day the badges are counted again: one pass over the credit
-    /// file's accounts and loans per bank.
-    ///
-    /// Everything the apps show and do is the credit desk's (CreditDesk): the same record and the same decisions as the
-    /// Finance app. With "Bank apps" off, or the credit rating off, there is no bank app and nothing else changes: every
-    /// account and loan stays where it is, and the Finance app still shows and offers everything.
+    /// The bank apps: one on the phone for each of the city's three largest banks (<see cref="BankApp"/>). No save data.
+    /// Cost: nothing per frame; once a second a few comparisons and at most one app built, and the badges after the economy's hour and day.
     /// </summary>
     public sealed class BanksDirector : MonoBehaviour
     {
         public const string AppIdPrefix = "RealLifeBank";
 
         private static readonly string[] AppGlyphs = { "Icon-Coin", "Icon-Money", "Icon-Security" };
-        // The icon's two colours for each rank, top and bottom: three plain banking colours, none a real bank's.
+        // the icon's two colours for each rank, top and bottom: three plain banking colours, none a real bank's
         private static readonly Color32[] Tops = { new Color32(96, 156, 232, 255), new Color32(120, 196, 120, 255), new Color32(214, 120, 120, 255) };
         private static readonly Color32[] Bottoms = { new Color32(34, 82, 170, 255), new Color32(40, 124, 64, 255), new Color32(150, 44, 56, 255) };
+        private static readonly int HotSecond = HotSpots.Slot("Economy: BanksDirector.Second");
+        private static readonly int HotBadges = HotSpots.Slot("Economy: BanksDirector.Badges");
 
         public static IModLogger Logger;
         public static BanksDirector Instance { get; private set; }
@@ -57,7 +48,7 @@ namespace RealLifeOverhaul.Economy
             _second = EachSecond;
             _onHour = Badges;
             _onDay = Badges;
-            EconomyDirector.Follow(StartSeats.Banks, _second);   // (its first second after a load has a frame of its own: Core/StartLine)
+            EconomyDirector.Follow(StartSeats.Banks, _second);   // its first second after a load gets a frame of its own (Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
@@ -74,12 +65,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- once a second (the credit side's timer)
-
-        private static readonly int HotSecond = HotSpots.Slot("Economy: BanksDirector.Second");
         private void EachSecond()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);   // the credit side's second, for this feature (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSecond);
             if (_broken)
             {
                 return;
@@ -129,7 +117,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (slot.App != null)
                 {
-                    slot.View.Bank = bank;   // (the same bank read again: the app follows the new branch object)
+                    slot.View.Bank = bank;   // the same bank read again: the app follows the new branch object
                     continue;
                 }
                 Install(slot, bank, i, credit);
@@ -138,8 +126,8 @@ namespace RealLifeOverhaul.Economy
             if (_toldBanks != banks.Count)
             {
                 _toldBanks = banks.Count;
-                Logger?.Info("Banks: " + banks.Count + " bank(s) in the city, " + wanted + " bank app(s) on the phone" + (banks.Count < BankRules.AppsMost ? " (the city has fewer than " + BankRules.AppsMost + " banks)" : string.Empty)
-                             + Names(wanted) + ".");
+                Logger?.Info("Banks: " + banks.Count + " bank(s) in the city, " + wanted + " bank app(s) on the phone"
+                             + (banks.Count < BankRules.AppsMost ? " (the city has fewer than " + BankRules.AppsMost + " banks)" : string.Empty) + Names(wanted) + ".");
             }
         }
 
@@ -167,7 +155,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Id = id,
                 TitleKey = "reallife_bank_app",
-                TitleArguments = new Dictionary<string, string>(1) { { "bank", bank.Name } },   // (read by the game as it is: no reflection, unlike an object with fields)
+                TitleArguments = new Dictionary<string, string>(1) { { "bank", bank.Name } },   // read by the game as it is: no reflection, unlike an object with fields
                 Icon = like => AppIconPainter.Paint(like, Glyph(), Tops[rank], Bottoms[rank], 0.42f, "AppIcon-Bank" + (index + 1)),
                 Build = view.Build,
                 Opened = view.Opened,
@@ -234,10 +222,7 @@ namespace RealLifeOverhaul.Economy
             _toldBanks = -1;
         }
 
-        // ---------------------------------------------------------------- the badges
-
-        private static readonly int HotBadges = HotSpots.Slot("Economy: BanksDirector.Badges");
-        // The number on each bank's button: its debts that are behind or whose collections call waits for an answer.
+        // The number on each bank's button: its debts behind or with a collections call waiting.
         private void Badges()
         {
             using var hotSpot = HotSpots.Time(HotBadges);
@@ -250,7 +235,7 @@ namespace RealLifeOverhaul.Economy
             }
             catch (Exception e)
             {
-                Logger?.Error(e);   // (a badge that cannot be counted is left as it was)
+                Logger?.Error(e);   // a badge that cannot be counted is left as it was
             }
         }
 
@@ -276,13 +261,7 @@ namespace RealLifeOverhaul.Economy
             slot.App.SetBadge(behind);
         }
 
-        // ---------------------------------------------------------------- for the test tools
-
-        /// <summary>
-        /// Test: each bank app's figures against the Finance app's. What every bank's Loans tab adds up, with what no bank
-        /// holds, must be what the Finance app counts in all; and under the lending threshold every bank's Apply page
-        /// must refuse. One line in Player.log and a notice.
-        /// </summary>
+        /// <summary>Test: every bank's figures with what no bank holds must be what the Finance app counts, and under the threshold every bank refuses.</summary>
         public void TestCheck()
         {
             try
@@ -306,7 +285,7 @@ namespace RealLifeOverhaul.Economy
                     tomorrow += slice.Tomorrow;
                     detail += (i > 0 ? "; " : string.Empty) + banks[i].Name + " " + slice.Debts + " debt(s), " + slice.Owed.ToString("0") + " owed, " + slice.Tomorrow.ToString("0") + " tomorrow";
                 }
-                // What the Finance app counts: the game's loans, and the mod's accounts (not a test tool's); and what no bank of the city holds.
+                // what the Finance app counts (the game's loans and the mod's accounts, not a test tool's) and what no bank of the city holds
                 float whole = 0f, nobody = 0f;
                 for (int i = 0; i < save.Loans.Count; i++)
                 {
@@ -329,18 +308,19 @@ namespace RealLifeOverhaul.Economy
                 }
                 bool sums = Mathf.Abs(sliced + nobody - whole) < 0.5f;
                 bool refuses = true;
+                int below = CreditCatalogue.LendingThreshold - 1;
                 for (int i = 0; i < banks.Count; i++)
                 {
-                    // Under the threshold, whichever bank: nothing to lend, on any product (the desk's own figures at that rating).
-                    int below = CreditCatalogue.LendingThreshold - 1;
                     refuses &= CreditDesk.LimitAt(ProductKind.Overdraft, below, banks[i]) == 0 && CreditDesk.LimitAt(ProductKind.CreditCard, below, banks[i]) == 0
                                && CreditDesk.LimitAt(ProductKind.CarFinance, below, banks[i]) == 0 && CreditDesk.LimitAt(ProductKind.Mortgage, below, banks[i]) == 0
                                && !LendingTerms.For(below, BankTerms.OwnCap(banks[i].Settings), BankTerms.OwnRate(banks[i].Settings)).Lends;
                 }
                 bool ok = sums && refuses;
-                Logger?.Info("Bank check (figures): " + banks.Count + " bank(s): " + (detail.Length > 0 ? detail : "none") + ". The banks together " + sliced.ToString("0") + " owed and " + tomorrow.ToString("0")
+                Logger?.Info("Bank check (figures): " + banks.Count + " bank(s): " + (detail.Length > 0 ? detail : "none") + ". The banks together " + sliced.ToString("0") + " owed and "
+                             + tomorrow.ToString("0")
                              + " tomorrow, held by no bank of the city " + nobody.ToString("0") + ", the Finance app " + whole.ToString("0") + " owed in all"
-                             + (sums ? string.Empty : " (they differ)") + "; under " + CreditCatalogue.LendingThreshold + " every bank refuses: " + (refuses ? "yes" : "NO") + ": " + (ok ? "PASS" : "FAIL"));
+                             + (sums ? string.Empty : " (they differ)") + "; under " + CreditCatalogue.LendingThreshold + " every bank refuses: " + (refuses ? "yes" : "NO") + ": "
+                                + (ok ? "PASS" : "FAIL"));
                 Notice(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_bank_test_pass" : "reallife_bank_test_fail", new Dictionary<string, string>
                 {
                     { "count", banks.Count.ToString() }, { "owed", FinanceText.Money(whole) }

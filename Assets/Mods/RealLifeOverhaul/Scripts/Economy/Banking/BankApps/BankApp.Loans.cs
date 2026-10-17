@@ -7,15 +7,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    // A bank app's Loans and Card tabs. A list goes in the table (it scrolls); the white box shows the one thing picked,
-    // with at most three buttons to a row. Every payment is asked of the credit desk; paying a game loan off in whole is
-    // confirmed in the game's own question box first, as EconoView confirms it.
+    /// <summary>A bank app's Loans and Card tabs: a list in the table, the one picked in the white box, every payment asked of the credit desk.</summary>
     public sealed partial class BankApp
     {
         private readonly List<Debt> _work = new List<Debt>(16);
         private string _picked;     // the row picked on the Loans tab
-
-        // ---------------------------------------------------------------- Loans
 
         private string WriteLoans(InfoBox box)
         {
@@ -33,7 +29,7 @@ namespace RealLifeOverhaul.Economy
                 CreditAccount a = d.Account;
                 if (a != null && ProductCatalogue.Revolving(a.Kind))
                 {
-                    continue;   // an overdraft and a card have their own places: Accounts and Card
+                    continue;   // an overdraft and a card have their own tabs
                 }
                 TableRow row;
                 if (a != null)
@@ -41,7 +37,7 @@ namespace RealLifeOverhaul.Economy
                     row = Row("acct:" + a.Id);
                     row.Kind = FinanceTables.Of(a.Kind);
                     row.Set(0, CreditDesk.Name(a));
-                    row.Set(2, FinanceText.Money(a.Owed), a.Test ? double.NaN : a.Owed);   // (a test tool's account is in no total)
+                    row.Set(2, FinanceText.Money(a.Owed), a.Test ? double.NaN : a.Owed);   // a test tool's account is in no total
                     if (a.RateBp > 0)
                     {
                         row.Set(3, FinanceApp.Rate(a.RateNow), a.RateNow / 100.0, a.Ladder.Penalty ? TableRow.Red : TableRow.Plain);
@@ -117,7 +113,7 @@ namespace RealLifeOverhaul.Economy
             return selected;
         }
 
-        // The "next payment" and "due" cells of a row; left empty where nothing is due.
+        // The "next payment" and "due" cells of a row; empty where nothing is due.
         private static void Payment(TableRow row, int amount, int day, int today)
         {
             if (amount <= 0 || day <= 0)
@@ -128,7 +124,6 @@ namespace RealLifeOverhaul.Economy
             row.Set(5, FinanceApp.DayWord(day, today), day, day < today ? TableRow.Red : TableRow.Plain);
         }
 
-        // One of the game's loans at this bank: its figures, how it stands, paying part of it or all of it.
         private void WriteLoan(InfoBox box, CreditDesk desk, LoanMark m, int today)
         {
             var loan = (Loan)m.Ref;
@@ -159,11 +154,11 @@ namespace RealLifeOverhaul.Economy
                 FinanceApp.InArrangement(box);
             }
             LoanButtons(box, desk, m, loan, frozen);
-            FinanceApp.AboutLines(box, FinanceText.T("reallife_tab_loan_about", "kind", kind, "day", m.FirstDay.ToString()), yearly > 0f ? FinanceText.T("reallife_tab_loan_rate_note") : null, GuideTitle);
+            FinanceApp.AboutLines(box, FinanceText.T("reallife_tab_loan_about", "kind", kind, "day", m.FirstDay.ToString()), yearly > 0f ? FinanceText.T("reallife_tab_loan_rate_note") : null,
+                                  GuideTitle);
         }
 
-        // A game loan's buttons: the collections call's answers when it is due, else paying part of it, paying it off and
-        // its daily payment. In a debt arrangement only paying it: its daily payment is the arrangement's.
+        // A game loan's buttons: the collections call's answers when it is due, else paying it and its daily payment (not in an arrangement).
         private void LoanButtons(InfoBox box, CreditDesk desk, LoanMark m, Loan loan, bool frozen)
         {
             Transform buttons = box.ButtonRow();
@@ -185,7 +180,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The game's own loans page, where the daily payment of one of its loans is changed.
+        // The game's own loans page, where a loan's daily payment is changed.
         private void OpenEconoView()
         {
             if (_menu != null)
@@ -215,7 +210,6 @@ namespace RealLifeOverhaul.Economy
             Said(answer);
         }
 
-        // Car finance, a mortgage or late fees owed to this bank: the figures, how it stands, paying it.
         private void WriteInstalments(InfoBox box, CreditDesk desk, CreditAccount a, int today)
         {
             box.Title(CreditDesk.Name(a));
@@ -255,8 +249,9 @@ namespace RealLifeOverhaul.Economy
             }
             else if (a.Owed > 0)
             {
-                // (in a debt arrangement it can be paid sooner by hand: the arrangement counts it, and ends once all of it is paid)
-                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Frozen ? a.Owed : Mathf.Min(a.Owed, Mathf.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, today))), amount => Paid(desk, a, amount));
+                // in a debt arrangement too: the arrangement counts it
+                int suggested = a.Frozen ? a.Owed : Mathf.Min(a.Owed, Mathf.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, today)));
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", suggested, amount => Paid(desk, a, amount));
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
             }
             FinanceApp.AboutLines(box, FinanceApp.AboutKind(a.Kind), a.RateBp > 0 && !a.Ladder.Penalty ? FinanceText.T("reallife_tab_account_rate_fixed") : null, GuideTitle);
@@ -281,7 +276,7 @@ namespace RealLifeOverhaul.Economy
             Said(answer);
         }
 
-        // The collections call's answers, for a debt whose call is due: the same three the Finance app and the call give.
+        // The collections call's three answers, for a debt whose call is due.
         private void CallButtons(Transform buttons, CreditDesk desk, Debt debt)
         {
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_overdue", () => Said(desk.PayOverdue(debt)));
@@ -296,10 +291,8 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        // ---------------------------------------------------------------- Card
-
-        // A card held here: its figures, statement and buttons; the table is the card's own movements over a month.
-        private void WriteCard(InfoBox box, CreditScore score)
+        // A card held here: its figures, statement and buttons, and the card's own movements over a month in the table.
+        private void WriteCard(InfoBox box)
         {
             _spec = _tables.CardMoves;
             CreditDesk desk = Desk;
@@ -355,8 +348,7 @@ namespace RealLifeOverhaul.Economy
             FinanceApp.AboutLines(box, null, card.Ladder.Penalty ? null : FinanceText.T("reallife_tab_account_rate_moves", "agreed", FinanceApp.Rate(card.RateBp)), GuideTitle);
         }
 
-        // The card's buttons: the collections call's answers when it is due, else paying it, drawing on it and closing it.
-        // In a debt arrangement only paying it, in part or in full: nothing is drawn, and there is no minimum to pay.
+        // The card's buttons: the collections call's answers when it is due, else paying, drawing and closing; in an arrangement only paying.
         private void CardButtons(InfoBox box, CreditDesk desk, CreditAccount card)
         {
             Transform buttons = box.ButtonRow();
@@ -372,7 +364,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_bank_card_pay_minimum", () => Paid(desk, card, card.MinimumLeft));
                 }
-                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", card.Frozen ? card.Owed : Mathf.Max(card.MinimumLeft, Mathf.Min(card.Owed, card.StatementLeft)), amount => Paid(desk, card, amount));
+                int suggested = card.Frozen ? card.Owed : Mathf.Max(card.MinimumLeft, Mathf.Min(card.Owed, card.StatementLeft));
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", suggested, amount => Paid(desk, card, amount));
                 InfoBox.Button(buttons, minimum ? InfoBox.Additional : InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, card, card.Owed));
             }
             if (card.Frozen)
@@ -387,11 +380,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The card's own movements over the last month: what was paid into it from cash and what was drawn on it.
         private void CardMovements(string name, int today)
         {
             _cardName = name;
-            _flow.Read(CashFlow.Month, today, _ofCard);   // (only the card's own are listed: the pass over the history is the same)
+            _flow.Read(CashFlow.Month, today, _ofCard);
             for (int i = _flow.Entries.Count - 1; i >= 0; i--)
             {
                 CashEntry entry = _flow.Entries[i];

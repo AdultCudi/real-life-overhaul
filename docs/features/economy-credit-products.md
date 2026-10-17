@@ -6,7 +6,7 @@ More kinds of credit (an overdraft, a credit card, a purchase on finance and mor
 
 ## Where the code is
 
-- Folders: [`Scripts/Economy/Banking`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/) (`Terms`, `Accounts`, `Debt`, `Loans` and `Desk`). The files are listed in the code block below.
+- Folders: [`Scripts/Economy/Banking`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/) (`Terms`, `Accounts`, `Debt`, `Loans` and `Desk`; its [README](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/README.md) says what lives where). The files are listed in the code block below.
 - Read first: `Banking/Terms/ProductCatalogue.cs`, `Banking/Desk/CreditDesk.cs` and `Banking/Debt/SharkRules.cs` (the private lender).
 
 ## How it talks to other features
@@ -26,16 +26,20 @@ Economy/
     Terms/
       ProductCatalogue  EVERY NUMBER of this part: limits, rates, fees, the steps' counts by level, the private lender, the ways out
       ProductTerms      the terms by rating (limits, rates, deposits, quotes), and consolidation's before and after
+      GameLoanMath      the game's loan interest formula, for a business loan and the penalty rate
     Accounts/
-      CreditAccount     ONE model for every account of the mod's (ProductKind), LadderState, IWallet, AccountRules (the arithmetic)
+      CreditAccount     ONE model for every account of the mod's (ProductKind)
+      AccountRules      the accounts' arithmetic and daily run; IWallet and the transaction keys (Money)
       Wallet            IWallet over GameManager.ChangeMoneySafe (the game's transaction history has every movement)
     Loans/
       LoanHolds         what the mod writes on one of the game's loans (penalty rate, arrangement) and how it is put back exactly
     Desk/
-      CreditDesk        THE GAME SIDE: the day and the hour, the steps, repossession, claims (.Offers: products and purchases;
-                        .Tests: leaving a save and the test tools; .Relief: collections, lender, arrangement, bankruptcy)
+      CreditDesk        THE GAME SIDE: starting, stopping, what is held on the game's loans, the hour and the save; one part a concern:
+                        .Day (each day's payments, the steps, claims), .Offers (opening, drawing, paying), .Loans (the business
+                        loan, consolidation), .Finance (car finance and mortgages, repossession), .Collections, .Shark, .Relief
+                        (advice, arrangement, bankruptcy), .Banks (by bank, for the bank apps), .Tests (leaving a save, the test tools)
     Debt/
-      LadderRules       what a lender does as payments go on being missed, for accounts and the game's loans alike
+      LadderRules       LadderState and what a lender does as payments go on being missed, for accounts and the game's loans alike
       SharkRules        the private lender's one debt and its terms (SharkDebt, SharkRules)
       Relief            arrangement, bankruptcy, the rating's ceilings, an approval for finance (Relief, ReliefRules)
       DebtPhone         three contacts and their conversations: Collections, Private lender, Debt advice

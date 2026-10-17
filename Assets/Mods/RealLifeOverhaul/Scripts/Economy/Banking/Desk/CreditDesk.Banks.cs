@@ -12,19 +12,13 @@ namespace RealLifeOverhaul.Economy
         public float Tomorrow;      // what they take at the next day's end
     }
 
-    // The credit desk as the bank apps ask for it (Economy/Banks): which debts are one bank's, paying a game loan off
-    // in part or whole, and one bank's figures added up. Every figure is the same record the Finance app reads, so a
-    // change made in one shows in the other at once: nothing here keeps a balance of its own.
+    /// <summary>The credit desk by bank, for the bank apps: a bank's terms at a rating, its debts and figures, paying a game loan. Nothing kept of its own.</summary>
     public sealed partial class CreditDesk
     {
         private const string LoanPayOff = "ba:transaction_loanpayoff";   // the game's own, as EconoView pays a loan off
         private const string LoanPaidEvent = "ba:gameevent_loanpaid";
 
-        /// <summary>
-        /// The limit of an overdraft or a card, or the most put into a vehicle or a building, at one bank at a rating:
-        /// the figure <see cref="Offer(ProductKind, Lender)"/> offers, and the one a bank app's Rating tab shows for
-        /// other ratings. Nothing under the lending threshold, at every bank.
-        /// </summary>
+        /// <summary>An overdraft's or a card's limit, or the most put into a vehicle or a building, at one bank at a rating.</summary>
         public static int LimitAt(ProductKind kind, int score, Lender bank)
         {
             if (bank == null)
@@ -46,10 +40,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The rate a kind of the mod's credit is agreed at with one bank at a rating, in hundredths of a per cent a year:
-        /// the bank's rate for the rating, the product's points and the bank's own (BankRules), the game's multiplier.
-        /// An overdraft and a card follow the central bank's rate day by day on top (CreditAccount.RateNow); a purchase on
-        /// finance takes it once, here.
+        /// The rate a kind of credit is agreed at with one bank at a rating, in hundredths of a per cent a year. An overdraft and
+        /// a card take the central bank's rate on top day by day (<see cref="CreditAccount.RateNow"/>); finance takes it here.
         /// </summary>
         public static int AgreedAt(ProductKind kind, int score, Lender bank)
         {
@@ -63,18 +55,7 @@ namespace RealLifeOverhaul.Economy
                 : ProductTerms.FixedRateBp(score, BankTerms.OwnRate(bank.Settings), points, Multiplier);
         }
 
-        /// <summary>The rate of a kind at one bank at a rating as it would be charged today (the central bank's rate on an overdraft and a card).</summary>
-        public static int RateAt(ProductKind kind, int score, Lender bank)
-        {
-            int agreed = AgreedAt(kind, score, bank);
-            return ProductCatalogue.Revolving(kind) ? ProductTerms.WithBase(agreed, AccountRules.BaseBp, AccountRules.BaseMultiplier) : agreed;
-        }
-
-        /// <summary>
-        /// Every debt held with one bank: the mod's accounts it opened (the address on the account) and the game's
-        /// loans made at any of its branches (the loan's own bank address). The list is the caller's and is used again.
-        /// Closed accounts are left out; a test tool's account is in, as the Finance app lists it.
-        /// </summary>
+        /// <summary>Every open debt held with one bank, a test account's too, into the caller's list.</summary>
         public void Held(Lender bank, List<Debt> into)
         {
             into.Clear();
@@ -129,11 +110,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Money paid off one of the game's loans, exactly as the game's own loans page does it (LoanEntryUi.PayOffLoan):
-        /// the game's pay-off transaction under the bank's name, the amount off what is left, and a loan with nothing left
-        /// taken out of the game's list with the game's own event. The credit file then reads the change as it reads one
-        /// made in EconoView. A loan in a debt arrangement can be paid sooner the same way, as EconoView allows: the
-        /// file's reading counts it under the arrangement (<see cref="PaidByHand"/>).
+        /// Money paid off one of the game's loans as the game's loans page does it (LoanEntryUi.PayOffLoan), so the credit file
+        /// reads it as a payment in EconoView; a loan in an arrangement counts under it.
         /// </summary>
         public ProductAnswer PayLoan(LoanMark m, int amount, out int used)
         {
@@ -150,7 +128,7 @@ namespace RealLifeOverhaul.Economy
                 return ProductAnswer.NothingOwed;
             }
             string bank = GameLoans.BankName(loan);
-            // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+            // a dictionary each: the game keeps a transaction's data for as long as it lists the transaction
             var info = new TransactionInfo(LoanPayOff, new Dictionary<string, string> { { "businessName", bank } });
             if (!GameManager.ChangeMoneySafe(-amount, info, null, null, false, true))
             {
@@ -165,10 +143,11 @@ namespace RealLifeOverhaul.Economy
                 Save.Loans.Remove(loan);
                 GameEvent.Invoke(LoanPaidEvent);
             }
-            _director.BringUpToDate("a payment from " + bank + "'s app");   // the file reads the loan as it reads a payment made in EconoView
+            _director.BringUpToDate("a payment from " + bank + "'s app");
             if (Verbose)
             {
-                Logger?.Info("Bank check (loan payment): " + amount + " paid off the loan of " + m.Total.ToString("0") + " at " + bank + " with the game's own pay-off: " + before.ToString("0") + " left before, "
+                Logger?.Info("Bank check (loan payment): " + amount + " paid off the loan of " + m.Total.ToString("0") + " at " + bank + " with the game's own pay-off: " + before.ToString("0")
+                             + " left before, "
                              + Mathf.Max(0f, loan.remainingAmount).ToString("0") + " after" + (paidOff ? ", paid off and out of the game's list" : string.Empty) + ": "
                              + (Mathf.Abs(before - amount - loan.remainingAmount) < 0.01f && (!paidOff || !Save.Loans.Contains(loan)) ? "PASS" : "FAIL"));
             }

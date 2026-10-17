@@ -11,36 +11,19 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// One bank's app: that bank's slice of the player's money, in the game's frame (GameUi.AppShell, copied from
-    /// MyEmployees) as the Finance app is. Five tabs over the table on the right, and on the left the white box:
-    ///
-    ///   Accounts   the current account (the cash, held with the house bank) and an overdraft held here; the table is
-    ///              the statement: every movement of money that was this bank's over a day, a week or a month
-    ///   Loans      every loan owed to this bank, the game's own and the mod's; pick one to pay part of it or all of it
-    ///              (BankApp.Loans.cs)
-    ///   Card       a card held here: its limit, balance, statement, minimum and due day, paying it and drawing on it;
-    ///              the table is the card's own movements (BankApp.Loans.cs)
-    ///   Apply      what this bank offers today at the player's rating, on its own terms (BankApp.Apply.cs)
-    ///   Rating     the rating as this bank sees it: what it lends at each band of the rating, and what would raise it
-    ///
-    /// ONE PLACE FOR THE FIGURES. The app keeps nothing: every figure is read from the credit file and the game's loans
-    /// when a tab is written, and every action is asked of the credit desk (CreditDesk), the same desk the Finance app
-    /// asks. The Finance app stays the one page for every lender at once; this is one bank's part of the same record.
-    /// Under the lending threshold every Apply page refuses in the bank's own words and offers nothing.
-    ///
-    /// Nothing runs while the app is closed: the rows are made when it opens, when a tab is picked and when the player
-    /// changes something in it. Cost: one pass over the credit file's accounts and loans per page (tens of items); the
-    /// statement reads the game's transaction history once (CashFlow, at most a thousand entries).
+    /// One bank's app: that bank's slice of the player's money in the game's frame, five tabs (Accounts, Loans, Card, Apply,
+    /// Rating). It keeps nothing: figures come from the credit file and the game's loans, actions go to the credit desk.
+    /// Cost: nothing while closed; a page is written when it opens, a tab is picked or something is done.
     /// </summary>
     public sealed partial class BankApp
     {
         public const int Accounts = 0, Loans = 1, Card = 2, Apply = 3, Rating = 4;
         private const int TypedAmountLength = 9;
+        private const string GuideTitle = "reallife_meta_title_economy_banks";   // the Guide's page every page of the app points to
 
         private static readonly string[] TabKeys = { "reallife_bank_tab_accounts", "reallife_bank_tab_loans", "reallife_bank_tab_card", "reallife_bank_tab_apply", "reallife_bank_tab_rating" };
         private static readonly int[] AmountSteps = { 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000 };
         private static readonly string[] ProfileKeys = { "reallife_bank_profile_0", "reallife_bank_profile_1", "reallife_bank_profile_2" };
-        private const string GuideTitle = "reallife_meta_title_economy_banks";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
 
@@ -54,10 +37,10 @@ namespace RealLifeOverhaul.Economy
         private readonly List<int> _amounts = new List<int>(16);
         private readonly CreditFactor[] _tips = new CreditFactor[2];
         private readonly CashFlow _flow = new CashFlow();
-        private readonly CashTable _cash;                                     // the statement, written as it scrolls (over _flow.Entries)
+        private readonly CashTable _cash;                                   // the statement, written as it scrolls
         private readonly Func<Dictionary<string, string>, bool> _mine, _ofCard;   // made once: what a read of the history keeps
-        private string _cardName;   // the card whose movements are read (_ofCard)
-        private bool _cashRows;     // the table that shows is the statement, written from _cash
+        private string _cardName;   // the card whose movements are read
+        private bool _cashRows;     // the table showing is the statement
 
         private AppShell _shell;
         private DataTable _table;
@@ -67,7 +50,7 @@ namespace RealLifeOverhaul.Economy
         private int _period = CashFlow.Week;
         private bool _ready;
 
-        /// <summary>The bank this app is for: one branch of it (BankTerms.Banks). Set by the director, and again when the city's banks are read again.</summary>
+        /// <summary>The bank this app is for (one branch of it), set by the director.</summary>
         public Lender Bank;
 
         public BankApp(EconomyDirector director, string id)
@@ -88,14 +71,13 @@ namespace RealLifeOverhaul.Economy
         private CreditDesk Desk => _director.Desk;
         private bool IsHouse => Bank != null && BankTerms.House != null && Bank.Rank == BankTerms.House.Rank;
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
-
-        // ---------------------------------------------------------------- building it from the game's parts
+        private static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            using var piece = SessionWatch.Piece("banks: an app being built from the game's MyEmployees");   // once per bank and city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("banks: an app being built from the game's MyEmployees");   // once per bank and city: a few hundred objects in one frame
             _shell = AppShell.Make(menu, dormant, _id);
             _table = DataTable.On(_shell, _id);
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(_tables.Off))
@@ -114,9 +96,6 @@ namespace RealLifeOverhaul.Economy
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening and the tabs
-
-        /// <summary>The tab to show the next time the app opens.</summary>
         public void Want(int tab)
         {
             _wanted = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
@@ -157,7 +136,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Everything the open tab shows, made again: when the app opens, a tab is picked or something was done.
         private void Refresh()
         {
             if (_shell == null || _table == null)
@@ -189,16 +167,16 @@ namespace RealLifeOverhaul.Economy
                 switch (_tab)
                 {
                     case Loans: selected = WriteLoans(box); break;
-                    case Card: WriteCard(box, score); break;
+                    case Card: WriteCard(box); break;
                     case Apply: selected = WriteApply(box, score); break;
                     case Rating: WriteRating(box, score); break;
-                    default: WriteAccounts(box, score); break;
+                    default: WriteAccounts(box); break;
                 }
             }
             box.Done();
             if (_cashRows)
             {
-                _table.Show(_spec, _cash, selected);   // (written as it scrolls: some fifteen rows of words, not one for every movement)
+                _table.Show(_spec, _cash, selected);   // written as it scrolls: some fifteen rows of words, not one for every movement
             }
             else
             {
@@ -206,7 +184,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Banks: " + (Bank != null ? Bank.Name : "no bank") + ", tab " + _tab + " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)") + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms; " + box.Fit() + ".");
+                Logger?.Info("Banks: " + (Bank != null ? Bank.Name : "no bank") + ", tab " + _tab + " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)")
+                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms; " + box.Fit() + ".");
             }
         }
 
@@ -264,7 +243,6 @@ namespace RealLifeOverhaul.Economy
             Refresh();
         }
 
-        // Something was done: the app is written again if it is still showing.
         private void After()
         {
             if (Showing)
@@ -274,14 +252,12 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- shared
-
         private static void Tell(NotificationType type, string key, Dictionary<string, string> data = null)
         {
             Notifications.Show(type, key, data, 9f, null, null, true, false);
         }
 
-        /// <summary>Why something is not on offer, as one sentence; a refusal for the rating in the bank's own words.</summary>
+        // Why something is not on offer, in one sentence; a refusal for the rating in the bank's own words.
         private string Why(ProductAnswer answer)
         {
             return answer == ProductAnswer.BelowThreshold
@@ -318,7 +294,7 @@ namespace RealLifeOverhaul.Economy
             }), null, Mathf.Max(0, initial).ToString(), false, TypedAmountLength));
         }
 
-        // The amounts a selector steps through, between a least and a most.
+        // The amounts a selector steps through between a least and a most, the one chosen among them.
         private void Steps(int least, int most)
         {
             _amount = Mathf.Clamp(_amount <= 0 ? most : _amount, least, Mathf.Max(least, most));
@@ -355,24 +331,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // An account of the mod's held with this bank, of a kind; null if there is none here.
         private CreditAccount HeldHere(ProductKind kind)
         {
             CreditAccount a = CreditLedger.File != null ? CreditLedger.File.Account(kind) : null;
             return a != null && BankTerms.IsBank(Bank, a.Street, a.Number) ? a : null;
         }
 
-        // The bank an open account of a kind is held with, by name; null if none is open.
         private static string HeldWith(ProductKind kind)
         {
             CreditAccount a = CreditLedger.File != null ? CreditLedger.File.Account(kind) : null;
             return a != null ? CreditDesk.LenderName(a) : null;
         }
 
-        // ---------------------------------------------------------------- Accounts
-
-        // The current account and an overdraft held here; the table is the statement of this bank's money.
-        private void WriteAccounts(InfoBox box, CreditScore score)
+        private void WriteAccounts(InfoBox box)
         {
             GameInstance save = SaveGameManager.Current;
             box.Title(FinanceText.T("reallife_bank_current"));
@@ -415,7 +386,7 @@ namespace RealLifeOverhaul.Economy
                 CreditDesk desk = Desk;
                 if (a.Owed > 0)
                 {
-                    // (in a debt arrangement too: paid sooner by hand, it counts under the arrangement)
+                    // in a debt arrangement too: paid sooner by hand, it counts under the arrangement
                     AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Owed, amount => Paid(desk, a, amount));
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
                 }
@@ -449,8 +420,7 @@ namespace RealLifeOverhaul.Economy
             Refresh();
         }
 
-        // Whether a movement of money is this bank's: the house bank holds the cash, so every movement is; another bank's
-        // are its loans' (the game writes the bank's name on them) and those of the accounts it holds (by the account's name).
+        // A movement of money is this bank's if the house bank holds the cash, or it is under the bank's name or an account it holds.
         private bool Mine(Dictionary<string, string> data)
         {
             if (IsHouse)
@@ -480,7 +450,6 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // The names this bank's movements are written under: its own, and each account it holds.
         private void Names()
         {
             _names.Clear();
@@ -498,7 +467,7 @@ namespace RealLifeOverhaul.Economy
         private void Statement(InfoBox box, int today)
         {
             Names();
-            _flow.Read(_period, today, IsHouse ? null : _mine);   // (the house bank's is every movement: nothing to leave out)
+            _flow.Read(_period, today, IsHouse ? null : _mine);   // the house bank's is every movement: nothing to leave out
             _spec = _tables.Statement;
             box.Headline("reallife_bank_statement");
             if (!box.HasSelector || !box.Selector(CashFlow.PeriodDays.Length, _period, CashFlow.PeriodName, i =>
@@ -509,8 +478,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CashFlow.PeriodName(_period));
             }
-            // Every movement of the bank's, newest first, in the table as it scrolls (CashTable); its totals here, in the
-            // order the rows were once added up in, so that they come to the same figures.
+            // the totals summed in the order the rows were once added up in, so that they come to the same figures
             float came = 0f, went = 0f;
             for (int i = _flow.Entries.Count - 1; i >= 0; i--)
             {
@@ -533,9 +501,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // ---------------------------------------------------------------- Rating
-
-        // The rating as this bank sees it: the terms it gives at each band of the rating, the player's own row among them.
+        // The rating as this bank sees it: its terms at each band, the player's own row among them.
         private void WriteRating(InfoBox box, CreditScore score)
         {
             _spec = _tables.Rating;
@@ -556,7 +522,8 @@ namespace RealLifeOverhaul.Economy
             if (next > score.Value && score.Value < best)
             {
                 LenderTerms then = LendingTerms.For(next, BankTerms.OwnCap(Bank.Settings), BankTerms.OwnRate(Bank.Settings));
-                box.Line(FinanceText.Fill("reallife_bank_rating_next", "score", next.ToString(), "bank", Bank.Name, "loan", FinanceText.Money(then.Cap), "rate", (then.AnnualRate * Multiplier).ToString("0.#"),
+                box.Line(FinanceText.Fill("reallife_bank_rating_next", "score", next.ToString(), "bank", Bank.Name, "loan", FinanceText.Money(then.Cap), "rate",
+                         (then.AnnualRate * Multiplier).ToString("0.#"),
                     "card", FinanceText.Money(CreditDesk.LimitAt(ProductKind.CreditCard, next, Bank))));
             }
             int tips = CreditScoring.Tips(score, _tips);
@@ -573,9 +540,7 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        private static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
-
-        // One band: the bank's own loan cap and rate at that rating (its terms before the borrower's means are counted), and what it gives on a card, an overdraft and car finance.
+        // One band: the bank's loan cap and rate at that rating before the borrower's means count, and its card, overdraft and car finance.
         private void RatingRow(string id, int at, int kind)
         {
             TableRow row = Row(id);
@@ -594,7 +559,8 @@ namespace RealLifeOverhaul.Economy
             row.Set(3, FinanceText.T("reallife_econ_row_rate", "rate", rate.ToString("0.#")), rate);
             if (Settings.EconomyProducts)
             {
-                int card = CreditDesk.LimitAt(ProductKind.CreditCard, at, Bank), overdraft = CreditDesk.LimitAt(ProductKind.Overdraft, at, Bank), car = CreditDesk.LimitAt(ProductKind.CarFinance, at, Bank);
+                int card = CreditDesk.LimitAt(ProductKind.CreditCard, at, Bank), overdraft = CreditDesk.LimitAt(ProductKind.Overdraft, at, Bank), car = CreditDesk.LimitAt(ProductKind.CarFinance,
+                                              at, Bank);
                 row.Set(4, FinanceText.Money(card), card);
                 row.Set(5, FinanceText.Money(overdraft), overdraft);
                 row.Set(6, FinanceText.Money(car), car);

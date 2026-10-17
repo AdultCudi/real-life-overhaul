@@ -907,7 +907,7 @@ internal static partial class Program
         Check(footfall.Length > 0 && !footfall.Contains("Logger?.Info") && footfall.Contains("CustomerDraw.Rewritten(reg)") && footfall.Contains("CustomerDraw.Writing(reg)"),
             "sources: the footfall writer builds no line on a write, asks for the customers through Core/CustomerDraw and says when it writes");
 
-        string economy = MoSource(scripts, @"Economy\Banking\EconomyDirector.cs");
+        string economy = MoSource(scripts, @"Economy\Banking\EconomyDirector.Day.cs");
         string day = MoBody(economy, "private void OnDay()");
         int morning = day.IndexOf("CustomerDraw.Morning()", StringComparison.Ordinal), after = day.IndexOf("Guard.Each(AfterDay)", StringComparison.Ordinal);
         Check(morning >= 0 && after > morning, "sources: the economy's day notes the game's own draw before any feature writes a figure");

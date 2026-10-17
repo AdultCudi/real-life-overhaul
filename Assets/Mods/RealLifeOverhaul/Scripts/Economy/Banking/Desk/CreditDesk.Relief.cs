@@ -1,319 +1,21 @@
 using System.Collections.Generic;
-using Helpers;
 using Tutorial.SideQuests;
 using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    // The credit desk's other half: the collections call, the lender of last resort, debt advice, a debt arrangement
-    // and bankruptcy. The conversations themselves are Economy/Debt/DebtPhone.cs; every decision in them is made here.
+    /// <summary>The credit desk's ways out of debt: debt advice, a debt arrangement and bankruptcy. The advice call itself is <see cref="DebtPhone"/>'s.</summary>
     public sealed partial class CreditDesk
     {
         private const string GameBankruptcyQuest = "SQBankruptcy";   // the game's own side quest: SideQuestHelper.BankruptcyQuestId
 
-        private static float Income => Mathf.Max(0f, CreditLedger.Income != null ? CreditLedger.Income() : 0f);
-
-        // ---------------------------------------------------------------- the collections call
-
-        /// <summary>The debt the collections call is about: the first one whose call has not been answered. False if there is none.</summary>
-        public bool CallAbout(out Debt debt)
-        {
-            debt = default(Debt);
-            for (int i = 0; _file != null && i < _file.Loans.Count; i++)
-            {
-                if (_file.Loans[i].Ladder.CallDue && _file.Loans[i].Ref is Loan)
-                {
-                    debt = new Debt(_file.Loans[i]);
-                    return true;
-                }
-            }
-            for (int i = 0; _file != null && i < _file.Accounts.Count; i++)
-            {
-                if (_file.Accounts[i].Ladder.CallDue && !_file.Accounts[i].Closed)
-                {
-                    debt = new Debt(_file.Accounts[i]);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>"Pay what is overdue now": the overdue money is taken, comes off the debt, and the debt is in order again.</summary>
-        public ProductAnswer PayOverdue(Debt debt)
-        {
-            if (_file == null || !debt.Valid)
-            {
-                return ProductAnswer.Off;
-            }
-            LadderState s = debt.Ladder;
-            int amount = Mathf.Min(s.Overdue, debt.Owed);
-            string name = debt.Name;
-            if (amount <= 0)
-            {
-                s.CallDue = false;
-                return ProductAnswer.NothingOwed;
-            }
-            if (!(debt.Account != null && debt.Account.Test) && !_wallet.Take(amount, Money.Payment, name))
-            {
-                return ProductAnswer.NoCash;   // (a test account takes no money)
-            }
-            int day = Today;
-            if (debt.Account != null)
-            {
-                AccountRules.Pay(debt.Account, amount);
-                if (debt.Account.Closed)
-                {
-                    CreditLedger.Unregister(debt.Account);
-                }
-            }
-            else
-            {
-                LoanMark m = debt.Mark;
-                m.Ladder.PlanLeft = 0;
-                if (LadderRules.Paid(m.Ladder))
-                {
-                    EndHold(m, LoanHold.Penalty, "what was overdue is paid");
-                }
-                PayDown(m, debt.Loan, amount, day);
-            }
-            s.CallDue = false;
-            Touch();
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (collections): " + name + ": " + amount + " overdue paid at once; the debt is in order again: " + (s.Misses == 0 && s.Overdue == 0 ? "PASS" : "FAIL"));
-            }
-            _director.TermsChanged("what was overdue was paid");
-            return ProductAnswer.Yes;
-        }
-
-        /// <summary>"Agree a payment plan": what is overdue over the plan's days on top of the normal payment. One plan per debt.</summary>
-        public ProductAnswer AgreePlan(Debt debt)
-        {
-            if (_file == null || !debt.Valid)
-            {
-                return ProductAnswer.Off;
-            }
-            LadderState s = debt.Ladder;
-            if (s.PlanUsed)
-            {
-                return ProductAnswer.AlreadyOpen;
-            }
-            bool agreed = debt.Account != null ? AccountRules.AgreePlan(debt.Account) : LadderRules.AgreePlan(s);
-            if (!agreed)
-            {
-                return ProductAnswer.NothingOwed;
-            }
-            Post(debt, CreditKind.PlanAgreed, s.PlanLeft, Today);
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (collections): " + debt.Name + ": a plan for " + s.PlanLeft + " at " + s.PlanPerDay + " a day on top of the normal payment: "
-                             + (s.PlanPerDay * ProductCatalogue.PlanDays >= s.PlanLeft ? "PASS" : "FAIL"));
-            }
-            return ProductAnswer.Yes;
-        }
-
-        /// <summary>"I can't pay": the call is over, and the count goes on.</summary>
-        public void CannotPay(Debt debt)
-        {
-            if (_file != null && (debt.Account != null || debt.Mark != null))
-            {
-                debt.Ladder.CallDue = false;
-                if (Verbose)
-                {
-                    Logger?.Info("Economy check (collections): " + debt.Name + ": the borrower cannot pay; nothing is agreed and the count goes on at " + debt.Ladder.Misses + ": PASS");
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------- the lender of last resort
-
-        public SharkDebt Shark => _file != null ? _file.Shark : null;
-
-        public int SharkMost => SharkRules.Most(Income);
-
-        /// <summary>A bank has just refused the player, or the rating has gone under the threshold: the private lender makes itself known, once.</summary>
-        public void Refused()
-        {
-            if (_file == null || !Settings.EconomyShark || _file.Shark.Known)
-            {
-                return;
-            }
-            _file.Shark.Known = true;
-            DebtPhone.Setup(this);
-            DebtPhone.Text(DebtPhone.Lender, "reallife_text_shark_intro", Data("least", FinanceText.Money(ProductCatalogue.SharkLeast), "most", FinanceText.Money(SharkMost)), _openLender);
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (private lender): made itself known by a text at rating " + CreditLedger.Value + " (lenders want " + CreditCatalogue.LendingThreshold + "): PASS");
-            }
-        }
-
-        public ProductAnswer SharkBorrow(int amount)
-        {
-            if (_file == null || !Settings.EconomyShark || !_file.Shark.Known)
-            {
-                return ProductAnswer.Off;
-            }
-            SharkDebt debt = _file.Shark;
-            ProductAnswer answer = SharkRules.CanLend(debt, amount, Income);
-            if (answer != ProductAnswer.Yes)
-            {
-                return answer;
-            }
-            int day = Today;
-            SharkRules.Lend(debt, amount, day);
-            _wallet.Give(amount, Money.SharkLent, string.Empty);
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (private lender): " + amount + " lent on day " + day + ", " + SharkRules.ADay(amount) + " a day on top, " + SharkRules.OwedOnDueDay(amount) + " due on day " + debt.DueDay
-                             + ", never more than " + SharkRules.Cap(amount) + "; nothing goes on the credit file: PASS");
-            }
-            return ProductAnswer.Yes;
-        }
-
-        public ProductAnswer SharkPay(int amount, out int used)
-        {
-            used = 0;
-            if (_file == null || !_file.Shark.Active)
-            {
-                return ProductAnswer.NothingOwed;
-            }
-            SharkDebt debt = _file.Shark;
-            SharkRules.Grow(debt, Today);
-            amount = Mathf.Min(amount, debt.Owed);
-            if (amount <= 0 || !_wallet.Take(amount, Money.SharkPaid, string.Empty))
-            {
-                return ProductAnswer.NoCash;
-            }
-            used = SharkRules.Pay(debt, amount);
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (private lender): " + used + " paid, " + debt.Owed + " left" + (debt.Active ? string.Empty : ": it is over, and nothing went on the credit file") + ": PASS");
-            }
-            return ProductAnswer.Yes;
-        }
-
-        public ProductAnswer SharkExtend(out int fee)
-        {
-            fee = 0;
-            if (_file == null || !_file.Shark.Active)
-            {
-                return ProductAnswer.NothingOwed;
-            }
-            SharkDebt debt = _file.Shark;
-            int day = Today;
-            SharkRules.Grow(debt, day);
-            fee = SharkRules.ExtendFee(debt);
-            if (!SharkRules.Extend(debt, day))
-            {
-                return ProductAnswer.AlreadyOpen;
-            }
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (private lender): extended once for a fee of " + fee + "; " + debt.Owed + " owed, due on day " + debt.DueDay + ": PASS");
-            }
-            return ProductAnswer.Yes;
-        }
-
-        // Each day: the lender shows itself if nobody else lends; the debt grows; past its day, today's act is decided.
-        private void SharkDay(int day, int level)
-        {
-            SharkDebt debt = _file.Shark;
-            if (!debt.Known && !CreditLedger.Score.Lends)
-            {
-                Refused();
-            }
-            if (!debt.Active)
-            {
-                return;
-            }
-            if (!Settings.EconomyShark)
-            {
-                debt.GrownDay = day;   // switched off: the debt stands as it is and can be paid; it does not grow and nothing is done about it
-                return;
-            }
-            int added = SharkRules.Grow(debt, day);
-            if (day == debt.DueDay)
-            {
-                DebtPhone.Text(DebtPhone.Lender, "reallife_text_shark_due", Data("amount", FinanceText.Money(debt.Owed)), _openLender);
-            }
-            SharkAct act = SharkRules.Today(debt, day, level > ProductCatalogue.Relaxed);
-            if (act == SharkAct.Warn)
-            {
-                DebtPhone.Text(DebtPhone.Lender, "reallife_text_shark_warn", Data("amount", FinanceText.Money(debt.Owed), "days", (day - debt.DueDay).ToString()), _openLender);
-            }
-            else if (act != SharkAct.None)
-            {
-                debt.Waiting = act;
-            }
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (private lender, day " + day + "): " + added + " added, " + debt.Owed + " owed of at most " + SharkRules.Cap(debt.Borrowed) + ", due day " + debt.DueDay
-                             + (day > debt.DueDay ? ", " + (day - debt.DueDay) + " day(s) past: " + act + (level > ProductCatalogue.Relaxed ? string.Empty : " (no violence on Relaxed)") : string.Empty)
-                             + ": " + (debt.Owed <= SharkRules.Cap(debt.Borrowed) ? "PASS" : "FAIL"));
-            }
-        }
-
-        // Each hour: an act that is waiting is carried out when nothing has hold of the player.
-        private void SharkHour(int day)
-        {
-            SharkDebt debt = _file.Shark;
-            if (debt.Waiting == SharkAct.None)
-            {
-                return;
-            }
-            if (!debt.Active || !Settings.EconomyShark || Level <= ProductCatalogue.Relaxed)
-            {
-                debt.Waiting = SharkAct.None;
-                return;
-            }
-            if (EconomyBridges.Held != null && EconomyBridges.Held())
-            {
-                return;   // in custody, in hospital, on a trip, in a scene: not now
-            }
-            if (debt.Waiting == SharkAct.Assault)
-            {
-                if (PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding)
-                {
-                    return;   // only in the street, on foot
-                }
-                int taken = _wallet.TakeUpTo(debt.Owed, Money.SharkTaken, string.Empty);
-                bool hurt = EconomyBridges.Assault != null && EconomyBridges.Assault(ProductCatalogue.SharkInjuryHours, ProductCatalogue.SharkInjuryEnergy, "reallife_econ_note_shark_assault");
-                SharkRules.Pay(debt, taken);
-                debt.Waiting = SharkAct.None;
-                Notifications.Show(NotificationType.Error, "reallife_econ_note_shark_taken", Data("amount", FinanceText.Money(taken), "left", FinanceText.Money(debt.Owed)), 14f, null, Guard.Wrap(_openLender), true, false);
-                if (Verbose)
-                {
-                    Logger?.Info("Economy check (private lender, day " + day + "): the borrower was set upon in the street (" + (hurt ? "hurt as a mugging hurts" : "no injury could be given") + "); "
-                                 + taken + " in cash taken against the debt, " + debt.Owed + " left: PASS");
-                }
-                return;
-            }
-            Books.Businesses(_shops);
-            if (_shops.Count == 0)
-            {
-                debt.Waiting = SharkAct.None;
-                DebtPhone.Text(DebtPhone.Lender, "reallife_text_shark_warn", Data("amount", FinanceText.Money(debt.Owed), "days", (day - debt.DueDay).ToString()), _openLender);
-                return;
-            }
-            BuildingRegistration shop = _shops[day % _shops.Count];
-            _shops.Clear();
-            int bill = SharkRules.DamageBill(debt.Owed);
-            _wallet.Force(bill, Money.SharkDamage, shop.BusinessName);
-            debt.Waiting = SharkAct.None;
-            Notifications.Show(NotificationType.Error, "reallife_econ_note_shark_damage", Data("business", shop.BusinessName, "amount", FinanceText.Money(bill)), 14f, null, Guard.Wrap(_openLender), true, false);
-            if (Verbose)
-            {
-                Logger?.Info("Economy check (private lender, day " + day + "): " + shop.BusinessName + " was damaged: a repair bill of " + bill + " (" + debt.Owed + " still owed): PASS");
-            }
-        }
-
-        // ---------------------------------------------------------------- debt advice and the ways out
+        private readonly List<DebtLine> _lines = new List<DebtLine>(6);
 
         /// <summary>True while the game's own bankruptcy quest is on: the mod's bankruptcy is not offered, and the player is pointed to the game's.</summary>
         public static bool GameBankruptcy => SideQuestHelper.IsSideQuestActive(GameBankruptcyQuest);
 
-        // Whether a debt is one an arrangement takes: everything that is not secured on something the borrower still has. (Never a test account.)
+        // A debt an arrangement takes: anything not secured on something the borrower still has, never a test account.
         private static bool Unsecured(CreditAccount a)
         {
             return !a.Closed && !a.Test && a.Owed > 0 && !(ProductCatalogue.Instalment(a.Kind) && a.Secured);
@@ -352,9 +54,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private readonly List<DebtLine> _lines = new List<DebtLine>(6);
-
-        // Each day: how long something has been overdue, whether a claim is still open, and debt advice when it is due.
+        // How long something has been overdue, whether a claim is still open, and debt advice when it is due.
         private void ReliefDay(int day)
         {
             Relief r = _file.Relief;
@@ -384,7 +84,8 @@ namespace RealLifeOverhaul.Economy
             Note(NotificationType.Info, "reallife_econ_note_advice", null, _openAdvice, 16f);
             if (Verbose)
             {
-                Logger?.Info("Economy check (debt advice, day " + day + "): offered; something has been overdue since day " + r.OverdueSince + ", " + r.Claims.Count + " claim(s) before the court: PASS");
+                Logger?.Info("Economy check (debt advice, day " + day + "): offered; something has been overdue since day " + r.OverdueSince + ", " + r.Claims.Count
+                             + " claim(s) before the court: PASS");
             }
         }
 
@@ -458,7 +159,7 @@ namespace RealLifeOverhaul.Economy
             return ProductAnswer.Yes;
         }
 
-        // A debt that goes into an arrangement or is written off: nothing is waiting on it any more.
+        // A debt that goes into an arrangement: nothing is waiting on it any more.
         private static void Quiet(LadderState s)
         {
             s.CallDue = false;
@@ -469,7 +170,7 @@ namespace RealLifeOverhaul.Economy
             s.RepoDay = s.RepoPending ? s.RepoDay : 0;
         }
 
-        // The arrangement's day: the one payment, shared out over the frozen debts oldest first. Three missed and it is over.
+        // The arrangement's day: the one payment, shared out over its debts. Missing it too often ends the arrangement.
         private void ArrangementDay(int day)
         {
             Relief r = _file.Relief;
@@ -489,15 +190,15 @@ namespace RealLifeOverhaul.Economy
                 }
                 else
                 {
-                    Note(NotificationType.Warning, "reallife_econ_note_arranged_missed", Data("amount", FinanceText.Money(due), "count", r.ArrangedMisses.ToString(), "most", ProductCatalogue.ArrangementMissesMost.ToString()));
+                    Note(NotificationType.Warning, "reallife_econ_note_arranged_missed", Data("amount", FinanceText.Money(due), "count", r.ArrangedMisses.ToString(), "most",
+                         ProductCatalogue.ArrangementMissesMost.ToString()));
                 }
                 return;
             }
             int share = due;
+            // the loans newest first (counted down, so a paid-off one can leave the list): a fixed order is what matters
             for (int i = _file.Loans.Count - 1; i >= 0 && share > 0; i--)
             {
-                // (the game keeps its loans oldest first and the file's marks in the same order; counted down so that removing one is safe,
-                // which pays the newest first: the order is fixed, and that is what matters to the borrower)
                 LoanMark m = _file.Loans[i];
                 var loan = m.Ref as Loan;
                 if ((m.Held & LoanHold.Frozen) == 0 || loan == null)
@@ -547,10 +248,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Money paid by hand into a debt the arrangement holds: one of its accounts paid in the Finance app or a bank's
-        /// app (<see cref="Pay"/>), or one of its loans paid in the game's EconoView or a bank's app (the director reads
-        /// that from the game's loans). It counts as paid under the arrangement, and the arrangement ends, cleared, the
-        /// moment nothing is left in it, whichever way the last of it was paid: not a day later, and only once.
+        /// Money paid by hand into a debt the arrangement holds, in an app or in EconoView: it counts under the arrangement,
+        /// which ends cleared the moment nothing is left in it, whichever way the last of it was paid.
         /// </summary>
         public void PaidByHand(int amount, string how)
         {
@@ -564,7 +263,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Info("Economy check (debt arrangement, day " + day + "): " + amount + " paid by hand (" + how + "), " + left + " left of " + _file.Relief.ArrangedTotal + ", "
                              + _file.Relief.ArrangedPaid + " paid under it" + (ends ? ": everything in it is paid, it ends now" : string.Empty) + ": "
-                             + ((long)_file.Relief.ArrangedPaid + left <= _file.Relief.ArrangedTotal ? "PASS" : "FAIL"));   // (nothing in it grows: what was paid and what is left never pass what it began with)
+                             + ((long)_file.Relief.ArrangedPaid + left <= _file.Relief.ArrangedTotal ? "PASS" : "FAIL"));   // nothing in it grows: paid and left never pass what it began with
             }
             if (ends)
             {
@@ -572,7 +271,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The arrangement ends: cleared, or broken. What is still owed runs again as it did; the rating stays held for the stated days.
+        // The arrangement ends, cleared or broken: what is still owed runs again as before, and the rating stays held for the stated days.
         private void EndArrangement(int day, bool cleared, int left)
         {
             for (int i = 0; i < _file.Loans.Count; i++)
@@ -595,9 +294,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// What bankruptcy would do: every loan, every account but a mortgage that still has its building, and the
-        /// private lender's debt are written off; a vehicle on finance goes back; cash above the stated sum goes to
-        /// the creditors; fines and court debts stay.
+        /// What bankruptcy would do: every debt but a mortgage with its building, fines and court debts is written off, a vehicle
+        /// on finance goes back, and cash above the sum kept goes to the creditors.
         /// </summary>
         public ProductAnswer BankruptcyOffer(out BankruptcyPlan plan)
         {
@@ -630,7 +328,6 @@ namespace RealLifeOverhaul.Economy
             return plan.WrittenOff <= 0 ? ProductAnswer.NothingOwed : ProductAnswer.Yes;
         }
 
-        /// <summary>Does it.</summary>
         public ProductAnswer Bankrupt()
         {
             if (_file != null && _file.Relief.HasApproval && !GameBankruptcy && ReliefRules.CanBankrupt(_file.Relief, Today))
@@ -673,7 +370,7 @@ namespace RealLifeOverhaul.Economy
                 a.Ladder.Clear();
                 if (a.Kind == ProductKind.CarFinance && a.Secured && Books.Vehicle(a.Security) != null)
                 {
-                    // The vehicle goes back; what it fetches is the creditors'. The account stays, with nothing owed, until it has been taken.
+                    // the vehicle goes back and what it fetches is the creditors'; the account waits, with nothing owed, until it is taken
                     a.SecurityValue = 0;
                     a.Ladder.RepoPending = true;
                     _repoWaiting = true;
@@ -695,15 +392,18 @@ namespace RealLifeOverhaul.Economy
             r.BankruptDay = day;
             r.OverdueSince = 0;
             r.AdviceTold = false;
-            Touch();
+            CreditLedger.Touch();
             CreditLedger.Post(CreditKind.Bankruptcy, plan.WrittenOff, day, "advice");
             Note(NotificationType.Error, "reallife_econ_note_bankrupt", Data("amount", FinanceText.Money(plan.WrittenOff), "cash", FinanceText.Money(plan.CashTaken),
                 "days", ProductCatalogue.BankruptNoCreditDays.ToString(), "score", CreditLedger.Value.ToString()), null, 20f);
             if (Verbose)
             {
-                Logger?.Info("Economy check (bankruptcy, day " + day + "): before " + plan.WrittenOff + " owed that goes (" + shark + " of it to the private lender), " + plan.Kept + " that stays, " + plan.CashNow
-                             + " in cash; after " + plan.Kept + " owed, " + plan.CashLeft + " in cash, " + taken + " vehicle(s) to go back; rating " + before + " to " + CreditLedger.Value + ", nobody lends until day "
-                             + plan.NoCreditUntil + ", the next bankruptcy not before day " + plan.NextAllowedDay + ": " + (CreditLedger.Value == ProductCatalogue.BankruptScore && Save.Loans.Count == 0 ? "PASS" : "FAIL"));
+                Logger?.Info("Economy check (bankruptcy, day " + day + "): before " + plan.WrittenOff + " owed that goes (" + shark + " of it to the private lender), " + plan.Kept + " that stays, "
+                             + plan.CashNow
+                             + " in cash; after " + plan.Kept + " owed, " + plan.CashLeft + " in cash, " + taken + " vehicle(s) to go back; rating " + before + " to " + CreditLedger.Value
+                                 + ", nobody lends until day "
+                             + plan.NoCreditUntil + ", the next bankruptcy not before day " + plan.NextAllowedDay + ": "
+                                 + (CreditLedger.Value == ProductCatalogue.BankruptScore && Save.Loans.Count == 0 ? "PASS" : "FAIL"));
             }
             _director.TermsChanged("a bankruptcy");
             return ProductAnswer.Yes;

@@ -252,7 +252,8 @@ internal static partial class Program
     {
         string economy = System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Economy");
         string Read(string file) => System.IO.File.ReadAllText(System.IO.Path.Combine(economy, file));
-        string offers = Read(@"Banking\Desk\CreditDesk.Offers.cs"), relief = Read(@"Banking\Desk\CreditDesk.Relief.cs"), director = Read(@"Banking\EconomyDirector.cs"), banks = Read(@"Banking\Desk\CreditDesk.Banks.cs");
+        string offers = Read(@"Banking\Desk\CreditDesk.Offers.cs"), relief = Read(@"Banking\Desk\CreditDesk.Relief.cs"), banks = Read(@"Banking\Desk\CreditDesk.Banks.cs");
+        string director = Read(@"Banking\EconomyDirector.cs") + Read(@"Banking\EconomyDirector.Day.cs");   // the timer and the hour's reading of the loans
         string loans = Read(@"Banking\BankApps\BankApp.Loans.cs"), bank = Read(@"Banking\BankApps\BankApp.cs"), finance = Read(@"Finance\FinanceApp.Accounts.cs");
         Check(offers.Contains("if (a.Frozen)") && offers.Contains("PaidByHand(used,"), "card fix: a payment by hand into a frozen account counts under the arrangement (CreditDesk.Pay)");
         Check(director.Contains("_desk.PaidByHand(arranged,") && director.Contains("LoanPaidEvent") && director.Contains("EventHold.Keep(ref GameEvent.onGameEventTriggered"),

@@ -2,14 +2,10 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// One bank app's tables, declared as data (GameUi.TableSpec) as the Finance app declares its own. Each app has
-    /// its own set, made once when the app is built, so an order or a filter chosen in one bank's app is that app's.
-    /// The numbers beside each are the columns, for whoever writes the rows.
-    /// </summary>
+    /// <summary>One bank app's tables (GameUi.TableSpec), a set for each app so its order and filter are its own. Each's columns are listed beside it.</summary>
     internal sealed class BankTables
     {
-        // ---- the kinds of thing the Apply tab lists, in its own order (the keys are the Finance app's)
+        // the kinds of thing the Apply tab lists, in its order (the keys are the Finance app's)
         public const int Loan = 0, Overdraft = 1, Card = 2, Business = 3, Car = 4, Home = 5, Consolidate = 6, OfferCount = 7;
 
         public static readonly string[] OfferKinds =
@@ -18,8 +14,7 @@ namespace RealLifeOverhaul.Economy
             "reallife_econ_kind_consolidate"
         };
 
-        // ---- the rows of the Rating tab
-        public const int Band = 0, Yours = 1;
+        public const int Band = 0, Yours = 1;   // the Rating tab's rows
         public static readonly string[] RatingKinds = { "reallife_bank_kind_band", "reallife_bank_kind_yours" };
 
         /// <summary>While the credit file is not open: one empty column.</summary>

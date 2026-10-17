@@ -36,7 +36,7 @@ The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jen
 | 2 | one point less | 80% | three quarters of the usual share |
 | 3 and on | as rank 0 | as rank 0 | as rank 0 |
 
-The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `RateAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
+The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
 The Finance app asks the same desk, so its offers from a bank are that bank's in its app too; rank 0 keeps every figure exactly as before (checked for every rating).
 
 The game's own loan at the bank counter keeps the game's terms by the rating alone (`BankTerms.Apply`): the banks already differ there by their own settings.

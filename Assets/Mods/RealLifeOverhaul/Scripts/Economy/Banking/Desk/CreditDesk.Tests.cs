@@ -7,19 +7,18 @@ using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul.Economy
 {
-    // Leaving a save (the save tools), and the test tools of the options page. A test works on accounts marked as
-    // tests and on a car made for the test, never on the player's own loans, accounts or vehicles; "Test: put
-    // everything back" removes all of it.
+    /// <summary>
+    /// The credit desk leaving a save (the save tools), and the options page's test tools. A test works on accounts marked as
+    /// tests and on a car made for it, never on the player's own; "Test: put everything back" removes all of it.
+    /// </summary>
     public sealed partial class CreditDesk
     {
         private const string TestCarType = "ba:vehicletype_honzamimic";   // the small hatchback the driving school lends
         private const int TestCarShare = 60;                               // per cent of its price a test finances
 
         /// <summary>
-        /// For the save tools ("prepare this save for removing the mod", "reset the mod's data"): the mod's accounts
-        /// do not exist in the plain game, so they are settled now as far as the cash goes and the rest is forgiven
-        /// and listed in the log. The game's loans are the game's own: each gets its own interest and payment back for
-        /// good, and stays. An approval's money goes back to the lender. A test car is removed.
+        /// For the save tools: the mod's accounts do not exist in the plain game, so they are settled as far as cash goes and
+        /// the rest is forgiven; the game's loans get their own figures back and stay.
         /// </summary>
         public void Leave()
         {
@@ -57,8 +56,7 @@ namespace RealLifeOverhaul.Economy
                     RemoveTest(a);
                     continue;
                 }
-                string name = Name(a);
-                int paid = a.Owed > 0 ? _wallet.TakeUpTo(a.Owed, Money.Payment, name) : 0;
+                int paid = a.Owed > 0 ? _wallet.TakeUpTo(a.Owed, Money.Payment, Name(a)) : 0;
                 settled += paid;
                 forgiven += a.Owed - paid;
                 text.Append(text.Length > 0 ? "; " : string.Empty).Append(a.Kind).Append(" #").Append(a.Id).Append(": ").Append(a.Owed).Append(" owed, ").Append(paid).Append(" paid, ")
@@ -75,8 +73,9 @@ namespace RealLifeOverhaul.Economy
                 text.Append(text.Length > 0 ? "; " : string.Empty).Append("the private lender: ").Append(shark.Owed).Append(" owed, ").Append(paid).Append(" paid, the rest forgiven");
                 shark.Clear();
             }
-            // Asked for by the save tools: written whether or not diagnostics are on.
-            Logger?.Warn("Economy: leaving this save. " + loans + " of the game's loan(s) had a penalty rate or an arrangement on them and have their own interest and payment again; they stay, as the game's own. "
+            // asked for by the save tools: written whether or not diagnostics are on
+            Logger?.Warn("Economy: leaving this save. " + loans
+                         + " of the game's loan(s) had a penalty rate or an arrangement on them and have their own interest and payment again; they stay, as the game's own. "
                          + "The mod's accounts do not exist without the mod: " + settled + " was paid from cash and " + forgiven + " is forgiven. "
                          + (text.Length > 0 ? text.ToString() : "There were no accounts") + ".");
         }
@@ -108,11 +107,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        /// <summary>
-        /// "Test: open every product": a test overdraft, a test card with cash drawn on it, and a test car on finance
-        /// (a car made for the test, standing at the kerb near the player), each on the terms of a fair rating and
-        /// whatever the real rating is. Nothing is paid out and nothing goes on the credit file.
-        /// </summary>
+        /// <summary>"Test: open every product": a test overdraft, a half-drawn test card and a test car on finance, at a fair rating's terms.</summary>
         public void TestOpen()
         {
             if (!TestReady("Open every product"))
@@ -132,7 +127,7 @@ namespace RealLifeOverhaul.Economy
                 int limit = kind == ProductKind.Overdraft ? ProductTerms.OverdraftLimit(score, BankTerms.OwnCapTotal) : ProductTerms.CardLimit(score, BankTerms.OwnCapTotal);
                 CreditAccount a = AccountRules.Open(kind, limit, ProductTerms.RateBp(score, ownRate, ProductTerms.Points(kind), Multiplier), day);
                 a.Test = true;
-                a.Owed = limit / 2;   // as if half had been drawn: there is something to pay, to miss and to charge interest on
+                a.Owed = limit / 2;   // as if half had been drawn: something to pay, to miss and to charge interest on
                 if (bank != null)
                 {
                     a.Street = bank.Street;
@@ -166,7 +161,7 @@ namespace RealLifeOverhaul.Economy
             TestSaid(TestAccount(ProductKind.CarFinance) != null ? "reallife_econ_test_opened" : "reallife_econ_test_opened_no_car");
         }
 
-        // A car for the tests: lent, not the player's to sell, at a free stretch of kerb near them. Null if there is none to be had here.
+        // A car for the tests, lent and not the player's to sell, at a free stretch of kerb near them. Null if none can be had here.
         private VehicleInstance TestCar()
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -188,7 +183,7 @@ namespace RealLifeOverhaul.Economy
             return instance;
         }
 
-        /// <summary>"Test: miss payments": every test account misses this many due payments, one after the other, with every step that brings.</summary>
+        /// <summary>"Test: miss payments": every test account misses this many due payments in turn, with every step that brings.</summary>
         public void TestMiss(int times)
         {
             if (!TestReady("Miss payments"))
@@ -215,8 +210,9 @@ namespace RealLifeOverhaul.Economy
                     steps.Append(' ').Append(a.Kind).Append(':').Append(a.Ladder.Misses).Append('=').Append(step);
                 }
             }
-            Touch();
-            Logger?.Warn("Economy check (test: " + times + " missed payment(s) on " + accounts + " test account(s), level " + level + ", consequences " + (Settings.EconomyConsequences ? "on" : "off (the steps are taken all the same: it is a test)")
+            CreditLedger.Touch();
+            Logger?.Warn("Economy check (test: " + times + " missed payment(s) on " + accounts + " test account(s), level " + level + ", consequences "
+                         + (Settings.EconomyConsequences ? "on" : "off (the steps are taken all the same: it is a test)")
                          + "):" + steps + ": " + (accounts > 0 ? "PASS" : "FAIL"));
             TestSaid(accounts > 0 ? "reallife_econ_test_missed_accounts" : "reallife_econ_test_none", "count", times.ToString());
         }
@@ -246,7 +242,8 @@ namespace RealLifeOverhaul.Economy
             }
             _file.Relief.CollectorKnown = true;
             DebtPhone.Setup(this);
-            Logger?.Warn("Economy check (test: the collections call): about " + a.Kind + " #" + a.Id + ", " + a.Ladder.Overdue + " overdue after " + a.Ladder.Misses + " missed; the conversation is opened: PASS");
+            Logger?.Warn("Economy check (test: the collections call): about " + a.Kind + " #" + a.Id + ", " + a.Ladder.Overdue + " overdue after " + a.Ladder.Misses
+                         + " missed; the conversation is opened: PASS");
             DebtPhone.Open(DebtPhone.Collections);
         }
 
@@ -284,13 +281,11 @@ namespace RealLifeOverhaul.Economy
             }
             _file.Shark.Known = false;
             Refused();
-            Logger?.Warn("Economy check (test: the private lender's text): sent; its contact is " + (Settings.PhoneContacts ? "on the phone" : "not added (\"Phone contacts\" is off: a notification was shown instead)") + ": PASS");
+            Logger?.Warn("Economy check (test: the private lender's text): sent; its contact is "
+                         + (Settings.PhoneContacts ? "on the phone" : "not added (\"Phone contacts\" is off: a notification was shown instead)") + ": PASS");
         }
 
-        /// <summary>
-        /// "Test: work out a debt arrangement and a bankruptcy": both are worked out on the test accounts alone and on
-        /// everything the save really owes, and written to the log with what is owed before and after. Nothing is changed.
-        /// </summary>
+        /// <summary>"Test: work out a debt arrangement and a bankruptcy": on the test accounts and on the whole save, logged; nothing is changed.</summary>
         public void TestWaysOut()
         {
             if (!TestReady("Ways out of debt"))
@@ -308,16 +303,19 @@ namespace RealLifeOverhaul.Economy
             BankruptcyPlan bankrupt;
             ProductAnswer arrange = ArrangementOffer(out real), ruin = BankruptcyOffer(out bankrupt);
             Logger?.Warn("Economy check (test: a debt arrangement): on the test accounts: " + onTest.Total + " frozen, " + onTest.PerDay + " a day (20% of an average income of " + Income.ToString("0")
-                         + ", at least " + ProductCatalogue.ArrangementLeast + ") for " + onTest.Days + " days, rating held at " + ProductCatalogue.ArrangementScoreCap + ". On the whole save: " + arrange
+                         + ", at least " + ProductCatalogue.ArrangementLeast + ") for " + onTest.Days + " days, rating held at " + ProductCatalogue.ArrangementScoreCap + ". On the whole save: "
+                             + arrange
                          + ", " + real.Total + " at " + real.PerDay + " a day for " + real.Days + " days. Nothing was changed: " + (onTest.PerDay * onTest.Days >= onTest.Total ? "PASS" : "FAIL"));
-            Logger?.Warn("Economy check (test: bankruptcy): on the test accounts: before " + bankruptOnTest.WrittenOff + " owed and " + bankruptOnTest.CashNow + " in cash; after 0 owed and " + bankruptOnTest.CashLeft
-                         + " in cash (" + bankruptOnTest.CashTaken + " to the creditors), nobody lends until day " + bankruptOnTest.NoCreditUntil + ". On the whole save: " + ruin + ", " + bankrupt.WrittenOff
+            Logger?.Warn("Economy check (test: bankruptcy): on the test accounts: before " + bankruptOnTest.WrittenOff + " owed and " + bankruptOnTest.CashNow + " in cash; after 0 owed and "
+                         + bankruptOnTest.CashLeft
+                         + " in cash (" + bankruptOnTest.CashTaken + " to the creditors), nobody lends until day " + bankruptOnTest.NoCreditUntil + ". On the whole save: " + ruin + ", "
+                                      + bankrupt.WrittenOff
                          + " written off, " + bankrupt.Kept + " kept" + (GameBankruptcy ? " (the game's own bankruptcy quest is on: not offered)" : string.Empty) + ". Nothing was changed: "
                          + (bankruptOnTest.CashLeft <= Mathf.Max(ProductCatalogue.BankruptKeepCash, 0) ? "PASS" : "FAIL"));
             TestSaid("reallife_econ_test_ways_done", "amount", FinanceText.Money(onTest.Total), "payment", FinanceText.Money(onTest.PerDay));
         }
 
-        /// <summary>"Test: put everything back": every test account and the test car are removed, a test debt to the private lender too, and what is held on the game's loans is checked.</summary>
+        /// <summary>"Test: put everything back": the test accounts, the test car and a test private loan are removed, and what is held on the game's loans is checked.</summary>
         public void TestBack()
         {
             if (!TestReady("Put everything back"))
@@ -354,12 +352,13 @@ namespace RealLifeOverhaul.Economy
                 _repoWaiting |= !_file.Accounts[i].Closed && _file.Accounts[i].Ladder.RepoPending;
             }
             _director.TermsChanged("a test");
-            Logger?.Warn("Economy check (test: everything back): " + removed + " test account(s) removed with the test car; " + held + " of the game's loan(s) have something held, each with its own figures remembered ("
+            Logger?.Warn("Economy check (test: everything back): " + removed + " test account(s) removed with the test car; " + held
+                         + " of the game's loan(s) have something held, each with its own figures remembered ("
                          + written + " written again); no test touched a loan: " + (sound ? "PASS" : "FAIL"));
             TestSaid("reallife_econ_test_back_done", "count", removed.ToString());
         }
 
-        // A test account goes, and the car that was made for it.
+        // A test account goes, and the car made for it.
         private void RemoveTest(CreditAccount a)
         {
             if (a.Kind == ProductKind.CarFinance && a.Security.Length > 0)

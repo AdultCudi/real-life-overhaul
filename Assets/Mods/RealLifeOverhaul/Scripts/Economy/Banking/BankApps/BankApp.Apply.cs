@@ -1,17 +1,12 @@
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    // A bank app's Apply tab: what this bank offers today at the player's rating, on its own terms, one row for each
-    // kind of credit. Picking one shows its page; applying goes through the game's own question box and then the same
-    // call the Finance app makes (EconomyDirector.Borrow for a loan, the credit desk for the rest), which asks the
-    // rating's gate again at that moment. Under the lending threshold the tab refuses in the bank's own words, lists
-    // nothing to apply for, and has no button that could lend.
+    /// <summary>A bank app's Apply tab: what this bank offers today at the player's rating, applied for through the game's own question box.</summary>
     public sealed partial class BankApp
     {
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
@@ -24,7 +19,6 @@ namespace RealLifeOverhaul.Economy
             ProductAnswer gate = Desk.Gate();
             if (!score.Lends || !BankRules.Lends(score.Value))
             {
-                // Under the threshold: the refusal, what would raise the rating, and nothing to press.
                 _product = -1;
                 box.Title(FinanceText.T("reallife_bank_refused_title", "bank", Bank.Name));
                 box.Chip(FinanceText.Grade(score.Grade), FinanceApp.Tone(score.Grade));
@@ -97,10 +91,9 @@ namespace RealLifeOverhaul.Economy
             return selected;
         }
 
-        // The figures of one row: the most, the rate, what borrowing the most would take each day, its fee, and whether it is on offer.
+        // One row: the most, the rate, what borrowing the most would take each day, its fee, and whether it is on offer.
         private void OfferCells(TableRow row, int p, int score)
         {
-            CreditDesk desk = Desk;
             ProductAnswer answer;
             switch (p)
             {
@@ -123,7 +116,7 @@ namespace RealLifeOverhaul.Economy
                 case BankTables.Car:
                 case BankTables.Home:
                     {
-                        ProductOffer offer = desk.Offer(KindOf(p), Bank);
+                        ProductOffer offer = Desk.Offer(KindOf(p), Bank);
                         answer = offer.Answer;
                         if (answer == ProductAnswer.AlreadyOpen && offer.Bank != null && offer.Bank.Rank != Bank.Rank)
                         {
@@ -141,7 +134,7 @@ namespace RealLifeOverhaul.Economy
                         break;
                     }
                 default:
-                    answer = desk.Gate();   // a business loan and a consolidation say more on their page
+                    answer = Desk.Gate();   // a business loan and a consolidation say more on their page
                     break;
             }
             bool open = answer == ProductAnswer.AlreadyOpen, offered = answer == ProductAnswer.Yes;
@@ -163,8 +156,6 @@ namespace RealLifeOverhaul.Economy
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
         }
-
-        // ---------------------------------------------------------------- a loan
 
         private void WriteLoanOffer(InfoBox box, CreditScore score)
         {
@@ -235,13 +226,15 @@ namespace RealLifeOverhaul.Economy
                 case LoanAnswer.Approved:
                     Tell(NotificationType.Success, "reallife_econ_note_lent", new Dictionary<string, string>
                     {
-                        { "lender", bank.Name }, { "amount", FinanceText.Money(amount) }, { "fee", FinanceText.Money(quote.Fee) }, { "payment", FinanceText.Money(quote.DailyPayment + quote.DailyInterest) }
+                        { "lender", bank.Name }, { "amount", FinanceText.Money(amount) }, { "fee", FinanceText.Money(quote.Fee) }, { "payment", FinanceText.Money(quote.DailyPayment
+                                                                               + quote.DailyInterest) }
                     });
                     _product = -1;
                     _tab = Loans;
                     break;
                 case LoanAnswer.TooMuch:
-                    Tell(NotificationType.Error, "reallife_econ_note_too_much", new Dictionary<string, string> { { "lender", bank.Name }, { "most", FinanceText.Money(PhoneLending.MostNow(bank, CreditLedger.Value)) } });
+                    Tell(NotificationType.Error, "reallife_econ_note_too_much", new Dictionary<string, string> { { "lender", bank.Name }, { "most", FinanceText.Money(PhoneLending.MostNow(bank,
+                         CreditLedger.Value)) } });
                     break;
                 case LoanAnswer.TooLittle:
                     Tell(NotificationType.Error, "reallife_econ_note_too_little", new Dictionary<string, string> { { "least", FinanceText.Money(CreditCatalogue.LoanLeast) } });
@@ -256,8 +249,6 @@ namespace RealLifeOverhaul.Economy
             After();
         }
 
-        // ---------------------------------------------------------------- an overdraft or a card
-
         private void WriteLimit(InfoBox box, ProductKind kind)
         {
             CreditDesk desk = Desk;
@@ -267,7 +258,8 @@ namespace RealLifeOverhaul.Economy
                 bool here = offer.Bank != null && offer.Bank.Rank == Bank.Rank;
                 box.Line(here
                     ? FinanceText.T("reallife_bank_open_here", "limit", FinanceText.Money(offer.Most))
-                    : FinanceText.T(kind == ProductKind.CreditCard ? "reallife_bank_card_elsewhere" : "reallife_bank_overdraft_elsewhere", "other", offer.Bank != null ? offer.Bank.Name : string.Empty, "bank", Bank.Name));
+                    : FinanceText.T(kind == ProductKind.CreditCard ? "reallife_bank_card_elsewhere" : "reallife_bank_overdraft_elsewhere", "other", offer.Bank != null ? offer.Bank.Name
+                                    : string.Empty, "bank", Bank.Name));
                 if (here)
                 {
                     int tab = kind == ProductKind.CreditCard ? Card : Accounts;
@@ -306,7 +298,8 @@ namespace RealLifeOverhaul.Economy
                         ProductAnswer answer = desk.OpenAccount(kind, bank, out account);
                         if (answer == ProductAnswer.Yes)
                         {
-                            Tell(NotificationType.Success, "reallife_econ_note_opened", new Dictionary<string, string> { { "account", CreditDesk.Name(account) }, { "limit", FinanceText.Money(account.Agreed) } });
+                            Tell(NotificationType.Success, "reallife_econ_note_opened", new Dictionary<string, string> { { "account", CreditDesk.Name(account) }, { "limit",
+                                 FinanceText.Money(account.Agreed) } });
                             _product = -1;
                             _tab = kind == ProductKind.CreditCard ? Card : Accounts;
                         }
@@ -314,8 +307,6 @@ namespace RealLifeOverhaul.Economy
                     }), null, "reallife_econ_offer_open", "common_cancel", false, false));
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
         }
-
-        // ---------------------------------------------------------------- a business loan
 
         private void WriteBusiness(InfoBox box)
         {
@@ -377,7 +368,8 @@ namespace RealLifeOverhaul.Economy
                         {
                             Tell(NotificationType.Success, "reallife_econ_note_lent", new Dictionary<string, string>
                             {
-                                { "lender", bank.Name }, { "amount", FinanceText.Money(amount) }, { "fee", FinanceText.Money(made.Fee) }, { "payment", FinanceText.Money(made.DailyPayment + made.DailyInterest) }
+                                { "lender", bank.Name }, { "amount", FinanceText.Money(amount) }, { "fee", FinanceText.Money(made.Fee) }, { "payment", FinanceText.Money(made.DailyPayment
+                                    + made.DailyInterest) }
                             });
                             _product = -1;
                             _tab = Loans;
@@ -386,8 +378,6 @@ namespace RealLifeOverhaul.Economy
                     }), null, "reallife_econ_offer_apply", "common_cancel", false, false));
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
         }
-
-        // ---------------------------------------------------------------- a vehicle or a building on finance
 
         private void WriteFinance(InfoBox box, ProductKind kind)
         {
@@ -462,8 +452,6 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
         }
 
-        // ---------------------------------------------------------------- consolidation with this bank
-
         private void WriteConsolidate(InfoBox box)
         {
             CreditDesk desk = Desk;
@@ -500,7 +488,8 @@ namespace RealLifeOverhaul.Economy
                         ProductAnswer done = desk.Consolidate(bank);
                         if (done == ProductAnswer.Yes)
                         {
-                            Tell(NotificationType.Success, "reallife_econ_note_consolidated", new Dictionary<string, string> { { "lender", bank.Name }, { "amount", FinanceText.Money(after.Owed) }, { "daily", FinanceText.Money(after.Daily) } });
+                            Tell(NotificationType.Success, "reallife_econ_note_consolidated", new Dictionary<string, string> { { "lender", bank.Name }, { "amount", FinanceText.Money(after.Owed) },
+                                 { "daily", FinanceText.Money(after.Daily) } });
                             _product = -1;
                             _tab = Loans;
                         }

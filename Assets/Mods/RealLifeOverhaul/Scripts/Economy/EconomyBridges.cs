@@ -14,33 +14,19 @@ namespace RealLifeOverhaul.Economy
         public int LateDays;    // days running on which it could not be taken
     }
 
-    /// <summary>
-    /// What the economy asks of the rest of the mod. Each is optional and has a default, so Scripts/Economy works
-    /// alone; Scripts/Wiring/EconomyLinks.cs fills them in. Economy never calls another feature directly, and another
-    /// feature reaches the economy only through <see cref="CreditLedger"/> and <see cref="Finance"/>.
-    /// </summary>
+    /// <summary>What the economy asks of the rest of the mod, each with a default so it works alone; Wiring/EconomyLinks and Wiring/DebtLinks fill them in.</summary>
     public static class EconomyBridges
     {
         /// <summary>The legal and public record. Default: spotless.</summary>
         public static Func<LegalStanding> Legal;
 
-        /// <summary>
-        /// Whether a transaction of the mod's pays back a game charge the player did not owe (a ride the day pass covered,
-        /// a ticket on a vehicle lent to them): the city's cost of living counts the game's charges of the day less these.
-        /// </summary>
+        /// <summary>Whether a transaction of the mod's pays back a game charge the player did not owe, for the city's cost of living.</summary>
         public static Func<string, bool> GivenBack;
 
-        /// <summary>
-        /// Whether a transaction of another feature's is a business's takings (the broadband company's customers' bills,
-        /// at its headquarters): the game's statement counts it among the takings of the business at its address
-        /// (GameBooks), so the game's tax and bank do. Default: none.
-        /// </summary>
+        /// <summary>Whether another feature's transaction is a business's takings, for the game's statement (<see cref="GameBooks"/>). Default: none.</summary>
         public static Func<string, bool> Takings;
 
-        /// <summary>
-        /// The row among a business's goods (the cost of what it sold) that a transaction of another feature's is entered
-        /// in, by the row's text key (the broadband company's network); null for none. Default: none.
-        /// </summary>
+        /// <summary>The text key of the row among a business's goods another feature's transaction goes in (the broadband network); null for none. Default: none.</summary>
         public static Func<string, string> CostRow;
 
         /// <summary>False while the record cannot be read yet (its feature has not loaded this save). Default: ready.</summary>
@@ -49,10 +35,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Adds the fines and court debts the mod keeps to the list. Default: none.</summary>
         public static Action<List<DebtLine>> OtherDebts;
 
-        /// <summary>
-        /// A lender files a civil claim for this much with the courts. Returns the court's number of the claim, or 0 if
-        /// there is no court to file with (then the debt simply stays owed). Default: no court.
-        /// </summary>
+        /// <summary>A lender files a civil claim for this much. Returns the court's number of the claim, or 0 with no court to file with (the debt stays owed). Default: no court.</summary>
         public static Func<int, int> FileClaim;
 
         /// <summary>True while a claim with this number is still before the court. Default: no.</summary>
@@ -61,40 +44,27 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A claim is withdrawn (the debt behind it has been written off). Default: nothing.</summary>
         public static Action<int> WithdrawClaim;
 
-        /// <summary>
-        /// True while something has hold of the player that the lender of last resort keeps away from: custody, prison,
-        /// hospital, a trip, a scene of the mod's, a panel on the screen. Default: never.
-        /// </summary>
+        /// <summary>True while something has hold of the player that the private lender keeps away from: custody, prison, hospital, a trip, a scene, a panel. Default: never.</summary>
         public static Func<bool> Held;
 
-        /// <summary>
-        /// The player is set upon in the street: the injury a mugging gives (hours hurt, energy lost), with the
-        /// notification named. False if it cannot be done now. Default: cannot.
-        /// </summary>
+        /// <summary>The player is set upon in the street: a mugging's injury (hours hurt, energy lost), with the notification named. False if it cannot be done now. Default: cannot.</summary>
         public static Func<int, float, string, bool> Assault;
 
-        /// <summary>True if the player could see a thing at this point: it is near and the camera looks its way. Default: yes (so nothing is taken away in sight).</summary>
+        /// <summary>True if the player could see a thing at this point: it is near and the camera looks its way. Default: yes, so nothing is taken away in sight.</summary>
         public static Func<Vector3, bool> InView;
 
         /// <summary>A free stretch of kerb near a point, for the test tools' car. Default: none.</summary>
         public static SpotFinder KerbSpot;
 
-        /// <summary>Makes the picture of a phone contact with this id, in this colour. Default: the contact has the game's blank picture.</summary>
+        /// <summary>Makes the picture of a phone contact with this id, in this colour. Default: the game's blank picture.</summary>
         public static Action<string, Color> ContactIcon;
 
         public delegate bool SpotFinder(Vector3 near, out Vector3 spot, out Quaternion heading);
 
-        /// <summary>
-        /// The player's standing (Scripts/Fame) as a page of the Finance app, opened from the Overview with a button as the
-        /// city's page is: its white box and its table's rows are written by its own writer, in the app's frame. Default:
-        /// no such page and no button.
-        /// </summary>
+        /// <summary>The player's standing (Scripts/Fame) as a page of the Finance app, opened from the Overview with a button. Default: no page and no button.</summary>
         public static StandingPage Standing;
 
-        /// <summary>
-        /// The rival tycoons and the city's rich list (Scripts/Rivals) as a page of the Finance app, opened from the Overview
-        /// with a button as the Standing page is. Default: no such page and no button.
-        /// </summary>
+        /// <summary>The rival tycoons and the city's rich list (Scripts/Rivals) as a page of the Finance app. Default: no page and no button.</summary>
         public static StandingPage Rivals;
 
         public static void Reset()
@@ -119,9 +89,8 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// A page another feature writes into the Finance app's frame (the player's standing): whether it is there now, its
-    /// table, and its writer, which is given the white box, a row for an id, what is picked (a row's id, or null), a way to
-    /// pick another (null puts the pick away) and a way back to the Overview. Asked when the page is shown, never otherwise.
+    /// A page another feature writes into the Finance app's frame. Its writer is given the white box, a row for an id, what is
+    /// picked (null for nothing), a way to pick another (null puts the pick away) and a way back to the Overview.
     /// </summary>
     public sealed class StandingPage
     {
@@ -130,12 +99,11 @@ namespace RealLifeOverhaul.Economy
         public Action<InfoBox, Func<string, TableRow>, string, Action<string>, Action> Write;
     }
 
-    /// <summary>The Finance app as the rest of the mod may use it: open it, on a tab.</summary>
+    /// <summary>The Finance app as the rest of the mod may use it: open it on a tab. Each does nothing while the economy is off or the app is not on the phone.</summary>
     public static class Finance
     {
         public const int Overview = 0, Credit = 1, Borrow = 2, CashFlow = 3, Accounts = 4;
 
-        /// <summary>Opens the Finance app on a tab. Does nothing while the economy is off or the app is not on the phone.</summary>
         public static void Open(int tab)
         {
             EconomyDirector director = EconomyDirector.Instance;
@@ -165,7 +133,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Opens the Finance app on the city's page (Overview's own page while the city's economy is off).</summary>
+        /// <summary>Opens the Finance app on the city's page (the Overview's own page while the city's economy is off).</summary>
         public static void OpenCity()
         {
             EconomyDirector director = EconomyDirector.Instance;
