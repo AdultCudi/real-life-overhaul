@@ -6,23 +6,27 @@ using Localizor;
 namespace RealLifeOverhaul.Fame
 {
     /// <summary>
-    /// The words of Standing. Every text is a key of en.json, written out in full so that the locale check finds each one;
-    /// nothing here is kept. Called when the page shows something or a notification is made, never otherwise.
+    /// The words of Standing. Every key is written out in full so that the locale check finds it. Called when the page
+    /// shows something or a notification is made, never per frame.
     /// </summary>
     public static class FameText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        public static readonly string[] PartKeys = { "reallife_fame_part_0", "reallife_fame_part_1", "reallife_fame_part_2", "reallife_fame_part_3" };
-        public static readonly string[] PartAboutKeys = { "reallife_fame_part_about_0", "reallife_fame_part_about_1", "reallife_fame_part_about_2", "reallife_fame_part_about_3" };
-        public static readonly string[] TierKeys = { "reallife_fame_tier_0", "reallife_fame_tier_1", "reallife_fame_tier_2", "reallife_fame_tier_3", "reallife_fame_tier_4" };
-        public static readonly string[] ProfileKeys =
+        internal static readonly string[] PartAboutKeys =
+        {
+            "reallife_fame_part_about_0", "reallife_fame_part_about_1", "reallife_fame_part_about_2", "reallife_fame_part_about_3"
+        };
+        private static readonly string[] PartKeys = { "reallife_fame_part_0", "reallife_fame_part_1", "reallife_fame_part_2", "reallife_fame_part_3" };
+        private static readonly string[] TierKeys = { "reallife_fame_tier_0", "reallife_fame_tier_1", "reallife_fame_tier_2", "reallife_fame_tier_3", "reallife_fame_tier_4" };
+        private static readonly string[] ProfileKeys =
         {
             "reallife_fame_profile_0", "reallife_fame_profile_1", "reallife_fame_profile_2", "reallife_fame_profile_3", "reallife_fame_profile_4", "reallife_fame_profile_5"
         };
-        private static readonly string[] OpinionKeys = { "reallife_fame_opinion_0", "reallife_fame_opinion_1", "reallife_fame_opinion_2", "reallife_fame_opinion_3", "reallife_fame_opinion_4" };
-
-        // ---- what moved a part, by FameCause
+        private static readonly string[] OpinionKeys =
+        {
+            "reallife_fame_opinion_0", "reallife_fame_opinion_1", "reallife_fame_opinion_2", "reallife_fame_opinion_3", "reallife_fame_opinion_4"
+        };
         private static readonly string[] CauseKeys =
         {
             "reallife_fame_cause_0", "reallife_fame_cause_1", "reallife_fame_cause_2", "reallife_fame_cause_3", "reallife_fame_cause_4", "reallife_fame_cause_5",
@@ -33,7 +37,7 @@ namespace RealLifeOverhaul.Fame
             "reallife_fame_cause_30"
         };
 
-        // ---- what people in the street say, by FameReaction (Look says nothing)
+        // By FameReaction; None and Look say nothing.
         private static readonly string[][] StreetKeys =
         {
             null,
@@ -46,85 +50,7 @@ namespace RealLifeOverhaul.Fame
         };
         private static readonly string[] GreetRichKeys = { "reallife_fame_street_greet_rich_1", "reallife_fame_street_greet_rich_2", "reallife_fame_street_greet_rich_3" };
 
-        public static string T(string key)
-        {
-            return key.GetLocalization();
-        }
-
-        /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
-        public static string Fill(string key, params string[] pairs)
-        {
-            string text = key.GetLocalization();
-            for (int i = 0; i + 1 < pairs.Length; i += 2)
-            {
-                text = text.Replace("{" + pairs[i] + "}", pairs[i + 1] ?? string.Empty);
-            }
-            return text;
-        }
-
-        /// <summary>"Label: value" with the value in bold, as the game's white box writes a line.</summary>
-        public static string Pair(string labelKey, string value)
-        {
-            return T(labelKey) + " <b>" + value + "</b>";
-        }
-
-        public static string N(int value)
-        {
-            return value.ToString("N0", Inv);
-        }
-
-        public static string Signed(int value)
-        {
-            return (value > 0 ? "+" : string.Empty) + N(value);
-        }
-
-        /// <summary>An amount of money as the game writes it.</summary>
-        public static string Money(float amount)
-        {
-            return amount.ToCurrencyFormat();
-        }
-
-        public static string Part(FamePart part)
-        {
-            return T(PartKeys[FameRules.Clamp((int)part, 0, PartKeys.Length - 1)]);
-        }
-
-        public static string Tier(FameTier tier)
-        {
-            return T(TierKeys[FameRules.Clamp((int)tier, 0, TierKeys.Length - 1)]);
-        }
-
-        public static string Profile(FameProfile profile)
-        {
-            return T(ProfileKeys[FameRules.Clamp((int)profile, 0, ProfileKeys.Length - 1)]);
-        }
-
-        public static string Cause(FameCause cause)
-        {
-            return T(CauseKeys[FameRules.Clamp((int)cause, 0, CauseKeys.Length - 1)]);
-        }
-
-        /// <summary>A reputation in a word: poor, low, fair, good, excellent.</summary>
-        public static string Opinion(int value)
-        {
-            int band = value < 25 ? 0 : value < 45 ? 1 : value < 60 ? 2 : value < 80 ? 3 : 4;
-            return T(OpinionKeys[band]);
-        }
-
-        /// <summary>A reputation as the page writes it: "62, good".</summary>
-        public static string Rep(int value)
-        {
-            return Fill("reallife_fame_rep_value", "value", N(value), "word", Opinion(value));
-        }
-
-        /// <summary>The key of what somebody in the street says, by a roll; null for a reaction without words.</summary>
-        public static string StreetLine(FameReaction reaction, bool rich, int roll)
-        {
-            string[] keys = reaction == FameReaction.Greeting && rich ? GreetRichKeys : StreetKeys[FameRules.Clamp((int)reaction, 0, StreetKeys.Length - 1)];
-            return keys != null ? keys[FameRules.Clamp(roll, 0, 999) % keys.Length] : null;
-        }
-
-        // ---- the press: questions (the question, the first answer's button, the second's), what the player says, promises, invitations, pieces
+        // A question's keys: the question, then the first and second answers' buttons.
         private static readonly string[] RiseKeys = { "reallife_fame_q_rise", "reallife_fame_a_rise_0", "reallife_fame_a_rise_1" };
         private static readonly string[] PlansKeys = { "reallife_fame_q_plans", "reallife_fame_a_plans_0", "reallife_fame_a_plans_1" };
         private static readonly string[] PromiseAskKeys = { "reallife_fame_q_promise", "reallife_fame_a_promise_0", "reallife_fame_a_promise_1" };
@@ -163,7 +89,7 @@ namespace RealLifeOverhaul.Fame
             "reallife_fame_news_partnership", "reallife_fame_news_event"
         };
 
-        // ---- the city: requests (the sponsor's two wordings first), what each is, how it stands; the council's pushes
+        // The sponsor's request has two wordings, picked by its seed.
         private static readonly string[] RequestTitleKeys =
         {
             "reallife_fame_request_0", "reallife_fame_request_0b", "reallife_fame_request_1", "reallife_fame_request_2", "reallife_fame_request_3", "reallife_fame_request_4"
@@ -179,33 +105,61 @@ namespace RealLifeOverhaul.Fame
         };
         private static readonly string[] LobbyStateKeys = { "reallife_fame_lobby_state_0", "reallife_fame_lobby_state_1", "reallife_fame_lobby_state_2" };
 
-        private static int RequestAt(FameRequest r)
+        public static string T(string key) => key.GetLocalization();
+        public static string N(int value) => value.ToString("N0", Inv);
+        public static string Signed(int value) => (value > 0 ? "+" : string.Empty) + N(value);
+        public static string Money(float amount) => amount.ToCurrencyFormat();
+        public static string Hour(int hour) => hour.GetFormattedTime(0f, true);
+
+        /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
+        public static string Fill(string key, params string[] pairs)
         {
-            int kind = FameRules.Clamp((int)r.Kind, 0, 4);
-            return kind == 0 ? (r.Seed & 1) : kind + 1;
+            string text = key.GetLocalization();
+            for (int i = 0; i + 1 < pairs.Length; i += 2)
+            {
+                text = text.Replace("{" + pairs[i] + "}", pairs[i + 1] ?? string.Empty);
+            }
+            return text;
         }
 
-        public static string RequestTitle(FameRequest r)
+        public static Dictionary<string, string> Data(params string[] pairs)
         {
-            return Fill(RequestTitleKeys[RequestAt(r)], "district", FameGame.DistrictName(r.District));
+            var data = new Dictionary<string, string>(pairs.Length / 2);   // a new one each time: the game keeps it with the notification
+            for (int i = 0; i + 1 < pairs.Length; i += 2)
+            {
+                data[pairs[i]] = pairs[i + 1] ?? string.Empty;
+            }
+            return data;
         }
 
-        public static string RequestAbout(FameRequest r)
+        public static string Part(FamePart part) => Pick(PartKeys, (int)part);
+        public static string Tier(FameTier tier) => Pick(TierKeys, (int)tier);
+        public static string Profile(FameProfile profile) => Pick(ProfileKeys, (int)profile);
+        public static string Cause(FameCause cause) => Pick(CauseKeys, (int)cause);
+        public static string PromiseWords(FamePromiseKind kind) => Pick(PromiseKeys, (int)kind);
+        public static string PromiseState(FamePromiseState state) => Pick(PromiseStateKeys, (int)state);
+        public static string InviteName(FameInviteKind kind) => Pick(InviteKeys, (int)kind);
+        public static string InviteState(FameInviteState state) => Pick(InviteStateKeys, (int)state);
+        public static string RequestState(FameRequestState state) => Pick(RequestStateKeys, (int)state);
+        public static string LobbyState(FameLobbyState state) => Pick(LobbyStateKeys, (int)state);
+
+        /// <summary>A reputation in a word: poor, low, fair, good, excellent.</summary>
+        public static string Opinion(int value)
         {
-            return Fill(RequestAboutKeys[RequestAt(r)], "district", FameGame.DistrictName(r.District), "amount", Money(r.Amount));
+            int band = value < 25 ? 0 : value < 45 ? 1 : value < 60 ? 2 : value < 80 ? 3 : 4;
+            return T(OpinionKeys[band]);
         }
 
-        public static string RequestState(FameRequestState state)
+        /// <summary>A reputation as the page writes it: "62, good".</summary>
+        public static string Rep(int value) => Fill("reallife_fame_rep_value", "value", N(value), "word", Opinion(value));
+
+        /// <summary>The key of what somebody in the street says, by a roll; null for a reaction without words.</summary>
+        public static string StreetLine(FameReaction reaction, bool rich, int roll)
         {
-            return T(RequestStateKeys[FameRules.Clamp((int)state, 0, RequestStateKeys.Length - 1)]);
+            string[] keys = reaction == FameReaction.Greeting && rich ? GreetRichKeys : StreetKeys[FameRules.Clamp((int)reaction, 0, StreetKeys.Length - 1)];
+            return keys != null ? keys[FameRules.Clamp(roll, 0, 999) % keys.Length] : null;
         }
 
-        public static string LobbyState(FameLobbyState state)
-        {
-            return T(LobbyStateKeys[FameRules.Clamp((int)state, 0, LobbyStateKeys.Length - 1)]);
-        }
-
-        /// <summary>A question's keys: the question, the first answer's button, the second's.</summary>
         public static string[] QuestionKeys(FameAsk ask)
         {
             switch (ask.Question)
@@ -217,7 +171,7 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
-        /// <summary>What the player says with each of the two answers, as the scene's page shows it under the button.</summary>
+        /// <summary>What the player says with each answer, shown under its button.</summary>
         public static string[] SayKeys(FameAsk ask)
         {
             switch (ask.Question)
@@ -229,26 +183,6 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
-        public static string PromiseWords(FamePromiseKind kind)
-        {
-            return T(PromiseKeys[FameRules.Clamp((int)kind, 0, PromiseKeys.Length - 1)]);
-        }
-
-        public static string InviteName(FameInviteKind kind)
-        {
-            return T(InviteKeys[FameRules.Clamp((int)kind, 0, InviteKeys.Length - 1)]);
-        }
-
-        public static string InviteState(FameInviteState state)
-        {
-            return T(InviteStateKeys[FameRules.Clamp((int)state, 0, InviteStateKeys.Length - 1)]);
-        }
-
-        public static string PromiseState(FamePromiseState state)
-        {
-            return T(PromiseStateKeys[FameRules.Clamp((int)state, 0, PromiseStateKeys.Length - 1)]);
-        }
-
         /// <summary>The locale key of a piece for the City Ledger; null for none.</summary>
         public static string StoryKey(FameStory story)
         {
@@ -256,20 +190,16 @@ namespace RealLifeOverhaul.Fame
             return at > 0 && at < StoryKeys.Length ? StoryKeys[at] : null;
         }
 
-        /// <summary>An hour as the game writes the time.</summary>
-        public static string Hour(int hour)
+        public static string RequestTitle(FameRequest r) => Fill(RequestTitleKeys[RequestAt(r)], "district", FameGame.DistrictName(r.District));
+
+        public static string RequestAbout(FameRequest r) => Fill(RequestAboutKeys[RequestAt(r)], "district", FameGame.DistrictName(r.District), "amount", Money(r.Amount));
+
+        private static int RequestAt(FameRequest r)
         {
-            return hour.GetFormattedTime(0f, true);
+            int kind = FameRules.Clamp((int)r.Kind, 0, 4);
+            return kind == 0 ? (r.Seed & 1) : kind + 1;
         }
 
-        public static Dictionary<string, string> Data(params string[] pairs)
-        {
-            var data = new Dictionary<string, string>(pairs.Length / 2);   // (a dictionary each: the game keeps a notification's data)
-            for (int i = 0; i + 1 < pairs.Length; i += 2)
-            {
-                data[pairs[i]] = pairs[i + 1] ?? string.Empty;
-            }
-            return data;
-        }
+        private static string Pick(string[] keys, int index) => T(keys[FameRules.Clamp(index, 0, keys.Length - 1)]);
     }
 }
