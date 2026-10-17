@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 // Faults fixed in five more Economy folders (OwnBank, City, Online, Ventures, Finance), each reproduced in a file of its
 // own: OwnBankFixChecks.cs, CityFixChecks.cs, OnlineFixChecks.cs, VenturesFixChecks.cs and FinanceFixChecks.cs; their
@@ -60,7 +61,10 @@ internal static partial class Program
         }
         Check(stale.Count == 0, "economy fixes: the approval's question names the interest a day in every language" + (stale.Count > 0 ? ": " + string.Join(", ", stale) : string.Empty));
         Check(languages[0].words.TryGetValue("reallife_online_days_note", out string note) && note.Contains("six days"), "economy fixes: the day-by-day table's note says it holds today and six days");
-        Check(languages[0].words.TryGetValue("reallife_changes_next", out string next) && next.Contains("Fixed: your own bank") && next.Contains("Fixed: the Web shop")
+        // The fixes stay in the next row until a version numbers them, so every What's new row is read.
+        string next = string.Join(" ", languages[0].words
+            .Where(kv => kv.Key.StartsWith("reallife_changes_", StringComparison.Ordinal)).Select(kv => kv.Value));
+        Check(next.Contains("Fixed: your own bank") && next.Contains("Fixed: the Web shop")
               && next.Contains("Fixed: investors") && next.Contains("Fixed: the Finance app") && next.Contains("Fixed: the city's economy"),
             "economy fixes: What's new names each folder's fixes");
     }
