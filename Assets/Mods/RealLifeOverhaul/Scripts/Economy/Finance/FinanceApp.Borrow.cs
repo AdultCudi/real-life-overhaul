@@ -138,13 +138,16 @@ namespace RealLifeOverhaul.Economy
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // Round figures under the most on offer, the most, and the amount chosen.
+        // Round figures from the least a bank lends at today's prices to under the most on offer, the most, and the amount chosen.
         private void Amounts(int most)
         {
             _amounts.Clear();
             for (int i = 0; i < AmountSteps.Length && AmountSteps[i] < most; i++)
             {
-                _amounts.Add(AmountSteps[i]);
+                if (AmountSteps[i] >= CreditCatalogue.LoanLeast)
+                {
+                    _amounts.Add(AmountSteps[i]);
+                }
             }
             _amounts.Add(most);
             InsertAmount();

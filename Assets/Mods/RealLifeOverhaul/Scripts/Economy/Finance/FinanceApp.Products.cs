@@ -270,13 +270,23 @@ namespace RealLifeOverhaul.Economy
             Relief relief = CreditLedger.File.Relief;
             if (relief.HasApproval && relief.ApprovedKind == (int)kind)
             {
+                int today = SaveGameManager.Current.Day, held = today - relief.ApprovedDay + 1;
+                int perDay = ProductTerms.AdvanceCharge(relief.ApprovedAmount, relief.ApprovedRateBp, 1, AccountRules.DaysPerYear);
+                int charge = ProductTerms.AdvanceCharge(relief.ApprovedAmount, relief.ApprovedRateBp, held, AccountRules.DaysPerYear);   // as CreditDesk.CancelApproval takes it
                 box.Line(FinanceText.T("reallife_econ_approval_stands", "amount", FinanceText.Money(relief.ApprovedAmount), "day", (relief.ApprovedDay + ProductCatalogue.ApprovalDays).ToString(),
                     "deposit", relief.ApprovedDeposit + "%"), CellTone.Green);
+                box.Line(FinanceText.T("reallife_econ_approval_charge", "per_day", FinanceText.Money(perDay), "charge", FinanceText.Money(charge)), CellTone.Yellow);
                 InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_econ_approval_cancel", () =>
-                {
-                    desk.CancelApproval(false);
-                    After();
-                });
+                    GameConfirm.Show("reallife_econ_approval_cancel".Localize(), "reallife_econ_confirm_cancel_approval".Localize(new
+                        {
+                            amount = FinanceText.Money(relief.ApprovedAmount), lender = BankName(relief.ApprovedStreet, relief.ApprovedNumber), charge = FinanceText.Money(charge),
+                            days = held.ToString()
+                        }),
+                        () => UiClone.Safe(() =>
+                        {
+                            desk.CancelApproval(false);
+                            After();
+                        }), null, "reallife_econ_approval_cancel", "common_cancel", false, true));
                 return;
             }
             ProductOffer offer = desk.Offer(kind);
@@ -318,7 +328,8 @@ namespace RealLifeOverhaul.Economy
                     {
                         amount = FinanceText.Money(amount), lender = offer.Bank.Name, deposit = deposit + "%", own = FinanceText.Money(own), days = term.ToString(),
                         rate = (offer.RateBp / 100f).ToString("0.#"), day = (SaveGameManager.Current.Day + ProductCatalogue.ApprovalDays).ToString(),
-                        share = Mathf.RoundToInt(ProductCatalogue.RepossessionValueShare * 100f) + "%"
+                        share = Mathf.RoundToInt(ProductCatalogue.RepossessionValueShare * 100f) + "%",
+                        per_day = FinanceText.Money(ProductTerms.AdvanceCharge(amount, offer.RateBp, 1, AccountRules.DaysPerYear))
                     }),
                     () => UiClone.Safe(() =>
                     {

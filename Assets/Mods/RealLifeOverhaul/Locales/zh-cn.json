@@ -8287,8 +8287,8 @@
   "reallife_econ_finance_interest": "整个期限内的利息，最多：",
   "reallife_econ_finance_approve": "获得批准",
   "reallife_econ_confirm_finance_title": "获得批准：{kind}",
-  "reallife_econ_confirm_car": "{lender} 批准你最高 {amount} 的汽车贷款，年利率 {rate}%，期限 {days} 天，价格中的 {deposit} 由你支付。这 {amount} 现在就会打入你的现金，因为游戏要求支付全价。请在第 {day} 天结束前购买车辆：贷款方为价格减去你的首付后的部分提供贷款，其余的钱会退回。如果你什么都没买，全部款项都会退回，无论你手上是否还有这笔钱。车辆即为担保物：如果逾期还款时间足够长，它会被收走，并以其价格的 {share} 出售。你自己出售它，则出售所得须立即偿还。",
-  "reallife_econ_confirm_home": "{lender} 批准你最高 {amount} 的抵押贷款，年利率 {rate}%，期限 {days} 天，价格中的 {deposit} 由你支付。这 {amount} 现在就会打入你的现金，因为游戏要求支付全价。请在第 {day} 天结束前在 BizMan 中购买建筑：贷款方为价格减去你的首付后的部分提供贷款，其余的钱会退回。如果你什么都没买，全部款项都会退回，无论你手上是否还有这笔钱。建筑即为担保物：如果逾期还款时间足够长，它的租金将归贷款方。建筑不会从你手中被收走。",
+  "reallife_econ_confirm_car": "{lender} 批准你最高 {amount} 的汽车贷款，年利率 {rate}%，期限 {days} 天，价格中的 {deposit} 由你支付。这 {amount} 现在就会打入你的现金，因为游戏要求支付全价。请在第 {day} 天结束前购买车辆：贷款方为价格减去你的首付后的部分提供贷款，其余的钱会退回。如果你什么都没买，全部款项都会退回，无论你手上是否还有这笔钱。持有这笔钱期间，贷款方按该利率对全部 {amount} 收取利息，每天约 {per_day}，直到你购买或款项退回为止。车辆即为担保物：如果逾期还款时间足够长，它会被收走，并以其价格的 {share} 出售。你自己出售它，则出售所得须立即偿还。",
+  "reallife_econ_confirm_home": "{lender} 批准你最高 {amount} 的抵押贷款，年利率 {rate}%，期限 {days} 天，价格中的 {deposit} 由你支付。这 {amount} 现在就会打入你的现金，因为游戏要求支付全价。请在第 {day} 天结束前在 BizMan 中购买建筑：贷款方为价格减去你的首付后的部分提供贷款，其余的钱会退回。如果你什么都没买，全部款项都会退回，无论你手上是否还有这笔钱。持有这笔钱期间，贷款方按该利率对全部 {amount} 收取利息，每天约 {per_day}，直到你购买或款项退回为止。建筑即为担保物：如果逾期还款时间足够长，它的租金将归贷款方。建筑不会从你手中被收走。",
   "reallife_econ_consolidate_now": "目前情况",
   "reallife_econ_consolidate_then": "合并之后",
   "reallife_econ_consolidate_line": "欠款 {owed}，每天 {daily}，{days} 天",
@@ -19756,5 +19756,7 @@
   "reallife_ven_note_no_deal_room": "没有空间达成这笔交易：交易和资金承诺合计最多 {most} 项，一家企业最多分出其利润的 {share}。",
   "reallife_ven_counter_at_most": "{name} 已给出其最高金额，只能要求更小的股份。",
   "reallife_ven_note_call_missed_no_court": "今天无法向{name}支付{amount}。连续天数：{count}。没有法院受理此诉讼，对方只能等待还款。",
-  "reallife_ven_deal_call_no_court": "已连续逾期还款：{count}次。没有法院受理这笔债务，只能等待。"
+  "reallife_ven_deal_call_no_court": "已连续逾期还款：{count}次。没有法院受理这笔债务，只能等待。",
+  "reallife_econ_approval_charge": "在你购买或款项退回之前，持有这笔钱每天约需 {per_day} 利息：目前已累计 {charge}。",
+  "reallife_econ_confirm_cancel_approval": "这 {amount} 现在退回给 {lender}，并附上你持有 {days} 天的利息 {charge}。"
 }

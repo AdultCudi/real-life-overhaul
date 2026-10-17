@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_tab_col_category", 420f, TableSort.Text)
             .Column("reallife_econ_col_in", 300f, TableSort.Money, sums: true)
             .Column("reallife_econ_col_out", 300f, TableSort.Money, sums: true, right: true)
-            .Filter("reallife_tab_all_categories", CashFlow.CategoryKeys)
+            .Filter("reallife_tab_all_categories", CashCategory.Keys)
             .Order(0, false)
             .Empty("reallife_tab_empty_cash");
 
@@ -115,17 +115,45 @@ namespace RealLifeOverhaul.Economy
             "reallife_tab_step_reminder", "reallife_tab_step_fee", "reallife_tab_step_penalty", "reallife_tab_step_collections", "reallife_tab_step_repossession", "reallife_tab_step_claim"
         };
 
-        /// <summary>The next step further misses bring, by the ladder's counts, and how many away; false if none.</summary>
+        private static readonly LadderState Scratch = new LadderState();
+
+        /// <summary>
+        /// The next step further misses bring, by the ladder's counts, and how many away; false if none. During a payment
+        /// plan the next miss breaks it and takes the step LadderRules.Missed gives, worked out on a copy.
+        /// </summary>
         public static bool NextStep(LadderState s, int level, bool secured, out string stepKey, out int missesAway)
         {
             level = ProductCatalogue.Level(level);
+            int misses = s.Misses, broke = 0;
+            if (s.PlanLeft > 0)
+            {
+                Scratch.Clear();
+                Scratch.Misses = s.Misses;
+                Scratch.PlanLeft = s.PlanLeft;
+                Scratch.PlanPerDay = s.PlanPerDay;
+                Scratch.PlanUsed = s.PlanUsed;
+                Scratch.Step = s.Step;
+                Scratch.Penalty = s.Penalty;
+                Scratch.RepoDay = s.RepoDay;
+                Scratch.RepoPending = s.RepoPending;
+                Scratch.ClaimNumber = s.ClaimNumber;
+                LadderStep step = LadderRules.Missed(Scratch, level, secured, s.Overdue);
+                if (step != LadderStep.None && (int)step <= StepKeys.Length)
+                {
+                    stepKey = StepKeys[(int)step - 1];
+                    missesAway = 1;
+                    return true;
+                }
+                misses = Scratch.Misses;   // the miss that broke it took no step: the count goes on from it
+                broke = 1;
+            }
             int[] counts = ProductCatalogue.Counts(level);
             for (int i = 0; i < counts.Length && i < StepKeys.Length; i++)
             {
-                if (counts[i] > s.Misses && LadderRules.Takes((LadderStep)(i + 1), level, secured))
+                if (counts[i] > misses && LadderRules.Takes((LadderStep)(i + 1), level, secured))
                 {
                     stepKey = StepKeys[i];
-                    missesAway = counts[i] - s.Misses;
+                    missesAway = counts[i] - misses + broke;
                     return true;
                 }
             }

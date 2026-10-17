@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Smartphone;
 using UI.Smartphone.Apps.Persona;
@@ -51,7 +50,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Say("none", FinanceText.T("reallife_econ_row_no_debts"));
             }
-            PersonalWealthData wealth = PlayerHelper.GetPersonalWealth();
+            Books.Wealth(out PersonalWealthData wealth);
 
             box.Title(FinanceText.T("reallife_econ_tab_overview"));
             box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
@@ -82,7 +81,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_econ_over_rent", FinanceText.Money(due.Rent));
             box.Row("reallife_econ_over_wages", FinanceText.Money(due.Wages));
             box.Headline("reallife_econ_over_worth_head");
-            box.Row("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts));   // as Books.NetWorth
+            box.Row("reallife_econ_over_worth", FinanceText.Money(Books.NetWorth()));
             box.Note(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
             if (cityOn)

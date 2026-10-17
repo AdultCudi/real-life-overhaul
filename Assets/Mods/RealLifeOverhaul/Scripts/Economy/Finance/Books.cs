@@ -4,6 +4,7 @@ using BigAmbitions.Tags;
 using Entities;
 using Helpers;
 using Streets;
+using UI.Smartphone.Apps.Persona;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -86,6 +87,7 @@ namespace RealLifeOverhaul.Economy
                     o.Rent += r.RentPerDay;
                 }
             }
+            o.Rent = CityEconomyDirector.RentWithCity(o.Rent);   // the city's change to the night's rent, booked the next morning
             List<Transaction> paid = GameBooks.Day(today - 1);   // last night's run, filed under the day it ended
             for (int i = 0; i < paid.Count; i++)
             {
@@ -99,8 +101,28 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
+        /// The game's own wealth figures (it walks vehicles, boats and buildings); false, with cash alone as the wealth, if
+        /// they cannot be read.
+        /// </summary>
+        public static bool Wealth(out PersonalWealthData wealth)
+        {
+            try
+            {
+                wealth = PlayerHelper.GetPersonalWealth();
+                return true;
+            }
+            catch (Exception)
+            {
+                wealth = default(PersonalWealthData);
+                wealth.cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Net worth as the Overview shows it: the game's figure (cash alone if it cannot be read) less the mod's accounts,
-        /// the private lender, fines and court debts. Shares are left to the market, which adds its own (Wiring/MarketLinks).
+        /// the private lender, fines, court debts and an approval's money, which goes back. Shares are left to the market,
+        /// which adds its own (Wiring/MarketLinks).
         /// </summary>
         public static long NetWorth()
         {
@@ -109,17 +131,10 @@ namespace RealLifeOverhaul.Economy
             {
                 return 0L;
             }
-            float worth;
-            try
-            {
-                worth = PlayerHelper.GetPersonalWealth().CurrentWealth;
-            }
-            catch (Exception)
-            {
-                worth = save.Money;
-            }
+            Wealth(out PersonalWealthData wealth);
+            float worth = wealth.CurrentWealth;
             CreditFile file = CreditLedger.File;
-            float owed = 0f;
+            float owed = file != null && file.Relief.HasApproval ? file.Relief.ApprovedAmount : 0f;
             for (int i = 0; file != null && i < file.Accounts.Count; i++)
             {
                 owed += Owing(file.Accounts[i]) ? file.Accounts[i].Owed : 0f;

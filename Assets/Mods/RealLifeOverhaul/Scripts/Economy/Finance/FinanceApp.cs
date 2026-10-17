@@ -119,6 +119,7 @@ namespace RealLifeOverhaul.Economy
             _wantCity = false;
             _standing = _wantStanding && _tab == Finance.Overview && StandingOn() != null;
             _wantStanding = false;
+            _standingPick = _standing ? null : _standingPick;   // a notification opens the page afresh, as the rivals' does
             _city &= !_standing;
             OpenedRivals();
             _ready = _director.AppOpened();

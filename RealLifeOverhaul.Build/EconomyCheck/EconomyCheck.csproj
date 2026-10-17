@@ -340,6 +340,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RedrawRules.cs" Link="Mod\RedrawRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LookupRules.cs" Link="Mod\LookupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\FinanceTables.cs" Link="Mod\FinanceTables.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerPageStamp.cs" Link="Mod\LedgerPageStamp.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PhotoThumbs.cs" Link="Mod\PhotoThumbs.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\PhotoStoreRules.cs" Link="Mod\PhotoStoreRules.cs" />

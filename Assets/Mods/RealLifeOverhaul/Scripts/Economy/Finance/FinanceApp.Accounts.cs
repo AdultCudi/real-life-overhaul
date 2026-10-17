@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Economy
                     row.Set(3, Rate(a.RateNow), a.RateNow / 100.0, a.Ladder.Penalty ? TableRow.Red : TableRow.Plain);
                 }
                 NextPayment(a, today, out int next, out int day);
-                PaymentCells(row, next, day, today);
+                PaymentCells(row, next, day, today, !a.Test);
                 row.Set(6, FinanceText.State(a), Gravity(a.Ladder, a.Frozen), sound ? TableRow.Plain : TableRow.Red);
                 if (row.Id == _picked)
                 {
@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 owed += loan.remainingAmount;
-                TableRow row = Row("loan:" + i);
+                TableRow row = Row(LoanRowId(m));
                 row.Pick = true;
                 row.Kind = FinanceTables.OfLoan(m.Purpose);
                 bool frozen = (m.Held & LoanHold.Frozen) != 0, sound = m.Ladder.InOrder && !m.Ladder.Penalty;
@@ -185,6 +185,12 @@ namespace RealLifeOverhaul.Economy
             return selected;
         }
 
+        // A game loan's row by its mark (the bank, the first day and the sum), so a pick stays on the loan when one before it is paid off.
+        private static string LoanRowId(LoanMark m)
+        {
+            return "loan:" + m.Street + "#" + m.Number + "@" + m.FirstDay + "/" + Mathf.RoundToInt(m.Total);
+        }
+
         private static string BankName(string street, int number)
         {
             Lender lender = BankTerms.At(street, number);
@@ -215,13 +221,13 @@ namespace RealLifeOverhaul.Economy
             day = amount > 0 ? today + 1 : 0;
         }
 
-        private static void PaymentCells(TableRow row, int amount, int day, int today)
+        private static void PaymentCells(TableRow row, int amount, int day, int today, bool inTotal = true)
         {
             if (amount <= 0 || day <= 0)
             {
                 return;
             }
-            row.Set(4, FinanceText.Money(amount), amount);
+            row.Set(4, FinanceText.Money(amount), inTotal ? amount : double.NaN);   // a test tool's account is in no total
             row.Set(5, DayWord(day, today), day, day < today ? TableRow.Red : TableRow.Plain);
         }
 

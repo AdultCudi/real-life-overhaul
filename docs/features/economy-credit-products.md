@@ -84,7 +84,8 @@ What is built instead keeps the game's purchase untouched and turns the order ro
 3. **The account** opens for `ProductTerms.Financed`: the price less the buyer's deposit, never more than was approved.
    What was approved over that is taken back at once (`..._finance_returned`).
 4. **No purchase** by the end of the day after the approval: all of it is taken back, by force if it has been spent (the game lets cash go under nothing, as its own loan interest does).
-   The same on "Cancel the approval".
+   The same on "Cancel the approval", after the game's question with the interest for the days held.
+   Finance names that interest before it is approved (about so much a day on the whole sum) and on the approval's page.
 
 **Selling or losing the security** (`CreditDesk.Securities`, each game hour): when the vehicle or building is no longer the player's, the newest matching sale in the game's transactions since yesterday (`ba:transaction_itemsold` with the vehicle's type, `ba:transaction_buildingsold` with the address) is taken against the balance as far as it is still in cash.
 The rest stays owed on the same payments, unsecured, and the app says so.
