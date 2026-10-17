@@ -6,7 +6,10 @@ using RealLifeOverhaul;
 // Checks for what a long session keeps: the session record's count of the mod's objects by holder and by kind
 // (Diagnostics/ObjectKinds.cs, compiled as it ships), which names what grows in the line a minute, and over the sources
 // that the record counts them once a minute and never in a frame; and a record of the game's pooled people
-// (Core/CacheRules.cs, People/StreetPeople.cs) that starts again once it has outgrown the pools.
+// (Core/CacheRules.cs, People/StreetPeople.cs) that starts again once it has outgrown the pools; and over the sources,
+// that what a long session used to keep is let go on every path: a render target held across frames, the clip players
+// of characters the game destroyed, a replaced director's handlers, a desk's pointer, a car fire's hazard lights, a
+// half-built cordon or tow truck, a portrait handed back unreadable, Flare's rows' heights.
 internal static partial class Program
 {
     private static void Memory()
@@ -16,6 +19,49 @@ internal static partial class Program
         KindCap();
         KindSources();
         PooledRecord();
+        LetGoSources();
+    }
+
+    private static void LetGoSources()
+    {
+        string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string camera = Source(scripts, @"Social\Flare\FlareCityCamera.cs");
+        Check(Body(camera, "public static IEnumerator Take(").Contains("_pending = target;") && Body(camera, "public static void Clear()").Contains("Release();")
+              && Body(camera, "private static void Release()").Contains("RenderTexture.ReleaseTemporary(_pending)"),
+            "let go: a city photo's render target is held where Clear can release it, so a photo stopped while its pixels come back does not keep it");
+        string drawn = Body(Source(scripts, @"Social\Flare\FlareApp.Pictures.cs"), "private static Texture2D Drawn(");
+        int fin = drawn.IndexOf("finally", StringComparison.Ordinal), release = drawn.IndexOf("RenderTexture.ReleaseTemporary(rt)", StringComparison.Ordinal);
+        Check(fin >= 0 && release > fin && drawn.IndexOf("RenderTexture.active = before", fin, StringComparison.Ordinal) > fin,
+            "let go: a post's picture lets its render target go in a finally, a fault while drawing included");
+        Check(Body(Source(scripts, @"Social\Flare\FlareApp.Cells.cs"), "private void Measured(").Contains("_heights.Count >= HeightsMost"),
+            "let go: Flare's rows' heights are kept for HeightsMost rows at most");
+        string animators = Source(scripts, @"CityLife\Animation\ActivityAnimators.cs");
+        string sweep = Body(animators, "private static void SweepDead()");
+        Check(Body(animators, "public static ActivityAnimator For(").Contains("Players.Count >= SweepFrom") && sweep.Contains("Dispose()") && sweep.Contains("Players.Remove(")
+              && sweep.Contains("Stepping.Remove("),
+            "let go: the clip players of characters the game's pools destroyed are disposed and forgotten once SweepFrom are kept");
+        string economy = Body(Source(scripts, @"Economy\EconomyDirector.cs"), "private void OnDestroy()");
+        int off = economy.IndexOf("CreditLedger.GradeChanged -= _onGrade", StringComparison.Ordinal), early = economy.IndexOf("if (Instance != this)", StringComparison.Ordinal);
+        Check(off >= 0 && early > off && economy.IndexOf("CreditLedger.Posted -= _onPosted", StringComparison.Ordinal) < early,
+            "let go: a replaced economy director takes its handlers off the credit ledger's static events before it returns early");
+        string desk = Body(Source(scripts, @"Careers\CareersDirector.Desk.cs"), "private void DeskRelease(");
+        int pointer = desk.IndexOf("Destroy(_deskPointer.gameObject)", StringComparison.Ordinal);
+        Check(pointer >= 0 && desk.IndexOf("_deskPointer = null", StringComparison.Ordinal) > pointer, "let go: the desk's pointer is destroyed when the desk is let go");
+        string fire = Source(scripts, @"Events\FireScene.cs");
+        int hazards = fire.IndexOf("_hazards = TrafficEffects.CreateFlasher(", StringComparison.Ordinal);
+        Check(hazards > 0 && fire.LastIndexOf("Object.Destroy(_hazards)", hazards, StringComparison.Ordinal) > fire.LastIndexOf("private ", hazards, StringComparison.Ordinal),
+            "let go: a car fire's hazard lights are taken off a car before new ones are put on");
+        string cordon = Body(Source(scripts, @"Traffic\SceneCordon.cs"), "private bool Prewarm(");
+        int caught = cordon.IndexOf("catch (Exception e)", StringComparison.Ordinal);
+        Check(caught >= 0 && cordon.IndexOf("Destroy(_props)", caught, StringComparison.Ordinal) > caught, "let go: a cordon that fails half built in its prewarm is destroyed");
+        string tow = Body(Source(scripts, @"Traffic\Tow\TowTruck.cs"), "public static TowTruck Make(");
+        int towCaught = tow.IndexOf("catch", StringComparison.Ordinal);
+        Check(towCaught >= 0 && tow.IndexOf("Destroy(root)", towCaught, StringComparison.Ordinal) > towCaught && tow.IndexOf("throw;", towCaught, StringComparison.Ordinal) > towCaught,
+            "let go: a tow truck that fails half built is destroyed, and the fault still reaches its caller");
+        string portrait = Body(Source(scripts, @"Phone\Contacts\ContactPainter.cs"), "private void Drawn(");
+        int unreadable = portrait.IndexOf("!source.isReadable", StringComparison.Ordinal), requeue = portrait.IndexOf("Requeue(p)", StringComparison.Ordinal);
+        Check(unreadable >= 0 && requeue > unreadable && portrait.IndexOf("Destroy(sprite)", unreadable, StringComparison.Ordinal) is int gone && gone > unreadable && gone < requeue,
+            "let go: a portrait the game hands back unreadable is destroyed before the face is asked for again");
     }
 
     // The game's pools destroy what they overflow with and make new people: a record of every id ever seen must not grow
