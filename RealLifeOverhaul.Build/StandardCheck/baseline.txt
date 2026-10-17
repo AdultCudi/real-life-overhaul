@@ -102,7 +102,6 @@ RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusInterior.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Economy/GameBooks.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineDirector.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Markets/MarketStore.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/People/HornReactions.cs	1
@@ -458,9 +457,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.Acco
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.City.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.cs	6
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineApp.Shops.cs	10
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineDirector.Actions.cs	5
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineDirector.Tests.cs	10
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineDirector.cs	16
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Online/OnlineStore.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankApp.cs	14

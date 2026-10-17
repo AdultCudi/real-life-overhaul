@@ -5,19 +5,14 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What the player does with a site from the Web shop app: opens one, changes who delivers and what is promised,
-    /// has a better site built, advertises, pays hosting that fell behind, puts products on and off the site and
-    /// prices them, renames it, closes it. Each is one call from a button; anything that costs is taken as a
-    /// transaction of its own and refused, with the game's own notice, if the cash does not cover it.
-    /// </summary>
+    /// <summary>The online shops' director, part: what the player does with a site from the app; a cost the cash does not cover is refused.</summary>
     public sealed partial class OnlineDirector
     {
         private readonly List<string> _stocked = new List<string>(32);
 
         private bool Ready => _running && !_broken && Save != null && _state != null;
 
-        /// <summary>What a site of a quality would cost to set up today, and a month of its hosting, with whether the player's own agency would build it.</summary>
+        /// <summary>What a site of a quality would cost to set up today, a month of its hosting, and whether the player's own agency would build it.</summary>
         public void Quote(int quality, out int setUp, out int hosting, out bool inHouse)
         {
             inHouse = OnlineGame.HasAgency();
@@ -25,11 +20,7 @@ namespace RealLifeOverhaul.Economy
             hosting = OnlineRules.HostingCost(quality, _index);
         }
 
-        /// <summary>
-        /// Opens a site for a business or a warehouse. The set-up is charged (unless <paramref name="free"/>, a test)
-        /// and has the first month's hosting in it; everything the place stocks is put on the site, up to the
-        /// catalogue's size, at the shop's own prices.
-        /// </summary>
+        /// <summary>Opens a site with what the place stocks on it at the shop's prices, charging the set-up unless <paramref name="free"/> (a test).</summary>
         public WebPlace OpenShop(string placeKey, int quality, int way, int promise, bool free)
         {
             BuildingRegistration reg = Ready ? OnlineGame.Find(placeKey) : null;
@@ -39,7 +30,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (_state.Shops.Count >= OnlineCatalogue.ShopsMost)
             {
-                Notifications.Show(NotificationType.Warning, "reallife_online_note_most", new Dictionary<string, string> { { "count", OnlineCatalogue.ShopsMost.ToString() } }, 7f, null, null, true, false);
+                Notifications.Show(NotificationType.Warning, "reallife_online_note_most", new Dictionary<string, string> { { "count", OnlineCatalogue.ShopsMost.ToString() } },
+                    7f, null, null, true, false);
                 return null;
             }
             int setUp, hosting, day = Save.Day;
@@ -70,10 +62,11 @@ namespace RealLifeOverhaul.Economy
                 OnlineRules.Offer(shop, _stocked[i]);
             }
             _stocked.Clear();
-            PlanAll(day);   // (every site shares the city with one more)
+            PlanAll(day);   // every site now shares the city with one more
             OnlineGame.CountStock(place);
-            Logger?.Info("Online shops: " + shop.Name + " opened at " + OnlineGame.NameOf(reg) + (place.Warehouse ? " (a warehouse)" : string.Empty) + ": quality " + shop.Quality + (inHouse ? ", built by the player's own web agency" : string.Empty)
-                         + ", set-up " + (free ? "free (a test)" : setUp.ToString()) + ", hosting " + hosting + " a month from day " + shop.HostDue + ", " + shop.Lines.Count + " product(s) on it, "
+            Logger?.Info("Online shops: " + shop.Name + " opened at " + OnlineGame.NameOf(reg) + (place.Warehouse ? " (a warehouse)" : string.Empty) + ": quality " + shop.Quality
+                         + (inHouse ? ", built by the player's own web agency" : string.Empty) + ", set-up " + (free ? "free (a test)" : setUp.ToString()) + ", hosting " + hosting
+                         + " a month from day " + shop.HostDue + ", " + shop.Lines.Count + " product(s) on it, "
                          + (place.Site.PerDay / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " order(s) a day expected.");
             Notifications.Show(NotificationType.Success, "reallife_online_note_opened", new Dictionary<string, string> { { "name", shop.Name }, { "count", shop.Lines.Count.ToString() } }, 9f, null,
                 Guard.Wrap(() => Open(TabShops, "shop:" + placeKey)), true, false);
@@ -81,7 +74,7 @@ namespace RealLifeOverhaul.Economy
             return place;
         }
 
-        /// <summary>Closes a site: its day's book is paid in, its open orders are dropped unrated, and it is gone.</summary>
+        /// <summary>Closes a site: its day's book is paid in and its open orders are dropped unrated.</summary>
         public void CloseShop(string placeKey)
         {
             WebPlace place = Ready ? PlaceAt(placeKey) : null;
@@ -93,7 +86,7 @@ namespace RealLifeOverhaul.Economy
             CloseBook(place, Save.Day);
             _state.Shops.Remove(place.Shop);
             ReadPlaces();
-            PlanAll(Save.Day);   // (the sites that are left share the city between fewer)
+            PlanAll(Save.Day);   // the sites left share the city between fewer
             Logger?.Info("Online shops: " + name + " closed by the player. Its day's book was paid in; its open orders are dropped.");
             Changed();
         }
@@ -107,13 +100,13 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Online shops: " + place.Shop.Name + " now delivers by " + (way == OnlineCatalogue.Courier ? "courier" : "the player's own vans") + ".");
                 if (way == OnlineCatalogue.Courier)
                 {
-                    HandToCourier(place);   // (what was packed for a van is collected by the courier at once, at its fee; what a courier already has stays with it)
+                    HandToCourier(place);
                 }
                 Changed();
             }
         }
 
-        // Packed orders that waited for a van are collected by the courier now.
+        // What was packed for a van is collected by the courier now, at its fee; what a courier already has stays with it.
         private void HandToCourier(WebPlace place)
         {
             WebShop shop = place.Shop;
@@ -131,18 +124,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>Orders already taken keep the promise they were given.</summary>
         public void SetPromise(string placeKey, int promise)
         {
             WebPlace place = Ready ? PlaceAt(placeKey) : null;
             if (place != null && promise >= 0 && promise <= 1 && promise != place.Shop.Promise)
             {
-                place.Shop.Promise = promise;   // (orders already taken keep the promise they were given)
+                place.Shop.Promise = promise;
                 Replan(place);
                 Changed();
             }
         }
 
-        /// <summary>Has a better site built: the difference between the two set-up prices today.</summary>
+        /// <summary>Has a better site built, for the difference between the two set-up prices today.</summary>
         public void Upgrade(string placeKey, int quality)
         {
             WebPlace place = Ready ? PlaceAt(placeKey) : null;
@@ -157,7 +151,8 @@ namespace RealLifeOverhaul.Economy
                 Notifications.ShowInsufficientMoney();
                 return;
             }
-            Logger?.Info("Online shops: " + place.Shop.Name + " rebuilt from quality " + place.Shop.Quality + " to " + quality + " for " + cost + (inHouse ? ", by the player's own web agency" : string.Empty) + ".");
+            Logger?.Info("Online shops: " + place.Shop.Name + " rebuilt from quality " + place.Shop.Quality + " to " + quality + " for " + cost
+                         + (inHouse ? ", by the player's own web agency" : string.Empty) + ".");
             place.Shop.Quality = quality;
             place.Shop.InHouse = inHouse;
             Replan(place);
@@ -185,7 +180,8 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             OnlineRules.Advertise(place.Shop, Save.Day, percent);
-            Logger?.Info("Online shops: advertising booked for " + place.Shop.Name + ": cost " + cost + ", +" + percent + "% of orders on days " + place.Shop.AdFrom + " to " + (place.Shop.AdEnd - 1) + ".");
+            Logger?.Info("Online shops: advertising booked for " + place.Shop.Name + ": cost " + cost + ", +" + percent + "% of orders on days " + place.Shop.AdFrom + " to "
+                         + (place.Shop.AdEnd - 1) + ".");
             Notifications.Show(NotificationType.Success, "reallife_online_note_ads", new Dictionary<string, string>
             {
                 { "name", place.Shop.Name }, { "from", place.Shop.AdFrom.ToString() }, { "to", (place.Shop.AdEnd - 1).ToString() }, { "percent", percent.ToString() }
@@ -193,7 +189,7 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
-        /// <summary>Hosting that fell behind is paid now, if the cash covers it.</summary>
+        /// <summary>Pays hosting that fell behind now, if the cash covers it.</summary>
         public void PayHosting(string placeKey)
         {
             WebPlace place = Ready ? PlaceAt(placeKey) : null;
@@ -222,7 +218,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Puts a product on a site or takes it off. A product taken off stays in the list until nothing hangs on it (OnlineRules.Prune).</summary>
+        /// <summary>Puts a product on a site or takes it off. One taken off stays listed until nothing hangs on it (OnlineRules.Prune).</summary>
         public void Offer(string placeKey, string item, bool on)
         {
             WebPlace place = Ready ? PlaceAt(placeKey) : null;
@@ -234,7 +230,8 @@ namespace RealLifeOverhaul.Economy
             {
                 if (OnlineRules.Offer(place.Shop, item) == null)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_online_note_full", new Dictionary<string, string> { { "count", OnlineCatalogue.LinesMost.ToString() } }, 7f, null, null, true, false);
+                    Notifications.Show(NotificationType.Warning, "reallife_online_note_full", new Dictionary<string, string> { { "count", OnlineCatalogue.LinesMost.ToString() } },
+                        7f, null, null, true, false);
                     return;
                 }
             }
@@ -266,25 +263,25 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The retail products a place has in stock, for the app's catalogue page. One pass over what stands in the building.</summary>
+        /// <summary>The retail products a place has in stock, for the catalogue page. One pass over what stands in the building.</summary>
         public void Stocked(WebPlace place, List<string> into)
         {
             into.Clear();
-            if (Ready && place != null && place.Reg != null)
+            if (Ready && place.Reg != null)
             {
                 OnlineGame.Stocked(place.Reg, into);
             }
         }
 
-        // What the app writes of a business or a product, asked here so that the app itself never reads the game.
+        // Asked here so that the app itself never reads the game.
         public string KeyOf(BuildingRegistration reg) => OnlineGame.Place(reg);
         public string NameOf(BuildingRegistration reg) => OnlineGame.NameOf(reg);
         public string TypeOf(BuildingRegistration reg) => OnlineGame.TypeOf(reg);
         public string ItemName(string item) => OnlineGame.ItemName(item);
         public int ShopPrice(WebPlace place, string item) => OnlineGame.ShopPrice(place, item);
-        public int StockOf(WebPlace place, string item) => place != null ? OnlineGame.InStock(place.Reg, item) : 0;
+        public int StockOf(WebPlace place, string item) => OnlineGame.InStock(place.Reg, item);
 
-        /// <summary>The businesses and warehouses of the player's that have no site yet.</summary>
+        /// <summary>The player's businesses and warehouses that have no site yet.</summary>
         public void Candidates(List<BuildingRegistration> into)
         {
             into.Clear();
