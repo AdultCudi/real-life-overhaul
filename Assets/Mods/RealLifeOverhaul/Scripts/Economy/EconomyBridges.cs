@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Adds the fines and court debts the mod keeps to the list. Default: none.</summary>
         public static Action<List<DebtLine>> OtherDebts;
 
+        /// <summary>Adds the credit accounts other features keep (the student loan) to the list: registered on the rating each time the credit side starts. Default: none.</summary>
+        public static Action<List<ICreditAccount>> OtherAccounts;
+
         /// <summary>A lender files a civil claim for this much. Returns the court's number of the claim, or 0 with no court to file with (the debt stays owed). Default: no court.</summary>
         public static Func<int, int> FileClaim;
 
@@ -77,6 +80,7 @@ namespace RealLifeOverhaul.Economy
             CostRow = null;
             LegalReady = null;
             OtherDebts = null;
+            OtherAccounts = null;
             FileClaim = null;
             ClaimOpen = null;
             WithdrawClaim = null;

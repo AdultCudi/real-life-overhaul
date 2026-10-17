@@ -16,7 +16,6 @@ namespace RealLifeOverhaul.Economy
         private string WriteLoans(InfoBox box)
         {
             CreditDesk desk = Desk;
-            CreditFile file = CreditLedger.File;
             int today = SaveGameManager.Current.Day, perYear = Mathf.Max(1, AccountRules.DaysPerYear);
             string selected = null;
             Debt picked = default(Debt);
@@ -57,7 +56,7 @@ namespace RealLifeOverhaul.Economy
                     LoanMark m = d.Mark;
                     Loan loan = d.Loan;
                     bool frozen = (m.Held & LoanHold.Frozen) != 0;
-                    row = Row("loan:" + file.Loans.IndexOf(m));
+                    row = Row(FinanceApp.LoanRowId(m));   // by the loan, not its place in the list, which moves when one before it is paid off
                     row.Kind = FinanceTables.OfLoan(m.Purpose);
                     row.Set(0, FinanceText.T(FinanceTables.DebtKinds[row.Kind]));
                     row.Set(2, FinanceText.Money(loan.remainingAmount), loan.remainingAmount);

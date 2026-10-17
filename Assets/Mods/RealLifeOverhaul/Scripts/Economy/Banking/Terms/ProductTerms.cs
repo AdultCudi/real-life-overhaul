@@ -182,6 +182,16 @@ namespace RealLifeOverhaul.Economy
             return whole < 1 ? 1 : whole;
         }
 
+        /// <summary>
+        /// What holding approved money costs when the purchase is made on the last of the days held: interest on the part the
+        /// lender finances only (what goes back unused costs nothing), for the days before the purchase, as the account it
+        /// becomes charges its own from the day it opens. Nothing when it is bought on the day it was approved.
+        /// </summary>
+        public static int PurchaseCharge(int financed, int rateBp, int daysHeld, int daysPerYear)
+        {
+            return financed <= 0 || daysHeld <= 1 ? 0 : AdvanceCharge(financed, rateBp, daysHeld - 1, daysPerYear);
+        }
+
         public static int ConsolidationFee(int total)
         {
             return total <= 0 ? 0 : Math.Max(ProductCatalogue.ConsolidateFeeLeast, ProductCatalogue.ShareUp(total, ProductCatalogue.ConsolidateFeeShare));

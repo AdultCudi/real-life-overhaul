@@ -66,16 +66,17 @@ internal static partial class Program
         Check(MemberText(EconomySource(@"Finance\FinanceApp.Borrow.cs"), "private void Amounts(").Contains("AmountSteps[i] >= CreditCatalogue.LoanLeast"),
             "finance fix: a bank loan's amounts start at the least a bank lends at today's prices");
         string accounts = EconomySource(@"Finance\FinanceApp.Accounts.cs");
-        Check(accounts.Contains("Row(LoanRowId(m))") && !accounts.Contains("Row(\"loan:\" + i)") && MemberText(accounts, "private static string LoanRowId(").Contains("m.FirstDay"),
+        Check(accounts.Contains("Row(LoanRowId(m))") && !accounts.Contains("Row(\"loan:\" + i)") && MemberText(accounts, "internal static string LoanRowId(").Contains("m.FirstDay"),
             "finance fix: a game loan's row is known by the loan, not its place in the list");
         Check(accounts.Contains("PaymentCells(row, next, day, today, !a.Test)") && MemberText(accounts, "private static void PaymentCells(").Contains("inTotal ? amount : double.NaN"),
             "finance fix: a test account's next payment is in no total");
         Check(MemberText(EconomySource(@"Finance\FinanceApp.cs"), "public void Opened(").Contains("_standingPick = _standing ? null : _standingPick"),
             "finance fix: a Standing notification opens the page with nothing picked");
         string products = EconomySource(@"Finance\FinanceApp.Products.cs");
-        string finance = MemberText(products, "private void WriteFinance(");
-        Check(finance.Contains("\"reallife_econ_approval_charge\"") && finance.Contains("\"reallife_econ_confirm_cancel_approval\".Localize(") && finance.Contains("per_day = FinanceText.Money(ProductTerms.AdvanceCharge(")
-              && finance.IndexOf("desk.CancelApproval(false)", System.StringComparison.Ordinal) > finance.IndexOf("GameConfirm.Show(\"reallife_econ_approval_cancel\"", System.StringComparison.Ordinal),
+        string finance = MemberText(products, "private void WriteFinance("), approval = MemberText(products, "internal static void WriteApproval(");   // the page Finance and the bank apps share
+        Check(finance.Contains("WriteApproval(box, desk, relief, After);") && approval.Contains("\"reallife_econ_approval_charge\"") && approval.Contains("\"reallife_econ_confirm_cancel_approval\".Localize(")
+              && finance.Contains("per_day = FinanceText.Money(ProductTerms.AdvanceCharge(")
+              && approval.IndexOf("desk.CancelApproval(false)", System.StringComparison.Ordinal) > approval.IndexOf("GameConfirm.Show(\"reallife_econ_approval_cancel\"", System.StringComparison.Ordinal),
             "finance fix: an approval's interest is named before it is approved, on its page, and in a question before a cancel takes it");
     }
 }

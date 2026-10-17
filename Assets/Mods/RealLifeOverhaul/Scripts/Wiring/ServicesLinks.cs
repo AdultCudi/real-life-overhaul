@@ -88,7 +88,6 @@ namespace RealLifeOverhaul
             }
 
             private const string PayOffKey = "ba:transaction_loanpayoff";   // the game's own, for a loan paid off (LoanEntryUi.PayOffLoan)
-            private const string LoanPaidEvent = "ba:gameevent_loanpaid";
 
             private static readonly ServicesSource Source = new ServicesSource();
             private static readonly List<int> Deals = new List<int>(4);
@@ -236,7 +235,7 @@ namespace RealLifeOverhaul
                         }
                         loan.remainingAmount -= amount;
                         save.Loans.Remove(loan);
-                        GameEvent.Invoke(LoanPaidEvent);
+                        GameEvent.Invoke(GameLoans.LoanPaidEvent);
                     }
                     Loans.Clear();
                     return all;

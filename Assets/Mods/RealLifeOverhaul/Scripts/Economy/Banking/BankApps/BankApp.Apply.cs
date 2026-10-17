@@ -385,13 +385,7 @@ namespace RealLifeOverhaul.Economy
             Relief relief = CreditLedger.File.Relief;
             if (relief.HasApproval && relief.ApprovedKind == (int)kind)
             {
-                box.Line(FinanceText.T("reallife_econ_approval_stands", "amount", FinanceText.Money(relief.ApprovedAmount), "day", (relief.ApprovedDay + ProductCatalogue.ApprovalDays).ToString(),
-                    "deposit", relief.ApprovedDeposit + "%"));
-                InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_econ_approval_cancel", () =>
-                {
-                    desk.CancelApproval(false);
-                    After();
-                });
+                FinanceApp.WriteApproval(box, desk, relief, After);   // its cost so far, and a cancel asked first, as in Finance
                 return;
             }
             ProductOffer offer = desk.Offer(kind, Bank);
@@ -435,7 +429,8 @@ namespace RealLifeOverhaul.Economy
                     {
                         amount = FinanceText.Money(amount), lender = bank.Name, deposit = deposit + "%", own = FinanceText.Money(own), days = term.ToString(),
                         rate = (offer.RateBp / 100f).ToString("0.#"), day = (SaveGameManager.Current.Day + ProductCatalogue.ApprovalDays).ToString(),
-                        share = Mathf.RoundToInt(ProductCatalogue.RepossessionValueShare * 100f) + "%"
+                        share = Mathf.RoundToInt(ProductCatalogue.RepossessionValueShare * 100f) + "%",
+                        per_day = FinanceText.Money(ProductTerms.AdvanceCharge(amount, offer.RateBp, 1, AccountRules.DaysPerYear))
                     }),
                     () => UiClone.Safe(() =>
                     {
@@ -470,7 +465,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (answer != ProductAnswer.Yes)
             {
-                box.Line(Why(answer), CellTone.Red);
+                box.Line(FinanceApp.NotConsolidated(answer, Why(answer)), CellTone.Red);
                 Close(box);
                 return;
             }

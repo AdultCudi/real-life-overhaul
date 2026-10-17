@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 int day = Save.Day;
+                KeepLoanRates();
                 DeskDo("the hour", _deskKeep);   // what is held on a loan is in place before the loans are read: the night's run may follow at once
                 SyncLoans(day);
                 if (day != CreditLedger.File.SettledDay)
@@ -144,6 +145,42 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // The game prices every loan again when its interest multiplier is changed (SaveGameManager.ApplyNewDifficulty calls
+        // LoanHelper.RecalculateLoanPayments), at the rate each bank offers today, which is the rating's: each loan gets back the
+        // rate it was made at, at the new multiplier, and its payment. Called before anything takes a loan's figures as its own.
+        private void KeepLoanRates()
+        {
+            float now = GameLoans.Multiplier, was = _multiplier;
+            CreditFile file = CreditLedger.File;
+            if (Mathf.Approximately(now, was) || file == null)
+            {
+                return;
+            }
+            _multiplier = now;
+            bool holds = !_deskBroken && _desk.Running;   // a desk that is off has written every loan's own figures back
+            int kept = 0;
+            for (int i = 0; i < file.Loans.Count; i++)
+            {
+                LoanMark m = file.Loans[i];
+                var loan = m.Ref as Loan;
+                if (loan == null)
+                {
+                    continue;
+                }
+                Lender bank = BankTerms.At(m.Street, m.Number);
+                int years = bank != null && bank.Settings != null ? bank.Settings.yearsToPayLoan : 1;
+                int interest = loan.dailyInterest, payment = loan.dailyPayment;
+                LoanHolds.Repriced(m, ref interest, ref payment, was, now, years, AccountRules.DaysPerYear, holds);
+                kept += interest != loan.dailyInterest || payment != loan.dailyPayment ? 1 : 0;
+                loan.dailyInterest = interest;
+                loan.dailyPayment = payment;
+            }
+            CreditLedger.Touch();
+            Logger?.Info("Economy: the game's interest multiplier went from " + was.ToString("0.##", CultureInfo.InvariantCulture) + " to " + now.ToString("0.##", CultureInfo.InvariantCulture)
+                         + " and the game priced its loans again at today's rates: " + kept + " of " + file.Loans.Count
+                         + " loan(s) given back the rate each was made at, at the new multiplier, and its payment.");
+        }
+
         // A loan paid off in EconoView is read at once, so a debt arrangement it clears ends the moment it is paid.
         private void OnGameEvent(string gameEvent)
         {
@@ -154,6 +191,7 @@ namespace RealLifeOverhaul.Economy
             }
             try
             {
+                KeepLoanRates();
                 SyncLoans(Save.Day);
                 CreditLedger.Touch();
             }
@@ -167,6 +205,7 @@ namespace RealLifeOverhaul.Economy
         {
             CreditFile file = CreditLedger.File;
             bool exact = _preRunDay == day;
+            KeepLoanRates();
             GameLoans.Read(_live);
             _findings.Clear();
             LoanBook.Settle(file.Loans, _live, _findings);

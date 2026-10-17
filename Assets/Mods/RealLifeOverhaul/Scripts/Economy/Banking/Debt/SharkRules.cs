@@ -115,6 +115,12 @@ namespace RealLifeOverhaul.Economy
             return Math.Min(Math.Max(0, Cap(debt.Borrowed) - debt.Owed), ProductCatalogue.ShareUp(debt.Owed, ProductCatalogue.SharkExtendFeeShare));
         }
 
+        /// <summary>The day the debt is due once the extension is had today: what the lender names when it is asked for.</summary>
+        public static int ExtendedDay(SharkDebt debt, int today)
+        {
+            return Math.Max(debt.DueDay, today) + ProductCatalogue.SharkDueDays;
+        }
+
         /// <summary>The one extension: the fee goes on the debt and the due day moves on. False if it has been had.</summary>
         public static bool Extend(SharkDebt debt, int today)
         {
@@ -124,7 +130,7 @@ namespace RealLifeOverhaul.Economy
             }
             debt.Owed += ExtendFee(debt);
             debt.Extended = true;
-            debt.DueDay = Math.Max(debt.DueDay, today) + ProductCatalogue.SharkDueDays;
+            debt.DueDay = ExtendedDay(debt, today);
             debt.ActedDay = 0;
             debt.Waiting = SharkAct.None;
             return true;

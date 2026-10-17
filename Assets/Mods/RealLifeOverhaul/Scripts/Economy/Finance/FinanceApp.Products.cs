@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
@@ -179,8 +180,44 @@ namespace RealLifeOverhaul.Economy
 
         private void Refused(InfoBox box, ProductAnswer answer)
         {
-            box.Line(Why(answer), CellTone.Red);
+            Refused(box, Why(answer));
+        }
+
+        private void Refused(InfoBox box, string why)
+        {
+            box.Line(why, CellTone.Red);
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+        }
+
+        /// <summary>A consolidation's refusal: while the game's bankruptcy quest runs, the way out it gives, in place of <paramref name="why"/>.</summary>
+        internal static string NotConsolidated(ProductAnswer answer, string why)
+        {
+            return answer == ProductAnswer.Busy && CreditDesk.GameBankruptcy ? FinanceText.T("reallife_advice_game_quest") : why;
+        }
+
+        /// <summary>
+        /// An approval that stands, in Finance and in its bank's app: its terms, what holding it costs a day and so far, and a
+        /// cancel that asks first in the game's question box with that charge. <paramref name="after"/> redraws the app.
+        /// </summary>
+        internal static void WriteApproval(InfoBox box, CreditDesk desk, Relief relief, Action after)
+        {
+            int today = SaveGameManager.Current.Day, held = today - relief.ApprovedDay + 1;
+            int perDay = ProductTerms.AdvanceCharge(relief.ApprovedAmount, relief.ApprovedRateBp, 1, AccountRules.DaysPerYear);
+            int charge = ReliefRules.CancelCharge(relief, today, AccountRules.DaysPerYear);   // as CreditDesk.CancelApproval takes it
+            box.Line(FinanceText.T("reallife_econ_approval_stands", "amount", FinanceText.Money(relief.ApprovedAmount), "day", (relief.ApprovedDay + ProductCatalogue.ApprovalDays).ToString(),
+                "deposit", relief.ApprovedDeposit + "%"), CellTone.Green);
+            box.Line(FinanceText.T("reallife_econ_approval_charge", "per_day", FinanceText.Money(perDay), "charge", FinanceText.Money(charge)), CellTone.Yellow);
+            InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_econ_approval_cancel", () =>
+                GameConfirm.Show("reallife_econ_approval_cancel".Localize(), "reallife_econ_confirm_cancel_approval".Localize(new
+                    {
+                        amount = FinanceText.Money(relief.ApprovedAmount), lender = BankName(relief.ApprovedStreet, relief.ApprovedNumber), charge = FinanceText.Money(charge),
+                        days = held.ToString()
+                    }),
+                    () => UiClone.Safe(() =>
+                    {
+                        desk.CancelApproval(false);
+                        after();
+                    }), null, "reallife_econ_approval_cancel", "common_cancel", false, true));
         }
 
         private void ShowAccount(CreditAccount account)
@@ -270,23 +307,7 @@ namespace RealLifeOverhaul.Economy
             Relief relief = CreditLedger.File.Relief;
             if (relief.HasApproval && relief.ApprovedKind == (int)kind)
             {
-                int today = SaveGameManager.Current.Day, held = today - relief.ApprovedDay + 1;
-                int perDay = ProductTerms.AdvanceCharge(relief.ApprovedAmount, relief.ApprovedRateBp, 1, AccountRules.DaysPerYear);
-                int charge = ProductTerms.AdvanceCharge(relief.ApprovedAmount, relief.ApprovedRateBp, held, AccountRules.DaysPerYear);   // as CreditDesk.CancelApproval takes it
-                box.Line(FinanceText.T("reallife_econ_approval_stands", "amount", FinanceText.Money(relief.ApprovedAmount), "day", (relief.ApprovedDay + ProductCatalogue.ApprovalDays).ToString(),
-                    "deposit", relief.ApprovedDeposit + "%"), CellTone.Green);
-                box.Line(FinanceText.T("reallife_econ_approval_charge", "per_day", FinanceText.Money(perDay), "charge", FinanceText.Money(charge)), CellTone.Yellow);
-                InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_econ_approval_cancel", () =>
-                    GameConfirm.Show("reallife_econ_approval_cancel".Localize(), "reallife_econ_confirm_cancel_approval".Localize(new
-                        {
-                            amount = FinanceText.Money(relief.ApprovedAmount), lender = BankName(relief.ApprovedStreet, relief.ApprovedNumber), charge = FinanceText.Money(charge),
-                            days = held.ToString()
-                        }),
-                        () => UiClone.Safe(() =>
-                        {
-                            desk.CancelApproval(false);
-                            After();
-                        }), null, "reallife_econ_approval_cancel", "common_cancel", false, true));
+                WriteApproval(box, desk, relief, After);
                 return;
             }
             ProductOffer offer = desk.Offer(kind);
@@ -382,7 +403,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (answer != ProductAnswer.Yes)
             {
-                Refused(box, answer);
+                Refused(box, NotConsolidated(answer, Why(answer)));
                 return;
             }
             Transform buttons = box.ButtonRow();

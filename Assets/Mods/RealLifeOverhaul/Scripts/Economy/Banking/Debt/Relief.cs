@@ -193,5 +193,21 @@ namespace RealLifeOverhaul.Economy
         {
             return r.HasApproval && today > r.ApprovedDay + ProductCatalogue.ApprovalDays;
         }
+
+        /// <summary>What an approval that ends today with nothing bought costs: interest on all of it for every day it was held, today included.</summary>
+        public static int CancelCharge(Relief r, int today, int daysPerYear)
+        {
+            return ProductTerms.AdvanceCharge(r.ApprovedAmount, r.ApprovedRateBp, today - r.ApprovedDay + 1, daysPerYear);
+        }
+
+        /// <summary>
+        /// What an approval costs when its purchase is made today and <paramref name="financed"/> of it becomes the account: the
+        /// financed part only, to yesterday (<see cref="ProductTerms.PurchaseCharge"/>). Worked out when the approval ends, from
+        /// what it records, so one standing in an older save is charged so too.
+        /// </summary>
+        public static int PurchaseCharge(Relief r, int financed, int today, int daysPerYear)
+        {
+            return ProductTerms.PurchaseCharge(Math.Min(financed, r.ApprovedAmount), r.ApprovedRateBp, today - r.ApprovedDay + 1, daysPerYear);
+        }
     }
 }

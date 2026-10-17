@@ -46,6 +46,10 @@ namespace RealLifeOverhaul.Economy
         public bool PenaltyEnded;
         public bool Statement;      // card: a statement was drawn up today
         public bool Closed;         // paid off today
+        public bool PaidEarly;      // card: the minimum due today was paid by hand before it
+
+        /// <summary>A payment due today was made in full, today or before it: one paid on time on the credit file.</summary>
+        public bool OnTime => WasDue && Missed == 0 && (Paid > 0 || PaidEarly);
     }
 
     /// <summary>
@@ -415,6 +419,7 @@ namespace RealLifeOverhaul.Economy
                     o.Missed = minimum;
                 }
                 o.WasDue = first;
+                o.PaidEarly = first && minimum == 0;   // a statement's minimum is never nothing: it was paid by hand before today
                 if (!a.Charged)
                 {
                     a.Charged = true;

@@ -185,8 +185,8 @@ namespace RealLifeOverhaul.Economy
             return selected;
         }
 
-        // A game loan's row by its mark (the bank, the first day and the sum), so a pick stays on the loan when one before it is paid off.
-        private static string LoanRowId(LoanMark m)
+        /// <summary>A game loan's row in Finance and a bank app, by its mark (the bank, the first day and the sum): a pick stays on the loan when one before it is paid off.</summary>
+        internal static string LoanRowId(LoanMark m)
         {
             return "loan:" + m.Street + "#" + m.Number + "@" + m.FirstDay + "/" + Mathf.RoundToInt(m.Total);
         }

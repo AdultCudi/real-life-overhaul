@@ -329,9 +329,38 @@ namespace RealLifeOverhaul.Economy
             if (!debt.Extended)
             {
                 entry.SecondOptionTextOverride = "reallife_lender_extend";
-                entry.OnSecondOption = () => DebtPhone.Safe(Extend);
+                entry.OnSecondOption = () => DebtPhone.Safe(AskExtend);   // the game's second button takes a key only: the fee is named in the answer
             }
             return entry;
+        }
+
+        // The extension's terms before it is agreed: the fee on top of what is owed, and the new day.
+        private static DialogEntry AskExtend()
+        {
+            CreditDesk desk = DebtPhone.Desk;
+            SharkDebt debt = desk != null && desk.Running ? desk.Shark : null;
+            if (debt == null)
+            {
+                return PhoneContacts.Closing("reallife_lender_nobody");
+            }
+            if (!debt.Active || debt.Extended)
+            {
+                return PhoneContacts.Closing("reallife_lender_no_extension");
+            }
+            int today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
+            SharkRules.Grow(debt, today);   // as the extension itself works the fee out
+            int fee = SharkRules.ExtendFee(debt);
+            return new DialogEntry
+            {
+                messageData = "reallife_lender_extend_terms".Localize(new
+                {
+                    fee = DebtPhone.Money(fee), amount = DebtPhone.Money(debt.Owed + fee), day = SharkRules.ExtendedDay(debt, today).ToString()
+                }),
+                ConfirmTextOverride = "reallife_lender_extend_agree".Localize(new { fee = DebtPhone.Money(fee) }),
+                OnConfirm = () => DebtPhone.Safe(Extend),
+                CancelTextOverride = "reallife_lender_no",
+                OnCancel = PhoneContacts.HangUp
+            };
         }
 
         private static DialogEntry Pay(int amount)

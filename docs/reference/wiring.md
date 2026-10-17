@@ -158,5 +158,6 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 | `Events.Weather.Wardrobe` | nobody | the wardrobe catalogue keeps what is worn private and has no coat |
 | `Economy.EconomyBridges.Legal`, `LegalReady` | `Wiring.EconomyLinks` | convictions that count (`Standing.Convictions`); from `JusticeState.Debts`: civil judgments being paid off, what is owed, and the days running on which a debt could not be taken (`JusticeDebt.Missed`); `ModState.PendingFine`; `Law.Record.Recent(30)`. Ready when Justice has read the save |
 | `Economy.EconomyBridges.OtherDebts` | `Wiring.EconomyLinks` | the same debts as lines for the Finance app: a court fine, legal fees, a civil judgment, a fine waiting at the police station |
+| `Economy.EconomyBridges.OtherAccounts` | `Wiring.CareersLinks` | the student loan as a credit account, registered on the rating each time the credit side starts (its ledger forgets every account when it stands down) |
 | the Planner's Finance rows | `Wiring.EconomyLinks` (`PlannerDirector.AddSource`) | tomorrow's payments over every credit account, a missed payment, a change of grade: read from `CreditLedger` |
 | `News` (the City Ledger) | `Wiring.Paper.Print(key)` | a finished story: verdicts (`JusticeDirector`), fires (`EventDirector.Begin`), election results and scandals (civic life) |

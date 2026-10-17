@@ -141,9 +141,9 @@ namespace RealLifeOverhaul.Economy
                     missed++;
                     missedAmount += o.Missed;
                 }
-                else if (o.WasDue && o.Paid > 0)
+                else if (o.OnTime)
                 {
-                    paid++;
+                    paid++;   // a card's minimum paid by hand before its day counts as well, with nothing taken today
                     paidAmount += o.Paid;
                 }
                 if (Verbose && (o.WasDue || o.Paid > 0 || o.Interest > 0 || o.Statement))

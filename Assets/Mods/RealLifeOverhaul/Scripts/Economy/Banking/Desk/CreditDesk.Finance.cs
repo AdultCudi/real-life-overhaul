@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Economy
             }
             int amount = r.ApprovedAmount, cash = _wallet.Cash;
             string kind = FinanceText.T(ProductCatalogue.KindKeys[r.ApprovedKind]);
-            int charge = ProductTerms.AdvanceCharge(amount, r.ApprovedRateBp, Today - r.ApprovedDay + 1, AccountRules.DaysPerYear);
+            int charge = ReliefRules.CancelCharge(r, Today, AccountRules.DaysPerYear);
             r.ClearApproval();
             _wallet.Force(amount, Money.AdvanceBack, kind);
             _wallet.Force(charge, Money.AdvanceCharge, kind);
@@ -181,7 +181,8 @@ namespace RealLifeOverhaul.Economy
             RememberOwned();
         }
 
-        // The purchase is made and paid from cash: the account opens for what the lender finances, the rest goes back with a charge.
+        // The purchase is made and paid from cash: the account opens for what the lender finances and the rest goes back. The
+        // approval's interest is on the financed part only, up to yesterday, as the account charges its own from today.
         private void Financed(ProductKind kind, string security, string name, int price, int day)
         {
             Relief r = _file.Relief;
@@ -194,7 +195,7 @@ namespace RealLifeOverhaul.Economy
                 account.Street = r.ApprovedStreet;
                 account.Number = r.ApprovedNumber;
             }
-            int charge = ProductTerms.AdvanceCharge(approved, r.ApprovedRateBp, day - r.ApprovedDay + 1, AccountRules.DaysPerYear);
+            int held = day - r.ApprovedDay + 1, charge = ReliefRules.PurchaseCharge(r, financed, day, AccountRules.DaysPerYear);
             r.ClearApproval();
             _owned.Clear();
             _ownedCount = -1;
@@ -212,7 +213,8 @@ namespace RealLifeOverhaul.Economy
             {
                 Logger?.Info("Economy check (purchase on finance): '" + name + "' (" + security + ") bought for " + price + ": " + financed + " financed of " + approved + " approved, "
                              + (approved - financed)
-                             + " returned, the buyer's own money " + (price - financed) + " (" + asked + "% asked): " + (financed <= approved && price - financed >= 0 ? "PASS" : "FAIL"));
+                             + " returned, the buyer's own money " + (price - financed) + " (" + asked + "% asked), " + charge + " of interest on the financed part for the "
+                             + (held - 1) + " day(s) before today: " + (financed <= approved && price - financed >= 0 ? "PASS" : "FAIL"));
             }
             _director.TermsChanged("a purchase on finance");
         }

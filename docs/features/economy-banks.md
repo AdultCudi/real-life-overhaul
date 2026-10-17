@@ -54,6 +54,7 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
 
 - **Loans**: every loan owed to the bank, the game's own and the mod's (business, consolidation, car finance, mortgage, late fees).
   Pick one: its figures, how it stands, the next step if payments are missed, and pay an amount or pay it off.
+  A game loan's row is known by the loan (`FinanceApp.LoanRowId`: its bank, first day and sum), so a pick stays on it when a loan before it is paid off.
 
   A game loan is paid as EconoView pays it (`LoanEntryUi.PayOffLoan`: the game's `ba:transaction_loanpayoff` under the bank's name, the amount off `remainingAmount`, the loan out of the list with `ba:gameevent_loanpaid` when nothing is left); the credit file then reads it as it reads a payment made in EconoView (`EconomyDirector.BringUpToDate`).
   A collections call that waits shows its three answers here as well.
@@ -62,6 +63,7 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
 - **Card**: a card held here: limit, balance, the share used, the rate, the statement, the minimum and its due day; pay the minimum, an amount or all of it; draw cash; close it at nothing owed.
   The table is the card's own movements over 30 days.
 - **Apply**: the bank's loan, overdraft, card, business loan, car finance, mortgage and consolidation, each with its figures today; a page for each with the same question boxes as the Finance app.
+  An approval that stands shows Finance's own page (`FinanceApp.WriteApproval`): what holding it costs so far, and a cancel asked first in the game's question box with that charge.
 - **Rating**: the bank's terms at five ratings from just under the threshold to the best terms, and the player's own: a loan up to (its cap before income and wealth), its rate, the card, the overdraft and car finance; what the next 50 points would bring at this bank; what would raise the rating.
 
 ## The game's parts

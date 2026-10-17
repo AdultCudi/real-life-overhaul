@@ -579,7 +579,7 @@ namespace RealLifeOverhaul.Economy
         private bool KeepRate()
         {
             float points = CityModel.BasePoints(_state);
-            float multiplier = Save != null && Save.gameVariables != null ? Save.gameVariables.bankInterestMultiplier : 1f;
+            float multiplier = GameLoans.Multiplier;
             int bp = ProductTerms.BaseBp(points, multiplier);
             if (LendingTerms.BasePoints == points && AccountRules.BaseBp == bp && AccountRules.BaseMultiplier == multiplier)
             {
