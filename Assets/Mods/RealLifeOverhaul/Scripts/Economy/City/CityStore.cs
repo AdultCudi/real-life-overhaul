@@ -6,29 +6,15 @@ using System.Text;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The city's economy in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=1~h:...~d:...~s:...~n:...
-    ///
-    /// Parts are divided by '~' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: the numbers of <see cref="CityState"/>, in the order of <see cref="Write"/>
-    ///   d  the districts: name|start|income|a month ago
-    ///   s  supply, one record per kind of goods in the catalogue's order: factor|shock|from|days|size
-    ///   n  the pieces for the paper that are not yet out of date: day|kind|a|b|c|d|name
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads. A line that cannot be read is left alone and the economy
-    /// is opened afresh. Nothing here is the game's: a save loads in the plain game with this line ignored.
-    ///
-    /// <see cref="TestKey"/> holds the same line as it was before the first test tool changed it, for as long as test
-    /// changes are in place.
+    /// The city's economy as one line of the save's modData, <c>v=1~h:...~d:...~s:...~n:...</c> (parts split by '~', records
+    /// by ';', fields by '|'): the header, the districts, supply by kind and the paper's pieces still due, in the order of
+    /// <see cref="Write"/>. A later version adds fields at the end of a record, or parts this reader skips. Game-free.
     /// </summary>
     public static class CityStore
     {
         public const string Key = "reallife:economy_city";
-        public const string TestKey = "reallife:economy_city_before_tests";
-        public const string EveKey = "reallife:economy_city_eve";   // the day the evening notice of a rate decision was last sent: the player's own, never in the line a host sends
+        public const string TestKey = "reallife:economy_city_before_tests";   // the line as it was before the first test tool changed it
+        public const string EveKey = "reallife:economy_city_eve";   // the day the evening notice of a rate decision was last sent; never sent by a host
         public const int Version = 1;
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -42,15 +28,16 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is
         }
 
         public static string Write(CityState s)
         {
             var t = new StringBuilder(256 + s.Districts.Count * 40);
             t.Append("v=").Append(Version).Append("~h:");
-            Join(t, s.Seed, s.Age, s.LastDay, (int)s.Cycle, s.MonthsLeft, s.MonthsIn, s.Base, s.BaseBefore, s.Pending ? 1 : 0, s.PendingMove, (int)s.PendingReason,
-                s.LastMove, (int)s.LastReason, s.Index, s.Inflation, s.Pressure, s.MonthChange, s.CarryRent, s.CarryWages, s.CarryTakings, s.LastCopycatDay, s.Buys, s.CarryLiving);
+            Join(t, s.Seed, s.Age, s.LastDay, (int)s.Cycle, s.MonthsLeft, s.MonthsIn, s.Base, s.BaseBefore, s.Pending ? 1 : 0, s.PendingMove,
+                (int)s.PendingReason, s.LastMove, (int)s.LastReason, s.Index, s.Inflation, s.Pressure, s.MonthChange, s.CarryRent, s.CarryWages,
+                s.CarryTakings, s.LastCopycatDay, s.Buys, s.CarryLiving);
             t.Append("~d:");
             for (int i = 0; i < s.Districts.Count; i++)
             {
@@ -149,7 +136,11 @@ namespace RealLifeOverhaul.Economy
                                 int kind = I(c, 1, -1);
                                 if (c.Length >= 6 && kind >= 0 && kind < MacroCatalogue.NewsKinds && s.News.Count < 16)
                                 {
-                                    s.News.Add(new CityNews { Day = I(c, 0), Kind = (CityNewsKind)kind, A = I(c, 2), B = I(c, 3), C = I(c, 4), D = I(c, 5), Name = c.Length > 6 ? c[6] : string.Empty });
+                                    s.News.Add(new CityNews
+                                    {
+                                        Day = I(c, 0), Kind = (CityNewsKind)kind, A = I(c, 2), B = I(c, 3), C = I(c, 4), D = I(c, 5),
+                                        Name = c.Length > 6 ? c[6] : string.Empty
+                                    });
                                 }
                             }
                             break;
@@ -187,7 +178,7 @@ namespace RealLifeOverhaul.Economy
             s.CarryTakings = Math.Max(0, I(c, 19));
             s.LastCopycatDay = Math.Max(0, I(c, 20));
             s.Buys = I(c, 21) & ((1 << MacroCatalogue.SupplyKinds) - 1);
-            s.CarryLiving = Math.Max(0, I(c, 22));   // (none in a save from before it was kept)
+            s.CarryLiving = Math.Max(0, I(c, 22));
         }
 
         private static RateReason Reason(int value)
@@ -214,7 +205,7 @@ namespace RealLifeOverhaul.Economy
             return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
         }
 
-        /// <summary>A text with the three dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the three dividers taken out, so it can never break the line apart.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('~', ' ');

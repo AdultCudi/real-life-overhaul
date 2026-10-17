@@ -17,7 +17,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDeck.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/PlayerOffences.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/Scenes/CarPursuitScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/LoanBook.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Market.cs	1
@@ -167,7 +166,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictPanel.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityEconomyDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
@@ -443,11 +441,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.Loans.cs	
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BanksDirector.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/CreditDesk.Banks.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityEconomy.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityEconomyDirector.cs	23
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityGame.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityStore.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityText.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/CreditDesk.Relief.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/DebtPhone.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	6

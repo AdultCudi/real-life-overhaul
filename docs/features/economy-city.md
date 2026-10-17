@@ -32,7 +32,8 @@ Economy/City/       the first four are game-free and compiled by EconomyCheck
   CityGame            THE GAME SIDE: districts from the game's neighbourhoods, the goods and their wholesale prices, the
                       player's businesses and their prices, the day's rent, wages and takings; CityBridges; CityShop
   CityText            the words: one way of writing each figure for the app, the paper, the Planner and a notification
-  CityEconomyDirector keeps it going and applies it: the day, the hour, the save, the tests
+  CityEconomyDirector keeps it going and applies it: the day, the hour, the save; its parts .Money (the rent, wages
+                      and takings adjustments), .Rivals, .News (notifications and the paper) and .Tests
 Economy/Finance/FinanceApp.City.cs   three lines on the Overview and the page "The city"
 Wiring/CityLinks.cs                  the calendar and the weather, business pressure (footfall, rivals), the paper, the Planner's rows
 ```
