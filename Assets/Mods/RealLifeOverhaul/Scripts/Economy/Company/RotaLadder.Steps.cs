@@ -3,52 +3,34 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The making of a ladder (see RotaLadder.cs), a step at a time. A candidate week is made the same way each time:
-    /// the worth of its hours is laid out, its cleaning hours are chosen by what each brings, a rota is made, the
-    /// hours nobody can keep are cut and the rota made again, and the week is valued. One step is one of those
-    /// pieces, one cleaning hour, or one step of the rota.
-    /// </summary>
+    /// <summary>The ladder made a step at a time: the order of its candidate weeks, which become rungs, and what a rung changes.</summary>
     public sealed partial class RotaLadder
     {
         private const int PhaseIdle = 0, PhaseGrid = 1, PhaseClean = 2, PhaseLay = 3, PhaseSolve = 4, PhaseCut = 5, PhaseSum = 6, PhaseFit = 7;
         private const int SeqStart = 0, SeqLean = 1, SeqStaff = 2, SeqCut = 3, SeqAdvised = 4, SeqHire = 5, SeqDone = 6, SeqExtend = 7;
         private const int CutNone = 0, CutPlain = 1, CutBlocks = 2;
-        private const int BenchMost = 8;    // people one candidate week may leave out, one after another, before whoever is still short simply gets no hours
 
         private RotaShop _shop;
         private RotaProblem _base;
         private readonly RotaProblem _work = new RotaProblem();
         private RotaSolver _solver;
+        private RotaAdvisor _advisor;
         private RotaOutlook _outlook;
         private RotaPlan _now;
         private bool[] _barred;
         private int _wanted;
         private RotaLadderResult _into;
-        private int _seq = SeqDone, _phase = PhaseIdle, _cut, _candMode, _mode;
-        private readonly bool[] _open = new bool[Cells], _blocked = new bool[Cells];
-        private readonly int[] _servedEst = new int[Cells], _clean = new int[Cells], _cleanFree = new int[Cells], _cellOrder = new int[Cells];
-        private readonly int[] _dayClean = new int[Days];
-        private readonly bool[] _moved = new bool[Days];
-        private int _moveAt, _moveWarm, _moveBest;
-        private long _moveNow, _moveMost;
+        private int _seq = SeqDone, _phase = PhaseIdle, _cut, _mode;
+        private readonly bool[] _open = new bool[Cells];
         private bool[] _need = new bool[0];
-        private int _cleanCount, _cleanTarget, _cleanWage;
-        private bool _cleanOn, _cleanPays;
         private readonly RotaPlan _plan = new RotaPlan();
         private readonly RotaRung _cand = new RotaRung(), _best = new RotaRung(), _a = new RotaRung(), _hireBest = new RotaRung();
         private readonly List<RotaRole> _roles = new List<RotaRole>(8);
         private readonly int[] _hired = new int[HiresMost], _tryGroups = new int[GroupsTried];
         private int _hires, _tryCount, _tryAt, _hireGroup;
         private bool _hireAny;
-        private readonly RotaFit _fit = new RotaFit();
-        private bool[] _benched = new bool[0];
-        private bool _rescuing;             // whoever has no hours is having the last try, a person a step
-        private bool _rescued;              // the last try for whoever had no hours gave somebody a week: the fit is finishing once more
-        private readonly bool[] _ext = new bool[Cells], _added = new bool[Cells];
-        private int _benchRounds, _runExtra, _extFor;
+        private int _runExtra;
         private bool _runStrict;
-        private int[] _groupAsked = new int[0], _groupHeld = new int[0];
         private RotaDemand[][] _strict = new RotaDemand[0][];
         private static readonly RotaDemand[] HireDemands = { new RotaDemand { Kind = RotaDemandKind.Hours, Priority = RotaCatalogue.PriorityHigh, A = 0, B = RotaCatalogue.FullWeek } };
 
@@ -61,12 +43,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// Begins a ladder, to be made a few steps at a time by <see cref="Step"/>. <paramref name="outlook"/> is the
-        /// advice already worked out for the shop (<see cref="RotaAdvisor.Advise"/>), <paramref name="now"/> the rota
-        /// it has, rated; <paramref name="barred"/> (may be null) the hours it may not open. Nothing given here may
-        /// change until the last step is done, and the solver and the advisor are not to be used for anything else.
-        /// </summary>
+        /// <summary>Begins a ladder for <see cref="Step"/>: nothing given may change, nor the solver and advisor be used elsewhere, until done.</summary>
         public void Begin(RotaShop shop, RotaProblem problem, RotaSolver solver, RotaAdvisor advisor, RotaOutlook outlook, RotaPlan now, bool[] barred, int mode, RotaLadderResult into)
         {
             _shop = shop;
@@ -85,7 +62,7 @@ namespace RealLifeOverhaul.Economy
             into.Steps = 0;
         }
 
-        /// <summary>Which piece the next step is: ten times the candidate week being made, plus the piece of it (for the self-checks' timing).</summary>
+        /// <summary>The piece the next step is: ten times the candidate week, plus its phase (for the self-check's timing).</summary>
         public int Doing => _seq * 10 + _phase;
 
         /// <summary>Does so many steps more. True when the ladder is finished.</summary>
@@ -153,209 +130,8 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The rota has been brought to everybody's least hours as far as the rules allow. Whoever still has some hours but
-        // fewer than they ask for is left out of this week, and the week is made again without them: nobody works outside
-        // the range they ask for. Who is left out goes by how well they do the job: the least skilled of those short, or
-        // somebody less skilled still at the same stations where the short one's own limits are not what keeps them short.
-        // At the end whoever has no hours is tried once more on the hours nobody stands at, the better first: only who
-        // the stations have no hours for stays without.
-        private void Fitted()
-        {
-            int stations = _work.Stations, real = _base.Workers;
-            int worst = -1, low = int.MaxValue;
-            if (_rescued)
-            {
-                // (the last try gave somebody a week, and the shifts have been moved towards the customers once more)
-                _rescued = false;
-                _solver.Rate(_work, _plan);
-                _phase = PhaseCut;
-                return;
-            }
-            for (int w = 0; w < real; w++)
-            {
-                int hours = _fit.HoursOf(w), skill = RotaFit.Skill(_base, w);
-                if (hours != 0 && !RotaFit.Inside(_base.Worker[w], hours) && !_benched[w] && skill <= low)
-                {
-                    low = skill;
-                    worst = w;
-                }
-            }
-            if (worst >= 0 && _benchRounds++ < BenchMost)
-            {
-                int home = Home(_base, worst), least = Least(_base.Worker[worst]);
-                bool room = _fit.HoursOf(worst) < least && RotaFit.Room(_shop, _base, _open, worst) >= least;
-                for (int v = 0; room && v < real; v++)
-                {
-                    int skill = RotaFit.Skill(_base, v);
-                    if (v != worst && !_benched[v] && skill < low && _fit.HoursOf(v) > 0 && Least(_base.Worker[v]) > 0 && Home(_base, v) == home)
-                    {
-                        low = skill;
-                        worst = v;
-                    }
-                }
-                _benched[worst] = true;
-                Build(_hires, _runExtra, _runStrict);
-                _phase = PhaseGrid;
-                return;
-            }
-            bool tried = false;
-            for (int w = 0; w < real; w++)
-            {
-                if (!RotaFit.Inside(_base.Worker[w], _fit.HoursOf(w)))
-                {
-                    _fit.Drop(w);
-                }
-                // (whoever was left out may stand at their stations again for the last try)
-                for (int s = 0; _benched[w] && s < stations; s++)
-                {
-                    _work.Can[w * stations + s] = _base.Can[w * stations + s];
-                }
-                tried |= _fit.HoursOf(w) == 0;
-            }
-            if (tried)
-            {
-                _fit.RescueBegin();
-                _rescuing = true;   // (a person a step)
-                return;
-            }
-            _solver.Rate(_work, _plan);
-            _phase = PhaseCut;
-        }
-
-        // Everybody without hours has had the last try. Whoever was left out and still has none stands nowhere again.
-        private void Rescued()
-        {
-            int stations = _work.Stations;
-            _rescuing = false;
-            for (int w = 0; w < _base.Workers; w++)
-            {
-                for (int s = 0; _benched[w] && _fit.HoursOf(w) == 0 && s < stations; s++)
-                {
-                    _work.Can[w * stations + s] = 0;
-                }
-            }
-            if (_fit.Given > 0)
-            {
-                _rescued = true;    // (the fit goes on: its passes towards the customers, then Fitted once more)
-                return;
-            }
-            _solver.Rate(_work, _plan);
-            _phase = PhaseCut;
-        }
-
-        // Who a week gives no hours although they ask for some, and why: their own limits against the opening hours, or the others at the same stations.
-        private void Leftover(RotaRung rung, bool[] open)
-        {
-            RotaShop shop = _shop;
-            int stations = shop.Stations;
-            rung.Left.Clear();
-            if (_groupAsked.Length < shop.Groups)
-            {
-                _groupAsked = new int[shop.Groups];
-                _groupHeld = new int[shop.Groups];
-            }
-            bool counted = false;
-            for (int w = 0; w < _base.Workers; w++)
-            {
-                int least, most, home = Home(_base, w);
-                RotaFit.Range(_base.Worker[w], out least, out most);
-                if (least <= 0 || rung.HoursOf[w] > 0 || home < 0)
-                {
-                    continue;
-                }
-                if (!counted)
-                {
-                    // What each group's people ask for between them, and the hours its stations hold: counted once, when somebody is left out.
-                    counted = true;
-                    Array.Clear(_groupAsked, 0, _groupAsked.Length);
-                    Array.Clear(_groupHeld, 0, _groupHeld.Length);
-                    for (int v = 0; v < _base.Workers; v++)
-                    {
-                        int group = Home(_base, v);
-                        _groupAsked[group < 0 ? 0 : group] += group < 0 ? 0 : Least(_base.Worker[v]);
-                    }
-                    for (int i = 0; i < Cells * stations; i++)
-                    {
-                        _groupHeld[shop.Group[i % stations]] += open[i / stations] && !shop.Taken[i] ? 1 : 0;
-                    }
-                }
-                var left = new RotaLeft { Worker = w, Least = least, Room = RotaFit.Room(shop, _base, open, w), Why = RotaClash.Hours };
-                if (shop.Cleaned && shop.GroupKind[home] == RotaGroupKind.Cleaning && left.Room < least)
-                {
-                    left.Why = RotaClash.Service;
-                }
-                else if (left.Room >= least)
-                {
-                    left.Why = RotaClash.Shared;
-                    left.Asked = _groupAsked[home];
-                    left.Held = _groupHeld[home];
-                }
-                rung.Left.Add(left);
-            }
-        }
-
-        // The hours kept and more: the best paying hour next to an open one (or the best of a day that is shut), one at a
-        // time, until the opening hours hold the least hours of everybody a week left out. False if no hour was added.
-        private bool Extend(RotaRung from)
-        {
-            RotaShop shop = _shop;
-            int stations = shop.Stations, added = 0;
-            Array.Copy(shop.Open, _ext, Cells);
-            Array.Clear(_added, 0, Cells);
-            _extFor = from.Left.Count > 0 ? from.Left[0].Worker : -1;
-            for (int round = 0; round < Cells; round++)
-            {
-                bool holds = true;
-                for (int i = 0; i < from.Left.Count && holds; i++)
-                {
-                    RotaLeft left = from.Left[i];
-                    int home = Home(_base, left.Worker), asked = 0, held = 0;
-                    holds &= RotaFit.Room(shop, _base, _ext, left.Worker) >= left.Least;
-                    for (int v = 0; v < _base.Workers; v++)
-                    {
-                        asked += Home(_base, v) == home ? Least(_base.Worker[v]) : 0;
-                    }
-                    for (int k = 0; k < Cells * stations; k++)
-                    {
-                        held += _ext[k / stations] && shop.Group[k % stations] == home && !shop.Taken[k] ? 1 : 0;
-                    }
-                    holds &= held >= asked;
-                }
-                if (holds)
-                {
-                    break;
-                }
-                int best = -1;
-                for (int cell = 0; cell < Cells; cell++)
-                {
-                    if (_ext[cell] || (_barred != null && _barred[cell]))
-                    {
-                        continue;
-                    }
-                    int d = cell / Hours, h = cell % Hours;
-                    bool beside = (h > 0 && _ext[cell - 1]) || (h < Hours - 1 && _ext[cell + 1]), any = false;
-                    for (int k = 0; k < Hours && !beside; k++)
-                    {
-                        any |= _ext[d * Hours + k];
-                    }
-                    if ((beside || !any) && (best < 0 || _outlook.Net[cell] > _outlook.Net[best]))
-                    {
-                        best = cell;
-                    }
-                }
-                if (best < 0)
-                {
-                    break;
-                }
-                _ext[best] = _added[best] = true;
-                added++;
-            }
-            return added > 0;
-        }
-
-        // ---------------------------------------------------------------- the order of the candidates
-
-        private bool Advised => _outlook.Advised && _shop.HasCustomers;
+        // Customers come, the hours are the business's own and a customer's worth is known (RotaAdvisor).
+        private bool Advised => _outlook.Advised;
 
         private void Start()
         {
@@ -399,6 +175,7 @@ namespace RealLifeOverhaul.Economy
             Run(shop.Open, CutNone, RotaMode.Lean);
         }
 
+        // Starts a candidate week: these hours, cut or not, in this mode, with one more person for the group extra (-1: none).
         private void Run(bool[] open, int cut, int mode, int extra = -1)
         {
             if (_benched.Length < _base.Workers)
@@ -413,7 +190,6 @@ namespace RealLifeOverhaul.Economy
             Build(_hires, extra, _runStrict);
             Array.Copy(open, _open, Cells);
             _cut = cut;
-            _candMode = mode;
             _phase = PhaseGrid;
         }
 
@@ -472,7 +248,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The mode is settled: the rota for the hours kept now is the one "Fill the rota" writes, and the first candidate for the best week.
+        // The mode is settled: the rota for the hours kept now is what "Fill the rota" writes, and the first candidate for the best week.
         private void Moded(int mode)
         {
             RotaLadderResult r = _into;
@@ -489,7 +265,7 @@ namespace RealLifeOverhaul.Economy
                 _best.Source = 1;
             }
             // Where the hours kept cannot hold somebody's least hours: the same hours and more, the best paying first.
-            if (Advised && !_shop.FixedHours && _a.Left.Count > 0 && _a.Left[0].Why != RotaClash.Service && Extend(_a))
+            if (Advised && _a.Left.Count > 0 && _a.Left[0].Why != RotaClash.Service && Extend(_a))
             {
                 _seq = SeqExtend;
                 Run(_ext, CutNone, _mode);
@@ -556,8 +332,6 @@ namespace RealLifeOverhaul.Economy
             NextHire();
         }
 
-        // ---------------------------------------------------------------- one more person
-
         private void NextHire()
         {
             RotaLadderResult r = _into;
@@ -605,7 +379,7 @@ namespace RealLifeOverhaul.Economy
             long need = Math.Max(GainLeast, before.Sum.Net > 0 ? before.Sum.Net * ShareLeast / 100 : 0);
             if (gain < need)
             {
-                // Where the goods ran out more with that person than without, it is the stock that holds the plans back.
+                // Where the goods ran out more with that person than without, the stock holds the plans back.
                 r.Stop = _hireBest.Sum.StockShort > 0 && _hireBest.Sum.StockLost > before.Sum.StockLost ? RotaEnd.Stock : RotaEnd.TooLittle;
                 r.StopGroup = _hireGroup;
                 r.StopGain = gain;
@@ -630,24 +404,7 @@ namespace RealLifeOverhaul.Economy
             NextHire();
         }
 
-        /// <summary>The going wage of somebody new at a group: the figure given, else what an hour at its first station is counted at.</summary>
-        public static int Going(RotaShop shop, int group)
-        {
-            if (group >= 0 && group < shop.Groups && shop.GroupGoing[group] > 0)
-            {
-                return shop.GroupGoing[group];
-            }
-            for (int s = 0; s < shop.Stations; s++)
-            {
-                if (shop.Group[s] == group)
-                {
-                    return shop.StationWage[s];
-                }
-            }
-            return 0;
-        }
-
-        // The problem the candidates are solved in: the people there are, the people advised so far, and one more for a group being tried.
+        // The problem the candidates are solved in: the people there are, those advised so far, and one more for a group tried.
         private void Build(int hires, int extra, bool strict)
         {
             RotaProblem from = _base, to = _work;
@@ -662,8 +419,8 @@ namespace RealLifeOverhaul.Economy
                 to.Worker[w].Mood = from.Worker[w].Mood;
                 to.Worker[w].Demands = from.Worker[w].Demands;
             }
-            // The hours a week somebody asks for never give way to an hour, in either mode; staff first, nothing they ask for does
-            // (the solver lets only demands below the game's high priority give way). Whoever is left out of a week stands nowhere in it.
+            // The hours a week somebody asks for never give way, in either mode; staff first, nothing they ask for does (the
+            // solver lets only demands below the game's high priority give way). Whoever is left out of a week stands nowhere.
             if (_strict.Length < real)
             {
                 _strict = new RotaDemand[real][];
@@ -704,7 +461,7 @@ namespace RealLifeOverhaul.Economy
 
         private bool Better(RotaRung a, RotaRung b)
         {
-            // First whoever keeps the hours rule for more people: nobody outside their range, and fewer left without hours.
+            // First the one that keeps the hours rule for more people: nobody outside their range, and fewer left without hours.
             int wrongA = a.Out * 1000 + a.Left.Count, wrongB = b.Out * 1000 + b.Left.Count;
             if (wrongA != wrongB)
             {
@@ -717,17 +474,9 @@ namespace RealLifeOverhaul.Economy
             return a.Plan.CoveredValue > b.Plan.CoveredValue || (a.Plan.CoveredValue == b.Plan.CoveredValue && a.Sum.Wages + a.Sum.Demands < b.Sum.Wages + b.Sum.Demands);
         }
 
-        // The least hours a week somebody asks for; 0 if they ask for none.
         private static int Least(RotaWorker worker)
         {
-            int least = 0;
-            for (int i = 0; i < worker.Demands.Length; i++)
-            {
-                if (worker.Demands[i].Kind == RotaDemandKind.Hours && worker.Demands[i].A > least)
-                {
-                    least = worker.Demands[i].A;
-                }
-            }
+            RotaFit.Range(worker, out int least, out _);
             return least;
         }
 
@@ -744,349 +493,7 @@ namespace RealLifeOverhaul.Economy
             return -1;
         }
 
-        // ---------------------------------------------------------------- one candidate week
-
-        private void Grid()
-        {
-            RotaShop shop = _shop;
-            int stations = shop.Stations;
-            _advisor.Grid(shop, _open, _work);
-            int cleaning = -1;
-            for (int s = 0; s < stations && cleaning < 0; s++)
-            {
-                cleaning = shop.GroupKind[shop.Group[s]] == RotaGroupKind.Cleaning ? s : -1;
-            }
-            _cleanOn = shop.HasCustomers && !shop.Cleaned && cleaning >= 0 && shop.DirtPerCustomer > 0 && shop.CleanPerHour > 0;
-            _cleanCount = _cleanTarget = _moveAt = 0;
-            _cleanPays = true;
-            Array.Clear(_clean, 0, Cells);
-            Array.Clear(_dayClean, 0, Days);
-            if (!_cleanOn)
-            {
-                _phase = PhaseLay;
-                return;
-            }
-            _cleanWage = shop.StationWage[cleaning];
-            for (int cell = 0; cell < Cells; cell++)
-            {
-                int served = 0, wage, count, free = 0;
-                if (_open[cell])
-                {
-                    _advisor.Crew(shop, shop.Customers[cell], _need, out served, out wage, out count);
-                }
-                for (int s = 0; s < stations && _open[cell]; s++)
-                {
-                    free += shop.GroupKind[shop.Group[s]] == RotaGroupKind.Cleaning && !shop.Taken[cell * stations + s] ? 1 : 0;
-                }
-                _servedEst[cell] = served;
-                _cleanFree[cell] = free;
-            }
-            for (int w = 0; w < _base.Workers; w++)
-            {
-                int home = Home(_base, w);
-                _cleanTarget += !_benched[w] && home >= 0 && shop.GroupKind[home] == RotaGroupKind.Cleaning ? Least(_base.Worker[w]) : 0;
-            }
-            _phase = PhaseClean;
-        }
-
-        // One more cleaning hour: the one that adds most to what the week's customers leave, for as long as that is more than a cleaner's hour costs.
-        private void CleanOne()
-        {
-            RotaShop shop = _shop;
-            if (_cleanPays && _cleanCount < CleanMost)
-            {
-                // The move that leaves most after the cleaner's wage: one hour more, or the same hour more on every day (one
-                // hour alone may change nothing where the floor is dirtier than a single hour cleans).
-                // A step looks at a day's worth of moves, so that no step is long; the week as it stands is counted before the first.
-                int end;
-                if (_moveAt == 0)
-                {
-                    CleanSales(shop, _open, _servedEst, _clean, 0, out _moveWarm);
-                    _moveNow = CleanSales(shop, _open, _servedEst, _clean, _moveWarm, out end);
-                    _moveMost = 0;
-                    _moveBest = -1;
-                }
-                for (int n = 0; n < Hours && _moveAt < Cells + Hours; n++, _moveAt++)
-                {
-                    int added = CleanMove(_moveAt, 1);
-                    if (added > 0)
-                    {
-                        long left = CleanSales(shop, _open, _servedEst, _clean, _moveWarm, out end) - _moveNow - (long)added * _cleanWage;
-                        if (left > _moveMost)
-                        {
-                            _moveMost = left;
-                            _moveBest = _moveAt;
-                        }
-                    }
-                    CleanMove(_moveAt, -1);
-                }
-                if (_moveAt < Cells + Hours)
-                {
-                    return;
-                }
-                _moveAt = 0;
-                int best = _moveBest;
-                if (best >= 0)
-                {
-                    _cleanCount += CleanMove(best, 1);
-                    for (int d = 0; d < Days; d++)
-                    {
-                        _dayClean[d] = 0;
-                        for (int h = 0; h < Hours; h++)
-                        {
-                            _dayClean[d] += _clean[d * Hours + h];
-                        }
-                    }
-                    return;
-                }
-            }
-            _cleanPays = false;
-            // The hours a cleaner asks for beyond those: the day with the fewest cleaning hours first, there the busiest hour next
-            // to the cleaning it has (so a shift grows around the busy hours), or the day's busiest hour where it has none.
-            while (_cleanCount < _cleanTarget)
-            {
-                int last = -1;
-                bool lastBeside = false;
-                for (int cell = 0; cell < Cells; cell++)
-                {
-                    if (_clean[cell] >= _cleanFree[cell])
-                    {
-                        continue;
-                    }
-                    int h = cell % Hours;
-                    bool beside = (h > 0 && _clean[cell - 1] > 0) || (h < Hours - 1 && _clean[cell + 1] > 0);
-                    if (last < 0 || _dayClean[cell / Hours] < _dayClean[last / Hours]
-                        || (_dayClean[cell / Hours] == _dayClean[last / Hours] && (beside && !lastBeside || (beside == lastBeside && shop.Customers[cell] > shop.Customers[last]))))
-                    {
-                        last = cell;
-                        lastBeside = beside;
-                    }
-                }
-                if (last < 0)
-                {
-                    break;
-                }
-                _clean[last]++;
-                _dayClean[last / Hours]++;
-                _cleanCount++;
-            }
-            CleanBlocks();
-            _phase = PhaseLay;
-        }
-
-        // A day's cleaning as one shift: the run of open hours, as long as the day's cleaning hours, that holds the most of the
-        // hours chosen and then the most customers. A day with a single hour gets a second beside it where there is room. More
-        // cleaners at once (a second cleaning station) stand in the busiest hours of that run.
-        private void CleanBlocks()
-        {
-            RotaShop shop = _shop;
-            for (int d = 0; d < Days; d++)
-            {
-                int at = d * Hours, length = 0, extra = 0, room = 0;
-                for (int h = 0; h < Hours; h++)
-                {
-                    length += _clean[at + h] > 0 ? 1 : 0;
-                    extra += Math.Max(0, _clean[at + h] - 1);
-                    room += _cleanFree[at + h] > 0 ? 1 : 0;
-                }
-                if (length == 0)
-                {
-                    continue;
-                }
-                length = Math.Min(room, Math.Max(length, 2));
-                int best = -1;
-                long most = -1;
-                for (int from = 0; from + length <= Hours; from++)
-                {
-                    long score = 0;
-                    bool whole = true;
-                    for (int h = from; h < from + length && whole; h++)
-                    {
-                        whole = _cleanFree[at + h] > 0;
-                        score += (_clean[at + h] > 0 ? 1L << 20 : 0L) + shop.Customers[at + h];
-                    }
-                    if (whole && score > most)
-                    {
-                        most = score;
-                        best = from;
-                    }
-                }
-                if (best < 0)
-                {
-                    continue;   // (no run of open hours is that long: the hours stay where they were chosen)
-                }
-                _cleanCount += length - _dayClean[d] + extra;
-                for (int h = 0; h < Hours; h++)
-                {
-                    _clean[at + h] = h >= best && h < best + length ? 1 : 0;
-                }
-                for (; extra > 0; extra--)
-                {
-                    int busiest = -1;
-                    for (int h = best; h < best + length; h++)
-                    {
-                        if (_clean[at + h] < _cleanFree[at + h] && (busiest < 0 || _clean[at + h] < _clean[at + busiest]
-                            || (_clean[at + h] == _clean[at + busiest] && shop.Customers[at + h] > shop.Customers[at + busiest])))
-                        {
-                            busiest = h;
-                        }
-                    }
-                    if (busiest < 0)
-                    {
-                        _cleanCount -= extra;
-                        break;
-                    }
-                    _clean[at + busiest]++;
-                }
-                _dayClean[d] = 0;
-                for (int h = 0; h < Hours; h++)
-                {
-                    _dayClean[d] += _clean[at + h];
-                }
-            }
-        }
-
-        // A move of the cleaning hours, done (1) or undone (-1): below Cells one hour of the week, from there the same hour of
-        // every day. Returns the hours it adds. Undoing takes back exactly what doing added (the cells it marked).
-        private int CleanMove(int move, int way)
-        {
-            int added = 0;
-            if (move < Cells)
-            {
-                if (way > 0 && _clean[move] < _cleanFree[move])
-                {
-                    _clean[move]++;
-                    _moved[0] = true;
-                    return 1;
-                }
-                if (way < 0 && _moved[0])
-                {
-                    _clean[move]--;
-                    _moved[0] = false;
-                }
-                return 0;
-            }
-            for (int d = 0; d < Days; d++)
-            {
-                int cell = d * Hours + (move - Cells);
-                if (way > 0)
-                {
-                    _moved[d] = _clean[cell] < _cleanFree[cell];
-                    _clean[cell] += _moved[d] ? 1 : 0;
-                    added += _moved[d] ? 1 : 0;
-                }
-                else if (_moved[d])
-                {
-                    _clean[cell]--;
-                    _moved[d] = false;
-                }
-            }
-            return added;
-        }
-
-        // The cleaning hours chosen go into the worth of the hours; staff first, so do the hours people ask for at stations that would stand empty.
-        private void Lay()
-        {
-            RotaShop shop = _shop;
-            int stations = shop.Stations;
-            for (int cell = 0; _cleanOn && cell < Cells; cell++)
-            {
-                int n = _clean[cell];
-                for (int s = 0; s < stations; s++)
-                {
-                    if (shop.GroupKind[shop.Group[s]] != RotaGroupKind.Cleaning)
-                    {
-                        continue;
-                    }
-                    int i = cell * stations + s;
-                    _work.Value[i] = 0;
-                    if (n > 0 && !shop.Taken[i])
-                    {
-                        _work.Value[i] = RotaCatalogue.ValueSupport;
-                        n--;
-                    }
-                }
-            }
-            // The open hours, the busiest first (and the earlier of two as busy).
-            for (int cell = 0; cell < Cells; cell++)
-            {
-                int j = cell;
-                while (j > 0 && shop.Customers[_cellOrder[j - 1]] < shop.Customers[cell])
-                {
-                    _cellOrder[j] = _cellOrder[j - 1];
-                    j--;
-                }
-                _cellOrder[j] = cell;
-            }
-            for (int g = 0; g < shop.Groups; g++)
-            {
-                if (shop.GroupKind[g] == RotaGroupKind.Cleaning)
-                {
-                    continue;
-                }
-                int asked = 0, wanted = 0;
-                for (int w = 0; w < _base.Workers; w++)
-                {
-                    asked += Home(_base, w) == g && !_benched[w] ? Least(_base.Worker[w]) : 0;
-                }
-                for (int i = 0; asked > 0 && i < Cells * stations; i++)
-                {
-                    wanted += shop.Group[i % stations] == g && _work.Value[i] > 0 ? 1 : 0;
-                }
-                for (int k = 0; k < Cells && wanted < asked; k++)
-                {
-                    int cell = _cellOrder[k];
-                    for (int s = 0; s < stations && _open[cell] && wanted < asked; s++)
-                    {
-                        int i = cell * stations + s;
-                        if (shop.Group[s] == g && _work.Value[i] == 0 && !shop.Taken[i] && !_work.Whole[s])
-                        {
-                            _work.Value[i] = RotaCatalogue.ValueSupport + Math.Min(1000, shop.Customers[cell]);   // (the busier hour is the more wanted)
-                            wanted++;
-                        }
-                    }
-                }
-            }
-        }
-
-        // The hours nobody keeps the smallest crew for are closed, and the week is made once more without them.
-        private void Cut()
-        {
-            if (_cut == CutNone)
-            {
-                _phase = PhaseSum;
-                return;
-            }
-            bool any = false;
-            for (int cell = 0; cell < Cells; cell++)
-            {
-                bool unmanned = _open[cell] && !_advisor.Crewed(_shop, cell, _plan.At);
-                _blocked[cell] = unmanned || (_barred != null && _barred[cell]);
-                any |= unmanned;
-            }
-            if (!any)
-            {
-                _phase = PhaseSum;
-                return;
-            }
-            if (_cut == CutPlain)
-            {
-                for (int cell = 0; cell < Cells; cell++)
-                {
-                    _open[cell] &= !_blocked[cell] || (_barred != null && _barred[cell] && _advisor.Crewed(_shop, cell, _plan.At));
-                }
-            }
-            else
-            {
-                _advisor.Blocks(_outlook.Net, _blocked, _shop.DayFee, _open);
-            }
-            _cut = CutNone;
-            _phase = PhaseGrid;
-        }
-
-        // ---------------------------------------------------------------- what a rung changes, and why
-
-        // Run by run of hours, day by day, against the hours kept now.
+        // What a rung changes against the hours kept now, run by run of hours, day by day, each with its reason.
         private void Changes(RotaRung rung)
         {
             rung.Changes.Clear();

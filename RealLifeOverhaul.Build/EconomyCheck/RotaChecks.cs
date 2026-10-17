@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Economy;
 
-// The staff rota planner's checks (Scripts/Economy/Company/RotaModel.cs, RotaSolver.cs, RotaAdvice.cs): every kind of
+// The staff rota planner's checks (Scripts/Economy/Company/RotaModel.cs, RotaSolver.cs, RotaAdvisor.cs): every kind of
 // demand, the game's limits on a shift and a day, skills, one place at a time, the headquarters rule, what gives way
 // when a full rota is impossible and what is said about it, the empty cases, the hours worth opening, an hour's crew,
 // the people a week takes, that the same business always gets the same rota, how long the largest business takes,

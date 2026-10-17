@@ -7,10 +7,11 @@ namespace RealLifeOverhaul.Economy
     public static class RotaMode
     {
         public const int Auto = 0;          // whichever of the two comes to more in a week
-        public const int StaffFirst = 1;    // the least hours people ask for are given wherever the opening hours hold them, as the game's own auto fill does
+        public const int StaffFirst = 1;    // the least hours people ask for are given wherever the hours hold them, as the game's auto fill does
         public const int Lean = 2;          // only hours that bring more than they cost
     }
 
+    /// <summary>What a rung of the ladder is: the week as it is, the best with the people there are, or a hire.</summary>
     public static class RotaRungKind
     {
         public const int AsItIs = 0, Best = 1, Hire = 2;
@@ -30,10 +31,10 @@ namespace RealLifeOverhaul.Economy
     /// <summary>Why the ladder ends where it does.</summary>
     public static class RotaEnd
     {
-        public const int Covered = 0;   // the people there are (and those advised) keep every hour that pays
-        public const int TooLittle = 1; // the next person would add less than the least a rung must
+        public const int Covered = 0;   // the people there are and those advised keep every hour that pays
+        public const int TooLittle = 1; // the next person would add less than a rung must
         public const int Most = 2;      // as many people as one ladder advises
-        public const int NoAdvice = 3;  // nothing is advised here (no customers, hours set by the game, nothing known of a customer's worth)
+        public const int NoAdvice = 3;  // nothing is advised (no customers, hours set by the game, a customer's worth unknown)
         public const int Stock = 4;     // the next person would add too little because the goods run out first
     }
 
@@ -41,14 +42,14 @@ namespace RealLifeOverhaul.Economy
     public struct RotaWeekSum
     {
         public int Hours, Manned;           // hours open, and those of them with the smallest crew there
-        public int Come, Served;            // customers who come while it is open, and those who are sold something
-        public int LostUnmanned, LostFull;  // those who find nobody at a station, and those more than the stations manned can serve
+        public int Come, Served;            // customers who come while it is open, and those sold something
+        public int LostUnmanned, LostFull;  // those who find nobody at a station, and those beyond what the stations manned serve
         public long Sales;                  // what the customers served leave after the cost of the goods, at the cleanliness they find
         public long Clean;                  // what a spotless floor would have added to that
         public long Wages, Fees, Theft, Night, Demands;
         public long Net;
         public int StaffHours, CleanHours;
-        public long StockLost;              // what the customers would have left for goods that had run out (not in Sales: told, not taken off again)
+        public long StockLost;              // what customers would have left for goods that had run out (already not in Sales)
         public int StockShort;              // products that ran out in the week
     }
 
@@ -57,7 +58,7 @@ namespace RealLifeOverhaul.Economy
     {
         public int Day, From, To;
         public byte Why;
-        public int Group;       // the stations nobody can be at (NoCrew); -1 otherwise
+        public int Group;       // NoCrew: the group nobody can be at; Fits: the employee; -1 otherwise
         public long Was;        // what those hours come to as things are
         public long Will;       // and in the plan
     }
@@ -66,7 +67,7 @@ namespace RealLifeOverhaul.Economy
     public struct RotaLeft
     {
         public int Worker, Least;
-        public int Room;        // the most hours they could be given in the plan's opening hours were nobody else there
+        public int Room;        // the most hours the plan's opening hours could give them were nobody else there
         public int Why;         // RotaClash
         public int Asked, Held; // Shared: what those at the same stations ask for between them, and the hours those stations hold
     }
@@ -74,7 +75,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>One plan of the ladder: its hours, its rota, and what its week comes to.</summary>
     public sealed class RotaRung
     {
-        public int Kind, Source;        // Source: 0 the week as it is, 1 the hours kept with a new rota, 2 those hours less the ones nobody can keep, 3 the hours worth opening, 4 the hours kept and more, so that everybody's least hours fit
+        public int Kind, Source;        // Source: 0 as it is, 1 its hours with a new rota, 2 less the unmanned, 3 the hours advised, 4 more to fit everybody
         public int Hires;
         public readonly int[] Hire = new int[RotaLadder.HiresMost];     // the group each person to hire is for
         public int Workers, Staff;      // in the rota, and of them the people there are now
@@ -88,11 +89,11 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Earn = new int[RotaCatalogue.Cells], Cost = new int[RotaCatalogue.Cells];
         public int[] HoursOf = new int[0];      // [worker] hours a week
         public long[] DemandCost = new long[0]; // [worker] what their unmet demands cost a week
-        public int[] QuitHours = new int[0];    // [worker] hours until their satisfaction is at nothing; 0: it does not fall there
+        public int[] QuitHours = new int[0];    // [worker] hours until their satisfaction is at nothing; 0: it never gets there
         public readonly List<RotaChange> Changes = new List<RotaChange>(RotaLadder.ChangesMost);
-        public readonly List<RotaLeft> Left = new List<RotaLeft>(4);    // whoever gets no hours because their least cannot be had
-        public readonly RotaStockWeek Stock = new RotaStockWeek();      // the goods in the week counted, product by product
-        public int Out;                 // people at work whose hours are outside what they ask for (only the week as it is can have any)
+        public readonly List<RotaLeft> Left = new List<RotaLeft>(4);
+        public readonly RotaStockWeek Stock = new RotaStockWeek();
+        public int Out;                 // people at work outside the hours they ask for (only the week as it is can have any)
         public int FitsFor = -1;        // the employee the hours were lengthened for (Source 4)
 
         /// <summary>True if everybody the plan gives hours works inside the range they ask for.</summary>
@@ -129,14 +130,14 @@ namespace RealLifeOverhaul.Economy
         public int Count;
         public int Recommended;
         public int Mode;                    // the one the plans are made in: RotaMode.StaffFirst or RotaMode.Lean
-        public bool ModeAuto;               // it was chosen by what a week comes to, not by the player
+        public bool ModeAuto;               // chosen by what a week comes to, not by the player
         public bool ModeMatters;            // somebody asks for a least number of hours, so the two differ
         public long LeanNet, StaffNet;      // the hours kept now with a new rota, in each
         public int Stop, StopGroup;
         public long StopGain, StopNeed;
         public readonly RotaPlan Fill = new RotaPlan();     // the rota for the hours kept now ("Fill the rota")
         public RotaWeekSum FillSum;
-        public readonly List<RotaLeft> FillLeft = new List<RotaLeft>(4);   // whoever that rota gives no hours, because the hours kept cannot hold their least
+        public readonly List<RotaLeft> FillLeft = new List<RotaLeft>(4);   // whoever that rota gives no hours
         public readonly int[] Hourly = new int[RotaCatalogue.Hours];   // the week's customers by the hour of the day
         public int Steps;                   // steps it took (the self-check)
 
@@ -150,119 +151,86 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The ladder of plans of one business, by rule and game-free: the week as it is, the best week the people there
-    /// are can keep, and one rung for each further person worth hiring. Every rung is a set of opening hours and a
-    /// rota (made by <see cref="RotaSolver"/>), valued the same way (<see cref="Evaluate"/>).
-    ///
-    /// WHAT A WEEK IS VALUED AT, each line the game's own arithmetic as read from its code (docs/features/economy-rota.md lists where):
-    ///   sales       only customers who find the smallest crew buy: an hour open with nobody at a till sells nothing
-    ///               (RetailBusinessSimulator.ProcessCustomer leaves the order unpaid). The stations manned serve
-    ///               their customers an hour and no more; whoever comes beyond that is lost. Skill does not change
-    ///               how many a till serves
-    ///   goods       where a delivery or a logistics manager's round brings a product, the customers buy it only while
-    ///               it is on site (RotaStock.cs: the shelves are filled again from storage the moment they run empty,
-    ///               the round comes at 2, the delivery at 8 on a Monday, what finds no room goes back). The goods are
-    ///               run over two weeks, as the cleanliness is, and the second is the one counted
-    ///   cleanliness each customer served dirties the floor, each hour of a cleaner's shift cleans, and the
-    ///               cleanliness a customer finds is a quarter of the satisfaction that scales what customers buy
-    ///               (BuildingCleanliness, BusinessHelper.UpdateSatisfaction). The week is run hour by hour, twice,
-    ///               so that it starts as dirty as it ends
-    ///   wages       of everybody at a station
-    ///   fees        the game's licensing fee of each day it opens
-    ///   theft       the game's hourly theft follows the customers who came in the hour, served or not
-    ///               (BusinessSecurityHelper.SimulateTheft)
-    ///   night       the mod's break-ins come only to a shop that is shut at one in the morning (Crime/OffscreenCrimes)
-    ///   demands     an unmet demand takes its weight off an employee's satisfaction every hour until they resign
-    ///               at nothing (EmployeeInstance.UpdateSatisfaction, LowSatisfactionComplaint); counted as the
-    ///               sales lost while the post stands empty for <see cref="ReplaceDays"/> days, spread over the weeks
-    ///               it takes, and the worse work in the meantime (an order's service is skill times satisfaction)
-    ///
-    /// THE RUNGS
-    ///   as it is    the hours and the rota it has
-    ///   best        the better of: the week as it is; the hours kept with a new rota; those hours less the ones
-    ///               nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep.
-    ///               So it is never worse than the week as it is
-    ///   hire        one more person of the group that adds most, at the going wage, with the hours worth opening
-    ///               cut to what everybody can then keep. A rung is kept only if it adds at least
-    ///               <see cref="ShareLeast"/> per cent and <see cref="GainLeast"/>; the ladder ends at the first
-    ///               that does not, so a week open round the clock is shown only if every step to it pays
-    ///
-    /// Cost: nothing unless asked. A ladder is made in one go (<see cref="Make"/>) or a few steps at a time
-    /// (<see cref="Begin"/> and <see cref="Step"/>), with the same result: the steps are the same in the same order.
-    /// Nothing is allocated once its arrays have grown to the largest business seen. No chance, no clock.
+    /// The ladder of plans of one business, game-free: the week as it is, the best week the people there can keep, and a rung
+    /// for each person worth hiring, all valued by <see cref="Evaluate"/> with the game's own arithmetic. Cost: nothing unless
+    /// asked; made in one go or a few steps a frame with the same result, allocating nothing once grown.
     /// </summary>
     public sealed partial class RotaLadder
     {
         public const int HiresMost = 4;             // people one ladder advises hiring
         public const int RungsMost = 2 + HiresMost;
         public const int ShareLeast = 5;            // per cent of the week before that one more person must add...
-        public static long GainLeast => 5000L * Prices.Level / 1000;   // (at today's prices, as the wages the rota reads)         // ...and never less than this, hundredths a week
-        public const int ReplaceDays = 7;           // days a post stands empty when somebody resigns (the planner's own figure: the game sends candidates over days, and the player has to see it, choose and agree a wage)
+        public static long GainLeast => 5000L * Prices.Level / 1000;   // ...and never less than this, hundredths a week at today's prices
+        public const int ReplaceDays = 7;           // days a post stands empty after a resignation: the planner's own figure, not the game's
         public const int CleanMost = 56;            // cleaning hours a week chosen one at a time by what each brings
         public const int ChangesMost = 28;
         public const int GroupsTried = 3;           // groups one more person is tried for, a rung
-        public const int HireSkill = 50;            // how well somebody new is taken to do the job (it changes no figure but who is preferred)
+        public const int HireSkill = 50;            // how well somebody new is taken to do the job: it decides who is preferred, no figure
 
         private const int Cells = RotaCatalogue.Cells, Hours = RotaCatalogue.Hours, Days = RotaCatalogue.Days;
 
-        private RotaAdvisor _advisor;
         private readonly bool[] _dayOpen = new bool[Days];
         private int[] _unmetWeight = new int[0], _unmetCount = new int[0];
         private long[] _value = new long[0];
         private readonly RotaStockRun _stockRun = new RotaStockRun();
 
-        /// <summary>
-        /// True for a rung that may be written into the game: the best week of the people there are, when it is not
-        /// the week as it is. A rung that takes somebody still to be hired is never written.
-        /// </summary>
+        /// <summary>True for a rung that may be written into the game: the best week with the people there are, if it changes anything.</summary>
         public static bool Writable(RotaRung rung)
         {
             return rung != null && rung.Hires == 0 && rung.Kind == RotaRungKind.Best && rung.Source != 0 && rung.Usable;
         }
 
-        // ---------------------------------------------------------------- the game's arithmetic, a figure at a time
+        /// <summary>The going wage of somebody new at a group: the figure read, else what an hour at its first station costs.</summary>
+        public static int Going(RotaShop shop, int group)
+        {
+            if (group >= 0 && group < shop.Groups && shop.GroupGoing[group] > 0)
+            {
+                return shop.GroupGoing[group];
+            }
+            for (int s = 0; s < shop.Stations; s++)
+            {
+                if (shop.Group[s] == group)
+                {
+                    return shop.StationWage[s];
+                }
+            }
+            return 0;
+        }
 
-        /// <summary>The game's cleanliness for a mean dirt, both in thousandths of a point: dirt that shows (five points and more) counts twice.</summary>
+        /// <summary>The game's cleanliness for a mean dirt, both in thousandths of a point: dirt that shows (five points on) counts twice.</summary>
         public static int CleanOf(int dirt)
         {
             int clean = 100000 - dirt - (dirt >= 5000 ? dirt : 0);
             return clean < 0 ? 0 : clean;
         }
 
-        /// <summary>
-        /// What a customer leaves at a mean dirt, in thousandths of the shop's margin: cleanliness is a quarter of
-        /// the satisfaction, and what customers buy goes with (satisfaction + 50) / 100.
-        /// </summary>
+        /// <summary>What a customer leaves at a mean dirt, in thousandths of what they leave at <see cref="RotaShop.CleanNow"/>.</summary>
         public static int Factor(RotaShop shop, int dirt)
         {
             if (shop.DirtPerCustomer <= 0)
             {
                 return 1000;
             }
+            // Cleanliness is a quarter of the satisfaction, and what customers buy goes with (satisfaction + 50) / 100.
             int factor = 1000 + (CleanOf(dirt) - shop.CleanNow * 1000) / (4 * (50 + Math.Max(0, shop.Content)));
             return factor < 0 ? 0 : factor;
         }
 
-        /// <summary>What the game's theft takes in an hour so many customers come.</summary>
         public static long Theft(RotaShop shop, int come)
         {
             return shop.TheftRate <= 0 || come <= 0 || (shop.TheftLimit > 0 && come >= shop.TheftLimit) ? 0L : (long)come * shop.TheftRate;
         }
 
-        /// <summary>
-        /// What one employee's unmet demands cost in a week. The weights are the game's (tenths of a point of
-        /// satisfaction an hour); <paramref name="value"/> is what the customers they serve leave in a week,
-        /// <paramref name="wages"/> what they are paid for it. <paramref name="quitHours"/>: the hours until their
-        /// satisfaction is at nothing and they resign; 0 if it settles above that.
-        /// </summary>
-        public static long DemandCost(int unmetWeight, int metWeight, int unmet, int demands, int mood, long value, long wages, int skill, bool serves, int content, out int quitHours)
+        /// <summary>What one employee's unmet demands cost a week: the post empty after they resign, and worse work until then.</summary>
+        public static long DemandCost(int unmetWeight, int metWeight, int unmet, int demands, int mood, long value, long wages, int skill, bool serves,
+            int content, out int quitHours)
         {
             quitHours = 0;
             if (unmet <= 0 || demands <= 0)
             {
                 return 0;
             }
-            int rate = Math.Min(6, unmetWeight - metWeight);    // tenths of a point an hour; the game moves it by no more than 0.6
+            int rate = Math.Min(6, unmetWeight - metWeight);    // tenths of a point an hour; the game moves it no more than 0.6
             int share = (demands - unmet) * 100 / demands;
             int cap = share <= 34 ? 60 : share <= 67 ? 80 : 100;
             mood = mood < 1 ? 1 : mood > 100 ? 100 : mood;
@@ -273,22 +241,18 @@ namespace RealLifeOverhaul.Economy
                 quitHours = Math.Max(1, mood * 10 / rate);
                 long replace = ReplaceDays * Math.Max(value - wages, wages) / 7;
                 quit = replace * 168 / Math.Max(168, quitHours);
-                lost = 100 - mood / 2;      // on the way down, half way on average
+                lost = 100 - mood / 2;      // half way down, on average
             }
             else
             {
                 lost = 100 - cap;           // it settles at the most the game allows with so many demands unmet
             }
+            // An order's service is skill times satisfaction, a quarter of what scales what customers buy.
             long worse = serves ? value * Math.Max(0, skill) * lost / (400L * (50 + Math.Max(0, content))) : wages * lost / 100;
             return quit + worse;
         }
 
-        // ---------------------------------------------------------------- what a week comes to
-
-        /// <summary>
-        /// Values a week: the hours <paramref name="open"/> with the rota <paramref name="plan"/> (rated or made by
-        /// the solver against <paramref name="problem"/>, so that it says which demands it leaves unmet).
-        /// </summary>
+        /// <summary>Values a week of hours and a rota; <paramref name="asked"/> (may be null) holds the game's own priorities of a stricter problem.</summary>
         public void Evaluate(RotaAdvisor advisor, RotaShop shop, RotaProblem problem, bool[] open, RotaPlan plan, RotaRung into, RotaProblem asked = null)
         {
             int stations = shop.Stations, workers = problem.Workers;
@@ -314,13 +278,14 @@ namespace RealLifeOverhaul.Economy
             }
             bool model = shop.HasCustomers && shop.DirtPerCustomer > 0 && !shop.Cleaned;
             RotaStock stock = shop.Stock;
-            bool goods = shop.HasCustomers && stock.Any;    // some goods sell only while they are there
+            bool goods = shop.HasCustomers && stock.Any;
             into.Stock.Clear(goods ? stock.Products : 0);
             if (goods)
             {
                 _stockRun.Start(stock);
             }
             int dirt = 0, spotless = Factor(shop, 0);
+            // The dirt and the goods are run over two weeks, so the counted one starts as it ends.
             for (int pass = model || goods ? 0 : 1; pass < 2; pass++)
             {
                 for (int cell = 0; cell < Cells; cell++)
@@ -342,9 +307,10 @@ namespace RealLifeOverhaul.Economy
                     }
                     if (_dayOpen[cell / Hours])
                     {
-                        dirt = Math.Max(0, dirt - cleaners * shop.CleanPerHour);   // (the game cleans on a day the business opens: BuildingCleanlinessHelper.RunHourly)
+                        dirt = Math.Max(0, dirt - cleaners * shop.CleanPerHour);   // the game cleans on a day the business opens (BuildingCleanlinessHelper.RunHourly)
                     }
                     int come = isOpen ? Math.Max(shop.Customers[cell], shop.Wanting[cell]) : 0;
+                    // Only customers who find the smallest crew buy (RetailBusinessSimulator.ProcessCustomer), up to what the stations manned serve.
                     int served = isOpen ? advisor.Served(shop, cell, at, null, false) : 0;
                     int factor = model ? Factor(shop, dirt) : 1000;
                     dirt = (int)Math.Min(100000L, dirt + (long)served * shop.DirtPerCustomer);
@@ -352,7 +318,6 @@ namespace RealLifeOverhaul.Economy
                     bool shortHour = false;
                     if (goods)
                     {
-                        // What the round and the delivery bring at the start of the hour, then what its customers find.
                         RotaStockWeek counted = pass == 1 ? into.Stock : null;
                         _stockRun.Arrive(cell, counted);
                         sales = _stockRun.Sell(cell, served, factor, counted);
@@ -366,7 +331,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    long theft = isOpen ? Theft(shop, come) : 0;
+                    long theft = isOpen ? Theft(shop, come) : 0;     // the game's theft follows who came, served or not (BusinessSecurityHelper.SimulateTheft)
                     bool manned = isOpen && advisor.Crewed(shop, cell, at);
                     sum.Hours += isOpen ? 1 : 0;
                     sum.Manned += manned ? 1 : 0;
@@ -375,7 +340,7 @@ namespace RealLifeOverhaul.Economy
                     sum.LostUnmanned += served == 0 ? come : 0;
                     sum.LostFull += served > 0 ? come - served : 0;
                     sum.Sales += sales;
-                    // What a spotless floor would add: nothing in an hour some goods ran out in (there was no more of them to sell).
+                    // A spotless floor adds nothing in an hour some goods ran out in: there was no more of them to sell.
                     sum.Clean += !model || shortHour ? 0 : !goods ? (long)served * shop.Margin * (spotless - factor) / 1000
                         : factor > 0 ? sales * (spotless - factor) / factor : (long)served * shop.Margin * spotless / 1000;
                     sum.Wages += wage;
@@ -407,6 +372,7 @@ namespace RealLifeOverhaul.Economy
             for (int d = 0; d < Days; d++)
             {
                 sum.Fees += _dayOpen[d] ? shop.DayFee[d] : 0;
+                // The mod's break-ins come only to a shop shut at one in the morning (Crime/OffscreenCrimes).
                 sum.Night += shop.NightRisk > 0 && !open[d * Hours + 1] ? shop.NightRisk : 0;
             }
             for (int i = 0; i < plan.Unmet.Count; i++)
@@ -414,7 +380,7 @@ namespace RealLifeOverhaul.Economy
                 RotaUnmet unmet = plan.Unmet[i];
                 if (unmet.Worker >= 0 && unmet.Worker < workers && unmet.Demand >= 0 && unmet.Demand < Asked(problem, asked, unmet.Worker).Length)
                 {
-                    _unmetWeight[unmet.Worker] += Weight(Asked(problem, asked, unmet.Worker)[unmet.Demand].Priority);
+                    _unmetWeight[unmet.Worker] += RotaCatalogue.Weight(Asked(problem, asked, unmet.Worker)[unmet.Demand].Priority);
                     _unmetCount[unmet.Worker]++;
                 }
             }
@@ -429,14 +395,14 @@ namespace RealLifeOverhaul.Economy
                 RotaDemand[] demands = Asked(problem, asked, w);
                 for (int k = 0; k < demands.Length; k++)
                 {
-                    all += Weight(demands[k].Priority);
+                    all += RotaCatalogue.Weight(demands[k].Priority);
                 }
                 for (int s = 0; s < stations; s++)
                 {
                     skill = Math.Max(skill, problem.Can[w * stations + s]);
                 }
-                long cost = DemandCost(_unmetWeight[w], all - _unmetWeight[w], _unmetCount[w], demands.Length, worker.Mood, _value[w], (long)into.HoursOf[w] * worker.Wage, skill, _value[w] > 0,
-                    shop.Content, out quit);
+                long cost = DemandCost(_unmetWeight[w], all - _unmetWeight[w], _unmetCount[w], demands.Length, worker.Mood, _value[w], (long)into.HoursOf[w] * worker.Wage,
+                    skill, _value[w] > 0, shop.Content, out quit);
                 into.DemandCost[w] = cost;
                 into.QuitHours[w] = quit;
                 sum.Demands += cost;
@@ -450,24 +416,14 @@ namespace RealLifeOverhaul.Economy
             into.Sum = sum;
         }
 
-        // What somebody asks for with the weights the game gives it: a problem made stricter for a plan keeps the same demands in the same order.
+        // A problem made stricter for a plan keeps the same demands in the same order, so the game's own weights are read here.
         private static RotaDemand[] Asked(RotaProblem problem, RotaProblem asked, int worker)
         {
             return asked != null && worker < asked.Workers ? asked.Worker[worker].Demands : problem.Worker[worker].Demands;
         }
 
-        private static int Weight(int priority)
-        {
-            return RotaCatalogue.DemandWeight[priority < 0 ? 0 : priority >= RotaCatalogue.DemandWeight.Length ? RotaCatalogue.DemandWeight.Length - 1 : priority];
-        }
-
-        // ---------------------------------------------------------------- cleaning hours, by what each brings
-
-        /// <summary>
-        /// What the customers of a week leave with so many cleaners in each hour, starting at a mean dirt:
-        /// <paramref name="served"/> customers an hour, <paramref name="clean"/> cleaners an hour.
-        /// </summary>
-        public static long CleanSales(RotaShop shop, bool[] open, int[] served, int[] clean, int dirt, out int end)
+        /// <summary>What a week's customers leave from a mean dirt: <paramref name="served"/> and <paramref name="clean"/> cleaners an hour.</summary>
+        private static long CleanSales(RotaShop shop, bool[] open, int[] served, int[] clean, int dirt, out int end)
         {
             long sales = 0;
             for (int d = 0; d < Days; d++)
@@ -503,7 +459,7 @@ namespace RealLifeOverhaul.Economy
             return CleanSales(shop, open, served, clean, warm, out end);
         }
 
-        internal static void CopyPlan(RotaPlan from, RotaPlan to)
+        private static void CopyPlan(RotaPlan from, RotaPlan to)
         {
             to.Size(from.Stations);
             Array.Copy(from.At, to.At, Cells * from.Stations);
@@ -520,7 +476,7 @@ namespace RealLifeOverhaul.Economy
             to.Gaps.AddRange(from.Gaps);
         }
 
-        internal static void CopyRung(RotaRung from, RotaRung to)
+        private static void CopyRung(RotaRung from, RotaRung to)
         {
             to.Size(from.Workers);
             to.Kind = from.Kind;
