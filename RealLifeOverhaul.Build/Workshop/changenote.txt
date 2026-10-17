@@ -1,4 +1,4 @@
-0.30.0
+0.30.1
 
-New
-- Classes now play as the game's own studying does: at the university you are walked to your classroom and sit at its desk, and online classes and homework are done at a computer at home, with fast forward and skip.
+Fixed
+- A street scene during a driving lesson or test, such as a pedestrian hit by traffic, no longer stops the checkpoints from showing.
