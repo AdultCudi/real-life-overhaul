@@ -56,10 +56,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditStore.cs" Link="Mod\CreditStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditLedger.cs" Link="Mod\CreditLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Loans\LoanBook.cs" Link="Mod\LoanBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Loans\LoanMark.cs" Link="Mod\LoanMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\LendingTerms.cs" Link="Mod\LendingTerms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\ProductCatalogue.cs" Link="Mod\ProductCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\ProductTerms.cs" Link="Mod\ProductTerms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Accounts\CreditAccount.cs" Link="Mod\CreditAccount.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Accounts\AccountRules.cs" Link="Mod\AccountRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\GameLoanMath.cs" Link="Mod\GameLoanMath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Debt\LadderRules.cs" Link="Mod\LadderRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Loans\LoanHolds.cs" Link="Mod\LoanHolds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Debt\SharkRules.cs" Link="Mod\SharkRules.cs" />

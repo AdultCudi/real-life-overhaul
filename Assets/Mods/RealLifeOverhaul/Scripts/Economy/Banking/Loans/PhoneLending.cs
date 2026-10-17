@@ -19,11 +19,8 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// A loan arranged from the phone. What is made is one of the game's own loans (Loan, in the save's list) with a
-    /// real bank's address, made exactly as the bank's dialogue makes one (BankDialog.LoanRequest): the same figures
-    /// from the same formulas (LoanHelper), the same payout transaction, the same game event. So EconoView lists it,
-    /// the game's daily run collects it, and it is still there with the mod removed. The one difference is the
-    /// arrangement fee, taken at once (the bank in person charges none).
+    /// A loan arranged from the phone: one of the game's own loans, made as the bank's dialogue makes one (BankDialog.LoanRequest),
+    /// so it stays with the mod removed. The one difference is the arrangement fee; the bank in person charges none.
     /// </summary>
     public static class PhoneLending
     {
@@ -32,7 +29,7 @@ namespace RealLifeOverhaul.Economy
         private const string LoanExpenses = "ba:transactioncategory_loanexpenses";  // the game's own category, so its summaries count the fee
         private const string NewLoanEvent = "ba:gameevent_newloan";
 
-        /// <summary>The most this lender will lend the player now: its cap for this rating less what it is owed, and no more than the game's own means test allows.</summary>
+        /// <summary>The most this lender lends the player now: its cap for the rating less what it is owed, within the game's own means test.</summary>
         public static float MostNow(Lender lender, int score)
         {
             if (lender == null || lender.Settings == null || SaveGameManager.Current == null)
@@ -54,11 +51,7 @@ namespace RealLifeOverhaul.Economy
             return BankTerms.Wanted(lender.Settings, score).AnnualRate * multiplier;
         }
 
-        /// <summary>
-        /// The figures for an amount. They are the game's (LoanHelper.CalculateDailyInterestPayment and
-        /// CalculateDailyPayment read the bank's settings in memory), so the terms for this rating are written on the
-        /// banks first: what is quoted is what the bank in person would quote at this moment.
-        /// </summary>
+        /// <summary>The figures for an amount by the game's formulas, with the rating's terms written on the banks first: what the bank in person would quote now.</summary>
         public static LoanQuote Quote(Lender lender, int amount, int score)
         {
             BankTerms.Apply(score);
@@ -68,16 +61,13 @@ namespace RealLifeOverhaul.Economy
                 AnnualRate = LoanHelper.CalculateEffectiveAnnualInterestRate(lender.Settings),
                 DailyInterest = LoanHelper.CalculateDailyInterestPayment(amount, lender.Settings),
                 DailyPayment = LoanHelper.CalculateDailyPayment(amount, lender.Settings),
-                Fee = BankRules.Fee(amount, lender.Rank)   // (each bank's share of the usual fee: Economy/Banks/BankRules)
+                Fee = BankRules.Fee(amount, lender.Rank)
             };
             quote.Days = quote.DailyPayment > 0 ? Mathf.CeilToInt(amount / (float)quote.DailyPayment) : 0;
             return quote;
         }
 
-        /// <summary>
-        /// Lends, if the rating and the lender's limit allow it. The loan is added to the game's list, the amount is
-        /// paid out and the fee taken; the caller writes the credit file.
-        /// </summary>
+        /// <summary>Lends if the rating and the lender's limit allow: the loan goes in the game's list, the amount is paid out and the fee taken. The caller writes the credit file.</summary>
         public static LoanAnswer Take(Lender lender, int amount, int score, out LoanQuote quote, out Loan loan)
         {
             quote = default(LoanQuote);
@@ -97,17 +87,13 @@ namespace RealLifeOverhaul.Economy
             return LoanAnswer.Approved;
         }
 
-        /// <summary>
-        /// Makes one of the game's loans with these figures, as the bank's dialogue does: the loan in the save's list,
-        /// the amount paid out with the game's own transaction, the arrangement fee taken if there is one, and the
-        /// game's event. Whether the loan may be made is the caller's question.
-        /// </summary>
+        /// <summary>Makes one of the game's loans with these figures, as the bank's dialogue does, with the arrangement fee. The caller decides whether it may.</summary>
         public static Loan Make(Lender lender, int amount, int dailyInterest, int dailyPayment, int fee)
         {
             var loan = new Loan(amount, dailyInterest, dailyPayment, lender.Address);
             SaveGameManager.Current.Loans.Add(loan);
+            // a dictionary each: the game keeps a transaction's data for as long as it lists the transaction
             GameManager.ChangeMoneySafe(amount, new TransactionInfo(PayoutTransaction, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
-            // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
             GameManager.ChangeMoneySafe(-fee, new TransactionInfo(FeeTransaction, LoanExpenses, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
             GameEvent.Invoke(NewLoanEvent);
             return loan;

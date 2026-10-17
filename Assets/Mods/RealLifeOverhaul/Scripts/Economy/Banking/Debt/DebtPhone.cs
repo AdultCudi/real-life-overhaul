@@ -13,14 +13,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The economy's three phone contacts, each put on the phone only once the save has met it: "Collections" (after
-    /// the first collections call), "Private lender" (after a bank has refused the player or the rating has gone
-    /// under the threshold) and "Debt advice" (after debts have stood overdue, or a claim was filed). They are
-    /// registered the way the mod's other contacts are, and each conversation is the game's own dialogue panel with
-    /// the game's reply buttons; every decision in it is the credit desk's (<see cref="CreditDesk"/>).
-    ///
-    /// With "Phone contacts" off nothing is added to the phone: a text becomes the game's notification, and a
-    /// notification that is clicked opens the same conversation in the game's dialogue panel.
+    /// The economy's three phone contacts (Collections, Private lender, Debt advice), each put on the phone once the save has
+    /// met it. Each conversation is the game's own dialogue panel; every decision in it is the credit desk's. With "Phone
+    /// contacts" off a text is the game's notification instead, which opens the same conversation.
     /// </summary>
     public static class DebtPhone
     {
@@ -37,7 +32,10 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The desk of the loaded save; null while the economy is not running.</summary>
         public static CreditDesk Desk { get; private set; }
 
-        /// <summary>Puts on the phone the contacts this save has met. Asked at the start and whenever one becomes known; one that is there is left alone.</summary>
+        /// <summary>RLO Texts (Wiring/TextsPhone): true when a text (from whom, key, values) is held for the model's words and sent later through the last argument.</summary>
+        public static Func<string, string, Dictionary<string, string>, Action<string, Dictionary<string, string>>, bool> HoldText;
+
+        /// <summary>Puts on the phone the contacts this save has met; one that is there is left alone.</summary>
         public static void Setup(CreditDesk desk)
         {
             Desk = desk;
@@ -61,7 +59,7 @@ namespace RealLifeOverhaul.Economy
             {
                 EconomyBridges.ContactIcon?.Invoke(ContactIds[which], Colours[which]);
                 Contact contact = Contact.GetContact(ContactIds[which], ContactCategoryName.General, Descriptions[which], null, false, true);
-                contact.callDialogTypeOverride = Register(which);   // not saved by the game, so set on every load
+                contact.callDialogTypeOverride = Register(which);   // not saved by the game: set on every load
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
                     contact.SendMessage(new TextMessage(Welcomes[which]), notify: false);
@@ -98,7 +96,7 @@ namespace RealLifeOverhaul.Economy
             return dialogType;
         }
 
-        /// <summary>The conversation without the phone: the game's own dialogue panel, as its counters open one. Not while another conversation is on.</summary>
+        /// <summary>The conversation without the phone, in the game's own dialogue panel as its counters open one. Not while another is on.</summary>
         public static void Open(int which)
         {
             try
@@ -116,14 +114,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A text in a contact's thread. Without the contact it is the game's notification, which opens the conversation when clicked.</summary>
-        /// <summary>
-        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
-        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
-        /// words, or the written line). Null or false: sent now, as written.
-        /// </summary>
-        public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
-
+        /// <summary>A text in a contact's thread; without the contact, the game's notification, which opens the conversation when clicked.</summary>
         public static void Text(int which, string key, Dictionary<string, string> data, Action click)
         {
             try
@@ -145,7 +136,6 @@ namespace RealLifeOverhaul.Economy
             Notifications.Show(NotificationType.Warning, key, data, 14f, null, Guard.Wrap(click), true, false);
         }
 
-        // A text held for its words (RLO Texts), sent now.
         private static void Send(Contact contact, string key, Dictionary<string, string> data)
         {
             try
@@ -154,7 +144,7 @@ namespace RealLifeOverhaul.Economy
             }
             catch (Exception)
             {
-                // (the contact is gone with the scene: nothing more to tell)
+                // the contact is gone with the scene: nothing more to tell
             }
         }
 
@@ -163,10 +153,7 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.Money(amount);
         }
 
-        /// <summary>
-        /// A step of a conversation, kept from throwing into the game's dialogue: a fault is logged and the call ends
-        /// with a plain line.
-        /// </summary>
+        /// <summary>A step of a conversation, kept from throwing into the game's dialogue: a fault is logged and the call ends with a plain line.</summary>
         internal static DialogEntry Safe(Func<DialogEntry> step)
         {
             try
@@ -235,7 +222,8 @@ namespace RealLifeOverhaul.Economy
             ProductAnswer answer = desk != null ? desk.AgreePlan(debt) : ProductAnswer.Off;
             LadderState s = debt.Ladder;
             return answer == ProductAnswer.Yes
-                ? PhoneContacts.Closing("reallife_collect_plan_agreed", new { amount = DebtPhone.Money(s.PlanLeft), payment = DebtPhone.Money(s.PlanPerDay), days = ProductCatalogue.PlanDays.ToString() })
+                ? PhoneContacts.Closing("reallife_collect_plan_agreed", new { amount = DebtPhone.Money(s.PlanLeft), payment = DebtPhone.Money(s.PlanPerDay),
+                                        days = ProductCatalogue.PlanDays.ToString() })
                 : PhoneContacts.Closing("reallife_collect_plan_used");
         }
     }
@@ -371,10 +359,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// Debt advice on the line, free: the three ways out with the caller's own figures. It only advises; the two
-    /// that change anything are asked for in Finance, under Accounts, where the game's own question box confirms them.
-    /// </summary>
+    /// <summary>Debt advice on the line, free: the three ways out with the caller's own figures. It only advises.</summary>
     public class DebtAdviceDialog : Dialog
     {
         public DebtAdviceDialog()

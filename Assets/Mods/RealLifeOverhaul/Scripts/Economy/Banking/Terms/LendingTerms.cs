@@ -20,31 +20,19 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The terms table: a lender's own cap and rate, moved by the borrower's rating. Game-free.
-    ///
-    ///   under the threshold   nothing is lent: the cap is 0
-    ///   at the threshold      40% of the lender's own cap, its own rate plus 6 points
-    ///   from 800              130% of its own cap, its own rate less 2 points
-    ///   between               a straight line from the one to the other; the rate is rounded to a whole point
-    ///
-    /// A rate is never under 1 per cent. Both figures move one way only as the score rises: the cap never falls and
-    /// the rate never rises.
-    ///
-    /// THE CENTRAL BANK. <see cref="BasePoints"/> is added to the rating's points before the rate is rounded and held
-    /// to its floor. It is nothing unless the city's economy (Economy/City) has set it, and then every rate offered
-    /// from now on carries it; a loan already made keeps the rate it was made at.
+    /// A bank's loan terms by the borrower's rating: its own cap and rate moved along a straight line from the threshold to
+    /// the best terms, nothing lent under the threshold. Every product's rate starts here. Game-free.
     /// </summary>
     public static class LendingTerms
     {
-        /// <summary>The central bank's rate in points on top of the banks' own. Nothing while the city's economy is off.</summary>
-        public static float BasePoints;
+        public static float BasePoints;   // the central bank's rate on top of the banks' own, set by the city's economy; points a year
 
         public static LenderTerms For(int score, float ownCap, int ownRate)
         {
             return For(score, ownCap, ownRate, BasePoints);
         }
 
-        /// <summary>The terms with a given central bank rate (nothing: the terms by the rating alone).</summary>
+        /// <summary>The terms with a given central bank rate (nothing for the terms by the rating alone).</summary>
         public static LenderTerms For(int score, float ownCap, int ownRate, float basePoints)
         {
             var terms = new LenderTerms();
@@ -55,7 +43,7 @@ namespace RealLifeOverhaul.Economy
             if (terms.Lends)
             {
                 float share = CreditCatalogue.CapShareAtThreshold + (CreditCatalogue.CapShareAtBest - CreditCatalogue.CapShareAtThreshold) * t;
-                terms.Cap = (float)Math.Round(Math.Max(0f, ownCap) * (double)share);   // to the whole unit: a share that is 1.3 but for float noise must not lose one
+                terms.Cap = (float)Math.Round(Math.Max(0f, ownCap) * (double)share);   // in double: a share of 1.3 but for float noise must not lose a unit
             }
             return terms;
         }
@@ -67,14 +55,13 @@ namespace RealLifeOverhaul.Economy
             return t < 0f ? 0f : t > 1f ? 1f : t;
         }
 
-        /// <summary>The fee for arranging a loan of this amount by phone: the share, rounded up to a whole unit of money, and never under the least.</summary>
+        /// <summary>The fee for arranging a loan of this amount by phone: the share rounded up to a whole unit, never under the least.</summary>
         public static int PhoneFee(float amount)
         {
-            // (the small step back keeps a product that is whole but for float noise, 1,000 x 1.5%, from being rounded up one more)
+            // the small step back keeps a product that is whole but for float noise (1,000 x 1.5%) from being rounded up one more
             return amount <= 0f ? 0 : Math.Max(CreditCatalogue.PhoneFeeLeast, (int)Math.Ceiling(amount * (double)CreditCatalogue.PhoneFeeShare - 1e-4));
         }
 
-        /// <summary>Whether an amount can be borrowed, given the rating and the most the lender will lend now.</summary>
         public static LoanAnswer Decide(int score, float amount, float mostNow)
         {
             if (score < CreditCatalogue.LendingThreshold)
@@ -88,11 +75,7 @@ namespace RealLifeOverhaul.Economy
             return amount > mostNow ? LoanAnswer.TooMuch : LoanAnswer.Approved;
         }
 
-        /// <summary>
-        /// The most a lender will lend now, by the two rules the game's bank applies (BankDialog.LoanRequest): its cap
-        /// less what is already owed to it, and never more than the borrower's means allow
-        /// (<paramref name="meansLimit"/>: the game's own figure from wealth and income, less every loan).
-        /// </summary>
+        /// <summary>The most a lender lends now, by the game's bank's rules (BankDialog.LoanRequest): its cap less what it is owed, within the means test.</summary>
         public static float MostNow(float cap, float owedToLender, float meansLimit)
         {
             float room = Math.Max(0f, cap - Math.Max(0f, owedToLender));

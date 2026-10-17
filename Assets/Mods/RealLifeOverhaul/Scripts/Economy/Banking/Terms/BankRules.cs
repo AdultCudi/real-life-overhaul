@@ -7,36 +7,18 @@ namespace RealLifeOverhaul.Economy
     public struct BankProfile
     {
         public int RatePoints;      // whole points a year on every rate of the mod's own credit at this bank
-        public int LimitPercent;    // the usual limit of a card, an overdraft or a purchase on finance, in per cent
-        public int FeePercent;      // the usual arrangement fee of a loan by phone, in per cent (its least is the same everywhere)
+        public int LimitPercent;    // of the usual limit of a card, an overdraft or a purchase on finance
+        public int FeePercent;      // of the usual arrangement fee of a loan by phone (its least is the same everywhere)
     }
 
     /// <summary>
-    /// The rule that sets the city's banks apart, so that choosing a bank matters. Game-free: compiled as it is by
-    /// RealLifeOverhaul.Build/EconomyCheck.
-    ///
-    /// WHICH BANK IS WHICH. The banks are the game's own, under the game's own names (BankTerms.Lenders). Branches
-    /// with the same name are one bank. They are ranked by the most the bank lends on its own terms (its
-    /// BankSettings.maxTotalLoanAmount before the rating touches it), the largest first, and by name among equals.
-    /// The first is the bank the mod's own accounts have always been held with (BankTerms.House): its profile is
-    /// the neutral one, so nothing that was offered before these apps changes.
-    ///
-    ///   rank 0   the largest     rates as they were, limits as they were, the fee as it was
-    ///   rank 1   the second      a point dearer, limits a quarter higher, half the arrangement fee
-    ///   rank 2   the third       a point cheaper, limits a fifth lower, three quarters of the fee
-    ///   rank 3+  any other       as rank 0 (it has no app; the Finance app still offers its loans)
-    ///
-    /// WHAT IT MOVES. Only the mod's own terms, and only through the one desk that decides them today
-    /// (CreditDesk.Offer, Business, BusinessQuote, PhoneLending.Quote): the overdraft, the card, car finance and the
-    /// mortgage (rate and limit), the business loan (rate and most), and the fee of a loan by phone. The game's own
-    /// loan rate and cap at its bank counter stay the game's (BankTerms writes them by the rating alone): the banks
-    /// already differ there by their own settings. The bounds hold on every profile: under the lending threshold
-    /// every limit is nothing, whatever the share, and no rate goes under the catalogue's floor.
+    /// What sets the city's banks apart: each bank's profile by its rank (<see cref="Rank"/>). Rank 0, the house bank that
+    /// holds the mod's accounts, is neutral; a bank past the third lends as rank 0. A profile moves only the mod's own terms,
+    /// never the game's loan at the counter. Game-free: compiled as it is by EconomyCheck.
     /// </summary>
     public static class BankRules
     {
-        /// <summary>The most bank apps there are on the phone: one for each of the three largest banks.</summary>
-        public const int AppsMost = 3;
+        public const int AppsMost = 3;   // bank apps on the phone: one for each of the three largest banks
 
         private static readonly BankProfile[] Profiles =
         {
@@ -78,7 +60,7 @@ namespace RealLifeOverhaul.Economy
             return CreditCatalogue.PhoneFeeShare * Of(rank).FeePercent / 100f;
         }
 
-        /// <summary>The arrangement fee of a loan by phone at a bank: its share, rounded up to a whole unit, never under the least.</summary>
+        /// <summary>The arrangement fee of a loan by phone at a bank: its share rounded up to a whole unit, never under the least.</summary>
         public static int Fee(float amount, int rank)
         {
             if (amount <= 0f)
@@ -90,35 +72,31 @@ namespace RealLifeOverhaul.Economy
             {
                 return LendingTerms.PhoneFee(amount);
             }
-            // (the small step back keeps a product that is whole but for float noise from being rounded up one more)
+            // the small step back keeps a product that is whole but for float noise from being rounded up one more
             return Math.Max(CreditCatalogue.PhoneFeeLeast, (int)Math.Ceiling(amount * (double)CreditCatalogue.PhoneFeeShare * percent / 100.0 - 1e-4));
         }
 
-        /// <summary>The bank's points on a product's points.</summary>
         public static int Points(int productPoints, int rank)
         {
             return productPoints + Of(rank).RatePoints;
         }
 
-        /// <summary>Whether any bank lends at this rating. The answer is the same in every app: under the threshold, none does.</summary>
+        /// <summary>Whether any bank lends at this rating: the same answer in every app.</summary>
         public static bool Lends(int score)
         {
             return score >= CreditCatalogue.LendingThreshold;
         }
 
         /// <summary>
-        /// The banks' ranks, from each branch's name and its own cap: branches with one name are one bank, ranked by
-        /// the largest cap among its branches, the largest first, and by name (ordinal) among equals. Writes each
-        /// branch's rank into <paramref name="ranks"/> and returns how many banks there are. The lists are the
-        /// caller's; <paramref name="order"/> is a list to work in, used again.
+        /// Each branch's rank into <paramref name="ranks"/>: one name is one bank, ranked by its branches' largest own cap, then
+        /// by name. Returns how many banks there are; <paramref name="order"/> is the caller's list to work in.
         /// </summary>
         public static int Rank(IList<string> names, IList<float> caps, int[] ranks, List<int> order)
         {
             order.Clear();
             for (int i = 0; i < names.Count; i++)
             {
-                int first = FirstOf(names, i);
-                if (first == i)
+                if (FirstOf(names, i) == i)
                 {
                     order.Add(i);
                 }

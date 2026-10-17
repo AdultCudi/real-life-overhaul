@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
         public float OwedShare;             // owed against what could be borrowed, 0 to 1 and over
         public float ServiceShare;          // daily payments against daily income; -1 when there is no income to measure against
         public LegalStanding Legal;
-        public int Ceiling = CreditCatalogue.ScoreMax;   // the most it can be today (a bankruptcy, a debt arrangement); the top of the scale when nothing holds it
+        public int Ceiling = CreditCatalogue.ScoreMax;   // the most it can be today (a bankruptcy, a debt arrangement)
 
         public bool Lends => Value >= CreditCatalogue.LendingThreshold;
 
@@ -45,11 +45,7 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// The rating's arithmetic. It is computed, never random: the same file, the same figures and the same day always
-    /// give the same score. Game-free; one pass over at most sixty days and the last 120 events, run when something
-    /// is posted, once a game day and when the Finance app opens.
-    /// </summary>
+    /// <summary>The rating's arithmetic: the same file, figures and day always give the same score. Game-free; one pass over at most 60 days and 120 events.</summary>
     public static class CreditScoring
     {
         public static void Compute(CreditFile file, in CreditInputs inputs, int today, CreditScore into)
@@ -65,14 +61,12 @@ namespace RealLifeOverhaul.Economy
             {
                 total += CreditCatalogue.Weights[f] * into.Factor[f];
             }
-            // A bankruptcy or a debt arrangement puts a ceiling on the rating, whatever the file would otherwise come to.
             into.Ceiling = ReliefRules.Ceiling(file.Relief, today);
             into.Value = CreditCatalogue.Clamp(Math.Min(CreditCatalogue.ScoreFor(total) + file.TestOffset, into.Ceiling));
             into.Grade = CreditCatalogue.GradeOf(into.Value);
         }
 
-        // Each instalment of the last PaymentFadeDays weighs by how recent it is; a missed one weighs as several paid
-        // ones. With nothing on file the factor stands at PaymentNeutral, and a new history moves it from there.
+        // An instalment weighs by how recent it is, a missed one as several paid; an empty file stands at PaymentNeutral.
         private static float Payments(CreditFile file, int today, CreditScore into)
         {
             float good = 0f, bad = 0f;
@@ -169,10 +163,7 @@ namespace RealLifeOverhaul.Economy
             return v < 0f ? 0f : v > 1f ? 1f : v;
         }
 
-        /// <summary>
-        /// The one or two factors that would raise the score most (those with the most points still to give, and at
-        /// least <paramref name="worthPoints"/> each), best first. Returns how many were written into <paramref name="into"/>.
-        /// </summary>
+        /// <summary>The factors that would raise the score most, best first, each worth at least <paramref name="worthPoints"/>. Returns how many.</summary>
         public static int Tips(CreditScore score, CreditFactor[] into, float worthPoints = 5f)
         {
             int found = 0;
@@ -204,11 +195,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Opens the file of a save that never had one, from what the save shows: each loan is taken to have been paid
-        /// on time for as many days as its paid-off part divided by its daily payment (the game's daily run reduces a
-        /// loan by exactly that each day it is paid), which gives the length of the history and its lasting payments.
-        /// Debts and the record are read live by the scoring, so they need no estimate. With no loans and no record
-        /// the score comes out at <see cref="CreditCatalogue.CleanStart"/>.
+        /// Opens the file of a save that never had one: each loan is taken as paid on time for its paid-off part over its
+        /// daily payment in days (the game takes exactly that a day), which gives the history's length.
         /// </summary>
         public static void Open(CreditFile file, List<LoanView> loans, int today)
         {

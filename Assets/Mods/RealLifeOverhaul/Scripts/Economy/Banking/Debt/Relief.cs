@@ -3,14 +3,12 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// What the save keeps of the ways out of debt and of an approval for finance (<see cref="CreditStore"/>, part
-    /// "r"): a debt arrangement in progress, the day of the last bankruptcy, how long something has been overdue.
-    /// </summary>
+    /// <summary>What the save keeps of the ways out of debt and of an approval for finance (part "r" of the credit file's line).</summary>
     public sealed class Relief
     {
-        // a debt arrangement
-        public bool Arranged;           // one is running
+        public const int ClaimsMost = 12;
+
+        public bool Arranged;           // a debt arrangement is running
         public int ArrangedDay;
         public int ArrangedPerDay;
         public int ArrangedTotal;       // what was owed when it began
@@ -18,12 +16,10 @@ namespace RealLifeOverhaul.Economy
         public int ArrangedMisses;      // of its payments, missed in all
         public int ArrangedEndDay;      // the day the last one ended; 0 for never
 
-        // bankruptcy
-        public int BankruptDay;         // the day of the last one; 0 for never
+        public int BankruptDay;         // the day of the last bankruptcy; 0 for never
 
-        // debt advice
         public int OverdueSince;        // the first day of the present run with something overdue; 0 for none
-        public bool AdviceTold;         // it has been offered for this run
+        public bool AdviceTold;         // debt advice has been offered for this run
         public bool AdviceKnown;        // its contact is on the phone
         public bool CollectorKnown;     // and the collections contact
 
@@ -37,9 +33,7 @@ namespace RealLifeOverhaul.Economy
         public string ApprovedStreet = string.Empty;   // the lending bank
         public int ApprovedNumber;
 
-        /// <summary>The court's numbers of the claims lenders have filed that the court has not dealt with yet.</summary>
-        public readonly System.Collections.Generic.List<int> Claims = new System.Collections.Generic.List<int>(2);
-        public const int ClaimsMost = 12;
+        public readonly List<int> Claims = new List<int>(2);   // the court's numbers of the lenders' claims still open
 
         public bool HasApproval => ApprovedKind >= 0 && ApprovedAmount > 0;
 
@@ -74,7 +68,6 @@ namespace RealLifeOverhaul.Economy
     /// <summary>The arithmetic of the ways out of debt, and the ceilings they put on the rating. Game-free.</summary>
     public static class ReliefRules
     {
-        /// <summary>The daily payment of an arrangement for this average daily income.</summary>
         public static int ArrangementPayment(float dailyIncome)
         {
             return Math.Max(ProductCatalogue.ArrangementLeast, (int)Math.Round(Math.Max(0f, dailyIncome) * (double)ProductCatalogue.ArrangementShare));
@@ -108,7 +101,7 @@ namespace RealLifeOverhaul.Economy
             r.ArrangedEndDay = today;
         }
 
-        /// <summary>What is still owed on the mod's own accounts that an arrangement holds: the frozen ones.</summary>
+        /// <summary>What is still owed on the accounts an arrangement holds (the frozen ones).</summary>
         public static int FrozenOwed(List<CreditAccount> accounts)
         {
             long owed = 0;
@@ -121,11 +114,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Money paid by hand into a debt an arrangement holds (an account paid in the Finance or a bank app, one of the
-        /// game's loans paid in EconoView or a bank app): it is paid under the arrangement as the daily payment is, so
-        /// Finance's "paid of" stays true. <paramref name="left"/> is what the arrangement still holds after it. True
-        /// when the arrangement is to end now, cleared: it is running and nothing is left in it. Once ended it is not
-        /// running, so it is never ended twice, and the day's payment is not asked for again.
+        /// Money paid by hand into a debt an arrangement holds counts under it; <paramref name="left"/> is what it still holds
+        /// after. True when it is to end now, cleared: once ended it is not running, so it never ends twice.
         /// </summary>
         public static bool PaidByHand(Relief r, int amount, int left)
         {
@@ -153,17 +143,13 @@ namespace RealLifeOverhaul.Economy
             };
         }
 
-        /// <summary>Nobody lends for a while after a bankruptcy, whatever the score: a flag of its own, asked by <see cref="CreditLedger.CanBorrow"/>.</summary>
+        /// <summary>Nobody lends for a while after a bankruptcy, whatever the score (<see cref="CreditLedger.CanBorrow"/>).</summary>
         public static bool NoCredit(Relief r, int today)
         {
             return r.BankruptDay > 0 && today - r.BankruptDay < ProductCatalogue.BankruptNoCreditDays;
         }
 
-        /// <summary>
-        /// The most the rating can be today. After a bankruptcy it is the lowest score for the days nobody lends, then
-        /// rebuilds from a set figure by so much a day; while an arrangement runs and for some days after it is held
-        /// under the lending threshold. With neither there is no ceiling but the scale's own.
-        /// </summary>
+        /// <summary>The most the rating can be today, after a bankruptcy or during an arrangement and for some days after it.</summary>
         public static int Ceiling(Relief r, int today)
         {
             int ceiling = CreditCatalogue.ScoreMax;
@@ -181,10 +167,7 @@ namespace RealLifeOverhaul.Economy
             return ceiling;
         }
 
-        /// <summary>
-        /// Keeps count of how long something has been overdue. True on the day debt advice is to be offered: something
-        /// has been overdue for the stated days running, or a claim has been filed, and it has not been offered for this run.
-        /// </summary>
+        /// <summary>Keeps count of how long something has been overdue. True on the day debt advice is to be offered, once a run.</summary>
         public static bool AdviceDue(Relief r, bool anyOverdue, bool claimFiled, int today)
         {
             if (!anyOverdue && !claimFiled)
@@ -205,7 +188,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>An approval for finance has run out: the purchase was not made by the end of the day after it was given.</summary>
+        /// <summary>An approval for finance has run out: nothing was bought by the end of the day after it was given.</summary>
         public static bool ApprovalOver(Relief r, int today)
         {
             return r.HasApproval && today > r.ApprovedDay + ProductCatalogue.ApprovalDays;

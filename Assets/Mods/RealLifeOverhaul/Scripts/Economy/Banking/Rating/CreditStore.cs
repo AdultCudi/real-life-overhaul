@@ -6,32 +6,21 @@ using System.Text;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The credit file in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
+    /// The credit file as one line of the save's modData, under <see cref="Key"/>. Game-free.
     ///
     ///     v=2~h:...~d:...~e:...~f:...~l:...~a:...~k:...~r:...
     ///
-    /// Parts are divided by '~' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: the numbers of <see cref="CreditFile"/>, in the order of <see cref="Save"/>
-    ///   d  the instalments of each of the last sixty days: day|on time|missed|part|test on time|test missed
+    /// Parts are divided by '~' and begin with a letter and a colon; records by ';', fields by '|'.
+    ///   h  the header: the numbers of <see cref="CreditFile"/>, in the order of <see cref="Write"/>
+    ///   d  each of the last sixty days: day|on time|missed|part|test on time|test missed
     ///   e  the last 120 events: kind|day|amount|count|effect|test|source
     ///   f  the folded totals, one record per kind: count|amount
-    ///   l  the loans as last seen: street|number|total|first day|remaining|payment|interest, and from version 2 what the
-    ///      mod keeps about each: its standing with the lender (twelve numbers, <see cref="LadderState"/>), what is held
-    ///      on it in memory with the loan's own interest and payment, its purpose and its security
-    ///   a  the mod's own accounts (version 2): the numbers of <see cref="CreditAccount"/>, its standing, and three texts
-    ///   k  the lender of last resort (version 2): the numbers of <see cref="SharkDebt"/>
-    ///   r  the ways out of debt and an approval for finance (version 2): the numbers of <see cref="Relief"/>, the lending
-    ///      bank's street, and the court's numbers of the claims still open, divided by commas
+    ///   l  the game's loans: street|number|total|first day|remaining|payment|interest, then its LadderState, holds,
+    ///      purpose and security
+    ///   a  the mod's accounts, k the private lender, r the ways out of debt and an approval: their fields in order
     ///
-    /// VERSION 1 had the first five parts and seven fields to a loan. Its file loads as it is: there are no accounts,
-    /// nothing is owed to the lender of last resort, and every loan starts in order with its lender
-    /// (<see cref="Upgrade"/>).
-    ///
-    /// A NEWER VERSION adds fields at the end of a record or a part with a new letter; this reader takes the fields it
-    /// knows and skips parts it does not, so a save written by a later version still loads (and what it does not know
-    /// is not written back). A change that cannot be read that way raises <see cref="Version"/> and gets a step in
-    /// <see cref="Upgrade"/>. Nothing here is the game's: the loans themselves are the game's own records, and a save
-    /// loads in the plain game with this line ignored.
+    /// Version 1 had the first five parts. A later version adds fields at a record's end or a part with a new letter;
+    /// what this reader does not know is skipped, so a later save still loads.
     /// </summary>
     public static class CreditStore
     {
@@ -40,7 +29,7 @@ namespace RealLifeOverhaul.Economy
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>The file of this save; null (and <paramref name="fresh"/> true) if the save has none or it cannot be read.</summary>
+        /// <summary>The file of this save; null (and <paramref name="fresh"/> true) if it has none or it cannot be read.</summary>
         public static CreditFile Load(Dictionary<string, string> data, out bool fresh, out int version)
         {
             fresh = true;
@@ -52,7 +41,7 @@ namespace RealLifeOverhaul.Economy
             }
             try
             {
-                CreditFile file = SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+                CreditFile file = SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // an unreadable line is kept as it is
                 if (file == null)
                 {
                     return null;
@@ -64,7 +53,7 @@ namespace RealLifeOverhaul.Economy
             catch (Exception)
             {
                 SaveLines.Unreadable(data, Key, "it could not be read");
-                return null;   // a damaged line: the file is opened afresh from what the save shows (and the line is kept as it is)
+                return null;   // opened afresh from what the save shows; the damaged line is kept
             }
         }
 
@@ -76,11 +65,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// What an older version's file needs before this version uses it. From version 1: nothing is made up. The
-        /// parts it did not have are empty, the next account's number is the first, and a loan that was being missed
-        /// starts its standing from nothing (the misses themselves are on the file's days, where the rating reads them).
-        /// </summary>
+        // From version 1 nothing is made up: a loan being missed starts its standing from nothing (its misses are on the days).
         private static void Upgrade(CreditFile file, int from)
         {
             if (from < 2)
@@ -135,7 +120,7 @@ namespace RealLifeOverhaul.Economy
                 CreditAccount a = f.Accounts[i];
                 if (a.Closed)
                 {
-                    continue;   // closed: forgotten at the day's end, and never kept in a save
+                    continue;
                 }
                 t.Append(written++ > 0 ? ";" : string.Empty);
                 Join(t, a.Id, (int)a.Kind, a.Owed, a.Agreed, a.RateBp);
@@ -182,144 +167,13 @@ namespace RealLifeOverhaul.Economy
                 switch (part[0])
                 {
                     case 'h': Header(f, body.Split('|')); break;
-                    case 'd':
-                        foreach (string record in Records(body))
-                        {
-                            string[] c = record.Split('|');
-                            if (c.Length >= 4 && I(c, 0) > 0)
-                            {
-                                f.Days.Add(new PayDay { Day = I(c, 0), OnTime = Count(c, 1), Missed = Count(c, 2), Part = Count(c, 3), TestOnTime = Count(c, 4), TestMissed = Count(c, 5) });
-                            }
-                        }
-                        f.Days.Sort((a, b) => a.Day.CompareTo(b.Day));
-                        break;
-                    case 'e':
-                        foreach (string record in Records(body))
-                        {
-                            string[] c = record.Split('|');
-                            int kind = I(c, 0, -1);
-                            if (c.Length >= 3 && kind >= 0 && kind < (int)CreditKind.Count && f.Events.Count < CreditCatalogue.LedgerMost)
-                            {
-                                f.Events.Add(new CreditEvent
-                                {
-                                    Kind = (CreditKind)kind, Day = I(c, 1), Amount = I(c, 2), Count = Math.Max(1, I(c, 3, 1)), Effect = I(c, 4),
-                                    Test = I(c, 5) != 0, Source = c.Length > 6 ? c[6] : string.Empty
-                                });
-                            }
-                        }
-                        break;
-                    case 'f':
-                        {
-                            string[] records = body.Split(';');
-                            for (int k = 0; k < records.Length && k < f.FoldedCount.Length; k++)
-                            {
-                                string[] c = records[k].Split('|');
-                                f.FoldedCount[k] = Count(c, 0);
-                                long amount;
-                                f.FoldedAmount[k] = c.Length > 1 && long.TryParse(c[1], NumberStyles.Integer, Inv, out amount) ? amount : 0L;
-                            }
-                        }
-                        break;
-                    case 'l':
-                        foreach (string record in Records(body))
-                        {
-                            string[] c = record.Split('|');
-                            if (c.Length >= 7)
-                            {
-                                var mark = new LoanMark
-                                {
-                                    Street = c[0], Number = I(c, 1), Total = F(c, 2), FirstDay = I(c, 3), Remaining = F(c, 4), Payment = I(c, 5), Interest = I(c, 6),
-                                    Held = Count(c, 19) & (LoanHold.Penalty | LoanHold.Frozen), OwnInterest = Count(c, 20), OwnPayment = Count(c, 21),
-                                    Purpose = Math.Min(Count(c, 22), LoanPurpose.Consolidation), Security = c.Length > 23 ? c[23] : string.Empty
-                                };
-                                Standing(mark.Ladder, c, 7);
-                                f.Loans.Add(mark);
-                            }
-                        }
-                        break;
-                    case 'a':
-                        foreach (string record in Records(body))
-                        {
-                            string[] c = record.Split('|');
-                            int kind = I(c, 1, -1);
-                            if (c.Length < 20 || kind < 0 || kind >= (int)ProductKind.Count || I(c, 0) <= 0 || f.Accounts.Count >= CreditFile.AccountsMost)
-                            {
-                                continue;
-                            }
-                            var a = new CreditAccount
-                            {
-                                Id = I(c, 0), Kind = (ProductKind)kind, Owed = Count(c, 2), Agreed = Count(c, 3), RateBp = Count(c, 4), Carry = L(c, 5),
-                                OpenedDay = I(c, 6), Term = Count(c, 7), Instalment = Count(c, 8), NextDay = I(c, 9), DueDay = I(c, 10), StatementLeft = Count(c, 11),
-                                MinimumLeft = Count(c, 12), Charged = I(c, 13) != 0, Secured = I(c, 14) != 0, SecurityValue = Count(c, 15), Number = I(c, 16),
-                                Frozen = I(c, 17) != 0, Closed = I(c, 18) != 0, Test = I(c, 19) != 0,
-                                Security = c.Length > 32 ? c[32] : string.Empty, SecurityName = c.Length > 33 ? c[33] : string.Empty, Street = c.Length > 34 ? c[34] : string.Empty
-                            };
-                            Standing(a.Ladder, c, 20);
-                            f.Accounts.Add(a);
-                        }
-                        break;
-                    case 'k':
-                        {
-                            string[] c = body.Split('|');
-                            SharkDebt k = f.Shark;
-                            k.Known = I(c, 0) != 0;
-                            k.Borrowed = Count(c, 1);
-                            k.Owed = Count(c, 2);
-                            k.TakenDay = I(c, 3);
-                            k.DueDay = I(c, 4);
-                            k.GrownDay = I(c, 5);
-                            k.Extended = I(c, 6) != 0;
-                            k.ActedDay = I(c, 7);
-                            int waiting = I(c, 8);
-                            k.Waiting = waiting >= 0 && waiting <= (int)SharkAct.Damage ? (SharkAct)waiting : SharkAct.None;
-                            k.Test = I(c, 9) != 0;
-                            if (k.Borrowed <= 0 || k.Owed <= 0)
-                            {
-                                bool known = k.Known;
-                                k.Clear();
-                                k.Known = known;
-                            }
-                        }
-                        break;
-                    case 'r':
-                        {
-                            string[] c = body.Split('|');
-                            Relief r = f.Relief;
-                            r.Arranged = I(c, 0) != 0;
-                            r.ArrangedDay = I(c, 1);
-                            r.ArrangedPerDay = Count(c, 2);
-                            r.ArrangedTotal = Count(c, 3);
-                            r.ArrangedPaid = Count(c, 4);
-                            r.ArrangedMisses = Count(c, 5);
-                            r.ArrangedEndDay = Count(c, 6);
-                            r.BankruptDay = Count(c, 7);
-                            r.OverdueSince = Count(c, 8);
-                            r.AdviceTold = I(c, 9) != 0;
-                            r.AdviceKnown = I(c, 10) != 0;
-                            r.CollectorKnown = I(c, 11) != 0;
-                            int kind = I(c, 12, -1);
-                            r.ApprovedKind = kind == (int)ProductKind.CarFinance || kind == (int)ProductKind.Mortgage ? kind : -1;
-                            r.ApprovedAmount = Count(c, 13);
-                            r.ApprovedDeposit = Count(c, 14);
-                            r.ApprovedTerm = Count(c, 15);
-                            r.ApprovedRateBp = Count(c, 16);
-                            r.ApprovedDay = I(c, 17);
-                            r.ApprovedNumber = I(c, 18);
-                            r.ApprovedStreet = c.Length > 19 ? c[19] : string.Empty;
-                            foreach (string claim in c.Length > 20 && c[20].Length > 0 ? c[20].Split(',') : Array.Empty<string>())
-                            {
-                                int number;
-                                if (int.TryParse(claim, NumberStyles.Integer, Inv, out number) && number > 0 && r.Claims.Count < Relief.ClaimsMost && !r.Claims.Contains(number))
-                                {
-                                    r.Claims.Add(number);
-                                }
-                            }
-                            if (!r.HasApproval)
-                            {
-                                r.ClearApproval();
-                            }
-                        }
-                        break;
+                    case 'd': ReadDays(f, body); break;
+                    case 'e': ReadEvents(f, body); break;
+                    case 'f': ReadFolded(f, body); break;
+                    case 'l': ReadLoans(f, body); break;
+                    case 'a': ReadAccounts(f, body); break;
+                    case 'k': ReadShark(f.Shark, body.Split('|')); break;
+                    case 'r': ReadRelief(f.Relief, body.Split('|')); break;
                 }
             }
             return f;
@@ -353,6 +207,149 @@ namespace RealLifeOverhaul.Economy
                 f.LastGrade = -1;
             }
             f.NextAccountId = Math.Max(1, I(c, 21, 1));
+        }
+
+        private static void ReadDays(CreditFile f, string body)
+        {
+            foreach (string record in Records(body))
+            {
+                string[] c = record.Split('|');
+                if (c.Length >= 4 && I(c, 0) > 0)
+                {
+                    f.Days.Add(new PayDay { Day = I(c, 0), OnTime = Count(c, 1), Missed = Count(c, 2), Part = Count(c, 3), TestOnTime = Count(c, 4), TestMissed = Count(c, 5) });
+                }
+            }
+            f.Days.Sort((a, b) => a.Day.CompareTo(b.Day));
+        }
+
+        private static void ReadEvents(CreditFile f, string body)
+        {
+            foreach (string record in Records(body))
+            {
+                string[] c = record.Split('|');
+                int kind = I(c, 0, -1);
+                if (c.Length >= 3 && kind >= 0 && kind < (int)CreditKind.Count && f.Events.Count < CreditCatalogue.LedgerMost)
+                {
+                    f.Events.Add(new CreditEvent
+                    {
+                        Kind = (CreditKind)kind, Day = I(c, 1), Amount = I(c, 2), Count = Math.Max(1, I(c, 3, 1)), Effect = I(c, 4),
+                        Test = I(c, 5) != 0, Source = c.Length > 6 ? c[6] : string.Empty
+                    });
+                }
+            }
+        }
+
+        private static void ReadFolded(CreditFile f, string body)
+        {
+            string[] records = body.Split(';');
+            for (int k = 0; k < records.Length && k < f.FoldedCount.Length; k++)
+            {
+                string[] c = records[k].Split('|');
+                f.FoldedCount[k] = Count(c, 0);
+                long amount;
+                f.FoldedAmount[k] = c.Length > 1 && long.TryParse(c[1], NumberStyles.Integer, Inv, out amount) ? amount : 0L;
+            }
+        }
+
+        private static void ReadLoans(CreditFile f, string body)
+        {
+            foreach (string record in Records(body))
+            {
+                string[] c = record.Split('|');
+                if (c.Length < 7)
+                {
+                    continue;
+                }
+                var mark = new LoanMark
+                {
+                    Street = c[0], Number = I(c, 1), Total = F(c, 2), FirstDay = I(c, 3), Remaining = F(c, 4), Payment = I(c, 5), Interest = I(c, 6),
+                    Held = Count(c, 19) & (LoanHold.Penalty | LoanHold.Frozen), OwnInterest = Count(c, 20), OwnPayment = Count(c, 21),
+                    Purpose = Math.Min(Count(c, 22), LoanPurpose.Consolidation), Security = c.Length > 23 ? c[23] : string.Empty
+                };
+                Standing(mark.Ladder, c, 7);
+                f.Loans.Add(mark);
+            }
+        }
+
+        private static void ReadAccounts(CreditFile f, string body)
+        {
+            foreach (string record in Records(body))
+            {
+                string[] c = record.Split('|');
+                int kind = I(c, 1, -1);
+                if (c.Length < 20 || kind < 0 || kind >= (int)ProductKind.Count || I(c, 0) <= 0 || f.Accounts.Count >= CreditFile.AccountsMost)
+                {
+                    continue;
+                }
+                var a = new CreditAccount
+                {
+                    Id = I(c, 0), Kind = (ProductKind)kind, Owed = Count(c, 2), Agreed = Count(c, 3), RateBp = Count(c, 4), Carry = L(c, 5),
+                    OpenedDay = I(c, 6), Term = Count(c, 7), Instalment = Count(c, 8), NextDay = I(c, 9), DueDay = I(c, 10), StatementLeft = Count(c, 11),
+                    MinimumLeft = Count(c, 12), Charged = I(c, 13) != 0, Secured = I(c, 14) != 0, SecurityValue = Count(c, 15), Number = I(c, 16),
+                    Frozen = I(c, 17) != 0, Closed = I(c, 18) != 0, Test = I(c, 19) != 0,
+                    Security = c.Length > 32 ? c[32] : string.Empty, SecurityName = c.Length > 33 ? c[33] : string.Empty, Street = c.Length > 34 ? c[34] : string.Empty
+                };
+                Standing(a.Ladder, c, 20);
+                f.Accounts.Add(a);
+            }
+        }
+
+        private static void ReadShark(SharkDebt k, string[] c)
+        {
+            k.Known = I(c, 0) != 0;
+            k.Borrowed = Count(c, 1);
+            k.Owed = Count(c, 2);
+            k.TakenDay = I(c, 3);
+            k.DueDay = I(c, 4);
+            k.GrownDay = I(c, 5);
+            k.Extended = I(c, 6) != 0;
+            k.ActedDay = I(c, 7);
+            int waiting = I(c, 8);
+            k.Waiting = waiting >= 0 && waiting <= (int)SharkAct.Damage ? (SharkAct)waiting : SharkAct.None;
+            k.Test = I(c, 9) != 0;
+            if (k.Borrowed <= 0 || k.Owed <= 0)
+            {
+                bool known = k.Known;
+                k.Clear();
+                k.Known = known;
+            }
+        }
+
+        private static void ReadRelief(Relief r, string[] c)
+        {
+            r.Arranged = I(c, 0) != 0;
+            r.ArrangedDay = I(c, 1);
+            r.ArrangedPerDay = Count(c, 2);
+            r.ArrangedTotal = Count(c, 3);
+            r.ArrangedPaid = Count(c, 4);
+            r.ArrangedMisses = Count(c, 5);
+            r.ArrangedEndDay = Count(c, 6);
+            r.BankruptDay = Count(c, 7);
+            r.OverdueSince = Count(c, 8);
+            r.AdviceTold = I(c, 9) != 0;
+            r.AdviceKnown = I(c, 10) != 0;
+            r.CollectorKnown = I(c, 11) != 0;
+            int kind = I(c, 12, -1);
+            r.ApprovedKind = kind == (int)ProductKind.CarFinance || kind == (int)ProductKind.Mortgage ? kind : -1;
+            r.ApprovedAmount = Count(c, 13);
+            r.ApprovedDeposit = Count(c, 14);
+            r.ApprovedTerm = Count(c, 15);
+            r.ApprovedRateBp = Count(c, 16);
+            r.ApprovedDay = I(c, 17);
+            r.ApprovedNumber = I(c, 18);
+            r.ApprovedStreet = c.Length > 19 ? c[19] : string.Empty;
+            foreach (string claim in c.Length > 20 && c[20].Length > 0 ? c[20].Split(',') : Array.Empty<string>())
+            {
+                int number;
+                if (int.TryParse(claim, NumberStyles.Integer, Inv, out number) && number > 0 && r.Claims.Count < Relief.ClaimsMost && !r.Claims.Contains(number))
+                {
+                    r.Claims.Add(number);
+                }
+            }
+            if (!r.HasApproval)
+            {
+                r.ClearApproval();
+            }
         }
 
         // A debt's standing with its lender: twelve numbers, in the order of LadderState.

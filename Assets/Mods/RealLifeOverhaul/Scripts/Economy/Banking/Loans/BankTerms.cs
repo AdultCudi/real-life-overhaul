@@ -1,9 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Buildings;
-using Streets;
 using Helpers;
 using SpecialServices.Bank;
+using Streets;
 using Tutorial.SideQuests;
 using UnityEngine;
 
@@ -21,24 +22,9 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The banks' terms, moved by the credit rating without touching the game's code.
-    ///
-    /// HOW THE GAME READS THEM. A bank's terms are one BankSettings object (a ScriptableObject in memory, shared by
-    /// every branch that uses it). The bank's dialogue reads it afresh each time: BankLoanSettings.Start and
-    /// SetDailyAmounts read annualInterestRate and yearsToPayLoan for the figures shown while the amount is typed
-    /// (LoanHelper.CalculateDailyInterestPayment / CalculateDailyPayment), and BankDialog.LoanRequest reads
-    /// maxTotalLoanAmount when the amount is confirmed: more than the cap less what is already owed to that bank is
-    /// answered with the game's own "the most we can lend you is ..." and no loan. So writing the cap and the rate on
-    /// the object is enough: a cap of 0 makes the game itself refuse, and the rate offered is the rate charged.
-    ///
-    /// WHAT IS LEFT ALONE. The game's two quest loans keep the banks' own terms: while the tutorial's first-business
-    /// loan is open (the condition BankDialog.GetEconomyMaxLoanAmount itself tests) no bank is touched, and while the
-    /// bankruptcy side quest is active a bank that offers its emergency loan is not touched (that loan ignores the cap
-    /// anyway, BankDialog.LoanRequest; this keeps its rate the bank's own as well).
-    ///
-    /// PUTTING THEM BACK. The first values seen on an object are its own and are kept for as long as the game runs
-    /// (never taken from an object this class has already written to), so <see cref="Restore"/> is exact however often
-    /// it and <see cref="Apply"/> run. Nothing of this reaches a save: the objects are the game's assets, not its save.
+    /// The city's banks, and their loan terms moved by the rating. A bank's dialogue reads its BankSettings afresh each time
+    /// (the rate in LoanHelper, the cap in BankDialog.LoanRequest), so writing the two fields is enough: a cap of 0 makes the
+    /// game itself refuse. The first values seen are kept for the session, so <see cref="Restore"/> is exact; nothing is saved.
     /// </summary>
     public static class BankTerms
     {
@@ -66,24 +52,17 @@ namespace RealLifeOverhaul.Economy
         /// <summary>One branch of each bank, by rank (the largest lender first): the banks the bank apps are for.</summary>
         public static IReadOnlyList<Lender> Banks => Firsts;
 
-        /// <summary>True while the terms in memory are this class's and not the banks' own.</summary>
+        /// <summary>True while the terms in memory are the rating's, not the banks' own.</summary>
         public static bool Applied { get; private set; }
 
         /// <summary>What every bank together would let the player owe on its own terms.</summary>
         public static float OwnCapTotal { get; private set; }
 
-        /// <summary>
-        /// The bank the mod's own accounts are held with: the one with the largest cap of its own (the first by name
-        /// among equals). Null in a city without a bank.
-        /// </summary>
+        /// <summary>The bank that holds the mod's accounts: the largest cap of its own, the first by name among equals. Null without a bank.</summary>
         public static Lender House { get; private set; }
 
-        /// <summary>
-        /// What is owed on loans secured on a business at the banks that share these settings. A bank's cap in memory
-        /// is raised by it, so that a business loan does not use up what the bank lends the borrower unsecured. Set by
-        /// the credit desk; nothing while it is not set.
-        /// </summary>
-        public static System.Func<BankSettings, float> Secured;
+        /// <summary>What is owed on business loans at the banks with these settings (the desk's): a bank's cap rises by it, so they do not use up unsecured lending.</summary>
+        public static Func<BankSettings, float> Secured;
 
         /// <summary>Finds the city's banks (one look through the game's special buildings) and notes each one's own terms. Returns how many.</summary>
         public static int Find()
@@ -135,7 +114,7 @@ namespace RealLifeOverhaul.Economy
             return List.Count;
         }
 
-        // Each branch's rank, and one branch of each bank in rank order (BankRules.Rank: the same rule the offline check holds).
+        // Each branch's rank, and one branch of each bank in rank order, by the rule the offline check holds (BankRules.Rank).
         private static void RankBanks()
         {
             RankNames.Clear();
@@ -175,7 +154,6 @@ namespace RealLifeOverhaul.Economy
             return branch != null && branch.Rank >= 0 && branch.Rank < Firsts.Count ? Firsts[branch.Rank] : null;
         }
 
-        /// <summary>Whether the branch at this address is one of this bank's.</summary>
         public static bool IsBank(Lender bank, string street, int number)
         {
             Lender branch = At(street, number);
@@ -194,7 +172,7 @@ namespace RealLifeOverhaul.Economy
             return settings != null && Originals.TryGetValue(settings, out own) ? own.Rate : 0;
         }
 
-        /// <summary>One of the game's quest loans is open at this bank: its terms stay its own.</summary>
+        /// <summary>One of the game's quest loans is open at this bank, so it keeps its own terms: the tutorial's at every bank, the bankruptcy quest's where offered.</summary>
         public static bool QuestHold(BankSettings settings)
         {
             GameInstance save = SaveGameManager.Current;
@@ -209,7 +187,6 @@ namespace RealLifeOverhaul.Economy
             return settings.allowSideQuestEmergencyLoan && SideQuestHelper.IsSideQuestActive(BankruptcyQuest);
         }
 
-        /// <summary>The terms a bank should have in memory for this rating.</summary>
         public static LenderTerms Wanted(BankSettings settings, int score)
         {
             Own own = Originals[settings];
@@ -230,7 +207,7 @@ namespace RealLifeOverhaul.Economy
         {
             for (int i = 0; i < List.Count; i++)
             {
-                if (List[i].Number == number && string.Equals(List[i].Street, street, System.StringComparison.Ordinal))
+                if (List[i].Number == number && string.Equals(List[i].Street, street, StringComparison.Ordinal))
                 {
                     return List[i];
                 }
@@ -238,10 +215,7 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        /// <summary>
-        /// Writes the terms for this rating on every bank. Only a value that differs is written, so asking each game
-        /// hour costs a few comparisons. Returns how many banks were changed.
-        /// </summary>
+        /// <summary>Writes the terms for this rating on every bank, only where a value differs. Returns how many banks were changed.</summary>
         public static int Apply(int score)
         {
             int changed = 0;
@@ -250,7 +224,7 @@ namespace RealLifeOverhaul.Economy
                 BankSettings settings = Unique[i];
                 if (settings == null)
                 {
-                    continue;   // the game has unloaded it: there is nothing to write to
+                    continue;   // the game has unloaded it
                 }
                 LenderTerms want = Wanted(settings, score);
                 if (settings.maxTotalLoanAmount != want.Cap || settings.annualInterestRate != want.AnnualRate)
@@ -264,10 +238,7 @@ namespace RealLifeOverhaul.Economy
             return changed;
         }
 
-        /// <summary>
-        /// Puts every bank's own terms back, exactly: those of this city and any other object this class ever wrote
-        /// to. Safe to call at any time and any number of times.
-        /// </summary>
+        /// <summary>Puts every bank's own terms back exactly, those of this city and any other object ever written to. Safe at any time.</summary>
         public static int Restore()
         {
             int restored = 0;
@@ -291,7 +262,7 @@ namespace RealLifeOverhaul.Economy
             {
                 for (int i = 0; i < dead.Count; i++)
                 {
-                    Originals.Remove(dead[i]);   // an object the game has unloaded: when it is loaded again it has its own values
+                    Originals.Remove(dead[i]);   // unloaded by the game: loaded again, it has its own values
                 }
             }
             Applied = false;
@@ -335,7 +306,7 @@ namespace RealLifeOverhaul.Economy
             return settings.name;
         }
 
-        /// <summary>The city has gone: the list is forgotten (the banks' own terms are kept for the next city).</summary>
+        /// <summary>The city has gone: its banks are forgotten, their own terms kept.</summary>
         public static void Forget()
         {
             List.Clear();

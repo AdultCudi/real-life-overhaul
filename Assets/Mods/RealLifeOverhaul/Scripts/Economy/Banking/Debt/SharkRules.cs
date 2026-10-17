@@ -2,7 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>What the lender of last resort does about a debt that is past its day.</summary>
+    /// <summary>What the private lender does about a debt past its day.</summary>
     public enum SharkAct
     {
         None = 0,
@@ -11,10 +11,7 @@ namespace RealLifeOverhaul.Economy
         Damage = 3      // one of the borrower's businesses is damaged: a repair bill
     }
 
-    /// <summary>
-    /// The one debt to the lender of last resort, as the save keeps it (<see cref="CreditStore"/>, part "k"). It is
-    /// not a credit account: it is not on the credit file, it is not in the rating, and paying it builds nothing.
-    /// </summary>
+    /// <summary>The one debt to the private lender (part "k" of the credit file's line). It is not credit: not in the rating, and paying it builds nothing.</summary>
     public sealed class SharkDebt
     {
         public bool Known;      // the lender has made itself known: its contact is on the phone
@@ -38,13 +35,10 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>
-    /// The lender of last resort's terms, in whole money. Simple interest on the sum borrowed each day, the whole of
-    /// it due in one sum, one extension for a fee, and never more owed than a multiple of the sum. Game-free.
-    /// </summary>
+    /// <summary>The private lender's terms: simple interest a day on the sum, all due in one sum, one extension, never more than a multiple owed. Game-free.</summary>
     public static class SharkRules
     {
-        /// <summary>The most it lends: its usual most, or so many days of the borrower's average daily income if that is more, to the step below.</summary>
+        /// <summary>The most it lends: its usual most, or so many days of the borrower's average daily income if more, to the step below.</summary>
         public static int Most(float dailyIncome)
         {
             double byIncome = Math.Max(0f, dailyIncome) * (double)ProductCatalogue.SharkIncomeDays;
@@ -57,7 +51,6 @@ namespace RealLifeOverhaul.Economy
             return borrowed * ProductCatalogue.SharkCapMultiple;
         }
 
-        /// <summary>A day's interest on a sum.</summary>
         public static int ADay(int borrowed)
         {
             return ProductCatalogue.ShareUp(borrowed, ProductCatalogue.SharkDailyShare);
@@ -117,7 +110,6 @@ namespace RealLifeOverhaul.Economy
             return used;
         }
 
-        /// <summary>The fee for the one extension, on what is owed now.</summary>
         public static int ExtendFee(SharkDebt debt)
         {
             return Math.Min(Math.Max(0, Cap(debt.Borrowed) - debt.Owed), ProductCatalogue.ShareUp(debt.Owed, ProductCatalogue.SharkExtendFeeShare));
@@ -138,11 +130,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>
-        /// What is done on a given number of days past the due day: a warning on the first, an assault on the third,
-        /// damage on the sixth, and then one or the other in turn every few days. With <paramref name="violence"/>
-        /// off (the mildest level) every one of them is a warning.
-        /// </summary>
+        /// <summary>What is done a number of days past the due day; without <paramref name="violence"/> (the mildest level) only warnings.</summary>
         public static SharkAct ActOn(int daysPast, bool violence)
         {
             SharkAct act;
@@ -162,7 +150,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return SharkAct.None;
             }
-            return violence || act == SharkAct.None ? act : SharkAct.Warn;
+            return violence ? act : SharkAct.Warn;
         }
 
         /// <summary>The act for today, once: nothing if today's has been dealt with or the debt is not past its day.</summary>
@@ -176,7 +164,6 @@ namespace RealLifeOverhaul.Economy
             return ActOn(today - debt.DueDay, violence);
         }
 
-        /// <summary>The repair bill of a damaged business.</summary>
         public static int DamageBill(int owed)
         {
             int bill = ProductCatalogue.ShareUp(owed, ProductCatalogue.SharkDamageShare);

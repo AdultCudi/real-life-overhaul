@@ -31,15 +31,11 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// The terms of each product by the borrower's rating. Every one of them is nothing under the lending threshold
-    /// and moves one way as the score rises: a limit never falls, a rate never rises. Game-free.
-    ///
-    /// "The bank's rate" is a bank's own rate moved by the rating as <see cref="LendingTerms"/> moves it; a product
-    /// adds or takes off its own points, and the game's interest multiplier applies to it as to a loan.
+    /// Each of the mod's products' terms by the borrower's rating. A product's rate is the bank's rate for the rating
+    /// (<see cref="LendingTerms"/>) with the product's points, times the game's interest multiplier. Game-free.
     /// </summary>
     public static class ProductTerms
     {
-        /// <summary>The overdraft's limit: a share of what the city's banks would lend at this rating.</summary>
         public static int OverdraftLimit(int score, float ownCapTotal)
         {
             return Revolving(score, ownCapTotal, ProductCatalogue.OverdraftShareAtThreshold, ProductCatalogue.OverdraftShareAtBest, ProductCatalogue.OverdraftRound, ProductCatalogue.OverdraftLeast);
@@ -61,44 +57,38 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(least, ProductCatalogue.Round(terms.Cap * (double)share, round));
         }
 
-        /// <summary>
-        /// A product's rate in hundredths of a per cent a year by the rating alone: the bank's rate for the rating, the
-        /// product's points, the game's multiplier. The central bank's rate is not in it: an overdraft and a card
-        /// carry that day by day (<see cref="CreditAccount.RateNow"/>), and a purchase on finance takes it once, when
-        /// it is approved (<see cref="FixedRateBp"/>).
-        /// </summary>
+        /// <summary>A product's rate in hundredths of a per cent a year by the rating alone, without the central bank's (<see cref="WithBase"/>).</summary>
         public static int RateBp(int score, int ownRate, int points, float multiplier)
         {
             int rate = Math.Max(CreditCatalogue.RateFloor, LendingTerms.For(score, 0f, ownRate, 0f).AnnualRate + points);
             return Math.Max(1, (int)Math.Round(rate * (double)Math.Max(0f, multiplier) * 100.0));
         }
 
-        /// <summary>The central bank's rate in hundredths of a per cent a year, as an account is charged it: its points times the game's multiplier.</summary>
+        /// <summary>The central bank's rate in hundredths of a per cent a year: its points times the game's multiplier.</summary>
         public static int BaseBp(float basePoints, float multiplier)
         {
             return (int)Math.Round(basePoints * (double)Math.Max(0f, multiplier) * 100.0, MidpointRounding.AwayFromZero);
         }
 
-        /// <summary>A rate with the central bank's on top, never under the floor: what a fixed product is agreed at, and what a revolving one is charged today.</summary>
+        /// <summary>A rate with the central bank's on top, never under the floor: a fixed product's for good, a revolving one's for today.</summary>
         public static int WithBase(int rateBp, int baseBp, float multiplier)
         {
             int floor = Math.Max(1, (int)Math.Round(CreditCatalogue.RateFloor * (double)Math.Max(0f, multiplier) * 100.0));
             return baseBp == 0 ? rateBp : Math.Max(Math.Min(floor, rateBp), rateBp + baseBp);
         }
 
-        /// <summary>The rate a purchase on finance is approved at: by the rating, with the central bank's rate of the day. It is fixed from then on.</summary>
+        /// <summary>The rate a purchase on finance is approved at and keeps: by the rating, with the central bank's rate of the day.</summary>
         public static int FixedRateBp(int score, int ownRate, int points, float multiplier)
         {
             return WithBase(RateBp(score, ownRate, points, multiplier), BaseBp(LendingTerms.BasePoints, multiplier), multiplier);
         }
 
-        /// <summary>The whole-point rate a business loan is made at: the bank's rate for the rating less a point, never under the floor.</summary>
+        /// <summary>The whole-point rate a business loan is made at: the bank's rate for the rating less a point.</summary>
         public static int BusinessRate(int score, int ownRate)
         {
             return Math.Max(CreditCatalogue.RateFloor, LendingTerms.For(score, 0f, ownRate).AnnualRate + ProductCatalogue.BusinessRatePoints);
         }
 
-        /// <summary>The most a business loan lends against a business with this average daily profit.</summary>
         public static int BusinessMost(int score, float averageDailyProfit)
         {
             if (score < CreditCatalogue.LendingThreshold || averageDailyProfit <= 0f)
@@ -108,7 +98,7 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Floor(averageDailyProfit * (double)ProductCatalogue.BusinessProfitMultiple);
         }
 
-        /// <summary>The most a lender puts into a vehicle or a building: what it would lend unsecured at the rating, and a multiple of it for a building.</summary>
+        /// <summary>The most a lender puts into a vehicle (what it would lend unsecured at the rating) or a building (a multiple of that).</summary>
         public static int FinanceMost(ProductKind kind, int score, float ownCap)
         {
             LenderTerms terms = LendingTerms.For(score, ownCap, 0);
@@ -139,13 +129,12 @@ namespace RealLifeOverhaul.Economy
         public static int TermStep(ProductKind kind) => kind == ProductKind.Mortgage ? ProductCatalogue.HomeTermStep : ProductCatalogue.CarTermStep;
         public static int FinanceLeast(ProductKind kind) => kind == ProductKind.Mortgage ? ProductCatalogue.HomeLeast : ProductCatalogue.CarLeast;
 
-        /// <summary>The deposit that goes with a price: the share, rounded up.</summary>
         public static int Deposit(int price, int depositPercent)
         {
             return ProductCatalogue.ShareUp(price, depositPercent / 100.0);
         }
 
-        /// <summary>The buyer's own money that an approval for this amount asks for: the deposit on the dearest thing the amount can finance.</summary>
+        /// <summary>The buyer's own money an approval for this amount asks for: the deposit on the dearest thing the amount can finance.</summary>
         public static int DepositFor(int approved, int depositPercent)
         {
             int percent = Math.Max(1, Math.Min(99, depositPercent));
@@ -158,7 +147,7 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(0, Math.Min(approved, price - Deposit(price, depositPercent)));
         }
 
-        /// <summary>The figures of a purchase on finance, with the interest of the whole term added up day by day as the account will charge it.</summary>
+        /// <summary>The figures of a purchase on finance, its interest added up day by day as the account will charge it.</summary>
         public static FinanceQuote Quote(int price, int depositPercent, int approved, int term, int rateBp, int daysPerYear)
         {
             var q = new FinanceQuote { Price = price, Term = Math.Max(1, term), RateBp = rateBp };
@@ -180,13 +169,7 @@ namespace RealLifeOverhaul.Economy
             return q;
         }
 
-        // ---------------------------------------------------------------- consolidation
-
-        /// <summary>The fee for consolidating this much debt.</summary>
-        /// <summary>
-        /// What holding approved purchase money costs: a day's interest at the approved rate for every day it was held,
-        /// the day of approval counted, at least 1. Without it an approval was a day or two of cash for nothing.
-        /// </summary>
+        /// <summary>What holding approved purchase money costs: a day's interest at the approved rate for each day held, at least 1.</summary>
         public static int AdvanceCharge(int amount, int rateBp, int daysHeld, int daysPerYear)
         {
             if (amount <= 0)
@@ -195,7 +178,7 @@ namespace RealLifeOverhaul.Economy
             }
             int days = daysHeld < 1 ? 1 : daysHeld;
             double charge = (double)amount * rateBp / 10000.0 * days / (daysPerYear < 1 ? 1 : daysPerYear);
-            int whole = (int)System.Math.Ceiling(charge);
+            int whole = (int)Math.Ceiling(charge);
             return whole < 1 ? 1 : whole;
         }
 
@@ -204,11 +187,7 @@ namespace RealLifeOverhaul.Economy
             return total <= 0 ? 0 : Math.Max(ProductCatalogue.ConsolidateFeeLeast, ProductCatalogue.ShareUp(total, ProductCatalogue.ConsolidateFeeShare));
         }
 
-        /// <summary>
-        /// The debts as they stand. A loan's interest is what it would still cost over the days it has left; a card or
-        /// an overdraft has no end, so its interest is counted over <paramref name="compareDays"/> (the days of the
-        /// loan that would replace it) and it adds nothing to the days.
-        /// </summary>
+        /// <summary>The debts as they stand; a card's or an overdraft's interest, having no end, over <paramref name="compareDays"/>.</summary>
         public static DebtTotals Before(IList<DebtItem> debts, int compareDays)
         {
             var t = new DebtTotals();
@@ -228,14 +207,14 @@ namespace RealLifeOverhaul.Economy
             return t;
         }
 
-        /// <summary>The one loan that replaces them, with its fee in what it costs.</summary>
+        /// <summary>The one loan that replaces them, its fee in what it costs.</summary>
         public static DebtTotals After(int amount, int dailyInterest, int dailyPayment, int fee)
         {
             int days = dailyPayment > 0 ? (amount + dailyPayment - 1) / dailyPayment : 0;
             return new DebtTotals { Owed = amount, Daily = dailyInterest + Math.Min(dailyPayment, amount), Cost = dailyInterest * days + fee, Days = days };
         }
 
-        /// <summary>Whether a bank will consolidate this much: the rating is at the threshold or over, and the new loan fits what it lends at the rating.</summary>
+        /// <summary>Whether a bank will consolidate this much: the rating lends, and the new loan with its fee fits what the bank lends at the rating.</summary>
         public static ProductAnswer Consolidate(int score, int total, float capAtScore)
         {
             if (score < CreditCatalogue.LendingThreshold)

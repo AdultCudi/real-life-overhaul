@@ -7,10 +7,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The game's loans (SaveGameManager.Current.Loans) as a credit account: the first thing that is credit, and the
-    /// model for the ones to come. It reads the game's list and keeps nothing; a loan stays the game's own record.
-    /// </summary>
+    /// <summary>The game's loans (SaveGameManager.Current.Loans) as a credit account. It reads the game's list and keeps nothing.</summary>
     public sealed class GameLoans : ICreditAccount
     {
         public const string AccountKey = "loans";
@@ -35,7 +32,6 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What every bank of the city together would lend on its own terms.</summary>
         public float Limit => BankTerms.OwnCapTotal;
 
-        /// <summary>What the game's daily run takes next: each loan's interest and its payment, or what is left of it (LoanHelper.RunDaily).</summary>
         public float PaymentDue
         {
             get
@@ -52,12 +48,12 @@ namespace RealLifeOverhaul.Economy
 
         private static List<Loan> Loans => SaveGameManager.Current != null ? SaveGameManager.Current.Loans : null;
 
+        /// <summary>What the game's daily run takes from a loan next: its interest and its payment, or what is left (LoanHelper.RunDaily).</summary>
         public static float Due(Loan loan)
         {
             return loan.dailyInterest + Mathf.Min(loan.dailyPayment, Mathf.Max(0f, loan.remainingAmount));
         }
 
-        /// <summary>The game's loans as the credit file compares them. The list is the caller's and is used again.</summary>
         public static void Read(List<LoanView> into)
         {
             into.Clear();
@@ -83,7 +79,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>What is owed to the bank at this address, as the bank itself counts it (BankDialog.GetRemainingLoanAmount).</summary>
+        /// <summary>What is owed to the bank at this address, counted as the bank itself counts it (BankDialog.GetRemainingLoanAmount).</summary>
         public static float OwedTo(Address bank)
         {
             List<Loan> loans = Loans;
@@ -106,12 +102,7 @@ namespace RealLifeOverhaul.Economy
                 : loan != null && loan.bankAddress != null ? loan.bankAddress.ToFormattedString() : string.Empty;
         }
 
-        /// <summary>
-        /// The most the borrower's means allow in new loans, as the game's bank works it out
-        /// (BankDialog.GetEconomyMaxLoanAmount, which is private: the same figures, read from the same public members).
-        /// The greater of the player's wealth before loans and a quarter of the daily income over the bank's payback
-        /// days (and 15,500 while the tutorial's first-business loan is open), less every loan still owed.
-        /// </summary>
+        /// <summary>The most the borrower's means allow in new loans: BankDialog.GetEconomyMaxLoanAmount (private there), term for term.</summary>
         public static float MeansLimit(BankSettings settings)
         {
             GameInstance save = SaveGameManager.Current;

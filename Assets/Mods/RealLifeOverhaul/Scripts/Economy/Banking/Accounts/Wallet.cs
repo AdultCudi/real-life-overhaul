@@ -4,17 +4,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The accounts' side of the player's cash: the game's own transaction call (GameManager.ChangeMoneySafe), so
-    /// everything the accounts take or pay is in the game's transaction history under its own name. A payment is
-    /// booked under the game's loan expenses, as its own loan payments are. During the day's run the transactions
-    /// are dated on the day that has ended (<see cref="BookDay"/>), as the game dates its own run.
+    /// The accounts' cash through the game's own transaction call, so every movement is in the game's history; a payment is
+    /// booked as a loan expense, as the game's own are.
     /// </summary>
     public sealed class Wallet : IWallet
     {
         private const string LoanExpenses = "ba:transactioncategory_loanexpenses";   // the game's own category
 
-        /// <summary>The day transactions are dated on; null for now.</summary>
-        public int? BookDay;
+        public int? BookDay;   // the day transactions are dated on (the day's run books on the day that ended); null for now
 
         public int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
 
@@ -40,14 +37,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Takes what there is of an amount, and says how much that was.</summary>
+        /// <summary>Takes what there is of an amount. Returns how much that was.</summary>
         public int TakeUpTo(int amount, string why, string name)
         {
             int take = Mathf.Min(amount, Cash);
             return take > 0 && Take(take, why, name) ? take : 0;
         }
 
-        // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+        // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string why, string name, bool expense)
         {
             var data = new Dictionary<string, string>(1) { { "name", name ?? string.Empty } };

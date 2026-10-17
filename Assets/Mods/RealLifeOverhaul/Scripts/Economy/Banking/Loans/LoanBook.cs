@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Economy
     public enum LoanNote
     {
         New,            // a loan the file had not seen
-        Gone,           // a loan no longer in the game outside the daily run: paid off by the borrower
+        Gone,           // no longer in the game outside the daily run: paid off by the borrower
         PaymentChanged, // its daily payment was changed
         ExtraPaid,      // its balance fell outside the daily run: part paid off by the borrower
         Paid,           // the daily run took its instalment
@@ -15,38 +15,25 @@ namespace RealLifeOverhaul.Economy
         Missed          // the daily run could not take its instalment
     }
 
+    /// <summary>One thing a comparison found about one loan.</summary>
     public struct LoanFinding
     {
         public LoanNote Note;
-        public LoanMark Mark;       // as the file had it before the comparison
-        public LoanMark Live;       // the file's own mark, where the loan is still there: what the mod keeps about the loan is on it
+        public LoanMark Mark;       // a copy of the file's mark as it was before the comparison
+        public LoanMark Live;       // the file's own mark, where the loan is still there
         public int Amount;          // the money the note is about
     }
 
     /// <summary>
-    /// Knows the game's loans apart and reads what happened to them, without touching the game's code. Game-free.
-    ///
-    /// IDENTITY. The game's Loan has no id and its list changes (a paid-off loan is removed, a new one is added at the
-    /// end). While a save is loaded a loan is the object itself (LoanMark.Ref). After a load the objects are new, so a
-    /// mark is matched to a loan by its fingerprint: the bank's address and the amount borrowed, which never change.
-    /// Two loans of one amount from one bank are told apart by their balance: the mark whose saved balance equals the
-    /// loan's is taken first, else the first whose saved balance is not below it (a balance only falls), in the
-    /// list's order, which the game keeps.
-    ///
-    /// THE DAILY PAYMENT. The game's NewDay raises its hour event first, then runs the day (LoanHelper.RunDaily takes
-    /// each instalment, or only the interest when the money is short), then raises its day event. <see cref="Sync"/> on
-    /// the hour event therefore leaves every mark exactly as its loan stood before the run, and <see cref="Settle"/> on
-    /// the day event compares after it: a balance that fell was paid, a loan that is gone was paid off, a balance that
-    /// did not move while a payment was due was missed. Nothing the player does can fall between the two.
+    /// Tells the game's loans apart and reads what happened to them. The game's NewDay raises its hour event, runs the day
+    /// (LoanHelper.RunDaily) and then raises its day event: <see cref="Sync"/> on the hour leaves every mark as its loan
+    /// stood before the run, and <see cref="Settle"/> on the day reads the run. Game-free.
     /// </summary>
     public static class LoanBook
     {
-        private const float Cent = 0.5f;   // balances are whole in practice; this only absorbs float noise
+        private const float Cent = 0.5f;   // balances are whole in practice: this only absorbs float noise
 
-        /// <summary>
-        /// Brings the marks up to date with the game's loans and says what changed since the last time. With
-        /// <paramref name="quiet"/> nothing is said (the first look after a load, or after the feature was off).
-        /// </summary>
+        /// <summary>Brings the marks up to date and says what changed since the last look; nothing with <paramref name="quiet"/>.</summary>
         public static void Sync(List<LoanMark> marks, List<LoanView> live, int today, List<LoanFinding> findings, bool quiet = false)
         {
             Match(marks, live);
@@ -93,10 +80,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>
-        /// After the game's daily run: what became of each instalment. The marks are as <see cref="Sync"/> left them
-        /// before the run and are brought up to date here.
-        /// </summary>
+        /// <summary>After the game's daily run: what became of each instalment, against the marks as the last hour left them.</summary>
         public static void Settle(List<LoanMark> marks, List<LoanView> live, List<LoanFinding> findings)
         {
             Match(marks, live);
@@ -129,7 +113,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 Take(mark, loan);
             }
-            // A loan made during the run itself cannot be (the run makes none), but a list is never left half read.
+            // the run makes no loan, but a list is never left half read
             for (int i = 0; i < live.Count; i++)
             {
                 if (Find(marks, live[i].Ref) == null)
@@ -141,7 +125,8 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Sets Matched and Ref on every mark that has a loan: by the object first, by the fingerprint for the rest.
+        // Sets Matched and Ref on every mark that has a loan: by the object first, then by the fingerprint (the bank's address
+        // and the amount, which never change), two alike told apart by balance, which only falls, in the game's list order.
         private static void Match(List<LoanMark> marks, List<LoanView> live)
         {
             for (int m = 0; m < marks.Count; m++)
@@ -163,7 +148,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (!mark.Matched)
                 {
-                    mark.Ref = null;   // its loan has left the game's list: it is not to be taken for another loan of the same print
+                    mark.Ref = null;   // its loan has left the game's list: never to be taken for another loan of the same print
                     mark.Gone = true;
                 }
             }
@@ -225,12 +210,13 @@ namespace RealLifeOverhaul.Economy
             mark.Interest = loan.Interest;
         }
 
+        // Held is copied too: it says whether a debt arrangement held the loan.
         private static LoanMark Copy(LoanMark mark)
         {
             return new LoanMark
             {
                 Street = mark.Street, Number = mark.Number, Total = mark.Total, FirstDay = mark.FirstDay,
-                Remaining = mark.Remaining, Payment = mark.Payment, Interest = mark.Interest, Held = mark.Held   // (Held: whether a debt arrangement held it)
+                Remaining = mark.Remaining, Payment = mark.Payment, Interest = mark.Interest, Held = mark.Held
             };
         }
     }

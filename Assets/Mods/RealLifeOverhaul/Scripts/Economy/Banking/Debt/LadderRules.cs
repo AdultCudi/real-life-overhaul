@@ -2,22 +2,34 @@ using System;
 
 namespace RealLifeOverhaul.Economy
 {
+    /// <summary>Where one debt, an account or a game loan, stands with its lender: missed payments in a row and what was done about them.</summary>
+    public sealed class LadderState
+    {
+        public int Misses;          // due payments missed in a row
+        public int Overdue;         // the money of those payments
+        public int PaidRun;         // payments made in a row since the penalty rate began
+        public int Step;            // the furthest step this run of misses has reached (LadderStep)
+        public bool Penalty;        // the penalty rate is on
+        public int PlanLeft;        // a payment plan: money still to pay under it
+        public int PlanPerDay;
+        public bool PlanUsed;       // one plan per account
+        public bool CallDue;        // the collections call has not been answered yet
+        public int RepoDay;         // the day the security was taken or the takings began to be diverted; 0 for not
+        public bool RepoPending;    // the vehicle is to be taken as soon as it stands out of sight
+        public int ClaimNumber;     // the court's number of the claim; 0 for none
+
+        public bool InOrder => Misses == 0 && PlanLeft == 0 && RepoDay == 0 && !RepoPending && ClaimNumber == 0;
+
+        public void Clear()
+        {
+            Misses = Overdue = PaidRun = Step = PlanLeft = PlanPerDay = RepoDay = ClaimNumber = 0;
+            Penalty = PlanUsed = CallDue = RepoPending = false;
+        }
+    }
+
     /// <summary>
-    /// What a lender does when payments are not made: one state machine for every debt, the mod's accounts and the
-    /// game's loans alike. It counts due payments missed in a row; a payment made in full puts the count back to
-    /// nothing (what is on the credit file stays there).
-    ///
-    ///   misses   Standard    Hardcore    what happens
-    ///   1        1           1           a reminder
-    ///   2        2           2           a late fee
-    ///   3        3           3           a penalty rate, until three payments in a row are made
-    ///   4        5           4           the collections call: pay what is overdue, agree a plan, or neither
-    ///   5        8           6           secured accounts only: the security is taken
-    ///   6        12          9           a civil claim through the courts
-    ///
-    /// Relaxed stops after the call, Standard after the security is taken, Realistic and Hardcore go to the claim
-    /// (<see cref="ProductCatalogue.LastStep"/>). A plan that is broken goes straight to the step after the call.
-    /// Game-free: the caller acts on the step it is given (a notice, a fee, a rate, a call).
+    /// What a lender does as due payments go on being missed, for accounts and the game's loans alike: steps by misses in a row
+    /// (<see cref="ProductCatalogue.StepCounts"/>), back to nothing on a payment in full. Game-free: the caller acts on the step.
     /// </summary>
     public static class LadderRules
     {
@@ -31,10 +43,7 @@ namespace RealLifeOverhaul.Economy
             return step != LadderStep.Repossession || secured;
         }
 
-        /// <summary>
-        /// A due payment was missed; <paramref name="overdue"/> is the money now overdue in all. Returns the step this
-        /// miss takes, or None.
-        /// </summary>
+        /// <summary>A due payment was missed; <paramref name="overdue"/> is the money now overdue in all. Returns the step this miss takes, or None.</summary>
         public static LadderStep Missed(LadderState s, int level, bool secured, int overdue)
         {
             level = ProductCatalogue.Level(level);
@@ -44,7 +53,7 @@ namespace RealLifeOverhaul.Economy
             LadderStep step = LadderStep.None;
             if (s.PlanLeft > 0)
             {
-                // The plan is broken: straight to the next step this level and this debt have, and the count goes with it.
+                // the plan is broken: straight to the next step this level and this debt have, and the count goes with it
                 s.PlanLeft = 0;
                 s.PlanPerDay = 0;
                 step = Takes(LadderStep.Repossession, level, secured) && s.RepoDay == 0 && !s.RepoPending ? LadderStep.Repossession
@@ -74,7 +83,7 @@ namespace RealLifeOverhaul.Economy
             s.Step = Math.Max(s.Step, (int)step);
             if (step >= LadderStep.PenaltyRate)
             {
-                s.Penalty = true;   // (a broken plan can pass the third miss by: the dearer rate goes with any later step)
+                s.Penalty = true;   // a broken plan can pass the third miss by: the dearer rate goes with any later step
             }
             if (step == LadderStep.Collections)
             {
@@ -104,7 +113,6 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>The plan's daily amount for what is overdue.</summary>
         public static int PlanPerDay(int overdue)
         {
             return overdue <= 0 ? 0 : (overdue + ProductCatalogue.PlanDays - 1) / ProductCatalogue.PlanDays;
@@ -125,22 +133,17 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        /// <summary>The lender's costs on a claim for this balance.</summary>
         public static int ClaimCosts(int balance)
         {
             return balance <= 0 ? 0 : Math.Max(ProductCatalogue.ClaimCostsLeast, ProductCatalogue.ShareUp(balance, ProductCatalogue.ClaimCostsShare));
         }
 
-        /// <summary>What a repossessed vehicle bought for this price fetches.</summary>
         public static int RepossessionValue(int price)
         {
             return price <= 0 ? 0 : (int)Math.Floor(price * (double)ProductCatalogue.RepossessionValueShare + 1e-4);
         }
 
-        /// <summary>
-        /// A balance left unsecured by a repossession is due for a claim: the days have passed, it still stands, the
-        /// level goes that far and no claim is out.
-        /// </summary>
+        /// <summary>A balance left unsecured by a repossession is due for a claim.</summary>
         public static bool UnsecuredClaimDue(LadderState s, int owed, int today, int level)
         {
             return s.RepoDay > 0 && !s.RepoPending && s.ClaimNumber == 0 && owed > 0 && today - s.RepoDay >= ProductCatalogue.UnsecuredClaimDays

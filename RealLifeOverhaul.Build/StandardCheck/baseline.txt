@@ -17,7 +17,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDeck.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/PlayerOffences.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/Scenes/CarPursuitScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/Loans/LoanBook.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/City/CityGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Deals.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/Market.cs	1
@@ -312,7 +311,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/TextsPhone.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/UtilityLinks.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/Loans/BankTerms.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/FinanceApp.City.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/OwnBankGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1
