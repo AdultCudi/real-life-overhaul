@@ -6,38 +6,31 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// The chess player on the pavement: the mod's chess table with one stool taken by somebody
-    /// from the living city's pool and the other left free for the player. Put out of the
-    /// player's view on a wide piece of pavement by day in the dry, at the places the living
-    /// city's own chess scene tests (both stools on the pavement, room either side), and taken
-    /// in again out of view when the player has gone, the light fails or it rains. One person
-    /// and one prop, and an onlooker to the side of the table where the pool can spare a third (watch_nod; when the
-    /// player wins the onlooker punches the air once with cheer_once), asked once a second by the director. Never while the living city has its own
-    /// chess table out: one table at a time.
+    /// The chess player on the pavement: the mod's table, an opponent and maybe an onlooker from the living city's
+    /// pool, put out of view by day in the dry, and never while the living city has its own chess table out.
     /// </summary>
     public sealed class ChessCorner
     {
-        private const float StoolOut = 0.62f;   // a stool's centre from the table's (chess_sit)
+        private const float StoolOut = 0.62f;   // metres from the table's centre to a stool's (chess_sit)
         private const int FromHour = 9, ToHour = 20;
 
         private const string WatchClip = "watch_nod";
         private const string CheerClip = "cheer_once";
-        private const float WatcherOut = 1.3f;     // an onlooker's feet from the table's middle, to the side of it (the stools are on its long axis)
+        private const float WatcherOut = 1.3f;     // metres to the side of the table, off its long axis
 
         private CityPerson _opponent;
-        private CityPerson _watcher;               // somebody standing by the table watching the game, where the pool could spare one; null otherwise
+        private CityPerson _watcher;
         private Transform _table;
         private float _nextTry;
-        private float _cheerEnds;                  // while the onlooker cheers, when it is over; 0 otherwise
+        private float _cheerEnds;                  // while the onlooker cheers, when it ends; 0 otherwise
 
         public bool Out => _table != null;
         public Vector3 Table { get; private set; }
-        public Vector3 Stool { get; private set; }      // the free one
-        public CityPerson Opponent => _opponent;
+        public Vector3 Stool { get; private set; }      // the player's
         public bool OpponentThere => _opponent != null && !_opponent.Lost;
         public bool WatcherThere => _watcher != null && !_watcher.Lost;
 
-        /// <summary>The onlooker, if there is one, punches the air once and goes back to watching. Nothing happens without one.</summary>
+        /// <summary>The onlooker, if there is one, punches the air once and goes back to watching.</summary>
         public void Cheer()
         {
             if (!WatcherThere || _cheerEnds > 0f || !ClipLibrary.TryGet(CheerClip, out CityClip cheer))
@@ -50,7 +43,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>Once a second while the player is out of doors. <paramref name="busy"/>: a game is on at the table.</summary>
+        /// <summary>Once a second out of doors; <paramref name="busy"/> while a game is on.</summary>
         public void Tick(Vector3 player, float now, bool busy)
         {
             CityLifeDirector city = CityLifeDirector.Instance;
@@ -68,7 +61,7 @@ namespace RealLifeOverhaul.Leisure
                     _cheerEnds = 0f;
                     if (WatcherThere)
                     {
-                        _watcher.Work(WatchClip, city.Props, 0.3f);   // the cheer is over: back to watching
+                        _watcher.Work(WatchClip, city.Props, 0.3f);
                     }
                 }
                 if (busy)
@@ -98,7 +91,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>Stands the table and seats the opponent. False with the reason; nothing is left out then.</summary>
+        /// <summary>Stands the table and seats the opponent; false with the reason, nothing left out, if not.</summary>
         public bool PutOut(Vector3 anchor, Vector3 player, out TestRefusal why)
         {
             why = TestRefusal.NothingFits;
@@ -116,7 +109,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 along = Quaternion.Euler(0f, Random.value * 360f, 0f) * Vector3.forward;
             }
-            // The stools are the table's own +Z and -Z. The player's is the one nearer to them, and must be walkable to.
+            // The stools are on the table's +Z and -Z; the player's is the nearer one.
             if (Vector3.Dot(player - table, along) < 0f)
             {
                 along = -along;
@@ -137,7 +130,7 @@ namespace RealLifeOverhaul.Leisure
             }
             if (!prop.TryGetComponent(out NavMeshObstacle solid))
             {
-                // The same obstacle the living city's chess scene gives the table: people walk round it.
+                // As the living city's chess scene does: people walk round it.
                 solid = prop.gameObject.AddComponent<NavMeshObstacle>();
                 solid.shape = NavMeshObstacleShape.Box;
                 solid.center = new Vector3(0f, 0.5f, 0f);
@@ -164,8 +157,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        // Somebody standing to one side of the table watching, if the pool can spare a third and a clear place to the side is
-        // on the pavement. Without one the game is played as it was.
+        // An onlooker at one side of the table, if the pool can spare a third and the pavement there is clear.
         private void Watch(CityLifeDirector city, Vector3 table, Vector3 along)
         {
             _watcher = null;
@@ -226,12 +218,8 @@ namespace RealLifeOverhaul.Leisure
     }
 
     /// <summary>
-    /// Street chess against whoever sits at the table. A whole game of chess is not what a
-    /// player stops on the pavement for (and a real engine and board interface would be a mod of
-    /// their own), so this is five positions from a game, each with three moves to choose from
-    /// on a draining clock: one is the move, one is sound, one loses material. The opponent
-    /// answers each in a line. Seven points of ten win the stake, five draw it. It is a reading
-    /// game rather than a timing one because chess is: the clock only stops it being a quiz.
+    /// Street chess: five positions from a game, each with three moves on a draining clock (the move, a sound one and a
+    /// blunder), answered by the opponent in a line. Seven points of ten win double the stake back, five return it.
     /// </summary>
     public sealed class ChessGame : LeisureActivity
     {
@@ -344,7 +332,7 @@ namespace RealLifeOverhaul.Leisure
             }
             _step = Step.Walk;
             _stepEnds = now + 20f;
-            Ctx.Player.SetGoal(_corner.Stool, null);   // walked there by the game itself, unless they are steering: then they walk it
+            Ctx.Player.SetGoal(_corner.Stool, null);   // the game walks them there unless they steer
             Marked = true;
             MarkAt = _corner.Stool;
             MarkLabel = T("reallife_leisure_chess_stool");
@@ -429,7 +417,7 @@ namespace RealLifeOverhaul.Leisure
                 case Step.Over:
                     if (now >= _stepEnds)
                     {
-                        Finish(true);   // on their feet again
+                        Finish(true);
                     }
                     break;
             }
@@ -439,7 +427,7 @@ namespace RealLifeOverhaul.Leisure
         {
             if (_step == Step.Think)
             {
-                MeterCursor = 1f - Mathf.Clamp01((now - _thinkFrom) / ThinkSeconds);   // the clock, draining
+                MeterCursor = 1f - Mathf.Clamp01((now - _thinkFrom) / ThinkSeconds);
             }
         }
 
@@ -454,7 +442,7 @@ namespace RealLifeOverhaul.Leisure
         private void Deal(float from)
         {
             Position position = Positions[_order[_move]];
-            var labels = new string[3];   // a new row each move: the HUD redraws a row only when it is a different one
+            var labels = new string[3];   // a new array each move: the panel compares the row by reference
             for (int i = 0; i < 3; i++)
             {
                 labels[i] = T(position.MoveKeys[i]);
@@ -484,8 +472,7 @@ namespace RealLifeOverhaul.Leisure
             else
             {
                 _points += position.Worth[choice];
-                // The hand makes the move (seated as chess_sit, from and back to its first pose); held at its end until
-                // the answer has been read, then the sitting loop again. Without the clip they just go on sitting.
+                // The hand makes the move from and back to chess_sit's first pose, held there until the reply is read.
                 _moved = ClipLibrary.Has("chess_move_player") && Ctx.Body.Play("chess_move_player", null, 0.2f, ClipEnd.Hold);
                 Show(T(position.ReplyKeys[choice]), T("reallife_leisure_chess_status", "move", (_move + 1).ToString(), "points", _points.ToString()));
                 LeisureSound.Cue(position.Worth[choice] == 2 ? LeisureCue.Good : position.Worth[choice] == 1 ? LeisureCue.Tick : LeisureCue.Bad);
@@ -506,7 +493,7 @@ namespace RealLifeOverhaul.Leisure
                 LeisureMoney.Give(Stake * 2, "reallife_transaction_chess_win");
                 outcome = T("reallife_leisure_chess_won", "amount", JobText.Money(Stake));
                 Mood = ModState.MoodUp;
-                _corner.Cheer();   // the onlooker, if the table has one
+                _corner.Cheer();
             }
             else if (_points >= 5)
             {
@@ -538,9 +525,8 @@ namespace RealLifeOverhaul.Leisure
         {
             if (!Played && _paid && _step <= Step.Sit)
             {
-                Refund();   // walked off before the first move
+                Refund();   // walked off before the first move; later, the stake is forfeit
             }
-            // Walking off in the middle of a game forfeits the stake: nothing more to do. The opponent stays at the table.
         }
     }
 }

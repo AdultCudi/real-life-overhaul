@@ -5,21 +5,14 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Leisure
 {
-    /// <summary>
-    /// The dance floor of a nightclub. The player dances one of the game's own nine dances
-    /// (BaseHuman.SetDance: the animations the game's own dance button plays) while a cursor
-    /// crosses the meter once a beat; the key in the zone keeps the run going, in the bright
-    /// middle scores more, and every sixth beat on a run changes the dance. Twenty-four beats,
-    /// about twenty seconds. The game's own nightclub mood is the game's; this adds its own only
-    /// for a good dance.
-    /// </summary>
+    /// <summary>The dance floor of a nightclub: the game's own dances, with the key pressed on the beat.</summary>
     public sealed class DanceFloor : LeisureActivity
     {
         private const int Beats = 24;
-        private const float Beat = 0.86f;
+        private const float Beat = 0.86f;   // seconds
 
         private Sweep _sweep;
-        private int _beat = -1;        // the pass of the cursor being played
+        private int _beat = -1;        // the cursor's pass being played
         private bool _pressed;
         private int _hits, _sweet, _run, _bestRun, _points;
         private int _dance;
@@ -156,16 +149,7 @@ namespace RealLifeOverhaul.Leisure
         }
     }
 
-    /// <summary>
-    /// A drink at a nightclub's bar: the game's own cocktail bar item, within reach. Beer,
-    /// a cocktail or something soft. Where the bar measures as one <c>drink_bar</c> fits (a level
-    /// top 1.05 m up, a face to stand square to) the glass is stood on it, the player steps up
-    /// to it and drinks with that clip: the glass in the hand only between its grip and release
-    /// marks, on the bar before and after. Anywhere else it is drunk standing where they are
-    /// (the mod's sip, with a glass where that clip was made with a cup of the same size). What is drunk is counted in the save and
-    /// wears off at one drink in ninety game minutes; from two up the player is tipsy (a small
-    /// mood, and their car wanders: LeisureDirector.Tipsy), and the bar stops serving at four.
-    /// </summary>
+    /// <summary>A drink at a nightclub's bar: at the bar where it fits drink_bar, else where they stand.</summary>
     public sealed class BarDrinks : LeisureActivity
     {
         public const float TipsyFrom = 2f;
@@ -177,13 +161,12 @@ namespace RealLifeOverhaul.Leisure
         private static readonly float[] Units = { 0.8f, 1.2f, 0f };
         private static readonly string[] NameKeys = { "reallife_leisure_drink_beer", "reallife_leisure_drink_cocktail", "reallife_leisure_drink_soft" };
 
-        // drink_bar (CityAssets): a bar top 1.05 m up, the glass on it 0.35 m ahead and 0.06 m to the right of the drinker,
-        // in the right hand only between the clip's grip and release marks. BarEdge is where the bar's near edge then is:
-        // the glass 0.10 m in from it, the left hand on the top, the toes clear.
+        // drink_bar (CityAssets): a bar top 1.05 m up, the glass 0.35 m ahead and 0.06 m right of the drinker, whose
+        // toes are 0.25 m from the bar's edge.
         private const string BarClip = "drink_bar";
         private const string GlassProp = "drink_glass";
         private const float BarTop = 1.05f, BarTopSlack = 0.05f, BarEdge = 0.25f, GlassAhead = 0.35f, GlassRight = 0.06f;
-        private const float StepUpWithin = 0.5f, StepUpSeconds = 9f;
+        private const float StepUpWithin = 0.5f, StepUpSeconds = 9f;   // metres; seconds
 
         private enum Phase { Choosing, StepUp, Settle, Drinking }
 
@@ -191,7 +174,7 @@ namespace RealLifeOverhaul.Leisure
         private int _ordered = -1;
         private Phase _phase;
         private ItemController _bar;
-        private Transform _glass;           // on the bar, ours; in the hand it is the body's until set down again
+        private Transform _glass;           // ours on the bar; the body's while in the hand
         private Vector3 _stand, _facing, _onBar;
         private float _stepUpBy, _gripAt = -1f, _releaseAt = -1f;
 
@@ -225,7 +208,7 @@ namespace RealLifeOverhaul.Leisure
             var labels = new string[3];
             for (int i = 0; i < 3; i++)
             {
-                labels[i] = T("reallife_leisure_drinks_choice", "drink", T(NameKeys[i]), "price", JobText.Money(Prices.At(DrinkPrices[i])));
+                labels[i] = T("reallife_leisure_drinks_choice", "drink", T(NameKeys[i]), "price", JobText.Money(DrinkPrice(i)));
             }
             Choices = labels;
             Show(T("reallife_leisure_drinks_ask"));
@@ -245,7 +228,7 @@ namespace RealLifeOverhaul.Leisure
                 LeisureSound.Cue(LeisureCue.Bad);
                 return;
             }
-            if (!LeisureMoney.Charge(Prices.At(DrinkPrices[choice]), "reallife_transaction_drinks"))
+            if (!LeisureMoney.Charge(DrinkPrice(choice), "reallife_transaction_drinks"))
             {
                 Objective = T("reallife_leisure_no_money");
                 LeisureSound.Cue(LeisureCue.Bad);
@@ -257,8 +240,7 @@ namespace RealLifeOverhaul.Leisure
             LeisureSound.Cue(LeisureCue.Tick);
             if (Serve())
             {
-                // The glass stands on the bar where drink_bar takes it from. The player is at that place already, or has
-                // a few seconds to step up to it (marked); if they do not, they drink where they stand.
+                // The player has a few seconds to step up to the marked place, or drinks where they stand.
                 _phase = Phase.StepUp;
                 _stepUpBy = now + StepUpSeconds;
                 Marked = true;
@@ -270,8 +252,7 @@ namespace RealLifeOverhaul.Leisure
             Sip(now);
         }
 
-        // The old way, and the way wherever the bar is not one drink_bar fits: the mod's sip with the glass in the hand
-        // from start to end (a one-off from and back to the game's idle); without the clip the drink is still drunk, standing.
+        // Wherever drink_bar does not fit: the sip clip with the glass in the hand throughout, or no clip at all.
         private void Sip(float now)
         {
             Marked = false;
@@ -288,12 +269,7 @@ namespace RealLifeOverhaul.Leisure
             _doneAt = now + (sipping ? 3.6f : 1.6f);
         }
 
-        /// <summary>
-        /// Whether the bar in front is one <c>drink_bar</c> was made for, measured on the bar's own colliders: a face
-        /// square enough to the player, a level top 1.05 m above the floor (5 cm either way) where the glass goes.
-        /// If so the glass is stood there (0.06 m right and 0.35 m ahead of where the player will stand, their toes
-        /// 0.25 m from the bar's edge) and true is returned. Anything else: false, nothing put out.
-        /// </summary>
+        /// <summary>Stands the glass on the bar if it fits drink_bar: square to the player, top 1.05 m up.</summary>
         private bool Serve()
         {
             if (_bar == null || !ClipLibrary.Has(BarClip) || !LeisureProps.Has(GlassProp))
@@ -356,8 +332,7 @@ namespace RealLifeOverhaul.Leisure
             _glass.localScale = Vector3.one;
         }
 
-        // The two moments of drink_bar: the hand closes on the glass, and lets it go on the bar again. Per frame only
-        // while a drink is being drunk that way, and then two comparisons.
+        // drink_bar's grip and release marks: two comparisons a frame while a drink is drunk that way.
         public override void Frame(float now, float delta)
         {
             if (_gripAt >= 0f && now >= _gripAt)
@@ -443,8 +418,7 @@ namespace RealLifeOverhaul.Leisure
 
         public override void End()
         {
-            // The glass off the bar. One still in the hand has gone back with the body's release already (giving it back
-            // twice is safe).
+            // A glass still in the hand went back with the body's release already; returning it twice is safe.
             Marked = false;
             _gripAt = _releaseAt = -1f;
             if (_glass != null)
@@ -456,16 +430,7 @@ namespace RealLifeOverhaul.Leisure
         }
     }
 
-    /// <summary>
-    /// Taking in the view at one of the city's landmarks: the player stops, turns their back to it
-    /// and takes a selfie with it behind them (the mod's selfie clip, with its phone: held out at
-    /// arm's length a little above the eyes, the screen to the face, then lowered), and the place
-    /// is ticked off this save's list. The first sight of a place lifts the mood; the last one on
-    /// the list more so. The turn is LeisureBody's (a third of a second, over the clip's first
-    /// moments while the phone is still at the chest), and which way is SightseeingRules'. A
-    /// bundle without the selfie plays take_photo where they stand. Only the local player's body
-    /// is moved; nothing is sent to anybody in a Going Public session.
-    /// </summary>
+    /// <summary>Taking in the view at a landmark: a selfie with it behind, and the place ticked off.</summary>
     public sealed class Sightseeing : LeisureActivity
     {
         private Landmark _mark;
@@ -497,7 +462,7 @@ namespace RealLifeOverhaul.Leisure
             Vector3 at = Ctx.Position;
             if (selfie && SightseeingRules.BackTo(at.x, at.z, _mark.Position.x, _mark.Position.z, out float x, out float z))
             {
-                Ctx.Body.Face(at + new Vector3(x, 0f, z));   // the landmark behind them in the picture
+                Ctx.Body.Face(at + new Vector3(x, 0f, z));
             }
             _doneAt = now + SightseeingRules.Lasts(photo);
             Show(T("reallife_leisure_sights_looking", "place", T(_mark.NameKey)));
