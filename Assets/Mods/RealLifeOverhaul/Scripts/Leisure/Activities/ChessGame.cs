@@ -11,7 +11,6 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class ChessCorner
     {
-        private const float StoolOut = 0.62f;   // metres from the table's centre to a stool's (chess_sit)
         private const int FromHour = 9, ToHour = 20;
 
         private const string WatchClip = "watch_nod";
@@ -68,7 +67,7 @@ namespace RealLifeOverhaul.Leisure
                 {
                     return;
                 }
-                bool gone = CitySpots.Flat(Table - player) > 140f;
+                bool gone = LeisureReach.Beyond(CitySpots.Flat(Table - player), LeisureReach.ChessKept);
                 if (!OpponentThere || gone || (!wanted && !CitySpots.InView(Table)))
                 {
                     TakeIn();
@@ -85,7 +84,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 return;   // the living city keeps the larger share of its own pool
             }
-            if (CitySpots.PavementRing(player, 30f, 70f, true, out Vector3 anchor))
+            if (CitySpots.PavementRing(player, LeisureReach.ChessFrom, LeisureReach.ChessTo, true, out Vector3 anchor))
             {
                 PutOut(anchor, player, out _);
             }
@@ -114,8 +113,8 @@ namespace RealLifeOverhaul.Leisure
             {
                 along = -along;
             }
-            Vector3 mine = table + along * StoolOut;
-            Vector3 theirs = table - along * StoolOut;
+            Vector3 mine = table + along * LeisureReach.StoolOut;
+            Vector3 theirs = table - along * LeisureReach.StoolOut;
             if (!CitySpots.OnPavement(mine, out _) || !CitySpots.OnPavement(theirs, out _)
                 || !CitySpots.OnPavement(table + along * 1.2f, out Vector3 approach) || !CitySpots.OnPavement(table - along * 1.2f, out _)
                 || !CitySpots.ClearQuietly(approach, 0.3f))
@@ -153,7 +152,8 @@ namespace RealLifeOverhaul.Leisure
             Watch(city, table, along);
             Table = table;
             Stool = mine;
-            LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(CitySpots.Flat(table - player)) + " m away.");
+            LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(table - player)))
+                                         + " m away.");
             return true;
         }
 
@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Leisure
                 refusalKey = "reallife_leisure_chess_no_table";
                 return false;
             }
-            if (CitySpots.Flat(_corner.Stool - Ctx.Position) > 4f)
+            if (LeisureReach.Beyond(CitySpots.Flat(_corner.Stool - Ctx.Position), LeisureReach.ChessStarts))
             {
                 refusalKey = "reallife_leisure_chess_too_far";
                 return false;
@@ -318,7 +318,7 @@ namespace RealLifeOverhaul.Leisure
             }
             _paid = true;
             Anchor = _corner.Table;
-            Leash = 7f;
+            Leash = LeisureReach.ChessLeash;
             for (int i = 0; i < _order.Length; i++)
             {
                 _order[i] = i;
@@ -351,7 +351,7 @@ namespace RealLifeOverhaul.Leisure
             switch (_step)
             {
                 case Step.Walk:
-                    if (CitySpots.Flat(_corner.Stool - Ctx.Position) < 0.5f)
+                    if (LeisureReach.Within(CitySpots.Flat(_corner.Stool - Ctx.Position), LeisureReach.ChessSeated))
                     {
                         Ctx.Body.Hold();
                         if (!Ctx.Body.Settle(_corner.Stool))

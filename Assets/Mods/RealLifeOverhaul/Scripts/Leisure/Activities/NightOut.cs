@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Leisure
                 return false;
             }
             Anchor = Ctx.Position;
-            Leash = 3f;
+            Leash = LeisureReach.DanceLeash;
             _sweep.Begin(now + 1.5f, Beat, 0.5f, 0.24f, 0.08f);   // a bar to find the beat first
             Meter = true;
             ZoneCentre = _sweep.Centre;
@@ -166,7 +166,7 @@ namespace RealLifeOverhaul.Leisure
         private const string BarClip = "drink_bar";
         private const string GlassProp = "drink_glass";
         private const float BarTop = 1.05f, BarTopSlack = 0.05f, BarEdge = 0.25f, GlassAhead = 0.35f, GlassRight = 0.06f;
-        private const float StepUpWithin = 0.5f, StepUpSeconds = 9f;   // metres; seconds
+        private const float StepUpSeconds = 9f;   // seconds to reach the place to stand
 
         private enum Phase { Choosing, StepUp, Settle, Drinking }
 
@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Leisure
             }
             _bar = bar;
             Anchor = bar.transform.position;
-            Leash = 4.5f;
+            Leash = LeisureReach.BarLeash;
             var labels = new string[3];
             for (int i = 0; i < 3; i++)
             {
@@ -357,7 +357,7 @@ namespace RealLifeOverhaul.Leisure
         {
             if (_phase == Phase.StepUp)
             {
-                if (CitySpots.Flat(_stand - Ctx.Position) < StepUpWithin * StepUpWithin)
+                if (LeisureReach.Within(CitySpots.Flat(_stand - Ctx.Position), LeisureReach.BarStepUp))
                 {
                     Marked = false;
                     Ctx.Body.Hold();
@@ -455,7 +455,7 @@ namespace RealLifeOverhaul.Leisure
                 return false;
             }
             Anchor = Ctx.Position;
-            Leash = 3f;
+            Leash = LeisureReach.StandingLeash;
             Ctx.Body.Hold();
             bool selfie = Ctx.Body.Play(SightseeingRules.SelfieClip, null, 0.3f);
             bool photo = selfie || Ctx.Body.Play(SightseeingRules.PhotoClip, null, 0.3f);

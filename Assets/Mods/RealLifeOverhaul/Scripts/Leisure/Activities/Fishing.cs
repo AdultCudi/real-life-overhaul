@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Leisure
         {
             refusalKey = null;
             LeisureVenues.FindLandmarks();
-            if (LeisureVenues.WatersideDistance(Ctx.Position) > 320f || !LeisureVenues.WaterAhead(Ctx.Position, Ctx.Forward, out _water, out _surface))
+            if (LeisureVenues.WatersideDistance(Ctx.Position) > LeisureReach.FishingLandmark || !LeisureVenues.WaterAhead(Ctx.Position, Ctx.Forward, out _water, out _surface))
             {
                 refusalKey = "reallife_leisure_fishing_no_water";
                 return false;
@@ -112,7 +112,7 @@ namespace RealLifeOverhaul.Leisure
                 Stow();
             }
             Anchor = Ctx.Position;
-            Leash = 3f;
+            Leash = LeisureReach.StandingLeash;
             _cast = 0;
             Choices = new[] { null, null, T("reallife_leisure_fishing_pack_up") };
             ToReady(now);

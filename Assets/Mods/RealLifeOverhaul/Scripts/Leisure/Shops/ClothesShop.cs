@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 if (!JobSites.FloorSpot(player, null, 0, 0f, out Vector3 spot)
                     || !NavMesh.FindClosestEdge(spot, out NavMeshHit edge, NavMesh.AllAreas) || edge.distance < 1.1f
-                    || CitySpots.Flat(spot - player) < 2.5f)
+                    || LeisureReach.Within(CitySpots.Flat(spot - player), LeisureReach.RackAway))
                 {
                     continue;
                 }

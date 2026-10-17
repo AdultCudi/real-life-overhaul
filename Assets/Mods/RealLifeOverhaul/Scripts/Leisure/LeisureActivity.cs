@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Leisure
 
         public bool Indoors;               // played inside Ctx.Building: leaving it ends the activity
         public Vector3 Anchor;
-        public float Leash = 6f;           // past this CitySpots.Flat (a squared distance) from Anchor, it ends
+        public float Leash = LeisureReach.Leash;   // metres on the flat from Anchor: farther, it ends
 
         public bool Finished { get; private set; }
         public bool Played { get; private set; }    // to the end: it counts, sets records and gives its mood

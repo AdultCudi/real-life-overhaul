@@ -10,8 +10,7 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class NightLife
     {
-        private const float Near = 75f, Far = 120f;   // Near in metres; Far against CitySpots.Flat, a squared distance
-        private const float StayMinutes = 5f;         // real minutes
+        private const float StayMinutes = 5f;   // real minutes
 
         private CityPerson _first, _second;
         private Vector3 _at;
@@ -34,7 +33,7 @@ namespace RealLifeOverhaul.Leisure
             if (Out)
             {
                 bool lost = _first == null || _second == null || _first.Lost || _second.Lost;
-                bool gone = CitySpots.Flat(_at - player) > Far;
+                bool gone = LeisureReach.Beyond(CitySpots.Flat(_at - player), LeisureReach.NightKept);
                 bool done = !wanted || now - _since > StayMinutes * 60f;
                 if (lost || gone || (done && !CitySpots.InView(_at)))
                 {
@@ -72,7 +71,8 @@ namespace RealLifeOverhaul.Leisure
             CityBuildingController venue = OpenVenueNear(player);
             if (venue == null)
             {
-                TestRefusals.Tell(LeisureDirector.Logger, "Night life", TestRefusal.NothingFits, 0, "no open nightclub, cinema, theatre or casino door within " + Near + " m");
+                TestRefusals.Tell(LeisureDirector.Logger, "Night life", TestRefusal.NothingFits, 0,
+                    "no open nightclub, cinema, theatre or casino door within " + LeisureReach.NightNear + " m");
                 return;
             }
             if (city.People.Free < 2)
@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Leisure
                 return null;
             }
             CityBuildingController best = null;
-            float bestSqr = Near * Near;
+            float bestSqr = LeisureReach.NightNear * LeisureReach.NightNear;
             CityBuildingController[] all = cityManager.cityBuildingControllers;
             for (int i = 0; i < all.Length; i++)
             {
@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 Vector3 a = front + along * (side * 2.0f);
                 Vector3 b = front + along * (side * 2.9f);
-                if (!CitySpots.Stand(a, 0.35f, out a) || !CitySpots.Stand(b, 0.35f, out b) || CitySpots.Flat(a - b) < 0.75f
+                if (!CitySpots.Stand(a, 0.35f, out a) || !CitySpots.Stand(b, 0.35f, out b) || LeisureReach.Within(CitySpots.Flat(a - b), LeisureReach.NightApart)
                     || (!inView && (CitySpots.InView(a) || CitySpots.InView(b))))
                 {
                     continue;

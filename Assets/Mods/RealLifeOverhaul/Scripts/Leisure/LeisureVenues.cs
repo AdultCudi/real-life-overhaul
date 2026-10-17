@@ -270,7 +270,7 @@ namespace RealLifeOverhaul.Leisure
             return best;
         }
 
-        /// <summary>CitySpots.Flat (a squared distance) to the nearest waterside landmark.</summary>
+        /// <summary>Metres on the flat to the nearest waterside landmark; float.MaxValue if there is none.</summary>
         public static float WatersideDistance(Vector3 position)
         {
             float best = float.MaxValue;
@@ -281,7 +281,7 @@ namespace RealLifeOverhaul.Leisure
                     best = Mathf.Min(best, CitySpots.Flat(Landmarks[i].Position - position));
                 }
             }
-            return best;
+            return best < float.MaxValue ? Mathf.Sqrt(best) : best;
         }
 
         /// <summary>

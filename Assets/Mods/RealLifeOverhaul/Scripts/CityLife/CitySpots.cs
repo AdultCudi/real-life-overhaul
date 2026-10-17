@@ -306,6 +306,7 @@ namespace RealLifeOverhaul
             return distance < 110f && distance > 0.01f && Vector3.Dot(offset, eye.forward) > 0.35f * distance;
         }
 
+        /// <summary>The square of a flat distance (x and z): compare it with a reach squared, never with metres.</summary>
         public static float Flat(Vector3 offset)
         {
             return offset.x * offset.x + offset.z * offset.z;

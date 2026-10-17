@@ -72,6 +72,7 @@ internal static partial class Program
         MapRows();       // the mod's places on the city map: a row and an icon for every kind, a row of its own for every claimed building, nothing before the map can take it (MapRowCheck.cs)
         CameraYields();  // when the mod's camera stands aside for the game's own camera moments and what it gives back, the highway's bridges among them (CameraYieldCheck.cs)
         Bikes();         // bicycles and motorbikes: the pull-away, the pose, the lean, the boxes the world meets, and their names (BikeCheck.cs)
+        LeisureReaches(); // leisure's reaches in metres against squares of flat distances, and every such comparison in the sources (LeisureReachCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

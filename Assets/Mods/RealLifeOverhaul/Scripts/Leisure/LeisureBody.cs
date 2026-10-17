@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Leisure
                 return false;
             }
             Vector3 from = _player.transform.position;
-            if (CitySpots.Flat(spot - from) > 0.6f || !NavMesh.SamplePosition(spot, out NavMeshHit hit, 0.25f, NavMesh.AllAreas))
+            if (LeisureReach.Beyond(CitySpots.Flat(spot - from), LeisureReach.Settles) || !NavMesh.SamplePosition(spot, out NavMeshHit hit, 0.25f, NavMesh.AllAreas))
             {
                 return false;
             }

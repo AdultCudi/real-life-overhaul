@@ -258,6 +258,7 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>The square of a flat distance (x and z): compare it with a reach squared, never with metres.</summary>
         public static float Flat(Vector3 offset)
         {
             return offset.x * offset.x + offset.z * offset.z;

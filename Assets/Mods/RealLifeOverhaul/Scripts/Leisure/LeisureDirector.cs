@@ -376,7 +376,7 @@ namespace RealLifeOverhaul.Leisure
         public bool StartFromApi(LeisureKind kind, Vector3? place, ThirdPersonCharacter companion, out string refusalKey)
         {
             if (place.HasValue && PlayerHelper.PlayerController != null
-                && CitySpots.Flat(place.Value - PlayerHelper.PlayerController.transform.position) > 6f)
+                && LeisureReach.Beyond(CitySpots.Flat(place.Value - PlayerHelper.PlayerController.transform.position), LeisureReach.ApiPlace))
             {
                 refusalKey = "reallife_leisure_too_far";
                 return false;
@@ -553,7 +553,7 @@ namespace RealLifeOverhaul.Leisure
                 reasonKey = "reallife_leisure_end_left";
                 return true;
             }
-            if (_activity.Leash > 0f && CitySpots.Flat(gm.playerController.transform.position - _activity.Anchor) > _activity.Leash)
+            if (_activity.Leash > 0f && LeisureReach.Beyond(CitySpots.Flat(gm.playerController.transform.position - _activity.Anchor), _activity.Leash))
             {
                 reasonKey = "reallife_leisure_end_left";
                 return true;

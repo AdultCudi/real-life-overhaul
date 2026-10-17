@@ -16,17 +16,17 @@ namespace RealLifeOverhaul.Leisure
             if (indoors)
             {
                 if (Settings.ClothesShops && business == LeisureVenues.ClothingStore && _rack.Find(position, out Vector3 rack)
-                    && CitySpots.Flat(rack - position) < 2.6f)
+                    && LeisureReach.Within(CitySpots.Flat(rack - position), LeisureReach.RackOffered))
                 {
                     SetOffer(LeisureKind.Rack, rack, "rack");
                 }
                 else if (Settings.LeisureNightOut && business == LeisureVenues.Nightclub
-                         && LeisureVenues.Nearest(LeisureVenues.Bars, position, 2.8f) is ItemController bar)
+                         && LeisureVenues.Nearest(LeisureVenues.Bars, position, LeisureReach.BarOffered) is ItemController bar)
                 {
                     SetOffer(LeisureKind.Drinks, bar.transform.position, "drinks");
                 }
                 else if (Settings.LeisureNightOut && business == LeisureVenues.Nightclub
-                         && LeisureVenues.Nearest(LeisureVenues.DanceFloors, position, 3.5f) is ItemController floor)
+                         && LeisureVenues.Nearest(LeisureVenues.DanceFloors, position, LeisureReach.DanceOffered) is ItemController floor)
                 {
                     SetOffer(LeisureKind.Dance, floor.transform.position, "dance");
                 }
@@ -36,12 +36,12 @@ namespace RealLifeOverhaul.Leisure
                 }
                 return;
             }
-            if (Settings.LeisureChess && _corner.Out && _corner.OpponentThere && CitySpots.Flat(_corner.Stool - position) < 3f)
+            if (Settings.LeisureChess && _corner.Out && _corner.OpponentThere && LeisureReach.Within(CitySpots.Flat(_corner.Stool - position), LeisureReach.ChessOffered))
             {
                 SetOffer(LeisureKind.Chess, _corner.Stool, "chess");
                 return;
             }
-            if (Settings.LeisureFishing && _stoodStill && LeisureVenues.WatersideDistance(position) < 320f
+            if (Settings.LeisureFishing && _stoodStill && LeisureVenues.WatersideDistance(position) < LeisureReach.FishingLandmark
                 && LeisureVenues.WaterAhead(position, forward, out Vector3 water, out _))
             {
                 SetOffer(LeisureKind.Fishing, water, "fishing");

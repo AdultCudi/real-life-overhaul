@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Leisure
                 return;
             }
             Vector3 position = PlayerHelper.PlayerController.transform.position;
-            if (kind == LeisureKind.Chess && _activity == null && (!_corner.Out || CitySpots.Flat(_corner.Stool - position) > 4f))
+            if (kind == LeisureKind.Chess && _activity == null && (!_corner.Out || LeisureReach.Beyond(CitySpots.Flat(_corner.Stool - position), LeisureReach.ChessStarts)))
             {
                 // No chess player here: a test may set one up just ahead, in view, for the player to walk up to.
                 TestRefusal street = TestRefusals.Street();
@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Leisure
                     return;
                 }
                 _corner.TakeIn();
-                Vector3 ahead = position + PlayerHelper.PlayerController.transform.forward * 3.5f;
+                Vector3 ahead = position + PlayerHelper.PlayerController.transform.forward * LeisureReach.ChessTestAhead;
                 if (CitySpots.Pavement(ahead, 5f, out Vector3 anchor) && !_corner.PutOut(anchor, position, out TestRefusal why))
                 {
                     TestRefusals.Tell(Logger, "Leisure Chess", why, 0, "table at " + anchor.ToString("F0"));
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 Vector3 position = player.transform.position;
                 LeisureVenues.FindLandmarks();
-                bool here = LeisureVenues.WatersideDistance(position) < 320f
+                bool here = LeisureVenues.WatersideDistance(position) < LeisureReach.FishingLandmark
                             && LeisureVenues.WaterAhead(position, player.transform.forward, out _, out _);
                 if (!here)
                 {
