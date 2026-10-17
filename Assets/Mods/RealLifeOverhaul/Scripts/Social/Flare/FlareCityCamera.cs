@@ -273,10 +273,7 @@ namespace RealLifeOverhaul.Flare
                     exposureHost.SetActive(false);   // out of the game's volumes now, before its own camera draws the frame
                     UnityEngine.Object.Destroy(exposureHost);
                 }
-                if (profile != null)
-                {
-                    UnityEngine.Object.Destroy(profile);
-                }
+                CodeAssets.DropProfile(profile);   // its exposure setting with it: one a photo otherwise
             }
         }
 

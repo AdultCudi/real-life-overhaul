@@ -377,9 +377,9 @@ namespace RealLifeOverhaul.Photos
                 return;
             }
             var volume = grade.GetComponent<Volume>();
-            if (volume != null && volume.sharedProfile != null)
+            if (volume != null)
             {
-                UnityEngine.Object.Destroy(volume.sharedProfile);
+                CodeAssets.DropProfile(volume.sharedProfile);   // its colour setting with it
             }
             UnityEngine.Object.Destroy(grade);
         }

@@ -102,10 +102,7 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             QualitySettings.lodBias = _vanillaLodBias;
-            if (_profile != null)
-            {
-                Destroy(_profile);
-            }
+            CodeAssets.DropProfile(_profile);   // its colour and bloom settings with it
         }
     }
 }
