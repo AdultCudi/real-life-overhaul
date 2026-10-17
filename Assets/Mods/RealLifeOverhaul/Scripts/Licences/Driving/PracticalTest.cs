@@ -107,7 +107,7 @@ namespace RealLifeOverhaul
         private readonly int[] _faults = new int[(int)TestFault.Count];
         private readonly StringBuilder _text = new StringBuilder(512);
         private readonly SchoolScreens _screens;
-        private readonly GuideMark _mark = new GuideMark("the driving test");
+        private readonly GuideMark _mark = new GuideMark("the driving test").Ranked(GuideMarkRank.Course);   // a scene nearby never hides the checkpoint ahead
         private readonly DoorPanel _park;
         private readonly Action _onParked;
         private readonly Action _onSheetClosed;

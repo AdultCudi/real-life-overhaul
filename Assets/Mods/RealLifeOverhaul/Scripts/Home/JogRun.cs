@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
         private readonly IModLogger _logger;
         private readonly Vector3[] _route = new Vector3[Checkpoints];
         private readonly string[] _lines = new string[Checkpoints];
-        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark("the run");
+        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark("the run").Ranked(GameUi.GuideMarkRank.Course);   // a scene nearby never hides the checkpoint ahead
         private int _marked = -1;
         private Transform _ring;
         private int _next;
