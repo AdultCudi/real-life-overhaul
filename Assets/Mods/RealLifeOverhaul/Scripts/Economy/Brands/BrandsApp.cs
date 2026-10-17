@@ -10,27 +10,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// What the Brands app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, Ventures
-    /// and the Company app are, with the kit's table (GameUi.DataTable, the game's own BaTable). An app of its own and
-    /// not a page of Ventures or the Company app: it has four lists of its own, each with a page for the row that is
-    /// picked, which is what one app's tabs are for, and the other two apps' tab bars are full. Four tabs over the
-    /// table on the right, and on the left the white box with the one thing picked:
-    ///
-    ///   Brands        each brand and each district it is known in; pick one for its figures explained
-    ///   Shops         every shop of the player's and every franchised shop, in one table: who runs it, its takings,
-    ///                 its standards; pick one of the player's to make a brand of it, join one or take a city chain's
-    ///                 franchise
-    ///   Applicants    who wants to open a shop under a brand; pick one for their record, a building and the terms
-    ///   Agreements    every franchise agreement, what its franchisee asks, and the player's own with a city chain
-    ///
-    /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, three
-    /// selectors at most and a Back button. Each tab's page is in its own file (BrandsApp.Brands.cs and its
-    /// neighbours). Every table is declared once, in BrandsApp.Tables.cs, and is sorted, filtered and summed by the
-    /// kit; what is picked stays picked through a sort or a filter (the kit keeps the row by its id).
-    ///
-    /// Everything on it is the game's. PER FRAME: NOTHING, open or closed. The rows and the page are made when the app
-    /// opens, when a tab or a row is picked, and when the director says something has changed: a few dozen strings
-    /// and the box's objects, on a click.
+    /// The Brands app, in the game's frame (GameUi.AppShell) with the kit's table: four tabs (brands, shops, applicants,
+    /// agreements), each a table on the right and, on the left, a box with the one row picked. Each tab's page is in a
+    /// part file and every table is declared in <see cref="BrandsTables"/>. Nothing per frame, open or closed: the page
+    /// is made again when the app opens, a tab or row is picked, or the director says something changed.
     /// </summary>
     public sealed partial class BrandsApp
     {
@@ -45,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Brands
         private AppShell _shell;
         private DataTable _table;
         private int _tab, _wanted = -1;
-        private string _pick, _wantPick;   // what is picked: a row's id ("brand:3", "dist:3:...", "shop:...", "app:7", "fr:9")
+        private string _pick, _wantPick;   // a row's id: "brand:3", "dist:3:...", "shop:...", "app:7", "fr:9"
         private bool _ready;               // the director has read the player's businesses for this opening
         private bool _writing;             // a page is being written: a change it causes does not write it again
 
@@ -53,8 +36,6 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             _director = director;
         }
-
-        // ---------------------------------------------------------------- building it from the game's parts
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
@@ -78,11 +59,9 @@ namespace RealLifeOverhaul.Economy.Brands
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening and the tabs
-
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification was clicked, or something has just been made).</summary>
+        /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification was clicked, or something was just made).</summary>
         public void Want(int tab, string pick)
         {
             _wanted = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
@@ -159,11 +138,6 @@ namespace RealLifeOverhaul.Economy.Brands
             Refresh();
         }
 
-        private void Back()
-        {
-            ClosePick();
-        }
-
         // Nothing is picked any more: Back was pressed, or a filter left no row to pick.
         private void ClosePick()
         {
@@ -173,7 +147,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Refresh();
         }
 
-        // What a page inside the box was showing (its own selectors) starts again for another row.
+        // The selectors inside the box start again for another row.
         private void ResetPages()
         {
             _brandPage = 0;
@@ -189,7 +163,6 @@ namespace RealLifeOverhaul.Economy.Brands
             _franchisePage = -1;
         }
 
-        // Everything the open tab shows, made again: asked for when the app opens, a tab or a row is picked, or something has changed.
         private void Refresh()
         {
             if (_shell == null || _table == null || _writing)
@@ -220,8 +193,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 else
                 {
                     int day = SaveGameManager.Current.Day;
-                    UiClone.Words(_shell.Header, BrandsText.Fill("reallife_brand_headline", "brands", state.Brands.Count.ToString(), "shops", (state.Members.Count + state.Franchises.Count).ToString(),
-                        "waiting", _director.Waiting().ToString()));
+                    UiClone.Words(_shell.Header, BrandsText.Fill("reallife_brand_headline", "brands", state.Brands.Count.ToString(),
+                        "shops", (state.Members.Count + state.Franchises.Count).ToString(), "waiting", _director.Waiting().ToString()));
                     switch (_tab)
                     {
                         case BrandsDirector.TabShops:
@@ -237,7 +210,7 @@ namespace RealLifeOverhaul.Economy.Brands
                             table = WriteBrands(box, state, day, ref selected);
                             break;
                     }
-                    Meta.Guide.Point(box, "reallife_meta_title_economy_brands");   // (every page of the app ends with the Guide's page, after its buttons)
+                    Meta.Guide.Point(box, "reallife_meta_title_economy_brands");   // every page ends with the Guide's page, after its buttons
                 }
                 box.Done();
                 _table.Show(table, _rows, selected);
@@ -253,9 +226,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        // ---------------------------------------------------------------- rows
-
-        // A row that can be picked, from the pool. Its cells are set by whoever asked (row.Set: the words, and the figure a column is ordered and summed by).
+        // A row that can be picked, from the pool; the caller sets its cells.
         private TableRow Row(string id)
         {
             TableRow row;
@@ -285,7 +256,7 @@ namespace RealLifeOverhaul.Economy.Brands
             return true;
         }
 
-        // A line of words where a table has nothing to list at all.
+        // A line of words where a table has nothing to list.
         private void Say(string id, string words)
         {
             TableRow row = Row(id);
@@ -294,7 +265,7 @@ namespace RealLifeOverhaul.Economy.Brands
             row.A = words;
         }
 
-        // The number of a name in a filter's own list of kinds (districts), added if it is new.
+        // The number of a name in a filter's own list of kinds, added if it is new.
         private static int KindOf(List<string> names, string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -310,18 +281,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return at;
         }
 
-        // What follows a prefix in what is picked ("app:" and the applicant's number); null if something else is picked.
-        private string Picked(string prefix)
-        {
-            return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
-        }
-
         private void BackButton(InfoBox box)
         {
-            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_brand_back", Back);
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_brand_back", ClosePick);
         }
 
-        // A choice among a few: the game's previous/next selector, or the choice as a line where the game's selector could not be had.
+        // A choice among a few: the game's previous/next selector, or the choice as a line where there is no selector.
         private void Choose(InfoBox box, int count, int index, Func<int, string> words, Action<int> changed)
         {
             if (count < 1)
