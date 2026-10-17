@@ -2,7 +2,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>Hosts the rivals' page and rich list, which Scripts/Rivals writes (EconomyBridges.Rivals); the Overview opens it.</summary>
+    /// <summary>Hosts the rivals' page, which Scripts/Rivals writes (EconomyBridges.Rivals).</summary>
     public sealed partial class FinanceApp
     {
         private bool _rivals;         // the Overview shows the rivals' page
@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Economy
             return Usable(EconomyBridges.Rivals);
         }
 
-        /// <summary>The rivals' page is what shows the next time the app opens (a notification of the rivals' was clicked).</summary>
+        /// <summary>The rivals' page shows the next time the app opens (its notification was clicked).</summary>
         public void WantRivals()
         {
             _wantRivals = true;

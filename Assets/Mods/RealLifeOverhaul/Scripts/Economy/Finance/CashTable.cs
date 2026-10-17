@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Economy
         string Money(float amount);
     }
 
-    /// <summary>A period's movements of money as a table whose rows' words are made as they scroll into view, newest first.</summary>
+    /// <summary>A period's movements of money, newest first, as a table whose rows are written as they scroll into view.</summary>
     public sealed class CashTable : ITableSource
     {
         public const int ColumnDay = 0, ColumnWhat = 1, ColumnCategory = 2, ColumnIn = 3, ColumnOut = 4;

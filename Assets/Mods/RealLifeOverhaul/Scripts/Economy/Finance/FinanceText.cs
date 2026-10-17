@@ -207,7 +207,7 @@ namespace RealLifeOverhaul.Economy
             return State(a.Ladder, a.Frozen, ProductCatalogue.Instalment(a.Kind) && !a.Secured);
         }
 
-        /// <summary>How a debt stands with its lender, the gravest first: an arrangement, repossession due, collections, a plan, behind, in order.</summary>
+        /// <summary>How a debt stands with its lender, in a few words; the gravest state is the one named.</summary>
         public static string State(LadderState s, bool frozen, bool unsecured)
         {
             if (frozen)

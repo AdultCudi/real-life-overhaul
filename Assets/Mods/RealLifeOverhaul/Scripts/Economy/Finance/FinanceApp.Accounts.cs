@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The Accounts tab, every debt and what can be done with it; the pieces of a debt's page are shared with BankApp.</summary>
+    /// <summary>The Accounts tab, and the pieces of a debt's page that BankApp shares.</summary>
     public sealed partial class FinanceApp
     {
         private const string WaysRow = "ways", LenderRow = "lender", ApprovalRow = "approval";
@@ -231,19 +231,19 @@ namespace RealLifeOverhaul.Economy
             return day == today ? FinanceText.T("common_today") : day == today + 1 ? FinanceText.T("common_tomorrow") : FinanceText.Day(day);
         }
 
-        /// <summary>How grave a debt's standing is, to order by: in order first, then by misses, the lender's steps, an arrangement last.</summary>
+        /// <summary>How grave a debt's standing is, to order by: misses, then the lender's steps, an arrangement last.</summary>
         internal static double Gravity(LadderState s, bool frozen)
         {
             return s.Misses + (s.Penalty ? 0.25 : 0) + (s.PlanLeft > 0 ? 0.5 : 0) + (s.RepoDay > 0 ? 20 : 0) + (s.CallDue ? 50 : 0) + (s.RepoPending ? 100 : 0) + (frozen ? 200 : 0);
         }
 
-        /// <summary>A game loan's yearly rate in per cent, read back from its daily interest: the game keeps no rate on a loan.</summary>
+        /// <summary>A game loan's yearly rate in per cent, from its daily interest: the game keeps no rate.</summary>
         internal static float YearlyRate(Loan loan, int daysPerYear)
         {
             return loan.totalAmount > 0f ? loan.dailyInterest * (float)daysPerYear / loan.totalAmount * 100f : 0f;
         }
 
-        /// <summary>The head of a debt's page: its state, and what further misses would bring (nothing where no step is left).</summary>
+        /// <summary>The head of a debt's page: its state, and what further misses would bring.</summary>
         internal static void StandsLines(InfoBox box, string state, LadderState s, bool secured, bool nextStep)
         {
             box.Chip(state, s.RepoPending || s.Misses >= 2 ? CellTone.Red : s.Misses > 0 || s.Overdue > 0 ? CellTone.Yellow : CellTone.Plain);
@@ -272,7 +272,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The foot of a debt's page: what the credit is and how its rate is set, either may be null, then the Guide.</summary>
+        /// <summary>A debt page's foot: what the credit is, how its rate is set (either may be null), the Guide.</summary>
         internal static void AboutLines(InfoBox box, string about, string rateNote, string guideTitle)
         {
             if (about != null)

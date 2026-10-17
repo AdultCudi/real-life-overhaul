@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Economy
         public int OldestDay { get; private set; }
         public int FromDay { get; private set; }
 
-        /// <summary>Reads yesterday, or the last 7 or 30 days to today; with <paramref name="keep"/>, only the movements it accepts.</summary>
+        /// <summary>Reads yesterday, or the last 7 or 30 days; with <paramref name="keep"/>, only the movements it accepts.</summary>
         public void Read(int period, int today, Func<Dictionary<string, string>, bool> keep)
         {
             Entries.Clear();
@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Economy
             return period == Yesterday ? FinanceText.T("reallife_econ_period_yesterday") : FinanceText.T("reallife_econ_period_days", "days", PeriodDays[period].ToString());
         }
 
-        /// <summary>One transaction in the game's own words, as EconoView's list writes it: its type's text, filled from its data.</summary>
+        /// <summary>One transaction as EconoView's list writes it: its type's text, filled from its data.</summary>
         public static string ItemName(string type, Dictionary<string, string> data)
         {
             if (string.IsNullOrEmpty(type))

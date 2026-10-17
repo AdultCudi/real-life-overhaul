@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The Borrow tab: every bank's loan and the other kinds of credit in one table; a bank picked shows its offer.</summary>
+    /// <summary>The Borrow tab: every bank's loan and the other kinds of credit; a bank picked shows its offer.</summary>
     public sealed partial class FinanceApp
     {
         private Lender _lender;   // the bank whose offer shows; null for none

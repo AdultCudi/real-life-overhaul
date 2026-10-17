@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The city's economy (Economy/City): three lines on the Overview and a page; only the words are made here.</summary>
+    /// <summary>The city's economy (Economy/City): three lines on the Overview, and its own page.</summary>
     public sealed partial class FinanceApp
     {
         private const int IncomeLow = 850, IncomeHigh = 1150;   // tenths of a point: a district's income the page calls low or high
@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Economy
         private bool _city;       // the Overview shows the city's page
         private bool _wantCity;   // it is to show the next time the app opens
 
-        /// <summary>The city's page is what shows the next time the app opens (a notification of the city's economy was clicked).</summary>
+        /// <summary>The city's page shows the next time the app opens (its notification was clicked).</summary>
         public void WantCity()
         {
             _wantCity = true;

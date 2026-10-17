@@ -2,7 +2,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The Finance app's tables as data (GameUi.TableSpec); each one's summary numbers its columns for the rows' writer.</summary>
+    /// <summary>The Finance app's tables as data (GameUi.TableSpec), each summary numbering its columns.</summary>
     internal static class FinanceTables
     {
         // The kinds of debt, the filter of the Overview and of Accounts.
@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Economy
             "reallife_tab_step_reminder", "reallife_tab_step_fee", "reallife_tab_step_penalty", "reallife_tab_step_collections", "reallife_tab_step_repossession", "reallife_tab_step_claim"
         };
 
-        /// <summary>The next step a lender takes as misses go on, by the ladder's own counts, and how many misses away; false if none.</summary>
+        /// <summary>The next step further misses bring, by the ladder's counts, and how many away; false if none.</summary>
         public static bool NextStep(LadderState s, int level, bool secured, out string stepKey, out int missesAway)
         {
             level = ProductCatalogue.Level(level);

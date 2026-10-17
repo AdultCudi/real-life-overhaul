@@ -38,13 +38,16 @@ namespace RealLifeOverhaul.Economy
         private static readonly Dictionary<FinancialSummary, ListIndex<FinancialSummary.BusinessIncomeStatement, Address>> StatementsOf
             = new Dictionary<FinancialSummary, ListIndex<FinancialSummary.BusinessIncomeStatement, Address>>(16, ReferenceComparer<FinancialSummary>.Instance);
 
-        /// <summary>What leaves in tonight's run: the game's loans and rent, the mod's accounts, fines, and last night's wages.</summary>
+        /// <summary>What tonight's run takes: loans, rent, the mod's accounts, fines, and wages as last night.</summary>
         public static Obligations Tomorrow(CreditFile file)
         {
             return Tomorrow(file, SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0);
         }
 
-        /// <summary>As of a day: the hour event opening a day comes after the game moves its day on, before its run, so it asks as of the day before.</summary>
+        /// <summary>
+        /// As of a day. The hour event that opens a day comes after the game moves its day on but before its run, so it
+        /// asks as of the day before.
+        /// </summary>
         public static Obligations Tomorrow(CreditFile file, int today)
         {
             var o = new Obligations();
@@ -134,7 +137,7 @@ namespace RealLifeOverhaul.Economy
             return (long)Math.Floor(worth - owed);
         }
 
-        /// <summary>An account the Overview and <see cref="NetWorth"/> count: open, not a test's, a card or overdraft only if drawn on.</summary>
+        /// <summary>Owed in the Overview and <see cref="NetWorth"/>: open, not a test's, and a card or overdraft only if drawn on.</summary>
         public static bool Owing(CreditAccount a)
         {
             return a != null && !a.Closed && !a.Test && (a.Owed > 0 || !ProductCatalogue.Revolving(a.Kind));
@@ -172,7 +175,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Average daily profit over the last days' statements, a day without one counting as nothing; and how many had one.</summary>
+        /// <summary>Average daily profit over the last days, a day without a statement as nothing; and how many had one.</summary>
         public static float AverageProfit(Address address, int days, out int onRecord)
         {
             onRecord = 0;

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>Borrow's other kinds of credit; each action is confirmed in the game's question box, then asked of the credit desk.</summary>
+    /// <summary>Borrow's other kinds of credit: the game's question box first, then the credit desk.</summary>
     public sealed partial class FinanceApp
     {
         private const int Overdraft = 0, Card = 1, BusinessLoan = 2, CarFinance = 3, HomeLoan = 4, Consolidate = 5, ProductCount = 6;

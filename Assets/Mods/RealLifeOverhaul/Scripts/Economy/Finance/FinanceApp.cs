@@ -363,7 +363,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A whole amount from what was typed: digits, with the comma, space and sign of "$5,000" let through. False for anything else.</summary>
+        /// <summary>A whole amount from what was typed ("$5,000" too); false for anything else.</summary>
         internal static bool Whole(string text, out int amount)
         {
             amount = 0;

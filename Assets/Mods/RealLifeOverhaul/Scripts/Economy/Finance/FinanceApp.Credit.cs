@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The Credit tab: the score, what it is made of and the file's last events; a factor picked says how it stands.</summary>
+    /// <summary>The Credit tab: the score, what it is made of and the file's last events.</summary>
     public sealed partial class FinanceApp
     {
         private static readonly string[] FactorAbout =

@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>The Overview tab: cash, what is owed, what leaves tomorrow and net worth, with every debt in the table.</summary>
+    /// <summary>The Overview tab: cash, debts, what leaves tomorrow and net worth.</summary>
     public sealed partial class FinanceApp
     {
         private readonly List<DebtLine> _debts = new List<DebtLine>(6);

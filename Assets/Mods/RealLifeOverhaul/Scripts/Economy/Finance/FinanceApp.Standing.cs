@@ -2,7 +2,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>Hosts the Standing page, which Scripts/Fame writes (EconomyBridges.Standing); the Overview opens it.</summary>
+    /// <summary>Hosts the Standing page, which Scripts/Fame writes (EconomyBridges.Standing).</summary>
     public sealed partial class FinanceApp
     {
         private bool _standing;         // the Overview shows the Standing page
@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Economy
             return page != null && page.Spec != null && page.Write != null && page.On != null && page.On() ? page : null;
         }
 
-        /// <summary>The Standing page is what shows the next time the app opens (a notification of Standing's was clicked).</summary>
+        /// <summary>The Standing page shows the next time the app opens (its notification was clicked).</summary>
         public void WantStanding()
         {
             _wantStanding = true;
