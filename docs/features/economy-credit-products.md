@@ -60,7 +60,7 @@ Interest is whole money, worked out in hundredths of a per cent over the game's 
 | Product | What it is | How it is collected |
 | --- | --- | --- |
 | Overdraft (`ProductKind.Overdraft`) | A limit of 2% (at 580) to 8% (from 800) of what the city's banks lend at the rating, rounded to 50, at least 200. Free to hold. Rate: the bank's plus 8 points. | On the first hour event of a new day, before the game's run, if cash is short of what leaves tonight (`Books.Tomorrow`, the figure the Overview shows) it pays the shortfall into cash up to its free limit. Interest is added to the balance each day. Cash above 500 pays it back at each day's end. A balance over the limit is a missed payment. |
-| Credit card (`CreditCard`) | A limit of 3% to 12% of the same, rounded to 50, at least 300. Cash is drawn in the app for a fee of 3%, at least 5. Rate: the bank's plus 12 points. | A statement every 7 days. 3 days later the minimum (5% of the statement, at least 25, or all of a smaller balance) is taken, and what is then still unpaid of the statement bears 7 days' interest. A statement paid in full bears none. A minimum that could not be taken is tried again each day: each day is a miss. |
+| Credit card (`CreditCard`) | A limit of 3% to 12% of the same, rounded to 50, at least 300. Cash is drawn in the app for a fee of 3%, at least 5. Rate: the bank's plus 12 points. | A statement every 7 days. 3 days later the minimum (5% of the statement, at least 25, or all of a smaller balance) is taken, and what is then still unpaid of the statement bears 7 days' interest. A statement paid in full bears none. A minimum paid by hand before its day counts as a payment on time on that day (`DayOutcome.PaidEarly`, `OnTime`). A minimum that could not be taken is tried again each day, and is one miss a statement. |
 | Business loan (a game `Loan`, `LoanMark.Purpose = Business`) | Offered when the player runs a business with 7 daily statements on record (`GameInstance.financialSummaries`, what EconoView's business page reads): up to 30 times its average daily profit, at the bank's rate less 1 point, plus the phone's arrangement fee. The mark keeps the business as `Security`. The bank's cap in memory is raised by what is owed on it (`BankTerms.Secured`), so it does not use up the personal cap. | By the game, like any loan. |
 | Car finance (`CarFinance`) | See  [A purchase on finance](#a-purchase-on-finance-where-the-game-forced-a-change). Deposit 10% to 50%, 60 to 240 days, the bank's rate plus 2 points, up to what the bank lends unsecured at the rating. The vehicle (`VehicleInstance.id`) is the security. | A daily instalment (the amount over the term, rounded up) and the day's interest, taken together on the game's day event, after the game's own loans. If the cash is not there nothing is taken, the interest is added to the balance, and it is a miss. |
 | Mortgage (`Mortgage`) | The same for a building bought in BizMan: deposit 20% to 50%, 360 to 1,440 days, the bank's rate less 1 point, up to 5 times what the bank lends unsecured. The building (its address) is the security. | As car finance. |
@@ -91,9 +91,11 @@ What is built instead keeps the game's purchase untouched and turns the order ro
    Lent vehicles (`zeroSellingPrice`) and hand vehicles are passed over.
 3. **The account** opens for `ProductTerms.Financed`: the price less the buyer's deposit, never more than was approved.
    What was approved over that is taken back at once (`..._finance_returned`).
-4. **No purchase** by the end of the day after the approval: all of it is taken back, by force if it has been spent (the game lets cash go under nothing, as its own loan interest does).
-   The same on "Cancel the approval", after the game's question with the interest for the days held.
-   Finance names that interest before it is approved (about so much a day on the whole sum) and on the approval's page.
+   The approval's interest (`ReliefRules.PurchaseCharge`, `..._finance_charge`) is on the part financed only, for the days before the purchase: the account charges its own interest from the day it opens, so no day is charged twice, and what goes back unused costs nothing.
+   An approval already standing in an older save is charged so when it ends: nothing saved says how it is charged, and the rule can only lower the charge.
+4. **No purchase** by the end of the day after the approval: all of it is taken back, by force if it has been spent (the game lets cash go under nothing, as its own loan interest does), with interest on all of it for every day held (`ReliefRules.CancelCharge`).
+   The same on "Cancel the approval", after the game's question with that interest, in Finance and in the bank's app alike (`FinanceApp.WriteApproval`).
+   The question before an approval, its page and the Guide name the interest: about so much a day on the whole sum while nothing is bought, and on the part financed once something is.
 
 **Selling or losing the security** (`CreditDesk.Securities`, each game hour): when the vehicle or building is no longer the player's, the newest matching sale in the game's transactions since yesterday (`ba:transaction_itemsold` with the vehicle's type, `ba:transaction_buildingsold` with the address) is taken against the balance as far as it is still in cash.
 The rest stays owed on the same payments, unsecured, and the app says so.
@@ -127,7 +129,8 @@ When the economy stops (the option, a fault, the city unloading); by the save to
 And **every time the game writes a save** (`CreditDesk.BeforeSave` on the game's save event, which runs before the game serialises): a save file therefore never holds anything but the game's own figures and loads in the plain game as it would without the mod, with or without "prepare this save".
 
 What is held stays noted in the credit file and is written again within a second and on the next hour event, which is the first thing the game's new day does, before its run.
-If the game recalculates a held loan (its interest multiplier was changed) or the player changes the payment in EconoView, the new figure is taken as the loan's own.
+If the player changes the payment in EconoView, the new figure is taken as the loan's own.
+When the game prices its loans again for a new interest multiplier, each loan's own figures are first put back at its own rate under the new multiplier (`LoanHolds.Repriced`, see [the credit rating](economy-credit.md)), so that recalculation is never taken for a loan's own.
 
 A debt arrangement uses the same mechanism (interest and payment are nothing while it runs).
 
@@ -147,7 +150,7 @@ Justice's suit can be contested and won; then the lender gets nothing.
 
 `CreditDesk.Consolidation` / `Consolidate`: every game loan, the card's balance and the overdraft's are paid off by ONE new game loan at the chosen bank at today's rate for the rating, for what is owed plus the fee (1%, at least 25: the fee is in the loan, so no cash is needed).
 
-Offered at or over the threshold, if the new loan fits what that bank lends at the rating, and not while one of the game's quest loans is open.
+Offered at or over the threshold, if the new loan fits what that bank lends at the rating, and not while one of the game's quest loans is open at that bank, nor at any bank while the game's own bankruptcy quest runs (`CreditDesk.GameBankruptcy`: its emergency loan would be paid off; the page says to follow the quest).
 Finance shows before and after: owed, daily cost, interest still to pay, days (`ProductTerms.Before` / `After`; a card or overdraft has no end, so its interest is counted over the new loan's days).
 It posts one `Application` and one `Consolidated` line, not early pay-offs.
 
@@ -158,7 +161,7 @@ The card and the overdraft stay open with nothing owed.
 `SharkDebt` / `SharkRules`, contact "Private lender" (`reallife-lender`).
 It makes itself known by a text the first time a bank refuses the player (`EconomyDirector.TellRefused`) or the rating is under the threshold at a day's end.
 
-It lends 500 to 5,000, or up to 10 days of average daily income if that is more; 3% of the sum is added each day; all of it is due in 10 days; one extension by 10 days costs 15% of what is owed; what is owed never passes 3 times the sum.
+It lends 500 to 5,000, or up to 10 days of average daily income if that is more; 3% of the sum is added each day; all of it is due in 10 days; one extension by 10 days costs 15% of what is owed, named with the new day in a question before it is agreed (`reallife_lender_extend_terms`, `SharkRules.ExtendedDay`); what is owed never passes 3 times the sum.
 It is not an `ICreditAccount` and posts nothing: it is not in the rating and paying it builds nothing.
 
 Past the due day: day 1 a text.

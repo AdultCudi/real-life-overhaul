@@ -41,7 +41,7 @@ The first eight are game-free: the offline checks compile them as they are.
 ## How it runs (no per-frame work)
 
 `VenturesDirector` has no `Update`.
-A coroutine on the real clock looks once a second: it starts when the save is ready, stands down when both options are off, keeps its handlers on `GlobalEvents.onNewDay`, `onNewHour` and the save relay (two reference comparisons while nothing has changed), puts the app on the phone, and asks a meeting in progress whether its window is still there.
+A coroutine on the real clock looks once a second: it starts when the save is ready; with Investors off it keeps the file open only while deals, promises or offers already made are there (`VenturesFile.CarriesOn`; a save loaded with the option off is looked at once for them) and stands down when none is left; it keeps its handlers on `GlobalEvents.onNewDay`, `onNewHour` and the save relay (two reference comparisons while nothing has changed), puts the app on the phone, and asks a meeting in progress whether its window is still there.
 Everything else is done on an event:
 
 - **the day** (after the game's daily run, so yesterday's statements exist): offers and promises that have lapsed; each deal's share of yesterday's profit and its target; every seventh day the look at the businesses for an offer; the market's day and, every fifteenth, its dividends.
@@ -51,7 +51,9 @@ Everything else is done on an event:
 - **the app** being opened or clicked: pages are written again; nothing runs while it is closed.
 
 A fault anywhere logs one line (`Ventures: switched off for this session after an error in ...`) and Ventures does nothing more that session; what the save holds is left as it is.
-Days on which Ventures did not run (an option off, a fault) are not made up afterwards: no share is taken for them and the market does not move.
+With Investors off, what was agreed carries on as with it on: each deal's day runs (its share, its target, a demand, a called sum collected, a claim), promises open or lapse, and offers already made can be answered until they lapse.
+Only what is new stops: the weekly look for offers (and a second round), pitches and meetings; the app says so.
+Days on which Ventures did not run (a fault, or the option off with nothing agreed) are not made up afterwards: no share is taken for them and the market does not move.
 
 ## The cast (`Cast.Make`, once per save from its seed)
 

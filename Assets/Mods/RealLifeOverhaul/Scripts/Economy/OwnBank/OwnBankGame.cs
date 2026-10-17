@@ -89,8 +89,7 @@ namespace RealLifeOverhaul.Economy
 
         public static BankCity City()
         {
-            GameInstance save = Save;
-            float multiplier = save != null && save.gameVariables != null ? save.gameVariables.bankInterestMultiplier : 1f;   // as the game's banks charge it (LoanHelper)
+            float multiplier = GameLoans.Multiplier;   // as the game's banks charge it (LoanHelper)
             Lender house = BankTerms.House;
             int houseRate = house != null ? BankTerms.OwnRate(house.Settings) : 0;
             Func<Lever, int> lever = OwnBankBridges.Policy;

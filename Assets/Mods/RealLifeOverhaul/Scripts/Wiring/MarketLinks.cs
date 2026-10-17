@@ -352,9 +352,9 @@ namespace RealLifeOverhaul
                     {
                         return new OldMarket { File = ventures.File };   // the live file: Ventures writes it into the save
                     }
-                    if (Settings.VenturesInvestors && ventures != null && _oldAsked++ < OldWaitSeconds)
+                    if (ventures != null && ventures.Opening && _oldAsked++ < OldWaitSeconds)
                     {
-                        return null;   // Ventures is opening its file: ask again in a second
+                        return null;   // Ventures may be opening its file (with Investors off, for deals that carry on): ask again in a second
                     }
                     VenturesFile file = VenturesStore.Load(save.modData, out int _);
                     if (file == null)

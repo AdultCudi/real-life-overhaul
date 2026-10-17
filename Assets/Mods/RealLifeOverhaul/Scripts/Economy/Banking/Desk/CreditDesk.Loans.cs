@@ -131,7 +131,10 @@ namespace RealLifeOverhaul.Economy
             return ProductAnswer.Yes;
         }
 
-        /// <summary>What one new loan from this bank in place of every loan, the card and the overdraft would come to.</summary>
+        /// <summary>
+        /// What one new loan from this bank in place of every loan, the card and the overdraft would come to. Busy while one of the
+        /// game's quest loans is open, the bankruptcy quest's at whichever bank: the game's own story ends that loan.
+        /// </summary>
         public ProductAnswer Consolidation(Lender bank, out DebtTotals before, out DebtTotals after, out LoanQuote quote, out int count)
         {
             before = default(DebtTotals);
@@ -143,9 +146,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return gate == ProductAnswer.Yes ? ProductAnswer.NoBank : gate;
             }
-            if (BankTerms.QuestHold(bank.Settings))
+            if (BankTerms.QuestHold(bank.Settings) || GameBankruptcy)
             {
-                return ProductAnswer.Busy;
+                return ProductAnswer.Busy;   // a quest loan is open: at this bank, or the game's bankruptcy emergency loan at any, which consolidating would pay off
             }
             _debts.Clear();
             List<Loan> loans = Save.Loans;

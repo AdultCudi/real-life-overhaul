@@ -119,7 +119,10 @@ A bank's terms are one `BankSettings` object in memory.
   Nothing of this is in a save: the objects are the game's assets.
 - **The refusal.** With a cap of 0 the game says "the most we can lend you is $0".
   So while nobody lends, the one-second timer looks whether a bank's dialogue is open (`DialogController.current.dialog is BankDialog`, at the counter or on a call) and says why once, through the game's notification, with what would raise the rating most.
-- **Known.** The game recalculates every loan's daily interest and payment from the bank's settings when `bankInterestMultiplier` is changed in the game's options (`LoanHelper.RecalculateLoanPayments`): with the economy on that uses the rate for the rating at that moment, not the rate each loan was taken at.
+- **A change of the interest multiplier.** The game recalculates every loan's daily interest and payment from the bank's settings when `bankInterestMultiplier` is changed in the game's options (`LoanHelper.RecalculateLoanPayments`), at the rate each bank offers at that moment, which with the economy on is the rating's.
+  The director compares the multiplier once a second and before anything reads a loan's figures (the hour, a loan paid off, the day, the save: `EconomyDirector.KeepLoanRates`), and gives each loan back its own terms at the new multiplier: the rate it was made at, read back from its interest at the old one (`GameLoanMath.Repriced`: every rate the game or the mod writes is a whole per cent; where a small loan's interest fits several, the middle one), and its payment as last read.
+  What is held on a loan stays held on those figures (`LoanHolds.Repriced`), so a business loan keeps its point off and no recalculation is taken for a loan's own.
+  One log line says how many loans were given back their rate.
 
 ## Loans from the phone
 
@@ -185,10 +188,11 @@ CreditLedger.GradeChanged                    // (was, is)
 CreditLedger.Posted                          // (event, score before, score after)
 ICreditAccount + CreditLedger.Register       // Key, NameKey, Balance, Limit, PaymentDue: counted in "owed" and in the app
 LendingTerms.For / MostNow / PhoneFee / Decide, BankTerms.Lenders / Wanted / QuestHold
-EconomyBridges.Legal / LegalReady / OtherDebts, Finance.Open(tab)
+EconomyBridges.Legal / LegalReady / OtherDebts / OtherAccounts, Finance.Open(tab)
 ```
 
 A new kind of credit is a class implementing `ICreditAccount`, registered while the economy runs, that posts `PaidOnTime`, `Missed` or `PartPaid` for its instalments (they are counted on their day) and `NewCredit` when it lends.
+Another feature's credit (the student loan, from `Wiring/CareersLinks`) is also given through `EconomyBridges.OtherAccounts`: the ledger forgets every account when the credit side stands down, and the director registers these again each time it starts.
 A new kind of event is a value at the end of `CreditKind` and a text in `FinanceText.EventKeys`.
 Every figure is a constant of `CreditCatalogue`; the Guide's page prints them through `{facts}`.
 

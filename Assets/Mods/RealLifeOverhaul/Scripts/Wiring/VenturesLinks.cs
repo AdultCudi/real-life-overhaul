@@ -80,8 +80,8 @@ namespace RealLifeOverhaul
             {
                 public string Id => "ventures";
 
-                public bool Available => Settings.VenturesInvestors && VenturesDirector.Instance != null && VenturesDirector.Instance.File != null
-                                         && SaveGameManager.Current != null;
+                // with Investors off the file is open only while deals, promises or offers carry on, and their days are still due
+                public bool Available => VenturesDirector.Instance != null && VenturesDirector.Instance.File != null && SaveGameManager.Current != null;
 
                 public void Collect(int fromDay, int toDay, PlannerList into)
                 {

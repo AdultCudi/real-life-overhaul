@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Economy
         private static readonly Func<LegalStanding> Legal = () => EconomyBridges.Legal != null ? EconomyBridges.Legal() : default(LegalStanding);
 
         private readonly GameLoans _loans = new GameLoans();
+        private readonly List<ICreditAccount> _others = new List<ICreditAccount>(2);   // other features' credit (EconomyBridges.OtherAccounts)
         private readonly List<LoanView> _live = new List<LoanView>(8);
         private readonly List<LoanFinding> _findings = new List<LoanFinding>(8);
         private readonly CreditFactor[] _tips = new CreditFactor[2];
@@ -67,6 +68,7 @@ namespace RealLifeOverhaul.Economy
         private int _waited;
         private int _findTries;
         private int _preRunDay;        // the day whose daily run the hour event has read the loans for
+        private float _multiplier;     // the game's interest multiplier the loans' figures were last read at
         private object _toldDialogue;  // the bank dialogue already told why nobody lends
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
         private Action<string> _onGameEvent, _gameEventSeen;
@@ -257,6 +259,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 StartUp();
             }
+            KeepLoanRates();
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
             EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen);
@@ -302,6 +305,13 @@ namespace RealLifeOverhaul.Economy
             }
             CreditLedger.Open(file);
             CreditLedger.Register(_loans);
+            _others.Clear();
+            EconomyBridges.OtherAccounts?.Invoke(_others);   // the student loan: the ledger let go of it when the credit side last stood down
+            for (int i = 0; i < _others.Count; i++)
+            {
+                CreditLedger.Register(_others[i]);
+            }
+            _multiplier = GameLoans.Multiplier;   // the loans' figures are the game's at this multiplier
             LoanBook.Sync(file.Loans, _live, today, null, true);   // the save's marks find their loans again; nothing is said
             if (file.FirstCreditDay <= 0 && _live.Count > 0)
             {
@@ -437,6 +447,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (_running && Save != null && CreditLedger.File != null)
                 {
+                    KeepLoanRates();   // before the desk writes each loan's own figures back for the save
                     DeskDo("the save", _deskSave);   // every loan carries its own interest and payment in the save
                     CreditStore.Save(Save.modData, CreditLedger.File);
                 }

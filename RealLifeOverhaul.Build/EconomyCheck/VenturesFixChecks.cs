@@ -7,6 +7,8 @@ using RealLifeOverhaul.Economy.Ventures;
 //   1. a ninth deal was dropped at the next save while the player kept the investor's money: the cap is kept when an
 //      offer is taken up, a promise is made and a promise opens;
 //   2. one new business paid out two promises of the same kind, the second on a business the player already had;
+//   3. the Investors option switched off stood the director down, so no deal's day ran: no share, no target, no called sum;
+//      now deals, promises and offers already made carry on, and only new offers, pitches and meetings stop;
 //   4. the investors' sums, the first target, the budget steps and the pitch's strongest figures stayed at the start's prices;
 //   5. a business opened in the last hour of a promise's last day was not found before the promise lapsed;
 //   6. asking for more money from an investor already at their largest sum was "agreed" and spent the counter;
@@ -15,11 +17,11 @@ using RealLifeOverhaul.Economy.Ventures;
 //   9. with no court, a called sum's missed days counted on while the notice said they would go to court;
 //   10. the Raise money page found the business clicked by its place in a list read afresh;
 //   11. a staff count that could not be read was asked about as 0.
-//   (3, the Investors option switched off stopping every deal's day, waits for a decision.)
 internal static partial class Program
 {
     private static void VenturesFixes()
     {
+        VenturesFixOff();
         VenturesFixCap();
         VenturesFixTwoPromises();
         VenturesFixPrices();
@@ -216,5 +218,28 @@ internal static partial class Program
             "ventures fix: the business clicked on Raise money is the one its row was written for");
         string accept = MemberText(EconomySource(@"Ventures\VenturesDirector.App.cs"), "public bool Accept(");
         Check(accept.Contains("if (deal == null)") && accept.Contains("NoRoom("), "ventures fix: an offer with no room is refused with the reason");
+    }
+
+    // 3 (the maintainer's decision): with Investors off what was agreed or offered carries on; only what is new stops.
+    private static void VenturesFixOff()
+    {
+        VenturesFile none = NewVentures(4242), dealt = VenturesFixFile(1, null), promised = NewVentures(4242), offered = NewVentures(4242);
+        promised.Pledges.Add(new Pledge { Id = promised.NextId++, InvestorId = promised.Investors[0].Id, TypeName = "ba:businesstype_bakery", Amount = 20000, ShareBp = 1500, OpenBy = 40 });
+        offered.Offers.Add(new Offer { Id = offered.NextId++, InvestorId = offered.Investors[0].Id, Place = "x#1", Business = "X", Amount = 30000, ShareBp = 2000, LapseDay = 30 });
+        Check(!none.CarriesOn && dealt.CarriesOn && promised.CarriesOn && offered.CarriesOn,
+            "ventures fix: a deal, money promised or an offer waiting carries on with Investors off; a save with none of them has nothing to run");
+        string director = EconomySource(@"Ventures\VenturesDirector.cs"), slow = MemberText(director, "private void Slow(");
+        int off = slow.IndexOf("if (!Settings.VenturesInvestors)", System.StringComparison.Ordinal), stand = slow.IndexOf("StandDown(true);", System.StringComparison.Ordinal);
+        Check(off > 0 && stand > off && slow.Contains("if (_running && !_file.CarriesOn)") && slow.Contains("if (!StartUp(true))") && slow.Contains("StartUp(false);")
+              && MemberText(director, "private bool StartUp(").Contains("if (carryOnly && (file == null || !file.CarriesOn))"),
+            "ventures fix: switched off, the director stays up while deals carry on, opens a save that has them, and stands down only when none is left");
+        string day = MemberText(EconomySource(@"Ventures\VenturesDirector.Day.cs"), "private void InvestorsDay(");
+        int deals = day.IndexOf("DealRules.RunDay(", System.StringComparison.Ordinal), look = day.IndexOf("if (Settings.VenturesInvestors && day - _file.OfferDay", System.StringComparison.Ordinal);
+        Check(deals > 0 && look > deals && Occurs(day, "Settings.VenturesInvestors") == 1, "ventures fix: each deal's day runs whatever the option; only the look for new offers asks it");
+        Check(MemberText(EconomySource(@"Ventures\VenturesDirector.App.cs"), "public bool StartPitch(").Contains("Running && (Settings.VenturesInvestors || test)"),
+            "ventures fix: no new meeting with the option off");
+        Check(!MemberText(EconomySource(@"..\Wiring\VenturesLinks.cs"), "public bool Available").Contains("Settings.VenturesInvestors")
+              && EconomySource(@"..\Wiring\MarketLinks.cs").Contains("if (ventures != null && ventures.Opening && _oldAsked++ < OldWaitSeconds)"),
+            "ventures fix: the Planner shows the days of deals that carry on, and the old market's move waits while Ventures may open its file");
     }
 }

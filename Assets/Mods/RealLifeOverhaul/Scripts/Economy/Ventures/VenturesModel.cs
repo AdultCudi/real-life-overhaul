@@ -211,6 +211,9 @@ namespace RealLifeOverhaul.Economy.Ventures
         public readonly List<Company> Companies = new List<Company>(VenturesCatalogue.Companies);
         public readonly List<Holding> Holdings = new List<Holding>(VenturesCatalogue.Companies);
 
+        /// <summary>Something already agreed or offered goes on with the Investors option off: a deal, money promised, an offer waiting for an answer.</summary>
+        public bool CarriesOn => Deals.Count > 0 || Pledges.Count > 0 || Offers.Count > 0;
+
         public Investor Investor(int id)
         {
             for (int i = 0; i < Investors.Count; i++)

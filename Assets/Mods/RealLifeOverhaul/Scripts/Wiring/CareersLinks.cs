@@ -97,6 +97,7 @@ namespace RealLifeOverhaul
                 Economy.OwnBankBridges.Qualified = Qualified;
                 CareersBridges.Council = () => CivicPolicy.Position(Lever.Grants);
                 Economy.CreditLedger.Register(Loan);
+                Economy.EconomyBridges.OtherAccounts = StudentCredit;   // and again each time the credit side starts: its ledger forgets every account when it stands down
                 CareersBridges.TechFirm = TechFirm;
                 CareersBridges.JoinFirm = (place, role, level, count) => TechDirector.Instance != null && SaveGameManager.Current != null
                     ? TechDirector.Instance.JoinPayroll(place, role, level, count, SaveGameManager.Current.Day) : 0;
@@ -122,6 +123,7 @@ namespace RealLifeOverhaul
                 TechBridges.AcademyType = null;
                 TechBridges.Schools = null;
                 Economy.CreditLedger.Unregister(Loan);
+                Economy.EconomyBridges.OtherAccounts = null;
                 Economy.OwnBankBridges.Qualified = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
@@ -325,6 +327,12 @@ namespace RealLifeOverhaul
             }
 
             private static readonly StudentLoan Loan = new StudentLoan();
+
+            // The student loan for the credit side's start (EconomyBridges.OtherAccounts).
+            private static void StudentCredit(List<Economy.ICreditAccount> into)
+            {
+                into.Add(Loan);
+            }
 
             private static void Credit(int kind, int amount)
             {

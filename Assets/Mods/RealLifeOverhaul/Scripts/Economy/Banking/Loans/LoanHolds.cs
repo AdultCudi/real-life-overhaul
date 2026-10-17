@@ -5,7 +5,8 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The penalty rate and a debt arrangement as written on one of the game's loans' daily interest and payment, and put back
     /// exactly: the loan's own figures are kept on its mark and written back before every save, so a save holds only the
-    /// game's. A figure changed from outside meanwhile (the game's recalculation, EconoView) is taken as the loan's own. Game-free.
+    /// game's. A figure changed from outside meanwhile (EconoView) is taken as the loan's own; the game's pricing again for a
+    /// new interest multiplier is undone first (<see cref="Repriced"/>). Game-free.
     /// </summary>
     public static class LoanHolds
     {
@@ -101,6 +102,30 @@ namespace RealLifeOverhaul.Economy
                 mark.OwnInterest = 0;
                 mark.OwnPayment = 0;
             }
+        }
+
+        /// <summary>
+        /// The game has priced its loans again for a new interest multiplier, at the rate each bank offers today. The loan keeps
+        /// its own: its payment as last read, and the interest of the rate it was made at under the new multiplier (the game's
+        /// figure stands where no rate can be read). With something held those become its own figures, and the held ones are
+        /// what it carries while <paramref name="holds"/> (the desk is running). The mark's reading moves with it.
+        /// </summary>
+        public static void Repriced(LoanMark mark, ref int interest, ref int payment, float was, float now, int years, int daysPerYear, bool holds)
+        {
+            bool held = mark.Held != LoanHold.None;
+            int own = GameLoanMath.Repriced(held ? mark.OwnInterest : mark.Interest, mark.Total, was, now, years, daysPerYear);
+            interest = own >= 0 ? own : interest;
+            payment = held ? mark.OwnPayment : mark.Payment;
+            if (held)
+            {
+                mark.OwnInterest = interest;
+                if (holds)
+                {
+                    Wanted(mark, now, daysPerYear, out interest, out payment);
+                }
+            }
+            mark.Interest = interest;
+            mark.Payment = payment;
         }
 
         /// <summary>The self-check: a loan with something held has its own figures remembered (no game loan has a payment and interest of nothing).</summary>
