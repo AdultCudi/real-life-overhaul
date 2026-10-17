@@ -4,14 +4,10 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// The test tools of the options page, and what the save tools ask of Ventures. A test's offers, deals, promises and
-    /// holdings are marked as tests, and "Test: put ventures back" takes them out again with the market, the
-    /// founder's name and the investors' days as they were before the first test of the session.
-    /// </summary>
+    /// <summary>The test tools, whose work is marked as a test's and can be put back, and what the save tools ask of Ventures.</summary>
     public sealed partial class VenturesDirector
     {
-        // What the tests may change that is not marked as a test's: kept from before the first test, put back by the last button.
+        // What the tests change that is not marked as a test's, as it was before the first test.
         private sealed class TestBackup
         {
             public int Reputation, Pitches;
@@ -45,7 +41,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return true;
         }
 
-        // A test tool runs here: a fault in one switches Ventures off for the session like any other, and never reaches the options page.
+        // A fault in a test tool switches Ventures off like any other and never reaches the options page.
         private void Guarded(Action test)
         {
             try
@@ -89,7 +85,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return null;
         }
 
-        /// <summary>"Test: a tycoon's offer for my best business": the terms the rule gives, or the tycoon's smallest sum if the figures carry none. Marked as a test's.</summary>
+        /// <summary>"Test: a tycoon's offer for my best business": the rule's terms, or the tycoon's smallest sum if the figures carry none.</summary>
         public void TestOffer()
         {
             Guarded(TestOfferNow);
@@ -114,7 +110,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 if (_file.Offers[i].Place == place || _file.Offers.Count >= VenturesCatalogue.OffersMost)
                 {
-                    _file.Offers.RemoveAt(i);   // (room for the test's offer)
+                    _file.Offers.RemoveAt(i);   // room for the test's offer
                 }
             }
             int day = Save.Day, amount, share;
@@ -134,7 +130,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 "share", VenturesText.Share(share), "day", offer.LapseDay.ToString());
         }
 
-        /// <summary>"Test: a meeting with an angel / a tycoon / a venture firm": about the best business, or with none about a business not yet open. Whatever it leads to is marked as a test's.</summary>
+        /// <summary>"Test: a meeting with an angel / a tycoon / a venture firm" about the best business, or one not yet open if there is none.</summary>
         public void TestPitch(int kind)
         {
             Guarded(() => TestPitchNow(kind));
@@ -163,7 +159,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             string type = null;
             if (r == null && investor.Kind == InvestorKind.Tycoon)
             {
-                Tell(NotificationType.Warning, "reallife_ven_test_no_business", null);   // (a tycoon backs no business that is not open)
+                Tell(NotificationType.Warning, "reallife_ven_test_no_business", null);   // a tycoon backs no business not yet open
                 return;
             }
             if (r == null)
@@ -188,7 +184,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 return;
             }
             Logger?.Warn("Ventures: day " + Save.Day + ", seed " + _file.Seed + ", name with investors " + _file.Reputation + ", level " + Level + ", market day " + _file.MarketSteps
-                         + ". " + CastLine());   // asked for by a button: written whether or not diagnostics are on
+                         + ". " + CastLine());   // asked for by a button: written with diagnostics off too
             for (int i = 0; i < _file.Deals.Count; i++)
             {
                 Deal d = _file.Deals[i];
@@ -210,7 +206,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Tell(NotificationType.Info, "reallife_ven_test_listed", null, "investors", _file.Investors.Count.ToString(), "companies", _file.Companies.Count.ToString());
         }
 
-        /// <summary>"Test: an investor calls their money": a deal there is, or a test deal on the best business, becomes a sum called back at this level's pace.</summary>
+        /// <summary>"Test: an investor calls their money": a deal there is, or a test deal on the best business, is called back.</summary>
         public void TestCall()
         {
             Guarded(TestCallNow);
@@ -237,7 +233,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     Tell(NotificationType.Warning, "reallife_ven_test_no_business", null);
                     return;
                 }
-                // A test deal: no money is paid in for it, and nothing but the call is shown.
+                // A test deal: no money is paid in for it.
                 deal = new Deal
                 {
                     Id = _file.NextId++, InvestorId = demanding.Id, Place = Books.Key(r.Address), Business = VenturesGame.Name(r), Amount = demanding.ChequeLeast,
@@ -254,7 +250,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 "per_day", FinanceText.Money(deal.CallPerDay));
         }
 
-        /// <summary>"Test: put ventures back": the tests' offers, deals, promises and holdings go, and the market, the founder's name and the investors' days are as before the first test.</summary>
+        /// <summary>"Test: put ventures back": what the tests made goes, and the rest is as it was before the first test.</summary>
         public void TestBack()
         {
             Guarded(TestBackNow);
@@ -286,19 +282,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             _testBackup = null;
             Badge();
-            Logger?.Warn("Ventures check (tests put back): " + removed + " test offer(s), deal(s), promise(s) and holding(s) removed; the market " + (market ? "is back at market day " + _file.MarketSteps : "was not moved")
-                         + "; name with investors " + _file.Reputation + ". Money a test paid (a dividend, an accepted test offer) stays.");
+            Logger?.Warn("Ventures check (tests put back): " + removed + " test offer(s), deal(s), promise(s) and holding(s) removed; the market "
+                         + (market ? "is back at market day " + _file.MarketSteps : "was not moved") + "; name with investors " + _file.Reputation
+                         + ". Money a test paid (a dividend, an accepted test offer) stays.");
             Tell(NotificationType.Info, "reallife_ven_test_back_done", _openInvestors, "count", removed.ToString());
         }
 
-        // ---------------------------------------------------------------- for the save tools
-
-        /// <summary>
-        /// For the save tools ("prepare this save for removing the mod", "reset the mod's data"): shares do not exist
-        /// in the plain game, so every holding is sold at today's price with no commission. Deals end with nothing
-        /// owed either way, and a sum called back is forgiven; each is listed in the log. Then Ventures stops; the
-        /// timer starts it again if an option is on.
-        /// </summary>
+        /// <summary>For the save tools: holdings sold at today's price, deals ended with nothing owed, each logged; Ventures stops.</summary>
         public void StopAll()
         {
             try

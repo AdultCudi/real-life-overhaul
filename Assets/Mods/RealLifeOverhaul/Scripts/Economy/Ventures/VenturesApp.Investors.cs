@@ -5,11 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// The Investors tab. Its first page lists what is open: offers, money promised, deals. "Raise money" leads through
-    /// the pages of a pitch: the business the money is for (or one not yet open: its kind and what it will cost), then
-    /// the investor, then the meeting, which the director holds in the game's list window with the phone put away.
-    /// </summary>
+    /// <summary>The Investors tab: offers, promises and deals, and "Raise money" through the business and the investor to a meeting.</summary>
     public sealed partial class VenturesApp
     {
         private const int PageList = 0, PageCounter = 1, PageBusiness = 2, PageType = 3, PageWho = 4;
@@ -35,14 +31,15 @@ namespace RealLifeOverhaul.Economy.Ventures
                 Offer o = file.Offers[i];
                 TableRow row = MoneyRow(file, OfferRow, o.Id, o.InvestorId, VenturesTables.IsOffer,
                     o.ForNew ? FinanceText.T("reallife_ven_row_new", "type", VenturesGame.TypeName(o.TypeName)) : VenturesText.Business(o.Place, o.Business), o.Amount, o.ShareBp);
-                row.NoTotal = true;   // (offered, not yet put in)
+                row.NoTotal = true;   // offered, not yet put in
                 row.Set(6, FinanceText.T("reallife_ven_row_answer_by", "day", o.LapseDay.ToString()), TableRow.Yellow);
             }
             for (int i = 0; i < file.Pledges.Count; i++)
             {
                 Pledge p = file.Pledges[i];
-                TableRow row = MoneyRow(file, PledgeRow, p.Id, p.InvestorId, VenturesTables.IsPledge, FinanceText.T("reallife_ven_row_new", "type", VenturesGame.TypeName(p.TypeName)), p.Amount, p.ShareBp);
-                row.NoTotal = true;   // (promised for a business not yet open)
+                TableRow row = MoneyRow(file, PledgeRow, p.Id, p.InvestorId, VenturesTables.IsPledge,
+                    FinanceText.T("reallife_ven_row_new", "type", VenturesGame.TypeName(p.TypeName)), p.Amount, p.ShareBp);
+                row.NoTotal = true;   // promised, not yet put in
                 row.Set(6, FinanceText.T("reallife_ven_row_open_by", "day", p.OpenBy.ToString()));
             }
             for (int i = 0; i < file.Deals.Count; i++)
@@ -62,13 +59,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             Offer offer = file.Offer(Picked(_picked, OfferRow));
             Deal deal = file.Deal(Picked(_picked, DealRow));
             Pledge pledge = null;
+            int pledgeId = Picked(_picked, PledgeRow);
             for (int i = 0; i < file.Pledges.Count; i++)
             {
-                pledge = file.Pledges[i].Id == Picked(_picked, PledgeRow) ? file.Pledges[i] : pledge;
+                pledge = file.Pledges[i].Id == pledgeId ? file.Pledges[i] : pledge;
             }
             if (_page == PageCounter && (offer == null || offer.Countered))
             {
-                _page = PageList;   // (the counter's page is only ever an offer's that has not been countered)
+                _page = PageList;   // the counter's page is only for an offer not yet countered
             }
             if (offer != null && _page == PageCounter)
             {
@@ -111,7 +109,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             return VenturesTables.Investors;
         }
 
-        // The cells every row of the list has: who, what kind of investor, for which business, how much and for what share.
         private TableRow MoneyRow(VenturesFile file, string kind, int id, int investorId, int stage, string business, int amount, int shareBp)
         {
             Investor investor = file.Investor(investorId);
@@ -152,7 +149,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Refresh();
         }
 
-        // A click on a row of this tab. True if it was dealt with here (a page of the pitch).
+        // A click on a row of this tab. True if it was a page of the pitch's, dealt with here.
         private bool InvestorRowClicked(TableRow row)
         {
             switch (_page)
@@ -193,8 +190,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // ---------------------------------------------------------------- an offer, a promise, a deal
-
         private void WriteOffer(InfoBox box, VenturesFile file, Offer offer)
         {
             Investor investor = file.Investor(offer.InvestorId);
@@ -227,7 +222,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // The game's own question box: what is agreed is said before it is agreed.
+        // The game's own question box says what is agreed before it is.
         private void AcceptOffer(int id)
         {
             VenturesFile file = _director.File;
@@ -256,7 +251,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }), null, "reallife_ven_accept", "common_cancel", false, false);
         }
 
-        // Something was agreed or paid: the page is written again if the app is still showing.
+        // Something was agreed or paid: the page again, if the app is still showing.
         private void AfterChange()
         {
             if (Showing)
@@ -354,8 +349,9 @@ namespace RealLifeOverhaul.Economy.Ventures
                 : FinanceText.T("reallife_ven_deal_mood_state", "mood", VenturesText.Mood(deal), "state", DealState(deal)));
             if (deal.Stage == DealStage.Demand)
             {
-                box.Line(FinanceText.Fill(investor.Kind == InvestorKind.Firm ? "reallife_ven_deal_demand_firm" : "reallife_ven_deal_demand", "day", deal.DemandDay.ToString(), "extra", VenturesText.Share(VenturesCatalogue.BoardExtraBp),
-                    "seat_days", VenturesCatalogue.BoardDays.ToString(), "cut", VenturesCatalogue.CostCutPct.ToString(), "cut_days", VenturesCatalogue.CostCutDays.ToString()));
+                box.Line(FinanceText.Fill(investor.Kind == InvestorKind.Firm ? "reallife_ven_deal_demand_firm" : "reallife_ven_deal_demand", "day", deal.DemandDay.ToString(),
+                    "extra", VenturesText.Share(VenturesCatalogue.BoardExtraBp), "seat_days", VenturesCatalogue.BoardDays.ToString(), "cut", VenturesCatalogue.CostCutPct.ToString(),
+                    "cut_days", VenturesCatalogue.CostCutDays.ToString()));
                 Transform answers = box.ButtonRow();
                 if (investor.Kind != InvestorKind.Firm)
                 {
@@ -400,8 +396,6 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }), null, deal.Stage == DealStage.Called ? "reallife_ven_pay_off" : "reallife_ven_buy_out", "common_cancel", false, false);
         }
 
-        // ---------------------------------------------------------------- raising money: the business, its kind, the investor
-
         private TableSpec WriteRaiseBusiness(InfoBox box, VenturesFile file, int day)
         {
             _businesses.Clear();
@@ -420,7 +414,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             _businesses.Clear();
             TableRow fresh = Row(NewRow, 0);
-            fresh.Pinned = true;   // (a way on, not a business: it stays at the head of the list)
+            fresh.Pinned = true;   // a way on, not a business: it stays at the head of the list
             fresh.A = FinanceText.T("reallife_ven_row_new_business");
             fresh.B = FinanceText.T("reallife_ven_row_new_business_note");
             box.Title(FinanceText.T("reallife_ven_raise"));
@@ -516,9 +510,9 @@ namespace RealLifeOverhaul.Economy.Ventures
                 row.Set(1, VenturesText.Kind(v));
                 row.Set(2, VenturesText.Likes(v));
                 row.Set(3, FinanceText.T("reallife_ven_row_range", "least", Money(v.ChequeLeast), "most", Money(v.ChequeMost)), v.ChequeMost);
-                bool backs = r != null || v.Kind != InvestorKind.Tycoon;   // (a tycoon backs no business that is not open yet)
+                bool backs = r != null || v.Kind != InvestorKind.Tycoon;   // a tycoon backs no business not yet open
                 bool open = backs && v.Open(day);
-                // (ordered by the day they would see the player: now first, a day after that, "not again" and "open businesses only" last)
+                // Sorted by the day they would see the player: now, then a day, then "not again" and "open businesses only".
                 row.Set(4, !backs ? FinanceText.T("reallife_ven_row_open_only") : v.Open(day) ? FinanceText.T("reallife_ven_row_open_now")
                     : VenturesText.Never(v, day) ? FinanceText.T("reallife_ven_row_never") : FinanceText.Day(v.OpenDay),
                     open ? 0 : backs && !VenturesText.Never(v, day) ? v.OpenDay : double.NaN, open ? (v.LikesSector(sector) ? TableRow.Yellow : TableRow.Plain) : TableRow.Red);
@@ -553,8 +547,10 @@ namespace RealLifeOverhaul.Economy.Ventures
             box.Row("reallife_ven_who_temper", VenturesText.Temper(picked));
             box.Row("reallife_ven_who_likes", VenturesText.Likes(picked));
             box.Row("reallife_ven_who_sums", FinanceText.T("reallife_ven_row_range", "least", Money(picked.ChequeLeast), "most", Money(picked.ChequeMost)));
-            box.Row("reallife_ven_who_share", FinanceText.T("reallife_ven_row_range", "least", VenturesText.Share(VenturesCatalogue.ShareLeastBp[k]), "most", VenturesText.Share(VenturesCatalogue.ShareMostBp[k])));
-            box.Row("reallife_ven_who_checks", FinanceText.T(picked.Diligence < 50 ? "reallife_ven_checks_lightly" : picked.Diligence < 78 ? "reallife_ven_checks_carefully" : "reallife_ven_checks_closely"));
+            box.Row("reallife_ven_who_share", FinanceText.T("reallife_ven_row_range", "least", VenturesText.Share(VenturesCatalogue.ShareLeastBp[k]),
+                "most", VenturesText.Share(VenturesCatalogue.ShareMostBp[k])));
+            box.Row("reallife_ven_who_checks",
+                FinanceText.T(picked.Diligence < 50 ? "reallife_ven_checks_lightly" : picked.Diligence < 78 ? "reallife_ven_checks_carefully" : "reallife_ven_checks_closely"));
             box.Row("reallife_ven_who_questions", VenturesCatalogue.Questions[k].ToString());
             box.Row("reallife_ven_offer_for", about);
             bool meets = picked.Open(day) && (r != null || picked.Kind != InvestorKind.Tycoon);
@@ -570,7 +566,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             return VenturesTables.RaiseWho;
         }
 
-        // The meeting is held in the game's list window, with the phone put away: the director sees to both.
         private void Meet(int investorId)
         {
             string place = _raisePlace, type = _raiseType;

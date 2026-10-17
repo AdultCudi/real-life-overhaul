@@ -9,30 +9,11 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>
-    /// What the Ventures app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, the
-    /// Planner and the Guide are. Two tabs over the table on the right, and on the left the white box:
-    ///
-    ///   Investors   offers waiting for an answer, money promised, deals; pick one to answer it, counter it, buy the
-    ///               investor out or answer a demand; "Raise money" leads through three pages (the business, for a new
-    ///               one its kind and budget, the investor) to a meeting (VenturesApp.Investors.cs)
-    ///   Property    the buildings the player owns as the game lets them: cost, rent, yield, mortgage
-    ///               (VenturesApp.Property.cs)
-    ///
-    /// (Shares are the Stocks app's: Scripts/Markets.)
-    ///
-    /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, and a
-    /// tab that needs more than one page has pages with a Back button. The table and its rows are the Finance app's
-    /// (DataTable, the game's own BaTable).
-    ///
-    /// Every table is declared in VenturesApp.Tables.cs and is sorted, filtered and summed by the kit (GameUi.DataTable).
-    /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
-    /// opens, when a tab is picked and when the player changes something in it.
-    /// </summary>
+    /// <summary>The Ventures app in the game's frame (GameUi.AppShell): the Investors and Property tabs. Nothing runs while it is closed.</summary>
     public sealed partial class VenturesApp
     {
         private static readonly string[] TabKeys = { "reallife_ven_tab_investors", "reallife_ven_tab_property" };
-        private const string GuideTitle = "reallife_meta_title_ventures";   // the Guide's page every page of the app points to at its foot
+        private const string GuideTitle = "reallife_meta_title_ventures";   // the Guide's page every page points to at its foot
         public static IModLogger Logger;
 
         private readonly VenturesDirector _director;
@@ -46,14 +27,12 @@ namespace RealLifeOverhaul.Economy.Ventures
         private FullMenu _menu;
         private int _tab, _wanted = -1;
         private bool _ready;       // the director has the file open for this opening
-        private string _picked;    // the row picked on the tab that shows
+        private string _picked;    // the row picked on the tab shown
 
         public VenturesApp(VenturesDirector director)
         {
             _director = director;
         }
-
-        // ---------------------------------------------------------------- building it from the game's parts
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
@@ -77,8 +56,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             return _shell.Root;
         }
-
-        // ---------------------------------------------------------------- opening and the tabs
 
         /// <summary>The tab to show the next time the app opens (a notification was clicked).</summary>
         public void Want(int tab)
@@ -125,7 +102,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // Everything the open tab shows, made again: asked for when the app opens, a tab is picked or something has changed.
         private void Refresh()
         {
             if (_shell == null || _table == null)
@@ -222,11 +198,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             _picked = null;
             _table.ClearSelection();
             Refresh();
-        }
-
-        private static string Pair(string labelKey, string value)
-        {
-            return FinanceText.Pair(labelKey, value);
         }
 
         private static string Money(float amount)
