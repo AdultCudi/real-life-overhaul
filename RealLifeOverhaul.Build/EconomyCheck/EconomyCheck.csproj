@@ -128,7 +128,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\SaleRules.cs" Link="Mod\SaleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesStore.cs" Link="Mod\ServicesStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandCatalogue.cs" Link="Mod\BrandCatalogue.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandState.cs" Link="Mod\BrandState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandsState.cs" Link="Mod\BrandsState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandRules.cs" Link="Mod\BrandRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\FranchiseRules.cs" Link="Mod\FranchiseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
