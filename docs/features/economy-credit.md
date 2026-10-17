@@ -35,10 +35,10 @@ Economy/
     GameLoans         the game's loans as an ICreditAccount; the game's own means test read from its public members
     PhoneLending      a loan made from the phone exactly as the bank's dialogue makes one, plus the fee
   Finance/
-    FinanceApp        the tabs (five since the second part) and the white box's pages
-    FinanceTable      the table (the game's BaTable) and its row
+    FinanceApp        the app: a part for each tab (.Overview, .Credit, .Borrow, .Products, .CashFlow, .Accounts) and each page it hosts (.City, .Standing, .Rivals)
+    FinanceTables     the app's tables as data (GameUi.TableSpec)
     FinanceText       the words; money as the game's loan pages write it
-    CashFlow          one pass over the game's transaction history for a period
+    CashFlow          one pass over the game's transaction history for a period; CashTable lists it as it scrolls
   EconomyBridges    what the economy asks of the rest of the mod (filled in by Wiring/EconomyLinks); Finance.Open
   EconomyDirector   keeps it going: the save's line, the game's hour and day events, the banks' terms, the app, the tests
 ```

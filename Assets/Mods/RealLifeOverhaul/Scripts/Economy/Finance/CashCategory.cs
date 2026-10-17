@@ -4,10 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// What a movement of money was for, told from its transaction type: the game's own ("ba:transaction_rent") or
-    /// the mod's ("reallife_transaction_shares_bought"). The game gives a category to only eleven of its types, so
-    /// the type's own name is read instead: the words in it say what it is. A type is read once and remembered.
-    /// Game-free, so the offline checks run it.
+    /// What a movement of money was for, from the words in its transaction type: the game gives a category to only eleven
+    /// of its types. Each type is read once, then remembered. Game-free: EconomyCheck runs it.
     /// </summary>
     public static class CashCategory
     {
@@ -19,15 +17,14 @@ namespace RealLifeOverhaul.Economy
             "reallife_tab_cash_fees", "reallife_tab_cash_marketing", "reallife_tab_cash_investments", "reallife_tab_cash_other"
         };
 
-        // Looked for in this order; the first that is in the type's name says what it is. "taxi" is no tax and
-        // "coffee" no fee, rent revenue is rent, a late fee belongs to the loan it is charged on, and what was sold
-        // for good (a building, shares) is an investment, not a day's takings.
+        // Looked for in this order, the first found deciding: "taxi" is no tax and "coffee" no fee, rent revenue is rent,
+        // a late fee belongs to its loan, and what was sold for good (a building, shares) is an investment, not takings.
         private static readonly string[][] Words =
         {
             new[] { "investment", "shares_", "venture_", "buildingbought", "buildingsold", "boatbought", "boatsold", "vehiclebought" },
             new[] { "loan", "interest", "credit_", "overdraft", "finance_", "consolidation", "arrangement", "bankruptcy", "late_fee", "repossession", "diverted" },
             new[] { "wage", "salary", "bonus", "overtime", "co_sick", "co_raise", "training", "healthinsurance", "replacement", "recruitment", "strike", "_job_", "prison_work" },
-            new[] { "rent", "util_" },   // rent and the bills of a place: power and water (Scripts/Utilities)
+            new[] { "rent", "util_" },   // with the bills of a place: power and water
             new[] { "itempurchase", "deliverycontract", "importdelivery" },
             new[] { "revenue", "takings", "inventorysold", "itemsold", "exportedgoods", "bulkorder" },
             new[] { "marketing", "campaign", "voucher" },
@@ -38,15 +35,13 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] TaxWords = { "tax", "levy" };
         private static readonly Dictionary<string, int> Known = new Dictionary<string, int>(128);
 
-        /// <summary>The category of a transaction type.</summary>
         public static int For(string type)
         {
             if (string.IsNullOrEmpty(type))
             {
                 return Other;
             }
-            int category;
-            if (!Known.TryGetValue(type, out category))
+            if (!Known.TryGetValue(type, out int category))
             {
                 category = Read(type);
                 Known[type] = category;

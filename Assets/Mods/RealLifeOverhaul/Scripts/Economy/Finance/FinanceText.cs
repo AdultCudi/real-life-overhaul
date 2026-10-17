@@ -4,11 +4,7 @@ using Localizor;
 
 namespace RealLifeOverhaul.Economy
 {
-    /// <summary>
-    /// The economy's words: every text is a key of en.json or one of the game's own keys, and money is written as the
-    /// game's loan pages write it (ToShortCurrencyFormat: whole units in the game's own currency format).
-    /// Texts are built when a page is written or a notification goes out, never on a timer.
-    /// </summary>
+    /// <summary>The economy's words, the mod's keys or the game's, and money as the game's loan pages write it.</summary>
     public static class FinanceText
     {
         private static readonly string[] EventKeys =
@@ -72,13 +68,13 @@ namespace RealLifeOverhaul.Economy
             return T("reallife_econ_day", "day", day.ToString());
         }
 
-        /// <summary>"Label: value" with the value in bold, as the game's white box writes a line.</summary>
+        /// <summary>A label and its value in bold, as the game's white box writes a line.</summary>
         public static string Pair(string labelKey, string value)
         {
             return T(labelKey) + " <b>" + value + "</b>";
         }
 
-        /// <summary>A plain word for how a factor stands.</summary>
+        /// <summary>A plain word for how a factor of the rating stands.</summary>
         public static string Word(float factor)
         {
             return T(WordKeys[factor >= 0.85f ? 3 : factor >= 0.65f ? 2 : factor >= 0.4f ? 1 : 0]);
@@ -147,7 +143,6 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>What to do about one factor, as one sentence.</summary>
         public static string Tip(CreditScore s, CreditFactor factor)
         {
             switch (factor)
@@ -179,7 +174,6 @@ namespace RealLifeOverhaul.Economy
             return count > 1 ? text + " " + Tip(s, buffer[1]) : text;
         }
 
-        /// <summary>A line of the credit file, as the app lists it.</summary>
         public static string Event(in CreditEvent e)
         {
             int kind = (int)e.Kind;
@@ -187,7 +181,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return string.Empty;
             }
-            // (the amount is in the words only for the two whose amount is a score; money has its own column)
+            // Only a file's start and a test's setting name the amount, a score; money has a column of its own.
             string text = T(EventKeys[kind], "amount", e.Amount.ToString(), "count", e.Count.ToString());
             return e.Test && e.Kind != CreditKind.TestAdjust ? T("reallife_econ_event_test", "text", text) : text;
         }
@@ -208,13 +202,12 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>How one of the mod's accounts stands with its lender, in a few words.</summary>
         public static string State(CreditAccount a)
         {
             return State(a.Ladder, a.Frozen, ProductCatalogue.Instalment(a.Kind) && !a.Secured);
         }
 
-        /// <summary>How a debt stands with its lender, the gravest thing first: in an arrangement, to be repossessed, in collections, on a plan, behind, in order.</summary>
+        /// <summary>How a debt stands with its lender, in a few words; the gravest state is the one named.</summary>
         public static string State(LadderState s, bool frozen, bool unsecured)
         {
             if (frozen)
@@ -248,7 +241,7 @@ namespace RealLifeOverhaul.Economy
             return T(unsecured ? "reallife_econ_state_unsecured" : "reallife_econ_state_ok");
         }
 
-        /// <summary>An effect on the score: "+12", "-45", or a dash-free "0".</summary>
+        /// <summary>An effect on the score: "+12", "-45" or "0".</summary>
         public static string Effect(int points)
         {
             return points > 0 ? "+" + points : points.ToString();
