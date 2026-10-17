@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Economy
             if (day < s.PushFrom)
             {
                 s.Push = -1;
-                s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = 0;
+                s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = s.PushGiven = 0;
                 return true;
             }
             s.PushEnd = Math.Min(s.PushEnd, day + 1);
@@ -109,6 +109,15 @@ namespace RealLifeOverhaul.Economy
             s.PushEnd = s.PushFrom + CompanyCatalogue.CampaignDays[kind];
             s.PushCost = Math.Max(0, cost);
             s.PushPercent = CompanyCatalogue.Clamp(percent, 0, CompanyCatalogue.CampaignMost);
+            s.PushGiven = 0;
+        }
+
+        /// <summary>A day's give-away of a discount day or a giveaway: part of what the campaign costs.</summary>
+        public static void Gave(ShopFile s, int given)
+        {
+            given = Math.Max(0, given);
+            s.PushCost += given;
+            s.PushGiven += given;
         }
 
         public static bool Over(ShopFile s, int day)
@@ -123,7 +132,7 @@ namespace RealLifeOverhaul.Economy
                 s.PushEnded[s.Push] = s.PushEnd;
             }
             s.Push = -1;
-            s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = 0;
+            s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = s.PushGiven = 0;
         }
 
         public static int Discount(int takings)
@@ -136,10 +145,18 @@ namespace RealLifeOverhaul.Economy
             return s.Pushing(day) ? s.PushPercent : 0;
         }
 
-        /// <summary>The report: its days against as many before; a day without figures counts in neither.</summary>
-        public static CampaignReport Measure(string name, int kind, int from, int days, int cost, DayBook book)
+        /// <summary>
+        /// The report: its days against as many before; a day without figures counts in neither. <paramref name="cost"/>
+        /// is all the campaign cost, <paramref name="given"/> of it given away on its days. The game's statements take the
+        /// price off the day it was booked (the day before the first) and a give-away off its day: both are put back into
+        /// the profit, so that the cost counts once. The days before are scaled to as many as the days during, so that the
+        /// two compare day for day.
+        /// </summary>
+        public static CampaignReport Measure(string name, int kind, int from, int days, int cost, int given, DayBook book)
         {
-            var r = new CampaignReport { Name = name ?? string.Empty, Kind = kind, From = from, Days = days, Cost = Math.Max(0, cost) };
+            cost = Math.Max(0, cost);
+            given = CompanyCatalogue.Clamp(given, 0, cost);
+            var r = new CampaignReport { Name = name ?? string.Empty, Kind = kind, From = from, Days = days, Cost = cost };
             for (int d = from - days; d < from + days; d++)
             {
                 int customers, takings, profit;
@@ -152,7 +169,7 @@ namespace RealLifeOverhaul.Economy
                     r.DaysBefore++;
                     r.CustomersBefore += customers;
                     r.TakingsBefore += takings;
-                    r.ProfitBefore += profit;
+                    r.ProfitBefore += profit + (d == from - 1 ? cost - given : 0);
                 }
                 else
                 {
@@ -162,7 +179,21 @@ namespace RealLifeOverhaul.Economy
                     r.ProfitDuring += profit;
                 }
             }
+            r.ProfitDuring += r.DaysDuring > 0 ? given : 0;
+            if (r.DaysBefore > 0 && r.DaysBefore != r.DaysDuring)
+            {
+                r.CustomersBefore = Math.Max(0, Scale(r.CustomersBefore, r.DaysDuring, r.DaysBefore));
+                r.TakingsBefore = Scale(r.TakingsBefore, r.DaysDuring, r.DaysBefore);
+                r.ProfitBefore = Scale(r.ProfitBefore, r.DaysDuring, r.DaysBefore);
+            }
             return r;
+        }
+
+        // A sum over so many days as over so many others, rounded half away from nothing.
+        private static int Scale(int sum, int to, int from)
+        {
+            long scaled = (long)sum * to * 2 / from;
+            return (int)((scaled + (scaled >= 0 ? 1 : -1)) / 2);
         }
 
         public static void Keep(List<CampaignReport> reports, CampaignReport report)

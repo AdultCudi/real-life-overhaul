@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy
         public int PushEnd;             // the first day without it
         public int PushCost;            // what was paid for it
         public int PushPercent;         // per cent of customers it adds
+        public int PushGiven;           // of PushCost, what a discount day or a giveaway gave away
         public readonly int[] PushEnded = new int[CompanyCatalogue.CampaignKinds];   // the first day without the last of each kind; 0 for never
 
         public int StrikeFrom;          // its first day; 0 with none called or running

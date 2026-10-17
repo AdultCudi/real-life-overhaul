@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Economy
         partial void MarketingDay(int day)
         {
             int yesterday = day - 1;
+            bool booked = false;   // yesterday's statement brought up to date for the reports
             for (int i = 0; i < _shops.Count; i++)
             {
                 CompanyShop shop = _shops[i];
@@ -23,14 +24,20 @@ namespace RealLifeOverhaul.Economy
                     int given = CampaignRules.Discount(shop.Takings);
                     Cost(given, CompanyGame.DiscountKey, shop, shop.Name, CostKind.Marketing, yesterday,
                         CompanyText.Share(CompanyCatalogue.DiscountShare) + " of the " + shop.Takings + " the game's statement shows for day " + yesterday, true);
-                    file.PushCost += given;
+                    CampaignRules.Gave(file, given);
                 }
                 if (!CampaignRules.Over(file, day))
                 {
                     continue;
                 }
+                if (!booked)
+                {
+                    Refresh(yesterday);   // its last day's statement with what was booked for it this morning: a give-away, wages
+                    booked = true;
+                }
                 CompanyShop measured = shop;
-                CampaignReport report = CampaignRules.Measure(shop.Name, file.Push, file.PushFrom, file.PushEnd - file.PushFrom, file.PushCost,
+                int gave = file.PushGiven;
+                CampaignReport report = CampaignRules.Measure(shop.Name, file.Push, file.PushFrom, file.PushEnd - file.PushFrom, file.PushCost, gave,
                     (int d, out int customers, out int takings, out int profit) => CompanyGame.DayBook(measured, d, out customers, out takings, out profit));
                 CampaignRules.Keep(_state.Reports, report);
                 CampaignRules.Close(file);
@@ -44,7 +51,8 @@ namespace RealLifeOverhaul.Economy
                     Logger?.Info("Company check (marketing, the report for " + shop.Name + "): " + (CampaignKind)report.Kind + " from day " + report.From + " for "
                                  + report.Days + " day(s); the game had figures for " + report.DaysBefore + " day(s) before and " + report.DaysDuring
                                  + " during; customers " + report.CustomersBefore + " to " + report.CustomersDuring + ", takings " + report.TakingsBefore + " to "
-                                 + report.TakingsDuring + ", profit " + report.ProfitBefore + " to " + report.ProfitDuring + ", cost " + report.Cost
+                                 + report.TakingsDuring + ", profit " + report.ProfitBefore + " to " + report.ProfitDuring + " (the price put back on the day it was booked, "
+                                 + gave + " given away put back, the days before scaled to the days during), cost " + report.Cost
                                  + ": extra profit " + report.Extra + ", return " + report.Return + "%; the footfall figure is the game's own again from today: PASS");
                 }
             }

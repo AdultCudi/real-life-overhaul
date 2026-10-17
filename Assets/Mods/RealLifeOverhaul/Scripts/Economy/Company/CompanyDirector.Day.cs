@@ -8,20 +8,61 @@ namespace RealLifeOverhaul.Economy
     /// <summary>The company's hour, day and save, and the one reading of the game they share.</summary>
     public sealed partial class CompanyDirector
     {
-        // The businesses, yesterday's statements and the staff, read once, with the economy's figures.
-        private void Read(int day, bool ranBefore, bool countLoss, out int added, out int dropped, out int gone)
+        // The businesses, yesterday's statements and the staff, read once, with the economy's figures. With 'refresh'
+        // (the day's pass) yesterday's statement first takes in what the economy's day booked for it before the company's
+        // (the city's lines, a dealership's sales).
+        private void Read(int day, bool ranBefore, bool refresh, out int added, out int dropped, out int gone)
         {
             _index = Prices.Level;
             _cycle = CityEconomy.State;
             CompanyGame.ReadShops(_state, _shops, _pool, day, ranBefore, out added, out dropped);
             _read++;
+            if (refresh)
+            {
+                Refresh(day - 1);
+            }
             CompanyGame.ReadBooks(_shops, day);
-            for (int i = 0; countLoss && i < _shops.Count; i++)
+            ReadPeople(out gone);
+        }
+
+        // Yesterday's statements read again once the parts have booked their own costs for that day (raises, sick pay,
+        // overtime, a give-away) and those are in them: the profit the app shows and the run of losses are the game's
+        // Finance app's figures, not the ones from before.
+        private void Books(int day, bool countLoss)
+        {
+            Refresh(day - 1);
+            CompanyGame.ReadBooks(_shops, day);
+            int books = 0, losses = 0;
+            for (int i = 0; i < _shops.Count; i++)
             {
                 ShopFile file = _shops[i].File;
-                file.LossRun = _shops[i].HasBooks && _shops[i].Profit < 0 ? file.LossRun + 1 : 0;
+                books += _shops[i].HasBooks ? 1 : 0;
+                losses += _shops[i].HasBooks && _shops[i].Profit < 0 ? 1 : 0;
+                if (countLoss)
+                {
+                    file.LossRun = _shops[i].HasBooks && _shops[i].Profit < 0 ? file.LossRun + 1 : 0;
+                }
             }
-            ReadPeople(out gone);
+            if (Verbose)
+            {
+                Logger?.Info("Company check (books, day " + day + "): yesterday's statements read again after the company's own costs for that day were put in them: "
+                             + books + " business(es) with a statement, " + losses + " of them at a loss" + (countLoss ? ", counted towards a run of losses" : string.Empty)
+                             + ": PASS");
+            }
+        }
+
+        // A day's statement brought up to date with what the mod has booked for it since the game made it (Economy/GameBooks;
+        // as often as asked, nothing is counted twice). On a fault it is read as it stands.
+        private void Refresh(int day)
+        {
+            try
+            {
+                GameBooks.Refresh(day);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         private void ReadPeople(out int gone)
@@ -120,7 +161,7 @@ namespace RealLifeOverhaul.Economy
                 _state.LastDay = day;
                 _state.Age++;
                 int added, dropped, gone;
-                Read(day, false, next, out added, out dropped, out gone);
+                Read(day, false, true, out added, out dropped, out gone);
                 float read = Time.realtimeSinceStartup;
                 for (int p = 0; p < (int)CompanyPart.Count; p++)
                 {
@@ -138,6 +179,7 @@ namespace RealLifeOverhaul.Economy
                         PartFault(part, "the day", e);
                     }
                 }
+                Books(day, next);
                 float ruled = Time.realtimeSinceStartup;
                 int written = WriteAll(day, true, true);
                 RotaRead();

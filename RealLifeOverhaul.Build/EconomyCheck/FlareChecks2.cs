@@ -136,14 +136,14 @@ internal static partial class Program
         {
             tail += "|" + s.Shops[0].PushEnded[k];
         }
-        string older = line.Replace(tail + ";", ";");   // the first shop as a version before the new kinds wrote it
+        string older = line.Replace(tail + "|" + s.Shops[0].PushGiven + ";", ";");   // the first shop as a version before the new kinds (and what a campaign gave away) wrote it
         CompanyState old = older != line ? CompanyStore.Read(older, out version) : null;
         Check(old != null && old.Shops[0].PushEnded[(int)CampaignKind.Sponsored] == 0 && old.Shops[0].PushEnded[(int)CampaignKind.Radio] == s.Shops[0].PushEnded[(int)CampaignKind.Radio]
               && old.Shops[0].Permits[0].Until == s.Shops[0].Permits[0].Until && old.Shops[0].Cover[0].Insurer == s.Shops[0].Cover[0].Insurer,
             "Company: a line from before the sponsored post reads as before, with none ended");
         // An older version reads only the fields it knows: the new one is after every one of them.
         string[] fields = line.Substring(line.IndexOf("^s:", StringComparison.Ordinal) + 3).Split(';')[0].Split('|');
-        Check(fields.Length == 1 + 20 + 3 * 7 + 4 * 3 + CompanyCatalogue.CampaignKinds - CompanyCatalogue.CampaignOwnKinds && fields[1 + 20 + 3 * 7 + 4 * 3] == "90",
+        Check(fields.Length == 1 + 20 + 3 * 7 + 4 * 3 + CompanyCatalogue.CampaignKinds - CompanyCatalogue.CampaignOwnKinds + 1 && fields[1 + 20 + 3 * 7 + 4 * 3] == "90",
             "Company: the new fields go after everything an older version reads");
         FlareFile f = FlareRules.Open(5, 1, 0, 50);
         FlareRules.AddBuzz(f, "Main%20St~1", 3, 4, 3);

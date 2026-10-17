@@ -179,7 +179,10 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>A report on flyers at the first business as if run the last three days, from the game's real figures; nothing charged.</summary>
+        /// <summary>
+        /// A report on flyers at the first business as if run the last three days, from the game's real figures; nothing
+        /// charged, so the price is taken off the day before its first as the game's statement would have taken it.
+        /// </summary>
         public void TestCampaign()
         {
             if (!TestReady("Company campaign", CompanyPart.Marketing))
@@ -194,9 +197,13 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 BeforeTest();
-                int kind = (int)CampaignKind.Flyers, days = CompanyCatalogue.CampaignDays[kind];
-                CampaignReport report = CampaignRules.Measure(shop.Name, kind, Save.Day - days, days, CampaignRules.Cost(kind, _index),
-                    (int d, out int customers, out int takings, out int profit) => CompanyGame.DayBook(shop, d, out customers, out takings, out profit));
+                int kind = (int)CampaignKind.Flyers, days = CompanyCatalogue.CampaignDays[kind], from = Save.Day - days, price = CampaignRules.Cost(kind, _index);
+                CampaignReport report = CampaignRules.Measure(shop.Name, kind, from, days, price, 0, (int d, out int customers, out int takings, out int profit) =>
+                {
+                    bool found = CompanyGame.DayBook(shop, d, out customers, out takings, out profit);
+                    profit -= d == from - 1 ? price : 0;
+                    return found;
+                });
                 CampaignRules.Keep(_state.Reports, report);
                 TestDone("a report for flyers at " + shop.Name + " over days " + report.From + " to " + (Save.Day - 1) + " (not run, not charged): figures for "
                          + report.DaysBefore + " day(s) before and " + report.DaysDuring + " during, extra " + report.Extra, TabMarketing, "rep:" + (_state.Reports.Count - 1));

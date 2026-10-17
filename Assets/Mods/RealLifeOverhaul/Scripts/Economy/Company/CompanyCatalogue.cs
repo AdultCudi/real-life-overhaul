@@ -228,6 +228,12 @@ namespace RealLifeOverhaul.Economy
             return (int)((priced + 5000) / 10000 * 10);
         }
 
+        /// <summary>A sum over the days it was found for, a day, rounded down; 0 with none found.</summary>
+        public static int DayAverage(long sum, int days)
+        {
+            return days > 0 ? (int)Math.Min(int.MaxValue, Math.Max(0L, sum) / days) : 0;
+        }
+
         /// <summary>a x b / 1000, rounded, without running over.</summary>
         public static int Share(long amount, int thousandths)
         {

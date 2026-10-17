@@ -125,7 +125,8 @@ namespace RealLifeOverhaul.Economy
         public int Income = CompanyCatalogue.IncomeMiddle;
         public int Needs;               // the licences it needs, a bit each
         public int Taste;               // +1 sells to the well-off, -1 sells on price, 0 neither
-        public int Average;             // an average day's takings over the last seven statements
+        public int Average;             // an average day's takings over the statements of the last seven days
+        public int Statements;          // of those days, the statements the game has
         public int Takings, Profit;     // yesterday's, by the game's statement
         public bool HasBooks;           // the game has a statement for yesterday
         public int Staff, Low, Standing, Sick;   // staff, those standing low, their standing summed, those off sick
@@ -251,8 +252,6 @@ namespace RealLifeOverhaul.Economy
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
                 shop.Needs = LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), OpensLate(reg));
                 shop.Taste = Is(type, WellOffTypes) ? 1 : Is(type, PriceTypes) ? -1 : 0;
-                shop.Average = shop.Takings = shop.Profit = 0;
-                shop.HasBooks = false;
                 shop.Staff = shop.Low = shop.Standing = shop.Sick = 0;
                 shop.Asked = 0;
                 shop.Applied = false;
@@ -303,9 +302,18 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        /// <summary>Yesterday's takings and profit of each business, and its average day of the last seven statements.</summary>
+        /// <summary>
+        /// Yesterday's takings and profit of each business, and its average day over the last seven days' statements: over
+        /// as many as there are, so that a business younger than a week is not taken to have taken nothing before it opened.
+        /// Read afresh each time.
+        /// </summary>
         public static void ReadBooks(List<CompanyShop> shops, int today)
         {
+            for (int i = 0; i < shops.Count; i++)
+            {
+                shops[i].Average = shops[i].Takings = shops[i].Profit = shops[i].Statements = 0;
+                shops[i].HasBooks = false;
+            }
             GameInstance save = Save;
             List<FinancialSummary> summaries = save != null ? save.financialSummaries : null;
             if (summaries == null || shops.Count == 0)
@@ -334,6 +342,7 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     shop.Average += Mathf.RoundToInt(Mathf.Max(0f, statement.TotalSales));
+                    shop.Statements++;
                     if (summary.dayNumber == today - 1)
                     {
                         shop.Takings = Mathf.RoundToInt(Mathf.Max(0f, statement.TotalSales));
@@ -344,7 +353,7 @@ namespace RealLifeOverhaul.Economy
             }
             for (int i = 0; i < shops.Count; i++)
             {
-                shops[i].Average /= 7;
+                shops[i].Average = CompanyCatalogue.DayAverage(shops[i].Average, shops[i].Statements);
             }
         }
 

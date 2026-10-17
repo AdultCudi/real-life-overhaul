@@ -191,6 +191,7 @@ internal static partial class Program
         GuideMarks();   // the mod's marks on the game's destination guider: whose a marker is, Hide whatever was believed, the watch by time, owner and scene, unloading, the accident's own end (GuideMarkChecks.cs)
         BugBooks();     // "Report a bug" with the staff and the money: each wage against the game's own with its hours, a day of each rota, yesterday's and today's money by kind and place (BugBooksChecks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
+        CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

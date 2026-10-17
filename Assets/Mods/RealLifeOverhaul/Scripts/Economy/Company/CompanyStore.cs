@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     t.Append('|').Append(shop.PushEnded[k].ToString(Inv));   // after all an older version reads, so it leaves them alone
                 }
+                t.Append('|').Append(shop.PushGiven.ToString(Inv));   // after those: a kind added later goes after this
             }
             t.Append("^e:");
             for (int i = 0; i < s.Staff.Count && i < CompanyCatalogue.StaffMost; i++)
@@ -251,6 +252,8 @@ namespace RealLifeOverhaul.Economy
             {
                 shop.PushEnded[k] = Math.Max(0, I(c, k < CompanyCatalogue.CampaignOwnKinds ? 8 + k : later + k - CompanyCatalogue.CampaignOwnKinds));
             }
+            // A line without it (written before it was kept) gave nothing away.
+            shop.PushGiven = shop.Push >= 0 ? CompanyCatalogue.Clamp(I(c, later + shop.PushEnded.Length - CompanyCatalogue.CampaignOwnKinds), 0, shop.PushCost) : 0;
             shop.StrikeFrom = Math.Max(0, I(c, 12));
             shop.StrikeEnd = Math.Max(0, I(c, 13));
             shop.StrikeRest = Math.Max(0, I(c, 14));

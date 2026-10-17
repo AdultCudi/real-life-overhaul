@@ -74,7 +74,8 @@ The rule is the city's economy's: no game method is patched, and no figure of th
 
 Each night it is paid for the hours the game counted that day (`workedHoursToday`, read on the hour event that opens the new day, before the game's run clears it; a delivery driver's fixed day as the game pays it) as one transaction per business, "Wages, agreed raise: {business}", taken whatever the cash is, as the game takes its own wages.
 
-An employee who is no longer at a business of the player's is no longer read, and their file is dropped on the next day's pass with the raise in it.
+An employee who is no longer at a business of the player's is no longer read, and their file is dropped with the raise in it the next time the staff are read: on the day's pass, or when the Company app opens.
+So is the file of somebody who has resigned (satisfaction at nothing) or is waiting to be replaced through the headhunter: the game gives their place to the newcomer under the same id (`HeadhunterPlan.ReplaceEmployee`), and the newcomer starts afresh.
 
 **Sick pay follows the game's own absences.** `GameManager.NewDay` raises the day event before `EmployeeHelper.RunDaily` picks the new day's absences, so on the day's pass `isAbsent` still says who was off on the day that has ended: sick pay is paid for that day and dated on it.
 Nobody is made sick by the mod and `nextSickDay` is not written.
@@ -83,6 +84,14 @@ Nobody is made sick by the mod and `nextSickDay` is not written.
 The name is the cost's label as words ("Business insurance"), the way the game itself passes a business's name there, so the game's tax notice reads the same in a save the mod has left.
 
 The game keeps those sums in its own list for its tax year; that list is the one thing of the game's saved data this feature adds to, through the game's own call and by the game's own rule.
+
+**The day's books.** The game makes yesterday's statement before the mod's day, and the mod's costs booked for that day are put into it afterwards (`Economy/GameBooks.Refresh`, as often as asked, nothing counted twice).
+The day's pass brings it up to date before reading it, so the city's lines and a dealership's sales booked earlier that morning are in the takings it works from (cash off the books, a discount day).
+After the parts have booked their own costs for that day (raises, sick pay, overtime, a give-away) it brings it up to date and reads it again: the profit the app shows for yesterday and the run of losses the Planner counts are the Finance app's figures.
+An average day's takings is over the statements of the last seven days that the game has, so a business younger than a week is not taken to have taken nothing before it opened.
+
+**A campaign's report** counts what the campaign cost once, as its cost: its price, booked the day before its first day, and what a discount day or a giveaway gave away on its days are put back into the profit of the days the game's statement took them from.
+The days before are scaled to as many as the campaign's days with figures, so that the two halves compare day for day.
 
 **Cash off the books** does not touch the game's count of sales.
 The tax the hidden share would bear at `gameVariables.taxPercentage` is paid back each morning, and only while the last year's income passes the game's own threshold (`TaxHelper.MeetsIncomeTaxThreshold`), since under it the game takes nothing.
@@ -118,7 +127,7 @@ A business needs the late opening permit by its own opening hours in the game (`
 
 ## In the save
 
-One line, `reallife:economy_company`: `v=1^h:...^t:...^s:...^e:...^c:...^r:...` (`CompanyStore`): the header's seven numbers, tax's twenty, a record per business (its place, twenty numbers, three policies of seven and four licences of three), a record per employee (the game's id, the place, ten numbers, a rival's name), the claims and the reports.
+One line, `reallife:economy_company`: `v=1^h:...^t:...^s:...^e:...^c:...^r:...` (`CompanyStore`): the header's seven numbers, tax's twenty, a record per business (its place, twenty numbers, three policies of seven, four licences of three, when the last campaign of each kind offered from outside ended, and what the running campaign has given away so far), a record per employee (the game's id, the place, ten numbers, a rival's name), the claims and the reports.
 Parts are divided by `^` because a place, written as business pressure writes one, contains `~`.
 Every figure is a whole number.
 
