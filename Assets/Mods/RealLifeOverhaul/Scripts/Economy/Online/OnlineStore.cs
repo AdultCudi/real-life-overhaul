@@ -6,33 +6,12 @@ using System.Text;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The online shops in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=1^h:...^d:...^v:...^s:...^l:...^o:...^r:...^b:...^s:...
-    ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: seed|first day|last hour worked through|next order number
-    ///   d  the districts by the game's names, in the order the orders count them
-    ///   v  the vans: driver|free at (minute)|minutes driven|on day
-    ///   s  one site: place|name|quality|way|promise|built in-house|opened|hosting due|offline|stars|seven closing
-    ///      ratings|advertising from|end|per cent|last ended|idle hours|refunds not yet in the game's statement
-    ///   l  its catalogue: product|price|offered|units|takings|cost|missed|seven days' units|seven days' missed|
-    ///      takings not yet in the statement|cost not yet in it
-    ///   o  its open orders: number|district|placed|due|arrives|stage|products|total|tilt|short, then for each product
-    ///      its place in the catalogue|asked|picked|price of one|cost
-    ///   r  its returns on their way: day|product|units|refund|cost of one
-    ///   b  its books, today's first and then the week's seven: day|orders|picked|units|takings|goods|delivery|
-    ///      refunds|hosting|on time|late|short|cancelled|missing|returned|turned away
-    /// The l, o, r and b parts after an s part are that site's.
-    ///
-    /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
-    /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads. A figure out of its bounds is put inside them; a line
-    /// that cannot be read is left alone and the feature starts afresh. Nothing here is the game's: a save loads in the
-    /// plain game with this line ignored, and a save made without the feature simply has no line.
-    ///
-    /// <see cref="TestKey"/> holds the same line as it was before the first test tool changed it, for as long as test
-    /// changes are in place.
+    /// The online shops in the save, game-free: one line under <see cref="Key"/>,
+    /// "v=1^h:header^d:districts^v:vans^s:site^l:catalogue^o:orders^r:returns^b:books^s:...", where the l, o, r and b
+    /// parts belong to the s part before them. Parts are divided by '^', records by ';' and whole-number fields by '|',
+    /// in the order <see cref="Write"/> joins them; the books are today's and then the week's seven. A newer version adds
+    /// fields at the end of a record, or a part with a new letter: this reader skips what it does not know and bounds
+    /// every figure. <see cref="TestKey"/> holds the line from before the first test tool changed it.
     /// </summary>
     public static class OnlineStore
     {
@@ -40,7 +19,7 @@ namespace RealLifeOverhaul.Economy
         public const string TestKey = "reallife:economy_online_before_tests";
         public const int Version = 1;
 
-        private const int Most = 100000000;     // cents in a day's figure, kept inside what an int adds up safely
+        private const int Most = 100000000;     // cents in one figure: sums of them stay inside an int
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         /// <summary>The state of this save; null if the save has none or it cannot be read.</summary>
@@ -52,7 +31,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is
         }
 
         public static string Write(OnlineState s)
@@ -131,7 +110,7 @@ namespace RealLifeOverhaul.Economy
             Join(t, b.Day, b.Orders, b.Picked, b.Units, b.Takings, b.Goods, b.Delivery, b.Refunds, b.Hosting, b.OnTime, b.Late, b.Short, b.Cancelled, b.Missing, b.Returned, b.Turned);
         }
 
-        /// <summary>Reads a line. Null for one that is not this feature's at all.</summary>
+        /// <summary>Reads a line. Null for one that is not this feature's.</summary>
         public static OnlineState Read(string text, out int version)
         {
             version = 0;
@@ -225,7 +204,11 @@ namespace RealLifeOverhaul.Economy
                                 string[] c = record.Split('|');
                                 if (shop != null && c.Length >= 5 && c[1].Length > 0 && shop.Returns.Count < OnlineCatalogue.ReturnsMost && I(c, 2) > 0)
                                 {
-                                    shop.Returns.Add(new WebReturn { Day = Math.Max(0, I(c, 0)), Item = c[1], Qty = OnlineCatalogue.Clamp(I(c, 2), 1, 9), Refund = OnlineCatalogue.Clamp(I(c, 3), 0, Most), Cost = OnlineCatalogue.Clamp(I(c, 4), 0, Most) });
+                                    shop.Returns.Add(new WebReturn
+                                    {
+                                        Day = Math.Max(0, I(c, 0)), Item = c[1], Qty = OnlineCatalogue.Clamp(I(c, 2), 1, 9), Refund = OnlineCatalogue.Clamp(I(c, 3), 0, Most),
+                                        Cost = OnlineCatalogue.Clamp(I(c, 4), 0, Most)
+                                    });
                                 }
                             }
                             break;
@@ -252,7 +235,8 @@ namespace RealLifeOverhaul.Economy
         {
             var shop = new WebShop
             {
-                Place = c[0], Name = c.Length > 1 ? c[1] : string.Empty, Quality = OnlineCatalogue.Quality(I(c, 2)), Way = OnlineCatalogue.Clamp(I(c, 3, OnlineCatalogue.Courier), 0, OnlineCatalogue.Ways - 1),
+                Place = c[0], Name = c.Length > 1 ? c[1] : string.Empty, Quality = OnlineCatalogue.Quality(I(c, 2)),
+                Way = OnlineCatalogue.Clamp(I(c, 3, OnlineCatalogue.Courier), 0, OnlineCatalogue.Ways - 1),
                 Promise = OnlineCatalogue.Clamp(I(c, 4, 1), 0, 1), InHouse = I(c, 5) != 0, OpenDay = Math.Max(0, I(c, 6)), HostDue = Math.Max(0, I(c, 7)), Offline = I(c, 8) != 0,
                 Stars = OnlineCatalogue.Clamp(I(c, 9, OnlineCatalogue.StarsStart), OnlineCatalogue.StarsLeast, OnlineCatalogue.StarsMost)
             };
@@ -286,7 +270,7 @@ namespace RealLifeOverhaul.Economy
             return line;
         }
 
-        // An order whose district or stage the save does not know is not kept; a product of it that is no longer in the catalogue is.
+        // An order whose district or stage is unknown is dropped; one whose product left the catalogue is kept.
         private static WebOrder Order(string[] c, int districts, int lines)
         {
             int stage = I(c, 5, -1), count = I(c, 6), district = I(c, 1, -1);
@@ -356,7 +340,7 @@ namespace RealLifeOverhaul.Economy
             return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
         }
 
-        /// <summary>A text with the three dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the three dividers taken out, so it can never break the line apart.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('^', ' ');
