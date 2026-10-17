@@ -3,12 +3,8 @@ using System;
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// What a transaction at one of the player's own dealerships is to its books (Economy/GameBooks), game-free. A car sold
-    /// is booked as the game books a vehicle sold (ba:transaction_itemsold) and a car bought as the game books a vehicle
-    /// bought (ba:transaction_vehiclebought), each with the dealership's address, so EconoView names them as the game's own;
-    /// what the game has no type for (an instalment of the dealership's finance, a warranty, an inspection, the auction's
-    /// fee, preparing a car, a claim) is a type of the mod's. Every cost is booked with the tax's deductible name at the
-    /// moment it is paid, as the game marks its own business costs, so the game's tax deducts it itself.
+    /// What a showroom's transaction is to its books, game-free. Cars sold and bought use the game's own types, so EconoView names
+    /// them; costs carry the tax's deductible name, so the game's tax deducts them.
     /// </summary>
     public static class DealerLines
     {
@@ -31,12 +27,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const string StockRow = "reallife_books_dealer_stock";       // the row among the goods for cars and what they cost to buy
         public const string RunningRow = "reallife_books_dealer_running";   // ...and for warranty claims and events
 
-        /// <summary>
-        /// What a transaction booked at a dealership of the player's is: takings (a car sold, an instalment, a premium, a car
-        /// taken back and sold at the auction, an extra), the stock's cost (a car bought, an inspection, the auction's fee,
-        /// preparing one, the workshop, the extras bought in) or the running cost (a claim, an event). None for anything
-        /// else booked there (the game's wages, rent and the rest).
-        /// </summary>
+        /// <summary>Takings, stock or running cost; none for what the game books there itself (wages, rent and the rest).</summary>
         public static DealerLine Of(string type)
         {
             switch (type)
@@ -52,7 +43,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 case PrepareKey:
                 case WorkshopKey:
                 case ExtrasCostKey:
-                    return DealerLine.Stock;   // (money back on one of them would come off the row)
+                    return DealerLine.Stock;   // money back on one of them comes off the row
                 case ClaimKey:
                 case EventKey:
                     return DealerLine.Running;

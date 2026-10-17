@@ -3,38 +3,34 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>
-    /// The numbers of the Car Showroom's floor: how many of an hour's visitors are seen walking round it, how long they
-    /// stay, and how close the showroom's camera comes to a car. None of them changes what the showroom's hour comes to
-    /// (DealerRules.Hour decides that); they only say how it is shown.
-    /// </summary>
+    /// <summary>The numbers of the showroom's floor and camera; they change how an hour is shown, never what it comes to.</summary>
     public static class FloorCatalogue
     {
         public const int ShownMost = 6;              // visitors of an hour seen on the floor at most, however many came
         public const int AtOnce = 3;                 // visitors on the floor at once: with the salesperson, the people pool's four who are only there to be seen
         public const int CarsLeast = 1;              // cars a visitor looks over
-        public const int CarsMost = 3;
-        public const int LookLeast = 12;             // seconds a visitor stands at a car
-        public const int LookMost = 22;
+        public const int CarsMost = 3;               // ...and at most
+        public const int LookLeast = 12;             // seconds a visitor stands at a car...
+        public const int LookMost = 22;              // ...at most
         public const int TalkSeconds = 14;           // seconds a salesperson spends with a visitor
-        public const int StayMinutes = 40;           // game minutes a visit is reckoned at (a game minute is a second of play), for one already under way when the player walks in
+        public const int StayMinutes = 40;           // game minutes a visit lasts, for one already under way when the player walks in
         public const int Late = 30;                  // game minutes a visitor whose time has come may wait for room on the floor before they are left out
 
         public const float PitchLeast = 8f;          // degrees over the level the camera looks down at a car from, at least
         public const float PitchMost = 55f;          // ...and at most
-        public const float PitchStart = 18f;
+        public const float PitchStart = 18f;         // ...and to start
         public const float YawStart = 35f;           // degrees round from the car's nose the camera starts at: its front three quarters
         public const float NearLeast = 1.6f;         // metres from the car's edge the camera comes at nearest
         public const float FarMost = 7f;             // metres beyond the car's edge it goes at furthest
-        public const float FarStart = 3.6f;
+        public const float FarStart = 3.6f;          // ...and to start
         public const float CeilingMost = 4.2f;       // metres over the floor the camera rises at most round a car
         public const float Wall = 0.4f;              // metres inside the floor's edge the camera keeps to round a car
         public const float FloorPitchLeast = 40f;    // degrees: the floor seen from above while a car's bay is chosen
-        public const float FloorPitchMost = 80f;
-        public const float FloorPitchStart = 62f;
+        public const float FloorPitchMost = 80f;     // ...at most
+        public const float FloorPitchStart = 62f;    // ...to start
         public const float FloorNear = 0.55f;        // of the floor's longer side: the nearest the floor's camera comes
         public const float FloorFar = 1.6f;          // ...and the furthest
-        public const float FloorStart = 1.05f;
+        public const float FloorStart = 1.05f;       // ...and to start
         public const float TurnStep = 90f;           // degrees of one press of the game's rotate keys, as its own cameras turn
         public const float TurnSpeed = 200f;         // degrees a second of that turn, as the game's
         public const float DragDegrees = 0.15f;      // degrees per pixel of a drag with the right button, as the game's preview camera
@@ -58,19 +54,12 @@ namespace RealLifeOverhaul.Economy.Dealership
     }
 
     /// <summary>
-    /// The rules of the Car Showroom's floor, game-free: who of an hour's visitors is seen and what each does
-    /// (<see cref="Plan"/>), which bay each car stands on (<see cref="Arrange"/>, <see cref="Nearest"/>), and where the
-    /// showroom's camera may be (<see cref="Orbit"/> and the limits beside it). EconomyCheck checks them.
-    ///
-    /// What is shown follows the hour as the showroom's rules worked it out and changes none of it: as many visitors as
-    /// came, up to <see cref="FloorCatalogue.ShownMost"/>; as many of them looked after by a salesperson as the rules
-    /// served, in proportion; and one visitor for each offer made that hour, at the car the offer is for.
+    /// The rules of the showroom's floor, game-free: which visitors are seen and what each does (<see cref="Plan"/>), the bay
+    /// each car stands on (<see cref="Arrange"/>), and where the camera may be (<see cref="Orbit"/>).
     /// </summary>
     public static class ShowroomFloorRules
     {
         public const int Absent = -2;        // in Arrange: a car that is not on the lot (no vehicle of the game's any more)
-
-        // ---------------------------------------------------------------- an hour's visitors
 
         /// <summary>How many of an hour's visitors are seen on the floor.</summary>
         public static int Shown(int visitors)
@@ -92,11 +81,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>
-        /// The visitors an hour shows, in the order they come in: the minute each comes, the cars each looks over, and
-        /// who is looked after and who makes an offer. The same hour of the same showroom always gives the same plan.
-        /// <paramref name="offerCars"/> holds, for each offer made that hour, the place of its car in the lot's list.
-        /// <paramref name="away"/>, by the same places, marks the cars that are not on show (in the workshop or out on a test
-        /// drive): no visitor looks one over, as no customer can take one (DealerRules.Customers). Returns how many there are.
+        /// An hour's visitors in the order they come: minute, cars looked over, served, offer; the same for the same hour and
+        /// showroom. Cars marked <paramref name="away"/> are not looked over. Returns how many.
         /// </summary>
         public static int Plan(int seed, int hour, string place, int visitors, int served, IList<int> offerCars, int carCount, List<FloorVisit> into, IList<bool> away = null)
         {
@@ -155,7 +141,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return shown;
         }
 
-        // The cars on show for the plan being made, by their places in the lot's list (kept, so that a plan allocates nothing).
+        // The cars on show for the plan being made, kept so that a plan allocates nothing.
         private static readonly List<int> OnShow = new List<int>(16);
 
         // True for a car of the lot that is on show: neither in the workshop nor out on a test drive.
@@ -164,7 +150,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return car >= 0 && car < carCount && (away == null || car >= away.Count || !away[car]);
         }
 
-        // A car on show that is neither of two others. With every car on show it draws as the plan always has.
+        // A car on show that is neither of two others.
         private static int Other(ref DealerDice dice, int not1, int not2)
         {
             int count = OnShow.Count;
@@ -193,13 +179,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             return dice.Range(FloorCatalogue.LookLeast, FloorCatalogue.LookMost);
         }
 
-        // ---------------------------------------------------------------- the bays
-
         /// <summary>
-        /// Which bay each car stands on. A car the player put on a bay (<paramref name="chosen"/>, -1 for none) stands
-        /// there, the first of two that chose the same; every other car keeps the bay it stood on (<paramref name="current"/>)
-        /// while that is free, and a car with none takes the first bay free. A car marked <see cref="Absent"/> takes none,
-        /// nor does a car for which no bay is left (-1).
+        /// The bay each car stands on: its chosen bay (the first of two choosing it), else its own while free, else the first free;
+        /// none for an <see cref="Absent"/> car or when no bay is left (-1).
         /// </summary>
         public static void Arrange(int bays, int[] current, int[] chosen, int count, int[] into)
         {
@@ -277,8 +259,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return ((yaw % 360) + 360) % 360;
         }
 
-        // ---------------------------------------------------------------- the camera
-
         /// <summary>The nearest and furthest the camera comes to a car of this length (metres, from its middle).</summary>
         public static void Reach(float carLength, out float least, out float most)
         {
@@ -313,10 +293,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return (float)(steps * FloorCatalogue.TurnStep);
         }
 
-        /// <summary>
-        /// Where the camera stands, from what it looks at: round it by <paramref name="yaw"/> degrees (0 is the world's
-        /// north, +z), over it by <paramref name="pitch"/> degrees, <paramref name="distance"/> metres away. The offset in metres.
-        /// </summary>
+        /// <summary>The camera's offset in metres: round by <paramref name="yaw"/> degrees (0 north, +z), over by <paramref name="pitch"/>.</summary>
         public static void Orbit(float yaw, float pitch, float distance, out float x, out float y, out float z)
         {
             double a = yaw * Math.PI / 180.0, p = pitch * Math.PI / 180.0;
@@ -327,10 +304,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>
-        /// The camera round a car kept inside the showroom and under its ceiling: a point outside the floor's edge (less
-        /// <see cref="FloorCatalogue.Wall"/>) is brought back along the line to the car, so the camera comes nearer rather
-        /// than looking through a wall; and it never rises more than <see cref="FloorCatalogue.CeilingMost"/> over the floor.
-        /// The car's middle (cx, cz) is taken to be on the floor. False if nothing had to be moved.
+        /// The camera kept inside the walls (less <see cref="FloorCatalogue.Wall"/>), brought in along the line to the car rather
+        /// than through a wall, and under the ceiling. False if nothing moved.
         /// </summary>
         public static bool KeepInside(float cx, float cz, ref float x, ref float y, ref float z, float floorY, float minX, float maxX, float minZ, float maxZ)
         {

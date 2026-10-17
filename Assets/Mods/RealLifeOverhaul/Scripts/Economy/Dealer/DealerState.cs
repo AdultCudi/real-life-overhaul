@@ -11,12 +11,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>Where an offer of a customer's stands.</summary>
     public enum OfferStage : byte { Open = 0, Driving = 1 }
 
-    /// <summary>
-    /// The car dealership in the save: the player's dealerships with their lots and stock, the day's market, the
-    /// customers' offers, the finance plans and warranties sold, the cars won at auction on their way, and each
-    /// showroom's event, reputation, missions and daily figures. Game-free: the game's objects are read and written by
-    /// DealerGame, and what is here is only what a save must keep that the game does not.
-    /// </summary>
+    /// <summary>What the save keeps of the dealership that the game does not; game-free.</summary>
     public sealed class DealerState
     {
         public int Seed;
@@ -90,25 +85,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return null;
         }
 
-        /// <summary>The car of the game's vehicle with this id, on whichever lot; null if it is none of the stock.</summary>
-        public StockCar CarOf(string vehicleId, out DealerYard yard)
-        {
-            for (int y = 0; vehicleId != null && y < Yards.Count; y++)
-            {
-                List<StockCar> cars = Yards[y].Cars;
-                for (int c = 0; c < cars.Count; c++)
-                {
-                    if (cars[c].VehicleId == vehicleId)
-                    {
-                        yard = Yards[y];
-                        return cars[c];
-                    }
-                }
-            }
-            yard = null;
-            return null;
-        }
-
         public int Next()
         {
             int id = NextId;
@@ -142,7 +118,6 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         public bool Laid => Spots.Count > 0;
 
-        /// <summary>True while its event runs on this day.</summary>
         public bool EventOn(int day) => Event >= 0 && day >= EventFrom && day <= EventUntil;
 
         /// <summary>Cars of the lot in the workshop at this hour.</summary>
@@ -185,12 +160,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             for (int s = 0; s < Spots.Count; s++)
             {
-                bool taken = false;
-                for (int c = 0; c < Cars.Count && !taken; c++)
-                {
-                    taken = Cars[c].Spot == s;
-                }
-                if (!taken)
+                if (!Taken(s))
                 {
                     return s;
                 }
@@ -203,14 +173,21 @@ namespace RealLifeOverhaul.Economy.Dealership
             int free = 0;
             for (int s = 0; s < Spots.Count; s++)
             {
-                bool taken = false;
-                for (int c = 0; c < Cars.Count && !taken; c++)
-                {
-                    taken = Cars[c].Spot == s;
-                }
-                free += taken ? 0 : 1;
+                free += Taken(s) ? 0 : 1;
             }
             return free;
+        }
+
+        private bool Taken(int spot)
+        {
+            for (int c = 0; c < Cars.Count; c++)
+            {
+                if (Cars[c].Spot == spot)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static DealerBook[] NewPast()
@@ -373,7 +350,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public bool Told;                   // the player has been told it waits for a free place
     }
 
-    /// <summary>A dealership's figures of a day. The last five are read off the showroom as the day closes.</summary>
+    /// <summary>A showroom's figures of a day. The last five are read off the showroom as the day closes.</summary>
     public sealed class DealerBook
     {
         public int Day;

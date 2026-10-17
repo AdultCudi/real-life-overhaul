@@ -1,33 +1,16 @@
 namespace RealLifeOverhaul.Economy.Dealership
 {
     /// <summary>
-    /// Every number that balances the car dealership, in one place. Game-free: the offline checks read the same table.
-    /// Money is in whole units. A car's worth starts from the game's own list price of its type (VehicleType.price) at
-    /// the city's price level (<see cref="Prices"/>), so a dealership's figures move with the city's prices; the round
-    /// sums the dealership pays (an inspection's least, a warranty's least) are written at the start's prices and asked
-    /// for at today's. Shares and chances are in thousandths.
-    ///
-    /// WHAT A DEALERSHIP MAKES, AND WHAT BOUNDS IT
-    /// The measure is a dealership in a mid-sized shop unit (the game's own count gives a shop there 25 customers an
-    /// hour) with a fair promotion of 50, two salespeople of middling skill on shift from 9 to 19, a lot kept full from
-    /// the wholesaler, staff left to close at 95% of the asking price and the rest countered once at the asking price.
-    /// It sees <see cref="VisitorShare"/> of a shop's customers: about one an hour, nine or ten a day. A car is bought at
-    /// about 91.5% of its worth new and asked at <see cref="MarkUp"/> of it; buyers offer 85 to 100% of the asking price
-    /// and go a little above, so a sale leaves about 9% of a car's price as margin before wages and rent: some 4,000 on a
-    /// 45,000 car. Used cars, auctions and part exchanges leave more and carry their risk: a car bought without an
-    /// inspection can hide what costs money to put right.
-    ///
-    /// THE BOUND. The offline check ("dealer balance") runs a month of that dealership on five of the game's cars from
-    /// 9,000 to 85,000 and measures about 1.4 cars a day and 5,900 a day of margin; it holds it within 3,000 to 7,000.
-    /// Nothing a player does takes it far past that: visitors stop at what the game's own customer count allows (the
-    /// promotion is the game's, at most 100), each salesperson serves <see cref="ServePerStaff"/> visitors an hour and no
-    /// more, a lot holds <see cref="SpotsMost"/> cars, a dear car sells slowly (its draw falls to almost nothing at 35%
-    /// over its worth), and a buyer's ceiling is a share of the asking price, so a high asking price finds no richer buyer.
+    /// Every number that balances the car dealership, game-free so the offline checks read the same table. Money is in
+    /// whole units; a car's worth follows the game's list price at the city's price level (<see cref="Prices"/>), and the
+    /// sums marked "at the start's prices" are asked for at today's. Shares and chances are in thousandths.
+    /// The offline check "dealer balance" holds a month of a mid-sized showroom to 3,000 to 7,000 of margin a day before
+    /// wages and rent: visitors stop at the game's own customer count, a salesperson serves <see cref="ServePerStaff"/> an
+    /// hour, a lot holds <see cref="SpotsMost"/> cars and a dear car hardly draws.
     /// </summary>
     public static class DealerCatalogue
     {
-        // ---------------------------------------------------------------- the business and its lot
-
+        // The business and its lot
         public const string TypeName = "reallife_businesstype_cardealership";   // its own business type (the name is also its text key)
         public const string BuildingType = "ba:buildingtype_retail";
         public const int YardsMost = 8;             // dealerships a player keeps the figures of
@@ -38,10 +21,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int WallGap = 200;             // centimetres kept clear along every wall
         public const int CarsMost = SpotsMost;      // cars a dealership holds: one on each place
 
-        // ---------------------------------------------------------------- what a car is worth
-
-        // Its worth against its kilometres (km: thousandths of its worth new) and its condition (thousandths: thousandths of
-        // that). Straight lines between the points; the last point holds beyond.
+        // What a car is worth: by kilometres (thousandths of its worth new) and by condition (thousandths of that), along
+        // straight lines between the points, the last point holding beyond.
         public static readonly int[] KmAt = { 0, 5000, 20000, 50000, 90000, 140000, 200000, 300000 };
         public static readonly int[] KmWorth = { 1000, 900, 830, 720, 600, 480, 380, 300 };
         public static readonly int[] ConditionAt = { 400, 500, 600, 700, 800, 900, 1000 };
@@ -52,19 +33,17 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int Round = 50;                // prices are named in fifties
         public const int TradeShare = 780;          // selling a car to the trade (another dealer, at once): of its worth
 
-        // ---------------------------------------------------------------- the market: new cars from the wholesaler
-
+        // The wholesaler's new cars
         public const int WholesaleADay = 6;         // new cars listed each morning
         public const int WholesaleLeast = 895, WholesaleMost = 935;   // their price, of their worth new
         public const int WholesaleKmMost = 60;      // delivery kilometres on a new car
 
-        // ---------------------------------------------------------------- used cars offered by their owners
-
+        // Used cars offered by their owners
         public const int UsedADay = 5;              // offers each morning
         public static readonly int[] UsedKmBand = { 8000, 35000, 70000, 120000, 190000 };   // the bands an offer's kilometres are drawn from...
         public static readonly int[] UsedKmShare = { 180, 320, 280, 160, 60 };              // ...and how often each band comes (thousandths)
         public const int UsedConditionSpread = 90;  // the condition drawn either side of what its kilometres would make it
-        public const int UsedConditionLeast = 420, UsedConditionMost = 980;
+        public const int UsedConditionLeast = 420, UsedConditionMost = 980;   // thousandths
         public const int OverstateMost = 120;       // condition an owner who knows of a fault says the car has beyond the truth
         public const int AskingLeast = 900, AskingMost = 1060;   // an owner's asking price, of what the car is really worth
         public const int FloorLeast = 900, FloorMost = 960;      // the least they take, of their asking price
@@ -81,8 +60,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public static readonly int[] FaultCondition = { 30, 30, 50, 60, 100, 30 };
         public static readonly int[] FaultChance = { 220, 160, 110, 120, 60, 140 };   // at 100,000 km and condition 700; more with more wear
 
-        // ---------------------------------------------------------------- the trade auction
-
+        // The trade auction
         public const int AuctionLots = 4;           // lots of a sale
         public const int AuctionFrom = 8, AuctionTo = 20;        // a sale opens only between these hours
         public static readonly int[] LotHours = { 3, 4, 5, 6 };  // the hours each lot of a sale runs
@@ -99,8 +77,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int NoPayDays = 3;             // a lot won and not paid for: no bids for this many days
         public static readonly string[] RivalNames = { "Halden Motors", "Crossway Cars", "Pier Street Autos", "Northgate Trade", "Riverside Car Sales", "Brookfield Motor Group" };
 
-        // ---------------------------------------------------------------- customers
-
+        // Customers
         public const int VisitorShare = 35;         // a dealership's visitors an hour, of the customers a shop of its size would see
         public static readonly int[] HourWeight =   // when people come (thousandths of an average hour), midnight first
         {
@@ -121,7 +98,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public static readonly int[] AgeAt = { 0, 3, 7, 14, 30, 60 };
         public static readonly int[] AgeDraw = { 1150, 1100, 1000, 900, 750, 600 };
 
-        // Three kinds of buyer: how often each comes, what they first offer and how far above it they will go (of the asking price).
+        // Three kinds of buyer: how often each comes, their first offer and how far above it they go (of the asking price).
         public const int Profiles = 3;              // a bargain hunter, an ordinary buyer, a keen one
         public static readonly int[] ProfileShare = { 350, 450, 200 };
         public static readonly int[] OfferLeast = { 850, 900, 950 };
@@ -138,21 +115,18 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int TellEvery = 6;             // hours between two notices that more offers wait for the player
         public const int DealsMost = 16;            // offers a dealership holds at once
 
-        // A test drive: who asks, how long it takes, what it does to the car and to the deal.
-        public const int TestDriveChance = 300;
-        public const int TestDriveHours = 1;
-        public const int TestDriveKmLeast = 5, TestDriveKmMost = 30;
+        public const int TestDriveChance = 300;     // buyers who ask for a test drive first
+        public const int TestDriveHours = 1;        // hours the car is out
+        public const int TestDriveKmLeast = 5, TestDriveKmMost = 30;   // kilometres a drive puts on
         public const int TestDriveWearChance = 100; // a drive that leaves a mark...
         public const int TestDriveWear = 20;        // ...of this much condition
         public const int TestDriveLift = 80;        // added to the chance that a counter is taken
 
-        // A buyer's own car offered in part exchange.
-        public const int TradeInChance = 250;
+        public const int TradeInChance = 250;       // buyers who bring their own car in part exchange
         public const int TradeInMost = 700;         // a part exchange is worth at most this share of the car's asking price
         public const int AllowanceLeast = 820, AllowanceMost = 900;   // what the dealership allows for it, of its worth
 
-        // ---------------------------------------------------------------- the dealership's own finance
-
+        // The dealership's own finance
         public const int FinanceLeast = 5000;       // a car under this (at the start's prices) is paid for in cash
         public const int FinanceWant = 380;         // buyers of a dearer car who ask to pay over time
         public const int FinanceCash = 600;         // of those turned down for finance, the share who pay in cash all the same
@@ -165,12 +139,11 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int CatchUpChance = 500;       // a missed instalment is paid with the next one this often
         public const int MissesToDefault = 3;       // missed weeks running before the car is taken back
         public const int RecoverShare = 550;        // a car taken back is sold at the trade auction for this of its worth
-        public const int PlansMost = 200;
+        public const int PlansMost = 200;           // finance plans kept
 
-        // ---------------------------------------------------------------- warranties
-
+        // Warranties
         public const int Tiers = 3;                 // basic, extended, complete
-        public static readonly int[] TierDays = { 30, 60, 120 };
+        public static readonly int[] TierDays = { 30, 60, 120 };     // days each covers
         public static readonly int[] TierPremium = { 35, 60, 95 };   // of the car's price
         public const int PremiumLeast = 150;        // at the start's prices
         public static readonly int[] TierTakeUp = { 300, 200, 120 }; // buyers offered the tier who take it
@@ -179,27 +152,20 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int ClaimFloor = 150, ClaimCeiling = 5000;      // ...within these at the start's prices
         public const int ClaimRest = 10;            // days after a claim before another
         public const int ClaimsMost = 3;            // claims one warranty pays
-        public const int CoversMost = 200;
+        public const int CoversMost = 200;          // warranties kept
 
-        // ---------------------------------------------------------------- preparing a car
-
+        // Preparing a car
         public const int PrepareBase = 120;         // at the start's prices: a valet and a check
         public const int PrepareShare = 300;        // and this share of the worth the missing condition costs it
         public const int PrepareRestore = 650;      // of the condition a car is missing, put back...
         public const int PrepareLeast = 50;         // ...and at least this much
 
-        // How a car's condition draws buyers (thousandths of what it would draw): one that looks tired is passed by. From
-        // 950 up it draws in full, so a new car and one the workshop has been over are alike.
+        // How condition draws buyers (thousandths): in full from 950, so a new car and one the workshop has been over are alike.
         public static readonly int[] ConditionDrawAt = { 400, 600, 800, 950 };
         public static readonly int[] ConditionDraw = { 650, 800, 920, 1000 };
 
-        // ---------------------------------------------------------------- advertising events
-
-        // An event a showroom runs for a few days, booked from the app and paid when booked. Each moves what the rules
-        // already use: its visitors (as points on the building's promotion, in the showroom's own count only and never
-        // past the game's own top of 100, so a campaign of the Company app that has the promotion high already leaves an
-        // event little to add), the share of those looked after who make an offer, a counter's chance, the part exchange,
-        // or a kind of car's draw. One at a time at a showroom.
+        // Advertising events, one at a time at a showroom and paid when booked. Their promotion points count only in the
+        // showroom's own visitors and never past the game's top, so a campaign that has it high leaves little to add.
         public const int EventKinds = 4;            // an open weekend, test drive days, a part exchange week, a featured kind of car
         public const int OpenWeekend = 0, TestDriveDays = 1, PartExchangeWeek = 2, FeaturedKind = 3;
         public static readonly int[] EventCost = { 2400, 1600, 1800, 2000 };   // at the start's prices, paid when booked
@@ -215,15 +181,13 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int EventRest = 5;             // days after an event ends before the same kind may be booked again at that showroom
         public const int PromotionMost = 100;       // the game's own top of a promotion
 
-        // ---------------------------------------------------------------- the showroom's reputation
-
-        // What buyers think of a showroom, 0 to RepMost, built by good sales and lost by bad ones, and by missions. It opens
-        // perks step by step. It never touches the visitors: those are the promotion's, which Standing's customers already move.
+        // Reputation, 0 to RepMost: won and lost by sales and missions, it opens perks step by step. It never touches the
+        // visitors, which are the promotion's.
         public const int RepMost = 1000;
         public static readonly int[] RepSteps = { 0, 100, 250, 450, 700 };   // where each step starts: new, known locally, trusted, respected, renowned
         public const int RepSale = 8;               // a car sold to a customer
         public const int RepGoodCar = 2;            // ...and this more for one in condition of at least RepGoodAt
-        public const int RepGoodAt = 900;
+        public const int RepGoodAt = 900;           // condition
         public const int RepFault = 6;              // taken for each fault the buyer finds that the showroom did not put right...
         public const int RepFaultsMost = 18;        // ...at most this for one car
         public const int RepWalked = 2;             // a buyer who walks away after the counters
@@ -236,23 +200,20 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int PerkWholesaleStep = 3, PerkWholesale = 10;  // the wholesaler's price lower by this share
         public const int PerkConvertStep = 4, PerkConvert = 1080;    // the offer chance, thousandths of itself
 
-        // ---------------------------------------------------------------- missions
-
-        // What a showroom has done, counted for its missions (its tallies), and the missions: what each counts, how many
-        // it needs and the reputation it gives once done. Each is done once, at its showroom.
+        // Missions: the tally each counts, the count it needs and the reputation it gives, each done once per showroom.
         public const int Tallies = 10;
         public const int TallySold = 0, TallyMargin = 1, TallyTradeIn = 2, TallyFinance = 3, TallyExtras = 4, TallyWorkshop = 5, TallyEvents = 6, TallyDelivered = 7, TallyQuick = 8, TallyLot = 9;
         public const int QuickDays = 3;             // a car sold within this many days of coming onto the lot is a quick sale
         public const int GoodMargin = 100;          // a sale whose margin is at least this share of its price counts as a good one
-        public static readonly int[] MissionTally = { TallySold, TallyLot, TallyEvents, TallyTradeIn, TallyFinance, TallyExtras, TallyWorkshop, TallyDelivered, TallyQuick, TallySold, TallyMargin, TallySold };
+        public static readonly int[] MissionTally =
+        {
+            TallySold, TallyLot, TallyEvents, TallyTradeIn, TallyFinance, TallyExtras, TallyWorkshop, TallyDelivered, TallyQuick, TallySold, TallyMargin, TallySold
+        };
         public static readonly int[] MissionTarget = { 1, 6, 1, 2, 3, 5, 3, 2, 3, 10, 5, 50 };
         public static readonly int[] MissionReward = { 20, 20, 15, 25, 25, 30, 25, 25, 30, 40, 40, 80 };
         public static int Missions => MissionTally.Length;
 
-        // ---------------------------------------------------------------- extras sold with a car
-
-        // Beyond the warranty: what a buyer may take on top of the car, each at its own share of the price, bought in by
-        // the showroom at a share of what it sells it for, and taken by some of the buyers it is offered to.
+        // Extras a buyer may take with a car, beyond the warranty
         public const int ExtraKinds = 4;            // paint and interior protection, a service plan, an accessories pack, tyre and wheel cover
         public static readonly int[] ExtraPrice = { 15, 25, 10, 20 };         // of the car's price
         public static readonly int[] ExtraLeast = { 150, 250, 100, 200 };     // at the start's prices
@@ -260,32 +221,26 @@ namespace RealLifeOverhaul.Economy.Dealership
         public static readonly int[] ExtraTakeUp = { 220, 160, 250, 120 };    // buyers offered it who take it
         public const int ExtraKeen = 50;            // a keen buyer takes each this much more often
 
-        // ---------------------------------------------------------------- the workshop
-
-        // Deeper than preparing: the car goes into the showroom's workshop for a day or more, off show, and comes back with
-        // every fault found and put right (the hidden ones too) and most of its missing condition back. The same condition
-        // and faults as the inspection and preparing use.
+        // The workshop: a day or more off show, then every fault put right (hidden ones too) and most missing condition back.
         public const int WorkshopBays = 2;          // cars one showroom's workshop works on at once
         public const int WorkshopBase = 250;        // at the start's prices: the bay and a day's labour
         public const int WorkshopShare = 350;       // and this share of what the missing condition takes off its worth new...
         public const int WorkshopRestore = 900;     // ...for this share of the condition still missing once the faults are put right
         public const int WorkshopLeast = 100;       // ...and at least this much of it
-        public const int WorkshopHoursLeast = 24, WorkshopHoursMost = 72;   // how long the work takes: a day, and an hour more for each WorkshopPerHour missing
-        public const int WorkshopPerHour = 10;
+        public const int WorkshopHoursLeast = 24, WorkshopHoursMost = 72;   // how long the work takes, in hours
+        public const int WorkshopPerHour = 10;      // condition missing that adds an hour to the work
 
-        // ---------------------------------------------------------------- deliveries
-
-        public const int DeliveryDaysLeast = 2, DeliveryDaysMost = 3;   // a lot won at the trade auction arrives this many days later...
+        // Deliveries of lots won at the trade auction
+        public const int DeliveryDaysLeast = 2, DeliveryDaysMost = 3;   // days after it is won that a lot arrives...
         public const int DeliveryHour = 8;          // ...at this hour
         public const int DeliveriesMost = 16;       // cars on their way at once
 
-        // ---------------------------------------------------------------- what is kept
-
+        // What is kept
         public const int WeekBooks = 7;             // days of figures a week's sums are of
         public const int ReportDays = 60;           // days of figures kept for each showroom, for its reports
         public const int AverageDays = 7;           // the line over a report's bars: the average of this many days
         public const int SalesKept = 40;            // recent sales kept for the app
-        public const int NameMost = 32;
+        public const int NameMost = 32;             // characters of a name kept
 
         public static readonly string[] FirstNames =
         {

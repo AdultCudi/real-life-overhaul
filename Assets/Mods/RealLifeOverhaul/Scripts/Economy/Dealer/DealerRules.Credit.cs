@@ -22,29 +22,19 @@ namespace RealLifeOverhaul.Economy.Dealership
 
     public static partial class DealerRules
     {
-        // ---------------------------------------------------------------- the dealership's own finance
-
         /// <summary>True when the dealership lends to a buyer with this rating: from the banks' own threshold up.</summary>
         public static bool Lends(int score)
         {
             return score >= CreditCatalogue.LendingThreshold;
         }
 
-        /// <summary>
-        /// The rate the dealership lends at to a buyer with this rating (hundredths of a per cent a year): the banks' rate for
-        /// the rating, the points of a car on finance and the dealership's own, with the central bank's rate of the day, as
-        /// the city's banks would price the same loan (ProductTerms.FixedRateBp). Fixed for the plan's life.
-        /// </summary>
+        /// <summary>The yearly rate (hundredths of a per cent) the city's banks ask for a car loan at this rating, and the dealership's points.</summary>
         public static int RateBp(int score)
         {
             return ProductTerms.FixedRateBp(score, DealerCatalogue.OwnRate, ProductCatalogue.CarRatePoints, 1f);
         }
 
-        /// <summary>
-        /// The money of a sale. A cash sale is the price less any part exchange today. On finance the buyer puts down their
-        /// deposit (the part exchange counts towards it), the dealership lends the rest, and the interest of the whole term
-        /// is reckoned day by day as the city's banks reckon a car on finance (ProductTerms.Quote); it is paid weekly.
-        /// </summary>
+        /// <summary>A sale's money: cash less the part exchange, or a deposit (the part exchange counts) and the rest lent as banks reckon it.</summary>
         public static DealMoney Settle(int price, int allowance, bool onFinance, int depositPercent, int termDays, int score, int premium, int daysPerYear)
         {
             var m = new DealMoney { Price = price, Allowance = Math.Max(0, Math.Min(price, allowance)), Premium = Math.Max(0, premium) };
@@ -76,12 +66,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return m;
         }
 
-        /// <summary>
-        /// A week of a plan: the instalment is paid, or missed (more often with a poorer rating and in a poorer economy:
-        /// <paramref name="economy"/> is thousandths of the usual chance). A missed week is paid with the next one half the
-        /// time; <see cref="DealerCatalogue.MissesToDefault"/> missed running and the car is taken back. What was paid is
-        /// in <paramref name="paid"/>.
-        /// </summary>
+        /// <summary>A plan's week: paid, caught up, missed (likelier with a poorer rating or <paramref name="economy"/>), or the car taken back.</summary>
         public static PlanWeek Week(DealerPlan p, int seed, int economy, out int paid)
         {
             paid = 0;
@@ -118,8 +103,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerCatalogue.Named(DealerCatalogue.Share(worth, DealerCatalogue.RecoverShare));
         }
 
-        // ---------------------------------------------------------------- warranties
-
         /// <summary>A warranty's premium on a car of this price, at least the least at today's prices.</summary>
         public static int Premium(int price, int tier, int leastAtPrices)
         {
@@ -130,10 +113,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             return Math.Max(leastAtPrices, DealerCatalogue.Named(DealerCatalogue.Share(price, DealerCatalogue.TierPremium[tier])));
         }
 
-        /// <summary>
-        /// A day of a warranty: a claim, now and then, dearer than chance for a car in poorer condition; nothing while it rests
-        /// after a claim, after its last day or once it has paid <see cref="DealerCatalogue.ClaimsMost"/>. The claim's cost, or 0.
-        /// </summary>
+        /// <summary>A warranty's day: now and then a claim, likelier in poorer condition; none while resting or done. The cost, or 0.</summary>
         public static int Claim(DealerCover c, int day, int seed, int floorAtPrices, int ceilingAtPrices)
         {
             if (day > c.Until || day <= c.RestUntil || c.Claims >= DealerCatalogue.ClaimsMost || c.Tier < 0 || c.Tier >= DealerCatalogue.Tiers)
@@ -146,7 +126,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return 0;
             }
-            int cost = DealerCatalogue.Clamp(DealerCatalogue.Named(DealerCatalogue.Share(c.Worth, dice.Range(DealerCatalogue.ClaimLeast, DealerCatalogue.ClaimMost))), floorAtPrices, Math.Max(floorAtPrices, ceilingAtPrices));
+            int share = dice.Range(DealerCatalogue.ClaimLeast, DealerCatalogue.ClaimMost);
+            int cost = DealerCatalogue.Clamp(DealerCatalogue.Named(DealerCatalogue.Share(c.Worth, share)), floorAtPrices, Math.Max(floorAtPrices, ceilingAtPrices));
             c.Claims++;
             c.Paid += cost;
             c.RestUntil = day + DealerCatalogue.ClaimRest;
