@@ -51,7 +51,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Law/RecordPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/LeisureApi.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/Shops/ClothesShop.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/Sound/LeisureSound.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Licences/LicenceState.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Markets/Bonds/BondModel.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Markets/Listing/ListingModel.cs	1
@@ -365,8 +364,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobBoards.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobSites.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/LeisureDirector.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Licences/Driving/DrivingEnforcement.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Licences/Driving/DrivingSchool.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDirector.cs	1
@@ -684,8 +681,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Ledger/NewsstandApp.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Ledger/NewsstandPage.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/LeisureApi.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Leisure/LeisureDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Licences/Driving/DrivingSchool.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Licences/SchoolDesk.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Markets/Bonds/BondCatalogue.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Markets/InvestRules.cs	1

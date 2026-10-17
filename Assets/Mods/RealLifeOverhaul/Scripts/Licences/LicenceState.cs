@@ -5,27 +5,26 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    // Game-free: nothing in this file touches the game or the engine, so the rules can be read (and checked) on their own.
-
-    /// <summary>What a driving licence covers. Taxi is an endorsement on a car licence; the motorcycle licence stands on its own.</summary>
+    /// <summary>What a driving licence covers. Taxi is an endorsement on a car licence.</summary>
     public enum LicenceClass
     {
         Car = 0,          // cars, SUVs, pickups
         Commercial = 1,   // vans and trucks
         Taxi = 2,         // carrying passengers for hire
-        Motorcycle = 3    // motorbikes (bicycles need no licence)
+        Motorcycle = 3    // motorbikes; bicycles need no licence
     }
 
+    /// <summary>Where a licence stands on a given day.</summary>
     public enum LicenceStanding
     {
         None,        // never held
         Valid,
-        Expired,     // run out, still renewable for a fee
-        Lapsed,      // run out too long ago: the tests again
-        Suspended    // twelve points
+        Expired,     // still renewable for a fee
+        Lapsed,      // expired too long ago: the tests again
+        Suspended
     }
 
-    /// <summary>What goes on a driving record, with the points it carries.</summary>
+    /// <summary>What goes on a driving record. The values are saved.</summary>
     public enum PointCode
     {
         RedLight = 0,
@@ -51,27 +50,27 @@ namespace RealLifeOverhaul
         public static int LessonFee => Prices.At(90);
         public static int CarTestFee => Prices.At(220);
         public static int CommercialTestFee => Prices.At(380);
-        public static int MotorcycleFee => Prices.At(180);        // the ride assessment, recorded at the desk (the school has no motorbike to lend)
-        public static int RetestFee => Prices.At(120);            // after a failed practical test (either class)
+        public static int MotorcycleFee => Prices.At(180);        // assessed at the desk: the school has no motorbike to lend
+        public static int RetestFee => Prices.At(120);            // after a failed practical test, either class
         public static int TaxiFee => Prices.At(180);
         public const int TaxiHeldDays = 7;           // a car licence held this long...
         public const int TaxiMostPoints = 5;         // ...with no more points than this
         public static int RenewalFee => Prices.At(90);
-        public const int ValidDays = 120;            // an in-game year or so
+        public const int ValidDays = 120;            // about an in-game year
         public const int RenewFromDays = 14;         // renewable from this many days before it runs out
         public const int LapsedAfterDays = 30;       // expired longer than this: theory and practical again
-        public const int RetestWaitDays = 1;         // after a failed test, not before the next day
+        public const int RetestWaitDays = 1;
 
-        public const int PointsExpireDays = 21;      // three in-game weeks
+        public const int PointsExpireDays = 21;
         public const int PointsLimit = 12;
         public const int SuspensionDays = 7;
 
         public static int NoLicenceFine => Prices.At(800);
         public static int WrongClassFine => Prices.At(500);
-        public static int ExpiredFine => Prices.At(250);          // expired but renewable: a fine and a warning, the car stays
+        public static int ExpiredFine => Prices.At(250);          // the car stays
         public static int SuspendedFine => Prices.At(1500);
-        public static int EvadedCheckFine => Prices.At(400);      // drove on from a roadside check: added at the next stop
-        public static int ImpoundFee => Law.LawBook.ImpoundFee;   // the city pound's own (Law)
+        public static int EvadedCheckFine => Prices.At(400);      // added at the next stop
+        public static int ImpoundFee => Law.LawBook.ImpoundFee;
         public const int ArrestFromCount = 3;        // the third time caught within the window is an arrest
         public const int RepeatWindowDays = 30;
         public const int ArrestHours = 6;
@@ -98,14 +97,11 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The player's driving licences and record for this save: one line in the save's modData
-    /// ("reallife:licences"), written and read here and nowhere else. A save without the line is a
-    /// save from before licences; a save with it loads without the mod, which simply ignores it.
-    /// </summary>
+    /// <summary>The player's driving licences and record: the save line "reallife:licences", read and written only here.</summary>
     public static class LicenceState
     {
         public const string Key = "reallife:licences";
+        private const int MostEntries = 40;   // the oldest entry goes beyond this
 
         public struct Card
         {
@@ -129,17 +125,14 @@ namespace RealLifeOverhaul
         /// <summary>The day the licence rules first ran on this save; 0 until then.</summary>
         public static int FirstDay;
 
-        /// <summary>
-        /// Whether it has been looked at once if the save already owns a motorbike (which then gets the motorcycle licence, as a car
-        /// owner got the car licence). False for a save from before the class; the answer is kept, so it is asked only once.
-        /// </summary>
+        /// <summary>Whether the save has been looked at once for a motorbike, which earns the motorcycle licence.</summary>
         public static bool MotorcycleDecided;
-        public static int SuspendedUntil;       // day on which a suspension ends; 0 = not suspended
+        public static int SuspendedUntil;       // day a suspension ends; 0 = not suspended
         public static int Caught;                // times caught driving without entitlement...
         public static int LastCaughtDay;         // ...the last of them on this day
         public static int EvadedChecks;          // roadside checks driven on from, not yet answered for
-        public static int LastCheckDay;          // the last roadside check
-        public static readonly int[] TheoryPassedDay = new int[2];      // by class (car, commercial)
+        public static int LastCheckDay;
+        public static readonly int[] TheoryPassedDay = new int[2];      // by class: car, commercial
         public static readonly int[] RetestDay = new int[2];            // the first day a failed practical may be sat again
         public static readonly bool[] RetestDue = new bool[2];          // the last practical was failed: the retest fee applies
         public static int TheoryRetryDay;
@@ -152,10 +145,7 @@ namespace RealLifeOverhaul
         public static void Reset()
         {
             Loaded = false;
-            for (int i = 0; i < Cards.Length; i++)
-            {
-                Cards[i] = default;
-            }
+            Array.Clear(Cards, 0, Cards.Length);
             Record.Clear();
             FirstDay = 0;
             MotorcycleDecided = false;
@@ -167,18 +157,15 @@ namespace RealLifeOverhaul
             TheoryRetryDay = 0;
             TestsPassed = 0;
             TestsFailed = 0;
-            for (int i = 0; i < 2; i++)
-            {
-                TheoryPassedDay[i] = 0;
-                RetestDay[i] = 0;
-                RetestDue[i] = false;
-                Lessons[i] = 0;
-            }
+            Array.Clear(TheoryPassedDay, 0, TheoryPassedDay.Length);
+            Array.Clear(RetestDay, 0, RetestDay.Length);
+            Array.Clear(RetestDue, 0, RetestDue.Length);
+            Array.Clear(Lessons, 0, Lessons.Length);
         }
 
         public static Card Of(LicenceClass kind) => Cards[(int)kind];
 
-        /// <summary>Where a licence stands on a day. The taxi endorsement stands or falls with the car licence under it.</summary>
+        /// <summary>The taxi endorsement stands or falls with the car licence under it.</summary>
         public static LicenceStanding Standing(LicenceClass kind, int day)
         {
             Card card = Cards[(int)kind];
@@ -238,7 +225,6 @@ namespace RealLifeOverhaul
             return card.Held && day >= card.Expires - LicenceLaw.RenewFromDays && day - card.Expires <= LicenceLaw.LapsedAfterDays;
         }
 
-        /// <summary>The points that still count on a day.</summary>
         public static int PointsOn(int day)
         {
             int total = 0;
@@ -252,7 +238,7 @@ namespace RealLifeOverhaul
             return total;
         }
 
-        /// <summary>Adds an entry. True if this took the record to the limit and a suspension started.</summary>
+        /// <summary>Adds an entry. True if it took the record to the limit and a suspension started.</summary>
         public static bool AddPoints(PointCode code, int day)
         {
             int points = LicenceLaw.Points(code);
@@ -260,7 +246,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            if (Record.Count >= 40)
+            if (Record.Count >= MostEntries)
             {
                 Record.RemoveAt(0);
             }
@@ -273,10 +259,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// A driving refresher course passed (Careers, through Wiring/CareersLinks): the newest entries still counting come off
-        /// the record, whole, up to so many points. Nothing comes off while a suspension runs. Returns the points taken off.
-        /// </summary>
+        /// <summary>A refresher course: the newest entries come off whole, up to so many points, none while suspended.</summary>
         public static int TakeOff(int points, int day)
         {
             if (!Loaded || points <= 0 || SuspendedUntil > day)
@@ -295,7 +278,8 @@ namespace RealLifeOverhaul
             }
             return off;
         }
-        /// <summary>A new day: entries that no longer count go, and a suspension that has run out ends with a clean slate. True if a suspension ended.</summary>
+
+        /// <summary>Drops entries that no longer count. True if a suspension ended, which also clears the record.</summary>
         public static bool NewDay(int day)
         {
             for (int i = Record.Count - 1; i >= 0; i--)
@@ -308,21 +292,19 @@ namespace RealLifeOverhaul
             if (SuspendedUntil > 0 && day >= SuspendedUntil)
             {
                 SuspendedUntil = 0;
-                Record.Clear();   // served: the record starts again
+                Record.Clear();
                 return true;
             }
             return false;
         }
 
-        /// <summary>Counts being caught driving without entitlement. Returns how many times within the window, this one included.</summary>
+        /// <summary>Counts being caught driving without entitlement. Returns the count within the window, this one included.</summary>
         public static int CountCaught(int day)
         {
             Caught = day - LastCaughtDay > LicenceLaw.RepeatWindowDays ? 1 : Caught + 1;
             LastCaughtDay = day;
             return Caught;
         }
-
-        // ---------------------------------------------------------------- the save
 
         public static void Load(Dictionary<string, string> data)
         {
@@ -404,7 +386,7 @@ namespace RealLifeOverhaul
             data[Key] = text.ToString();
         }
 
-        internal static void Pair(StringBuilder text, string name, params int[] values)
+        private static void Pair(StringBuilder text, string name, params int[] values)
         {
             text.Append(';').Append(name).Append('=');
             for (int i = 0; i < values.Length; i++)
@@ -417,7 +399,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        internal static int Int(string[] values, int index)
+        private static int Int(string[] values, int index)
         {
             return index < values.Length && int.TryParse(values[index], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : 0;
         }
