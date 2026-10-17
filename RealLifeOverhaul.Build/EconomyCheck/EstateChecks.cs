@@ -1105,7 +1105,7 @@ internal static partial class Program
         var data = new Dictionary<string, string> { { EstateStore.Key, line } };
         Check(EstateStore.Load(data, EstateStore.Key, out version) != null && EstateStore.Load(data, EstateStore.TestKey, out version) == null && EstateStore.Load(null, EstateStore.Key, out version) == null,
             "a save without the feature's line, or with no data of the mod's at all, has no state: the feature starts afresh");
-        Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 2, "the save key is the one the brief names, with a version: 2 since the units");
+        Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 2, "the save key is the documented one, with a version: 2 since the units");
         Check(EstateStore.Write(new EstateState { Seed = 3 }).StartsWith("v=2^h:3|0|0|1000|0|0|0|0|0^p:^u:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:", StringComparison.Ordinal), "an empty state writes every part, empty");
     }
 

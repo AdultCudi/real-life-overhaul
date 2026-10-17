@@ -99,7 +99,7 @@ internal static partial class Program
             }
             at = Math.Max(at, next);
         }
-        Check(lost == null, "bug report: report.txt gives every field the brief asks for, in its order (the first missing or out of order: " + (lost ?? "none") + ")");
+        Check(lost == null, "bug report: report.txt gives every field the report needs, in its order (the first missing or out of order: " + (lost ?? "none") + ")");
         Check(text.Contains("  Twice, at %USERPROFILE%\\Desktop."), "bug report: the player's second line is indented under the first, its user folder taken out");
         Check(!text.Contains(BugProfile) && !text.Contains("ann/") && !text.Contains("ann\\"), "bug report: the user folder is nowhere in report.txt");
         Check(text.Contains("| at RealLifeOverhaul.Transport.BusDirector.Tick () (at <abc>:0)") && !text.Contains("RealLifeOverhaul.Other.Step"),

@@ -180,6 +180,6 @@ internal static partial class Program
         }
         Check(wrong.Count == 0, "class play: the computer's buttons, its refusals and the class's notice are in every language with their names (" + string.Join(", ", wrong) + ")");
         Check(words[0].TryGetValue("reallife_study_why_no_computer", out string why) && why == "You need a computer at home for an online class.",
-            "class play: a home with no computer says so, in the owner's words");
+            "class play: a home with no computer says so, in those words");
     }
 }

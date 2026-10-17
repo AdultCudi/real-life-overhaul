@@ -42,7 +42,7 @@ internal static partial class Program
             Reader(image, md, pe);
             Section("the mod's code against this game, as the running mod checks it as it starts (Core/ModScan)");
             ThisGame(image, refs);
-            Section("the mod's code against a game that lacks what a player's Build 3675 lacked (their Player.log, 14 Oct 2026)");
+            Section("the mod's code against a game that lacks what the game's Build 3675 lacked");
             Older(image, refs, md);
             Section("the mod's code: isolated members, guarded entry points, guarded coroutines");
             Isolation(image, md, pe);

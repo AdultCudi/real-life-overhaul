@@ -63,7 +63,7 @@ internal static partial class Program
         Check(TextServer.WarmLimit(new TextServerStart { Device = "Vulkan0", WarmSeconds = 120.0 }) == 120.0 && TextServer.WarmLimit(new TextServerStart { WarmSeconds = 5.0, BuildSeconds = 60.0 }) == 5.0,
             "texts, the first reply's limit: never below the warm-up's own on a GPU; the build's is a GPU's only");
         Check(TextServer.WarmLimit(gpu) + TextStartWatch.Grace < gpu.LoadSeconds + 10.0 && TextServer.WarmLimit(gpu) > 22.2 * 3.0,
-            "texts, the first reply's limit: room for a processor three times slower than the owner's at building, still bounded");
+            "texts, the first reply's limit: room for a processor three times slower than a fast one at building, still bounded");
     }
 
     private static void TextsCacheState()

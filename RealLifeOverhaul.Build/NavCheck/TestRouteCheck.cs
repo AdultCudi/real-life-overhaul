@@ -254,7 +254,7 @@ internal static partial class Program
             RouteOutcome outcome = planner.Plan(town, ab[0], 7, seed, true);
             newFails += outcome == RouteOutcome.Planned && Sound(town, planner.Path, out _) ? 0 : 1;
         }
-        Check(oldFails > 0, "lesson route: the old walk runs into the closed stretch and gives up for some seeds (" + oldFails + " of 200): the fault the owner met");
+        Check(oldFails > 0, "lesson route: the old walk runs into the closed stretch and gives up for some seeds (" + oldFails + " of 200): the fault a player met");
         Check(newFails == 0, "lesson route: the planner finds a route round it for every seed (" + newFails + " of 200 failed)");
 
         // Every way out shut: Closed (the road clears by itself); a road that leads nowhere at all: NoRoad.

@@ -137,7 +137,7 @@ internal static partial class Program
             int toCome = customers - served - lost;
             int underWay = came - served - lost;
             Check(toCome == toComeBefore && toCome == 7 && underWay == 0 && underWay < toCome,
-                "cart: the owner's case: 7 still to come before and after, nobody counted as on the way, so the next customer sets off");
+                "cart: 7 still to come before and after, nobody counted as on the way, so the next customer sets off");
         }
     }
 

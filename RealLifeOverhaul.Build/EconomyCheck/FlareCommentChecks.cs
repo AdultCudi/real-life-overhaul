@@ -436,7 +436,7 @@ internal static partial class Program
         {
             none &= !key.StartsWith("reallife_flare_comment_line", StringComparison.Ordinal) && !key.StartsWith("reallife_flare_comment_text", StringComparison.Ordinal);
         }
-        Check(none, "Flare comments: no written comment lines (the owner's rule: only RLO Texts writes them)");
+        Check(none, "Flare comments: no written comment lines (only RLO Texts writes them)");
     }
 
     // ---------------------------------------------------------------- nothing per frame (the source)

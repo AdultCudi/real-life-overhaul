@@ -37,8 +37,8 @@ internal static partial class Program
     {
         { "RealLifeOverhaul.RealLifeOverhaulInit", "the game's start of the mod: each of its steps runs in Guard.Step (Core/RealLifeOverhaulMod)" },
         { "RealLifeOverhaul.RealLifeOverhaulCity", "the game's start of the mod in the city: each of its steps runs in Guard.Step (Core/RealLifeOverhaulMod)" },
-        { "RealLifeOverhaul.CharacterQualityCity", "the characters' own start, the owner's work: left as it is" },
-        { "RealLifeOverhaul.CharacterQualityIntro", "the characters' own start, the owner's work: left as it is" },
+        { "RealLifeOverhaul.CharacterQualityCity", "the characters' own start, kept by hand: left as it is" },
+        { "RealLifeOverhaul.CharacterQualityIntro", "the characters' own start, kept by hand: left as it is" },
         { "RealLifeOverhaul.CharacterLabEntry", "a development aid of the characters' work, the owner's: left as it is" },
         { "RealLifeOverhaul.Meta.Dev+GatedLogger", "the mod's own logger, which the guard itself writes with" },
     };
@@ -73,8 +73,8 @@ internal static partial class Program
     // Classes whose hand-overs to the game are left as they are, and why.
     private static readonly Dictionary<string, string> ClassesHandedByHand = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        { "RealLifeOverhaul.CharacterQuality", "the characters' own, the owner's work: left as it is" },
-        { "RealLifeOverhaul.PlayerDouble", "the characters' own (the player's detailed double), the owner's work: left as it is" },
+        { "RealLifeOverhaul.CharacterQuality", "the characters' own, kept by hand: left as it is" },
+        { "RealLifeOverhaul.PlayerDouble", "the characters' own (the player's detailed double), kept by hand: left as it is" },
     };
 
     // Where a delegate of the mod's goes to the game unguarded on purpose, and why.
