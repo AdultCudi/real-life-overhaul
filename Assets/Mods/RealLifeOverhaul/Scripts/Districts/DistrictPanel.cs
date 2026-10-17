@@ -198,9 +198,16 @@ namespace RealLifeOverhaul.Districts
             }
         }
 
-        // A white disc for the colour swatches, should the game's own "circle" not be in memory: drawn once.
+        // A white disc for the colour swatches, should the game's own "circle" not be in memory: drawn once a session and kept,
+        // not again for each panel made.
+        private static Sprite _drawnDisc;
+
         private static Sprite Disc()
         {
+            if (_drawnDisc != null)
+            {
+                return _drawnDisc;
+            }
             const int size = 64;
             var pixels = new Color32[size * size];
             for (int y = 0; y < size; y++)
@@ -215,7 +222,8 @@ namespace RealLifeOverhaul.Districts
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "RealLifeOverhaul District Disc" };
             texture.SetPixels32(pixels);
             texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+            _drawnDisc = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+            return _drawnDisc;
         }
 
         public void Show(bool on)
