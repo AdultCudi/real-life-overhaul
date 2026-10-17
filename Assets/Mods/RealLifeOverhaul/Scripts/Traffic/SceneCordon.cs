@@ -227,6 +227,10 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Logger?.Error(e);
+                if (_props != null)
+                {
+                    UnityEngine.Object.Destroy(_props);   // half built: not kept, and not built over next time
+                }
                 _props = null;
             }
             return true;
