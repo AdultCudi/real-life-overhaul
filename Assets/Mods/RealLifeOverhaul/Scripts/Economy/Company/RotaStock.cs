@@ -21,8 +21,9 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Box = new int[ProductsMost];          // units a box of it holds in storage
         public readonly int[] Weekly = new int[ProductsMost];       // units the delivery contracts bring at 8 on a Monday
         public readonly int[] Target = new int[ProductsMost];       // units a logistics round tops it up to at 2 every morning; 0: no round
-        public readonly int[] Most = new int[ProductsMost];         // units the wholesalers deliver in a week at most; 0: no figure
-        public readonly int[] Warehouse = new int[ProductsMost];    // units the warehouse of its round holds now
+        public readonly int[] Most = new int[ProductsMost];         // units the contracts' wholesalers deliver in a week at most, each line its own; 0: no figure
+        public readonly int[] Warehouse = new int[ProductsMost];    // units the warehouses of its rounds hold now, each counted once
+        public readonly int[] Restock = new int[ProductsMost];      // units those warehouses' own contracts bring them at 8 on a Monday
         public readonly bool[] Bag = new bool[ProductsMost];        // a paper bag
         public readonly bool[] Backorder = new bool[ProductsMost];  // the wholesaler has none this week (said, not counted: a week's event)
         public readonly bool[] Shortage = new bool[ProductsMost];   // the wholesaler is short this week and sends less (said, not counted)
@@ -64,9 +65,30 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(Target, 0, ProductsMost);
             Array.Clear(Most, 0, ProductsMost);
             Array.Clear(Warehouse, 0, ProductsMost);
+            Array.Clear(Restock, 0, ProductsMost);
             Array.Clear(Bag, 0, ProductsMost);
             Array.Clear(Backorder, 0, ProductsMost);
             Array.Clear(Shortage, 0, ProductsMost);
+        }
+
+        /// <summary>
+        /// A repeating contract's line for a product: what it brings on a Monday and its wholesaler's weekly limit (0: none).
+        /// Each line has a limit of its own, so the most is their sum.
+        /// </summary>
+        public void Contract(int p, int amount, int limit)
+        {
+            Weekly[p] += Math.Max(0, amount);
+            Most[p] += Math.Max(0, limit);
+        }
+
+        /// <summary>
+        /// What sales leave after their goods: the takings at today's prices (the city's takings line, <paramref name="factor"/>
+        /// thousandths) less what the goods cost, at today's prices already. A customer's margin and each product's are made
+        /// the same way, so the one splits into the others.
+        /// </summary>
+        public static double Left(double takings, double goods, int factor)
+        {
+            return takings * factor / 1000.0 - goods;
         }
 
         /// <summary>Splits a customer's <paramref name="margin"/>, <paramref name="goods"/> of it goods, into the products, Goods and Other.</summary>
@@ -210,7 +232,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return Target;
             }
-            if (stock.Weekly[p] > 0 && stock.Most[p] > 0 && stock.Weekly[p] >= stock.Most[p])
+            if (stock.Weekly[p] > 0 && stock.Most[p] > 0 && stock.Weekly[p] >= stock.Most[p])   // every line at its wholesaler's limit
             {
                 return Second;
             }
@@ -220,15 +242,17 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// A week of a plan against the goods, hour by hour as the game runs it: a logistics round tops each product up to
-    /// its target at 2; the contracts arrive at 8 on a Monday, onto the shelves, then into storage a box at a time, the
-    /// rest refunded (DeliverCargoToBuilding); a sale takes a unit and an empty shelf refills at once from all on site
-    /// (ItemHelper.SubtractFromStock); without a bag, where the type needs one, nobody buys goods
+    /// its target at 2, with no more than its warehouse holds (LogisticsManagerPlanDestination.ProcessStockTarget); the
+    /// contracts arrive at 8 on a Monday, onto the shelves, then into storage a box at a time, the rest refunded
+    /// (DeliverCargoToBuilding), and the warehouse's own at the same hour; a sale takes a unit and an empty shelf refills
+    /// at once from all on site (ItemHelper.SubtractFromStock); without a bag, where the type needs one, nobody buys goods
     /// (RetailBusinessSimulator.GetIdealPointOfSale). A run is two weeks, the first from what is there now, the second
     /// counted. Nothing is allocated.
     /// </summary>
     public sealed class RotaStockRun
     {
         private readonly long[] _left = new long[RotaStock.ProductsMost];  // thousandths of a unit on site
+        private readonly int[] _store = new int[RotaStock.ProductsMost];   // units in the warehouse of its round
         private RotaStock _stock;
         private bool _bags;
 
@@ -242,6 +266,7 @@ namespace RealLifeOverhaul.Economy
             for (int p = 0; p < RotaStock.ProductsMost; p++)
             {
                 _left[p] = p < stock.Products ? (long)Math.Max(0, stock.OnSite[p]) * 1000 : 0;
+                _store[p] = p < stock.Products ? Math.Max(0, stock.Warehouse[p]) : 0;
                 _bags |= p < stock.Products && stock.Bag[p] && stock.Capped(p);
             }
         }
@@ -263,7 +288,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (s.Target[p] > 0)
                     {
-                        Bring(p, Math.Max(0, s.Target[p] - Left(p)), week);
+                        _store[p] -= Bring(p, Math.Min(_store[p], Math.Max(0, s.Target[p] - Left(p))), week);   // what finds no room goes back to the warehouse
                     }
                 }
             }
@@ -275,16 +300,17 @@ namespace RealLifeOverhaul.Economy
                     {
                         Bring(p, s.Weekly[p], week);
                     }
+                    _store[p] += s.Target[p] > 0 ? Math.Max(0, s.Restock[p]) : 0;
                 }
             }
         }
 
-        // So many units arrive: onto the shelves, then into storage a box at a time; the rest goes back.
-        private void Bring(int p, int units, RotaStockWeek week)
+        // So many units arrive: onto the shelves, then into storage a box at a time; the rest goes back. Returns those taken in.
+        private int Bring(int p, int units, RotaStockWeek week)
         {
             if (units <= 0)
             {
-                return;
+                return 0;
             }
             int room = Room(p), taken = Math.Min(units, room);
             _left[p] += (long)taken * 1000;
@@ -293,6 +319,7 @@ namespace RealLifeOverhaul.Economy
                 week.Delivered[p] += taken;
                 week.Refused[p] += units - taken;
             }
+            return taken;
         }
 
         /// <summary>The units of a product that would fit on site now: room on its shelves, in its boxes and in free box places.</summary>
@@ -364,10 +391,12 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                long want = buyers * s.PerCustomer[p] / 1000 * factor / 1000;
+                // Cleanliness changes how much a customer buys, not that a customer who buys takes one bag (ProcessPaperBag).
+                int scale = s.Bag[p] ? 1000 : factor;
+                long want = buyers * s.PerCustomer[p] / 1000 * scale / 1000;
                 if (_bags)
                 {
-                    long all = (long)served * s.PerCustomer[p] * factor / 1000;
+                    long all = (long)served * s.PerCustomer[p] * scale / 1000;
                     goodsLost += (all - want) * s.UnitMargin[p] / 1000;
                 }
                 if (!s.Capped(p))

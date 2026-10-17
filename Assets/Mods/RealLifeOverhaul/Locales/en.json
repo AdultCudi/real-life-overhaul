@@ -11776,7 +11776,7 @@
   "reallife_rota_lift_target": "The Logistics Manager's delivery plan tops it up to {target} each morning, and a busy day sells about {day}. A higher target would cover it.",
   "reallife_rota_lift_warehouse": "Its warehouse holds only {warehouse} now.",
   "reallife_rota_lift_order": "The Monday delivery brings {delivered} and a week sells about {want}. A larger amount in its Delivery Contract would cover it, or an Urgent Order in the week at a {percentage} per cent surcharge.",
-  "reallife_rota_lift_second": "The Monday delivery brings {delivered}, the most one wholesaler sends in a week, and a week sells about {want}. A Delivery Contract with a second wholesaler, or a Logistics Manager's delivery plan from a warehouse, would cover it. An Urgent Order would not help for long: it counts towards the same weekly limit.",
+  "reallife_rota_lift_second": "The Monday delivery brings {delivered}, the most its Delivery Contracts may bring in a week, and a week sells about {want}. A Delivery Contract with another wholesaler, or a Logistics Manager's delivery plan from a warehouse, would cover it. An Urgent Order would not help for long: it counts towards the same weekly limit.",
   "reallife_rota_stop_stock": "One more for {skill} would add only about {amount} a week, because the goods run out before more customers can buy them.",
   "reallife_rota_sum_stock": "Goods that run out in this plan: {count}. What their customers would have spent, already left out above: {amount} a week.",
   "reallife_rota_note_permit_stock": "The goods already run out in the hours there are, so longer hours would sell less than that.",

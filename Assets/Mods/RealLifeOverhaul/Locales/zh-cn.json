@@ -11776,7 +11776,7 @@
   "reallife_rota_lift_target": "物流经理的配送计划每天早上把它补到 {target}，而忙碌的一天约能卖出 {day}。更高的目标可以满足需求。",
   "reallife_rota_lift_warehouse": "它的仓库现在只存有 {warehouse}。",
   "reallife_rota_lift_order": "周一送货带来 {delivered}，而一周约能卖出 {want}。在其配送合同中加大数量可以满足需求，或在一周内下一个加急订单，附加费为 {percentage}%。",
-  "reallife_rota_lift_second": "周一送货带来 {delivered}，这是一家批发商一周最多发送的数量，而一周约能卖出 {want}。与第二家批发商签订配送合同，或由物流经理从仓库制定配送计划，可以满足需求。加急订单帮不了多久：它计入同一个每周上限。",
+  "reallife_rota_lift_second": "周一送货带来 {delivered}，这是它的配送合同一周最多能送来的数量，而一周约能卖出 {want}。与另一家批发商签订配送合同，或由物流经理从仓库制定配送计划，可以满足需求。加急订单帮不了多久：它计入同一个每周上限。",
   "reallife_rota_stop_stock": "为 {skill} 再增加一人每周只能多带来约 {amount}，因为在更多顾客购买之前货品就已售罄。",
   "reallife_rota_sum_stock": "此方案中会售罄的货品：{count}。其顾客本会花费的金额（上面已扣除）：每周 {amount}。",
   "reallife_rota_note_permit_stock": "在现有的营业时间里货品就已售罄，因此延长营业时间卖出的会比这更少。",

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using RealLifeOverhaul;
@@ -13,6 +14,7 @@ internal static partial class Program
     {
         RotaFixState();
         RotaFixLadder();
+        RotaFixGoods();
     }
 
     private static void RotaFixState()
@@ -247,5 +249,90 @@ internal static partial class Program
             }
         }
         return true;
+    }
+
+    private static void RotaFixGoods()
+    {
+        // A logistics round brings no more than its warehouse holds; the warehouse's own contracts fill it again on a Monday.
+        RotaStock dry = RotaGoods(0, target: 120);
+        dry.Warehouse[0] = 300;
+        var w = new RotaStockWeek();
+        RotaGoodsWeek(dry, RotaNoon(100), w);
+        Check(w.Sold[0] == 0 && w.Out[0] == 12 && w.Delivered[0] == 0,
+            "rota goods: a warehouse of 300 that nothing fills runs dry in the week before, so the week counted gets nothing from its round (" + w.Sold[0] / 1000 + " sold)");
+        RotaStock fed = RotaGoods(0, target: 120);
+        fed.Warehouse[0] = 300;
+        fed.Restock[0] = 700;
+        RotaGoodsWeek(fed, RotaNoon(100), w);
+        Check(w.Sold[0] == 700000 && w.Out[0] < 0, "rota goods: with 700 a week coming into the warehouse the round keeps the shop supplied (" + w.Sold[0] / 1000 + " sold)");
+        RotaStock short4 = RotaGoods(0, target: 120);
+        short4.Warehouse[0] = 300;
+        short4.Restock[0] = 400;
+        RotaGoodsWeek(short4, RotaNoon(100), w);
+        Check(w.Sold[0] < 700000 && w.Sold[0] > 0 && RotaLift.Of(short4, w, 0) == RotaLift.Target,
+            "rota goods: 400 a week into a warehouse whose shop sells 700 runs short in time, and the page points to the round and its warehouse (" + w.Sold[0] / 1000 + " sold)");
+        string read = CompanySource("RotaGame.Stock.cs");
+        Check(InOrder(CompanyMethod(read, "private static void ReadRounds("), "StockCounted.Clear();", "if ((counted & (1u << p)) == 0)", "stock.Warehouse[p] +=", "stock.Restock[p] += Restocks(warehouse, target.itemName)"),
+            "rota goods: a warehouse two rounds come from is counted once for a product, with what its own contracts bring it");
+
+        // A product's margin and a customer's are both at today's prices, so a price rise is not earned on goods that ran out.
+        Check(Math.Abs(RotaStock.Left(10, 6, 1200) - 6) < 1e-9 && Math.Abs(RotaStock.Left(10, 6, 1000) - 4) < 1e-9 && Math.Abs(RotaStock.Left(5, 0, 900) - 4.5) < 1e-9,
+            "rota goods: what a sale leaves is its takings at today's prices less the goods (12.00 less 6.00 with prices a fifth up)");
+        var split = new RotaStock { Products = 1 };
+        split.PerCustomer[0] = 1000;
+        split.UnitMargin[0] = (int)Math.Round(RotaStock.Left(10, 6, 1200) * 100);
+        split.Split((int)Math.Round(RotaStock.Left(10, 6, 1200) * 100), (int)Math.Round(RotaStock.Left(10, 6, 1200) * 100));
+        Check(split.Other == 0 && split.Goods == 0 && split.Margin == 600, "rota goods: a shop that sells one product splits into that product alone, nothing of the price rise in what needs no goods (" + split.Other + ")");
+        string taken = CompanyMethod(read, "private static void ReadTaken(");
+        Check(InOrder(taken, "int factor = CityEconomyDirector.TakingsFactor;", "RotaStock.Left(sale.totalPrice, sale.totalWholesalePrice, factor)", "RotaStock.Left(ItemHelper.GetPrice(products[i], reg), item.GetWholesalePrice(), factor)")
+              && CompanySource("RotaGame.Read.cs").Contains("shop.Margin = (int)Math.Round(RotaStock.Left(takings, goods, factor) * 100.0 / customers);"),
+            "rota goods: each product's margin is made as the customer's is, books and prices alike");
+
+        // A bag goes with a customer who buys, however much they buy: the floor's dirt does not change the number of bags.
+        var bags = new RotaStock { Products = 1 };
+        bags.Bag[0] = true;
+        bags.PerCustomer[0] = 1000;
+        bags.UnitMargin[0] = -5;
+        var run = new RotaStockRun();
+        run.Start(bags);
+        var counted = new RotaStockWeek();
+        counted.Clear(1);
+        run.Sell(12, 10, 800, counted);
+        Check(!bags.Capped(0) && counted.Want[0] == 10000, "rota goods: ten customers who buy take ten bags on a dirty floor as on a clean one (" + counted.Want[0] / 1000.0 + ")");
+
+        // Each contract line has its wholesaler's limit: two lines at theirs need another wholesaler, one under its limit more ordered.
+        RotaStock lines = RotaGoods(0, shelf: 1000, box: 100, boxes: 100);
+        lines.Contract(0, 5000, 5000);
+        lines.Contract(0, 2000, 5000);
+        RotaGoodsWeek(lines, RotaNoon(1500), w);
+        Check(lines.Weekly[0] == 7000 && lines.Most[0] == 10000 && w.Out[0] >= 0 && RotaLift.Of(lines, w, 0) == RotaLift.Order,
+            "rota goods: two contracts bringing 7,000 of the 10,000 their wholesalers allow: order more, not a second wholesaler");
+        RotaStock full = RotaGoods(0, shelf: 1000, box: 100, boxes: 100);
+        full.Contract(0, 5000, 5000);
+        full.Contract(0, 5000, 5000);
+        RotaGoodsWeek(full, RotaNoon(1500), w);
+        Check(full.Most[0] == 10000 && w.Out[0] >= 0 && RotaLift.Of(full, w, 0) == RotaLift.Second, "rota goods: both at their limit, another wholesaler or a delivery plan");
+        RotaStock none = RotaGoods(0);
+        none.Contract(0, 500, 0);
+        Check(none.Weekly[0] == 500 && none.Most[0] == 0, "rota goods: with the game's limits off there is no limit to reach");
+        Check(RotaFixValues("reallife_rota_lift_second", "the most its Delivery Contracts may bring in a week", "another wholesaler"),
+            "rota goods: the page says the Monday delivery is the most its contracts may bring, and names another wholesaler");
+    }
+
+    // True if en.json's text of a key holds every piece given.
+    private static bool RotaFixValues(string key, params string[] pieces)
+    {
+        string text = System.IO.File.ReadAllText(System.IO.Path.Combine(LocalesFolder(), "en.json"));
+        int at = text.IndexOf("\"" + key + "\":", StringComparison.Ordinal);
+        int end = at < 0 ? -1 : text.IndexOf('\n', at);
+        string line = at < 0 ? string.Empty : end < 0 ? text.Substring(at) : text.Substring(at, end - at);
+        foreach (string piece in pieces)
+        {
+            if (!line.Contains(piece))
+            {
+                return false;
+            }
+        }
+        return line.Length > 0;
     }
 }

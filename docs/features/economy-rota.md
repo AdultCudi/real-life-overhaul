@@ -151,14 +151,15 @@ In a shop of the game's retail simulators, every product sold off a shelf (and, 
 - what its shelves hold (`CargoInstance.GetMaxStockCapacity`);
 - what is on site: the shelves, the stock containers and any vehicle parked there, as `ReStockingHelper.CountAvailableStock` counts them;
 - the box places of the business's storage less those other goods take;
-- what a customer takes of it and what a unit leaves, by the same source as what a customer is worth (the books of the last days, else the game's own arithmetic for a customer's order);
-- what the delivery contracts that repeat bring on a Monday (`DeliveryContractItem.amount`, with the weekly limit `Item.maxWholesaleOrderAmount`);
-- what the logistics managers' delivery plans top it up to each morning (`ItemAmountTarget.targetAmount`, read as `LogisticsManagerPlan.GetPlannedDeliveries` would run it, without its side effects).
+- what a customer takes of it and what a unit leaves, by the same source as what a customer is worth (the books of the last days, else the game's own arithmetic for a customer's order), at today's prices as a customer's worth is (the city's takings line), so that what a customer leaves splits into its goods without a price rise landing on what needs none;
+- what the delivery contracts that repeat bring on a Monday (`DeliveryContractItem.amount`, with the weekly limit `Item.maxWholesaleOrderAmount`, which each contract line has of its own);
+- what the logistics managers' delivery plans top it up to each morning (`ItemAmountTarget.targetAmount`, read as `LogisticsManagerPlan.GetPlannedDeliveries` would run it, without its side effects), what the warehouse of the plan holds, and what that warehouse's own repeating contracts bring it a week; a warehouse two plans come from is counted once.
 
-Each week of a plan is run hour by hour (`RotaStockRun`): the delivery plan at 2, the contract at 8 on a Monday (onto the shelves, then into storage a box at a time; what finds no room goes back, as `ItemHelper.DeliverCargoToBuilding` refunds it), then the hour's customers buy what is there.
+Each week of a plan is run hour by hour (`RotaStockRun`): the delivery plan at 2, with no more than its warehouse holds (`LogisticsManagerPlanDestination.ProcessStockTarget` takes only what is there; what finds no room goes back to the warehouse), the contract at 8 on a Monday (onto the shelves, then into storage a box at a time; what finds no room goes back, as `ItemHelper.DeliverCargoToBuilding` refunds it) and the warehouse's own at the same hour, then the hour's customers buy what is there.
+The warehouse is taken to serve this business alone: what other businesses' plans take from it is not counted.
 The shelves are filled again from storage the moment they run empty (`ItemHelper.SubtractFromStock`, `RefillSingleItemWithLimit`), so what sells out is everything on site.
 
-Without a bag nobody buys goods (`GetIdealPointOfSale`).
+Without a bag nobody buys goods (`GetIdealPointOfSale`); a customer who buys takes one bag, however much the floor's dirt lowers what they buy (`ProcessPaperBag`).
 The goods run two weeks, the first from what is there now, and the second is counted, so a plan comes to what it comes to week after week with the deliveries there are.
 
 An Urgent Order is a delivery once (the contract goes back to Mondays after it, and the game lowers its amount to what is left of the week's limit), so it is not counted; neither is a contract that does not repeat, a backorder or a shortage at the wholesaler (the page says those).
@@ -167,7 +168,7 @@ A product nothing brings is not capped: it is taken to be restocked by hand, and
 A shelf whose item takes nothing on a sale (`producerSettings.ResourcesRequired` off) is no limit.
 With no product capped the week is valued exactly as before.
 
-The page lists each product that runs out in the advised plan with the hour, what its customers would have spent and what would lift it (`RotaLift`): room for the deliveries, a higher target for the delivery plan, a larger contract or an Urgent Order, or past the weekly limit a second wholesaler or a delivery plan from a warehouse.
+The page lists each product that runs out in the advised plan with the hour, what its customers would have spent and what would lift it (`RotaLift`): room for the deliveries, a higher target for the delivery plan (and what its warehouse holds), a larger contract or an Urgent Order, or with every contract line at its wholesaler's weekly limit another wholesaler or a delivery plan from a warehouse.
 
 Where the next hire adds too little because the goods run out first, the ladder ends with that reason (`RotaEnd.Stock`).
 

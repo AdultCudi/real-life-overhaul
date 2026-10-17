@@ -11776,7 +11776,7 @@
   "reallife_rota_lift_target": "El plan de entregas del Gestor de logística lo completa hasta {target} cada mañana, y un día con mucho trabajo vende unos {day}. Un objetivo más alto lo cubriría.",
   "reallife_rota_lift_warehouse": "Su almacén solo tiene {warehouse} ahora.",
   "reallife_rota_lift_order": "La entrega del lunes trae {delivered} y una semana vende unos {want}. Una cantidad mayor en su contrato de entrega lo cubriría, o un Pedido urgente durante la semana con un recargo del {percentage} por ciento.",
-  "reallife_rota_lift_second": "La entrega del lunes trae {delivered}, lo máximo que envía un mayorista en una semana, y una semana vende unos {want}. Un contrato de entrega con un segundo mayorista, o un plan de entregas de un Gestor de logística desde un almacén, lo cubriría. Un Pedido urgente no ayudaría mucho: cuenta para el mismo límite semanal.",
+  "reallife_rota_lift_second": "La entrega del lunes trae {delivered}, lo máximo que sus contratos de entrega pueden traer en una semana, y una semana vende unos {want}. Un contrato de entrega con otro mayorista, o un plan de entregas de un Gestor de logística desde un almacén, lo cubriría. Un Pedido urgente no ayudaría mucho: cuenta para el mismo límite semanal.",
   "reallife_rota_stop_stock": "Uno más para {skill} sumaría solo unos {amount} a la semana, porque los productos se agotan antes de que más clientes puedan comprarlos.",
   "reallife_rota_sum_stock": "Productos que se agotan en este plan: {count}. Lo que habrían gastado sus clientes, ya descontado arriba: {amount} a la semana.",
   "reallife_rota_note_permit_stock": "Los productos ya se agotan en las horas que hay, así que más horas venderían menos que eso.",

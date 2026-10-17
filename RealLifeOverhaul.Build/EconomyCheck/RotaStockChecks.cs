@@ -145,8 +145,9 @@ internal static partial class Program
         fresh.Sell(12, 1, 1000, null);
         Check(fresh.Left(0) == 159 && fresh.Room(0) == 1, "rota goods: a unit sold makes room for a unit in a part-filled box");
 
-        // A Logistics Manager tops it up to 120 each morning: enough for 100 a day, not for a Saturday of 150.
+        // A Logistics Manager tops it up to 120 each morning, from a warehouse with plenty: enough for 100 a day, not for a Saturday of 150.
         s = RotaGoods(0, target: 120);
+        s.Warehouse[0] = 100000;
         long value = RotaGoodsWeek(s, RotaNoon(100, 150), w);
         Check(s.Capped(0) && w.Out[0] == 5 * 24 + 12 && w.Sold[0] == (6 * 100 + 120) * 1000L, "rota goods: a top-up to 120 each morning sells 100 a day and 120 of a Saturday's 150 (" + w.Sold[0] / 1000 + ")");
         Check(w.DayUnits(0) == 150 && RotaLift.Of(s, w, 0) == RotaLift.Target, "rota goods: the busiest day wants 150, and a higher target is what would cover it");

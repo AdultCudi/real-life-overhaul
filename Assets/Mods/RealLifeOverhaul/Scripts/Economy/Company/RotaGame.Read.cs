@@ -471,12 +471,12 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             // The city's takings line brings the game's takings to today's prices; goods cost today's prices already.
-            double factor = CityEconomyDirector.TakingsFactor / 1000.0;
+            int factor = CityEconomyDirector.TakingsFactor;
             if (customers >= RotaCatalogue.BooksCustomers && takings > 0)
             {
                 sheet.FromBooks = true;
-                shop.Takings = (int)Math.Round(takings * factor * 100.0 / customers);
-                shop.Margin = (int)Math.Round((takings * factor - goods) * 100.0 / customers);
+                shop.Takings = (int)Math.Round(RotaStock.Left(takings, 0, factor) * 100.0 / customers);
+                shop.Margin = (int)Math.Round(RotaStock.Left(takings, goods, factor) * 100.0 / customers);
                 return;
             }
             // No books yet: what one customer buys of the products on sale, at the prices set.
@@ -508,8 +508,8 @@ namespace RealLifeOverhaul.Economy
                     goods += (item.type & ItemType.ServiceProduct) != 0 ? 0f : sold * item.GetWholesalePrice();
                 }
             }
-            shop.Takings = (int)Math.Round(Math.Max(0.0, takings * factor) * 100.0);
-            shop.Margin = (int)Math.Round((takings * factor - goods) * 100.0);
+            shop.Takings = (int)Math.Round(Math.Max(0.0, RotaStock.Left(takings, 0, factor)) * 100.0);
+            shop.Margin = (int)Math.Round(RotaStock.Left(takings, goods, factor) * 100.0);
         }
 
         // What a customer takes of a product by the game's own arithmetic, a random amount at its mean

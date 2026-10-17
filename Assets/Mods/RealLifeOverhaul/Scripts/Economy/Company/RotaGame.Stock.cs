@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Economy
     {
         private static readonly Dictionary<string, int> StockIndex = new Dictionary<string, int>(32, StringComparer.Ordinal);
         private static readonly bool[] StockEndless = new bool[RotaStock.ProductsMost];
+        // The products each warehouse of a shop's rounds has been counted for, a bit each: two rounds from one count it once.
+        private static readonly Dictionary<BuildingRegistration, uint> StockCounted =
+            new Dictionary<BuildingRegistration, uint>(4, ReferenceComparer<BuildingRegistration>.Instance);
         private static bool _stockSaid;
 
         // After ReadWorth: the same books or prices say what a customer takes.
@@ -178,6 +181,7 @@ namespace RealLifeOverhaul.Economy
             RotaShop shop = sheet.Shop;
             RotaStock stock = shop.Stock;
             double goods = 0;
+            int factor = CityEconomyDirector.TakingsFactor;   // as ReadWorth puts a customer's margin at today's prices
             if (sheet.FromBooks)
             {
                 int today = Save.Day, customers = 0;
@@ -203,7 +207,7 @@ namespace RealLifeOverhaul.Economy
                         {
                             continue;
                         }
-                        double margin = sale.totalPrice - sale.totalWholesalePrice;
+                        double margin = RotaStock.Left(sale.totalPrice, sale.totalWholesalePrice, factor);
                         if (IsGoods(sale.itemName, type))
                         {
                             goods += margin;
@@ -238,7 +242,7 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     float taken = Taken(item, products[i], type, reg, content);
-                    double margin = ItemHelper.GetPrice(products[i], reg) - item.GetWholesalePrice();
+                    double margin = RotaStock.Left(ItemHelper.GetPrice(products[i], reg), item.GetWholesalePrice(), factor);
                     goods += taken * margin * 100.0;
                     if (StockIndex.TryGetValue(products[i], out int p))
                     {
@@ -287,9 +291,8 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    stock.Weekly[p] += line.amount;
                     Item item = line.ItemCached;
-                    stock.Most[p] = limits && item != null ? Math.Max(stock.Most[p], item.maxWholesaleOrderAmount) : 0;
+                    stock.Contract(p, line.amount, limits && item != null ? item.maxWholesaleOrderAmount : 0);
                     if (seller != null)
                     {
                         stock.Backorder[p] |= ProductMarketHelper.IsProductInMarketEvent(line.itemName, MarketEventType.ProductBackorder, seller.Neighborhood);
@@ -300,11 +303,13 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The logistics managers' rounds to here: each target and the warehouse's stock, counted only where the game
-        // would run the round (LogisticsManagerPlan.GetPlannedDeliveries): a manager at work, a destination served.
+        // would run the round (LogisticsManagerPlan.GetPlannedDeliveries): a manager at work, a destination served. A
+        // warehouse is counted once for a product, with what its own repeating contracts bring it a week.
         private static void ReadRounds(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaStock stock = sheet.Shop.Stock;
             List<LogisticsManagerPlan> plans = Save.logisticsManagerPlans;
+            StockCounted.Clear();
             for (int i = 0; plans != null && i < plans.Count; i++)
             {
                 LogisticsManagerPlan plan = plans[i];
@@ -335,10 +340,37 @@ namespace RealLifeOverhaul.Economy
                             continue;
                         }
                         stock.Target[p] = Math.Max(stock.Target[p], target.targetAmount);
-                        stock.Warehouse[p] += BuildingHelper.CountTotalResourcesInStock(warehouse, target.itemName, false);
+                        StockCounted.TryGetValue(warehouse, out uint counted);
+                        if ((counted & (1u << p)) == 0)
+                        {
+                            StockCounted[warehouse] = counted | (1u << p);
+                            stock.Warehouse[p] += BuildingHelper.CountTotalResourcesInStock(warehouse, target.itemName, false);
+                            stock.Restock[p] += Restocks(warehouse, target.itemName);
+                        }
                     }
                 }
             }
+            StockCounted.Clear();
+        }
+
+        // What a warehouse's own repeating contracts bring it of a product each Monday.
+        private static int Restocks(BuildingRegistration warehouse, string item)
+        {
+            int units = 0;
+            List<DeliveryContract> contracts = Save.DeliveryContracts;
+            for (int i = 0; contracts != null && i < contracts.Count; i++)
+            {
+                DeliveryContract c = contracts[i];
+                if (c == null || !c.enabled || !c.repeatingOrder || c.businessAddress == null || c.businessAddress != warehouse.Address || c.items == null)
+                {
+                    continue;
+                }
+                for (int k = 0; k < c.items.Count; k++)
+                {
+                    units += c.items[k] != null && c.items[k].itemName == item ? Math.Max(0, c.items[k].amount) : 0;
+                }
+            }
+            return units;
         }
 
         // A product whose shelf never runs down limits nothing: it goes back into the margin with the other goods.
@@ -364,6 +396,7 @@ namespace RealLifeOverhaul.Economy
                     stock.Target[to] = stock.Target[p];
                     stock.Most[to] = stock.Most[p];
                     stock.Warehouse[to] = stock.Warehouse[p];
+                    stock.Restock[to] = stock.Restock[p];
                     stock.Bag[to] = stock.Bag[p];
                     stock.Backorder[to] = stock.Backorder[p];
                     stock.Shortage[to] = stock.Shortage[p];
