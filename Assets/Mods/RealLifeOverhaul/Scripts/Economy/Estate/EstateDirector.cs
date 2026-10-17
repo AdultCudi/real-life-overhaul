@@ -501,7 +501,7 @@ namespace RealLifeOverhaul.Economy
                 _holding = false;
                 _state.LastDay = day;   // a jump of many days is one pass, for today
                 _climate = EstateGame.Climate(day);
-                if (day - _state.YearFrom >= _climate.DaysPerYear)
+                if (EstateRules.YearTurned(_state.YearFrom, day, _climate.DaysPerYear))
                 {
                     NewYear(day);
                 }

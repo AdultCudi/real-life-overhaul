@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Every building's custom price is the game's own again, and nothing of the city is kept.</summary>
+        /// <summary>Every building's custom price, and the listings priced by it, are the game's own again, and nothing of the city is kept.</summary>
         public static int RestoreValues()
         {
             int put = City.Count;
@@ -284,6 +284,7 @@ namespace RealLifeOverhaul.Economy
                     City[i].B.customMarketPrice = City[i].Custom;
                 }
             }
+            Reprice();   // the listings the mod priced (they are in the save) take the game's own values again
             City.Clear();
             ByPlace.Clear();
             ByAddress.Clear();

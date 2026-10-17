@@ -46,9 +46,10 @@ namespace RealLifeOverhaul.Economy
             return key == EstateGame.HotelTakingsKey || key == EstateGame.HotelCostsKey || key == EstateGame.HireRentKey || key == EstateGame.HireCostsKey;
         }
 
+        // The year's figures start again with the game's tax year (TradingYear's).
         private void NewYear(int day)
         {
-            _state.YearFrom = day;
+            _state.YearFrom = EstateRules.TaxYearFirst(day, _climate.DaysPerYear);
             for (int i = 0; i < _state.Holdings.Count; i++)
             {
                 _state.Holdings[i].RentYear = _state.Holdings[i].CostYear = 0;

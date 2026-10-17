@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Economy
             {
                 HireCar car = hire.Cars[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(car.Id)).Append('|').Append(Clean(car.Type)).Append('|');
-                Join(t, car.Price, car.Rate, car.State, car.Day, car.HireDays, car.HireRate, car.Deposit, car.HireSeed, car.X, car.Y, car.Z, car.Yaw, car.Takings, car.Hires);
+                Join(t, car.Price, car.Rate, car.State, car.Day, car.HireDays, car.HireRate, car.Deposit, car.HireSeed, car.X, car.Y, car.Z, car.Yaw, car.Takings, car.Hires, car.HireRating);
             }
             return t.ToString();
         }
@@ -244,7 +244,8 @@ namespace RealLifeOverhaul.Economy
                                         Id = c[0], Type = c[1], Price = Math.Max(0, I(c, 2)),
                                         Rate = EstateCatalogue.Clamp(I(c, 3, 1000), EstateCatalogue.RateLeast, EstateCatalogue.RateMost), State = state,
                                         Day = Math.Max(0, I(c, 5)), HireDays = Math.Max(0, I(c, 6)), HireRate = Math.Max(0, I(c, 7)), Deposit = Math.Max(0, I(c, 8)), HireSeed = I(c, 9),
-                                        X = I(c, 10), Y = I(c, 11), Z = I(c, 12), Yaw = I(c, 13), Takings = Math.Max(0, I(c, 14)), Hires = Math.Max(0, I(c, 15))
+                                        X = I(c, 10), Y = I(c, 11), Z = I(c, 12), Yaw = I(c, 13), Takings = Math.Max(0, I(c, 14)), Hires = Math.Max(0, I(c, 15)),
+                                        HireRating = EstateCatalogue.Clamp(I(c, 16, -1), -1, 1000)
                                     });
                                 }
                             }

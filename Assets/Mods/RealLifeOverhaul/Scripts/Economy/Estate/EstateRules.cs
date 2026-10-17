@@ -86,6 +86,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>True for a condition in the run-down range StreetCondition draws from, its top included.</summary>
+        public static bool RunDown(int cond) => cond <= EstateCatalogue.RunDownMost;
+
         /// <summary>The condition of a building nobody of the mod's has looked at yet: a quarter of the city is run down.</summary>
         public static int StreetCondition(int seed, int place)
         {
@@ -176,6 +179,16 @@ namespace RealLifeOverhaul.Economy
         {
             return scale <= 0 ? 1000 : EstateCatalogue.Clamp(scale, EstateCatalogue.RentScaleLeast, EstateCatalogue.RentScaleMost);
         }
+
+        /// <summary>A night's rent of a building the game lets, the rental income option settled on it: what comes in.</summary>
+        public static int GameNight(int gameRent, int scale) => gameRent + GameRentTopUp(gameRent, scale);
+
+        /// <summary>
+        /// What the game's nightly run paid short of a building the player lets himself: it lets fewer units on a night when the
+        /// rent is at or over its market rate, and the tenants' agreed rent is made good. 0 when nothing is short, and when
+        /// nothing was paid at all (the building is no longer the player's, or the run did not reach it).
+        /// </summary>
+        public static int RentShort(int agreed, int paid) => paid <= 0 ? 0 : Math.Max(0, agreed - paid);
 
         /// <summary>What is added to (or, under 100%, taken from) a night's rent the game paid, so the night comes to that rent times the setting.</summary>
         public static int GameRentTopUp(int gameRent, int scale)
@@ -427,6 +440,9 @@ namespace RealLifeOverhaul.Economy
             int least = EstateCatalogue.Share(EstateCatalogue.AgentFeeLeast, EstateCatalogue.Clamp(index, 500, 4000));
             return price <= 0 ? 0 : Math.Min(price, Math.Max(least, EstateCatalogue.Share(price, EstateCatalogue.AgentFee)));
         }
+
+        /// <summary>Whether the year's figures begun on a day are a year old: the game's tax year has turned since.</summary>
+        public static bool YearTurned(int yearFrom, int day, int daysPerYear) => TaxYearFirst(day, daysPerYear) > yearFrom;
 
         /// <summary>The last day of the game's tax year a day is in: the game taxes on each day that is a multiple of the year (TaxHelper).</summary>
         public static int TaxYearLast(int day, int daysPerYear)

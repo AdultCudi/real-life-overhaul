@@ -344,7 +344,7 @@ namespace RealLifeOverhaul.Economy
                 row.Set(1, district);
                 row.Set(2, EstateText.Use(use));
                 row.Set(3, EstateText.Money(f.buildingPrice), f.buildingPrice);
-                row.Set(4, EstateText.Level(cond), cond, cond <= EstateCatalogue.RunDownMost ? TableRow.Yellow : TableRow.Plain);
+                row.Set(4, EstateText.Level(cond), cond, EstateRules.RunDown(cond) ? TableRow.Yellow : TableRow.Plain);
                 if (rent > 0 && f.buildingPrice > 0f)
                 {
                     row.Set(5, EstateText.Money(rent), rent);
@@ -411,16 +411,16 @@ namespace RealLifeOverhaul.Economy
             string place = b.Place;
             box.Title(EstateGame.NameOf(place));
             box.Subtitle(EstateText.T("reallife_ibox_type_in", "type", EstateText.Use(use), "district", EstateText.District(b.District)));
-            box.Chip(EstateText.Level(cond), cond < EstateCatalogue.RunDownMost ? CellTone.Yellow : CellTone.Plain);
+            box.Chip(EstateText.Level(cond), EstateRules.RunDown(cond) ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_money");
             box.Row("reallife_estate_listing_price", EstateText.Money(value));
             box.Section("reallife_ibox_sec_price_made");
             box.Line(EstateText.T("reallife_estate_listing_base", "amount", EstateText.Money(b.Base)));
             box.Line(EstateText.T("reallife_estate_listing_market", "market", EstateText.Share(state.Real), "prices", EstateText.Share(c.Index)));
             box.Line(EstateText.T("reallife_estate_listing_district", "district", EstateText.District(b.District), "share", EstateText.Share(EstateRules.DistrictValue(income))));
-            box.Line(EstateText.T(cond < EstateCatalogue.RunDownMost ? "reallife_estate_listing_run_down" : "reallife_estate_listing_kept", "condition", EstateText.Level(cond),
+            box.Line(EstateText.T(EstateRules.RunDown(cond) ? "reallife_estate_listing_run_down" : "reallife_estate_listing_kept", "condition", EstateText.Level(cond),
                 "share", EstateText.Share(EstateRules.ConditionValue(cond)), "amount", EstateText.Money(EstateRules.RepairCost(b.Base, cond, c.Index))),
-                cond < EstateCatalogue.RunDownMost ? CellTone.Yellow : CellTone.Plain);
+                EstateRules.RunDown(cond) ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_letting");
             box.Line(rent > 0
                 ? EstateText.T("reallife_estate_listing_rent", "use", EstateText.Use(use), "amount", EstateText.Money(rent),

@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Economy
 
             // What the game's nightly run has just paid for each building, before anything is written again; a building
             // the game lets has the rental income option settled on it as rent.
-            int paid = 0, wrong = 0, topped = 0, topUps = 0;
+            int paid = 0, wrong = 0, topped = 0, topUps = 0, madeGood = 0, shorts = 0;
             for (int i = 0; i < s.Holdings.Count; i++)
             {
                 EstateHolding h = s.Holdings[i];
@@ -28,16 +28,24 @@ namespace RealLifeOverhaul.Economy
                     topUps++;
                 }
                 rent += extra;
+                int agreed = h.Managed ? EstateRules.PayingRent(h) : 0;
+                int shortfall = h.Managed ? EstateRules.RentShort(agreed, rent) : 0;
+                if (shortfall > 0)
+                {
+                    EstateGame.BookRent(shortfall, h);   // the run let fewer units, as it does when the rent is over its market rate
+                    madeGood += shortfall;
+                    shorts++;
+                    rent += shortfall;
+                }
                 h.RentYear += rent;
                 paid += rent;
-                int agreed = h.Managed ? EstateRules.PayingRent(h) : 0;
-                wrong += h.Managed && Math.Abs(rent - agreed) > Math.Max(2, agreed / 12) ? 1 : 0;
+                wrong += h.Managed && rent - agreed > Math.Max(2, agreed / 12) ? 1 : 0;
             }
             if (Verbose)
             {
-                Logger?.Info("Estate check (rent, day " + day + "): the game's run paid " + paid + " for " + s.Holdings.Count + " building(s); " + wrong
-                             + " building(s) the player lets himself were paid something other than the agreed rent of their units that owe nothing "
-                             + "(the game may let a few units less on a day): " + (wrong == 0 ? "PASS" : "LOOK"));
+                Logger?.Info("Estate check (rent, day " + day + "): " + paid + " for " + s.Holdings.Count + " building(s), " + madeGood + " of it made good on " + shorts
+                             + " building(s) the player lets himself that the game's run paid short; " + wrong
+                             + " building(s) the player lets himself were paid more than the agreed rent of their units that owe nothing: " + (wrong == 0 ? "PASS" : "LOOK"));
             }
             if (topUps > 0)
             {

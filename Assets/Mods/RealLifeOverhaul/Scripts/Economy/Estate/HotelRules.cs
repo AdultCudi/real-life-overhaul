@@ -126,6 +126,19 @@ namespace RealLifeOverhaul.Economy
             return EstateCatalogue.Share((long)Rooms(tier) * EstateCatalogue.CampaignPerRoom, EstateCatalogue.Clamp(index, 500, 4000));
         }
 
+        /// <summary>A week's campaign paid for today: it runs from today, and is spent this year.</summary>
+        public static void Campaign(HotelFile f, int day, int cost)
+        {
+            f.PushEnd = day + EstateCatalogue.CampaignDays - 1;
+            f.CostsYear += Math.Max(0, cost);
+        }
+
+        /// <summary>What giving up a hotel brings: a lease its deposit; a hotel bought a little under its price now, or under what was paid when Travel no longer prices it.</summary>
+        public static int SoldBack(bool leased, int paid, int priceNow)
+        {
+            return leased ? paid : EstateCatalogue.Share(priceNow > 0 ? priceNow : paid, EstateCatalogue.HotelSellShare);
+        }
+
         public static int Stars(int rating)
         {
             return 1 + EstateCatalogue.Clamp(rating, 0, 999) / 200;
@@ -256,7 +269,7 @@ namespace RealLifeOverhaul.Economy
                 n.PipeCost = Pipe(f, day, c.Index);
             }
 
-            if (f.AskRooms > 0 && day > f.AskLapse)
+            if (f.AskRooms > 0 && day >= f.AskLapse)   // the night of its last day: it could be answered all that day
             {
                 RefuseGroup(f);
                 n.GroupLapsed = true;

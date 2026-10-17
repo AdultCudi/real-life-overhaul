@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Economy
             {
                 c.Season = CalendarRules.SeasonFromSpring(day, c.DaysPerYear);
                 net -= HireRules.Premium(price, c);
-                if (car.State == (int)HireState.Out && day >= car.Day)
+                if (car.State == (int)HireState.Out && day >= HireRules.Back(car, rating))
                 {
                     HireReturn r = HireRules.End(car, rating, true, c);
                     net += r.Rent + r.Kept + r.Payout - r.Repair - r.Cleaning;

@@ -797,7 +797,7 @@ internal static partial class Program
         Check(withGroup.Sold0 >= rooms && withGroup.Sold0 <= 40 && g.GroupNights == nights - 1 && withGroup.Takings >= rooms * groupRate, "a group's rooms are sold at its rate whatever the rate at the desk, and never more than the hotel has");
         HotelFile unanswered = Hotel();
         HotelRules.AskGroup(unanswered, 500, 1);
-        HotelNight l1 = HotelRules.Night(unanswered, 500, 3, c), l2 = HotelRules.Night(unanswered, 12345, 4, c);
+        HotelNight l1 = HotelRules.Night(unanswered, 500, 2, c), l2 = HotelRules.Night(unanswered, 12345, 3, c);
         Check(!l1.GroupLapsed && l2.GroupLapsed, "a group that is not answered within its days books elsewhere");
         HotelFile wet = Hotel();
         int bill = HotelRules.Pipe(wet, 10, 1000);

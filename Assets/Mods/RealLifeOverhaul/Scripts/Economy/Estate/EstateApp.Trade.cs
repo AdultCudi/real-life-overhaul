@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Economy
                     picked = car;
                 }
                 row.Kind = carClass;
-                row.Kind2 = car.State == (int)HireState.Out ? EstateTables.CarOut : EstateTables.CarIn;
+                row.Kind2 = HireRules.Away(car.State) ? EstateTables.CarOut : EstateTables.CarIn;
                 row.Set(0, EstateGame.CarName(car.Type));
                 row.Set(1, EstateText.CarClass(carClass));
                 row.Set(2, EstateText.CarState(car.State), car.State == (int)HireState.Waiting ? TableRow.Yellow : TableRow.Plain);

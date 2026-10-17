@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Economy
             {
                 EstateHolding h = state.Holdings[i];
                 int value = EstateRules.Value(h, state.Real, c.Index), behind;
-                int income = h.Managed ? EstateRules.PayingRent(h) : EstateGame.GameRent(h);
+                int income = h.Managed ? EstateRules.PayingRent(h) : EstateRules.GameNight(EstateGame.GameRent(h), c.RentScale);
                 bool empty = h.LetUnits(out behind) < h.Units.Count && h.Managed;
                 worth += value;
                 rent += income;
@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.Economy
             }
             else if (!h.Managed)
             {
-                box.Line(EstateText.T("reallife_estate_own_game", "amount", EstateText.Money(EstateGame.GameRent(h) + EstateRules.GameRentTopUp(EstateGame.GameRent(h), c.RentScale)),
+                box.Line(EstateText.T("reallife_estate_own_game", "amount", EstateText.Money(EstateRules.GameNight(EstateGame.GameRent(h), c.RentScale)),
                     "market", EstateText.Money(EstateRules.MarketRent(h, c))));
             }
             else if (h.Units.Count == 1)

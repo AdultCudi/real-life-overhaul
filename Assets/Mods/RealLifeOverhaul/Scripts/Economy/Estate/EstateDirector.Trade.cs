@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            int back = f.Leased || slot == null ? f.Paid : EstateCatalogue.Share(EstateGame.HotelPrice(slot, _state.Real, _climate.DaysPerYear), EstateCatalogue.HotelSellShare);
+            int back = HotelRules.SoldBack(f.Leased, f.Paid, slot != null ? EstateGame.HotelPrice(slot, _state.Real, _climate.DaysPerYear) : 0);
             Pay(back, EstateGame.HotelSoldKey, f.Name, null, f.Leased ? "a lease ended: its deposit" : "a hotel sold back");
             _state.Hotels.Remove(f);
             Tell(NotificationType.Info, "reallife_estate_note_hotel_gone", Data("hotel", f.Name, "amount", EstateText.Money(back)), TabHotel, null);
@@ -165,12 +165,13 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            if (!Cost(HotelRules.CampaignCost(f.Tier, _climate.Index), EstateGame.HotelCostsKey, f.Name, null, "a week's campaign"))
+            int cost = HotelRules.CampaignCost(f.Tier, _climate.Index);
+            if (!Cost(cost, EstateGame.HotelCostsKey, f.Name, null, "a week's campaign"))
             {
                 Notifications.ShowInsufficientMoney();
                 return;
             }
-            f.PushEnd = Save.Day + EstateCatalogue.CampaignDays - 1;
+            HotelRules.Campaign(f, Save.Day, cost);
             Changed();
         }
 
@@ -315,15 +316,21 @@ namespace RealLifeOverhaul.Economy
                 if (EstateGame.Vehicle(car.Id) == null)
                 {
                     hire.Cars.RemoveAt(i);   // sold, seized or taken back by a lender: it is off the books
+                    int deposit = HireRules.DepositHeld(car);
+                    if (deposit > 0)
+                    {
+                        string gone = EstateGame.CarName(car.Type);
+                        Cost(deposit, EstateGame.HireDepositKey, gone, null, "the deposit goes back: the car was taken off the save while out", true, false);
+                    }
                     continue;
                 }
                 switch ((HireState)car.State)
                 {
                     case HireState.Valet:
-                        car.State = (int)HireState.Idle;
-                        break;
+                        car.State = (int)HireState.Idle;   // cleaned yesterday: it can go out today
+                        goto default;
                     case HireState.Out:
-                        if (day >= car.Day)
+                        if (day >= HireRules.Back(car, hire.Rating))   // a hire that runs a day late comes back the day after its day
                         {
                             Due(car, day, false);
                         }
@@ -442,8 +449,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 else if (car.State == (int)HireState.Waiting)
                 {
+                    int had = hire.Cars.Count;
                     Due(car, day, false);
-                    changed |= i >= hire.Cars.Count || hire.Cars[i].State != (int)HireState.Waiting;
+                    changed |= hire.Cars.Count != had || car.State != (int)HireState.Waiting;   // lost, or back on the lot
                 }
             }
             if (changed)

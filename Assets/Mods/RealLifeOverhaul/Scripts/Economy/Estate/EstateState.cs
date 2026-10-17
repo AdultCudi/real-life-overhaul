@@ -263,6 +263,7 @@ namespace RealLifeOverhaul.Economy
         public int HireDays, HireRate, Deposit, HireSeed;
         public int X, Y, Z, Yaw;        // where it stood when it went out: hundredths of a metre, tenths of a degree
         public int Takings, Hires;
+        public int HireRating = -1;     // while out: the hire business's rating when it went out, which decides how it ends; -1: not known (an older save)
     }
 
     /// <summary>The hire business: its lot, its cars, what customers think of it.</summary>

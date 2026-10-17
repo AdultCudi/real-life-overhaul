@@ -10,6 +10,7 @@ internal static partial class Program
         BrandFixes();
         ServicesFixes();
         DealerFixes();
+        EstateFixes();
     }
 
     // A file of Scripts/Economy as text, comments and all.

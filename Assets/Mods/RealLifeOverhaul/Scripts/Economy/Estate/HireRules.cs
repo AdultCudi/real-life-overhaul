@@ -92,15 +92,28 @@ namespace RealLifeOverhaul.Economy
             car.HireSeed = EstateRules.Roll(seed, day, ForHire, key + 1) * 1000 + EstateRules.Roll(seed, day, ForHire, key + 2);
             car.Day = day + car.HireDays;
             car.State = (int)HireState.Out;
+            car.HireRating = EstateCatalogue.Clamp(rating, 0, 1000);
             return true;
         }
+
+        /// <summary>True for a car not on the lot: with a customer, or back and waiting for its space.</summary>
+        public static bool Away(int state) => state == (int)HireState.Out || state == (int)HireState.Waiting;
+
+        /// <summary>The day a car that is out comes back: its day, or the day after when the hire runs a day late.</summary>
+        public static int Back(HireCar car, int rating)
+        {
+            return car.Day + (Late(car, rating) ? 1 : 0);
+        }
+
+        /// <summary>The customer's deposit still held on a car: while it is out or waits for its space, until the hire is settled.</summary>
+        public static int DepositHeld(HireCar car) => Away(car.State) ? Math.Max(0, car.Deposit) : 0;
 
         /// <summary>How the hire that is ending went: the same answer however often it is asked. Changes nothing; <see cref="Settle"/> follows.</summary>
         public static HireReturn End(HireCar car, int rating, bool cover, EstateClimate c, bool damageNow = false)
         {
             var r = new HireReturn();
             int s = car.HireSeed;
-            r.Stolen = !damageNow && EstateRules.Roll(s, 0, ForStolen, 0) < (rating >= EstateCatalogue.HireGoodRating ? EstateCatalogue.HireStolenChanceGood : EstateCatalogue.HireStolenChance);
+            r.Stolen = !damageNow && Stolen(car, rating);
             r.Late = !r.Stolen && EstateRules.Roll(s, 0, ForLate, 0) < EstateCatalogue.HireLateChance;
             r.Days = car.HireDays + (r.Late ? 1 : 0);
             r.Rent = car.HireRate * car.HireDays + (r.Late ? EstateCatalogue.Share(car.HireRate, EstateCatalogue.HireLateRate) : 0);
@@ -125,12 +138,25 @@ namespace RealLifeOverhaul.Economy
             return r;
         }
 
+        // Whether the car is not brought back: judged by the rating the hire went out under (an older save's by the one given).
+        private static bool Stolen(HireCar car, int rating)
+        {
+            int judged = car.HireRating >= 0 ? car.HireRating : rating;
+            return EstateRules.Roll(car.HireSeed, 0, ForStolen, 0) < (judged >= EstateCatalogue.HireGoodRating ? EstateCatalogue.HireStolenChanceGood : EstateCatalogue.HireStolenChance);
+        }
+
+        private static bool Late(HireCar car, int rating)
+        {
+            return !Stolen(car, rating) && EstateRules.Roll(car.HireSeed, 0, ForLate, 0) < EstateCatalogue.HireLateChance;
+        }
+
         /// <summary>The hire is over and paid for: the car is cleaned today and can be hired from tomorrow.</summary>
         public static void Settle(HireCar car, HireReturn r)
         {
             car.Takings += r.Rent;
             car.Hires++;
             car.HireDays = car.HireRate = car.Deposit = car.HireSeed = car.Day = 0;
+            car.HireRating = -1;
             car.State = (int)HireState.Valet;
         }
 
