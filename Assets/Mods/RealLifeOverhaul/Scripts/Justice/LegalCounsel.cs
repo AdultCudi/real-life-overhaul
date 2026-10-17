@@ -493,33 +493,31 @@ namespace RealLifeOverhaul
             Func<DialogEntry> more = () => Offer(next);
             if (index == 0)
             {
-                DialogEntry entry = Raw(JusticeText.T("reallife_justice_offer_pd"));
-                entry.ConfirmTextOverride = "reallife_justice_offer_take".Localize();
-                entry.OnConfirm = () =>
-                {
-                    LegalCounsel.RetainSimple(LawyerKind.PublicDefender, JusticeDirector.Logger);
-                    return PhoneContacts.Closing("reallife_justice_hired_pd");
-                };
-                entry.SecondOptionTextOverride = "reallife_justice_offer_next";
-                entry.OnSecondOption = more;
-                return entry;
+                return PlainOffer(JusticeText.T("reallife_justice_offer_pd"), LawyerKind.PublicDefender, "reallife_justice_hired_pd", more);
             }
             if (index == 1)
             {
                 float quality = JusticeLaw.SelfQuality(LegalCounsel.LawyerSkillValue());
-                DialogEntry entry = Raw(JusticeText.T("reallife_justice_offer_self", "skill", JusticeText.N(Mathf.FloorToInt(LegalCounsel.LawyerSkillValue())),
-                    "effect", JusticeText.Percent(JusticeLaw.CounselEffect(quality))));
-                entry.ConfirmTextOverride = "reallife_justice_offer_take".Localize();
-                entry.OnConfirm = () =>
-                {
-                    LegalCounsel.RetainSimple(LawyerKind.Self, JusticeDirector.Logger);
-                    return PhoneContacts.Closing("reallife_justice_hired_self");
-                };
-                entry.SecondOptionTextOverride = "reallife_justice_offer_next";
-                entry.OnSecondOption = more;
-                return entry;
+                string text = JusticeText.T("reallife_justice_offer_self", "skill", JusticeText.N(Mathf.FloorToInt(LegalCounsel.LawyerSkillValue())),
+                    "effect", JusticeText.Percent(JusticeLaw.CounselEffect(quality)));
+                return PlainOffer(text, LawyerKind.Self, "reallife_justice_hired_self", more);
             }
             return FirmOffer(Options[index], more);
+        }
+
+        // The public defender or oneself: no fee, nothing to sign.
+        private static DialogEntry PlainOffer(string text, LawyerKind kind, string hiredKey, Func<DialogEntry> more)
+        {
+            DialogEntry entry = Raw(text);
+            entry.ConfirmTextOverride = "reallife_justice_offer_take".Localize();
+            entry.OnConfirm = () =>
+            {
+                LegalCounsel.RetainSimple(kind, JusticeDirector.Logger);
+                return PhoneContacts.Closing(hiredKey);
+            };
+            entry.SecondOptionTextOverride = "reallife_justice_offer_next";
+            entry.OnSecondOption = more;
+            return entry;
         }
 
         private static DialogEntry FirmOffer(LawFirm firm, Func<DialogEntry> more)
