@@ -5,9 +5,9 @@ using BAModAPI;
 using Extensions;
 using GleyTrafficSystem;
 using Helpers;
+using Streets;
 using UI;
 using UI.Notification;
-using Streets;
 using UnityEngine;
 using Vehicles.DeliveryDriverJob;
 using Random = UnityEngine.Random;
@@ -15,27 +15,17 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Penalty points, and what happens to someone found driving without the licence for what
-    /// they are in. Nothing is ever discovered by magic: points go on the record only when an
-    /// officer has booked the offence (PoliceAttention.Stopped, PolicePursuit.CaughtAfterFleeing,
-    /// PolicePursuit.PeopleCharged), and the licence is only looked at when the player is
-    /// actually stopped: for an offence, after a pursuit, or at a rare routine roadside check
-    /// (a patrol car that comes up behind, lights on: its own small pull-over, below).
-    ///   no licence / wrong class   a fine, the vehicle impounded (the game's own tow, to a repair
-    ///                              shop bay, and the fee), the third time in thirty days an arrest
-    ///   expired, still renewable   a smaller fine; the car stays
-    ///   suspended                  the heaviest fine, impounded, the second time an arrest
-    /// Driving the school's car on a lesson or test is lawful, and nothing here ever touches it.
-    /// Idle this is one roll every ten seconds while the player drives.
+    /// Penalty points, and the licence asked for when the player is stopped: for an offence, after a pursuit, or at a
+    /// rare roadside check. Nothing is found out without a stop. Idle: one roll every ten seconds while driving.
     /// </summary>
     internal sealed class DrivingEnforcement
     {
-        private const float RollInterval = 10f;
+        private const float RollInterval = 10f;        // seconds
         private const float CheckChance = 0.004f;      // per roll while driving: about once in forty minutes at the wheel...
         private const int CheckGapDays = 2;            // ...and never more often than this
-        private const float ComplyWindow = 25f;
-        private const float TicketDistance = 28f;
-        private const float CrumbSpacing = 6f;
+        private const float ComplyWindow = 25f;        // seconds to pull over
+        private const float TicketDistance = 28f;      // metres: the patrol car must be this close to the stopped car
+        private const float CrumbSpacing = 6f;         // metres between the points of the path the patrol car follows
         private const int MaxCrumbs = 600;
 
         private enum CheckState { Idle, Signalled, Checking }
@@ -93,9 +83,7 @@ namespace RealLifeOverhaul
             ClearCheck();
         }
 
-        // ---------------------------------------------------------------- points
-
-        // An officer has the player stopped for traffic offences: each kind booked goes on the record, and the licence is asked for.
+        // Stopped for traffic offences: each kind booked goes on the record, and the licence is asked for.
         private void OnStopped(int booked, bool fled)
         {
             try
@@ -106,25 +94,12 @@ namespace RealLifeOverhaul
                 }
                 if (Settings.LicencePoints)
                 {
-                    if ((booked & (1 << (int)Offence.RedLight)) != 0)
+                    PointsIf(booked, Offence.RedLight, PointCode.RedLight);
+                    PointsIf(booked, Offence.Speeding, PointCode.Speeding);
+                    PointsIf(booked, Offence.Reckless, PointCode.Reckless);
+                    PointsIf(booked, Offence.WrongSide, PointCode.WrongSide);
+                    if (PointsIf(booked, Offence.DrunkDriving, PointCode.DrunkDriving))
                     {
-                        Points(PointCode.RedLight);
-                    }
-                    if ((booked & (1 << (int)Offence.Speeding)) != 0)
-                    {
-                        Points(PointCode.Speeding);
-                    }
-                    if ((booked & (1 << (int)Offence.Reckless)) != 0)
-                    {
-                        Points(PointCode.Reckless);
-                    }
-                    if ((booked & (1 << (int)Offence.WrongSide)) != 0)
-                    {
-                        Points(PointCode.WrongSide);
-                    }
-                    if ((booked & (1 << (int)Offence.DrunkDriving)) != 0)
-                    {
-                        Points(PointCode.DrunkDriving);
                         Wiring.LicenceLinks.DrunkDrivingBooked(fled);   // the second time inside three weeks it goes to court
                     }
                     if (fled)
@@ -140,7 +115,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Caught after driving off from a crash or from someone they hit.
+        private bool PointsIf(int booked, Offence offence, PointCode code)
+        {
+            if ((booked & (1 << (int)offence)) == 0)
+            {
+                return false;
+            }
+            Points(code);
+            return true;
+        }
+
         private void OnCaughtAfterCrash()
         {
             try
@@ -162,7 +146,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The police have charged the player for people hit with the car.
         private void OnPeopleCharged(int hurt, int killed, bool stopped)
         {
             try
@@ -186,7 +169,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Puts an entry on the record, says so, and says so again if it meant a suspension.</summary>
+        /// <summary>Puts an entry on the record and says so, and whether it meant a suspension.</summary>
         public void Points(PointCode code)
         {
             int day = TimeHelper.CurrentDay;
@@ -202,8 +185,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the licence, asked for at a stop
-
         private bool OnSchoolCar()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -211,25 +192,21 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The officer asks for the licence. Everything that follows from the answer is said in
-        /// one message with its amount, charged, and (a few seconds later, with the officer at
-        /// the window) carried out: the vehicle towed, the driver taken in.
+        /// The officer asks for the licence: a fine, then once the officer is at the window the vehicle towed or the driver
+        /// taken in. With <paramref name="custodyFollows"/> the stop already ends in custody: no second arrest.
         /// </summary>
-        /// <param name="custodyFollows">The stop already ends in custody (caught after fleeing): no second arrest is made here.</param>
-        /// <returns>True if the licence was in order.</returns>
-        public bool AskForLicence(bool custodyFollows, bool routine)
+        public void AskForLicence(bool custodyFollows, bool routine)
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
             if (vehicle == null || !Licences.Driving.ClassOf(vehicle, out LicenceClass kind) || _isSchoolCar(vehicle))
             {
-                return true;   // on foot by now, or in something that needs no licence
+                return;   // on foot by now, or in something that needs no licence
             }
             int day = TimeHelper.CurrentDay;
             int fine = 0;
             if (LicenceState.EvadedChecks > 0)
             {
-                // The check they drove on from: answered for now.
                 fine += LicenceLaw.EvadedCheckFine * Mathf.Min(LicenceState.EvadedChecks, 3);
                 LicenceState.EvadedChecks = 0;
                 if (Settings.LicencePoints)
@@ -249,7 +226,7 @@ namespace RealLifeOverhaul
                 {
                     Licences.Toast(NotificationType.Success, "reallife_lic_check_ok", 7f);
                 }
-                return true;
+                return;
             }
 
             string key;
@@ -281,8 +258,7 @@ namespace RealLifeOverhaul
                 key = "reallife_lic_stop_none";
                 arrest = LicenceState.CountCaught(day) >= LicenceLaw.ArrestFromCount;
             }
-            // A hired van or the game's job van is not the player's to have impounded, nor, in a Going Public session, another
-            // player's car they were driving (GoingPublic.MineVehicle): that one is never towed or billed for here.
+            // A hired van, the game's job van or another Going Public player's car is never towed or billed for.
             bool own = !(vehicle.vehicleInstance is DeliveryVehicleInstance) && GoingPublic.MineVehicle(vehicle);
             Licences.Charge(fine, "reallife_transaction_fine");
             Licences.Toast(NotificationType.Error, key, "amount", Licences.Money(fine), "class", Licences.ClassName(kind), 12f);
@@ -290,7 +266,7 @@ namespace RealLifeOverhaul
             Licences.Law.Record(offence, arrested: arrest && !custodyFollows);
             if (standing == LicenceStanding.Suspended)
             {
-                Wiring.LicenceLinks.SuspendedAtStop(LicenceLaw.SuspendedFine);   // the courts charge this too: what was just paid is credited there, not owed twice
+                Wiring.LicenceLinks.SuspendedAtStop(LicenceLaw.SuspendedFine);   // credited at the courts, so it is not owed twice
             }
             _logger?.Info("Licences: stopped in a " + kind + " vehicle with the licence " + standing + ": fine " + fine + (impound ? ", impound" : string.Empty)
                           + (arrest ? ", arrest" : string.Empty) + " (caught " + LicenceState.Caught + " time(s) in the window).");
@@ -299,11 +275,9 @@ namespace RealLifeOverhaul
                 _settling = true;
                 _host.StartCoroutine(Guard.Routine(Settle(vehicle, impound, own, arrest && !custodyFollows, custodyFollows ? 1.5f : 7f)));
             }
-            return false;
         }
 
-        // A licence for something else is in order (a car licence on a motorbike or a van, a motorcycle licence at the wheel of a car):
-        // the wrong class, not none at all.
+        // A licence for another class is in order: the wrong class, not none at all.
         private static bool HoldsAnother(LicenceClass kind, int day)
         {
             return (kind != LicenceClass.Car && LicenceState.Valid(LicenceClass.Car, day))
@@ -311,7 +285,7 @@ namespace RealLifeOverhaul
                    || (kind != LicenceClass.Motorcycle && LicenceState.Valid(LicenceClass.Motorcycle, day));
         }
 
-        // The officer has had time to reach the window: out of the car, the car away, and for a repeat offender the cuffs.
+        // Once the officer is at the window: out of the car, the car away, and for a repeat offender the cuffs.
         private IEnumerator Settle(VehicleController vehicle, bool impound, bool own, bool arrest, float after)
         {
             try
@@ -334,13 +308,13 @@ namespace RealLifeOverhaul
                     {
                         if (vehicle.CurrentSpeed > 1f)
                         {
-                            // Still rolling: nobody is pulled out of a moving car. The fine stands; the tow does not happen.
+                            // Nobody is pulled out of a moving car: the fine stands, the tow does not happen.
                             Licences.Toast(NotificationType.Warning, "reallife_lic_impound_missed", 8f);
                             yield break;
                         }
                         vehicle.ExitVehicle();
                         yield return new WaitForSecondsRealtime(0.5f);
-                        // (As after a crash: the game clears the selected vehicle only when its panel closes.)
+                        // The game clears the selected vehicle only when its panel closes.
                         UIs hud = InstanceBehavior<UIs>.Instance;
                         if (gm.selectedVehicle != null && !PlayerHelper.IsUsingVehicle && hud != null && hud.playerHUD != null && hud.playerHUD.itemPanelUI != null)
                         {
@@ -374,7 +348,6 @@ namespace RealLifeOverhaul
             {
                 if (!own || vehicle.vehicleInstance == null)
                 {
-                    // A hired van or the game's own job van: it goes back to whoever it belongs to, not to the pound.
                     Licences.Toast(NotificationType.Warning, "reallife_lic_impound_hired", 9f);
                     return;
                 }
@@ -400,9 +373,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the routine roadside check
-
-        /// <summary>Called a few times a second by the director while out of doors.</summary>
+        /// <summary>A few times a second while out of doors.</summary>
         public void Tick(float now)
         {
             if (_check == CheckState.Idle)
@@ -474,7 +445,7 @@ namespace RealLifeOverhaul
         private bool Wanted(int day)
         {
             return day - LicenceState.LastCheckDay >= CheckGapDays && !JobDirector.OnShift && LifeEvents.IsSafeForEvent()
-                   && !Wiring.Scenes.AnyLargeSceneActive && _body != null && _body.velocity.sqrMagnitude > 36f;   // never a check beside another scene (Wiring/Scenes)
+                   && !Wiring.Scenes.AnyLargeSceneActive && _body != null && _body.velocity.sqrMagnitude > 36f;
         }
 
         private void BeginCheck(float now, bool test = false)
@@ -495,7 +466,7 @@ namespace RealLifeOverhaul
                 {
                     TestRefusals.Tell(_logger, "Roadside check", TestRefusal.NothingFits, 0, _patrol.Refusal);
                 }
-                return;   // no patrol car could get onto the road here: no check
+                return;
             }
             _patrol.Path.Add(position);
             EmergencyDriver driver = _patrol.Driver;
@@ -527,7 +498,7 @@ namespace RealLifeOverhaul
             {
                 if (PoliceAttention.IsBusy)
                 {
-                    ClearCheck();   // they did something worse meanwhile: that stop takes over, and asks for the licence too
+                    ClearCheck();   // a stop for something worse takes over, and asks for the licence too
                     return;
                 }
                 if ((position - _lastCrumb).sqrMagnitude > CrumbSpacing * CrumbSpacing && _patrol.Path.Count < MaxCrumbs)
@@ -557,7 +528,7 @@ namespace RealLifeOverhaul
                     _holdSince = 0f;
                     if (now >= _until)
                     {
-                        // Drove on. Nobody gives chase over a routine check, but the plate is written down.
+                        // Drove on: nobody gives chase over a routine check, but it is answered for at the next stop.
                         LicenceState.EvadedChecks++;
                         LicenceState.LastCheckDay = TimeHelper.CurrentDay;
                         Licences.Toast(NotificationType.Warning, "reallife_lic_check_evaded", 9f);
@@ -568,12 +539,11 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // Checking: the officer walks up, asks, walks back.
             _stop.Tick(now);
             if (_askAt >= 0f && now >= _askAt)
             {
                 _askAt = -1f;
-                Justice.PoliceContact(driving: true);   // a bench warrant is served at this stop as at any other (Scripts/Justice)
+                Justice.PoliceContact(driving: true);   // a bench warrant is served here as at any stop
                 AskForLicence(custodyFollows: false, routine: true);
             }
             if (now >= _until || (now >= _holdSince && _stop.Finished && _askAt < 0f && !_settling))
@@ -587,7 +557,7 @@ namespace RealLifeOverhaul
             _patrol.Park();
             _check = CheckState.Checking;
             LicenceState.LastCheckDay = TimeHelper.CurrentDay;
-            _holdSince = now + Random.Range(9f, 12f);   // (from here: the earliest the patrol car leaves)
+            _holdSince = now + Random.Range(9f, 12f);   // from here on: the earliest the patrol car leaves
             _until = _holdSince;
             bool walking = false;
             try
@@ -607,7 +577,7 @@ namespace RealLifeOverhaul
             _askAt = now + (walking ? 5f : 1.5f);
         }
 
-        /// <summary>The patrol car and its officer go; nothing is after the player. Safe at any time.</summary>
+        /// <summary>The patrol car and its officer go. Safe at any time.</summary>
         public void ClearCheck()
         {
             _check = CheckState.Idle;
@@ -627,7 +597,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Options-page test button: a routine check now, whatever the dice and the calendar say.</summary>
+        /// <summary>Test button: a routine check now, whatever the dice and the calendar say.</summary>
         public void TestCheck()
         {
             try

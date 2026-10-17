@@ -8,17 +8,13 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What driving licences ask of a law feature, if there is one (a criminal record,
-    /// custody). Whoever provides it sets <see cref="Licences.Law"/>; until then
-    /// <see cref="DefaultLaw"/> does what the mod did before there was one.
-    /// </summary>
+    /// <summary>What driving licences ask of a law feature, when one is wired: the criminal record and custody.</summary>
     public interface ILicenceLawBridge
     {
-        /// <summary>Something for the record. <paramref name="offenceId"/> is one of the ids in <see cref="LicenceOffences"/>, or "hit_and_run".</summary>
+        /// <summary><paramref name="offenceId"/> is one of <see cref="LicenceOffences"/>, or "hit_and_run".</summary>
         void Record(string offenceId, bool arrested);
 
-        /// <summary>Takes the player into custody for some hours. False if it could not: the caller then settles it with the fine alone.</summary>
+        /// <summary>Takes the player into custody. False if it could not: the fine alone then settles it.</summary>
         bool Custody(int hours);
     }
 
@@ -29,7 +25,7 @@ namespace RealLifeOverhaul
         public const string Suspended = "driving_suspended";
     }
 
-    /// <summary>Today's behaviour without a law feature: nothing is recorded, and custody is the mod's own time skip.</summary>
+    /// <summary>Without a law feature: nothing is recorded, and custody is the mod's own time skip.</summary>
     public sealed class DefaultLaw : ILicenceLawBridge
     {
         public void Record(string offenceId, bool arrested)
@@ -42,11 +38,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The one door to licences for the rest of the mod. Safe to read at any time: before a save
-    /// is loaded, with the options off, with nothing held.
-    ///     Licences.Driving.Has(LicenceClass.Taxi)     may the player drive for hire?
-    /// </summary>
+    /// <summary>The one door to driving licences for the rest of the mod. Safe at any time, before a save loads too.</summary>
     public static class Licences
     {
         private const string FeeCategory = "ba:transactioncategory_licensingfees";
@@ -56,7 +48,7 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        /// <summary>The law feature's side of things; never null. Set it to null to go back to the default.</summary>
+        /// <summary>The law feature's side; never null. Set to null for the default.</summary>
         public static ILicenceLawBridge Law
         {
             get => _law ?? Fallback;
@@ -65,41 +57,24 @@ namespace RealLifeOverhaul
 
         public static class Driving
         {
-            /// <summary>False when the whole requirement is switched off: everyone may then drive anything, as in the base game.</summary>
+            /// <summary>False when the requirement is off: everyone may drive anything, as in the base game.</summary>
             public static bool Required => Settings.DrivingLicence;
 
-            /// <summary>May the player drive this class right now? Always true with the requirement off or before the save is ready.</summary>
+            /// <summary>Always true with the requirement off or before the save is ready.</summary>
             public static bool Has(LicenceClass kind)
             {
                 return !Required || !LicenceState.Loaded || LicenceState.Valid(kind, TimeHelper.CurrentDay);
             }
 
-            public static LicenceStanding Standing(LicenceClass kind)
-            {
-                return LicenceState.Loaded ? LicenceState.Standing(kind, TimeHelper.CurrentDay) : LicenceStanding.None;
-            }
-
-            public static int Points => LicenceState.Loaded ? LicenceState.PointsOn(TimeHelper.CurrentDay) : 0;
-
             public static bool Suspended => LicenceState.Loaded && LicenceState.SuspendedUntil > TimeHelper.CurrentDay;
 
-            /// <summary>
-            /// The Garage's two-wheelers, set by Wiring: what a vehicle of the save is, 0 neither, 1 a bicycle, 2 a motorbike.
-            /// Left null, no vehicle is taken for one (a two-wheeler is then an electric scooter, which needs no licence).
-            /// </summary>
+            /// <summary>Set by Wiring from the Garage: 0 neither, 1 a bicycle, 2 a motorbike. Null: always 0.</summary>
             public static Func<VehicleController, int> TwoWheelerOf;
 
-            /// <summary>
-            /// Set by Wiring: whether the save owns a motorbike. 1 yes, 0 no, -1 not known yet (the Garage has not read its list).
-            /// Left null, nobody is taken to own one.
-            /// </summary>
+            /// <summary>Set by Wiring: whether the save owns a motorbike, 1 yes, 0 no, -1 not known yet.</summary>
             public static Func<int> OwnsMotorbike;
 
-            /// <summary>
-            /// Which licence a vehicle needs. False for what needs none: bicycles, scooters, hand trucks, flatbed
-            /// trolleys, anything without an engine. Motorbikes are the motorcycle class, vans and trucks are
-            /// commercial, every other car is a car.
-            /// </summary>
+            /// <summary>Which licence a vehicle needs; false for what needs none, such as bicycles, scooters and trolleys.</summary>
             public static bool ClassOf(VehicleController vehicle, out LicenceClass kind)
             {
                 kind = LicenceClass.Car;
@@ -137,23 +112,16 @@ namespace RealLifeOverhaul
                     return 0;
                 }
             }
-
-            public static bool MayDrive(VehicleController vehicle)
-            {
-                return !ClassOf(vehicle, out LicenceClass kind) || Has(kind);
-            }
         }
 
-        // ---------------------------------------------------------------- money and words
-
-        /// <summary>A fee that is only taken if it can be afforded in full. False (and nothing taken) if not.</summary>
+        /// <summary>Takes a fee only if it can be paid in full. False, with nothing taken, if not.</summary>
         internal static bool Pay(int amount, string transactionKey)
         {
             return amount <= 0 || (SaveGameManager.Current != null
                 && GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey, FeeCategory), null, null, force: false));
         }
 
-        /// <summary>A fine or a fee that is owed whatever is in the account (the game allows the red).</summary>
+        /// <summary>Takes a fine or fee whatever the balance: the game allows the red.</summary>
         internal static void Charge(int amount, string transactionKey)
         {
             if (amount > 0 && SaveGameManager.Current != null)
@@ -196,7 +164,7 @@ namespace RealLifeOverhaul
 
         internal static void Toast(NotificationType type, string key, string name, string value, float seconds = 9f)
         {
-            // A new dictionary each time: the game keeps hold of it for as long as the toast is listed.
+            // A new dictionary each time: the game keeps it for as long as the toast is listed.
             Notifications.Show(type, key, new Dictionary<string, string>(1) { { name, value } }, seconds);
         }
 

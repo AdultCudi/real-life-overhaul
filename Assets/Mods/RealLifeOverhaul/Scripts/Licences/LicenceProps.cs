@@ -2,13 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The things driving licences stand in the world. Each is asked for by id: the
-    /// modelled prop of that id from the prop bundle if it has one (so a prop made later drops
-    /// in with no change here), otherwise a stand-in built from the shared plain shapes that
-    /// still reads as what it is. Shared meshes, one material per colour, no colliders, no
-    /// shadows; everything is made once by whoever owns it and reused.
-    /// </summary>
+    /// <summary>The props driving licences put in the world: the bundle's model of an id, else plain shapes.</summary>
     internal static class LicenceProps
     {
         public const string SchoolSign = "driving_school_sign";
@@ -37,7 +31,7 @@ namespace RealLifeOverhaul
             switch (id)
             {
                 case SchoolSign:
-                    // A sandwich board with a learner plate on each face: a white square with a red L.
+                    // A sandwich board with a learner plate on each face.
                     for (int side = -1; side <= 1; side += 2)
                     {
                         Transform face = Shapes.Piece("Board", root, cube, Shapes.Paint(White), new Vector3(0f, 0.55f, side * 0.13f), new Vector3(0.62f, 1.0f, 0.03f));
@@ -60,10 +54,7 @@ namespace RealLifeOverhaul
             return root;
         }
 
-        /// <summary>
-        /// The outline of a parking bay on the road: four painted strips and a short post at each
-        /// corner. One object, made once and resized when a test marks its bay.
-        /// </summary>
+        /// <summary>A parking bay painted on the road: four strips and a post at each corner, sized by <see cref="SizeBay"/>.</summary>
         public static Transform MakeBay(Transform parent)
         {
             if (!Shapes.Available)

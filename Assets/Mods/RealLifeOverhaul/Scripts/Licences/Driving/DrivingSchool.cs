@@ -5,8 +5,8 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
-using UI.Smartphone.Apps.Contacts;
 using Streets;
+using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -14,7 +14,7 @@ namespace RealLifeOverhaul
     /// <summary>What the driving school (and the licensing office on the phone) offers.</summary>
     internal enum SchoolService
     {
-        Card,          // read the licence card out
+        Card,          // the licence card
         Theory,
         LessonCar,
         TestCar,
@@ -22,14 +22,10 @@ namespace RealLifeOverhaul
         TestVan,
         Taxi,
         Renew,
-        Motorcycle     // the ride assessment, recorded at the desk
+        Motorcycle     // the ride assessment at the desk
     }
 
-    /// <summary>
-    /// The driving school's rules: what each service costs, when it can be had and why not.
-    /// The same list is read out at the school's desk and by the licensing office on the phone;
-    /// tests and lessons can only be started at a desk.
-    /// </summary>
+    /// <summary>The driving school's rules: what each service costs, and when it can be had, at the desk or on the phone.</summary>
     internal static class DrivingSchool
     {
         public const int OpensAt = 7;
@@ -58,7 +54,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>How many of the licences (car, commercial, taxi, motorcycle) could be renewed today.</summary>
+        /// <summary>How many licences could be renewed on a day.</summary>
         public static int Renewable(int day)
         {
             int count = 0;
@@ -74,19 +70,19 @@ namespace RealLifeOverhaul
             return LicenceState.TheoryPassedDay[0] > 0 && day - LicenceState.TheoryPassedDay[0] <= LicenceLaw.TheoryValidDays;
         }
 
-        /// <summary>Whether a service can be had right now; if not, a line that says why.</summary>
+        /// <summary>Whether a service can be had now; if not, the locale key of the reason.</summary>
         public static bool Available(SchoolService service, bool inPerson, out string reasonKey)
         {
             reasonKey = null;
-            int day = TimeHelper.CurrentDay;
-            LicenceStanding car = LicenceState.Standing(LicenceClass.Car, day);
-            LicenceStanding van = LicenceState.Standing(LicenceClass.Commercial, day);
-            LicenceStanding bike = LicenceState.Standing(LicenceClass.Motorcycle, day);
-            bool needsDesk = service != SchoolService.Card && service != SchoolService.Renew && service != SchoolService.Taxi;
             if (service == SchoolService.Card)
             {
                 return true;
             }
+            int day = TimeHelper.CurrentDay;
+            LicenceStanding car = LicenceState.Standing(LicenceClass.Car, day);
+            LicenceStanding van = LicenceState.Standing(LicenceClass.Commercial, day);
+            LicenceStanding bike = LicenceState.Standing(LicenceClass.Motorcycle, day);
+            bool needsDesk = service != SchoolService.Renew && service != SchoolService.Taxi;
             if (needsDesk && !Settings.DrivingSchool)
             {
                 reasonKey = "reallife_school_closed";
@@ -108,7 +104,7 @@ namespace RealLifeOverhaul
                 switch (service)
                 {
                     case SchoolService.Theory:
-                        reasonKey = Holds(car) && Holds(bike) ? "reallife_school_no_have"   // (the paper is for whichever of the car and the motorbike is still to get)
+                        reasonKey = Holds(car) && Holds(bike) ? "reallife_school_no_have"   // one paper serves the car and the motorbike
                             : TheoryInDate(day) ? "reallife_school_no_theory_passed"
                             : day < LicenceState.TheoryRetryDay ? "reallife_school_no_wait"
                             : null;
@@ -179,7 +175,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The licence card as text: each licence with its dates, the points, a suspension. Built when asked for.</summary>
+        /// <summary>The licence card as text, for a notification or the phone.</summary>
         public static string CardText()
         {
             int day = TimeHelper.CurrentDay;
@@ -187,37 +183,43 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Classes; i++)
             {
                 var kind = (LicenceClass)i;
-                LicenceState.Card card = LicenceState.Of(kind);
-                LicenceStanding standing = LicenceState.Standing(kind, day);
-                text.Append(Licences.ClassName(kind)).Append(": ");
-                if (!card.Held)
-                {
-                    text.Append(Licences.StandingName(LicenceStanding.None));
-                }
-                else
-                {
-                    text.Append(Licences.T("reallife_lic_card_line", "standing", Licences.StandingName(standing), "issued", card.Issued.ToString())
-                        .Replace("{expires}", card.Expires.ToString()));
-                }
-                text.Append('\n');
+                text.Append(Licences.ClassName(kind)).Append(": ").Append(CardLine(kind, day)).Append('\n');
             }
             int points = LicenceState.PointsOn(day);
             text.Append(Licences.T("reallife_lic_card_points", "points", points.ToString(), "limit", LicenceLaw.PointsLimit.ToString()));
-            IReadOnlyList<LicenceState.Entry> entries = LicenceState.Entries;
-            for (int i = 0; i < entries.Count; i++)
-            {
-                if (day - entries[i].Day < LicenceLaw.PointsExpireDays)
-                {
-                    text.Append('\n').Append("  ").Append(entries[i].Points).Append("  ").Append(Licences.T(PointName(entries[i].Code)))
-                        .Append("  (").Append(Licences.T("reallife_lic_card_until", "day", (entries[i].Day + LicenceLaw.PointsExpireDays).ToString())).Append(')');
-                }
-            }
+            AppendEntries(text, day, "  ");
             if (LicenceState.SuspendedUntil > day)
             {
                 text.Append('\n').Append(Licences.T("reallife_lic_card_suspended", "day", LicenceState.SuspendedUntil.ToString()));
             }
             text.Append('\n').Append(Licences.T("reallife_lic_card_today", "day", day.ToString()));
             return text.ToString();
+        }
+
+        /// <summary>A licence's line on the card: its standing and dates, or never held.</summary>
+        public static string CardLine(LicenceClass kind, int day)
+        {
+            LicenceState.Card card = LicenceState.Of(kind);
+            if (!card.Held)
+            {
+                return Licences.StandingName(LicenceStanding.None);
+            }
+            return Licences.T("reallife_lic_card_line", "standing", Licences.StandingName(LicenceState.Standing(kind, day)), "issued", card.Issued.ToString())
+                .Replace("{expires}", card.Expires.ToString());
+        }
+
+        /// <summary>Appends a line for each record entry that still counts.</summary>
+        public static void AppendEntries(StringBuilder text, int day, string indent)
+        {
+            IReadOnlyList<LicenceState.Entry> entries = LicenceState.Entries;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (day - entries[i].Day < LicenceLaw.PointsExpireDays)
+                {
+                    text.Append('\n').Append(indent).Append(entries[i].Points).Append("  ").Append(Licences.T(PointName(entries[i].Code)))
+                        .Append("  (").Append(Licences.T("reallife_lic_card_until", "day", (entries[i].Day + LicenceLaw.PointsExpireDays).ToString())).Append(')');
+                }
+            }
         }
 
         public static string PointName(PointCode code)
@@ -240,19 +242,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Where the driving school can be walked up to: a learner-plate sandwich board on the
-    /// pavement beside the door of each of the city's school buildings (three at most), found
-    /// once per city load, a few buildings a second. Standing at one and pressing the
-    /// interaction key opens the school's list. A board is one object with shared meshes and no
-    /// collider or script. Nothing here runs unless the director calls it, once a second.
+    /// The school's desks: a learner-plate board by the door of each school building, three at most, found once per city
+    /// load a few buildings a second. Runs only when the director calls it.
     /// </summary>
     internal sealed class LicenceDesks
     {
         private const int Most = 3;
         private const int PerTick = 30;
-        internal const float Aside = 4.3f;       // metres along the wall from the door (a help-wanted board may stand at 2.4; the university's place at the school's door keeps clear: CampusRules.DoorReachAt)
-        private const float FromWall = 0.55f;
-        internal const float Reach = 1.7f;
+        internal const float Aside = 4.3f;       // metres along the wall from the door, clear of a job board and the university's door
+        private const float FromWall = 0.55f;    // metres
+        internal const float Reach = 1.7f;       // metres from a desk's front that count as at it
         private const string SchoolType = "ba:businesstype_school";
 
         private readonly Transform _parent;
@@ -275,14 +274,12 @@ namespace RealLifeOverhaul
         public int At { get; private set; } = -1;
 
         public int Count => _fronts.Count;
-        public bool Searched => _searched;
 
         public Vector3 Front(int index) => _fronts[index];
 
-        /// <summary>The address of the school a desk stands at, for the city map (World/MapLinks).</summary>
         public string Address(int index) => _addresses[index];
 
-        /// <summary>The school a desk stands at (it lights up on the city map while its row is ticked; its card stays the game's).</summary>
+        /// <summary>The school a desk stands at, lit on the city map.</summary>
         public CityBuildingController Building(int index) => _buildings[index];
 
         public void Away()
@@ -290,7 +287,7 @@ namespace RealLifeOverhaul
             At = -1;
         }
 
-        /// <summary>The nearest desk to a point, for directions. False if none was found (yet).</summary>
+        /// <summary>The nearest desk to a point. False if none has been found yet.</summary>
         public bool Nearest(Vector3 from, out Vector3 front, out string address)
         {
             front = default;
@@ -384,7 +381,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // On the pavement a few steps to one side of the school's door, a step out from the wall, where nothing else stands.
+        // On the pavement to one side of the school's door, a step out from the wall, where nothing else stands.
         private void Place(CityBuildingController building)
         {
             if (!JobSpots.Front(building, out Vector3 front) || !CitySpots.Along(front, out Vector3 along))
@@ -418,11 +415,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The licensing office as a phone contact: the licence card read out, renewals and the
-    /// taxi endorsement over the phone, and directions to the driving school for everything that
-    /// has to be done in person. Registered the way the mod's other contacts are.
-    /// </summary>
+    /// <summary>The licensing office as a phone contact: the card, renewals and the taxi endorsement, and directions to a desk.</summary>
     internal static class LicencePhone
     {
         public const string ContactId = "reallife-dmv";
@@ -436,7 +429,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
+                ContactPictures.Add(ContactId);
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_dmv_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -460,11 +453,10 @@ namespace RealLifeOverhaul
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new DrivingSchoolDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(closed));
         }
-
     }
 
-    /// <summary>The school's list, one service at a time: what it costs, where the player stands with it, "take it" or "what else".</summary>
-    public class DrivingSchoolDialog : Dialog
+    /// <summary>The school's services in the game's dialogue, one at a time: its fee and status, then take it or the next.</summary>
+    public sealed class DrivingSchoolDialog : Dialog
     {
         public DrivingSchoolDialog()
         {
@@ -530,7 +522,7 @@ namespace RealLifeOverhaul
         private static DialogEntry Take(SchoolService service)
         {
             LicenceDirector director = LicenceDirector.Instance;
-            // Asked again now: the hour may have turned or the money gone while they talked.
+            // Asked again: the hour may have turned or the money gone while they talked.
             if (director == null || !DrivingSchool.Available(service, InPerson, out string reason))
             {
                 return PhoneContacts.Closing("reallife_school_not_now");

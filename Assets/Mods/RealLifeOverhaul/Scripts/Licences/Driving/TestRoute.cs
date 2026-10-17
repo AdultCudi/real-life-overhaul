@@ -6,27 +6,16 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The route of a driving lesson or test: five to seven checkpoints along real lanes of the
-    /// traffic system's road graph, starting on the lane the school's car stands in and turning
-    /// at junctions as the graph allows, and a marked bay at the kerb after the last of them.
-    /// Planned over the lanes that are open now (<see cref="TestRoutePlanner"/>): a lane an accident's
-    /// cordon or a street event has closed is driven round, and a planning that finds no route says
-    /// whether a closure is why. Planned once for each place the school could put its car when a lesson
-    /// or test is booked or starts (the planner's bound, a handful of overlap tests for the bay); while
-    /// one is driven, one look a step at whether the next checkpoint's lane has been closed since.
-    /// Nothing per frame.
-    /// </summary>
+    /// <summary>A lesson's route on the traffic system's lanes: the checkpoints planned, and a bay at the kerb after the last.</summary>
     internal sealed class TestRoute
     {
         private static readonly float[] KerbOffsets = { 2.9f, 3.2f, 3.5f };
 
         public readonly List<Vector3> Checkpoints = new List<Vector3>(8);
         public readonly List<Vector3> Runs = new List<Vector3>(8);      // the way the lane runs at each checkpoint
-        private readonly List<int> _lanePoints = new List<int>(8);     // the lane point of each checkpoint (the bay's: the one beside it)
+        private readonly List<int> _lanePoints = new List<int>(8);     // each checkpoint's lane point; the bay's is the one beside it
 
-        // The middle of the lane the route follows, point by point, and whether each point is inside a junction:
-        // what "keeping to the lane" is measured against (the road data's own points may lie metres apart).
+        // The lane followed, point by point, and whether each point is in a junction.
         private readonly List<Vector3> _line = new List<Vector3>(256);
         private readonly List<bool> _junction = new List<bool>(256);
 
@@ -45,18 +34,13 @@ namespace RealLifeOverhaul
         public Vector3 StopAt { get; private set; }
         public float Length { get; private set; }
 
-        /// <summary>Lane points the last planning went into (for the log).</summary>
         public int Expanded => _planner.Expanded;
 
-        /// <summary>
-        /// Plans a route from a lane point, kept for <see cref="Build"/>. Planned: there is one over the lanes open now.
-        /// Closed: there is none now, but there would be with no lane closed (asked only with <paramref name="askWhy"/>).
-        /// NoRoad: there is none.
-        /// </summary>
+        /// <summary>Plans a route from a lane point, kept for <see cref="Build"/>.</summary>
         public RouteOutcome Plan(Waypoint start, int wanted, int seed, bool askWhy)
         {
             _plannedOn = null;
-            Waypoint[] all = RoadData.Points;   // kept from the city's one search: the traffic system's own accessor searches the whole scene on every call
+            Waypoint[] all = RoadData.Points;   // the traffic system's own accessor searches the whole scene on every call
             if (all == null || start == null || start.listIndex < 0 || start.listIndex >= all.Length || !ReferenceEquals(all[start.listIndex], start))
             {
                 return RouteOutcome.NoRoad;
@@ -72,10 +56,7 @@ namespace RealLifeOverhaul
             return outcome;
         }
 
-        /// <summary>
-        /// Lays the route last planned out on the road: its checkpoints, the lane it follows and the bay. False if nothing
-        /// is planned (or the city's lane points have changed since).
-        /// </summary>
+        /// <summary>Lays out the route last planned. False if none is, or the city's lane points have changed since.</summary>
         public bool Build(float carHalfWidth, float carHalfLength)
         {
             Checkpoints.Clear();
@@ -130,7 +111,7 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    // Past the last checkpoint: the first stretch of kerb with room for the bay.
+                    // Past the last checkpoint: the first kerb with room for the bay.
                     past += length;
                     if (plain && past > 18f && FindBay(next, lastRun, carHalfWidth, carHalfLength))
                     {
@@ -147,17 +128,14 @@ namespace RealLifeOverhaul
             StopAt = Checkpoints[_laid.Count - 1];
             if (!HasBay)
             {
-                // No kerb with room: the last checkpoint becomes the place to stop at (its lane point stays, for the stop).
+                // No kerb with room: the last checkpoint becomes the stop (its lane point stays).
                 Checkpoints.RemoveAt(Checkpoints.Count - 1);
                 Runs.RemoveAt(Runs.Count - 1);
             }
             return true;
         }
 
-        /// <summary>
-        /// Whether the lane at a checkpoint (or, past the last, at the bay or the stop) has been closed since the route was
-        /// planned: an accident's cordon or a street event that came up while the drive was on. One look at one lane point.
-        /// </summary>
+        /// <summary>Whether the lane at a checkpoint, or past the last at the bay or stop, has closed since the planning.</summary>
         public bool ClosedAt(int checkpoint)
         {
             Waypoint[] all = RoadData.Points;
@@ -169,11 +147,7 @@ namespace RealLifeOverhaul
             return point >= 0 && point < all.Length && all[point] != null && all[point].temporaryDisabled;
         }
 
-        /// <summary>
-        /// How far to one side of the route's lane a point is, in metres, and whether the nearest stretch of it is in
-        /// or beside a junction (where there is no lane to keep to). A few hundred subtractions; called ten times a
-        /// second while a test is driven.
-        /// </summary>
+        /// <summary>Metres from a point to the route's lane, and whether that stretch is at a junction. A few hundred subtractions.</summary>
         public float Lateral(Vector3 point, out bool junction)
         {
             junction = true;
@@ -204,7 +178,7 @@ namespace RealLifeOverhaul
             return Mathf.Sqrt(best);
         }
 
-        // Plain road as the planner counts it (Lanes.Plain with closures): the same test, so what is planned is what is laid.
+        // The planner's own test, so what is planned is what is laid.
         private static bool Plain(Waypoint point)
         {
             return Lanes.IsPlain(point, true);
@@ -250,7 +224,7 @@ namespace RealLifeOverhaul
             return NavMesh.SamplePosition(point, out _, 0.3f, StreetSpots.Pavement);
         }
 
-        /// <summary>The traffic system's lane points as the planner asks about them. Set to the city's points for one planning, then let go.</summary>
+        /// <summary>The traffic system's lane points for the planner; <see cref="All"/> is set for one planning.</summary>
         private sealed class Lanes : RouteRoads
         {
             public Waypoint[] All;
@@ -268,7 +242,6 @@ namespace RealLifeOverhaul
                 return All[point].neighbors[k];
             }
 
-            // A lane a car may use, and (with closures) not closed for now.
             public override bool Open(int point, bool closures)
             {
                 Waypoint lane = All[point];
@@ -285,7 +258,7 @@ namespace RealLifeOverhaul
                 return Vector3.Distance(All[from].position, All[to].position);
             }
 
-            // Road proper, one lane in and one out, no junction: where a checkpoint may stand.
+            // One lane in and one out, no junction.
             public static bool IsPlain(Waypoint point, bool closures)
             {
                 return point != null && !point.enter && !point.exit && (!closures || !point.temporaryDisabled) && !point.IsInIntersection()

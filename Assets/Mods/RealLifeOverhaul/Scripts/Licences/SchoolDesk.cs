@@ -10,27 +10,13 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A driving-school desk in the game's own interface. Standing at the sign the game's panel over a place
-    /// (<see cref="WorldPanel"/> through <see cref="DoorPanel"/>) says whether the school is open and offers
-    /// "Speak to the instructor" on the interact key. That opens the school's list (<see cref="TravelList"/>): an entry
-    /// for your licence card, then one for the theory test, each lesson and test, the motorcycle assessment, the taxi
-    /// endorsement and renewal, each with the fee and what is needed under its name, and its button off, with the reason,
-    /// when it cannot be had now (closed hours, the fee, a test still to pass first). The licence card is a second page of
-    /// the same list: a note for each licence, one for the penalty points and one for a suspension, with "Back". A card is
-    /// a list of short facts, each with a name, so it suits the list better than a box of running text.
-    ///
-    /// What the school answers is a notification. Renewals, the taxi endorsement and the motorcycle assessment are done at
-    /// once and the list stays up with the new figures; a test or a lesson is paid for, the list closes, and it starts
-    /// when the director's step says so, as it did after the conversation. The phone's licensing office is still the
-    /// game's dialogue (<c>DrivingSchoolDialog</c>), and so is the desk when the game's window cannot be copied.
-    ///
-    /// The cost: the panel is asked for once a second by the director and written only when the hour or the place
-    /// changes; the list is filled when it opens and after something is bought. Nothing runs per frame.
+    /// A driving-school desk: the game's panel at the sign, and the school's list of services with the licence card as a
+    /// second page. Nothing per frame; the panel is rewritten only when the hour changes.
     /// </summary>
     internal sealed class SchoolDesk
     {
         private const int RowCard = -1, RowBack = -2;
-        private const NavigationBlocker Blocker = (NavigationBlocker)7302;   // a value of our own, so nobody else's is ever lifted
+        private const NavigationBlocker Blocker = (NavigationBlocker)7302;   // our own value, so nobody else's is ever lifted
         private const string ButtonDo = "reallife_lic_list_do";
         private const string ButtonOpen = "reallife_lic_list_open";
 
@@ -65,13 +51,10 @@ namespace RealLifeOverhaul
             _onClosed = Closed;
         }
 
-        /// <summary>True while the game's panel is up at a desk, in the frame its button ran, and while the school's list is open.</summary>
+        /// <summary>True while the panel is up at a desk, in the frame its button ran, and while the school's list is open.</summary>
         public bool TakesKey => _door.TakesKey || IsOpen;
 
-        /// <summary>True while the school's list is the one on the window.</summary>
         public bool IsOpen => _screens.Window.OpenFor(this);
-
-        // ---------------------------------------------------------------- the panel at the desk
 
         /// <summary>Once a second: the panel over the desk the player stands at (<paramref name="at"/> is its address), or down.</summary>
         public void Offer(bool on, Vector3 front, Vector3 player, string at)
@@ -121,9 +104,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the list
-
-        /// <summary>Opens the school's list. False if the game's window cannot be made (the caller then speaks through the dialogue panel).</summary>
+        /// <summary>Opens the school's list. False if the game's window cannot be made.</summary>
         public bool Open()
         {
             float began = Time.realtimeSinceStartup;
@@ -152,7 +133,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The licence card on its own page (the phone and the test button use it). False if the game's window cannot be made.</summary>
+        /// <summary>The licence card on its own page. False if the game's window cannot be made.</summary>
         public bool ShowCard()
         {
             TravelList list = _screens.Window.Take(this);
@@ -215,7 +196,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The menu: what each service costs and needs, and why one cannot be had now.
         private int Fill(TravelList list)
         {
             list.Begin(Licences.T("reallife_school_door_title"), Licences.T("reallife_school_list_info", "from", Hour(DrivingSchool.OpensAt), "to", Hour(DrivingSchool.ClosesAt)));
@@ -230,17 +210,15 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 bool available = DrivingSchool.Available(service, true, out string reason);
-                _text.Length = 0;
-                _text.Append(Licences.T(DrivingSchool.PitchKey(service)).Replace("{amount}", Licences.Money(DrivingSchool.Fee(service)))
-                    .Replace("{status}", available ? Licences.T("reallife_school_ready") : Licences.T(reason)));
-                string detail = _text.ToString();
+                string detail = Licences.T(DrivingSchool.PitchKey(service)).Replace("{amount}", Licences.Money(DrivingSchool.Fee(service)))
+                    .Replace("{status}", available ? Licences.T("reallife_school_ready") : Licences.T(reason));
                 list.Add((int)service, Licences.T(NameKeys[(int)service]), detail, ButtonDo, available, list.HeightFor(detail.Length, true));
                 count++;
             }
             return count;
         }
 
-        // The licence card: a note for each licence, one for the points, one for a suspension.
+        // A note for each licence, one for the points, one for a suspension.
         private void FillCard(TravelList list)
         {
             int day = TimeHelper.CurrentDay;
@@ -249,24 +227,13 @@ namespace RealLifeOverhaul
             for (int i = 0; i < DrivingSchool.Classes; i++)
             {
                 var kind = (LicenceClass)i;
-                LicenceState.Card card = LicenceState.Of(kind);
-                string detail = !card.Held ? Licences.StandingName(LicenceStanding.None)
-                    : Licences.T("reallife_lic_card_line", "standing", Licences.StandingName(LicenceState.Standing(kind, day)), "issued", card.Issued.ToString()).Replace("{expires}", card.Expires.ToString());
-                list.AddNote(Licences.ClassName(kind), detail, 0f);
+                list.AddNote(Licences.ClassName(kind), DrivingSchool.CardLine(kind, day), 0f);
             }
             _text.Length = 0;
             _text.Append(Licences.T("reallife_lic_card_points", "points", LicenceState.PointsOn(day).ToString(), "limit", LicenceLaw.PointsLimit.ToString()));
-            var entries = LicenceState.Entries;
-            for (int i = 0; i < entries.Count; i++)
-            {
-                if (day - entries[i].Day < LicenceLaw.PointsExpireDays)
-                {
-                    _text.Append('\n').Append(entries[i].Points).Append("  ").Append(Licences.T(DrivingSchool.PointName(entries[i].Code)))
-                        .Append("  (").Append(Licences.T("reallife_lic_card_until", "day", (entries[i].Day + LicenceLaw.PointsExpireDays).ToString())).Append(')');
-                }
-            }
+            DrivingSchool.AppendEntries(_text, day, string.Empty);
             string points = _text.ToString();
-            list.AddNote(Licences.T("reallife_school_list_points"), points, list.HeightFor(points.Length + 30 * (entries.Count + 1), false));
+            list.AddNote(Licences.T("reallife_school_list_points"), points, list.HeightFor(points.Length + 30 * (LicenceState.Entries.Count + 1), false));
             if (LicenceState.SuspendedUntil > day)
             {
                 list.AddNote(Licences.T("reallife_school_list_suspended"), Licences.T("reallife_lic_card_suspended", "day", LicenceState.SuspendedUntil.ToString()), 0f);
@@ -297,7 +264,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 var service = (SchoolService)id;
-                // Asked again now: the hour may have turned or the money gone since the list was written.
+                // Asked again: the hour may have turned or the money gone since the list was written.
                 if (!DrivingSchool.Available(service, true, out string reason))
                 {
                     Licences.Toast(NotificationType.Warning, reason, 7f);
@@ -307,13 +274,13 @@ namespace RealLifeOverhaul
                     return;
                 }
                 string done = _director.Take(service);
-                bool failed = LicenceDirector.Refused(done);   // nothing paid: the money, or why the school's car cannot go out now
+                bool failed = LicenceDirector.Refused(done);
                 Licences.Toast(failed ? NotificationType.Warning : NotificationType.Success, done ?? "reallife_school_not_now", 9f);
                 Step(service + (failed ? " not taken (" + done + ")" : " taken"));
                 if (!failed && (service == SchoolService.Renew || service == SchoolService.Taxi || service == SchoolService.Motorcycle))
                 {
                     Fill(list);
-                    list.Open(_onPick, _onClosed);   // the figures have changed
+                    list.Open(_onPick, _onClosed);
                 }
                 else if (!failed)
                 {
