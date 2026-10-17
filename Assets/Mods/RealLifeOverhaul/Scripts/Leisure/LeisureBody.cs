@@ -1,6 +1,5 @@
 using System;
 using BAModAPI;
-using BigAmbitions.Characters;
 using Dancing;
 using UnityEngine;
 using UnityEngine.AI;
@@ -8,12 +7,8 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// The player's own body at play: kept on the spot (the game's own navigation blocker),
-    /// playing one of the mod's clips with its tool at the clip's grip (HeldTool), one of the
-    /// mod's clips over an arm while the rest stays the game's, or one of the game's own
-    /// dances. One for the session, owned by the director, which calls <see cref="Release"/>
-    /// on every way out of every activity, so nothing here can leave the player rooted, mid
-    /// clip or with something in a hand.
+    /// The player's body at play: held by the game's navigation blocker, playing one of the mod's clips with its tool
+    /// in the hand, or one of the game's dances. The director calls <see cref="Release"/> on every way out.
     /// </summary>
     public sealed class LeisureBody
     {
@@ -40,11 +35,10 @@ namespace RealLifeOverhaul.Leisure
             _logger = logger;
         }
 
-        public bool Holding => _held;
         public Transform Tool => _tool;
         public bool NeedsFrame => _turning || _settling;
 
-        /// <summary>The clip started with <see cref="Play"/> is still on (a one-off ends by itself; the clip service may be switched off under us).</summary>
+        /// <summary>The clip started by <see cref="Play"/> is still on; a one-off ends by itself.</summary>
         public bool ClipAlive => _clip && _animator != null && _animator.Active && _animator.Current != null;
 
         public void Bind(PlayerController player)
@@ -65,7 +59,6 @@ namespace RealLifeOverhaul.Leisure
 
         public ThirdPersonCharacter Character => _player != null ? _player.Character : null;
 
-        /// <summary>Whether the body can be played with at all right now: there, drawn, on its feet and not something else's.</summary>
         public bool Usable
         {
             get
@@ -106,7 +99,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>Turns the held player to look at a point, over a third of a second (stepped by <see cref="Frame"/>).</summary>
+        /// <summary>Turns the held player to a point over a third of a second.</summary>
         public void Face(Vector3 point)
         {
             if (_player == null)
@@ -122,10 +115,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>
-        /// Brings the held player the last step on to an exact spot (a stool) over a third of a second. The spot must be
-        /// on the navigation mesh within 0.6 m of where they stand; false, and nothing moved, if it is not.
-        /// </summary>
+        /// <summary>Brings the held player the last step on to a spot close by; false if it is off the mesh.</summary>
         public bool Settle(Vector3 spot)
         {
             if (_player == null || !_held)
@@ -142,7 +132,6 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        /// <summary>Per frame, only while <see cref="NeedsFrame"/>: the turn and the last step. Allocates nothing.</summary>
         public void Frame(float delta)
         {
             if (_player == null)
@@ -180,11 +169,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>
-        /// One of the mod's clips on the whole body, with a tool in the hand at the clip's grip: the clip's own prop, or
-        /// <paramref name="toolId"/> in its place (a glass where the clip was made with a cup of the same size). The
-        /// player must be held. All or nothing.
-        /// </summary>
+        /// <summary>A clip on the held body, its prop or <paramref name="toolId"/> in hand. All or nothing.</summary>
         public bool Play(string clipName, string toolId = null, float fade = 0.3f, ClipEnd end = ClipEnd.Return)
         {
             if (!_held || !Ready(clipName, out CityClip clip, out ActivityAnimator animator))
@@ -207,11 +192,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        /// <summary>
-        /// One of the mod's clips on the whole body with the hands EMPTY, whatever tool it was made with: for a clip that
-        /// picks its tool up part of the way through (<see cref="PickUp"/> at its grip mark, <see cref="SetDown"/> at its
-        /// release mark). The player must be held.
-        /// </summary>
+        /// <summary>A clip on the held body with empty hands, for one that picks its tool up part of the way.</summary>
         public bool PlayBare(string clipName, float fade = 0.3f, ClipEnd end = ClipEnd.Return)
         {
             if (!_held || !Ready(clipName, out CityClip clip, out ActivityAnimator animator))
@@ -230,11 +211,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        /// <summary>
-        /// Takes something that stands in the world (one of <see cref="LeisureProps"/>' props) into the hand, at the grip
-        /// of the clip being played. From then on it is the body's, and is put away with everything else unless
-        /// <see cref="SetDown"/> hands it back first. False, and nothing changed, if it cannot be done.
-        /// </summary>
+        /// <summary>Takes a standing prop into the hand at the clip's grip; it is the body's until SetDown.</summary>
         public bool PickUp(string clipName, Transform tool)
         {
             if (tool == null || !_clip || !Ready(clipName, out CityClip clip, out ActivityAnimator animator) || !clip.HasTool)
@@ -251,7 +228,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        /// <summary>Out of the hand and into the world where it is now: the caller's again (to stand somewhere, and to give back). Null if the hand was empty.</summary>
+        /// <summary>Out of the hand and left where it is, the caller's again; null if the hand was empty.</summary>
         public Transform SetDown()
         {
             Transform tool = _tool;
@@ -264,7 +241,7 @@ namespace RealLifeOverhaul.Leisure
             return tool;
         }
 
-        /// <summary>One of the mod's loops over part of the body (never the legs), with a tool as for <see cref="Play"/>. The player need not be held.</summary>
+        /// <summary>One of the mod's loops over part of the body (never the legs), with a tool as for Play.</summary>
         public bool Over(string clipName, BodyMask mask, string toolId = null, float fade = 0.3f)
         {
             if (!Ready(clipName, out CityClip clip, out ActivityAnimator animator))
@@ -287,7 +264,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        /// <summary>Back to the game's own animation; the hands are emptied. The hold stays.</summary>
+        /// <summary>Back to the game's own animation with empty hands; the hold stays.</summary>
         public void Rest(float fade = 0.3f)
         {
             if (_animator != null)
@@ -307,7 +284,6 @@ namespace RealLifeOverhaul.Leisure
             StopDance();
         }
 
-        /// <summary>One of the game's own dances on the held player. False if they cannot dance now.</summary>
         public bool Dance(DanceType dance)
         {
             if (!_held || !Usable)
@@ -347,7 +323,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>Everything undone at once, whatever state it was in. Never throws.</summary>
+        /// <summary>Everything undone, whatever state it was in. Never throws.</summary>
         public void Release()
         {
             try
@@ -383,7 +359,7 @@ namespace RealLifeOverhaul.Leisure
             return animator != null && animator.Usable;
         }
 
-        // The tool for a clip, in the hand at the clip's grip. A clip without a tool empties the hands.
+        // A clip without a tool empties the hands.
         private bool Grip(Animator animator, CityClip clip, string toolId)
         {
             if (!clip.HasTool)

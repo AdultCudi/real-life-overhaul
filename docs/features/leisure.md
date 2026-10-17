@@ -22,11 +22,12 @@ One component, `LeisureDirector`, owns all of it except sound and photo mode, wh
 ```
 Leisure/
   LeisureDirector   the one activity that is on, what is on offer where the player stands (one look a second),
-                    interruptions, the result card, the test buttons, the film programme, drink at the wheel
+                    interruptions, the result card, drink at the wheel; parts: .Offer (what is on offer),
+                    .Cinema (the film programme), .Tests (the test buttons)
   LeisureActivity   the base every activity derives from; Sweep, the one timing interaction they share
   LeisureApi        Activities.Start / Stop / Finished for the rest of the mod; LeisureMoney
   LeisureState      this save's records, landmarks, catch, clothes bought, outfits, drinks: plain strings in modData
-  LeisureScreen     the game's panels, job panel, list window, marker and notifications for all of it
+  LeisureScreen     the game's panels, job panel, marker and notifications for all of it
   LeisureBody       the player's body at play: held, a clip with its tool (HeldTool), an arm loop, one of the game's dances
   LeisureProps      pooled props: from PropLibrary by id, else a stand-in of plain shapes (see the wish-list)
   LeisureVenues     what the game's city has: the items of the building the player is in, landmarks, the water's edge
@@ -231,7 +232,7 @@ The job panel's line with a text gauge was used instead, as the fallback allowed
 Cost: per frame only `LeisureScreen.Gauge`, which compares one cell number and writes a line only when the cursor is in another cell (about twenty times a pass, only while a meter is up).
 Everything else is told on the tick (five a second) or on a button press, and only when it changed.
 
-Log lines with diagnostics on: `Leisure check (prompt panel)`, `Leisure check (activity card)`, `Leisure check (clothes list)`, each ending PASS or FAIL. Behaviour that changed: the keys 1 to 3 and the interact key are the panel's buttons now (the game shows the player's own keys).
+Log lines with diagnostics on: `Leisure check (prompt panel)` and `Leisure check (activity card)`, each ending PASS or FAIL. Behaviour that changed: the keys 1 to 3 and the interact key are the panel's buttons now (the game shows the player's own keys).
 The browser's up and down are the list's scroll.
 
 Photo mode starts with the game's interface showing and the controls in a notification (the "2" key hides or shows the game's interface, and a picture is always taken with it away).

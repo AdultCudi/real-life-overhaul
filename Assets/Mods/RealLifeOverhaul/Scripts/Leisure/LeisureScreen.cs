@@ -9,56 +9,36 @@ using UnityEngine;
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// Everything leisure puts on screen, as the game's own interface (nothing is drawn by the mod):
-    ///  - the objective and the figures: a copy of the game's job panel at the top right (<see cref="ShiftCard"/>): the activity's
-    ///    name, what to do, the status, and while a timing meter is up what it asks and, under that, the game's own bar;
-    ///  - the prompt and the choices: the game's panel over the player (<see cref="DoorPanel"/>), the game writing each key on its
-    ///    button and running it on that key or a click;
-    ///  - a place worth a visit, before anything is started: the same panel over the place;
-    ///  - the marker: the game's destination marker (<see cref="GuideMark"/>);
-    ///  - the list of the clothes browser: the game's list window (<see cref="DeskList"/>);
-    ///  - what a game or a visit adds up to, and the radio's station and song: the game's notifications.
-    ///
-    /// The timing meter (a cast, a pull on the line, the beat on a dance floor, a chess clock). The game's activity panel
-    /// (PlayerActivityUI) cannot carry it: it pauses the game while it is shown and writes its progress bar once a game minute. So
-    /// the meter is on the job panel: one line that says what it asks ("Cast"), and under it one of the game's own bars
-    /// (<see cref="GameBar"/>, a copy of the energy bar of the top bar): the zone marked on it in the game's green, the better part
-    /// of the zone in full green, and a marker that runs along it; a clock is the same bar filled, running down. The action is a
-    /// button of the game's panel on the game's key. If the bar cannot be copied the line gives the zone in figures instead
-    /// ("Cast: good from 59% to 85%"), and nothing stands in for the bar.
-    ///
-    /// The cost: nothing per frame except <see cref="Gauge"/>, which hands the bar one number: two comparisons, and one position
-    /// written only when the marker has moved a visible step (<see cref="BarRule"/>). No text is made and nothing is laid out for
-    /// it. Everything else is told on the tick and only when it changed.
+    /// What leisure shows, through the game's own interface: a copy of the job panel for the objective and the meter
+    /// (the game's activity panel would pause the game), the game's panel for prompts and offers, its marker and its
+    /// notifications. Per frame only <see cref="Gauge"/> runs; the rest is told on the tick, only on change.
     /// </summary>
     public sealed class LeisureScreen
     {
-        private const string ButtonText = "reallife_leisure_button";          // "{text}": the words come from the activity
+        private const string ButtonText = "reallife_leisure_button";   // "{text}": the words come from the activity
         private const string ButtonGo = "reallife_leisure_button_go";
 
         private readonly IModLogger _logger;
         private readonly DoorPanel _door;
         private readonly GuideMark _mark = new GuideMark("outings");
-        private readonly DeskList _list = new DeskList("RealLifeOverhaul Clothes", 1000f, 110f);
         private readonly Action _interact;
         private readonly Action[] _choose = new Action[3];
         private readonly object[] _choiceArgs = new object[3];
+        private readonly Action _onOffer;
         private ShiftCard _card;
         private bool _cardTried;
         private bool _suppressed;
-        private string _press, _pressText;
+        private string _press;
         private object _pressArgs;
         private string[] _choices;
         private string _objectiveToldFor;
         private string _meterLabel;
         private float _zoneCentre = -1f, _zoneWidth = -1f, _zoneSweet = -1f;
-        private string _meterWords;
         private GameBar _bar;
         private bool _meterOn;
         private LeisureActivity _gaugeSaidFor;
         private string _offerText, _offerPlain;
         private bool _offerUp;
-        private Action _onOffer;
 
         public LeisureScreen(IModLogger logger, Action interact, Action<int> choose, Action accept)
         {
@@ -71,21 +51,17 @@ namespace RealLifeOverhaul.Leisure
                 int index = i;
                 _choose[i] = _door.Press(() => choose(index));
             }
-            TravelList.Logger = logger;
         }
 
-        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
         internal void KeptBy(Behaviour host)
         {
             _mark.Keep(host);
         }
 
-        /// <summary>True while one of the panel's buttons is the one the game is reading the key for (the mod's own interact key stands aside).</summary>
+        /// <summary>True while one of the panel's buttons has the game's key.</summary>
         public bool TakesKey => _door.TakesKey;
 
-        public bool ListOpen => _list.IsOpen;
-
-        /// <summary>Hidden for a photograph: the panel, the card and the marker are put away until it is lifted.</summary>
+        /// <summary>Hidden for photo mode: the panel, the card and the marker stay away until lifted.</summary>
         public void Suppress(bool hidden)
         {
             _suppressed = hidden;
@@ -96,16 +72,13 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // ---------------------------------------------------------------- the activity
-
-        /// <summary>The card, the panel and the marker for the activity that is on. Five times a second; each is told only what changed.</summary>
         public void Draw(LeisureActivity activity, string title, Vector3 player)
         {
             if (_suppressed)
             {
                 return;
             }
-            if (ThirdPersonCamera.IsUiOpen() && !_list.IsOpen)
+            if (ThirdPersonCamera.IsUiOpen())
             {
                 HideActivity();
                 return;
@@ -122,7 +95,7 @@ namespace RealLifeOverhaul.Leisure
             }
             else if (activity.Objective != null && !ReferenceEquals(activity.Objective, _objectiveToldFor))
             {
-                // Without the copy of the game's job panel what is asked of the player is sent as a notification when it changes.
+                // Without the job panel the objective goes out as a notification each time it changes.
                 _objectiveToldFor = activity.Objective;
                 Say(activity.Objective, 6f);
             }
@@ -171,8 +144,7 @@ namespace RealLifeOverhaul.Leisure
             if (!ReferenceEquals(press, _press))
             {
                 _press = press;
-                _pressText = press != null ? Plain(press) : null;
-                _pressArgs = press != null ? new { text = _pressText } : null;
+                _pressArgs = press != null ? new { text = Plain(press) } : null;
             }
             if (!ReferenceEquals(choices, _choices))
             {
@@ -193,8 +165,6 @@ namespace RealLifeOverhaul.Leisure
             panel.Follow = null;
             _door.Show(player, player, 2.1f, () => "activity");
         }
-
-        // ---------------------------------------------------------------- the meter
 
         private void Meter(LeisureActivity activity, ShiftCard card)
         {
@@ -217,10 +187,8 @@ namespace RealLifeOverhaul.Leisure
                 _zoneWidth = activity.ZoneWidth;
                 _zoneSweet = activity.SweetWidth;
                 _bar = card.Bar();
-                // With the bar the line says what is asked and the bar shows where; without it the line gives the zone in figures.
-                _meterWords = _bar != null ? activity.MeterLabel ?? string.Empty : MeterWords(activity);
-                card.Line(2, _meterWords, WorldPanel.White());
-                card.Line(3, null, WorldPanel.White());   // the bar stands in the place of the card's last two lines
+                card.Line(2, _bar != null ? activity.MeterLabel ?? string.Empty : MeterWords(activity), WorldPanel.White());
+                card.Line(3, null, WorldPanel.White());   // the bar takes the place of the last two lines
                 card.Line(4, null, WorldPanel.White());
                 if (_bar != null && activity.ZoneWidth > 0f)
                 {
@@ -231,7 +199,7 @@ namespace RealLifeOverhaul.Leisure
             _bar?.Show(true);
             if (!ReferenceEquals(_gaugeSaidFor, activity))
             {
-                _gaugeSaidFor = activity;   // once for each game played
+                _gaugeSaidFor = activity;
                 if (Meta.Dev.Verbose)
                 {
                     _logger?.Info("Gauge check (" + LeisureKinds.Id(activity.Kind) + "): "
@@ -243,7 +211,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>Per frame while a meter is up: the bar is handed one number, and writes it only when the marker has moved a visible step.</summary>
+        /// <summary>Per frame while a meter is up; the bar writes only when the cursor moves a visible step.</summary>
         public void Gauge(LeisureActivity activity)
         {
             if (_bar != null && _meterOn && activity.Meter && !_suppressed)
@@ -252,7 +220,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // A zone to stop in: the marker runs along the bar. No zone: a clock, the bar filled with what is left.
+        // With a zone the marker runs along the bar; without one it is a clock, the bar filled with what is left.
         private void Cursor(LeisureActivity activity)
         {
             if (_bar == null)
@@ -287,9 +255,7 @@ namespace RealLifeOverhaul.Leisure
             return Mathf.Clamp(Mathf.RoundToInt(fraction * 100f), 0, 100).ToString();
         }
 
-        // ---------------------------------------------------------------- a place worth a visit
-
-        /// <summary>The game's panel over a place where something can be started: "Fish here (bait $5, five casts)" and a button.</summary>
+        /// <summary>The game's panel over a place where something can be started.</summary>
         public void Offer(string text, Vector3 place, Vector3 player)
         {
             if (_suppressed)
@@ -320,7 +286,6 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>The prompt, the card and the marker put away (the activity is over or the screen is needed).</summary>
         public void HideActivity()
         {
             _card?.Show(false);
@@ -330,35 +295,14 @@ namespace RealLifeOverhaul.Leisure
             _choices = null;
         }
 
-        // ---------------------------------------------------------------- the list
-
-        /// <summary>The game's list window for the clothes browser; null (one line in the log) if it could not be copied.</summary>
-        public TravelList ListFor(object owner)
-        {
-            TravelList list = _list.Take(owner);
-            if (list == null)
-            {
-                _logger?.Info("Leisure check (clothes list): the game's list could not be made; the rack and the wardrobe are not offered: FAIL.");
-            }
-            return list;
-        }
-
-        public void CloseList()
-        {
-            _list.Close();
-        }
-
-        // ---------------------------------------------------------------- notifications
-
-        /// <summary>A game or a visit adds up: one of the game's notifications with the title over the lines.</summary>
-        public void Card(string title, string body, float seconds)
+        /// <summary>A result as one of the game's notifications, the title over the lines.</summary>
+        public static void Card(string title, string body, float seconds)
         {
             Notifications.Show(NotificationType.Info, "reallife_leisure_card_toast",
                 new Dictionary<string, string>(2) { { "title", title ?? string.Empty }, { "body", body ?? string.Empty } }, seconds);
         }
 
-        /// <summary>One line, as one of the game's notifications.</summary>
-        public void Say(string text, float seconds)
+        public static void Say(string text, float seconds)
         {
             Notifications.Show(NotificationType.Info, "reallife_leisure_text", new Dictionary<string, string>(1) { { "text", text ?? string.Empty } }, seconds);
         }
@@ -369,10 +313,9 @@ namespace RealLifeOverhaul.Leisure
             _mark.Hide();
             _card?.Destroy();
             _card = null;
-            _list.Destroy(e => _logger?.Error(e));
         }
 
-        // A prompt as the activities write it ("E: cast") without its key: the game writes the key on the button itself.
+        // "E: cast" without its key: the game writes the key on the button itself.
         private static string Plain(string text)
         {
             if (string.IsNullOrEmpty(text))

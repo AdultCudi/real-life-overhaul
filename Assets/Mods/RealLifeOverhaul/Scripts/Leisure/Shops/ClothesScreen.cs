@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
-using BigAmbitions.Characters;
 using BigAmbitions.Characters.Appearance;
-using Character.Customization;
 using Localizor.LanguageChangeEvent;
 using UI;
 using UI.Notification;
@@ -14,33 +12,14 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// The mod's clothes in the game's own clothes screen (ChangeCharacterClothesUI): the screen a wardrobe's "Change
-    /// clothes" opens, with the player's preview in the middle, the game's categories down the side, a grid of pieces,
-    /// a row of colours and Save.
-    ///
-    ///  - At home, what the player owns of the mod's is in the Torso, Legs and Feet grids after the game's own pieces,
-    ///    in the colours bought. A click shows it on the preview; Save keeps it, and closing without saving puts back
-    ///    what was worn (the game asks first, as it does for its own pieces).
-    ///  - At the Real Life Overhaul rack in a clothing store the same screen opens as a shop: the mod's garments in
-    ///    every colour with their prices (the game's own pieces of those kinds, which the wardrobe gives anyway, are put
-    ///    away), and Save says "Buy" with the price of what is tried on and not yet owned, greyed while it cannot be
-    ///    paid. Buying pays and keeps it on; closing without buying takes off what was tried.
-    ///
-    /// How a Save is told from a closing: the game's SaveClothes puts a new list of the player's pieces in the save (a
-    /// copy of the preview's), so the list the save held when the screen opened is no longer the one it holds. Nothing
-    /// of the game's is replaced or rewired: a component on the screen's object hears it open and close, the grid's
-    /// tiles are GridLooks's, and the Save button has only its words and its greying changed, while the shop is open.
-    ///
-    /// A piece of the game's being tried in this screen covers the mod's look of that kind on the preview (the game's
-    /// rule, CharacterCatalogue.Shows); picking one of the mod's again puts the game's piece of that kind on the
-    /// preview back to the one the pick is made over, so the mod's look shows and a Save leaves the game's piece as it
-    /// was. The screen also dresses employees in uniforms: then nothing of the mod's is offered.
+    /// The mod's clothes in the game's own clothes screen: as a wardrobe, what the player owns; at the mod's rack, a
+    /// shop whose Save reads "Buy" with the price. Nothing of the game's is replaced: a hook hears the screen open and
+    /// close, <see cref="GridLooks"/> adds the tiles, and only the Save button's words and greying change.
     /// </summary>
     internal static class ClothesScreen
     {
         private const string BuyKey = "reallife_clothes_screen_buy";
 
-        // The kinds of the game's clothes the shop's screen opens with: everyday wear (its own pieces of the mod's three kinds are put away).
         private static readonly AppearanceTag[] Everyday = { AppearanceTag.Casual, AppearanceTag.Formal, AppearanceTag.Sport, AppearanceTag.Party };
 
         public static IModLogger Logger;
@@ -57,12 +36,12 @@ namespace RealLifeOverhaul.Leisure
         private static bool _shopNext;
         private static GridMode _mode = GridMode.Off;
         private static int[] _before;
-        private static List<AppearanceElementData> _piecesBefore;   // the save's list of the player's pieces as the screen opened
+        private static List<AppearanceElementData> _piecesBefore;   // as the screen opened: a Save replaces it
         private static readonly List<string> ToPay = new List<string>(4);
 
         public static bool Ready => !_failed && _ui != null && _grid != null;
 
-        /// <summary>Once a second from the director while clothes shops are on; does something once per city.</summary>
+        /// <summary>Once a second while clothes shops are on; does its work once per city.</summary>
         public static void Install()
         {
             if (_failed || (_ui != null && _grid != null))
@@ -74,11 +53,11 @@ namespace RealLifeOverhaul.Leisure
             EmployeeUniformPreview preview = CharacterTools.FindPreview();
             if (ui == null || preview == null || preview.appearanceSetter == null)
             {
-                return;   // the interface is not there yet: asked again in a second
+                return;   // not built yet: tried again in a second
             }
             try
             {
-                _tagsField = GameContract.CustomizerTags.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                _tagsField = GameContract.CustomizerTags.Field;
                 _save = GameContract.ClothesSaveButton.Field?.GetValue(ui) as Button;
                 if (_tagsField == null || _save == null)
                 {
@@ -90,7 +69,7 @@ namespace RealLifeOverhaul.Leisure
                 _grid = GridLooks.Attach(ui, preview.appearanceSetter, Logger, GridMode.Off, Choose);
                 if (_grid == null)
                 {
-                    _failed = true;   // (GridLooks has said why)
+                    _failed = true;   // GridLooks logged why
                     return;
                 }
                 if (ui.GetComponent<ClothesScreenHook>() == null)
@@ -106,7 +85,6 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        /// <summary>The city is going: what was tried is put back, and the screen is let go of.</summary>
         public static void Shutdown()
         {
             if (_mode != GridMode.Off && !GameManager.isCitySceneBeingUnloaded)
@@ -125,13 +103,11 @@ namespace RealLifeOverhaul.Leisure
             _failed = false;
         }
 
-        /// <summary>The rack: the clothes screen as a shop. False with a reason (a locale key) if it cannot open.</summary>
         public static bool OpenShop(out string refusalKey)
         {
             return Open(true, out refusalKey);
         }
 
-        /// <summary>The test button: the clothes screen as the wardrobe at home opens it.</summary>
         public static bool OpenWardrobe(out string refusalKey)
         {
             return Open(false, out refusalKey);
@@ -154,7 +130,7 @@ namespace RealLifeOverhaul.Leisure
             _shopNext = shop;
             try
             {
-                _ui.Show(Everyday);   // the game's own opening: it pauses the game and holds the player, and switches the screen on a frame later
+                _ui.Show(Everyday);   // the game's own: it pauses, holds the player, shows the screen a frame later
             }
             catch (Exception e)
             {
@@ -165,8 +141,6 @@ namespace RealLifeOverhaul.Leisure
             }
             return true;
         }
-
-        // ---------------------------------------------------------------- the screen opens and closes
 
         internal static void Opened()
         {
@@ -267,7 +241,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // What was tried in the screen comes off: every pick as it was when the screen opened.
+        // Every pick back as it was when the screen opened.
         private static void Undo(string why)
         {
             if (!CharacterCatalogue.Differs(_before))
@@ -277,8 +251,6 @@ namespace RealLifeOverhaul.Leisure
             CharacterCatalogue.Restore(_before, LookSource.Wardrobe);
             Logger?.Info("Clothes: what was tried is taken off again (" + why + ").");
         }
-
-        // ---------------------------------------------------------------- a click on one of the mod's tiles
 
         private static void Choose(CharacterCatalogue.Slot slot, int entry)
         {
@@ -298,12 +270,12 @@ namespace RealLifeOverhaul.Leisure
             }
             if (_mode == GridMode.Wardrobe)
             {
-                _save.interactable = true;   // something to save, and the game asks before it is thrown away
+                _save.interactable = true;   // the game then asks before a change is thrown away
             }
             Price();
         }
 
-        // The preview's piece of the game's of this kind, back to the one the save has (the one the pick is made over).
+        // A game piece tried here covers the mod's look of its kind, so a pick puts that piece back as saved.
         private static bool PutBack(LookKind kind)
         {
             AppearanceElementType type = CharacterCatalogue.ElementOf(kind);
@@ -331,9 +303,7 @@ namespace RealLifeOverhaul.Leisure
             return null;
         }
 
-        // ---------------------------------------------------------------- the shop's Buy
-
-        // In the shop, the Save button names what buying costs, and is greyed while the money is not there.
+        // In the shop the Save button names what buying costs, greyed while the money is not there.
         private static void Price()
         {
             if (_mode != GridMode.Shop || _save == null)
@@ -350,11 +320,11 @@ namespace RealLifeOverhaul.Leisure
             RestoreLabel();
             if (CharacterCatalogue.Differs(_before))
             {
-                _save.interactable = true;   // only what is owned, worn another way: a Save keeps it
+                _save.interactable = true;   // only owned pieces, worn another way: a Save keeps them
             }
         }
 
-        // What is on and not yet owned, and what it all costs (a dress is one purchase, its skirt with it).
+        // What is on and not yet owned, and its cost; a dress is one purchase, its skirt with it.
         private static int Owed()
         {
             ToPay.Clear();
@@ -393,7 +363,7 @@ namespace RealLifeOverhaul.Leisure
                 _saveArguments = _saveLabel.Arguments;
                 _labelChanged = true;
             }
-            _saveLabel.Arguments = new Dictionary<string, string>(1) { { "price", price } };   // (read by the game as it is)
+            _saveLabel.Arguments = new Dictionary<string, string>(1) { { "price", price } };
             _saveLabel.Key = BuyKey;
         }
 
@@ -407,8 +377,6 @@ namespace RealLifeOverhaul.Leisure
             _saveLabel.Arguments = _saveArguments;
             _saveLabel.Key = _saveKey;
         }
-
-        // ---------------------------------------------------------------- helpers
 
         private static CharacterData Player()
         {
@@ -427,7 +395,7 @@ namespace RealLifeOverhaul.Leisure
         }
     }
 
-    /// <summary>On the game's clothes screen: tells <see cref="ClothesScreen"/> when it opens and closes. It has no Update.</summary>
+    /// <summary>On the game's clothes screen: says when it opens and closes. No cost a frame.</summary>
     public sealed class ClothesScreenHook : MonoBehaviour
     {
         private void OnEnable()

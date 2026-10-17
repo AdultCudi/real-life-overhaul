@@ -1,22 +1,21 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul.Leisure
 {
-    /// <summary>One saved outfit: a name (one of a fixed list, by index) and the look worn in each wardrobe slot, by id.</summary>
+    /// <summary>One saved outfit: a name from a fixed list, and the look worn in each wardrobe slot.</summary>
     public sealed class SavedOutfit
     {
         public bool Used;
-        public int Name;                                   // which of six outfit names (kept with the save: the wardrobe is the game's own screen now, which has no outfits)
-        public readonly string[] Ids = new string[8];      // in the order of CharacterCatalogue.Slots; null or empty: the game's own
+        public int Name;                                   // one of six outfit names, kept in the save
+        public readonly string[] Ids = new string[8];      // by CharacterCatalogue.Slots; null or empty: the game's own
     }
 
     /// <summary>
-    /// Leisure's part of a save, kept in the save's modData (plain strings under keys the base
-    /// game ignores: a save made with the mod loads without it). Best scores by activity, the
-    /// landmarks seen, the fish caught, the clothes bought, three outfits, and how much the
-    /// player has had to drink. Game-free: read and written through ModState's load and save.
+    /// Leisure's part of the save, plain strings in modData that the base game ignores: records, landmarks seen, fish,
+    /// clothes bought, outfits and drink. Read and written through ModState.
     /// </summary>
     public static class LeisureState
     {
@@ -44,23 +43,22 @@ namespace RealLifeOverhaul.Leisure
 
         public static bool Loaded { get; private set; }
 
-        /// <summary>Goes up each time a save is read: whoever does something once per save compares it.</summary>
+        /// <summary>Goes up each time a save is read.</summary>
         public static int Loads { get; private set; }
 
-        /// <summary>True if this save had no leisure data when it was read: the director then decides what a new or an old save starts with.</summary>
+        /// <summary>True if this save had no leisure data when it was read.</summary>
         public static bool Fresh { get; private set; }
 
-        /// <summary>This save's "clothes must be bought": on for a game started with the mod, off for one that was already going.</summary>
+        /// <summary>This save's "clothes must be bought".</summary>
         public static bool MustBuy;
 
-        /// <summary>Drinks still in the blood (each wears off in ninety game minutes) and the game minute the count was last brought up to date.</summary>
+        /// <summary>Drinks in the blood at the game minute <see cref="DrinkTime"/>; read through DrinksAt.</summary>
         public static float Drinks;
         public static float DrinkTime;
 
-        /// <summary>Everything this save has spent on leisure and clothes.</summary>
         public static int Spent;
 
-        /// <summary>Goes up whenever what is owned changes, for whoever shows it.</summary>
+        /// <summary>Goes up whenever what is owned changes.</summary>
         public static int OwnedVersion { get; private set; }
 
         public static void Reset()
@@ -80,7 +78,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 outfit.Used = false;
                 outfit.Name = 0;
-                System.Array.Clear(outfit.Ids, 0, outfit.Ids.Length);
+                Array.Clear(outfit.Ids, 0, outfit.Ids.Length);
             }
             OwnedVersion++;
         }
@@ -150,8 +148,6 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // ---------------------------------------------------------------- scores
-
         public static int BestOf(string activity)
         {
             return Best.TryGetValue(activity, out int best) ? best : 0;
@@ -162,7 +158,7 @@ namespace RealLifeOverhaul.Leisure
             return Plays.TryGetValue(activity, out int plays) ? plays : 0;
         }
 
-        /// <summary>Counts a finished game and keeps its score if it beats the record. True if it did (and there was a record to beat or this is the first).</summary>
+        /// <summary>Counts a finished game and keeps its score if it is a new best; true if it was.</summary>
         public static bool Record(string activity, int score)
         {
             Plays[activity] = PlaysOf(activity) + 1;
@@ -173,8 +169,6 @@ namespace RealLifeOverhaul.Leisure
             }
             return false;
         }
-
-        // ---------------------------------------------------------------- landmarks, fish
 
         public static bool HasSeen(string landmark) => Seen.Contains(landmark);
         public static int SeenCount => Seen.Count;
@@ -190,8 +184,6 @@ namespace RealLifeOverhaul.Leisure
             Fish[fish] = had + 1;
             return had == 0;
         }
-
-        // ---------------------------------------------------------------- clothes
 
         public static bool Owns(string id) => id == null || Owned.Contains(id);
         public static int OwnedCount => Owned.Count;
@@ -215,9 +207,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // ---------------------------------------------------------------- drink
-
-        /// <summary>What is still in the blood at this game minute: a drink wears off in ninety minutes.</summary>
+        /// <summary>What is still in the blood at this game minute: each drink wears off in ninety.</summary>
         public static float DrinksAt(float nowMinutes)
         {
             if (Drinks <= 0f)
@@ -233,8 +223,6 @@ namespace RealLifeOverhaul.Leisure
             Drinks = DrinksAt(nowMinutes) + units;
             DrinkTime = nowMinutes;
         }
-
-        // ---------------------------------------------------------------- reading and writing
 
         private static void ReadCounts(Dictionary<string, string> data, string key, Dictionary<string, int> into)
         {

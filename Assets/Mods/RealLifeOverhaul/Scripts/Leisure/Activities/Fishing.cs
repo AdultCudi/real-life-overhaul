@@ -4,18 +4,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
-    /// A line in the water. Five casts on one lot of bait: a cast (stop the cursor in the zone:
-    /// a good cast shortens the wait and brings better fish), the wait with the float on the
-    /// water, the bite (the float goes under: strike with the key inside the fish's window, and
-    /// not before, which scares it off), and the fight (three timed pulls, the zone narrower the
-    /// heavier the fish; two misses and it is off). What is landed is weighed, listed and sold.
-    /// The player stands held at the water's edge with the rod in the hand at the grip the four
-    /// rod clips share (0.10 m from the butt): <c>fish_wait</c> between and during casts,
-    /// <c>cast_rod</c> for the cast (the line goes out at its <c>release</c> mark),
-    /// <c>reel_in</c> while a fish is on and <c>fish_land</c> when it comes out. The clips turn
-    /// the rod themselves, so per frame there is only the float, the line and the meter. With a
-    /// bundle that lacks any of the four the old stand-in is used instead: the right-arm loop
-    /// made for holding a shaft up, and the rod aimed over the water each frame.
+    /// A line in the water: five casts on one lot of bait. Cast, wait, strike inside the bite's window, then three
+    /// timed pulls; the catch is weighed and sold. Without the rod clips an arm loop stands in.
     /// </summary>
     public sealed class Fishing : LeisureActivity
     {
@@ -26,7 +16,7 @@ namespace RealLifeOverhaul.Leisure
         {
             public readonly string Id, NameKey;
             public readonly int MinGrams, MaxGrams, Weight, ValuePerKilo;
-            public readonly float Window, Zone;   // seconds to strike in; width of the zone in the fight
+            public readonly float Window, Zone;   // seconds to strike in; the fight zone's width
 
             public Fish(string id, string nameKey, int minGrams, int maxGrams, int weight, int valuePerKilo, float window, float zone)
             {
@@ -41,7 +31,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // What comes out of a city harbour, commonest first. The boot is worth nothing and weighs what a wet boot weighs.
+        // What comes out of a city harbour, commonest first.
         private static readonly Fish[] Catch =
         {
             new Fish("perch", "reallife_leisure_fish_perch", 150, 450, 26, 8, 1.25f, 0.30f),
@@ -58,7 +48,7 @@ namespace RealLifeOverhaul.Leisure
 
         private const string RodProp = "fishing_rod";
         private const string WaitClip = "fish_wait", CastClip = "cast_rod", ReelClip = "reel_in", LandClip = "fish_land";
-        private const float RodLength = 2.1f;     // butt to tip ring, along the prop's +Z
+        private const float RodLength = 2.1f;     // metres, butt to tip ring along the prop's +Z
         private const float FlySeconds = 0.8f;
 
         private Step _step;
@@ -69,8 +59,8 @@ namespace RealLifeOverhaul.Leisure
         private Transform _float, _line;
         private float _floatDip;        // metres under, eased
         private float _flyFrom;
-        private bool _rodClips;         // the four rod clips are there: they hold and turn the rod
-        private string _rodClip;        // the one that is on
+        private bool _rodClips;
+        private string _rodClip;
         private int _cast;
         private int _castQuality;
         private int _scares;
@@ -108,7 +98,7 @@ namespace RealLifeOverhaul.Leisure
             Ctx.Body.Face(_water);
             if (_rodClips && !Rod(WaitClip))
             {
-                _rodClips = false;   // the clip service said no: the stand-in pose, if that can be had
+                _rodClips = false;   // the stand-in pose, if that can be had
             }
             if ((!_rodClips && !Ctx.Body.Over("umbrella_hold", BodyMask.RightArm, RodProp)) || !LeisureMoney.Charge(Bait, "reallife_transaction_fishing_bait"))
             {
@@ -129,8 +119,7 @@ namespace RealLifeOverhaul.Leisure
             return true;
         }
 
-        // One of the four rod clips on the whole body, the rod staying in the hand (they share its grip, so they
-        // cross-fade). A one-off holds its last pose, which is fish_wait's first, until the next is asked for.
+        // The rod clips share the grip, so they cross-fade; a one-off holds its last pose, fish_wait's first.
         private bool Rod(string clip)
         {
             if (!_rodClips)
@@ -143,13 +132,13 @@ namespace RealLifeOverhaul.Leisure
             }
             if (!Ctx.Body.Play(clip, RodProp, 0.25f, ClipEnd.Hold))
             {
-                return false;   // the pose stays whatever it was; the game goes on
+                return false;   // the pose stays as it was; the game goes on
             }
             _rodClip = clip;
             return true;
         }
 
-        // How long after a cast is begun the line leaves: the clip's release mark, or at once with the stand-in.
+        // Seconds from the start of a cast to the line leaving.
         private float CastRelease()
         {
             return _rodClips && ClipLibrary.TryGet(CastClip, out CityClip cast) ? Mathf.Max(0f, cast.Mark("release", 0.9f)) : 0f;
@@ -255,7 +244,7 @@ namespace RealLifeOverhaul.Leisure
 
         private void Pull(float now)
         {
-            // Each pull the zone is somewhere else and the fish a little quicker.
+            // Each pull the zone moves and the fish is a little quicker.
             _sweep.Begin(now, 1.05f - 0.12f * _pulls, Random.Range(0.25f, 0.75f), _fish.Zone, _fish.Zone * 0.3f);
             Meter = true;
             ZoneCentre = _sweep.Centre;
@@ -276,7 +265,7 @@ namespace RealLifeOverhaul.Leisure
                         Objective = T("reallife_leisure_fishing_waiting");
                         Prompt = null;
                         OwnsInteractKey = true;
-                        QuietPrompt = T("reallife_leisure_fishing_prompt_strike");   // the key is live, and the button says so without saying a fish is there
+                        QuietPrompt = T("reallife_leisure_fishing_prompt_strike");
                         Rod(WaitClip);   // the cast ends in this loop's first pose
                     }
                     break;
@@ -338,7 +327,7 @@ namespace RealLifeOverhaul.Leisure
             Stow();
             if (!landing)
             {
-                Rod(WaitClip);   // off the reel (or the wait) and back to holding the rod out
+                Rod(WaitClip);
             }
         }
 
@@ -357,7 +346,7 @@ namespace RealLifeOverhaul.Leisure
                 "fish", T(_fish.NameKey), "weight", Kilos(_grams));
             LeisureSound.Cue(LeisureCue.Good);
             LeisureMoney.Tire(0.8f);
-            NextCast(now, 3.2f, Rod(LandClip));   // up with it, a step back, a look: ends holding the rod out again
+            NextCast(now, 3.2f, Rod(LandClip));   // fish_land ends holding the rod out
         }
 
         private void Conclude(float now)
@@ -383,7 +372,7 @@ namespace RealLifeOverhaul.Leisure
                   + (_bestGrams > 0 ? "\n" + T("reallife_leisure_fishing_result_best", "weight", Kilos(_bestGrams)) : string.Empty)
                   + "\n" + T("reallife_leisure_fishing_result_kinds", "kinds", LeisureState.FishKinds.ToString(), "all", Catch.Length.ToString());
             Mood = _newKind || _bestGrams >= 3000 ? ModState.MoodUpBig : _landed > 0 ? ModState.MoodUp : null;
-            _sold = 0;   // paid
+            _sold = 0;   // paid: End must not pay again
         }
 
         private static string Kilos(int grams)
@@ -430,20 +419,19 @@ namespace RealLifeOverhaul.Leisure
             }
             if (!_rodClips)
             {
-                // The stand-in only (no rod clips): the rod is aimed out over the water from the hand, tip up, more
-                // upright while a fish is on. With the clips the rod is theirs and is never turned here.
-                Vector3 out_ = _water - rod.position;
-                out_.y = 0f;
+                // The stand-in aims the rod out over the water, tip up, more upright while a fish is on.
+                Vector3 ahead = _water - rod.position;
+                ahead.y = 0f;
                 float lift = _step == Step.Fight ? 1.1f : _step == Step.Ready || _step == Step.Landed ? 1.6f : 0.55f;
-                rod.rotation = Quaternion.Slerp(rod.rotation, Quaternion.LookRotation(out_.normalized + Vector3.up * lift), 6f * delta);
+                rod.rotation = Quaternion.Slerp(rod.rotation, Quaternion.LookRotation(ahead.normalized + Vector3.up * lift), 6f * delta);
             }
             if (_float == null || _line == null)
             {
                 return;
             }
-            // The line is out from the moment the cast lets it go (the clip's release mark) until it is wound in.
-            bool out2 = (_step == Step.Fly && now >= _flyFrom) || _step == Step.Wait || _step == Step.Bite || _step == Step.Fight;
-            if (!out2)
+            // The line is out from the cast's release until it is wound in.
+            bool lineOut = (_step == Step.Fly && now >= _flyFrom) || _step == Step.Wait || _step == Step.Bite || _step == Step.Fight;
+            if (!lineOut)
             {
                 return;
             }
@@ -475,7 +463,7 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // The float and line out of sight between casts (they are still ours).
+        // The float and line hidden between casts; they are still ours.
         private void Stow()
         {
             if (_float != null && _float.gameObject.activeSelf)
@@ -492,7 +480,7 @@ namespace RealLifeOverhaul.Leisure
         {
             if (_float != null)
             {
-                _float.gameObject.SetActive(true);   // the pool takes back only what is switched on
+                _float.gameObject.SetActive(true);   // Return skips a switched-off prop as returned already
                 Ctx.Props.Return(_float);
                 _float = null;
             }
@@ -504,7 +492,7 @@ namespace RealLifeOverhaul.Leisure
             }
             if (!Played && _sold > 0)
             {
-                LeisureMoney.Give(_sold, "reallife_transaction_fishing_catch");   // walked off with fish in the bucket: they are still sold
+                LeisureMoney.Give(_sold, "reallife_transaction_fishing_catch");   // walked off: the fish are still sold
             }
         }
     }
