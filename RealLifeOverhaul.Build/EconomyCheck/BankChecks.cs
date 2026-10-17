@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Economy;
 
-// Checks for the rule that sets the city's banks apart (Scripts/Economy/Banks/BankRules.cs): that the three banks'
+// Checks for the rule that sets the city's banks apart (Scripts/Economy/Banking/Terms/BankRules.cs): that the three banks'
 // terms differ by it in rate, limit and fee; that the largest keeps the terms as they were before the bank apps; that
 // under the lending threshold every bank refuses on every product whatever its share; that limits never fall and
 // rates never rise as the rating rises, at every bank; that no rate goes under the floor; how branches and banks are

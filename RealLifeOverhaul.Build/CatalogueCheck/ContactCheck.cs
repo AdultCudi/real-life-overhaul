@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
                 string text = File.ReadAllText(file);
                 if (text.Contains("ContactPictures.Person(")) pictured.Add(Path.GetFileName(file));
                 if (!text.Contains("Contact.GetContact(")) continue;
-                // A contact's id is declared as a constant, or in a list of ids (Economy/Debt/DebtPhone.ContactIds); a speaker's name in a call (npcNameKey) is not one.
+                // A contact's id is declared as a constant, or in a list of ids (Economy/Banking/Debt/DebtPhone.ContactIds); a speaker's name in a call (npcNameKey) is not one.
                 foreach (Match m in Regex.Matches(text, @"const string \w+ = ""(reallife-[a-z0-9-]+)"""))
                 {
                     added.Add(m.Groups[1].Value);

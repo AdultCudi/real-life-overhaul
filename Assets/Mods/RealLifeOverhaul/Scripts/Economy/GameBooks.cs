@@ -8,48 +8,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The mod's business costs in the game's own daily statement (GameInstance.financialSummaries, built by
-    /// FinancialSummaryHelper first thing each day for the day that ended). The game reads four lines of a business's
-    /// costs from that day's transactions, by the business's address and the game's categories: salaries, rent,
-    /// marketing and licensing fees. A cost of the mod's that is one of those is booked with that category and the
-    /// business's address (CompanyGame.Take). One booked after midnight for the day that ended (the mod's day comes after
-    /// the game has built the statement) is put into it here once the mod's day is done (EconomyDirector.OnDay): the
-    /// four lines are summed again from the day's transactions as the game sums them, and the totals with them. Goods,
-    /// sales and theft are the game's own and stay as they are. What the statement has no line for (insurance, an
-    /// accountant, hosting) stays in the mod's own books. So the game's bank (a loan's size), its daily summary and its
-    /// statements see what the mod costs a business. The city's lines of a day (rent, wages, takings, shops and services:
-    /// Economy/City) are booked the morning after under the address and category of the game's own charges they adjust,
-    /// so they are summed in here too: a business's four lines by category, its takings (the game's sales of the day and
-    /// the city's line on them, the goods sold scaled row by row so that they still add up), a rented home's rent (the
-    /// game's daily rent and the city's line on it), and the day's own figures (loans, health insurance, the headhunter,
-    /// parking, salary income, the wages of staff of no business), each summed as the game sums them. So the game's taxes,
-    /// its bank and EconoView count them. The mod's own takings at a business are among its takings too: its online
-    /// orders less refunds (Economy/Online, which puts each product's sales among the statement's rows itself), the
-    /// estate agency's commissions at its office (Economy/Estate) and, from
-    /// another feature, the broadband company's bills at its headquarters (EconomyBridges.Takings), with its network's
-    /// cost as a row among the goods (EconomyBridges.CostRow). A statement's takings are summed afresh each time from what
-    /// the save keeps (the day's transactions, and the order book where the game booked no takings of its own: a
-    /// factory's exports), never from the statement itself, so entering them twice counts nothing twice and a refresh
-    /// after another entry loses nothing. Once or twice a day, one look at the day's transactions.
-    ///
-    /// A dealership of Empire Motors, another author's mod (Core/EmpireMotors), is booked here as well: the game counts
-    /// nothing it takes or spends, as that mod books its money under types of its own with no category and, but for a car
-    /// sold with no trade-in, no address. Its car sales, finance payments and warranty premiums (less refunds) are among its
-    /// takings, at its address or, booked with none, shared evenly between the player's dealerships; the cars it buys,
-    /// inspects, reconditions and services are a row among its goods, and its supplies, campaigns, specialism and warranty
-    /// claims another. Its order book's day is given the takings and a customer for each car sold, which is what the
-    /// mod's business pressure, brands and company read there. And the game's tax deducts those costs as it deducts a
-    /// shop's goods (<see cref="Deduct"/>), so that it counts the dealership's margin rather than its takings.
-    ///
-    /// This mod's own dealerships (Economy/Dealer) are booked the same way, by the address of a business of that type:
-    /// a car sold (ba:transaction_itemsold) and an instalment, a premium or a car taken back and sold are its takings, a
-    /// car bought (ba:transaction_vehiclebought), an inspection, the auction's fee and preparing a car a row among its
-    /// goods, warranty claims another (DealerLines), and its order book's day has the takings and a customer for each car
-    /// sold. Its costs are marked deductible when they are paid, so the game's tax deducts them itself.
-    ///
-    /// A day's transactions are found once a day by a walk of the game's history (<see cref="Day"/>): every reader of a
-    /// morning shares it, kept up to date with what is booked after, so each further reading walks the history only by
-    /// reference. The figures of a refresh are added up in dictionaries and arrays kept from one refresh to the next.
+    /// The mod's figures in the game's own daily statement, so the game's tax, its bank and EconoView count them. The game
+    /// builds a day's statement the next morning, before the mod's day books its lines, so <see cref="Refresh"/> sums the
+    /// day's transactions again as the game does (FinancialSummaryHelper.CreateFinancialSummary): a business's cost lines,
+    /// its takings with the city's and the mod's, the mod's rows among its goods, a home's rent and the day's totals, always
+    /// afresh from the save, so a second refresh counts nothing twice. Dealerships (Empire Motors and Economy/Dealer) are
+    /// booked by their address too. Cost: one walk of the transaction history a day (<see cref="Day"/>).
     /// </summary>
     public static class GameBooks
     {
@@ -60,22 +24,25 @@ namespace RealLifeOverhaul.Economy
         public const string Parking = "ba:transactioncategory_parkingfees";
         public const string HealthInsurance = "ba:transactioncategory_healthinsuranceexpenses";
         public const string Headhunter = "ba:transactioncategory_headhunterreplacementfees";
-        private const string Loans = "ba:transactioncategory_loanexpenses";
         private const string SalaryIncome = "ba:transactioncategory_salaryincome";
         private const string RevenueType = "ba:transaction_revenue";
         private const string UnassignedWageType = "ba:transaction_unassignedwage";
 
-        // A business's figures of the day by address: its four lines, the game's takings, the city's takings, whether the
-        // game booked takings at all, the city's rent line there as spent (for a home), and the mod's own takings there.
+        // A business's figures of the day by address: its four lines, the game's takings, the city's takings, whether the game
+        // booked takings at all, the city's rent line there as spent (for a home), and the mod's own takings there.
         private const int Salary = 0, RentLine = 1, MarketingLine = 2, LicensingLine = 3, Sales = 4, CitySales = 5, Sold = 6, CityRent = 7, OwnSales = 8, Width = 9;
 
         private const string OurKeys = "reallife" + "_";   // every key of the mod's begins so (split: it is no key itself)
 
-        // Empire Motors' dealerships of the player's, and what each took on the day being booked: takings, then cars sold.
-        private static readonly List<Address> Dealers = new List<Address>(4);
-        private static readonly List<Address> OwnDealers = new List<Address>(4);   // this mod's own dealerships (Economy/Dealer)
+        private static readonly List<Address> Dealers = new List<Address>(4);      // the player's Empire Motors dealerships
+        private static readonly List<Address> OwnDealers = new List<Address>(4);   // this mod's own (Economy/Dealer)
         private static readonly List<BuildingRegistration> OwnRegs = new List<BuildingRegistration>(4);
-        private static readonly Dictionary<Address, float[]> DealerDay = new Dictionary<Address, float[]>(4);
+        private static readonly Dictionary<Address, float[]> DealerDay = new Dictionary<Address, float[]>(4);   // a dealership's day: takings, cars sold
+        private static readonly DayCut<Transaction> Days = new DayCut<Transaction>(t => t.timestamp != null ? t.timestamp.Day : int.MinValue);
+        private static readonly Dictionary<Address, float[]> ByAddress = new Dictionary<Address, float[]>(64);
+        private static readonly Dictionary<string, float> ByCategory = new Dictionary<string, float>(32, StringComparer.Ordinal);
+        private static readonly List<float[]> Lines = new List<float[]>(64);   // the figures of a day's addresses, kept for the next day's
+        private static int _linesUsed;
         private static GameInstance _deductedSave;   // the save and the day whose dealership costs the tax was last given
         private static int _deductedDay = int.MinValue;
 
@@ -88,19 +55,7 @@ namespace RealLifeOverhaul.Economy
             return t != null && t.transactionType != null && t.transactionType.StartsWith(OurKeys, StringComparison.Ordinal);
         }
 
-        private static readonly DayCut<Transaction> Days = new DayCut<Transaction>(t => t.timestamp != null ? t.timestamp.Day : int.MinValue);
-        private static readonly Dictionary<Address, float[]> ByAddress = new Dictionary<Address, float[]>(64);
-        private static readonly Dictionary<string, float> ByCategory = new Dictionary<string, float>(32, StringComparer.Ordinal);
-        private static readonly List<float[]> Lines = new List<float[]>(64);   // the figures of the addresses of a day, kept for the next day's
-        private static int _linesUsed;
-
-        /// <summary>
-        /// The game's transactions dated on a day (GameInstance.Transactions, oldest first), in its order: what every reader of
-        /// a morning walked the whole history of 25,000 to 35,000 for, four or five times (the city's day figures, each
-        /// statement brought up to date, the dealerships' deduction, what leaves tomorrow). The history is walked in full once a
-        /// day, and after that only past what was seen at the last asking (Core/LookupRules DayCut). A list kept here: read it,
-        /// never change or keep it.
-        /// </summary>
+        /// <summary>The game's transactions dated on a day, oldest first, from one walk of the history a day (DayCut). Read it, never change or keep it.</summary>
         public static List<Transaction> Day(int day)
         {
             GameInstance save = SaveGameManager.Current;
@@ -129,7 +84,6 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
 
-            // The day's transactions, once, summed as the game sums them (FinancialSummaryHelper.CreateFinancialSummary).
             Dictionary<Address, float[]> byAddress = ByAddress;
             Dictionary<string, float> byCategory = ByCategory;
             byAddress.Clear();
@@ -156,20 +110,20 @@ namespace RealLifeOverhaul.Economy
                 DealerLine dealer = Dealers.Count > 0 ? EmpireMotors.LineOf(t, Dealers.Count) : DealerLine.None;
                 if (dealer != DealerLine.None)
                 {
-                    Dealer(t, dealer, byAddress, ref goods);   // (it has none of the game's categories: nothing below would count it)
+                    Dealer(t, dealer, byAddress, ref goods);   // it has none of the game's categories: nothing below would count it
                     continue;
                 }
                 DealerLine own = OwnDealers.Count > 0 && !ReferenceEquals(t.address, null) && OwnDealers.Contains(t.address) ? Dealership.DealerLines.Of(t.transactionType) : DealerLine.None;
                 if (own != DealerLine.None)
                 {
-                    Dealer(t, own, byAddress, ref goods);   // (a car sold or bought, booked as the game books one, at the dealership's own address)
+                    Dealer(t, own, byAddress, ref goods);
                     continue;
                 }
                 float amount = t.amount;
                 bool here = !ReferenceEquals(t.address, null);
                 if (t.transactionType == UnassignedWageType || (t.transactionType == CityGame.WagesKey && !here))
                 {
-                    unassigned += amount;   // (the city's line on wages of no business goes with them)
+                    unassigned += amount;   // the city's line on wages of no business goes with them
                 }
                 List<string> categories = t.transactionCategories;
                 for (int c = 0; categories != null && c < categories.Count; c++)
@@ -191,10 +145,22 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (categories != null)
                 {
-                    if (categories.Contains(Salaries)) line[Salary] += amount;
-                    if (categories.Contains(Rent)) line[RentLine] += amount;
-                    if (categories.Contains(Marketing)) line[MarketingLine] += amount;
-                    if (categories.Contains(Licensing)) line[LicensingLine] += amount;
+                    if (categories.Contains(Salaries))
+                    {
+                        line[Salary] += amount;
+                    }
+                    if (categories.Contains(Rent))
+                    {
+                        line[RentLine] += amount;
+                    }
+                    if (categories.Contains(Marketing))
+                    {
+                        line[MarketingLine] += amount;
+                    }
+                    if (categories.Contains(Licensing))
+                    {
+                        line[LicensingLine] += amount;
+                    }
                 }
                 if (t.transactionType == RevenueType)
                 {
@@ -212,21 +178,14 @@ namespace RealLifeOverhaul.Economy
                 else if (t.transactionType == OnlineGame.TakingsKey || t.transactionType == OnlineGame.RefundsKey || t.transactionType == EstateGame.CommissionKey
                          || (takings != null && Ours(t) && takings(t.transactionType)))
                 {
-                    line[OwnSales] += amount;   // (a refund is negative)
+                    line[OwnSales] += amount;   // a refund is negative
                 }
                 else if (costRow != null && Ours(t) && amount < 0f)
                 {
                     string row = costRow(t.transactionType);
                     if (row != null)
                     {
-                        goods = goods ?? new Dictionary<Address, Dictionary<string, float>>();
-                        if (!goods.TryGetValue(t.address, out Dictionary<string, float> rows))
-                        {
-                            rows = new Dictionary<string, float>(2);
-                            goods[t.address] = rows;
-                        }
-                        rows.TryGetValue(row, out float spent);
-                        rows[row] = spent - amount;
+                        AddGood(ref goods, t.address, row, -amount);
                     }
                 }
             }
@@ -241,16 +200,13 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 byAddress.TryGetValue(statement.Address, out float[] line);
-                // (As the game writes them: each line as an amount spent.)
+                // as the game writes them: each line as an amount spent
                 float salaries = line != null ? Mathf.Abs(line[Salary]) : 0f;
                 float rent = line != null ? Mathf.Abs(line[RentLine]) : 0f;
                 float marketing = line != null ? Mathf.Abs(line[MarketingLine]) : 0f;
                 float licensing = line != null ? Mathf.Abs(line[LicensingLine]) : 0f;
-                // The takings: the game's own of the day and the city's line on them; where the game booked none, the sales of
-                // its order book (a factory's exports); and the mod's own takings there. Never read from the statement itself.
                 float own = line != null ? line[OwnSales] : 0f;
                 float sales = line != null && line[Sold] > 0f ? line[Sales] + line[CitySales] + own : OrderBook(statement, day, own);
-                // The goods: the game's rows (and the online products', each under its item's name) as they are, the mod's own as booked.
                 Dictionary<string, float> rows = null;
                 goods?.TryGetValue(statement.Address, out rows);
                 bool goodsChanged = OwnGoods(statement, rows);
@@ -272,7 +228,6 @@ namespace RealLifeOverhaul.Economy
             }
             DealerOrders(day);
 
-            // A rented home: the game's daily rent and the city's line on it.
             float homes = 0f;
             for (int r = 0; summary.residentialStatements != null && r < summary.residentialStatements.Count; r++)
             {
@@ -294,7 +249,7 @@ namespace RealLifeOverhaul.Economy
                 homes += home.Amount;
             }
 
-            float loans = Sum(byCategory, Loans), health = Sum(byCategory, HealthInsurance), headhunter = Sum(byCategory, Headhunter);
+            float loans = Sum(byCategory, GameLoans.ExpenseCategory), health = Sum(byCategory, HealthInsurance), headhunter = Sum(byCategory, Headhunter);
             float parking = Sum(byCategory, Parking), income = Sum(byCategory, SalaryIncome);
             if (!Mathf.Approximately(loans, summary.totalLoanExpenses) || !Mathf.Approximately(health, summary.totalHealthInsuranceExpenses)
                 || !Mathf.Approximately(headhunter, summary.totalHeadhunterReplacementFees) || !Mathf.Approximately(parking, summary.parkingFees)
@@ -323,7 +278,7 @@ namespace RealLifeOverhaul.Economy
             return byCategory.TryGetValue(category, out float sum) ? sum : 0f;
         }
 
-        // An address's figures of the day, nothing in them: one kept from an earlier refresh, or a new one.
+        // An address's figures of the day, empty: one kept from an earlier refresh, or a new one.
         private static float[] Line()
         {
             if (_linesUsed == Lines.Count)
@@ -335,8 +290,21 @@ namespace RealLifeOverhaul.Economy
             return line;
         }
 
-        // A transaction of an Empire Motors dealership's, into the day's figures of the dealership at its address, or with
-        // none, a share into each of the player's dealerships: takings among its own takings, a cost in its row among the goods.
+        // Money spent on a row among a business's goods, made only when a business has such a row.
+        private static void AddGood(ref Dictionary<Address, Dictionary<string, float>> goods, Address at, string row, float spent)
+        {
+            goods = goods ?? new Dictionary<Address, Dictionary<string, float>>();
+            if (!goods.TryGetValue(at, out Dictionary<string, float> rows))
+            {
+                rows = new Dictionary<string, float>(2);
+                goods[at] = rows;
+            }
+            rows.TryGetValue(row, out float sum);
+            rows[row] = sum + spent;
+        }
+
+        // A dealership's transaction into the day's figures at its address or, booked with none, a share into each of the
+        // player's Empire Motors dealerships: takings among its own takings, a cost in its row among the goods.
         private static void Dealer(Transaction t, DealerLine kind, Dictionary<Address, float[]> byAddress, ref Dictionary<Address, Dictionary<string, float>> goods)
         {
             bool here = !ReferenceEquals(t.address, null);
@@ -367,21 +335,14 @@ namespace RealLifeOverhaul.Economy
                 }
                 else if (row != null)
                 {
-                    goods = goods ?? new Dictionary<Address, Dictionary<string, float>>();
-                    if (!goods.TryGetValue(at, out Dictionary<string, float> rows))
-                    {
-                        rows = new Dictionary<string, float>(2);
-                        goods[at] = rows;
-                    }
-                    rows.TryGetValue(row, out float spent);
-                    rows[row] = spent - amount;
+                    AddGood(ref goods, at, row, -amount);
                     DealerCosts -= amount;
                 }
             }
         }
 
-        // Each dealership's order book for the day: what it took and a customer for each car sold, beside what the game
-        // booked there (its own customers: none come to a dealership). Set, never added to, so a second refresh changes nothing.
+        // Each dealership's order book for the day: what it took and a customer for each car sold, beside what the game booked
+        // there. Set, never added to, so a second refresh changes nothing.
         private static void DealerOrders(int day)
         {
             foreach (KeyValuePair<Address, float[]> took in DealerDay)
@@ -408,10 +369,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// What the player's Empire Motors dealerships spent on the day, less refunds, given to the game's tax as an expense
-        /// it deducts, as it deducts what a shop pays for its goods (TaxHelper.TrackTransaction, with a transaction of the
-        /// mod's own making that goes in no list). Once a day, after the game's day (EconomyDirector.OnDay); the same day
-        /// of the same save is never given twice. Returns what was deducted.
+        /// What the player's Empire Motors dealerships spent on the day, given to the game's tax to deduct as it deducts a shop's
+        /// goods (TaxHelper.TrackTransaction). Never the same day of a save twice. Returns what was deducted.
         /// </summary>
         public static float Deduct(int day)
         {
@@ -447,9 +406,8 @@ namespace RealLifeOverhaul.Economy
             return deductible;
         }
 
-        // A business whose takings the game did not book (no customers came: a headquarters, a warehouse; or its sales are
-        // exports: a factory): the sales its order book has for the day, as the game put them in the statement, and the
-        // mod's own takings there. If its registration cannot be had, the statement's own figure is kept as it is.
+        // A business whose takings the game did not book (no customers came, or its sales are a factory's exports): the sales
+        // its order book has for the day, and the mod's own takings there. Without its registration the statement's figure stays.
         private static float OrderBook(FinancialSummary.BusinessIncomeStatement statement, int day, float own)
         {
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(statement.Address);
@@ -473,7 +431,7 @@ namespace RealLifeOverhaul.Economy
             return (float)sales + own;
         }
 
-        // The mod's own rows among a statement's goods (each under its text key) made what the day's transactions say, the
+        // The mod's own rows among a statement's goods (each under its text key) made what the day's transactions say, and the
         // total goods moved by as much; true if anything changed. The game's rows and the online products' are left alone.
         private static bool OwnGoods(FinancialSummary.BusinessIncomeStatement statement, Dictionary<string, float> rows)
         {

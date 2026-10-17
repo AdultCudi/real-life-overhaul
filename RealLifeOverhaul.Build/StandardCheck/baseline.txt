@@ -17,7 +17,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDeck.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/PlayerOffences.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/Scenes/CarPursuitScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/LoanBook.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
@@ -95,7 +94,6 @@ RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusInterior.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Economy/GameBooks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Markets/MarketStore.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/People/HornReactions.cs	1
@@ -161,7 +159,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictPanel.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeFridgeButton.cs	1
@@ -205,9 +202,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/RealLifeOverhaulMod.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/WorkRings.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Company/RotaModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/CreditModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/Shark.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/Ladder.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	1
@@ -301,7 +295,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/TextsPhone.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/UtilityLinks.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Lending/BankTerms.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
@@ -327,7 +320,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/NoticeKinds.cs	9
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDeck.cs	4
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDirector.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeScene.cs	7
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Economy/GameBooks.cs	4
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Children.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Courtship.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	6
@@ -425,17 +417,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictBridges.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictView.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/VehicleTow.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.Apply.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.Loans.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BankApp.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/BanksDirector.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/CreditDesk.Banks.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/CreditDesk.Relief.cs	11
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Debt/DebtPhone.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/EconomyDirector.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Offers.cs	8
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.Tests.cs	8
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Products/CreditDesk.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventDirector.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireEffects.cs	1

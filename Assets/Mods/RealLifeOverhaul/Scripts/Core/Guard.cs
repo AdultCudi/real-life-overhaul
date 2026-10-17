@@ -709,7 +709,7 @@ namespace RealLifeOverhaul
         /// <summary>
         /// Calls each handler of one of the mod's own events in turn, each in a try of its own: a handler that throws is
         /// written to Player.log against its class's guard and the others still run; a handler whose feature was
-        /// switched off is skipped. For the economy's hour and day, which a dozen features share (its second goes to each in the start line's order: Economy/EconomyDirector.Follow).
+        /// switched off is skipped. For the economy's hour and day, which a dozen features share (its second goes to each in the start line's order: Economy/Banking/EconomyDirector.Follow).
         /// </summary>
         public static void Each(Action handlers)
         {

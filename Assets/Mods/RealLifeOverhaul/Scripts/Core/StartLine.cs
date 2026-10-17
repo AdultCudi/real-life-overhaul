@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     ///         yield return null;
     ///     }
     ///
-    /// and the credit side does the same for each of its followers before it calls it (Economy/EconomyDirector). Once a
+    /// and the credit side does the same for each of its followers before it calls it (Economy/Banking/EconomyDirector). Once a
     /// seat has been given, asking again is one array read and false, so each director keeps its one-second rhythm from
     /// there, a few frames later than before. While the save is not there, the loading screen is up or the city is being
     /// unloaded nothing is held: nothing starts then, and the director's own tick returns at its first line.

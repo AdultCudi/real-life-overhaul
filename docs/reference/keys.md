@@ -18,7 +18,7 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:civic_office` | `Civic/CivicDirector.cs` |
 | `reallife:civic_works` | `Civic/CivicDirector.cs`, `Meta/FeatureList.cs` |
 | `reallife:district_log` | `Districts/DistrictRules.cs` |
-| `reallife:economy` | `Economy/Credit/CreditModel.cs`, `Economy/Credit/CreditStore.cs` |
+| `reallife:economy` | `Economy/Banking/Rating/CreditFile.cs`, `Economy/Banking/Rating/CreditStore.cs` |
 | `reallife:economy_brands` | `Economy/Brands/BrandStore.cs` |
 | `reallife:economy_brands_before_tests` | `Economy/Brands/BrandStore.cs` |
 | `reallife:economy_city` | `Economy/City/CityStore.cs` |
@@ -146,8 +146,8 @@ Every phone contact the mod adds has an id that starts `reallife-`. The save too
 | `reallife-career` | `Jobs/CareerPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-cityhall` | `Civic/CityHallPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-clinic` | `Home/HomePhone.cs` |
-| `reallife-collections` | `Economy/Debt/DebtPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
-| `reallife-debt-advice` | `Economy/Debt/DebtPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
+| `reallife-collections` | `Economy/Banking/Debt/DebtPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
+| `reallife-debt-advice` | `Economy/Banking/Debt/DebtPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-dmv` | `Licences/Driving/DrivingSchool.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-doctor` | `Meta/FeatureList.cs`, `Phone/Contacts/ContactCatalogue.cs` and 1 more |
 | `reallife-fame-reporter` | `Fame/FameReporter.cs` |
@@ -162,7 +162,7 @@ Every phone contact the mod adds has an id that starts `reallife-`. The save too
 | `reallife-jobs` | `Jobs/JobPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-ledger` | `Phone/Contacts/ContactCatalogue.cs`, `Social/SocialPhone.cs` |
 | `reallife-legal` | `Justice/LegalCounsel.cs`, `Phone/Contacts/ContactCatalogue.cs` |
-| `reallife-lender` | `Economy/Debt/DebtPhone.cs`, `Economy/Finance/FinanceApp.Accounts.cs` and 2 more |
+| `reallife-lender` | `Economy/Banking/Debt/DebtPhone.cs`, `Economy/Finance/FinanceApp.Accounts.cs` and 2 more |
 | `reallife-mom` | `Family/Relatives.cs`, `Meta/FeatureList.cs` and 3 more |
 | `reallife-partner` | `Family/FamilyPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-people` | `Phone/Contacts/ContactCatalogue.cs`, `Social/SocialPhone.cs` |

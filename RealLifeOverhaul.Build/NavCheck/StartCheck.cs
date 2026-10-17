@@ -272,8 +272,8 @@ internal static partial class Program
         // seat field, file, how it ticks (own: its own timer; follower: the credit side's second), what the wiring adds
         var table = new (string Seat, string File, bool Own, string Add)[]
         {
-            ("Credit", @"Economy\EconomyDirector.cs", true, "Guard.Add<Economy.EconomyDirector>(_root)"),
-            ("Banks", @"Economy\Banks\BanksDirector.cs", false, "Guard.Add<Economy.BanksDirector>(_root)"),
+            ("Credit", @"Economy\Banking\EconomyDirector.cs", true, "Guard.Add<Economy.EconomyDirector>(_root)"),
+            ("Banks", @"Economy\Banking\BankApps\BanksDirector.cs", false, "Guard.Add<Economy.BanksDirector>(_root)"),
             ("CityEconomy", @"Economy\City\CityEconomyDirector.cs", false, "Guard.Add<Economy.CityEconomyDirector>(_root)"),
             ("Dealer", @"Economy\Dealer\DealerDirector.cs", false, "Guard.Add<Economy.Dealership.DealerDirector>(_root)"),
             ("Online", @"Economy\Online\OnlineDirector.cs", false, "Guard.Add<Economy.OnlineDirector>(_root)"),
@@ -341,7 +341,7 @@ internal static partial class Program
         Check(held, "start line: each director's first tick after a load waits for its seat (its own timer, or the credit side's for a follower)" + missed);
         Check(named, "start line: each director's tick opens a scope of its own for the session record (Core/HotSpots)" + missed);
 
-        string credit = Body(Source(scripts, @"Economy\EconomyDirector.cs"), "private IEnumerator Tick()");
+        string credit = Body(Source(scripts, @"Economy\Banking\EconomyDirector.cs"), "private IEnumerator Tick()");
         Check(credit.Contains("StartLine.Holds(StartSeats.Credit)") && credit.Contains("_running && StartLine.Holds(seat)") && credit.Contains("Call(Followers[i])"),
             "start line: the credit side asks for each follower's seat while it runs, then calls it, in the seats' order");
         bool secondGone = true;

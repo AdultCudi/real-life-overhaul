@@ -17,8 +17,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class StartSeats
     {
-        public const int Credit = 0;        // Economy/EconomyDirector: the credit file and the banks' terms
-        public const int Banks = 1;         // Economy/Banks/BanksDirector, a follower of the credit side's second (as are the eight after it)
+        public const int Credit = 0;        // Economy/Banking/EconomyDirector: the credit file and the banks' terms
+        public const int Banks = 1;         // Economy/Banking/BankApps/BanksDirector, a follower of the credit side's second (as are the eight after it)
         public const int CityEconomy = 2;   // Economy/City/CityEconomyDirector
         public const int Dealer = 3;        // Economy/Dealer/DealerDirector
         public const int Online = 4;        // Economy/Online/OnlineDirector

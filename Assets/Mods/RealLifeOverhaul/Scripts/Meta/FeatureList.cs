@@ -969,7 +969,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_week", () => Whole(Economy.CashFlow.PeriodDays[Economy.CashFlow.Week]))
                 .Fact("econ_month", () => Whole(Economy.CashFlow.PeriodDays[Economy.CashFlow.Month]))
                 .Fact("econ_top", () => Whole(Economy.CashFlow.TopMost))
-                // The credit products, what happens when payments are missed, the private lender and the ways out (Economy/Products/ProductCatalogue).
+                // The credit products, what happens when payments are missed, the private lender and the ways out (Economy/Banking/Terms/ProductCatalogue).
                 .Fact("econ_od_low", () => Guide.Percent(Economy.ProductCatalogue.OverdraftShareAtThreshold))
                 .Fact("econ_od_high", () => Guide.Percent(Economy.ProductCatalogue.OverdraftShareAtBest))
                 .Fact("econ_od_least", () => Guide.Money(Economy.ProductCatalogue.OverdraftLeast))

@@ -40,7 +40,7 @@ internal static partial class Program
         Check(Body(animators, "public static ActivityAnimator For(").Contains("Players.Count >= SweepFrom") && sweep.Contains("Dispose()") && sweep.Contains("Players.Remove(")
               && sweep.Contains("Stepping.Remove("),
             "let go: the clip players of characters the game's pools destroyed are disposed and forgotten once SweepFrom are kept");
-        string economy = Body(Source(scripts, @"Economy\EconomyDirector.cs"), "private void OnDestroy()");
+        string economy = Body(Source(scripts, @"Economy\Banking\EconomyDirector.cs"), "private void OnDestroy()");
         int off = economy.IndexOf("CreditLedger.GradeChanged -= _onGrade", StringComparison.Ordinal), early = economy.IndexOf("if (Instance != this)", StringComparison.Ordinal);
         Check(off >= 0 && early > off && economy.IndexOf("CreditLedger.Posted -= _onPosted", StringComparison.Ordinal) < early,
             "let go: a replaced economy director takes its handlers off the credit ledger's static events before it returns early");

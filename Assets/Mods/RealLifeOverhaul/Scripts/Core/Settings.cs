@@ -395,7 +395,7 @@ namespace RealLifeOverhaul
         public static bool EconomyProducts = true;       // more kinds of credit: an overdraft, a card, a business loan, car finance, a mortgage, consolidation (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort (off: it lends nothing and does nothing; a debt to it can still be paid)
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
-        public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Products/ProductCatalogue)
+        public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Banking/Terms/ProductCatalogue)
         public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
         public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects (off: none; the decision comes all the same)
         public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)

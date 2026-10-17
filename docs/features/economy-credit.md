@@ -6,8 +6,8 @@ One credit rating worked out from how the player pays, the banks' terms moved by
 
 ## Where the code is
 
-- Folders: [`Scripts/Economy`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/) (`EconomyDirector.cs`, `EconomyBridges.cs`), [`Credit`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Credit/), [`Lending`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Lending/) and [`Finance`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/). The files are listed in the code block below.
-- Read first: `EconomyDirector.cs`, `Credit/CreditScoring.cs` and `Credit/CreditLedger.cs`.
+- Folders: [`Scripts/Economy/Banking`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/) (its [README](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/README.md) says what lives where, and where each rate and fee is worked out), [`Scripts/Economy`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/) (`EconomyBridges.cs`) and [`Finance`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Finance/). The files are listed in the code block below.
+- Read first: `Banking/EconomyDirector.cs`, `Banking/Rating/CreditScoring.cs` and `Banking/Rating/CreditLedger.cs`.
 - The other economy pages: [credit products and debt](economy-credit-products.md), [bank apps and your own bank](economy-banks.md), [the city](economy-city.md), [investors](economy-investors.md), [the market](economy-markets.md), [running a business](economy-company.md) and [the rota planner](economy-rota.md).
 
 ## How it talks to other features
@@ -15,32 +15,37 @@ One credit rating worked out from how the player pays, the banks' terms moved by
 - Economy calls no other feature and none calls it: `Wiring/EconomyLinks.cs` fills in `EconomyBridges` with the record the rating reads (`Wiring.Standing`, Justice's debts), the debts the Finance app lists, the price level and the refunds the city counts.
 - The Planner's Finance rows come from `Wiring/EconomyLinks.cs` too.
 
-The economy core (`Scripts/Economy`, option "Credit rating and phone loans", id `economy`): one credit rating worked out from how the player pays, the banks' terms moved by it (under the threshold nobody lends), loans from the phone, and a Finance app.
+The economy core (`Scripts/Economy/Banking`, option "Credit rating and phone loans", id `economy`): one credit rating worked out from how the player pays, the banks' terms moved by it (under the threshold nobody lends), loans from the phone, and a Finance app.
 
 It is the foundation the later economy work stands on: more kinds of credit and what a missed payment leads to (built: see [Economy: credit products, missed payments, the private lender and the ways out](economy-credit-products.md)), a city economy with interest rates, investors, tax.
 No method of the game's is patched; everything is done by reading and writing the game's public state, on its events, with copies of its interface.
 
 ```
 Economy/
-  Credit/           game-free: compiled as they are by RealLifeOverhaul.Build/EconomyCheck
-    CreditCatalogue   EVERY NUMBER: the scale, the bands, the threshold, the weights, the fades, the terms, the fee
-    CreditModel       CreditFile (what the save holds), CreditEvent, PayDay, LoanMark, LoanView, LegalStanding, CreditInputs
-    CreditScoring     the arithmetic: Compute, Tips (what would raise it most), Open (the starting estimate)
-    CreditLedger      THE PUBLIC FACE: the score and grade, CanBorrow, Post, GradeChanged, ICreditAccount and its register
-    CreditStore       the save's one line, "reallife:economy"
-    LoanBook          the game's loans told apart (Sync) and the daily run read (Settle)
-  Lending/
-    LendingTerms      game-free: the terms table, the phone's fee, Decide, MostNow
-    BankTerms         the city's banks; their own terms kept, the rating's written, the own put back
-    GameLoans         the game's loans as an ICreditAccount; the game's own means test read from its public members
-    PhoneLending      a loan made from the phone exactly as the bank's dialogue makes one, plus the fee
+  Banking/
+    EconomyDirector   keeps it going: the save's line, the timer every economic feature follows, the banks' terms
+                      (.Day: the game's hour and day, the loans read and settled; .App: the Finance app and a loan by
+                      phone; .Tests: the save tools and the test buttons)
+    Terms/            game-free: compiled as they are by RealLifeOverhaul.Build/EconomyCheck
+      CreditCatalogue   EVERY NUMBER: the scale, the bands, the threshold, the weights, the fades, the terms, the fee
+      LendingTerms      the terms table, the phone's fee, Decide, MostNow
+    Rating/           game-free: compiled as they are by RealLifeOverhaul.Build/EconomyCheck
+      CreditFile        CreditFile (what the save holds), CreditEvent, PayDay, LegalStanding, CreditInputs
+      CreditScoring     the arithmetic: Compute, Tips (what would raise it most), Open (the starting estimate)
+      CreditLedger      THE PUBLIC FACE: the score and grade, CanBorrow, Post, GradeChanged, ICreditAccount and its register
+      CreditStore       the save's one line, "reallife:economy"
+    Loans/
+      LoanMark          game-free: a game loan as the file last saw it (LoanMark, LoanHold, LoanPurpose, LoanView)
+      LoanBook          game-free: the game's loans told apart (Sync) and the daily run read (Settle)
+      BankTerms         the city's banks; their own terms kept, the rating's written, the own put back
+      GameLoans         the game's loans as an ICreditAccount; the game's own means test read from its public members
+      PhoneLending      a loan made from the phone exactly as the bank's dialogue makes one, plus the fee
   Finance/
     FinanceApp        the app: a part for each tab (.Overview, .Credit, .Borrow, .Products, .CashFlow, .Accounts) and each page it hosts (.City, .Standing, .Rivals)
     FinanceTables     the app's tables as data (GameUi.TableSpec)
     FinanceText       the words; money as the game's loan pages write it
     CashFlow          one pass over the game's transaction history for a period; CashTable lists it as it scrolls
   EconomyBridges    what the economy asks of the rest of the mod (filled in by Wiring/EconomyLinks); Finance.Open
-  EconomyDirector   keeps it going: the save's line, the game's hour and day events, the banks' terms, the app, the tests
 ```
 
 ## The rating

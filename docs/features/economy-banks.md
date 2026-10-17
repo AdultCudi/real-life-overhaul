@@ -6,15 +6,15 @@ One phone app for each of the city's three largest banks, each showing that bank
 
 ## Where the code is
 
-- Folders: [`Scripts/Economy/Banks`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banks/) and [`Scripts/Economy/OwnBank`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/).
-- Read first: `Banks/BanksDirector.cs`, `Banks/BankRules.cs`, `OwnBank/OwnBankDirector.cs` and `OwnBank/OwnBankRules.cs`.
+- Folders: [`Scripts/Economy/Banking/BankApps`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/BankApps/) and [`Scripts/Economy/OwnBank`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/OwnBank/).
+- Read first: `Banking/BankApps/BanksDirector.cs`, `Banking/Terms/BankRules.cs`, `OwnBank/OwnBankDirector.cs` and `OwnBank/OwnBankRules.cs`.
 
 ## How it talks to other features
 
-- The bank apps read the game's own banks (`Lending/BankTerms.Lenders`) and keep no save data.
+- The bank apps read the game's own banks (`Banking/Loans/BankTerms.Lenders`) and keep no save data.
 - `Wiring/OwnBankLinks.cs` gives your own bank Standing's integrity, the council's levers, the courts for a lender's claims and the Stocks app's quotes.
 
-`Scripts/Economy/Banks/`.
+`Scripts/Economy/Banking/BankApps/`.
 One app on the game's phone for each of the city's three largest banks, under the game's own name for the bank, each that bank's slice of the player's money.
 The Finance app stays the one page for every lender at once.
 Option: Money > Bank apps (`economy_banks`, on by default).
@@ -36,7 +36,7 @@ The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jen
 | 2 | one point less | 80% | three quarters of the usual share |
 | 3 and on | as rank 0 | as rank 0 | as rank 0 |
 
-The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `RateAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
+The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
 The Finance app asks the same desk, so its offers from a bank are that bank's in its app too; rank 0 keeps every figure exactly as before (checked for every rating).
 
 The game's own loan at the bank counter keeps the game's terms by the rating alone (`BankTerms.Apply`): the banks already differ there by their own settings.
