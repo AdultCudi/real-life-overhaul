@@ -20,7 +20,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyState.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeActivity.cs	1
@@ -258,7 +257,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/TextsPhone.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/UtilityLinks.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
@@ -373,7 +371,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/StreetEventScene.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Errands.cs	13
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultDirector.Reports.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6
