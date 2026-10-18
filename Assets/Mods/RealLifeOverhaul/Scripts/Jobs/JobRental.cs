@@ -50,7 +50,7 @@ namespace RealLifeOverhaul
         /// <summary>When the van was last put on the road (Time.time): the game resets its destination guider a frame later.</summary>
         public float SpawnedAt { get; private set; } = -100f;
 
-        public bool PaidToday => _paidDay == TimeHelper.CurrentDay && _paidDay > 0;
+        private bool PaidToday => _paidDay == TimeHelper.CurrentDay && _paidDay > 0;
 
         /// <summary>Whether a van could be hired right now. The reason is a key the phone can say.</summary>
         public bool CanHire(bool test, out string reasonKey)

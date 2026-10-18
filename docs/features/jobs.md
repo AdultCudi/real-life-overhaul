@@ -14,20 +14,20 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | --- | --- |
 | `JobCatalogue` | every job: needs, pay per unit and per metre, energy, skill, daily amount, levels (game-free) |
 | `JobState` | per-save experience, strikes, sackings, today's and this week's totals: one line in modData (game-free) |
-| `JobDirector` | the one job that is on: start, 0.2 s tick, interruptions (indoors only in the one building a job names), pay, the test buttons |
+| `JobDirector` | the one job that is on: start, 0.2 s tick, interruptions (indoors only in the one building a job names), pay, the test buttons; its parts are Boards, Ending, Pay, Street and Tests |
 | `Job` | the base every job derives from, the pay slip, what a job is handed each tick, text helpers |
 | `JobStand` | a place of work taken by walking on to it: the last step, the turn, the hold, the working pose, stepping away |
 | `JobUniform` | work clothes over the player's own (the game's UpdateVisuals(list)); the director takes them off on every way out |
 | `ShiftSkip` | the rest of a shift left to the game's clock: one of the game's activities on the game's own panel, as its employer job |
 | `ShiftCard` | the shift's figures on the HUD: a copy of the game's job panel, five lines written only when they change |
 | `CareerClock` | a shift's time as start to end in the game's clock format: the one formatter every text asks |
-| `JobKeys` | every key test and key name the jobs use: the two lines to change for rebindable keys; fills {key} in texts |
+| `JobKeys` | the interaction key and the key names in texts: fills {key} and {key1} to {key3} |
 | `JobPhone` | the Gig Line contact and its conversation, on the phone or face to face at a board |
 | `JobBoards` | help-wanted boards outside a few service buildings: the same list as the Gig Line |
 | `JobCast` | the two characters jobs put on the street (never the accident pool's) |
 | `JobSpots` | door fronts and the ground beside the player's car, tested before anyone is put there |
 | `JobSites` | a client's premises: which businesses will do, clear floor and shelves inside that the player can walk to |
-| `JobAnimations` | IJobAnimations and JobClip: the one door to another person's body; the mod's clip where the bundle has one, the game's gesture where not |
+| `IJobAnimations` | IJobAnimations and JobClip: the one door to another person's body; `ClipJobAnimations` plays the mod's clip where the bundle has one, `GameJobAnimations` the game's gesture where not |
 | `JobBody` | the player's own body at work: held on the spot, a clip with its tool, or the game's own animation and hand object |
 | `JobProps` | the jobs' props, pooled (modelled, or the prop that stands in, or a plain shape); HeldProp: one in a hand at its clip's grip |
 | `JobCarry` | a box in the player's arms with the game's own carry |
@@ -36,7 +36,8 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `CareerCatalogue` | employers, ranks, rotas and every figure of the career ladder (game-free) |
 | `CareerState` | per-save employer, rank, rota, marks, review figures, employment history: one line in modData (game-free) |
 | `CareerDirector` | where each employer is (a help-wanted board), its boss by the board, the rota, clocking on, payslip, reviews, booked sets |
-| `CareerPhone` | the Work contact and the same conversation face to face with a boss: sign on, rota, clock on, sick, notice, CV |
+| `CareerPhone` | the Work contact and its texts |
+| `CareerDialog` | the Work contact's conversation, by phone or face to face with a boss: sign on, rota, clock on, sick, notice, CV |
 | `CareerLinks` | the optional doors to other features: acquaintances (offered), law record and sick notes (asked for) |
 | `DispatchList` | the dispatcher's planning board: the game's list window, written only when a parcel is placed or taken back |
 

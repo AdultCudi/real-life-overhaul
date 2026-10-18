@@ -83,7 +83,7 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        public bool DepotPlace(int employer, out Vector3 place, out string address)
+        private bool DepotPlace(int employer, out Vector3 place, out string address)
         {
             JobBoards boards = _director.HelpBoards;
             int board = DepotOf(employer);

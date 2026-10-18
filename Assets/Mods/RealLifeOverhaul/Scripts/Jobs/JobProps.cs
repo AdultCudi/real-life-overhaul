@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>The prop already in the bundle that stands in for one that is on its way, or null.</summary>
-        public static string Alias(string id)
+        private static string Alias(string id)
         {
             switch (id)
             {
