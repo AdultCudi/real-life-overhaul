@@ -27,8 +27,6 @@ namespace RealLifeOverhaul.Roommates
 
         /// <summary>Fills the list with the friends who could be asked to move in (social life); returns how many.</summary>
         public static Func<List<SocialPerson>, int> Friends;
-        /// <summary>The person of the social cast at a place in it; null if there is none (or social life is off).</summary>
-        public static Func<int, SocialPerson> Friend;
         /// <summary>Tells social life that things moved between the player and one of its people: place, affection, trust.</summary>
         public static Action<int, float, float> FriendMoved;
         /// <summary>A roommate becomes one of the people of social life; returns their place in the cast, or -1 if there is none free.</summary>
@@ -46,7 +44,6 @@ namespace RealLifeOverhaul.Roommates
             PartnerLivesIn = null;
             PartnerName = null;
             Friends = null;
-            Friend = null;
             FriendMoved = null;
             MakeFriend = null;
             Introduce = null;

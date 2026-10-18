@@ -459,7 +459,7 @@ namespace RealLifeOverhaul.Roommates
         {
             Vector3 offset = _person.Position - player;
             PlayerController controller = PlayerHelper.PlayerController;
-            return CitySpots.Flat(offset) < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null
+            return CitySpots.Flat(offset) < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null && controller.Character != null
                    && Vector3.Dot(controller.Character.transform.forward, offset.normalized) > 0.45f;
         }
 

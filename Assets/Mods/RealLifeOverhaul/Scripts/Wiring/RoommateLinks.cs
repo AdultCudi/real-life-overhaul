@@ -13,7 +13,7 @@ namespace RealLifeOverhaul
         ///
         ///   RoommateBridges.PartnerLivesIn / PartnerName   family life: whether the player's partner lives in, and what they are called
         ///   RoommateBridges.PartnerBody                    where the partner stands in the home just now: the roommate keeps off that place
-        ///   RoommateBridges.Friends / Friend / IsPartner   social life: the friends who could be asked to move in, a person of the cast by place
+        ///   RoommateBridges.Friends / IsPartner            social life: the friends who could be asked to move in, and whether one is the partner
         ///   RoommateBridges.FriendMoved                    a roommate who is one of social life's people: what happens at home moves that person's figures
         ///   RoommateBridges.MakeFriend                     a roommate the player gets on with becomes one of social life's people: the cast's neighbour,
         ///                                                  while the player has not met them, takes the roommate's name, look and job and is met
@@ -60,7 +60,6 @@ namespace RealLifeOverhaul
                 RoommateBridges.PartnerName = PartnerName;
                 RoommateBridges.PartnerBody = PartnerBody;
                 RoommateBridges.Friends = Friends;
-                RoommateBridges.Friend = Friend;
                 RoommateBridges.FriendMoved = FriendMoved;
                 RoommateBridges.MakeFriend = MakeFriend;
                 RoommateBridges.Introduce = Introduce;
