@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Extensions;
 using GleyTrafficSystem;
@@ -36,9 +37,6 @@ namespace RealLifeOverhaul.Law
 
         public static IModLogger Logger;
         public static LawDirector Instance { get; private set; }
-
-        private const float DoorWithin = 5f;         // metres from a precinct's door at which the interaction key is the station's
-        private const float DeskWithin = 2.3f;
 
         private enum Use { None, Desk, Door, Window }
 
@@ -289,7 +287,7 @@ namespace RealLifeOverhaul.Law
                 Vector3 at = player.transform.position;
                 if (BuildingManager.IsInsideBuilding)
                 {
-                    if (_interior.Dressed && JobSpots.Flat(at, _interior.ServiceSpot) < DeskWithin * DeskWithin)
+                    if (_interior.Dressed && StationReach.AtDesk(JobSpots.Flat(at, _interior.ServiceSpot)))
                     {
                         use = Use.Desk;
                         precinct = _interior.Precinct;
@@ -298,7 +296,7 @@ namespace RealLifeOverhaul.Law
                 else
                 {
                     Precinct near = _precincts.Nearest(at);
-                    if (near != null && JobSpots.Flat(at, near.Door) < DoorWithin * DoorWithin && Mathf.Abs(at.y - near.Door.y) < 4f)
+                    if (near != null && AtDoor(at, near))
                     {
                         precinct = near;
                         use = Precincts.CanEnter(near) ? Use.Door : Use.Window;
@@ -330,6 +328,12 @@ namespace RealLifeOverhaul.Law
         private static bool Wanted()
         {
             return LawState.Loaded && LawState.WantedCharges != 0;
+        }
+
+        // At the precinct's door as the game itself measures at one of its doors (StationReach). A few multiplications.
+        private static bool AtDoor(Vector3 at, Precinct precinct)
+        {
+            return StationReach.AtDoor(at.x - precinct.Door.x, at.y - precinct.Door.y, at.z - precinct.Door.z);
         }
 
         // The game's panel at the desk or the door. At a desk: speak to the officer (the list). At a door that can be walked into: go in.
@@ -398,6 +402,22 @@ namespace RealLifeOverhaul.Law
                 if (Where(out Precinct precinct, out Use use) && use == Use.Door)
                 {
                     Idle();
+                    // Measured again at the press: the look four times a second may be a step behind the player.
+                    Vector3 at = PlayerHelper.GetPosition();
+                    bool there = AtDoor(at, precinct);
+                    if (Meta.Dev.Verbose)
+                    {
+                        float metres = StationReach.Metres(at.x - precinct.Door.x, at.z - precinct.Door.z);
+                        Logger?.Info("Law check (station door): the player was " + metres.ToString("F1", CultureInfo.InvariantCulture) + " m from "
+                                     + precinct.Name + "'s door on the flat and " + (at.y - precinct.Door.y).ToString("F1", CultureInfo.InvariantCulture)
+                                     + " m up at the press (wanted under " + StationReach.Door.ToString("F1", CultureInfo.InvariantCulture)
+                                     + " m, the game's own reach at a door, and under " + StationReach.Rise.ToString("F1", CultureInfo.InvariantCulture)
+                                     + " m up or down): " + (there ? "PASS" : "not let in from there, the panel goes: PASS") + ".");
+                    }
+                    if (!there)
+                    {
+                        return;
+                    }
                     if (!EnterStation(precinct))
                     {
                         Notifications.Show(NotificationType.Warning, "reallife_law_station_no_entry", null, 6f);
@@ -855,7 +875,7 @@ namespace RealLifeOverhaul.Law
                     TestRefusals.Tell(Logger, "Dress the precinct", TestRefusal.NoPrecinct);
                     return;
                 }
-                float metres = Mathf.Sqrt(JobSpots.Flat(at, precinct.Door));
+                float metres = JobSpots.Flat(at, precinct.Door);
                 if (metres > 250f)
                 {
                     TestRefusals.TellKey(Logger, "Dress the precinct", "reallife_law_test_dress_far", $"{precinct.Name} is {metres:F0} m away");
