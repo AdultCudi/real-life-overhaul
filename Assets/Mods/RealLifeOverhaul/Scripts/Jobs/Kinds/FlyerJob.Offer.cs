@@ -245,7 +245,7 @@ namespace RealLifeOverhaul
                 }
                 body.LookTarget = Vector3.zero;
                 Vector3 from = body.transform.position;
-                if (!StreetSpots.AwayFrom(from, Ctx != null ? Ctx.PlayerPosition : from, 30f, false, out Vector3 to))
+                if (!StreetSpots.AwayFrom(from, Ctx.PlayerPosition, 30f, false, out Vector3 to))
                 {
                     to = from;
                 }
@@ -253,7 +253,7 @@ namespace RealLifeOverhaul
             }
             else if (turned && person != null && person.gameObject.activeInHierarchy)
             {
-                if (Ctx != null && Ctx.Director != null && Ctx.Director.isActiveAndEnabled)
+                if (Ctx.Director != null && Ctx.Director.isActiveAndEnabled)
                 {
                     Ctx.Director.StartCoroutine(Guard.Routine(Turn(person.transform, _turnedFrom, 0.3f)));
                 }

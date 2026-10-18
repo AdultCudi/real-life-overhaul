@@ -65,7 +65,7 @@ namespace RealLifeOverhaul
 
         private void More()
         {
-            if (Ctx == null || Over || _step != Step.Pick || Time.time - _songOver < Debounce)
+            if (Over || _step != Step.Pick || Time.time - _songOver < Debounce)
             {
                 return;
             }
@@ -75,7 +75,7 @@ namespace RealLifeOverhaul
 
         private void StepAway()
         {
-            if (Ctx == null || Over || _step != Step.Pick || !_more || Time.time - _songOver < Debounce)
+            if (Over || _step != Step.Pick || !_more || Time.time - _songOver < Debounce)
             {
                 return;
             }

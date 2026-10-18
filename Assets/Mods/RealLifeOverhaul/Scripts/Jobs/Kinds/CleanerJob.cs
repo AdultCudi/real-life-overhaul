@@ -189,7 +189,7 @@ namespace RealLifeOverhaul
         // The game is about to save: the client's registration and the player's hands are as the game had them meanwhile.
         private void OnSaveGame()
         {
-            if (Ctx == null || Over)
+            if (Over)
             {
                 return;
             }
@@ -443,7 +443,7 @@ namespace RealLifeOverhaul
         // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
-            if (Ctx == null || Over)
+            if (Over)
             {
                 return;
             }
@@ -495,7 +495,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || Ctx == null)
+            if (_paid)
             {
                 return false;
             }
@@ -512,7 +512,7 @@ namespace RealLifeOverhaul
 
         private void OfferSkip()
         {
-            if (Ctx == null || Over || _step != Step.Floor || JobMop.HandsFull || JobMop.Cleaning || Time.time - _mopOver < Debounce || LeftUnits() <= 0)
+            if (Over || _step != Step.Floor || JobMop.HandsFull || JobMop.Cleaning || Time.time - _mopOver < Debounce || LeftUnits() <= 0)
             {
                 return;
             }
@@ -567,10 +567,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             SaveHook.Drop(_onSave);
             _panel.Hide();
             _clock?.Close();   // the game's activity panel goes; nothing more is settled through it

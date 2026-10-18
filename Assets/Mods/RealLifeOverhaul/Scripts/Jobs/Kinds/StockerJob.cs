@@ -335,7 +335,7 @@ namespace RealLifeOverhaul
         // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
-            if (Ctx == null || Over)
+            if (Over)
             {
                 return;
             }
@@ -486,7 +486,7 @@ namespace RealLifeOverhaul
         private bool Owed(bool all, out PaySlip slip)
         {
             slip = default;
-            if (_paid || _hand <= 0 || Ctx == null)
+            if (_paid || _hand <= 0)
             {
                 return false;
             }
@@ -504,7 +504,7 @@ namespace RealLifeOverhaul
 
         private void OfferSkip()
         {
-            if (Ctx == null || Over || _step != Step.ToPile || PlayerHelper.IsHoldingItem || Time.time - _shelvedAt < Debounce || !_clock.Offer())
+            if (Over || _step != Step.ToPile || PlayerHelper.IsHoldingItem || Time.time - _shelvedAt < Debounce || !_clock.Offer())
             {
                 return;
             }
@@ -535,10 +535,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             _panel.Hide();
             _clock?.Close();   // the game's activity panel goes; nothing more is settled through it
             if (_carry != null)

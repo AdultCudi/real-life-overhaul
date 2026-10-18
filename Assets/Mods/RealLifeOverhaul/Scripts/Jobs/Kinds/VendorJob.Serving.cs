@@ -28,7 +28,7 @@ namespace RealLifeOverhaul
         /// <summary>A drink button (0, 1 or 2), run by the game on its key or a click.</summary>
         public override void Choose(int choice, float now)
         {
-            if (Ctx == null || _front < 0 || _state[_front] != Guest.Ordering || !Ctx.Stand.Ready || now < _serveUntil || _skip != null)
+            if (_front < 0 || _state[_front] != Guest.Ordering || !Ctx.Stand.Ready || now < _serveUntil || _skip != null)
             {
                 return;
             }

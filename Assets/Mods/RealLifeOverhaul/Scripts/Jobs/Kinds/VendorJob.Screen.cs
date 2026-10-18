@@ -82,7 +82,7 @@ namespace RealLifeOverhaul
 
         private void StepAway()
         {
-            if (Ctx == null || Time.time - _orderOver < Debounce)
+            if (Time.time - _orderOver < Debounce)
             {
                 return;
             }

@@ -384,7 +384,7 @@ namespace RealLifeOverhaul
 
         public override void Choose(int choice, float now)
         {
-            if (Ctx == null || Over || _step != Step.Planning || _current >= DispatchPlan.Parcels || choice < 0 || choice >= DispatchPlan.Vans || now - _batchAt < Debounce)
+            if (Over || _step != Step.Planning || _current >= DispatchPlan.Parcels || choice < 0 || choice >= DispatchPlan.Vans || now - _batchAt < Debounce)
             {
                 return;
             }
@@ -419,7 +419,7 @@ namespace RealLifeOverhaul
         // The panel's Take one back: the last parcel comes off its van.
         private void TakeBack()
         {
-            if (Ctx == null || Over || _step != Step.Planning || _current <= 0)
+            if (Over || _step != Step.Planning || _current <= 0)
             {
                 return;
             }
@@ -470,7 +470,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || _plan <= 0 || Ctx == null)
+            if (_paid || _plan <= 0)
             {
                 return false;
             }
@@ -488,10 +488,6 @@ namespace RealLifeOverhaul
             _list?.Hide();
             _list?.Dispose();
             _list = null;
-            if (Ctx == null)
-            {
-                return;
-            }
             _panel.Hide();
             Ctx.Self.StopOver();
             if (why != JobEnd.Fault)

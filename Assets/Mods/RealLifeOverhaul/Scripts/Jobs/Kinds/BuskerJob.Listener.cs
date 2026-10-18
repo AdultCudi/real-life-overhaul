@@ -168,7 +168,7 @@ namespace RealLifeOverhaul
             }
             body.LookTarget = Vector3.zero;
             Vector3 from = body.transform.position;
-            if (Ctx == null || !StreetSpots.AwayFrom(from, Ctx.PlayerPosition, 30f, false, out Vector3 to))
+            if (!StreetSpots.AwayFrom(from, Ctx.PlayerPosition, 30f, false, out Vector3 to))
             {
                 to = from;
             }

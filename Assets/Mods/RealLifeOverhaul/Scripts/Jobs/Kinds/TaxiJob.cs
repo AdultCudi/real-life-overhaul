@@ -593,10 +593,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             Ctx.Cast.Release(_passenger);
             Ctx.Cast.Release(_rider);
             Ctx.Cast.Release(_leaving);

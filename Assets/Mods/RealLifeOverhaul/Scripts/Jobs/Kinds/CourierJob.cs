@@ -435,7 +435,7 @@ namespace RealLifeOverhaul
         // The panel's button, run by the game on its key or a click.
         private void Act(string action)
         {
-            if (Ctx == null || Over)
+            if (Over)
             {
                 return;
             }
@@ -633,7 +633,7 @@ namespace RealLifeOverhaul
         private bool Owed(bool beatTheClock, out PaySlip slip)
         {
             slip = default;
-            if (_paid || _delivered <= 0 || Ctx == null)
+            if (_paid || _delivered <= 0)
             {
                 return false;
             }
@@ -653,10 +653,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             _panel.Hide();
             DropParcel();
             Ctx.Cast.Release(_clerk);

@@ -318,7 +318,7 @@ namespace RealLifeOverhaul
         // The panel's Check on them, run by the game on its key or a click.
         private void Check()
         {
-            if (Ctx == null || Over || _step != Step.Rounds || _target < 0 || _staff[_target] == null || Time.time - _stepAt < Debounce)
+            if (Over || _step != Step.Rounds || _target < 0 || _staff[_target] == null || Time.time - _stepAt < Debounce)
             {
                 return;
             }
@@ -339,7 +339,7 @@ namespace RealLifeOverhaul
         /// <summary>A choice button (0, 1 or 2), run by the game on its key or a click.</summary>
         public override void Choose(int choice, float now)
         {
-            if (Ctx == null || Over || now - _stepAt < Debounce)
+            if (Over || now - _stepAt < Debounce)
             {
                 return;
             }
@@ -505,7 +505,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || _calls <= 0 || Ctx == null)
+            if (_paid || _calls <= 0)
             {
                 return false;
             }
@@ -522,10 +522,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             for (int i = 0; i < _staff.Length; i++)
             {
                 Ctx.Cast.Release(_staff[i]);

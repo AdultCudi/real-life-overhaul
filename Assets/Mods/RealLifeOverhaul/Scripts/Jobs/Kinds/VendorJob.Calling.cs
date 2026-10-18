@@ -50,7 +50,7 @@ namespace RealLifeOverhaul
         /// </summary>
         private void Hawk(float now)
         {
-            if (Ctx == null || _skip != null || _hawkBanned || now < _hawkReadyAt || !Ctx.Stand.Ready)
+            if (_skip != null || _hawkBanned || now < _hawkReadyAt || !Ctx.Stand.Ready)
             {
                 return;
             }

@@ -118,7 +118,7 @@ namespace RealLifeOverhaul
         public override bool PassingTime => _skip != null && _skip.Working;
 
         /// <summary>While the panel over the cart is up its first button has the interact key.</summary>
-        public override bool OwnsInteractKey => Ctx != null && Ctx.Stand.Standing;
+        public override bool OwnsInteractKey => Ctx.Stand.Standing;
 
         public override bool QuitIsFailure => _came > 0 && _served * 2 < _came;
 
@@ -351,7 +351,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || _hand <= 0 || Ctx == null)
+            if (_paid || _hand <= 0)
             {
                 return false;
             }
@@ -370,7 +370,7 @@ namespace RealLifeOverhaul
         protected override bool ClockOwed(out PaySlip slip)
         {
             slip = default;
-            if (Ctx == null || _ending || _skip == null || _skipDone <= 0)
+            if (_ending || _skip == null || _skipDone <= 0)
             {
                 return false;
             }
@@ -380,10 +380,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             _ending = true;
             if (_skip != null)
             {

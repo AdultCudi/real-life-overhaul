@@ -18,7 +18,7 @@ namespace RealLifeOverhaul
 
         private void OfferSkip()
         {
-            if (Ctx == null || _skip != null || !Ctx.Stand.Ready || LeftToServe <= 0 || Time.time - _orderOver < Debounce)
+            if (_skip != null || !Ctx.Stand.Ready || LeftToServe <= 0 || Time.time - _orderOver < Debounce)
             {
                 return;
             }
@@ -29,7 +29,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        string ISkippableShift.SkipTitle => Ctx != null && Ctx.Shift != null
+        string ISkippableShift.SkipTitle => Ctx.Shift != null
             ? JobText.T("reallife_career_shift_title", "title", JobText.T(Ctx.Shift.Rank.TitleKey), "employer", JobText.T(Ctx.Shift.Employer.NameKey)) : _title;
 
         int ISkippableShift.SkipMinutes => LeftToServe * _minutesEach;
@@ -74,7 +74,7 @@ namespace RealLifeOverhaul
 
         void ISkippableShift.SkipEnded(int minutes, bool whole)
         {
-            if (Ctx == null || _ending)
+            if (_ending)
             {
                 return;
             }

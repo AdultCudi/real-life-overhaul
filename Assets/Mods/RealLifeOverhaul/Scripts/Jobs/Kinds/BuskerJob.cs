@@ -109,7 +109,7 @@ namespace RealLifeOverhaul
         public override bool PassingTime => _clock != null && _clock.Working;
 
         /// <summary>While the player is on the pitch its panel's first button has the interact key.</summary>
-        public override bool OwnsInteractKey => Ctx != null && Ctx.Stand.Standing;
+        public override bool OwnsInteractKey => Ctx.Stand.Standing;
 
         int IClockedShift.ClockLeft => Mathf.Max(0, _songsWanted - _songs);
 
@@ -311,7 +311,7 @@ namespace RealLifeOverhaul
         // The panel's Strum, run by the game on its key or a click: in time if a strum is called for, else a wrong note.
         private void Strum(float now)
         {
-            if (Ctx == null || Over || _step != Step.Song || !Ctx.Stand.Ready)
+            if (Over || _step != Step.Song || !Ctx.Stand.Ready)
             {
                 return;
             }
@@ -335,7 +335,7 @@ namespace RealLifeOverhaul
         /// <summary>A song button (0, 1 or 2), run by the game on its key or a click.</summary>
         public override void Choose(int choice, float now)
         {
-            if (Ctx == null || Over || _step != Step.Pick || _more || !Ctx.Stand.Ready || _clock.Offered || now - _songOver < Debounce)
+            if (Over || _step != Step.Pick || _more || !Ctx.Stand.Ready || _clock.Offered || now - _songOver < Debounce)
             {
                 return;
             }
@@ -400,7 +400,7 @@ namespace RealLifeOverhaul
 
         private void OfferSkip()
         {
-            if (Ctx == null || Over || _step != Step.Pick || !_more || _songs >= _songsWanted || Time.time - _songOver < Debounce)
+            if (Over || _step != Step.Pick || !_more || _songs >= _songsWanted || Time.time - _songOver < Debounce)
             {
                 return;
             }
@@ -524,7 +524,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || _songs <= 0 || Ctx == null || (_handSongs <= 0 && !(Ctx.Gig != null && _songs * 2 >= _songsWanted)))
+            if (_paid || _songs <= 0 || (_handSongs <= 0 && !(Ctx.Gig != null && _songs * 2 >= _songsWanted)))
             {
                 return false;
             }
@@ -538,10 +538,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             _panel.Hide();
             _clock?.Close();   // the game's activity panel goes; nothing more is settled through it
             Music(false);

@@ -271,7 +271,7 @@ namespace RealLifeOverhaul
         private System.Collections.IEnumerator WalkAfter(StreetActor person, int lease, float seconds)
         {
             yield return new WaitForSeconds(seconds);
-            if (person != null && person.IsValid && person.InUse && person.Lease == lease && Ctx != null)
+            if (person != null && person.IsValid && person.InUse && person.Lease == lease)
             {
                 Walk(person);
             }
