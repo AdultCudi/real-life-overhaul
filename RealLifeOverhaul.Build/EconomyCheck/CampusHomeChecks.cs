@@ -261,7 +261,8 @@ internal static partial class Program
         string Read(string file) => File.Exists(System.IO.Path.Combine(scripts, file)) ? File.ReadAllText(System.IO.Path.Combine(scripts, file)) : string.Empty;
         string links = Read(@"Wiring\CareersLinks.cs"), building = Read(@"Careers\CampusBuilding.cs"), map = Read(@"World\MapLinks.cs"), precincts = Read(@"Law\Precincts.cs"),
                court = Read(@"Justice\Courthouse.cs"), brands = Read(@"Economy\Brands\BrandsGame.cs"), interior = Read(@"Careers\CampusInterior.cs"), guide = Read(@"Careers\CareersGuide.cs"),
-               floors = Read(@"Careers\CareersDirector.Floors.cs"), list = Read(@"Meta\FeatureList.cs");
+               floors = Read(@"Careers\CareersDirector.Floors.cs"),
+               list = Read(@"Meta\FeatureList.cs") + Read(@"Meta\FeatureList.Life.cs") + Read(@"Meta\FeatureList.Economy.cs");
         Check(links.Contains("SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber") && links.Contains("SpecialBuildings.Unreserve(CampusRules.BookId)"),
             "university home: the careers wiring reserves the building at start, before any feature chooses, and lets it go when unwired");
         Check(building.Contains("CampusRules.Choose(") && building.Contains("CampusRules.HomeBlockOf(") && building.Contains("CampusRules.MovesHome(") && building.Contains("RivalsHelper.IsBuildingSuitableFor"),

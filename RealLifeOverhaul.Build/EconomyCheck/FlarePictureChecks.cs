@@ -341,7 +341,8 @@ internal static partial class Program
         Check(words[0]["reallife_guide_flare"].Contains("# Pictures") && words[1]["reallife_guide_flare"].Contains("# Fotos") && words[2]["reallife_guide_flare"].Contains("# 头像与照片")
               && words[0]["reallife_guide_flare"].Contains("never indoors") && words[0]["reallife_guide_flare"].Contains("streets, shop fronts, parks, sights and street events"),
             "Flare pictures: the Guide's Flare page says what the pictures are and how the city's photos are taken, in three languages");
-        string mod = ReviewSource("Core/RealLifeOverhaulMod.cs"), features = ReviewSource("Meta/FeatureList.cs"), tree = ReviewSource("Meta/OptionsTree.cs"), settings = ReviewSource("Core/Settings.cs");
+        string mod = ReviewSource("Core/RealLifeOverhaulMod.cs"), features = ReviewSource("Meta/FeatureList.cs") + ReviewSource("Meta/FeatureList.Life.cs") + ReviewSource("Meta/FeatureList.Economy.cs"),
+               tree = ReviewSource("Meta/OptionsTree.cs"), settings = ReviewSource("Core/Settings.cs");
         Check(mod.Contains("Settings.FlarePicturesId, \"reallife_flare_opt_pictures\"") && mod.Contains("Settings.FlareCityPhotosId, \"reallife_flare_opt_city_photos\"")
               && features.Contains("Settings.FlarePicturesId, Settings.FlareCityPhotosId") && tree.Contains("\"flare_pictures\", \"flare_city_photos\"")
               && settings.Contains("public static bool FlarePictures = true;") && settings.Contains("public static int FlareCityPhotos = 2;"),

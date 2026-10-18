@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-// What is gone stays gone: every object a feature lists for its clean-up (Meta/FeatureList.cs) is made somewhere in the
+// What is gone stays gone: every object a feature lists for its clean-up (Meta/FeatureList and its parts) is made somewhere in the
 // sources, and every text of leisure and photo mode in en.json is named in them.
 internal static partial class Program
 {
@@ -13,9 +13,9 @@ internal static partial class Program
         foreach (string file in Directory.GetFiles(PhotoScripts, "*.cs", SearchOption.AllDirectories))
         {
             string code = LogCode(File.ReadAllText(file));
-            if (System.IO.Path.GetFileName(file) == "FeatureList.cs")
+            if (System.IO.Path.GetFileName(file).StartsWith("FeatureList.", System.StringComparison.Ordinal))
             {
-                list = code;
+                list += code + "\n";
             }
             else
             {
