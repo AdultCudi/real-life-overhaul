@@ -13,13 +13,15 @@ namespace RealLifeOverhaul
     {
         private sealed class Before
         {
+            public AppearanceSetter Owner;   // the character it belongs to: once that is destroyed, the record may go
             public List<AppearanceElementData> Parts;
             public List<FacialBlendshape> Shapes;
             public Color32 Eyes;
         }
 
         private static readonly Dictionary<int, Before> Dressed = new Dictionary<int, Before>(4);   // by appearance instance: what a kept look replaced
-        private const int DressedMost = 16;   // characters remembered; past that the record starts again
+        private const int DressedMost = 16;   // characters remembered before the records of those no longer there are let go
+        private static readonly List<int> Gone = new List<int>(DressedMost);
 
         /// <summary>The look of a character as the game made it, as a kept look's text; null if it has none.</summary>
         public static string Of(CharacterData data)
@@ -78,12 +80,31 @@ namespace RealLifeOverhaul
             {
                 if (Dressed.Count >= DressedMost)
                 {
-                    Dressed.Clear();   // long gone: the mod dresses only a handful
+                    ForgetGone();
                 }
-                Dressed.Add(id, new Before { Parts = data.elements, Shapes = data.blendshapes, Eyes = data.eyesColor });
+                Dressed.Add(id, new Before { Owner = appearance, Parts = data.elements, Shapes = data.blendshapes, Eyes = data.eyesColor });
             }
             Fill(data, look);
             return true;
+        }
+
+        // Lets go of the records of characters that have been destroyed. One still wearing a kept look keeps its record, so the
+        // face it is rolled later is the one it had before, however many others were dressed since.
+        private static void ForgetGone()
+        {
+            Gone.Clear();
+            foreach (KeyValuePair<int, Before> record in Dressed)
+            {
+                if (record.Value.Owner == null)
+                {
+                    Gone.Add(record.Key);
+                }
+            }
+            for (int i = 0; i < Gone.Count; i++)
+            {
+                Dressed.Remove(Gone[i]);
+            }
+            Gone.Clear();
         }
 
         private static void Fill(CharacterData data, PersonLook look)

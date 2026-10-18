@@ -75,6 +75,7 @@ internal static partial class Program
         Bikes();         // bicycles and motorbikes: the pull-away, the pose, the lean, the boxes the world meets, and their names (BikeCheck.cs)
         LeisureReaches(); // leisure's reaches in metres against squares of flat distances, and every such comparison in the sources (LeisureReachCheck.cs)
         StationReaches(); // a police station's door and desk: from the doorstep, as the game's own door, never from the road; JobSpots.Flat never squared (StationReachCheck.cs)
+        MeshCutLabels();  // what the session record names as the mod's last change to the walking mesh: a constant text that says where (MeshCutCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();
