@@ -8,11 +8,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare in a Going Public session (Core/SharedCity, part F; the lines are FlareNetShare's): one network for the city.
-    /// The host makes the city's posts and runs the City Office, and sends every shared post to the guests; a guest's post
-    /// comes in as a request and goes in the feed under its player's name. A following guest keeps its own friends,
-    /// influencers and brands. Pictures go as small copies; another player's text is filtered. Cost: nothing per frame;
-    /// a guest's waiting lines once a second, the host's update every few seconds, a picture's encode on a worker.
+    /// Flare in a Going Public session (Core/SharedCity, part F): the host makes the city's posts, runs the City Office and
+    /// sends every shared post to the guests; a guest's post comes in as a request. Cost: nothing per frame; a guest's lines
+    /// once a second, the host's update every few seconds, a picture's encode on a worker.
     /// </summary>
     public sealed partial class FlareDirector
     {

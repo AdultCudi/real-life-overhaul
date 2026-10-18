@@ -129,7 +129,6 @@ namespace RealLifeOverhaul.Flare
             Fill();
         }
 
-        /// <summary>The look changed: every cell made is painted again.</summary>
         public void Paint(FlareLook look)
         {
             _look = look;

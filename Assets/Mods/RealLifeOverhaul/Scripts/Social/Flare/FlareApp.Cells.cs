@@ -173,7 +173,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // An emblem's glyph (FlareAvatarRules.Emblem*).
         private static FlareGlyph GlyphOfEmblem(int emblem)
         {
             switch (emblem)

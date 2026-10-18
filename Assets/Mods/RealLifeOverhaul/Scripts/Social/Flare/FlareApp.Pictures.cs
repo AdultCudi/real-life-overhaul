@@ -8,10 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The pictures in the posts by key (FlarePost.Pic): "f:" the player's, its small copy (Core/PhotoThumbs) read off the
-    /// main thread or drawn small by the engine; "n:" the session's (FlareSnap), decoded on a worker. At most
-    /// <see cref="Most"/> textures, the ones used last. Cost: nothing per frame or while closed; a new picture is one read
-    /// off the main thread and one upload.
+    /// The pictures in the posts by key: "f:" the player's, its small copy read off the main thread; "n:" the session's,
+    /// decoded on a worker. At most <see cref="Most"/> textures. Cost: nothing per frame; a new picture one read and one upload.
     /// </summary>
     internal sealed class FlarePictures
     {

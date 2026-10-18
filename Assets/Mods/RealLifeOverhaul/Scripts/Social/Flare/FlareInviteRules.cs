@@ -29,7 +29,6 @@ namespace RealLifeOverhaul.Flare
     /// <summary>An invitation in a Flare message as the game reads and decides it, filled by Wiring/FlareInviteLinks; never kept.</summary>
     public sealed class FlareInviteAsk
     {
-        // Asked.
         public PlanKind Kind;            // the outing read (FlareInviteRules.Read)
         public bool Influencer;          // "i:3"
         public string First, Last;       // a city person's name (the stranger as the social life would meet them)
@@ -84,12 +83,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Invitations in the player's Flare messages; one accepted becomes a plan, as one made on the phone. The game reads
-    /// the text by fixed rules (English, robust to typos, slang and emoji) and decides by the social life's rules, rolled
-    /// from the save's seed and the message's minute so a reload answers the same; the model only words the answer. A yes
-    /// comes sooner and its plan starts at least <see cref="PlanAfterAnswer"/> minutes later, read before its reminder.
-    /// Somebody new says yes only after a few messages (<see cref="ChatsForYes"/>) or to a well-liked player, a rule the
-    /// player can act on; an influencer says maybe at most. Game-free. Cost: a pass over each message sent.
+    /// Invitations in the player's Flare messages, read by fixed rules and decided by the social life's, rolled from the
+    /// save's seed and the message's minute so a reload answers the same; the model only words the answer. A yes becomes a
+    /// plan at least <see cref="PlanAfterAnswer"/> minutes on. Game-free. Cost: a pass over each message sent.
     /// </summary>
     public static partial class FlareInviteRules
     {

@@ -89,7 +89,6 @@ namespace RealLifeOverhaul.Flare
         // Opening words of a suggestion put without a question mark ("grab a coffee later", "drinks sometime").
         private static readonly string[] Opening = { "grab", "get", "go", "come", "join", "meet", "hang", "catch", "lets", "how", "what" };
 
-        // Slang and shorthand, each to its words.
         private static readonly Dictionary<string, string> Slang = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "u", "you" }, { "ya", "you" }, { "yu", "you" }, { "yuo", "you" }, { "yall", "you" }, { "r", "are" }, { "ur", "you are" }, { "youre", "you are" },

@@ -7,10 +7,8 @@ namespace RealLifeOverhaul.Flare
     public static partial class FlareTextsMap
     {
         /// <summary>
-        /// The trained intent of a comment under a post that is not the player's, by what the post is about (a thread, a
-        /// reaction, a stranger's reply); <paramref name="niche"/> is an influencer's, -1 for anybody else. With data v3 every
-        /// kind has comments, a post on a v2 topic or of no kind on its words, as those answered the post better. Null: only the
-        /// count shows.
+        /// The trained intent of a comment under a post that is not the player's, by what the post is about;
+        /// <paramref name="niche"/> an influencer's, -1 for anybody else. Null: only the count shows.
         /// </summary>
         public static string Comment(FlarePost p, int niche, int data = TextIntents.DataV2)
         {

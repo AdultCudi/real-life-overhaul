@@ -236,7 +236,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The first entrance door of a building, or null.
         private static Transform DoorOf(CityBuildingController controller)
         {
             return controller != null && controller.entranceDoors != null && controller.entranceDoors.Length > 0 && controller.entranceDoors[0] != null

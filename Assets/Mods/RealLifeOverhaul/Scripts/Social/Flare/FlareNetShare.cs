@@ -315,7 +315,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The kinds of post a guest may send.</summary>
         public static bool GuestSource(int source)
         {
             if (source <= 0 || source > (int)FlareSource.Answer)
@@ -328,7 +327,6 @@ namespace RealLifeOverhaul.Flare
                    || s == FlareSource.Graduated || s == FlareSource.Interior;
         }
 
-        /// <summary>The built part of a post within its bounds.</summary>
         public static bool BuiltOk(FlarePost p)
         {
             switch (p.Source)

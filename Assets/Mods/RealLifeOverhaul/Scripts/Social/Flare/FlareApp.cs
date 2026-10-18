@@ -14,10 +14,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The Flare app: a social network's own look inside the game's phone, an exception to the native rule. The frame is
-    /// the game's (GameUi.AppShell); inside it Flare draws its rail, a column of cards (FlareList builds only those in view),
-    /// the account's side where the phone is wide enough and a sheet over all, with the game's font. Cost: nothing per frame
-    /// while it stands still, open or closed; rows are made on a click or the director's word, the glide only while it moves.
+    /// The Flare app: a social network's own look inside the game's phone frame (GameUi.AppShell), an exception to the
+    /// native rule: rail, a column of cards, the account's side and a sheet over all. Cost: nothing per frame while it
+    /// stands still; rows are made on a click or the director's word, the glide only while it moves.
     /// </summary>
     public sealed partial class FlareApp
     {
@@ -36,7 +35,6 @@ namespace RealLifeOverhaul.Flare
         private bool _built, _writing, _top;
         private int _composeWanted = -1;
 
-        // Where the app stands: the screen, its tab, and what it is about.
         private struct State
         {
             public FlareScreen Screen;
@@ -116,7 +114,6 @@ namespace RealLifeOverhaul.Flare
             CloseSheet();
         }
 
-        /// <summary>The screen to show, by the director's tab.</summary>
         public void Want(int tab, string pick)
         {
             var s = new State { Post = -1 };
@@ -248,7 +245,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // Everything shown written again: the look, the rail's badges, the side, the column's rows.
         private void Refresh(bool all)
         {
             if (!_built || _writing)

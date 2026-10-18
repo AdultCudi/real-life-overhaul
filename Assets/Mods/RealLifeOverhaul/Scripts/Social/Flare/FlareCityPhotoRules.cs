@@ -6,11 +6,8 @@ using System.Text;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The city's photos: a bank of them taken quietly while the player is out, and the city's posts carrying one that
-    /// fits, so the city's people post photos as real people do. While the player is outdoors the bank's pass
-    /// (<see cref="Plan"/>) takes what the bank lacks here. A city post whose kind has something to see (<see cref="Wish"/>)
-    /// and whose seed rolls under its share is given the fitting photo (<see cref="Pick"/>), never a wrong one, kept after a
-    /// load. Which posts carry one and which photo go by the post's seed, so every machine of a session picks alike and
+    /// The city's photos: a bank taken quietly while the player is outdoors (<see cref="Plan"/>), and the city's posts given
+    /// a fitting photo (<see cref="Wish"/>, <see cref="Pick"/>) by their seed, so every machine of a session picks alike and
     /// nothing is sent. Game-free. Cost: a pass over the bank (144 photos at most) a pick or plan; no allocation.
     /// </summary>
     public static class FlareCityPhotoRules

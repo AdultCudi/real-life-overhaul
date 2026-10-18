@@ -217,7 +217,6 @@ namespace RealLifeOverhaul.Flare
             return _caseNotes++ < CaseNotesPerDay;
         }
 
-        // The answer in character, a reply to the report.
         private FlarePost AnswerPost(FlareCase c, FlareAnswer answer, string address, int days)
         {
             FlarePost report = c.Post >= 0 ? _file.Post(c.Post) : null;

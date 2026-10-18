@@ -13,11 +13,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Draws the faces not on disk yet, one at a time, through the game's portrait camera (Phone/Contacts/PortraitTurn) and
-    /// keeps each as its round picture's file; a face the contacts have is made round from their JPEG. It draws only when the
-    /// player feels nothing (<see cref="Now"/>): behind a held loading screen, a black screen, or with Flare open for a face
-    /// in view. Cost: nothing while there is nothing to draw (it switches itself off); two comparisons a frame while faces
-    /// wait; a face is the game's render and read-back, then a worker writes it.
+    /// Draws the faces not on disk yet through the game's portrait camera (Phone/Contacts/PortraitTurn), only when the
+    /// player feels nothing (<see cref="Now"/>). Cost: nothing while there is nothing to draw (it switches itself off); two
+    /// comparisons a frame while faces wait; a face is the game's render and read-back, then a worker writes it.
     /// </summary>
     internal sealed class FlareFacePainter : MonoBehaviour
     {

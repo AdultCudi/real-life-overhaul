@@ -54,12 +54,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Every account's picture: which kind each gets and from what, and the round picture made from rows of pixels. A
-    /// person gets a face from the game's portrait camera of a look from the city's seed or the social life, the same on
-    /// every machine; the player and another session player their latest selfie, so no picture is sent; a business its
-    /// logo; an account that is not a person an emblem, never a face, as the tycoons are parodies. The picture is
-    /// <see cref="Size"/> pixels, round with a soft edge so the app needs no mask. Game-free. Cost: a plan is a few
-    /// comparisons; a round picture some 40,000 sums on a worker thread.
+    /// Every account's picture: a person a face from the game's portrait camera, the same on every machine; a player their
+    /// latest selfie, so no picture is sent; a business its logo; any other account an emblem, never a face. Round with a
+    /// soft edge so the app needs no mask. Game-free. Cost: a plan is a few comparisons; a round picture runs on a worker.
     /// </summary>
     public static class FlareAvatarRules
     {
@@ -221,7 +218,6 @@ namespace RealLifeOverhaul.Flare
             return 1 + FlareRules.Roll(seed, index, salt) * 1000 + FlareRules.Roll(seed, index, salt + 1);
         }
 
-        /// <summary>The emblem of an official account (FlareOfficial).</summary>
         public static int Official(int official)
         {
             switch ((FlareOfficial)official)

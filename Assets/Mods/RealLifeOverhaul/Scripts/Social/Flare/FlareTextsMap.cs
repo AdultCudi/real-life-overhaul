@@ -319,7 +319,6 @@ namespace RealLifeOverhaul.Flare
             return with != null && with.Length > 2 && with[1] == ':' && (with[0] == 'b' || with[0] == 'k' || with[0] == 't') ? with.Substring(2) : null;
         }
 
-        /// <summary>The key an answer's words are kept under.</summary>
         public static string DmKey(FlareDm m) => "fd:" + m.With + ":" + m.At;
 
         /// <summary>Whether an answer to the player's message may have its words asked now: the city's, still to come, with a card.</summary>

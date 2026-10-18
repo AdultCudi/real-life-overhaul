@@ -35,10 +35,9 @@ namespace RealLifeOverhaul.Flare
     public delegate bool TextFriendOf(int index, TextWho who, out bool partner);
 
     /// <summary>
-    /// Flare's director, posts worded by RLO Texts: a post that goes up later has its card asked at once, its going up the
-    /// deadline, and the words kept by its number replace the written line; words that come after it went up are not used,
-    /// so a post never changes before the player. In a session only the host asks. Cost: on the events that make posts, a
-    /// walk over the posts not yet up and the messages; nothing per frame.
+    /// Flare's director, posts worded by RLO Texts: a post going up later has its words asked at once, its going up the
+    /// deadline, and words that come later are not used, so a post never changes before the player. Cost: on the events
+    /// that make posts, a walk over the posts not yet up and the messages; nothing per frame.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -418,7 +417,6 @@ namespace RealLifeOverhaul.Flare
             return FlareBridges.TextWants == null || FlareBridges.TextWants(r.Use, shared) ? r : null;
         }
 
-        // A city person as the card's speaker.
         private bool Citizen(int number, TextRequest r)
         {
             if (number < 0 || number >= _citizens.Count)
@@ -459,7 +457,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A post's author as a thread line names them.
         private string AuthorName(FlarePost p)
         {
             switch (p.Author)

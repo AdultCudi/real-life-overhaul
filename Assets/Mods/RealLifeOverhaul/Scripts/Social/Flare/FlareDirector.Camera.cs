@@ -101,10 +101,8 @@ namespace RealLifeOverhaul.Flare
         public bool Shooting => _shooting;
 
         /// <summary>
-        /// The door for another feature's photo (the Gallery's "Share to Flare"): Flare opens its compose sheet with it attached
-        /// as a moment. <paramref name="photoPath"/> is a PNG or JPG; <paramref name="smallCopyPath"/>, if any, a Core/PhotoThumbs
-        /// small copy, copied where PhotoThumbs.FileOf(photoPath) says off the main thread (else made when first shown). False
-        /// while Flare is not running or with no path.
+        /// The door for another feature's photo (the Gallery's "Share to Flare"): the compose sheet opens with it as a moment;
+        /// <paramref name="smallCopyPath"/>, if any, a Core/PhotoThumbs small copy copied off the main thread. False while not running or with no path.
         /// </summary>
         public bool SharePhoto(string photoPath, string smallCopyPath = null)
         {

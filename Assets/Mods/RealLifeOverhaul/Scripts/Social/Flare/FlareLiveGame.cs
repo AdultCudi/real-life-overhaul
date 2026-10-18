@@ -88,7 +88,6 @@ namespace RealLifeOverhaul.Flare
             return reg != null && !reg.RentedByPlayer && reg.HasValidAddress && !string.IsNullOrEmpty(reg.BusinessName) && reg.businessTypeName != EmptyBusiness;
         }
 
-        /// <summary>A business as the day's posts see it.</summary>
         public static FlareBiz Biz(BuildingRegistration reg, bool mine)
         {
             Satisfaction s = reg.satisfaction;

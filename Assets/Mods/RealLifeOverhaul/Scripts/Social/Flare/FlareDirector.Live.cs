@@ -6,10 +6,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare as a living network (FlareLiveRules): the city's posts each morning from what happened, the reactions over the
-    /// hours, the City Office's cases, posts that move a business's customers, invitations, messages, stories for the paper
-    /// and the badge. Cost: nothing per frame. The city's people are made once a seed (some 0.2 ms) and never walked; the
-    /// day makes a few dozen posts and one pass over the buildings, the hour answers the cases due and counts the badge.
+    /// Flare as a living network (FlareLiveRules): the city's posts, reactions, the City Office's cases, invitations,
+    /// messages, stories and the badge. Cost: nothing per frame; the city's people once a seed (0.2 ms), the day a few
+    /// dozen posts and one pass over the buildings, the hour the cases due and the badge.
     /// </summary>
     public sealed partial class FlareDirector
     {

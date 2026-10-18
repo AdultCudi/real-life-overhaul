@@ -4,10 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's director, what a post does outside Flare through bridges Wiring/FlareLinks fills in: talk about a business,
-    /// a viral post's hype and paper piece, a tagged friend, a scandal's answer, an arrest trending; and what the company,
-    /// business pressure and brands ask of Flare. Cost: nothing per frame; <see cref="FootfallOf"/> walks the talk there is
-    /// each time a business's figure is written.
+    /// Flare's director, what a post does outside Flare through bridges Wiring/FlareLinks fills in, and what the company,
+    /// business pressure and brands ask of Flare. Cost: nothing per frame; <see cref="FootfallOf"/> walks the talk there is.
     /// </summary>
     public sealed partial class FlareDirector
     {

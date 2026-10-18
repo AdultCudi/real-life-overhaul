@@ -5,11 +5,9 @@ using RealLifeOverhaul.Texts;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's director, the comments under posts that are not the player's (FlareCommentRules): who writes them and when
-    /// is the game's, from the post's seed; their words are RLO Texts', kept by the comment's key. Every comment a count
-    /// promises is asked ahead at the lowest priority, an open thread's first; one that answers another waits for its words.
-    /// In a session only the host asks. Cost: on Flare's events a walk over the last day's posts and a dictionary look a
-    /// comment; nothing per frame.
+    /// Flare's director, the comments under posts that are not the player's: who and when from the post's seed, the words
+    /// RLO Texts', asked ahead at the lowest priority, an open thread's first; in a session only the host asks. Cost: on
+    /// Flare's events a walk over the last day's posts and a dictionary look a comment; nothing per frame.
     /// </summary>
     public sealed partial class FlareDirector
     {

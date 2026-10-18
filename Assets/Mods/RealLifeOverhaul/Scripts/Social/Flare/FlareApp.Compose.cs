@@ -80,7 +80,6 @@ namespace RealLifeOverhaul.Flare
             }
             y = Mentions(file, c, y, width);
             y = Tags(file, c, y, width);
-            // What the player types: the game's own text box.
             string typed = c.Text;
             float fh = Mathf.Max(150f, FlareKit.Height(_fieldText, typed ?? "M", width - 64f) + 56f);
             FlareKit.Place(_field.rectTransform, 0f, y, width, fh);
@@ -91,7 +90,6 @@ namespace RealLifeOverhaul.Flare
             FlareKit.Set(_counter, FlareText.Fill("reallife_flare_compose_count", "count", (typed != null ? typed.Length : 0).ToString(), "most", FlareLiveRules.TextMost.ToString()));
             FlareKit.Place(_counter.rectTransform, width - 300f, y, 300f, 36f);
             y += 44f;
-            // The picture, and how to take one.
             Texture2D pic = c.Pic != null ? _pictures.Of(c.Pic) : null;
             FlareKit.Show(_picBack, c.Pic != null);
             if (c.Pic != null)
@@ -130,7 +128,6 @@ namespace RealLifeOverhaul.Flare
                 }
                 y += 92f;
             }
-            // The words as they will read, and whether it can go now.
             string preview = Preview(file, c);
             FlareKit.Show(_preview, preview != null);
             if (preview != null)

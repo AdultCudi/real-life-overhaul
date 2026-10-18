@@ -12,10 +12,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's director, the city's photos (FlareCityPhotoRules decides, FlareCityCamera takes them) and the faces drawn
-    /// ahead (FlareFacePainter). The bank lives in the save's photos' folder, read on a worker at the start. Each machine of a
-    /// session keeps its own bank and picks alike; nothing is sent. Cost: a comparison or two a second while nothing is due,
-    /// a look along the posts a game minute, a millisecond of fronts a second once a day; file work on a worker.
+    /// Flare's director, the city's photos and the faces drawn ahead; each machine of a session keeps its own bank and
+    /// picks alike, nothing sent. Cost: a comparison or two a second while nothing is due, a look along the posts a game
+    /// minute, a millisecond of fronts a second once a day; file work on a worker.
     /// </summary>
     public sealed partial class FlareDirector
     {

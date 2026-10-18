@@ -57,8 +57,6 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A complaint at work: the boss saw the player posting on shift. Default: nothing.</summary>
         public static Action Complaint;
 
-        // The city's influencers, brands and candidates.
-
         /// <summary>True while the council lets the night go on later than the city came with. Default: no.</summary>
         public static Func<bool> NightLate;
 
@@ -87,8 +85,6 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>A star influencer turns out to be somebody the player can still meet, introduced by a friend: their number, or -1. Default: nobody.</summary>
         public static Func<string, int> MeetStar;
-
-        // The rest of the city.
 
         /// <summary>Somebody the player has still to meet answers a post and becomes a contact: their name, or null. Default: nobody.</summary>
         public static Func<string> MeetOnline;

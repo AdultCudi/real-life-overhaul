@@ -352,7 +352,6 @@ namespace RealLifeOverhaul.Flare
             return niche != FlareNiche.Business;
         }
 
-        /// <summary>True if a person of the social life is one of the influencers already.</summary>
         public static bool IsOne(FlareFile f, int person)
         {
             for (int i = 0; i < f.Influencers.Count; i++)

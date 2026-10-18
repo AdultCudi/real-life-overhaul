@@ -239,8 +239,6 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A number for what was asked already, by post and slot (this file's posts).</summary>
         public static long Asked(int postId, int slot) => (long)postId << 4 | (uint)(slot & 15);
 
-        // Answers in a thread (RLO Texts data v3).
-
         public const int EarlierShare = 350;     // thousandths: a written comment after the first answers the one before it
         public const int AuthorAnswers = 600;    // thousandths: a city person answers the player's typed reply under their own post this often
         public const int AccountAnswers = 450;   // ...an account (an official one, a business, a brand, a rival) under its own post
@@ -385,7 +383,6 @@ namespace RealLifeOverhaul.Flare
         private readonly Dictionary<long, Entry> _all = new Dictionary<long, Entry>(256);
         private readonly List<long> _gone = new List<long>(32);
 
-        /// <summary>Requests waiting at the background's priority.</summary>
         public int Background { get; private set; }
 
         public int Count => _all.Count;

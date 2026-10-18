@@ -5,10 +5,9 @@ using System.Text;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The mod's own word list for what another player of a session typed, used when Steam's filter is not there and, at
-    /// Strict, after it: a listed word shows as its first letter and stars, figures for letters and doubled letters
-    /// counting; at Strict longer words inside others and web addresses too. In ROT13 so the source reads clean. Game-free;
-    /// one pass over a text of 300 characters at most, as another player's post or message comes in.
+    /// The mod's own word list for what another player typed, when Steam's filter is not there and, at Strict, after it:
+    /// a listed word shows as its first letter and stars. In ROT13 so the source reads clean. Game-free; one pass over a
+    /// text of 300 characters at most, as another player's post or message comes in.
     /// </summary>
     public static class FlareFilter
     {

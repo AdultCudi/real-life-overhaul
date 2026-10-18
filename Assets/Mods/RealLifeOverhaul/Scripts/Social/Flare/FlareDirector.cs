@@ -10,10 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare, the city's social media app: an account with followers and a reputation, posts only about what really
-    /// happened, and friends who follow, like and answer. The rules are game-free; this keeps them going. Cost: nothing per
-    /// frame, open or closed: a one-second real-time timer starts it and holds its handlers, and the work runs on the
-    /// game's hour, day and save, on what Wiring/FlareLinks tells and on clicks. A fault switches Flare off for the session.
+    /// Flare, the city's social media app: an account, posts only about what really happened, friends who follow and
+    /// answer. Cost: nothing per frame, open or closed: a one-second real-time timer holds it, the work runs on the game's
+    /// hour, day and save, on Wiring/FlareLinks and on clicks. A fault switches Flare off for the session.
     /// </summary>
     public sealed partial class FlareDirector : MonoBehaviour
     {

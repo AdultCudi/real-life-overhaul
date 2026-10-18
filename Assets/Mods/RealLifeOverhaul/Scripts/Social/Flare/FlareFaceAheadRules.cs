@@ -11,11 +11,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Which faces Flare draws ahead of need, and when, so no frame of play pays for one (FlareFacePainter draws them):
-    /// behind the loading screen up to <see cref="LoadMost"/> while the time held lasts (<see cref="Another"/>), behind a
-    /// black screen up to <see cref="AheadMost"/>, and with Flare open a face in view. <see cref="Likely"/> orders them;
-    /// past <see cref="DiskMost"/> on disk the ones used longest ago go (<see cref="Evict"/>). Nothing is sent in a session.
-    /// Game-free. Cost: Likely walks the kept posts a load and a game day; Evict sorts on a worker once a load.
+    /// Which faces Flare draws ahead of need, so no frame of play pays for one: behind the loading screen while the time
+    /// held lasts, behind a black screen, and with Flare open a face in view; past <see cref="DiskMost"/> the oldest go.
+    /// Game-free. Cost: <see cref="Likely"/> walks the kept posts a load and a game day; Evict sorts on a worker once a load.
     /// </summary>
     public static class FlareFaceAheadRules
     {

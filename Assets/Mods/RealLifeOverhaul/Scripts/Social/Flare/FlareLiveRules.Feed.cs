@@ -7,13 +7,11 @@ namespace RealLifeOverhaul.Flare
     /// <summary>Flare's living network, the feed: reactions over the hours, Trending and tags, typed text, messages, notifications and what is kept.</summary>
     public static partial class FlareLiveRules
     {
-        // The reactions over the hours.
         public const int CurveMinutes = 150;           // likes come in on a curve: two thirds in the first two and a half hours
         public const int CitizensReactMost = 6;        // the city's people with names who react to one post
         public const int PileOnFrom = 150;             // a post that went badly and was seen by this many: a pile-on
         public const int PileOnLeast = 4, PileOnMost = 10;   // replies
 
-        // The city's people's messages.
         public const int DmGapDays = 2;
         public const int DmChance = 450;               // per mille a day after the gap
 

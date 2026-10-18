@@ -17,10 +17,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The pictures beside every account's name, as FlareAvatarRules says: a face's file (FlareFacePainter draws missing
-    /// ones), the player's selfie or portrait made round on a worker, a shared selfie, a logo, an emblem, else initials. At
-    /// most <see cref="FlareAvatarRules.Most"/> round textures, the longest unused destroyed first. Cost: nothing per frame
-    /// or while closed; binding is a plan and a dictionary look, a new picture one read off the main thread and one upload.
+    /// The pictures beside every account's name, as FlareAvatarRules says, at most <see cref="FlareAvatarRules.Most"/>
+    /// round textures, the longest unused destroyed first. Cost: nothing per frame or while closed; binding a card is a
+    /// plan and a dictionary look, a new picture one read off the main thread and one upload.
     /// </summary>
     internal sealed class FlareAvatars
     {

@@ -10,10 +10,9 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The camera of the city's photos: an off-screen camera of the mod's where a phone would be held, rendering at 320 by
-    /// 180 with the player's camera's settings. A photo takes a few frames: where to stand, two renders so the automatic
-    /// exposure settles (as the showroom's car photos do), the pixels asked without waiting, a worker writing the small copy.
-    /// The costly passes are left out and everything made is let go on every path. Cost: nothing per frame between photos.
+    /// The camera of the city's photos: an off-screen camera at 320 by 180 with the player's camera's settings, two renders
+    /// so the automatic exposure settles, the pixels read back without waiting and a worker writing the small copy. Cost:
+    /// nothing per frame between photos; the costly passes are left out and everything made is let go on every path.
     /// </summary>
     internal static class FlareCityCamera
     {

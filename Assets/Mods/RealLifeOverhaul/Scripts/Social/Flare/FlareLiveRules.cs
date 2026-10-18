@@ -22,14 +22,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Flare as a living network, by rule: the city's people (made from the city's seed), the posts the city makes each day
-    /// from what happened, the reactions to a post over the next hours, pile-ons, the City Office's cases, what a post does
-    /// to a business, Trending, the messages and the notifications. Game-free.
-    ///
-    /// Every roll is <see cref="FlareRules.Roll"/> of the city's seed and the day, so the same city on the same day makes the
-    /// same posts, and in a Going Public session the host's are everybody's. At Normal a day has about 14 posts of the
-    /// city's people, 2 to 5 of official accounts and 4 of businesses; Quiet about half, Busy nearly twice. That is set by
-    /// the day, never by how many people there are, so nothing here walks all four hundred.
+    /// Flare as a living network, by rule: the city's people, its posts each day from what happened, reactions, the City
+    /// Office, Trending, messages and notifications. Every roll is of the city's seed and the day, so the host's posts are
+    /// everybody's; a day's count is set by the day, never by the people, so nothing walks all four hundred. Game-free.
     /// </summary>
     public static partial class FlareLiveRules
     {
@@ -68,7 +63,6 @@ namespace RealLifeOverhaul.Flare
             "Ashby", "Brook", "Corwin", "Darby", "Easton", "Frost", "Greer", "Hale"
         };
 
-        // Whether each of the first names above is a woman's.
         private static readonly bool[] FemaleFirst =
         {
             true, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true,
