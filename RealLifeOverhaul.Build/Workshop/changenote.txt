@@ -1,7 +1,4 @@
-0.39.1
+0.39.2
 
 Fixed
-- Resting or sleeping in a hotel room no longer gives you a cold when it rains. The room counted as standing in the street, so an hour of rain while you were up there made you ill.
-- A night or a nap in a hotel room now counts as sleep. It used to count as hours awake, so sleep debt and stress went up overnight instead of down.
-- You can now go up to your hotel room while the game is paused. It used to say you were busy with something else.
-- With Developer diagnostics on, the log's line for a long frame now names the mod's costliest piece of work in that frame, and also the newest when they differ. It used to name only the newest, which could blame a small job for another's cost.
+- A building that is no longer yours is let go within the hour. Its power and water get their last bill, and the mod never closes it or bills it again. An underground car park that another mod sells as a business gets no power or water bills, and anything billed for one is written off.
