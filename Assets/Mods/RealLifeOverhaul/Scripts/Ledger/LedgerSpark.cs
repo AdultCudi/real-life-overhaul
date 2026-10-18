@@ -4,14 +4,10 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// The little chart of the city index on the paper's markets page: its closes over the last sessions as one line in the
-    /// paper's ink, over three faint rules, with the last close marked. A graphic of the game's interface (a mesh the canvas
-    /// draws with the rest of the page), filled once when the page is written: nothing per frame.
-    /// </summary>
+    /// <summary>The city index's little chart on the paper, filled once when the page is written: nothing per frame.</summary>
     public sealed class LedgerSpark : MaskableGraphic
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerSpark", typeof(LedgerSpark));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerSpark", typeof(LedgerSpark));
 
         private readonly List<int> _closes = new List<int>(LedgerCatalogue.ChartDays);
         private Color _rule = new Color(0f, 0f, 0f, 0.15f);
@@ -26,14 +22,10 @@ namespace RealLifeOverhaul.Ledger
             return spark;
         }
 
-        /// <summary>Draws these closes (oldest first) in the given ink, with rules in a fainter one.</summary>
         public void Show(List<int> closes, Color ink, Color rule, float thickness)
         {
             _closes.Clear();
-            if (closes != null)
-            {
-                _closes.AddRange(closes);
-            }
+            _closes.AddRange(closes);
             color = ink;
             _rule = rule;
             _thickness = Mathf.Max(1f, thickness);
@@ -44,7 +36,7 @@ namespace RealLifeOverhaul.Ledger
         {
             if (FrameGuard.Off)
             {
-                Guard.NoMesh(vh);   // (its feature is off: nothing drawn)
+                Guard.NoMesh(vh);
                 return;
             }
             try
@@ -84,7 +76,7 @@ namespace RealLifeOverhaul.Ledger
             }
             catch (System.Exception fault)
             {
-                Guard.FailMesh(FrameGuard, fault, vh);   // (half a mesh is not drawn)
+                Guard.FailMesh(FrameGuard, fault, vh);
             }
         }
 

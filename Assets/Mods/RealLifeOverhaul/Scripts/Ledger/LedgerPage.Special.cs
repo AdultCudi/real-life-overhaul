@@ -1,31 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Ledger
 {
+    /// <summary>The paper's page: a front page of its own (<see cref="LedgerSpecial"/>).</summary>
     public sealed partial class LedgerPage
     {
-        // ================================================================ a front page of its own (LedgerSpecial)
-
         private LedgerSpecial _special;
         private Action _specialClosed;
         private readonly List<string> _boxScratch = new List<string>(16);
 
-        /// <summary>True while the page is on a special front page rather than an edition.</summary>
         public bool Special => _special != null;
 
-        /// <summary>
-        /// Opens the page on a front page of its own (an obituary): the masthead, the dateline and the rules are the paper's,
-        /// every word is the special's, the inside pages' tabs are hidden while it is up. <paramref name="closed"/> is told
-        /// once, when the page goes down by any way (the cancel key, the menu's close button, another app). False if the page
-        /// is not in the menu yet.
-        /// </summary>
+        /// <summary>Opens the page on a front page of its own, its inside pages hidden; <paramref name="closed"/> is told once when it goes down.</summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)
         {
-            if (_app == null || !_app.Installed || special == null || !_app.Ready() || _shell == null)   // (Ready: the page is built when it is first opened)
+            if (_app == null || !_app.Installed || special == null || !_app.Ready() || _shell == null)   // Ready builds the page if it is not built yet
             {
                 return false;
             }
@@ -33,14 +25,7 @@ namespace RealLifeOverhaul.Ledger
             _specialClosed = closed;
             _page = Front;
             Tabs(false);
-            if (Showing)
-            {
-                UiClone.Safe(Opened);
-            }
-            else
-            {
-                _app.Open();
-            }
+            Open();
             return true;
         }
 
@@ -79,9 +64,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The front page laid out as the morning's is, with the special's words: the masthead between its two ears, the
-        // dateline, the lead's head across the main area, four columns (the lead under a drop cap, then each section under
-        // its label), the box down the side, and the framed notice in what the columns leave.
+        // The front page laid out as the morning's is, in the special's words, with its notice under the columns.
         private void WriteSpecial(LedgerSpecial sp, Rules rules)
         {
             float u = _height;
@@ -110,11 +93,9 @@ namespace RealLifeOverhaul.Ledger
             rules.Across(0f, dy + dh, W, _px);
             float bt = dy + dh + 0.018f * u;
 
-            // ---- the box down the side
             float mw = 0.755f * W, bx = mw + 0.017f * W, bw = W - bx;
             SpecialBox(sp, bx, bt, bw, H - bt, u, rules);
 
-            // ---- the lead and the columns, sized together as the morning's front page is
             float gut = 0.025f * u;
             float cw = (mw - (FrontColumns - 1) * gut) / FrontColumns;
             float s = BodyStart * u, hs = HeadStart * u;
@@ -150,7 +131,6 @@ namespace RealLifeOverhaul.Ledger
             _fColumns.Marks(rules, _px);
             _fColumns.Gutters(rules, gut, _px);
 
-            // ---- under the columns: the notice, framed twice as the paper frames its own
             float below = top + _fColumns.Depth + BandGap * u * 0.6f;
             Show(_fBand, false);
             Show(_fCaption, false);
@@ -162,7 +142,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The lead's text again at the columns' size: the cap and the lines beside it, with the special's standfirst kept.
+        // The lead's text again at the columns' size (the cap and the lines beside it), the special's standfirst kept.
         private Lead Restand(Lead lw, string body, float cw)
         {
             string stand = lw.Stand;
@@ -173,7 +153,6 @@ namespace RealLifeOverhaul.Ledger
             return lw;
         }
 
-        // The columns' words: the lead after its drop cap, then each section under its label over a rule.
         private string SpecialFlow(LedgerSpecial sp, Lead lw)
         {
             _b.Clear();

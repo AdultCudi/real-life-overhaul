@@ -5,10 +5,7 @@ using Localizor;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// The City Ledger's words: every text is a key of en.json, written out when the page is opened (so the paper is in
-    /// the language of the moment), never per frame. Money is written as the game writes it.
-    /// </summary>
+    /// <summary>The City Ledger's words: locale keys written out in the language of the moment; money as the game writes it.</summary>
     public static class LedgerText
     {
         public static string T(string key)
@@ -27,7 +24,6 @@ namespace RealLifeOverhaul.Ledger
             return text;
         }
 
-        /// <summary>The names of a text as the game's own notifications and messages take them.</summary>
         public static Dictionary<string, string> Data(params string[] pairs)
         {
             var data = new Dictionary<string, string>(pairs.Length / 2 + 1);
@@ -38,7 +34,6 @@ namespace RealLifeOverhaul.Ledger
             return data;
         }
 
-        /// <summary>A sum of money in whole units, as the game writes one.</summary>
         public static string Money(int amount)
         {
             return ((double)amount).ToShortCurrencyFormat();
@@ -62,7 +57,6 @@ namespace RealLifeOverhaul.Ledger
             return (bp / 100f).ToString("0.00", CultureInfo.CurrentCulture) + "%";
         }
 
-        /// <summary>An hour of the day as the game writes the time.</summary>
         public static string Hour(int hour)
         {
             return hour.GetFormattedTime(0f, true);
@@ -73,7 +67,7 @@ namespace RealLifeOverhaul.Ledger
         {
             string text = Fill(p.Key, p.Data);
             LedgerRules.Split(text, out kicker, out headline, out body);
-            string model = LedgerBridges.TextsBody != null ? LedgerBridges.TextsBody(p) : null;   // (RLO Texts: the model's brief for the story, when it was written in time)
+            string model = LedgerBridges.TextsBody != null ? LedgerBridges.TextsBody(p) : null;   // RLO Texts' brief for the story, when it was written in time
             if (model != null)
             {
                 body = model;
