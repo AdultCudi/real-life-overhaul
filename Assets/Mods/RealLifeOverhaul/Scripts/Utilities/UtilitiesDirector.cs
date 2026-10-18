@@ -34,9 +34,10 @@ namespace RealLifeOverhaul.Utilities
     ///
     /// The office is a desk at the door of 13 7th Street (UtilitiesOffice); the desk is the game's own list (DeskList, UtilitiesDesk). The Utilities
     /// app (UtilitiesApp) shows every account, its bills and auto debit. Nothing runs per frame but a few checks: the
-    /// day's books once a morning, the effects once an hour, the office and its panel once a second.
+    /// day's books once a morning, the places and the effects once an hour (a place let go: UtilitiesDirector.Gone), the
+    /// office and its panel once a second.
     /// </summary>
-    public sealed class UtilitiesDirector : MonoBehaviour
+    public sealed partial class UtilitiesDirector : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("utilities", "UtilitiesDirector", typeof(UtilitiesDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
@@ -360,7 +361,7 @@ namespace RealLifeOverhaul.Utilities
         /// </summary>
         public void Sync(int today, bool fresh)
         {
-            UtilitiesGame.Places(_places);
+            ReadPlaces();
             int newOwned = 0;
             _index.Build(_state);
             for (int p = 0; p < _places.Count; p++)
@@ -408,29 +409,7 @@ namespace RealLifeOverhaul.Utilities
                     }
                 }
             }
-            for (int i = _state.Accounts.Count - 1; i >= 0; i--)
-            {
-                Account a = _state.Accounts[i];
-                if (a.State != SupplyState.Closed && !Holds(a.Place))
-                {
-                    Close(a, today);
-                }
-                if (a.State == SupplyState.Closed && a.Owed <= 0 && a.Accrued <= 0)
-                {
-                    _state.Accounts.RemoveAt(i);
-                }
-            }
-            for (int i = _state.Grace.Count - 1; i >= 0; i--)
-            {
-                if (!Holds(_state.Grace[i]))
-                {
-                    _state.Grace.RemoveAt(i);   // (a place given up leaves the grace: taken again, it is a business started now)
-                }
-            }
-            if (_state.Grace.Count == 0)
-            {
-                _state.GraceUntil = 0;   // (none left to cover: nothing to end or tell)
-            }
+            CloseGivenUp(today);
             if (newOwned > 0)
             {
                 UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(fresh ? "reallife_util_toast_first_owned" : "reallife_util_toast_bought",
@@ -1049,6 +1028,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return;
             }
+            Refresh();   // a place given up since the morning is closed now, and never closed or billed again
             Effects();
         }
 
@@ -1062,6 +1042,10 @@ namespace RealLifeOverhaul.Utilities
             for (int p = 0; p < _places.Count; p++)
             {
                 PlaceInfo place = _places[p];
+                if (!GoingPublic.Mine(place.Reg))
+                {
+                    continue;   // no longer the player's since the places were read: never closed by the utilities (Refresh drops it)
+                }
                 Account power = _index.Find(_state, place.Place, Service.Power), water = _index.Find(_state, place.Place, Service.Water);
                 bool dark = power != null && !UtilitiesRules.Supplied(power, today);
                 bool dry = water != null && !UtilitiesRules.Supplied(water, today);
@@ -1189,7 +1173,7 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             _door.Hide("the desk was spoken to");
-            UtilitiesGame.Places(_places);
+            Refresh();
             if (_desk == null || !_desk.Open())
             {
                 UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_desk_fallback"), 8f);
@@ -1253,7 +1237,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return false;
             }
-            UtilitiesGame.Places(_places);
+            Refresh();
             return true;
         }
 

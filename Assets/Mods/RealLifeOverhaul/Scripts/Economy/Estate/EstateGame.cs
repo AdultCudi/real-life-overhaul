@@ -364,6 +364,11 @@ namespace RealLifeOverhaul.Economy
             {
                 if (!s.Holdings[i].Seen)
                 {
+                    if (Meta.Dev.Verbose)
+                    {
+                        EstateDirector.Logger?.Info("Estate check (a building let go): " + s.Holdings[i].Name + " (" + s.Holdings[i].Place
+                                                    + ") is no longer among the game's buildings of the player's: dropped from the books: PASS");
+                    }
                     s.Holdings.RemoveAt(i);
                     dropped++;
                 }

@@ -495,15 +495,37 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- closure
 
-        /// <summary>Closes a business with the game's own switch. False if it was closed already (it is then not ours to reopen).</summary>
+        /// <summary>
+        /// Closes a business of the player's with the game's own switch. False if it was closed already (it is then not
+        /// ours to reopen), or if the building is not the player's (sold with its lease, handed back, another player's).
+        /// </summary>
         public static bool Close(BuildingRegistration reg)
         {
-            if (reg.temporarilyClosed || InstanceBehavior<UI.UIs>.Instance == null)
+            if (!GoingPublic.Mine(reg) || reg.temporarilyClosed || InstanceBehavior<UI.UIs>.Instance == null)
             {
                 return false;
             }
             reg.TemporarilyClose(true);
             Logger?.Info("Business: " + Name(reg) + " temporarily closed.");
+            return true;
+        }
+
+        /// <summary>
+        /// A building the mod had closed, let go by the player since (its lease ended, it was sold with it): the game's
+        /// switch the mod set is cleared, as the game's own hand-over clears a tenant's fields, so the closure does not
+        /// pass to whoever has it next. Only while nobody rents it: in a Going Public session another player's building is
+        /// rented on this machine, and is never touched. The field is set directly, as selling a business does
+        /// (ServicesGame.Sale): TemporarilyClose would charge the player the licensing fees of a building not theirs.
+        /// True if it was cleared.
+        /// </summary>
+        public static bool Freed(string place)
+        {
+            BuildingRegistration reg = At(place);
+            if (reg == null || reg.RentedByPlayer || !reg.temporarilyClosed)
+            {
+                return false;
+            }
+            reg.temporarilyClosed = false;
             return true;
         }
 

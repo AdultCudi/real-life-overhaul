@@ -163,6 +163,7 @@ internal static partial class Program
         Ventures2();
         Firms();
         Competitors();
+        LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)
         Hiring();
         Tech();
         Careers();
