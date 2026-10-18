@@ -171,6 +171,7 @@ internal static partial class Program
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
+        VendorCartFixes();
         Work();
         Desks();
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)
