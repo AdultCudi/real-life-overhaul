@@ -39,6 +39,7 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 | `Crossings` | the city's marked pedestrian crossings, and whose turn it is there, for a few subtractions and no physics query |
 | `Reckless/` | accidents that happen for a reason, where the player can see them: a reckless driver (`RecklessDrivers`, `RecklessCar`), a jaywalker (`Jaywalker`), and the rules of the live street (`StreetRules`: the horn, the officer) |
 | `Solid/` | traffic sees people in the road: somebody in the road is a real obstacle to every traffic car near the player (`SolidStreets`, `SolidBrakes`, `SolidRules`, its tests) |
+| `Drivers/` | the city's drivers: each traffic car near the player reads its lane ahead and is slowed in good time, to reach the game's own sensor or stop line at walking pace; a gap kept behind the player's car and room to park; hold lines that let the player out of a space or reverse into one (`CityDrivers` and its parts, `DriverBrakes`, `DriverGame`; `DriverRules` is game-free: NavCheck's `DriverCheck.cs`) |
 
 ### `Scripts/People`
 
@@ -59,7 +60,7 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 | `CrewWay` | the ambulance crew's one way from the rear doors to the casualty and back, planned and tested pose by pose before anyone sets off, and the fixed layout beside the casualty (stretcher, who kneels where) |
 | `CrewPath` | that way as plain geometry (no engine types; checked outside the game): a line with rounded corners laid out by distance, the crew's pose at any distance along it, what it sweeps over, how near that comes to a point, a box or a length of tape |
 | `SceneWitness` | an unhurt driver or bystander at a scene: checks the casualty, phones, looks for help; out to the kerb the moment the tape is up or the paramedics are out, and gives their account there |
-| `SceneOfficer` | one officer's jobs at a scene: one on traffic at the barrier (stepping out of the open lane to wave the ambulance through when it leaves that way); the other at the casualty, setting out evidence markers, taking the witness's account, at the cordon's opening |
+| `SceneOfficer` | one officer's jobs at a scene: one on traffic at the barrier (stepping out of the open lane to wave a unit through: the scene's own ambulance leaving that way, or an ambulance, fire engine or patrol car with its lights on coming up it: `TrafficAccidents.Wave`, `CordonRules.Pass`); the other at the casualty, setting out evidence markers, taking the witness's account, at the cordon's opening |
 | `Stretcher` | the ambulance crew's wheeled stretcher: one, built once; wheeled along a CrewPath, moving its crew with it frame by frame (no navigation agent finds a way), swung where a corner will not do; its passenger laid straight (SupinePose) under a blanket, or a covered form |
 | `PeopleAhead` | the people a mod-driven vehicle must brake for whom physics cannot see |
 | `RoadsideStop` | the crew of a patrol car at a stopped car: a ticket at the window, or an arrest (Crime/ArrestSequence) |
@@ -135,6 +136,10 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 - A fine for people struck is taken at the roadside only up to the share of the cash in hand a court's fines are bounded to (`PolicePursuit.Roadside`: 35 %, never bounded below 250, `JusticeLaw.Bound`); the rest is left to the court case, which credits what was paid, and the toast says so.
 - Ragdolls come from `Ragdoll/RagdollSystem` only (six at once: 11 bodies each while falling, nothing simulated at rest; when all are in use the one who has lain longest gives up their place) and are ended through it on every path.
   A character must never be moved, shown, hidden or animated while it is one (`StreetActor.Limp`, `RagdollSystem.Holds`), and a pedestrian borrowed from the game goes back through `PedestrianTakeover` with nothing of ours left on it.
+
+- The city's drivers (`Drivers/CityDrivers`) never set anything on a traffic car or a lane point: a car is slowed only by a change of velocity each physics step with the traffic system's own acceleration step taken back (`DriverBrakes`), and held for the player only by a trigger the traffic system itself stops for (a hold line, tagged as the game's own parking room is), reported gone to it when it comes down (`Manager.TriggerColliderRemovedEvent`).
+  Everything is given back at once (`CityDrivers.ReleaseAll`) when the option is off, the street is paused, the player goes indoors, on a Going Public guest's machine (whose traffic is the host's), on a fault and when the mod closes; a car the mod drives itself, or one `Solid/` brakes for somebody, is left alone.
+  One `Traffic check (...)` line per event with developer diagnostics on: a car that began to slow (one in ten seconds at most), the room left behind the player parking, a car that let the player out, a hold line up and down, and once a minute what the looks cost.
 
 - A vehicle driven by the mod (`EmergencyDriver`) never touches anything: it brakes for vehicles and for people (`PeopleAhead` covers those without a collider), moves over only into another lane of the road graph, never steers off its road points and never forces through.
 

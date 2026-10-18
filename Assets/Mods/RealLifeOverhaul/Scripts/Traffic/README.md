@@ -1,6 +1,6 @@
 # `Scripts/Traffic`
 
-Staged traffic accidents with an ambulance and police response, the tow truck, hit-and-run chases, the player's crash consequences, the reckless drivers and the solid streets.
+Staged traffic accidents with an ambulance and police response, the tow truck, hit-and-run chases, the player's crash consequences, the reckless drivers, the solid streets and the city's drivers (`Drivers/`: traffic that brakes in good time and leaves the player room).
 
 ## Read first
 
