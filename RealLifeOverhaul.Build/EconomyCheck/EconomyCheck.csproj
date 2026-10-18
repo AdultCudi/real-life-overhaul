@@ -316,7 +316,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\RideRules.cs" Link="Mod\RideRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.cs" Link="Mod\TransitPlan.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitSearch.cs" Link="Mod\TransitSearch.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Journeys.cs" Link="Mod\TransitPlan.Journeys.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitEta.cs" Link="Mod\TransitEta.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RouteSearch.cs" Link="Mod\RouteSearch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankCatalogue.cs" Link="Mod\OwnBankCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBank.cs" Link="Mod\OwnBank.cs" />
