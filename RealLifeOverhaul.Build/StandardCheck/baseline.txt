@@ -172,7 +172,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/WorkRings.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Company/RotaModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Ventures/VenturesModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitRules.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeCooking.cs	1
@@ -282,7 +281,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeScene.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Courtship.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyState.cs	5
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/HomeLife.cs	3
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	4
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeHealth.cs	11
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomePhone.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateFlat.cs	1
@@ -378,7 +376,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Errands.cs	13
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/HomeLife.cs	5
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultDirector.Reports.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6
