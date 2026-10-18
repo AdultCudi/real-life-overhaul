@@ -1,4 +1,4 @@
-0.36.1
+0.37.0
 
-Fixed
-- A class you sit through now always counts, also after skipping time, and while a class or exam is on, a desk at Manhattan Business School has it on the main key and the game's own course on the second key.
+New
+- Traffic near you now brakes in good time and smoothly, not hard at the last moment. It keeps room behind you while you park and lets you out of a space. At an accident, the officer on traffic duty steps aside to wave an ambulance, a fire engine or a patrol car through.
