@@ -30,7 +30,7 @@ What Real Life Overhaul 0.1.0 contains, and where each part came from. The in-ga
 ## Third-party material that ships
 
 - Recorded car sounds (`Sounds/`), all real recordings, none AI-generated or synthesised, all from Freesound.org:
-  - "Audi R8 Idling Reving Backfire.wav" by Jonas_Jocys (https://freesound.org/people/Jonas_Jocys/sounds/457733/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): the sports engine's loops and one pop, cut, looped, levelled and encoded as OGG Vorbis.
+  - "Audi R8 Idling Reving Backfire.wav" by Jonas_Jocys (https://freesound.org/people/Jonas_Jocys/sounds/457733/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): the sports engine's loops, cut, looped, levelled and encoded as OGG Vorbis.
   - "Chev350 Raw.wav" by lonemonk (https://freesound.org/people/lonemonk/sounds/123717/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): the V8's loops, cut, looped, levelled and encoded as OGG Vorbis.
   - In the public domain (CC0 1.0), credited all the same: "Diesel-drive.wav" and "Diesel-drive2.wav" by fastson (the diesel), "Ford Ranger (2000) RPM variations outside 4 mics" by YannSauvin (the petrol engine), "Car Antilag (No cleanup, 32float)" by modusmogulus (pops), "Import car revs on Chassis Dyno with Turbo.wav" by editboy23 (the turbo's whistle), "Turbo Spooling and Blow Off.WAV" by EwanPenman11 (the turbo's flutter), "Chrysler LHS tire squeal 04 (04-25-2009).wav" by audible-edge (the tyre squeal).
   - The off-throttle loops are the same recordings filtered; no engine sound is synthesised. `Sounds/SOURCES.md` has the measurements and every change, file by file.
