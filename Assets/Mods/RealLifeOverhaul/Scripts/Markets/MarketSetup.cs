@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Markets
         {
             int year = Math.Max(8, state.YearDays);
             var joined = new List<Stock>(8);
+            bool[] capped = null;
+            double weighedBefore = state.Weighted ? MarketIndex.Total(state.Stocks, null, null, ref capped) : 0.0;
             for (int i = 0; i < MarketCatalogue.All.Length && state.Stocks.Count < MarketCatalogue.CompaniesMost; i++)
             {
                 CompanyDef d = MarketCatalogue.All[i];
@@ -151,7 +153,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     continue;
                 }
-                double value = s.Shares * s.Mid;
+                double value = state.Weighted ? MarketIndex.Value(s) : s.Shares * s.Mid;   // as the index's step weighs it
                 if (joined.Contains(s))
                 {
                     added[(int)s.Sector] += value;
@@ -163,9 +165,18 @@ namespace RealLifeOverhaul.Markets
                     before += value;
                 }
             }
-            if (state.IndexDivisor > 0.0 && before > 0.0)
+            if (state.Weighted)
             {
-                state.IndexDivisor *= (before + all) / before;   // the index stays where it was
+                // Free float held to the cap: one company over it weighs less than its value, so the sums above would move the index.
+                double weighedAfter = MarketIndex.Total(state.Stocks, null, null, ref capped);
+                if (state.IndexDivisor > 0.0 && weighedBefore > 0.0 && weighedAfter > 0.0)
+                {
+                    state.IndexDivisor *= weighedAfter / weighedBefore;   // the index stays where it was
+                }
+            }
+            else if (state.IndexDivisor > 0.0 && before > 0.0)
+            {
+                state.IndexDivisor *= (before + all) / before;   // an older save's every share, until its first step reweighs it
             }
             for (int sec = 0; sec < added.Length; sec++)
             {

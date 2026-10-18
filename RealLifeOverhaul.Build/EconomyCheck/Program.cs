@@ -199,6 +199,7 @@ internal static partial class Program
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast (SocialFixChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
+        MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

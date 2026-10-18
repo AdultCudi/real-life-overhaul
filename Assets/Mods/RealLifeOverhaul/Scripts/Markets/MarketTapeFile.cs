@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Markets
     /// outside every save: lines added as the market goes, the whole written again when the game saves. The writes go to one
     /// writer on the thread pool in order, since a file write with a virus guard looking would stall a frame; a day's
     /// secret is on disk within milliseconds. Before a read and as the market stops, what is on its way is written first.
-    /// A file that cannot be read or written leaves the market on what it has, with one line in the log.
+    /// The whole is swapped in so a crash never leaves no tape (<see cref="MarketTapeSwap"/>), and a read puts back one left
+    /// mid-swap. A file that cannot be read or written leaves the market on what it has, with one line in the log.
     /// </summary>
     public static class MarketTapeFile
     {
@@ -57,6 +58,7 @@ namespace RealLifeOverhaul.Markets
             try
             {
                 string path = PathOf(id);
+                MarketTapeSwap.Settle(path);
                 return MarketTape.Read(id, File.Exists(path) ? File.ReadAllText(path) : null);
             }
             catch (Exception e)
@@ -130,16 +132,14 @@ namespace RealLifeOverhaul.Markets
                     Directory.CreateDirectory(Path.GetDirectoryName(job.Path));
                     if (job.Whole)
                     {
-                        string temp = job.Path + ".new";
-                        File.WriteAllText(temp, job.Text);
-                        if (File.Exists(job.Path))
-                        {
-                            File.Delete(job.Path);
-                        }
-                        File.Move(temp, job.Path);
+                        MarketTapeSwap.Write(job.Path, job.Text);
                     }
                     else
                     {
+                        if (!File.Exists(job.Path))
+                        {
+                            MarketTapeSwap.Settle(job.Path);   // a tape left mid-swap is added to, never begun again
+                        }
                         if (!File.Exists(job.Path))
                         {
                             File.WriteAllText(job.Path, job.First);

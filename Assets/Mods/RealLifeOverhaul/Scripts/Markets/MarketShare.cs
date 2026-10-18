@@ -305,7 +305,7 @@ namespace RealLifeOverhaul.Markets
                     long part = micros != 0 ? (long)((double)shares * Math.Abs(m) / Math.Abs(micros)) : shares / lines;
                     n = Math.Max(1L, Math.Min(Math.Min(part, shares - (lines - 1)), int.MaxValue));
                 }
-                send("i|" + _stocks[0] + "|" + m + "|" + Math.Max(1L, n));
+                send(Line(_stocks[0], m, Math.Max(1L, n)));
                 sent++;
                 micros -= m;
                 shares -= n;
@@ -329,6 +329,24 @@ namespace RealLifeOverhaul.Markets
             _stocks.Clear();
             _micros.Clear();
             _shares.Clear();
+        }
+
+        /// <summary>One trade line for the host, its numbers culture-free: a machine set to another language writes its minus sign as every other does.</summary>
+        public static string Line(int stock, long micros, long shares)
+        {
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            return "i|" + stock.ToString(inv) + "|" + micros.ToString(inv) + "|" + shares.ToString(inv);
+        }
+
+        /// <summary>A trade line read on the host, culture-free as <see cref="Line"/> writes it; false for anything else.</summary>
+        public static bool Read(string line, out int stock, out int micros, out long shares)
+        {
+            stock = micros = 0;
+            shares = 0L;
+            string[] f = line != null ? line.Split('|') : null;
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            return f != null && f.Length >= 4 && f[0] == "i" && int.TryParse(f[1], NumberStyles.Integer, inv, out stock)
+                   && int.TryParse(f[2], NumberStyles.Integer, inv, out micros) && long.TryParse(f[3], NumberStyles.Integer, inv, out shares);
         }
 
         // The lines a company's sum takes: its move in parts of MicrosMost, its shares in parts of int.MaxValue; one at least.

@@ -50,9 +50,7 @@ namespace RealLifeOverhaul.Markets
             int done = 0;
             for (int i = 0; i < lines.Length && i < GuestTrades.LinesMost; i++)
             {
-                string[] f = lines[i].Split('|');
-                if (f.Length >= 4 && f[0] == "i" && int.TryParse(f[1], out int stock) && int.TryParse(f[2], out int micros) && long.TryParse(f[3], out long shares)
-                    && _engine.GuestTrade(stock, micros, shares))
+                if (GuestTrades.Read(lines[i], out int stock, out int micros, out long shares) && _engine.GuestTrade(stock, micros, shares))
                 {
                     done++;
                 }

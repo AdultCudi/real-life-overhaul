@@ -285,6 +285,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\OfficeRules.cs" Link="Mod\OfficeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\OfficeState.cs" Link="Mod\OfficeState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketShare.cs" Link="Mod\MarketShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTapeSwap.cs" Link="Mod\MarketTapeSwap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\PermadeathRules.cs" Link="Mod\PermadeathRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\PermadeathState.cs" Link="Mod\PermadeathState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\LifeStory.cs" Link="Mod\LifeStory.cs" />

@@ -318,6 +318,10 @@ namespace RealLifeOverhaul.Markets
 
         public void OnPointerExit(PointerEventData e)
         {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
             try
             {
                 if (_hover >= 0)
