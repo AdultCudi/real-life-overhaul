@@ -619,7 +619,8 @@ internal static partial class Program
         Check(talk.Contains("FlareInviteRules.Decide(a, out FlareInviteWhy why)") && talk.Contains("StreetSay.Read(words, _facts.Shops)"),
             "street talk: an invitation is decided by Flare's own rules; the player's words are read with fixed rules");
         Check(talk.Contains("_openBy = now + (float)StreetRules.Hold") && talk.Contains("now >= _openBy ||"), "street talk: the panel opens at the latest when the hold is over, words or not");
-        Check(game.Contains("ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog") && game.Contains("textInputUi.Show(") && director.Contains("new DoorPanel("),
+        Check(game.Contains("ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog") && game.Contains("TextBox.Ask(\"reallife_street_say_placeholder\"") && TextsSource(@"Core\GameUi\TextBox.cs").Contains("textInputUi.Show(")
+              && director.Contains("new DoorPanel("),
             "street talk: the game's own panels: the box over a person, its dialogue panel, its text box");
         Check(game.Contains("p.enabled = _ped;") && game.Contains("agent.isStopped = _stopped;") && talk.Contains("_hold.Release();"),
             "street talk: a stopped walker is given back as found on every way out");

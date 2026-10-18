@@ -9,6 +9,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using Streets.Pedestrians;
 using UI.Guiders;
@@ -357,25 +358,12 @@ namespace RealLifeOverhaul.Street
         public static bool CancelKey => PlayerAction.Cancel.Pressed();
 
         /// <summary>True when the game has its text box to ask for a line in.</summary>
-        public static bool CanType
-        {
-            get
-            {
-                var uis = InstanceBehavior<UI.UIs>.Instance;
-                return uis != null && uis.textInputUi != null;
-            }
-        }
+        public static bool CanType => TextBox.CanType;
 
         /// <summary>The game's own text box over everything (its own canvas), for the player's words. False if the game has none.</summary>
         public static bool AskWords(Action<string> said, Action closed)
         {
-            var uis = InstanceBehavior<UI.UIs>.Instance;
-            if (uis == null || uis.textInputUi == null)
-            {
-                return false;
-            }
-            uis.textInputUi.Show("reallife_street_say_placeholder", "reallife_street_btn_say", Guard.Wrap(said), Guard.Wrap(closed), string.Empty, false, StreetSay.Most);
-            return true;
+            return TextBox.Ask("reallife_street_say_placeholder", "reallife_street_btn_say", Guard.Wrap(said), Guard.Wrap(closed), string.Empty, false, StreetSay.Most);
         }
 
         /// <summary>A notification of the game's.</summary>
