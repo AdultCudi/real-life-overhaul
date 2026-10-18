@@ -16,8 +16,8 @@ internal static partial class Program
         string stay = ModSource(@"Travel\HotelStay.cs");
         Check(MemberText(stay, "public bool EnterRoom(out TestRefusal why)").Contains("_director.CanSeclude(out why, pausedIsFine: true)"),
             "travel fix: going up to the room is allowed while the game is paused");
-        Check(FixLineEverywhere("go up to your hotel room while the game is paused", "subir ao teu quarto de hotel com o jogo em pausa",
-                                "游戏暂停时也能上楼回酒店房间", "auch bei pausiertem Spiel auf dein Hotelzimmer", "monter dans ta chambre d'hôtel pendant que le jeu est en pause",
+        Check(FixLineEverywhere("go up to your hotel room while the game is paused", "subir para o seu quarto de hotel com o jogo em pausa",
+                                "游戏暂停时也能上楼回酒店房间", "auch bei pausiertem Spiel auf dein Hotelzimmer", "monter dans votre chambre d'hôtel pendant que le jeu est en pause",
                                 "subir a tu habitación de hotel con el juego en pausa", "подняться в номер отеля, пока игра на паузе"),
             "travel fix: What's new has the paused room's line, with its fix mark, in some row of every language");
     }
