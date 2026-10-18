@@ -492,6 +492,7 @@ namespace RealLifeOverhaul
             if (happiness < 35) f |= Need.Unhappy;
             f |= place == 2 || Coin() ? Need.HasVehicle : Need.NoVehicle;
             if (Coin()) f |= Need.HasBusiness;
+            if (Coin()) f |= Need.HasHome;
             if (Coin(0.3)) f |= Need.MomGiftDue;
             if (Coin(0.9)) f |= Need.Friend | Need.Mom;
             if (Coin(0.95)) f |= Need.CanPrompt;
