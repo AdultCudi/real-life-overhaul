@@ -1,6 +1,4 @@
-using System;
 using UI.Notification;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {

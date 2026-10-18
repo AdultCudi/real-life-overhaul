@@ -1,7 +1,6 @@
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
-using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers

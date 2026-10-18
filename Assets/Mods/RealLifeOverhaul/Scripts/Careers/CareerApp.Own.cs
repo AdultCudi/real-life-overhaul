@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers

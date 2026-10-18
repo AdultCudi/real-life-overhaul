@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
-using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
 using UI.Load;
 using UI.Notification;
@@ -12,9 +11,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Education and careers, each part behind its own option in a partial file of this class. No Update, nothing per frame: a
-    /// one-second timer starts and stops the parts and keeps the game's hour, day and save handlers in place (the game empties
-    /// its events on every load). A fault switches it off for the session.
+    /// Education and careers, each part behind its own option in a partial file of this class. No Update: a one-second timer
+    /// starts and stops the parts and keeps the game's hour, day and save handlers in place (the game empties its events on
+    /// every load); the frame cost is LateUpdate's (.Prompt). A fault switches it off for the session.
     /// </summary>
     public sealed partial class CareersDirector : MonoBehaviour
     {

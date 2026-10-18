@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
 using UI.Notification;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {

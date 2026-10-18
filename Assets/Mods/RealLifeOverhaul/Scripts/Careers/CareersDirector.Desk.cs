@@ -1,12 +1,9 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Globalization;
 using Helpers;
 using RealLifeOverhaul.FitOut;
 using RealLifeOverhaul.Tech;
-using UI.Elements;
-using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
