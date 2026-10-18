@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
     ///     Scenes          the one question every street scene asks before it starts
     ///     CivicLinks      city hall with the record, the weather, the paper and the scenes; Paper, a story for the City Ledger
     ///     LifeLinks       careers, social life, travel, the garage and the weather with each other
+    ///     DrivingLinks    the driven car's handling with the custom shop's parts on top of it
     ///     FamilyLinks     family life with social life, home life and the law
     ///     NavLinks        the minimap and the GPS with the scenes that take the screen, and the police stations
     ///     TaxiLinks       the taxi called from the phone with the holds, the weather, the GPS's roads and the minimap
@@ -93,6 +94,7 @@ namespace RealLifeOverhaul
             Step("the recorded car sounds", CarSoundLinks.Connect);
             Step("civic life", CivicLinks.Connect);
             Step("everyday life", LifeLinks.Connect);
+            Step("the driven car's handling and the custom shop's parts", DrivingLinks.Connect);
             Step("family life", FamilyLinks.Connect);
             Step("the minimap and the GPS", NavLinks.Connect);
             Step("the taxi by phone", TaxiLinks.Connect);
@@ -171,6 +173,7 @@ namespace RealLifeOverhaul
             Step("investors", VenturesLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);
             Step("family life", FamilyLinks.Disconnect);
+            Step("the driven car's handling and the custom shop's parts", DrivingLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);
             Step("civic life", CivicLinks.Disconnect);
             Step("licences", LicenceLinks.Disconnect);

@@ -44,7 +44,7 @@ namespace RealLifeOverhaul
         private struct WheelStock
         {
             public WheelUAPI Wheel;
-            public float Grip, SideGrip, SpringForce, SpringLength, Bump, Rebound;
+            public float Grip, SideGrip, SpringForce, SpringLength, Bump, Rebound, Application;
         }
 
         private struct WheelLook
@@ -80,6 +80,9 @@ namespace RealLifeOverhaul
         private float _pitch, _volume;
         private float[] _antiRoll;
         private readonly List<WheelStock> _wheels = new List<WheelStock>(6);
+        private bool _lifted;                  // the handling parts are off for a moment (LiftHandling), to go back on with LayHandling
+        private GarageModifiers _liftedParts;
+        private bool _liftedWet;
 
         /// <summary>What the director last showed on this car (build version and options); -1: nothing yet.</summary>
         public int Stamp = -1;
@@ -167,6 +170,7 @@ namespace RealLifeOverhaul
         public void Clear()
         {
             ClearLooks();
+            _lifted = false;
             ClearHandling();
             _shown.Take(new GarageBuild());
             _any = false;
@@ -676,9 +680,9 @@ namespace RealLifeOverhaul
                 _volume = note.baseVolume;
             }
             _wheels.Clear();
-            int count = nwh.powertrain.wheels.Count;
-            float load = _mass * 9.81f / Mathf.Max(1, count);
             float grip = wet ? m.WetGrip : m.Grip;
+            float stiffness = m.Stiffness > 0.1f ? m.Stiffness : 1f;
+            float damping = Mathf.Sqrt(m.Stiffness > 0.1f ? m.Stiffness : 1f);   // dampers matched to the springs: the car keeps its damping ratio
             foreach (WheelComponent component in nwh.powertrain.wheels)
             {
                 WheelUAPI wheel = component != null ? component.wheelUAPI : null;
@@ -690,23 +694,27 @@ namespace RealLifeOverhaul
                 {
                     Wheel = wheel, Grip = wheel.LongitudinalFrictionGrip, SideGrip = wheel.LateralFrictionGrip,
                     SpringForce = wheel.SpringMaxForce, SpringLength = wheel.SpringMaxLength,
-                    Bump = wheel.DamperBumpRate, Rebound = wheel.DamperReboundRate
+                    Bump = wheel.DamperBumpRate, Rebound = wheel.DamperReboundRate, Application = wheel.ForceApplicationPointDistance
                 });
                 wheel.LongitudinalFrictionGrip *= grip;
                 wheel.LateralFrictionGrip *= grip;
-                wheel.SpringMaxForce *= m.Stiffness;
-                wheel.DamperBumpRate *= m.Stiffness;
-                wheel.DamperReboundRate *= m.Stiffness;
-                if (m.Ride != 0f && wheel.SpringMaxLength > 0.05f && wheel.SpringMaxForce > 1f)
+                if (wheel.SpringMaxLength > 0.05f && wheel.SpringMaxForce > 1f)
                 {
-                    // Lowered only inside the travel the game's own suspension already uses under this car: the wheel
-                    // rises into its arch by at most a quarter of what is left of the spring at rest, and never 5 cm.
-                    float atRest = wheel.SpringMaxLength * (1f - Mathf.Clamp01(load / wheel.SpringMaxForce));
-                    float ride = m.Ride < 0f
-                        ? -Mathf.Min(-m.Ride, GarageCatalogue.MaxLower, atRest * 0.25f)
-                        : Mathf.Min(m.Ride, GarageCatalogue.MaxRaise);
-                    wheel.SpringMaxLength += ride;
+                    // Stiffer by the part and standing as much higher or lower at rest as it says, on whatever spring the car
+                    // has (the game's own or the driven car's handling), never lowered into the travel a kerb needs: the
+                    // rule NavCheck runs with every build on every car (Driving/HandlingModel.FitSpring). The roll centre
+                    // moves with the body.
+                    float load = WheelLoad(nwh, wheel, body) * m.Mass;
+                    float rest = HandlingModel.RestCompression(CurveOf(wheel), wheel.SpringMaxForce, load);
+                    HandlingModel.FitSpring(wheel.SpringMaxForce, wheel.SpringMaxLength, rest, stiffness, m.Ride, GarageCatalogue.MaxLower, GarageCatalogue.MaxRaise,
+                        out float force, out float length, out float change);
+                    float rollCentre = wheel.ForceApplicationPointDistance * wheel.SpringMaxLength + change;
+                    wheel.SpringMaxForce = force;
+                    wheel.SpringMaxLength = length;
+                    wheel.ForceApplicationPointDistance = rollCentre / length;
                 }
+                wheel.DamperBumpRate *= damping;
+                wheel.DamperReboundRate *= damping;
             }
             if (nwh.powertrain.wheelGroups != null)
             {
@@ -763,6 +771,7 @@ namespace RealLifeOverhaul
                     stock.Wheel.SpringMaxLength = stock.SpringLength;
                     stock.Wheel.DamperBumpRate = stock.Bump;
                     stock.Wheel.DamperReboundRate = stock.Rebound;
+                    stock.Wheel.ForceApplicationPointDistance = stock.Application;
                 }
                 _wheels.Clear();
                 if (_antiRoll != null && nwh.powertrain != null && nwh.powertrain.wheelGroups != null)
@@ -797,6 +806,84 @@ namespace RealLifeOverhaul
             {
                 Logger?.Warn("Garage: a car's handling could not be put back completely. " + e);
             }
+        }
+
+        /// <summary>
+        /// For Driving (the driven car's handling, through Wiring.DrivingLinks): the parts' handling taken off this car for a
+        /// moment, so that what lies under them can change. True if it had any on; <see cref="LayHandling"/> puts them back.
+        /// </summary>
+        public bool LiftHandling()
+        {
+            if (!_handling)
+            {
+                return false;
+            }
+            _liftedParts = _handled;
+            _liftedWet = _wet;
+            ClearHandling();
+            _lifted = true;
+            return true;
+        }
+
+        /// <summary>For Driving: what <see cref="LiftHandling"/> took off, put back on top of whatever is under it now. Nothing if it took nothing.</summary>
+        public void LayHandling()
+        {
+            if (!_lifted)
+            {
+                return;
+            }
+            _lifted = false;
+            Handling(_liftedParts, _liftedWet);
+        }
+
+        // The load on one wheel at rest: the car's weight shared between its axles by where the centre of mass stands, and
+        // evenly between the wheels of an axle. A car whose wheels do not stand both sides of it shares it evenly.
+        private static float WheelLoad(NwhVehicle nwh, WheelUAPI wheel, Rigidbody body)
+        {
+            List<WheelComponent> wheels = nwh.powertrain.wheels;
+            Transform space = nwh.transform;
+            float com = body.centerOfMass.z;
+            float frontZ = 0f, rearZ = 0f;
+            int front = 0, rear = 0;
+            for (int i = 0; i < wheels.Count; i++)
+            {
+                WheelUAPI other = wheels[i] != null ? wheels[i].wheelUAPI : null;
+                if (other == null)
+                {
+                    continue;
+                }
+                float z = space.InverseTransformPoint(other.transform.position).z;
+                if (z > com)
+                {
+                    frontZ += z;
+                    front++;
+                }
+                else
+                {
+                    rearZ += z;
+                    rear++;
+                }
+            }
+            float weight = body.mass * 9.81f;
+            if (front == 0 || rear == 0)
+            {
+                return weight / Mathf.Max(1, front + rear);
+            }
+            frontZ /= front;
+            rearZ /= rear;
+            float own = space.InverseTransformPoint(wheel.transform.position).z;
+            return own > com ? weight * (com - rearZ) / (frontZ - rearZ) / front : weight * (frontZ - com) / (frontZ - rearZ) / rear;
+        }
+
+        // The wheel's own spring curve, compression to force share; a straight line where it has none of the game's.
+        private static Func<float, float> CurveOf(WheelUAPI wheel)
+        {
+            AnimationCurve curve = wheel is NWH.WheelController3D.WheelController controller && controller.spring != null ? controller.spring.forceCurve : null;
+            if (curve == null)
+            {
+                return c => c;
+            }
+            return curve.Evaluate;
         }
 
         /// <summary>The car's weight and brakes as the game made them, whatever is fitted now: what the shop's figures start from.</summary>

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
+using Localizor;
 using NWH.VehiclePhysics2.Modules.SpeedLimiter;
 using NWH.VehiclePhysics2.Powertrain;
+using UI.Notification;
 using UnityEngine;
 using UnityEngine.Events;
 using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
@@ -20,13 +22,17 @@ namespace RealLifeOverhaul
     /// Only the car being driven is touched (never traffic). Everything changed is recorded first and put
     /// back exactly when the player gets out, changes car, switches the option off, or the mod unloads.
     /// Anything unexpected restores the car, says so once in the log and leaves cars alone from then on.
-    /// Per frame this compares one reference and one number; the working out runs once per car.
+    ///
+    /// It also carries the car's handling (<see cref="CarHandling"/>): put on first, since the power is found for the
+    /// car's weight, and taken off after its own numbers; and its listener on the car's input eases the brake pedal
+    /// as well as the throttle. Per frame this compares one reference and two numbers; the working out runs once per
+    /// car and change of an option.
     /// </summary>
     public class CarTuning : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarTuning", typeof(CarTuning));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
-        private const float BrakeOnset = 0.25f;   // seconds for the brakes to come on fully with the eased pedal
+        public const float BrakeOnset = 0.25f;    // seconds for the brakes to come on fully with the eased pedal
         private const float MaxTopKmh = 350f;     // whatever the slider says: beyond this a car covers two metres a physics step
 
         public static IModLogger Logger;
@@ -53,15 +59,19 @@ namespace RealLifeOverhaul
         private readonly CarSetup _setup = new CarSetup();
         private readonly List<WheelComponent> _driven = new List<WheelComponent>(4);
         private readonly Dictionary<string, int> _logged = new Dictionary<string, int>();   // vehicle type -> options last logged for it
+        private readonly CarHandling _handling = new CarHandling();
 
         private NwhVehicle _seen;        // the vehicle last looked at, tuned or not
         private int _options = -1;       // the options it was looked at with
+        private long _handled = -1;      // and the handling's level and sliders
         private NwhVehicle _tuned;       // the vehicle that carries our numbers, if any
         private Stock _stock;
         private CarDrag _drag;
         private UnityAction _easePedal;
-        private bool _easing;
+        private NwhVehicle _pedalOn;     // the vehicle whose input the pedal listener is on
+        private bool _easeThrottle;
         private float _pedal;
+        private float _brakePedal;
         private bool _failed;
 
         /// <summary>The car being driven if it carries the mod's numbers, else null.</summary>
@@ -107,7 +117,8 @@ namespace RealLifeOverhaul
             int options = !Settings.CarTuning
                 ? 0
                 : 1 | (Settings.SmoothThrottle ? 2 : 0) | (Mathf.Clamp(Settings.CarTopSpeed, 70, 150) << 2) | (Mathf.Clamp(Settings.CarAcceleration, 70, 150) << 10) | (GarageTuning.Stamp << 18);
-            if (vehicle == _seen && options == _options)
+            long handled = HandlingStamp();
+            if (vehicle == _seen && options == _options && handled == _handled)
             {
                 return;   // same car (or none), same options: nothing to do
             }
@@ -115,13 +126,22 @@ namespace RealLifeOverhaul
             Restore();
             _seen = vehicle;
             _options = options;
-            if (vehicle == null || options == 0 || _failed)
+            _handled = handled;
+            if (vehicle == null || (options == 0 && handled == 0) || _failed)
             {
                 return;
             }
             try
             {
-                Apply(car, vehicle);
+                if (handled != 0)
+                {
+                    _handling.Apply(car, vehicle, HandlingRules.Level(Settings.Handling), Tuning());   // first: the power below is found for the car's new weight
+                }
+                if (options != 0)
+                {
+                    Apply(car, vehicle);
+                }
+                Ease(vehicle);
             }
             catch (Exception e)
             {
@@ -134,10 +154,95 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             Restore();
+            _handling.Dispose();
             if (Instance == this)
             {
                 Instance = null;
             }
+        }
+
+        // ---------------------------------------------------------------- the handling's options
+
+        // The handling's level and its sliders as one number: 0 with the handling off.
+        private static long HandlingStamp()
+        {
+            HandlingLevel level = HandlingRules.Level(Settings.Handling);
+            return level == HandlingLevel.Off ? 0L : (long)level + (Tuning().Stamp << 4);
+        }
+
+        private static HandlingTuning Tuning()
+        {
+            return new HandlingTuning(Settings.HandlingSoftness, Settings.HandlingBounce, Settings.HandlingRoll, Settings.HandlingGrip, Settings.HandlingSteering,
+                Settings.HandlingBrakes);
+        }
+
+        /// <summary>
+        /// A tuning slider moved (the options page): the six figures and the level written to Player.log whatever the diagnostics
+        /// say, so that the design can be set from them afterwards. The car being driven takes them at once (the stamp).
+        /// </summary>
+        public static void TuningChanged()
+        {
+            HandlingTuning t = Tuning();
+            Meta.Dev.Always(Logger, "Car handling tuning: softness " + t.Softness + " %, bounce " + t.Bounce + " %, roll " + t.Roll + " %, grip " + t.Grip + " %, steering "
+                                    + t.Steering + " %, brakes " + t.Brakes + " %, at the level " + HandlingRules.Level(Settings.Handling) + ".");
+        }
+
+        /// <summary>
+        /// For the custom shop's figures (Garage/GarageTuning): the metres from 100 km/h the car being driven stops in with a
+        /// build of the Garage's brakes, weight and tyres on top, by its handling's own model; -1 with the handling not on it.
+        /// </summary>
+        public static float HandlingStop(CarController car, float brakes, float mass, float grip)
+        {
+            CarTuning tuning = Instance;
+            return tuning != null && !tuning._failed ? tuning._handling.ShopStop(car, brakes, mass, grip) : -1f;
+        }
+
+        /// <summary>The driving feature's clean-up: the car being driven as the game made it, until it or an option changes.</summary>
+        public static void PutBack()
+        {
+            Instance?.Restore();
+        }
+
+        /// <summary>The test button: what the car being driven has from the handling, in a notice and in full in Player.log.</summary>
+        public static void TestHandling()
+        {
+            CarTuning tuning = Instance;
+            var gm = InstanceBehavior<GameManager>.Instance;
+            var car = gm != null ? gm.selectedVehicle as CarController : null;
+            if (tuning == null || car == null || car.vehicleController == null)
+            {
+                TestRefusals.Tell(Logger, "Car handling", TestRefusal.NotDriving);
+                return;
+            }
+            if (HandlingRules.Level(Settings.Handling) == HandlingLevel.Off)
+            {
+                TestRefusals.Tell(Logger, "Car handling", TestRefusal.FeatureOff);
+                return;
+            }
+            string name = car.vehicleType != null ? car.vehicleType.vehicleTypeName.GetLocalization() : car.name;
+            var data = new Dictionary<string, string>(7) { { "car", name } };
+            if (tuning._failed || !tuning._handling.Tell(data, Tuning()))
+            {
+                string why = tuning._failed ? "car tuning stood down after a fault" : tuning._handling.Refusal ?? "not a car the handling is for";
+                Meta.Dev.Always(Logger, "Car handling test: " + name + " keeps the game's own handling (" + why + ").");
+                Notifications.Show(NotificationType.Info, "reallife_handling_test_none", data, 8f);
+                return;
+            }
+            Notifications.Show(NotificationType.Success, "reallife_handling_test_said", data, 14f);
+        }
+
+        // The listener on the car's input that eases its pedals: the throttle with smooth throttle on a tuned car, the brake with the handling.
+        private void Ease(NwhVehicle vehicle)
+        {
+            _easeThrottle = _tuned == vehicle && Settings.SmoothThrottle;
+            if (!_easeThrottle && !_handling.On)
+            {
+                return;
+            }
+            _pedal = 0f;
+            _brakePedal = 0f;
+            _pedalOn = vehicle;
+            vehicle.input.inputModifyCallback.AddListener(_easePedal);
         }
 
         // ---------------------------------------------------------------- applying
@@ -226,10 +331,7 @@ namespace RealLifeOverhaul
             _drag.Begin(body, _setup.Drag);
             if (eased)
             {
-                vehicle.brakes.actuationTime = Mathf.Max(_stock.BrakeActuation, BrakeOnset);
-                _pedal = 0f;
-                vehicle.input.inputModifyCallback.AddListener(_easePedal);
-                _easing = true;
+                vehicle.brakes.actuationTime = Mathf.Max(_stock.BrakeActuation, BrakeOnset);   // (the pedal listener itself: Ease)
             }
             TargetSeconds = seconds;
             TargetTopKmh = topKmh;
@@ -387,29 +489,45 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the eased pedal
 
         // Called by the car's own input handler each frame, after it has read the keys and before the
-        // drivetrain sees them. In reverse the game swaps the two pedals, so the one that drives is eased.
+        // drivetrain sees them. In reverse the game swaps the two pedals: the one that drives is eased as the
+        // throttle, the one that brakes as the brake.
         private void EasePedal()
         {
-            NwhVehicle vehicle = _tuned;
+            NwhVehicle vehicle = _pedalOn;
             if (vehicle == null)
             {
                 return;
             }
             var input = vehicle.input;
             bool reversing = input.IsInputSwapped;
-            float asked = reversing ? input.Brakes : input.Throttle;
-            if (asked > CarModel.GentleThrottle && Keys.Held(KeyAction.GentleThrottle))
+            if (_easeThrottle)
             {
-                asked = CarModel.GentleThrottle;   // the "gentle throttle" key: half the pedal, about a third of the power
+                float asked = reversing ? input.Brakes : input.Throttle;
+                if (asked > CarModel.GentleThrottle && Keys.Held(KeyAction.GentleThrottle))
+                {
+                    asked = CarModel.GentleThrottle;   // the "gentle throttle" key: half the pedal, about a third of the power
+                }
+                _pedal = CarModel.Pedal(_pedal, asked, vehicle.deltaTime);
+                if (reversing)
+                {
+                    input.Brakes = _pedal;
+                }
+                else
+                {
+                    input.Throttle = _pedal;
+                }
             }
-            _pedal = CarModel.Pedal(_pedal, asked, vehicle.deltaTime);
-            if (reversing)
+            if (_handling.On)
             {
-                input.Brakes = _pedal;
-            }
-            else
-            {
-                input.Throttle = _pedal;
+                _brakePedal = HandlingRules.BrakePedal(_brakePedal, reversing ? input.Throttle : input.Brakes, vehicle.deltaTime, _handling.BrakeRise);
+                if (reversing)
+                {
+                    input.Throttle = _brakePedal;
+                }
+                else
+                {
+                    input.Brakes = _brakePedal;
+                }
             }
         }
 
@@ -423,18 +541,39 @@ namespace RealLifeOverhaul
             {
                 _drag.End();
             }
-            bool easing = _easing;
-            _easing = false;
-            if (vehicle == null)
+            NwhVehicle pedalOn = _pedalOn;
+            _pedalOn = null;
+            _easeThrottle = false;
+            if (pedalOn != null)
             {
-                return;   // nothing of ours anywhere (or the car is gone, and its numbers with it)
+                try
+                {
+                    pedalOn.input.inputModifyCallback.RemoveListener(_easePedal);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Warn("Car tuning: the eased pedals could not be taken off the car's input. " + e);
+                }
+            }
+            if (vehicle != null)
+            {
+                PutBackTuning(vehicle);   // (or the car is gone, and its numbers with it)
             }
             try
             {
-                if (easing)
-                {
-                    vehicle.input.inputModifyCallback.RemoveListener(_easePedal);
-                }
+                _handling.Restore();   // after the numbers worked out on top of it
+            }
+            catch (Exception e)
+            {
+                _failed = true;
+                Logger?.Warn("Car tuning: the car's handling could not be put back completely; cars are left alone from now on. " + e);
+            }
+        }
+
+        private void PutBackTuning(NwhVehicle vehicle)
+        {
+            try
+            {
                 EngineComponent engine = vehicle.powertrain.engine;
                 TransmissionComponent box = vehicle.powertrain.transmission;
                 engine.maxPower = _stock.Power;
