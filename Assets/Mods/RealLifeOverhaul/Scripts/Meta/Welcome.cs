@@ -5,16 +5,14 @@ using UI.Notification;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The welcome: the game's own notification, shown once on the first city load with the mod on this computer and
-    /// once more after each change of version. It says what to do ("open the Guide on your phone to see what changed")
-    /// and a click on it opens the Guide on its "What changed" page. The options page's welcome button does the same
-    /// without the notice. The version last seen is kept in PlayerPrefs with the mod's options, so it is per install, not
-    /// per save. A version seen that is not older than the one running reads as a first run: there is nothing to list as new.
+    /// The welcome: the game's own notification, shown on the first city load with the mod on this computer and after each
+    /// change of version; a click opens the Guide on "What changed". The version last seen is kept in PlayerPrefs (per
+    /// install, not per save); one not older than the running version reads as a first run.
     /// </summary>
     public static class Welcome
     {
         private const string SeenId = "meta_seen_release";
-        private const string DevelopmentSeenId = "meta_seen_version";   // written by the builds before the first release (0.13 to 0.46): dropped, never read
+        private const string DevelopmentSeenId = "meta_seen_version";   // written by the development builds: deleted, never read
 
         /// <summary>The version whose welcome the player has seen, or null.</summary>
         public static string SeenVersion
@@ -30,10 +28,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>True when this version's welcome has not been shown yet.</summary>
         public static bool Due => Settings.ModId != null && SeenVersion != Changelog.Version;
 
-        /// <summary>
-        /// Shows the welcome notice (and notes the version as seen). <paramref name="asked"/>: from the options page, so the
-        /// Guide opens on "What changed" instead.
-        /// </summary>
+        /// <summary>Shows the welcome notice and notes the version as seen; <paramref name="asked"/> (from the options page) opens the Guide on "What changed" instead.</summary>
         public static void Open(bool asked)
         {
             try

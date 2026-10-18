@@ -7,22 +7,16 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The mod's settings as an app on the game's phone (<see cref="PhoneApp"/>, built as the Guide is): a button on the
-    /// home screen and in the full menu's top bar, and a panel in the game's frame (<see cref="SettingsView"/>). It reads
-    /// and writes the very rows of the Mods tab (OptionsLayout), so a change in either place is the same change. It is put
-    /// on the phone once the city's phone is there (asked again each second until it is, for a few minutes), and taken off
-    /// when the city unloads.
-    ///
-    /// Asked for from the Mods tab ("Open the mod's settings on your phone") or another app's page (BizMan's Interior tab):
-    /// with the phone free it opens at once, on the section or option asked for; while a menu of the game's is up (the
-    /// options) a notification says it opens when the menu is closed, and it does. Nothing here runs per frame; the
-    /// waiting is a quarter-second timer that lasts only while a request waits.
+    /// The mod's settings as an app on the game's phone (<see cref="PhoneApp"/>, built as the Guide is), drawn by
+    /// <see cref="SettingsView"/>. It reads and writes the very rows of the Mods tab (OptionsLayout), so a change in either is
+    /// the same change. It goes on and off the phone with the city as the Guide does, and asked for while a menu of the
+    /// game's is up it opens when the menu closes. Nothing per frame: a quarter-second wait only while a request waits.
     /// </summary>
     public static class SettingsApp
     {
         public const string AppId = "RealLifeSettings";
 
-        private const float GiveUpAfter = 600f;
+        private const float GiveUpAfter = 600f;   // real seconds of trying to put the app on the phone
         private static readonly string[] AppGlyphs = { "Icon-Settings", "Icon-Edit" };
 
         private static PhoneApp _app;
@@ -153,12 +147,7 @@ namespace RealLifeOverhaul.Meta
             return null;
         }
 
-        // ---------------------------------------------------------------- asking for it
-
-        /// <summary>
-        /// Opens the app on a section ("s:interiors"), an option (its id) or where it was left (null). Waits for a menu
-        /// of the game's to close; says so when it cannot open at all.
-        /// </summary>
+        /// <summary>Opens the app on a section ("s:interiors"), an option (its id) or where it was left (null), once a menu of the game's has closed; says so when it cannot.</summary>
         public static void Open(string target)
         {
             if (!Installed || _view == null)
@@ -180,10 +169,7 @@ namespace RealLifeOverhaul.Meta
             OpenNow();
         }
 
-        /// <summary>
-        /// A button at the foot of another app's page that opens this app on that page's options (BizMan's Interior tab
-        /// opens the interiors' section). Nothing is added while the app is not on the phone.
-        /// </summary>
+        /// <summary>A button at the foot of another app's page that opens this app on that page's section (BizMan's Interior tab); nothing while the app is off the phone.</summary>
         public static void Link(InfoBox box, string sectionId)
         {
             if (box == null || !Installed)

@@ -11,14 +11,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The word on each button of the options page. The game's button row has two texts: the label beside the
-    /// button, which the game fills from the row, and one on the button itself, which it never fills, so the
-    /// button shows whatever its template was saved with. This part of the class writes that second text: a
-    /// section's button says "Open" or "Close", a button that does something says what ("Run", "Apply", "Reset").
-    ///
-    /// Done once per drawing of the page (the game destroys and makes every row each time), from a row that draws
-    /// nothing at the end of the mod's rows, and when a section opens or closes. Nothing runs per frame. A button
-    /// whose text cannot be found is left as it is, and one line goes to the log.
+    /// The word on each button of the options page. The game's button row has a label beside the button, which it fills, and
+    /// a text on the button, which it never fills; this part writes it: "Open" or "Close" on a section, what a button does on
+    /// the others ("Run", "Apply", "Reset"). Done on each drawing of the page and when a section opens or closes; nothing per
+    /// frame. A button whose text cannot be found is left as it is, with one line in the log.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -241,10 +237,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>
-        /// The page as it was built, for when it could not be put in order: the same rows, with a number beside
-        /// every slider and a word on every button.
-        /// </summary>
+        /// <summary>The page as it was built, for when it could not be put in order: the same rows, a number beside every slider and a word on every button.</summary>
         private static ModOptions AsBuilt(ModOptions original)
         {
             try

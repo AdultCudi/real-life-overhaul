@@ -64,23 +64,18 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The arithmetic of the Settings app, with no Unity or game types so that CatalogueCheck runs it as it ships:
-    /// which line stands on which tab and under which heading (from the very plan the Mods tab is put in order by,
-    /// <see cref="OptionsPlan.Place"/>), how the presets compare with the choices made, the values a number's
-    /// selector steps through, and which lines a search finds. Cost: <see cref="Tabs"/> is one pass over the rows and
-    /// the test tools, once when the page is built; the rest runs on a click, over a few hundred ints. Nothing per frame.
+    /// The arithmetic of the Settings app: the lines of each tab under their headings (from the plan the Mods tab is placed
+    /// by, <see cref="OptionsPlan.Place"/>), the presets against the choices made, a number's steps and the search. No Unity
+    /// or game types, so CatalogueCheck runs it as it ships. <see cref="Tabs"/> runs once per build, the rest on a click.
     /// </summary>
     public static class SettingsRules
     {
         public const int MostSteps = 21;   // values a number's selector offers between its ends: a click or two from any of them to any other
         public const int TabChars = 11;    // a tab's label: ten tabs stand side by side over the table
 
-        // ---------------------------------------------------------------- the tabs
-
         /// <summary>
-        /// The app's tabs, one per group of the options page in its order. Each section that has rows is a heading
-        /// followed by its rows, as the plan placed them; rows the plan placed nowhere ("Other") and the test tools go
-        /// on the last tab, Troubleshooting, the test tools by group and section as the Mods tab has them.
+        /// One tab per group of the options page, in order, each section a heading over its rows as the plan placed them. Rows
+        /// placed nowhere ("Other") and the test tools go on Troubleshooting, the tests by group and section.
         /// </summary>
         public static SettingsTab[] Tabs(Plan plan, IList<PlanRow> rows, IList<TestPlace> tests)
         {
@@ -127,8 +122,7 @@ namespace RealLifeOverhaul.Meta
                 }
             }
 
-            // The test tools: a group's in one filter kind, a heading per section, in the order of the tree; those of a
-            // feature no section stands for last.
+            // The test tools: a group's in one filter kind, a heading per section; those of a feature no section stands for last.
             for (int g = 0; g < groups.Length; g++)
             {
                 int filter = -1;
@@ -177,12 +171,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the presets
-
-        /// <summary>
-        /// How many options differ from what a preset sets, of those it covers; their indices go into
-        /// <paramref name="into"/> (when it is given) in their order. The three lists are one entry per option.
-        /// </summary>
+        /// <summary>How many of the options a preset covers differ from it; their indices go into <paramref name="into"/> when given. One entry per option in each list.</summary>
         public static int Differences(IList<int> now, IList<int> preset, IList<bool> covered, List<int> into)
         {
             into?.Clear();
@@ -200,9 +189,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// The preset to compare the choices with: one they match exactly (it is in use), else the one they differ
-        /// from in fewest options; between equals the standard one, then the first. -1 when no preset covers anything.
-        /// <paramref name="counts"/> are the differences, <paramref name="covers"/> how many options each preset covers.
+        /// The preset to compare the choices with: one they match (it is in use), else the one they differ from least, a tie
+        /// going to <paramref name="standard"/>, then to the first; -1 when no preset covers anything.
         /// </summary>
         public static int Closest(IList<int> counts, IList<int> covers, int standard, out bool exact)
         {
@@ -223,12 +211,9 @@ namespace RealLifeOverhaul.Meta
             return best;
         }
 
-        // ---------------------------------------------------------------- a number's selector
-
         /// <summary>
-        /// The values a number's selector steps through: both ends, the value it has now and the default, and evenly
-        /// spaced values between, no more than <see cref="MostSteps"/> in all where the range allows, smallest first.
-        /// A small range is every whole number in it.
+        /// The values a number's selector steps through, smallest first: both ends, the value now, the default and evenly spaced
+        /// values between, at most about <see cref="MostSteps"/>; every whole number of a small range.
         /// </summary>
         public static void Steps(int min, int max, int now, int standard, List<int> into)
         {
@@ -278,13 +263,7 @@ namespace RealLifeOverhaul.Meta
             return best;
         }
 
-        // ---------------------------------------------------------------- the search
-
-        /// <summary>
-        /// The lines a search finds: those whose own text, section or group has every word typed at the start of one
-        /// of its words (<see cref="OptionsFind"/>, as the Mods tab's search box). Headings are never found by
-        /// themselves (their rows are). The four lists are one entry per line; indices go into <paramref name="into"/>.
-        /// </summary>
+        /// <summary>The lines whose text, section or group has every word typed (<see cref="OptionsFind"/>); a heading is found through its rows. One entry per line in each list.</summary>
         public static int Search(List<string> words, IList<SettingsLine> lines, IList<string> texts, IList<string> sections, IList<string> groups, List<int> into)
         {
             into.Clear();

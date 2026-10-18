@@ -23,13 +23,10 @@ namespace RealLifeOverhaul.Meta
         public float Height;
     }
 
-    /// <summary>
-    /// The Guide's table is the game's own (BaTable), as the Planner's is: the game's scroller makes only the rows in
-    /// view and reuses them. A row is one page (100 high) or one line of a page, as tall as its words need.
-    /// </summary>
+    /// <summary>The Guide's table, the game's own BaTable as the Planner's is: its scroller makes only the rows in view. A row is a page (100 high) or a line of one.</summary>
     public sealed class GuideTable : BaTable<GuideCellView, GuideRow>
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideTable", typeof(GuideTable));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideTable", typeof(GuideTable));   // the game's calls of it
 
         private bool _started;
 
@@ -92,7 +89,7 @@ namespace RealLifeOverhaul.Meta
     /// <summary>A row: the game's MyEmployees row with one cell left, wrapped, written from a <see cref="GuideRow"/>.</summary>
     public sealed class GuideCellView : BaTableCellView<GuideRow>
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideCellView", typeof(GuideCellView));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideCellView", typeof(GuideCellView));   // the game's calls of it
 
         private TMP_Text _text;
         private GuideRow _row;
@@ -204,12 +201,9 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// What the Guide app shows, in the game's frame (<see cref="AppShell"/>, copied from MyEmployees) as the Planner does.
-    /// On the right two tabs over the table: "Pages" lists the pages (the mod's features, the fixed pages, "Known
-    /// limits", "What changed"), "Reading" holds the page that was picked, a line of it to a row, with its headings and
-    /// bullets in the game's lettering. On the left the white box says which page it is and has a button back to the
-    /// list. The text of a page is the same as ever: the locale file's "# " headings, "- " bullets and {facts}.
-    /// Nothing runs while the app is closed; the rows are made when it opens and when a page is picked.
+    /// What the Guide app shows in the game's frame (<see cref="AppShell"/>, copied from MyEmployees): a "Pages" tab listing
+    /// the pages and a "Reading" tab with the page picked, a line to a row in the game's lettering; the white box names the
+    /// page and leads back to the list. Nothing runs while the app is closed.
     /// </summary>
     public sealed class GuideView
     {
@@ -225,8 +219,6 @@ namespace RealLifeOverhaul.Meta
         private GuideTopic _topic;
         private string _wanted;           // a page asked for before the app was opened
         private int _tab;
-
-        // ---------------------------------------------------------------- building it from the game's parts
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
@@ -275,8 +267,6 @@ namespace RealLifeOverhaul.Meta
             text.alignment = TextAlignmentOptions.Left;
             return true;
         }
-
-        // ---------------------------------------------------------------- opening and reading
 
         /// <summary>Asks for a page (null for the list); shown when the app opens.</summary>
         public void Want(string topicId)
@@ -373,8 +363,6 @@ namespace RealLifeOverhaul.Meta
                 Read(topic);
             }
         }
-
-        // ---------------------------------------------------------------- the two tabs
 
         private void List()
         {

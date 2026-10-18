@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
+    /// <summary>What kind of control a saved option has.</summary>
     public enum OptionType
     {
         Toggle,
@@ -67,9 +68,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// Every saved option the mod has, found without a list of its own to keep up to date: the fields of
-    /// <see cref="Settings"/> (a const string "XId" beside a static bool or int "X": id, kind and shipped value),
-    /// the rows of the options page (label and range), and what a feature declares for options kept elsewhere.
+    /// Every saved option, found without a list to keep up to date: the fields of <see cref="Settings"/> (a const "XId" beside
+    /// a static bool or int "X"), the rows of the options page, and what the features declare for options kept elsewhere.
     /// </summary>
     public static class SettingsTable
     {
@@ -88,10 +88,7 @@ namespace RealLifeOverhaul.Meta
             return id != null && ById.TryGetValue(id, out OptionInfo info) ? info : null;
         }
 
-        /// <summary>
-        /// Called at the top of Settings.Load. The first time, the static fields still hold the values the mod
-        /// ships with, and they are taken down as the defaults; later calls do nothing.
-        /// </summary>
+        /// <summary>Called at the top of Settings.Load: the first time, the static fields still hold the shipped values, which become the defaults.</summary>
         public static void CaptureDefaults()
         {
             if (_captured)
@@ -111,7 +108,7 @@ namespace RealLifeOverhaul.Meta
                     FieldInfo value = settings.GetField(idField.Name.Substring(0, idField.Name.Length - 2), BindingFlags.Public | BindingFlags.Static);
                     if (value == null || value.IsLiteral || (value.FieldType != typeof(bool) && value.FieldType != typeof(int)))
                     {
-                        continue;   // an id with no value of its own (the dropped car_speed)
+                        continue;   // an id with no value of its own
                     }
                     OptionInfo info = Ensure((string)idField.GetRawConstantValue());
                     info.Field = value;

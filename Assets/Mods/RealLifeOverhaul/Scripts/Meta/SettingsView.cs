@@ -9,21 +9,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The Settings app's page, in the game's frame (GameUi.AppShell, copied from MyEmployees) with the kit's table:
-    ///
-    ///   tabs       the ten groups of the options page, Start here first and Troubleshooting last
-    ///   the table  a group's sections in the page's order, each a heading ("4 of 6 on") over its rows: an option's name,
-    ///              its value now, and what keeps it from doing anything ("needs Home life and health"); the drop-down
-    ///              over the table shows one section of the group; Troubleshooting ends with the test tools, by group
-    ///   the box    what is picked: an option's sentence, its value, its control (the game's switch, or its selector of
-    ///              choices and of numbers), what it needs with a button that switches that on, when it takes effect,
-    ///              where it is on the Mods tab and its Guide page; a heading's main switch and Guide page; a button's
-    ///              action; with nothing picked, the group and the preset compared with the choices made
-    ///   search     the game's text entry; the matches of every group in one list, a pick opens its tab on its row
-    ///   the preset in use, or the one the choices are nearest, and the list of the options that differ from it
-    ///
-    /// Every value is read and written through OptionsLayout (OptionsLayout.Book.cs), the rows of the Mods tab itself.
-    /// The page is written when the app opens and on a click; nothing runs per frame or while the app is closed.
+    /// The Settings app's page in the game's frame (GameUi.AppShell, copied from MyEmployees) with the kit's table: a tab per
+    /// group of the options page; in the table the group's sections in the page's order, each a heading ("4 of 6 on") over its
+    /// rows (an option's name, its value, what keeps it from working), a drop-down to show one section, and the test tools at
+    /// the end of Troubleshooting; the box for what is picked (an option's sentence, value, control, needs and Guide page);
+    /// and a search over every group. Every value goes through OptionsLayout (OptionsLayout.Book.cs), the rows of the Mods tab
+    /// itself. Written when the app opens and on a click; nothing per frame.
     /// </summary>
     public sealed partial class SettingsView
     {
@@ -233,8 +224,6 @@ namespace RealLifeOverhaul.Meta
             _table.ClearSelection();
             Refresh();
         }
-
-        // ---------------------------------------------------------------- writing the page
 
         private void Refresh()
         {
@@ -465,8 +454,6 @@ namespace RealLifeOverhaul.Meta
             return line.Section != null ? group + ", " + line.Section.TitleKey.GetLocalization() : group;
         }
 
-        // ---------------------------------------------------------------- search
-
         private void AskSearch()
         {
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
@@ -525,8 +512,6 @@ namespace RealLifeOverhaul.Meta
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_set_back", Back);
             Guide.Point(box, GuideTitle);
         }
-
-        // ---------------------------------------------------------------- rows
 
         private TableRow Row(int index)
         {

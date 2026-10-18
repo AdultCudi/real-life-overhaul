@@ -11,31 +11,17 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// Puts the options page in order. The mod API gives one flat page for all mods and these rows: header,
-    /// toggle, slider, dropdown, button, splitter, and a custom row that draws itself; a row has a label and
-    /// nothing else (no second line, no disabled state, no indent, no sub-pages, no way to jump to a row). So
-    /// the page stays as RealLifeOverhaulMod.cs builds it (features keep adding their group there, and no saved
-    /// option id, default or handler changes), and this class rearranges the finished list by the one table
-    /// <see cref="OptionsTree"/>, with <see cref="OptionsPlan"/> doing the arithmetic:
+    /// Puts the options page in order. The mod API gives every mod one flat page of headers, toggles, sliders, drop-downs,
+    /// buttons, splitters and rows that draw themselves, each with a label and nothing else. So the page stays as
+    /// RealLifeOverhaulMod.cs builds it (no saved id, default or handler changes) and this class rearranges the finished list
+    /// by <see cref="OptionsTree"/>, with <see cref="OptionsPlan"/> doing the arithmetic: groups that open to sections, one
+    /// open at a time, each button counting its switches on; a row that does nothing for now drawn disabled with the reason
+    /// after its label; a tooltip sentence on every option; the test tools under Troubleshooting only while asked for; a row
+    /// the table does not claim under "Other", named in the log.
     ///
-    ///   ten groups in the order a player thinks ("Start here", "Your character and home", "The city", ...),
-    ///   each a button that opens to its sections, each section a button that opens to at most ten rows, its
-    ///   main switch first. One group is open at a time and one section in it; what is open is remembered
-    ///   until the game is closed. Each button says how many of its switches are on.
-    ///   A row whose option does nothing just now (its main switch is off, something it needs is off, another
-    ///   mod has what it steers) is drawn as the game draws a control that cannot be used, with the reason
-    ///   after its label ("needs: Credit rating and phone loans").
-    ///   Every option has one sentence, shown by the game's own tooltip when the pointer rests on its row.
-    ///   Test buttons stand only under Troubleshooting, in "Test tools", grouped as the page is; they are on
-    ///   the page at all only while "Show test tools" is on (the page is registered again when that changes).
-    ///   A row the table does not claim is shown under Troubleshooting in "Other" and named in the log.
-    ///
-    /// Under the page's first header is the search box (OptionsSearch.cs, the other half of this class).
-    ///
-    /// Cost: the table is read once at start-up (<see cref="Build"/>, timed in its log line). Each drawing of
-    /// the page runs one pass over the mod's rows as the game makes them; a click on a switch recounts its
-    /// section and group and looks again at the rows that need something (a few dictionary reads each).
-    /// Nothing runs per frame. If anything here fails, the page is registered exactly as it was built.
+    /// Cost: the table is read once at start-up (<see cref="Build"/>, timed in its log line); each drawing is one pass over
+    /// the mod's rows, and a click recounts its section and group. Nothing per frame. If anything fails, the page is
+    /// registered as it was built.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -60,7 +46,7 @@ namespace RealLifeOverhaul.Meta
             public Feature AsideOf;                // the feature that may say it does nothing for now
             public bool Away;                      // not on the page in this drawing
             public string Reason;                  // why it does nothing just now, as shown after its label; null while it works
-            public ModOption Option;               // the row as the page registers it (a switch wrapped so that the page hears of it): what the Settings app writes through
+            public ModOption Option;               // the row as registered, a switch wrapped so that the page hears of it: what the Settings app writes through
         }
 
         /// <summary>A button of the page that opens and closes: a group, a section, "Test tools" or a group of test buttons.</summary>
@@ -86,7 +72,7 @@ namespace RealLifeOverhaul.Meta
             public int SwitchesOn;
             public int Switches;
             public string Suffix = string.Empty;   // what stands after its name
-            public string[] Features;              // the features of Meta/FeatureList it is the section of (for Core/Guard's note)
+            public string[] Features;              // its features, for Core/Guard's note
             public string Shown;                   // the suffix that is on the button now
 
             // For the search: made on the first letters typed after the page was drawn.
@@ -144,8 +130,6 @@ namespace RealLifeOverhaul.Meta
         private static string _countFormat;
         private static string _needsFormat;
 
-        // ---------------------------------------------------------------- order
-
         /// <summary>The features in the order of the page: as the table names them, then any it does not name.</summary>
         public static List<Feature> Ordered()
         {
@@ -173,8 +157,6 @@ namespace RealLifeOverhaul.Meta
             }
             return list;
         }
-
-        // ---------------------------------------------------------------- building
 
         /// <summary>The one call from RealLifeOverhaulInit: the page as built goes in, the page in order comes out.</summary>
         public static ModOptions Organise(ModContext context, ModOptions original)
@@ -261,8 +243,8 @@ namespace RealLifeOverhaul.Meta
             var built = new List<ModOption>();
             Feature current = null;
 
-            // Whose a row is, as before: the feature that owns its option id; else the one that named its button; else
-            // the one whose header it stood under. A button whose label has "_test_" in it is a test.
+            // Whose a row is: the feature that owns its option id, else the one that named its button, else the one whose header it
+            // stood under. A button with "_test_" in its label is a test.
             foreach (ModOption option in original.Options)
             {
                 if (option is HeaderOption)
@@ -351,9 +333,9 @@ namespace RealLifeOverhaul.Meta
             built.Add(new ButtonOption("reallife_meta_reset_button", AskReset));
             built.Add(new ButtonOption("reallife_meta_export_button", ExportNow));
             built.Add(new ButtonOption("reallife_meta_import_button", AskImport));
-            built.Add(new ButtonOption("reallife_meta_bug_button", BugReport.Press));   // a report on the player's disk to post in the mod's Discord (Meta/BugReport)
+            built.Add(new ButtonOption("reallife_meta_bug_button", BugReport.Press));
             built.Add(new ButtonOption("reallife_meta_welcome_button", () => Welcome.Open(true)));
-            built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off (Core/Guard)
+            built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off
             Features.Find("diagnostics")?.AddTest(LayoutTestKey, TestLayout);
 
             var rows = new List<PlanRow>(built.Count);
@@ -662,8 +644,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the page being drawn
-
         private static bool Drawing => _drawFrame == Time.frameCount;
 
         // The first of the mod's rows is being made: the rows of the last drawing are on their way out, and nothing may switch them back on.
@@ -791,8 +771,6 @@ namespace RealLifeOverhaul.Meta
             }
             return first;
         }
-
-        // ---------------------------------------------------------------- switches, counts, rows that do nothing for now
 
         private static bool IsOn(string optionId)
         {
@@ -1009,8 +987,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- open and closed
-
         private static void Show(GameObject row, bool on)
         {
             on = on && !Absent.Contains(row);   // a row that is not on the page stays away, whatever opens or is found
@@ -1118,11 +1094,7 @@ namespace RealLifeOverhaul.Meta
             Refresh();
         }
 
-        /// <summary>
-        /// Option values were changed from outside the page (a preset, an import, a reset), or the test tools were
-        /// asked for: if the page is registered it is drawn again on the next frame, which is the game's own way
-        /// of showing saved values.
-        /// </summary>
+        /// <summary>Option values changed from outside the page (a preset, an import, a reset): a registered page is drawn again next frame, the game's own way of showing saved values.</summary>
         public static void Refresh()
         {
             if (_plain == null || _modId == null || !OptionsService.RegisteredEntries.ContainsKey(_modId))
@@ -1139,9 +1111,8 @@ namespace RealLifeOverhaul.Meta
             });
         }
 
-        // The game's own "reset all options": it clears the saved values and draws the page again, and every row then
-        // reports its default (the rows carry the shipped values, see SettingsTable.WithTrueDefault). A frame later the
-        // options are read again so that whoever listens to Settings.Changed hears of it.
+        // The game's own "reset all options" clears the saved values and draws the page again, every row reporting the shipped
+        // default (SettingsTable.WithTrueDefault); a frame later Settings is read again, so that Settings.Changed is heard.
         private static void GameReset()
         {
             try
@@ -1157,8 +1128,6 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Error(e);
             }
         }
-
-        // ---------------------------------------------------------------- the buttons of "Start here"
 
         // A preset is asked first, with the game's own question, which says how many options it will change.
         private static void AskPreset(Intensity intensity)
@@ -1207,8 +1176,6 @@ namespace RealLifeOverhaul.Meta
                 OptionsNotice.Tell("reallife_meta_export_title", "reallife_meta_export_failed".GetLocalization().Replace("{error}", e.Message));
             }
         }
-
-        // ---------------------------------------------------------------- the layout as text
 
         /// <summary>The whole page as it is arranged, one line per group, section and row, for Player.log.</summary>
         public static string Describe()
@@ -1265,12 +1232,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the set-up check
-
-        /// <summary>
-        /// The "Check the mod's set-up" button: looks through the registry, the presets, the options page and the
-        /// guide for anything that does not fit together, and says what it found. For whoever merges a feature.
-        /// </summary>
+        /// <summary>The "Check the mod's set-up" button: anything in the registry, the presets, the page or the Guide that does not fit together, for whoever merges a feature.</summary>
         public static void CheckSetup()
         {
             var problems = new List<string>();

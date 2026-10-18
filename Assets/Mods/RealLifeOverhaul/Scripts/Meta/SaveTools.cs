@@ -20,37 +20,21 @@ using Vehicles.DeliveryDriverJob;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The tools that deal with what the mod leaves in a save game: "prepare this save for removing the mod",
-    /// "reset the mod's data in this save", "repair", and the check that runs once after every load.
-    ///
-    /// What the mod puts into a save (GameInstance), all of it found by reading the game's save code:
-    ///   modData            a Dictionary of strings; every key of the mod's starts with "reallife:".
-    ///   happinessModifiers entries whose type starts with reallife_happinessmodifier_. The game does not know
-    ///                      these types without the mod, so ModState takes them out while a save is written.
-    ///   Contacts           Contact objects with the mod's ids (reallife-...); a contact's messages are inside it.
-    ///   notifications      the history of toasts; the mod's have a key starting with reallife_.
-    ///   Transactions       the bank history; the mod's have a type starting with reallife_transaction_. These are
-    ///                      money that really moved and are left alone (without the mod they show their internal name).
-    ///   VehicleInstances   the van of a job in progress, which is the game's own job van and is taken back by Jobs.
-    ///   BuildingRegistrations  a business of one of the tech sector's own types (Tech/Firms/TechTypes), which the game
-    ///                      does not know without the mod: made the game's own web development agency again when the
-    ///                      save is prepared for removal.
-    ///   (not in the save)  an empty shop the mod made an office (Offices/Conversions) is a shop again without the mod,
-    ///                      since a building's type is the game's asset and never the save's. A business of an office type
-    ///                      the player has in one is then an office business in a shop, whose clients the game counts as
-    ///                      a shop's (CustomerEntriesCalculatorFactory picks by the building's type): the question and the
-    ///                      report name each of them and say to move it to an office the game made first.
-    /// One field of the game's own is put back to "none" when it names a contact that is removed:
-    /// PlayerDefaults.contactsLastName (the contact last opened; the Contacts app lists nothing while it names one
-    /// that does not exist). Nothing else of a save is touched, and nothing here runs unless the player presses one of the buttons
-    /// (the check after a load is one pass over three lists).
+    /// The tools for what the mod leaves in a save: "prepare this save for removing the mod", "reset the mod's data in this
+    /// save", "repair", and the check after every load. A save holds of the mod's, as the game's save code writes it: modData
+    /// keys under "reallife:", happiness modifiers of the mod's types (which the game cannot read without the mod), contacts
+    /// with the mod's ids and their messages, notifications with the mod's keys, the mod's transactions (real money, left
+    /// alone), a job's van (Jobs takes it back) and businesses of the tech sector's and the academies' types (made the game's
+    /// own again). Businesses in shops the mod made offices are named in the question and the report. Of the game's own
+    /// fields only PlayerDefaults.contactsLastName is reset, when it names a removed contact. docs/features/meta.md has the
+    /// whole account. Nothing runs unless a button is pressed, except the check after a load (one pass over three lists).
     /// </summary>
     public static class SaveTools
     {
         public const string VersionKey = "reallife:meta_release";   // the mod version that last wrote this save
-        public const string DevelopmentVersionKey = "reallife:meta_version";   // the same from the builds before the first release (0.13 to 0.46): removed at load, never compared
+        public const string DevelopmentVersionKey = "reallife:meta_version";   // the same from the development builds: removed at load, never compared
 
-        private const float SaveWaitSeconds = 90f;
+        private const float SaveWaitSeconds = 90f;   // real seconds to wait for a save being written
 
         private static bool _busy;
 
@@ -63,8 +47,6 @@ namespace RealLifeOverhaul.Meta
             Dormant = false;
             _busy = false;
         }
-
-        // ---------------------------------------------------------------- what is the mod's
 
         /// <summary>True for an id or key the mod made: "reallife" followed by a separator.</summary>
         public static bool IsOurs(string text)
@@ -81,8 +63,6 @@ namespace RealLifeOverhaul.Meta
         {
             return contact != null && contact.id != null && (IsOurs(contact.id) || Features.OwnerOfContact(contact.id) != null);
         }
-
-        // ---------------------------------------------------------------- when a tool may run
 
         /// <summary>Why a tool cannot run now (a text for the player), or null.</summary>
         private static string Refusal(bool needsFeatures)
@@ -119,8 +99,6 @@ namespace RealLifeOverhaul.Meta
             return null;
         }
 
-        // ---------------------------------------------------------------- the buttons
-
         public static void AskPrepare()
         {
             string title = "reallife_meta_remove_title".GetLocalization();
@@ -154,18 +132,11 @@ namespace RealLifeOverhaul.Meta
             MetaUi.Confirm(title, "reallife_meta_resetdata_explain".GetLocalization(), "reallife_meta_resetdata_yes", () => MetaUi.Instance.Run(ResetData()));
         }
 
-        // ---------------------------------------------------------------- the backup
-
         /// <summary>
-        /// Copies the current save's files (the save, its .meta and its picture) to two places, and succeeds only if
-        /// both copies are complete. One is a new folder beside the save,
-        /// SaveGames/[version]/[character]/RealLifeOverhaul_backup_[time]: the game lists the files of a character
-        /// folder and never looks into folders inside it, so the copy is not offered as a save. But the game
-        /// deletes a character folder whole when the character, or its last save, is deleted in the load menu, so
-        /// the second is outside the game's saves, in the mod's own folder under backups/[character]/[time].
-        /// Returns both folders (one per line), or null with <paramref name="error"/> set;
-        /// <paramref name="neverSaved"/> says the reason is that there is no save file at all. Nothing is ever
-        /// deleted or overwritten.
+        /// Copies the save, its .meta and its picture to two new folders and succeeds only if both copies are whole: beside the
+        /// save (the game never lists a folder inside a character folder) and under the mod's own backups folder (the game
+        /// deletes a character folder whole with its last save). Returns both folders, one per line, or null with
+        /// <paramref name="error"/> set; <paramref name="neverSaved"/>: there is no save file at all. Nothing is overwritten.
         /// </summary>
         public static string Backup(out string error, out bool neverSaved)
         {
@@ -266,7 +237,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                MethodInfo method = GameContract.CanSave.Method;   // (resolved once: Core/GameContract)
+                MethodInfo method = GameContract.CanSave.Method;
                 return method == null || (bool)method.Invoke(null, null);
             }
             catch (Exception)
@@ -274,8 +245,6 @@ namespace RealLifeOverhaul.Meta
                 return true;
             }
         }
-
-        // ---------------------------------------------------------------- shared steps
 
         // Every registered feature takes its things off the street, in order; one that fails is reported and the rest go on.
         private static void RunCleanups(List<string> report)
@@ -368,7 +337,7 @@ namespace RealLifeOverhaul.Meta
 
         private static void RemoveData(GameInstance save, Removed removed)
         {
-            SaveLines.Forget();   // the player takes the mod's data out: the lines kept as they were read go too (Core/SaveLines)
+            SaveLines.Forget();   // the lines kept as they were read go with the data
             if (save.modData == null)
             {
                 return;
@@ -476,8 +445,6 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Error(e);
             }
         }
-
-        // ---------------------------------------------------------------- prepare this save for removing the mod
 
         // What the last save held of the mod's at the moment it was written, after the purge inside the save event.
         private static int _leftAtSave = -1;
@@ -837,8 +804,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- reset the mod's data in this save
-
         private static IEnumerator ResetData()
         {
             _busy = true;
@@ -908,8 +873,6 @@ namespace RealLifeOverhaul.Meta
             MetaUi.Message(title, string.Join("\n", report));
         }
 
-        // ---------------------------------------------------------------- repair
-
         /// <summary>Puts back what the mod adds to a save (its contacts, its mood types) where it has gone missing, and says what it found.</summary>
         public static void Repair()
         {
@@ -978,7 +941,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
+                FieldInfo field = GameContract.HappinessRegistry.Field;
                 return field?.GetValue(null) is Dictionary<string, HappinessModifier> registry
                        && registry.ContainsKey(ModState.Sick) && registry.ContainsKey(ModState.MoodDownBig);
             }
@@ -987,8 +950,6 @@ namespace RealLifeOverhaul.Meta
                 return false;
             }
         }
-
-        // ---------------------------------------------------------------- after every load
 
         /// <summary>Later versions add a step here when they change what an earlier one wrote: (first version that no longer needs it, what it does).</summary>
         private static readonly KeyValuePair<string, Action<Dictionary<string, string>>>[] Migrations =
@@ -1028,9 +989,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// Once per load, when the save's mod data has been read: looks for what another version of the mod left
-        /// behind and puts it right, with a line in the log for each thing. It removes only what would break the
-        /// game or the mod (mood types this version does not have); data it does not recognise is reported and kept.
+        /// Once per load, after the save's mod data is read: removes what another version left that would break the game
+        /// (unknown mood types), and reports, but keeps, data it does not know.
         /// </summary>
         public static void CheckAfterLoad()
         {
@@ -1046,8 +1006,8 @@ namespace RealLifeOverhaul.Meta
                     save.modData = new Dictionary<string, string>();
                 }
                 Dictionary<string, string> data = save.modData;
-                // A development build's number (up to 0.46) means nothing beside the released ones: such a save counts
-                // as written before the first release, so every later migration runs on it and nothing is compared.
+                // A development build's number means nothing beside the released ones: such a save counts as written before the first
+                // release, so every migration runs on it and nothing is compared.
                 data.Remove(DevelopmentVersionKey);
                 data.TryGetValue(VersionKey, out string written);
                 string now = Changelog.Version;

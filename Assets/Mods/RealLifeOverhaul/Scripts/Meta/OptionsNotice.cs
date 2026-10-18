@@ -6,12 +6,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// What the options page asks and tells, through the game's own interface: a question is the game's
-    /// confirm dialog (HudConfirm, which the game itself uses over its options screen, in the main menu too),
-    /// and an answer is the game's notification. Where there are no notifications (the main menu has no HUD)
-    /// the answer is shown in the confirm dialog instead. With "Developer diagnostics" on, the whole text goes
-    /// to Player.log as well.
-    /// Called on a button press only; nothing here runs per frame.
+    /// What the options page asks and tells, through the game's own interface: a question in its confirm dialog (HudConfirm,
+    /// which also works over the main menu's options), an answer as its notification, or in the confirm dialog where there is
+    /// no HUD. With "Developer diagnostics" on, the whole text goes to Player.log too. Runs on a button press only.
     /// </summary>
     internal static class OptionsNotice
     {

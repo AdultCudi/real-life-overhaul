@@ -31,11 +31,9 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The in-game guide: the pages and their texts. The app on the game's phone that shows them is <see cref="GuideApp"/>. The
-    /// fixed pages are texts in en.json; a feature's page is its registered description and help text followed
-    /// by its options as they are set now and its test buttons, both read from the registry. Numbers in a
-    /// page are {facts} read from the code's own constants when the page is opened, and keys are read from
-    /// <see cref="Keys"/>, so neither goes stale. Nothing here runs unless the guide is open.
+    /// The in-game Guide's pages and texts (<see cref="GuideApp"/> shows them). The fixed pages are en.json texts; a feature's
+    /// page is its description and help, then its options as set now and its test buttons. {facts} are read from the code's
+    /// constants when a page opens, so no number goes stale. Nothing runs unless the Guide is open.
     /// </summary>
     public static class Guide
     {
@@ -65,8 +63,6 @@ namespace RealLifeOverhaul.Meta
             Open(null);
         }
 
-        // ---------------------------------------------------------------- the topics
-
         public static List<GuideTopic> Topics()
         {
             var topics = new List<GuideTopic>
@@ -83,10 +79,10 @@ namespace RealLifeOverhaul.Meta
                 Feature captured = feature;
                 topics.Add(new GuideTopic("feature_" + feature.Id, feature.TitleKey, () => FeaturePage(captured)));
             }
-            topics.Add(new GuideTopic("trouble", "reallife_guide_trouble_title", () => "reallife_guide_trouble".GetLocalization() + "\n\n" + "reallife_guide_trouble_report".GetLocalization()   // "Report a bug" (Meta/BugReport)
-                                                                                       + "\n\n" + "reallife_guide_trouble_update".GetLocalization()   // (Core/Guard)
+            topics.Add(new GuideTopic("trouble", "reallife_guide_trouble_title", () => "reallife_guide_trouble".GetLocalization() + "\n\n" + "reallife_guide_trouble_report".GetLocalization()
+                                                                                       + "\n\n" + "reallife_guide_trouble_update".GetLocalization()
                                                                                        + "\n\n" + "reallife_guide_trouble_stutter".GetLocalization()
-                                                                                       + "\n\n" + "reallife_guide_trouble_empire".GetLocalization()));   // another author's dealership mod (Core/EmpireMotors)
+                                                                                       + "\n\n" + "reallife_guide_trouble_empire".GetLocalization()));
             topics.Add(new GuideTopic("limits", "reallife_guide_limits_title", () => "reallife_guide_limits".GetLocalization()));
             topics.Add(new GuideTopic("credits", "reallife_guide_credits_title", () => "reallife_guide_credits".GetLocalization()));
             topics.Add(new GuideTopic("whatsnew", "reallife_guide_whatsnew_title", () => "reallife_guide_whatsnew".GetLocalization() + "\n\n" + Changelog.Page()));
@@ -147,10 +143,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// The last line of an app's page: the Guide's page that explains it, named as the Guide's list names it
-        /// ("Guide: <b>Stock market</b>"), at the page's foot in the box's note style (InfoBox.GuideLink). Every app ends its pages this way, so that what a figure means and how a
-        /// rule works is read in the Guide and the page itself holds only the figures and the actions. A few strings,
-        /// written with the page (on a click).
+        /// The last line of an app's page: the Guide's page that explains it ("Guide: <b>Stock market</b>"), in the box's note
+        /// style. Every app's page ends so: the page holds the figures and the actions, the Guide what they mean.
         /// </summary>
         public static void Point(GameUi.InfoBox box, string featureTitleKey)
         {
@@ -159,8 +153,6 @@ namespace RealLifeOverhaul.Meta
                 box.GuideLink(featureTitleKey.GetLocalization());
             }
         }
-
-        // ---------------------------------------------------------------- facts and mark-up
 
         /// <summary>An amount of money as the game writes it.</summary>
         public static string Money(float amount)
@@ -334,10 +326,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// The "Real Life Overhaul Guide" entry on the phone: a contact like the mod's others, whose call opens the
-    /// guide. Added with the other contacts (and only while "phone contacts" is on); removed with them by the save tools.
-    /// </summary>
+    /// <summary>The "Real Life Overhaul Guide" phone contact, whose call opens the Guide; added and removed with the mod's other contacts.</summary>
     public static class GuideContact
     {
         public const string ContactId = "reallife-guide";
@@ -351,7 +340,7 @@ namespace RealLifeOverhaul.Meta
             }
             try
             {
-                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
+                ContactPictures.Add(ContactId);
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_guide_desc", null, false, true);
                 var dialogType = (CallDialogType)BAModAPI.ModEnumHash.GetSafeHash("reallife_guide_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -369,7 +358,6 @@ namespace RealLifeOverhaul.Meta
                 return false;
             }
         }
-
     }
 
     /// <summary>The call to the guide contact: one line, then the guide opens.</summary>

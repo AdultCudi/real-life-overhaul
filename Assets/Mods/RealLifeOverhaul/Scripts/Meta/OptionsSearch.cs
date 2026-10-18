@@ -10,16 +10,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The search box of the options page: a text field under the page's first header. While two letters or more
-    /// stand in it, a row is shown only if every word typed begins a word of its label, of its sentence, of the
-    /// other words the table gives it, or of the name (and other words) of its section or its group
-    /// (<see cref="OptionsFind"/>); a section's button and its group's are shown above what was found in them,
-    /// which is how a found row says where it lives. Emptying the box puts every group back as it was left:
-    /// nothing here changes what is open and closed.
-    ///
-    /// Nothing runs per frame. The work is done when the field's text changes; the lower-case texts are made on
-    /// the first letters typed after the page was drawn; rows are the game's own objects, switched on and off.
-    /// If anything fails, the box is hidden, one line goes to the log, and the page is as it was without it.
+    /// The search box of the options page, a text field under its first header. While it holds two letters or more, a row is
+    /// shown only if every word typed begins a word of its label, its sentence, the table's words for it, or its section's or
+    /// group's (<see cref="OptionsFind"/>); the section and group buttons stand above what was found in them. Emptying the box
+    /// puts the page back as it was left. Runs when the text changes, never per frame; after a fault the box stays hidden.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -36,7 +30,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>The row that makes the box. The game has no text field on this page, so it is built here.</summary>
         private sealed class SearchRow : ModOption
         {
-            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.SearchRow", typeof(SearchRow));   // the game's calls of it (Core/Guard)
+            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.SearchRow", typeof(SearchRow));   // the game's calls of it
 
             public SearchRow() : base(null, string.Empty)
             {
@@ -69,8 +63,6 @@ namespace RealLifeOverhaul.Meta
                 }
             }
         }
-
-        // ---------------------------------------------------------------- the page being drawn
 
         // The first thing on every drawing of the page: the box is new and empty, so nothing is being searched for.
         private static void SearchDrawn(Transform parent)
@@ -133,8 +125,6 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Error(again);
             }
         }
-
-        // ---------------------------------------------------------------- what was typed
 
         // Takes the box's text. True if what is searched for is now something else.
         private static bool SetQuery(string typed)
@@ -223,11 +213,9 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the box
-
         /// <summary>
-        /// The search row: a plate with the text field on it and a button that empties it, and a line for the
-        /// count below. It has no Update: it is called by the field's own events.
+        /// The search row: a plate with the text field and a button that empties it, and a line for the count below. It costs
+        /// nothing a frame: no Update, only its field's events.
         /// </summary>
         private sealed class SearchBox : MonoBehaviour
         {
@@ -409,7 +397,7 @@ namespace RealLifeOverhaul.Meta
                 _field.enabled = false;
                 _field.enabled = true;
                 _field.onValueChanged.AddListener(Changed);
-                _field.onSelect.AddListener(Guard.Listener<string>(Selected));   // (the two with no try of their own: through the guard, Core/Guard)
+                _field.onSelect.AddListener(Guard.Listener<string>(Selected));   // these two have no try of their own: the guard's
                 _field.onDeselect.AddListener(Guard.Listener<string>(Deselected));
                 _field.onEndEdit.AddListener(Ended);
 
@@ -496,8 +484,6 @@ namespace RealLifeOverhaul.Meta
                     _row.sizeDelta = new Vector2(_row.sizeDelta.x, height);
                 }
             }
-
-            // ------------------------------------------------------------ the field's events
 
             private void Changed(string typed)
             {
@@ -617,13 +603,10 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>
-        /// Puts the page's scroll view where the mod's first header is at the top. Switched on by a new search
-        /// for two frames (the page lays its rows out again in between), and off otherwise.
-        /// </summary>
+        /// <summary>Scrolls the page so that the mod's first header is at the top: on for two frames after a new search (the page lays its rows out in between), off otherwise.</summary>
         private sealed class ScrollToTop : MonoBehaviour
         {
-            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.ScrollToTop", typeof(OptionsLayout.ScrollToTop));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.ScrollToTop", typeof(OptionsLayout.ScrollToTop));   // its frame methods
 
             public ScrollRect Scroll;
 
@@ -647,7 +630,7 @@ namespace RealLifeOverhaul.Meta
                 using var hotSpot = HotSpots.Time(HotLateUpdate);
                 if (FrameGuard.Off)
                 {
-                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    enabled = false;   // switched off after its faults
                     return;
                 }
                 try

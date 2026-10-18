@@ -6,14 +6,10 @@ using Localizor;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// What the Settings app (<see cref="SettingsView"/>) knows of the options page: the same rows, read and written the
-    /// way the game's own controls on the Mods tab read and write them. A value is the saved one (ModOptionPrefs' key,
-    /// "m:mod:id", or the option's field in Settings), and a change saves it under that key and then calls the row's own
-    /// handler with it, as ModOptionsToggleControl, ModOptionsSliderControl and ModOptionsDropdownControl do on a
-    /// click. So the app and the Mods tab cannot disagree: there is one saved value and one handler.
-    ///
-    /// The app's tabs come from <see cref="SettingsRules.Tabs"/> over the plan the page itself is placed by, made once in
-    /// <see cref="Build"/>. Everything below runs when the app writes a page or the player clicks; nothing per frame.
+    /// What the Settings app (<see cref="SettingsView"/>) knows of the options page: the same rows, read and written as the
+    /// game's own Mods tab controls do (the value saved under ModOptionPrefs' key, then the row's handler called), so the app
+    /// and the Mods tab cannot disagree. The tabs come from <see cref="SettingsRules.Tabs"/> over the page's own plan, made
+    /// once in <see cref="Build"/>; the rest runs on a click.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -163,8 +159,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- values
-
         /// <summary>What an option is now: its field in Settings where it has one, else what is saved, else its default.</summary>
         internal static int AppValue(SettingsLine line)
         {
@@ -246,9 +240,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// Changes an option as the game's control on the Mods tab does: the value saved under the same key, then the
-        /// row's own handler called with it (for a switch, the page's wrapper, so the Mods tab hears of it too). False
-        /// if there is nothing to write (the options were not read yet).
+        /// Changes an option as its control on the Mods tab does: saved under the same key, then the row's handler called (for a
+        /// switch, the page's wrapper). False with nothing to write.
         /// </summary>
         internal static bool AppSet(SettingsLine line, int value)
         {
@@ -328,8 +321,6 @@ namespace RealLifeOverhaul.Meta
             string id = AppId(line);
             return id != null && Features.NeedsReload(id);
         }
-
-        // ---------------------------------------------------------------- buttons, keys and tests
 
         /// <summary>Presses a button or runs a test tool, as its row on the Mods tab does.</summary>
         internal static void AppRun(SettingsLine line)

@@ -14,22 +14,14 @@ using UnityEngine.Experimental.Rendering;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The one place "Report a bug" (BugReport.cs) touches the game and the engine: the listener that keeps the mod's
-    /// warnings and errors (<see cref="Listen"/>), the facts read when the button is pressed, the game's text box, the
-    /// screenshot, the log files read with sharing, the zip, the clipboard and the two links opened.
-    ///
-    /// Per frame: nothing. The listener runs once per line the engine logs, on whichever thread wrote it: a type comparison
-    /// for a plain line; for a warning or an error a prefix comparison, and for an error a search of its stack for the mod's
-    /// namespace; a line of the mod's is a few field writes under a lock (BugLog). No allocation. Everything else runs on the
-    /// press: the facts and the screen on the main thread, the files on a worker thread.
+    /// Where "Report a bug" touches the game and the engine: the listener that keeps the mod's warnings and errors
+    /// (<see cref="Listen"/>), the facts read on the press, the game's text box, the screenshot, the logs read with sharing,
+    /// the zip, the clipboard and the two links. Nothing per frame: the listener runs once per line the engine logs, on any
+    /// thread, a few comparisons and for a line of the mod's a few field writes under a lock; no allocation.
     /// </summary>
     internal static class BugReportGame
     {
-        /// <summary>
-        /// The mod's Discord server, by its lasting invite. A link to the #bug-reports channel itself
-        /// (discord.com/channels/...) shows a player who has not joined yet only "no access"; the invite works for everyone,
-        /// lands a member in the server as it is and asks a newcomer to join first. The notice names the channel.
-        /// </summary>
+        /// <summary>The mod's Discord by its lasting invite: a link to the channel itself shows a player not yet in the server only "no access".</summary>
         public const string DiscordUrl = "https://discord.gg/tzCh2VXs9E";
 
         private const int JpgQuality = 85;   // a 1440p screen in some 400 KB: Discord takes 10 MB in a post, the logs need the room
@@ -66,8 +58,6 @@ namespace RealLifeOverhaul.Meta
                 // (see above: a line is lost, the game's log is not touched)
             }
         }
-
-        // ---------------------------------------------------------------- the facts
 
         /// <summary>What report.txt says, read on the main thread as the player confirms. A part that cannot be read says so.</summary>
         public static BugFacts Facts(string words)
@@ -295,12 +285,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>True while a city is loaded: then the report has a screenshot and the game's text box is there.</summary>
         public static bool InCity => MetaCity.Root != null;
 
-        // ---------------------------------------------------------------- the game's text box
-
-        /// <summary>
-        /// The game's own text box (UIs.textInputUi, as the mod's apps ask for a name) for what went wrong, which may be left
-        /// empty. False when the game has none to show (the main menu).
-        /// </summary>
+        /// <summary>The game's own text box (UIs.textInputUi) for what went wrong, which may be left empty; false when the game has none (the main menu).</summary>
         public static bool AskWords(Action<string> done)
         {
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
@@ -322,8 +307,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the screen
-
         /// <summary>The screen as it is drawn, read at the end of a frame.</summary>
         public sealed class Shot
         {
@@ -335,9 +318,9 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// The screen, as the game's own feedback form takes it (ScreenCapture.CaptureScreenshotAsTexture): called after
-        /// WaitForEndOfFrame. Its pixels are copied out and the texture let go at once; the encoding, the slow part, is the
-        /// worker's (<see cref="WriteShot"/>). Null when it cannot be taken.
+        /// The screen as the game's own feedback form takes it (ScreenCapture.CaptureScreenshotAsTexture), after
+        /// WaitForEndOfFrame: its pixels copied out and the texture let go; the worker encodes it (<see cref="WriteShot"/>).
+        /// Null when it cannot be taken.
         /// </summary>
         public static Shot TakeShot()
         {
@@ -403,8 +386,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the files
-
         /// <summary>The game's log of this session, when it is in the game's own data folder (a log written elsewhere is not read).</summary>
         public static string GameLog()
         {
@@ -417,10 +398,7 @@ namespace RealLifeOverhaul.Meta
             return string.Equals(folder, Path.GetFullPath(Application.persistentDataPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) ? log : null;
         }
 
-        /// <summary>
-        /// On the worker: a copy of one of the game's logs, its tail when large, the user folder taken out (BugReportRules.CopyTail).
-        /// Opened with sharing, so the game goes on writing it, and never locked. False when there is no such file.
-        /// </summary>
+        /// <summary>On the worker: a copy of one of the game's logs, its tail when large and the user folder taken out, read with sharing so it is never locked. False with no such file.</summary>
         public static bool CopyLog(string from, string to, long cap, string profile)
         {
             if (from == null || !File.Exists(from))
@@ -436,8 +414,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// On the worker: every file of the folder in one zip beside it. Its own method, so that a game whose runtime lacks the
-        /// zip classes leaves only the folder. A half-written zip is removed. Null when it could not be made.
+        /// On the worker: the folder's files in one zip beside it, in a method of its own so that a runtime without the zip
+        /// classes loses only the zip. A half-written zip is removed and the fault thrown on.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string Zip(string folder)
@@ -474,13 +452,10 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- handing it over
-
         /// <summary>
-        /// The summary on the clipboard, the file explorer on the reports' folder with the new zip (or folder) picked, the mod's
-        /// Discord in the browser. On Windows the explorer is started itself: a file address escaped for the browser
-        /// (Uri.AbsoluteUri) is read back in the system's code page, which mangles a user folder with accents or Chinese
-        /// characters. If it cannot be started, and on any other system, the folder's address is opened unescaped.
+        /// The summary on the clipboard, the explorer on the reports' folder with the new zip picked, the Discord in the browser.
+        /// On Windows the explorer is started itself: an escaped file address is read back in the system's code page, which
+        /// mangles a user folder with accents or Chinese characters. Elsewhere, or if it fails, the address is opened unescaped.
         /// </summary>
         public static void HandOver(string summary, string folder, string zip)
         {

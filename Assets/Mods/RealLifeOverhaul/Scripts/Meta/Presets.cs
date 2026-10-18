@@ -9,10 +9,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The realism presets, "reset everything" and the settings file. A preset is nothing but saved option
-    /// values: it writes the same PlayerPrefs keys the options page writes, has Settings read them again and
-    /// raises Settings.Changed. What each preset sets is declared by the features (Feature.Preset) and so is
-    /// one table, printed in the guide; an option no feature declares is left as the player has it.
+    /// The realism presets, "reset everything" and the settings file: each writes the PlayerPrefs keys the options page
+    /// writes and has Settings read them again. What a preset sets is declared by the features (Feature.Preset).
     /// </summary>
     public static class Presets
     {
@@ -94,10 +92,7 @@ namespace RealLifeOverhaul.Meta
             return (now.HasValue ? NameKeys[(int)now.Value] : "reallife_meta_preset_custom").GetLocalization();
         }
 
-        /// <summary>
-        /// How many options a preset would change if it were applied now, and how many of those are switches:
-        /// what the question says before anything is written. One pass over the options, on a button press.
-        /// </summary>
+        /// <summary>How many options a preset would change now, and how many of those are switches: for the question before it is applied.</summary>
         public static int CountChanges(Intensity intensity, out int switches)
         {
             int changed = 0;
@@ -117,10 +112,7 @@ namespace RealLifeOverhaul.Meta
             return changed;
         }
 
-        /// <summary>
-        /// Sets every option the presets cover. The settings as they were are written to a file first, so a
-        /// preset pressed by mistake can be undone with "Import". Returns the text to show the player.
-        /// </summary>
+        /// <summary>Sets every option the presets cover, first saving the settings to a file so that a press by mistake can be undone with Import. Returns the player's text.</summary>
         public static string Apply(Intensity intensity)
         {
             if (Settings.ModId == null)
@@ -241,12 +233,7 @@ namespace RealLifeOverhaul.Meta
             return info.LabelKey != null ? info.LabelKey.GetLocalization() : info.Id;
         }
 
-        // ---------------------------------------------------------------- the settings file
-
-        /// <summary>
-        /// Writes every option and key binding as "id=value" lines. Returns the full path. The file can be
-        /// given to someone else: "Import" reads the one called settings.txt in the same folder.
-        /// </summary>
+        /// <summary>Writes every option and every changed key as "id=value" lines and returns the path; Import reads settings.txt in the same folder.</summary>
         public static string Export(string fileName)
         {
             string path = Path.Combine(Folder, fileName);

@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Meta
         Hardcore = 3
     }
 
-    /// <summary>One option's place in the presets. Toggles are 0 and 1.</summary>
+    /// <summary>What the presets set one option to; a toggle is 0 or 1.</summary>
     public sealed class PresetRule
     {
         public readonly string OptionId;
@@ -53,10 +53,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// Everything the mod's own tools need to know about one feature: its section on the options page, its
-    /// options and what the presets do with them, what it writes into a save, what it adds to the phone, how
-    /// to take it off the street, and its page in the guide. Filled in with one statement
-    /// (<see cref="Features.Add"/> and the methods below, each of which returns the feature).
+    /// One feature as the mod's own tools see it: its options and presets, save keys, phone contacts, clean-up and Guide
+    /// page. Filled in by one <see cref="Features.Add"/> statement whose calls each return the feature.
     /// </summary>
     public sealed class Feature
     {
@@ -70,19 +68,19 @@ namespace RealLifeOverhaul.Meta
         public bool Auto;                       // made from an options header nobody registered
         public bool StartsOpen;                 // its section is open the first time the page is shown
 
-        public readonly List<string> Groups = new List<string>();        // header keys of the original page that are its
+        public readonly List<string> Groups = new List<string>();        // options headers whose rows are its
         public readonly List<string> Options = new List<string>();       // option ids it owns
-        public readonly List<string> RowLabels = new List<string>();     // buttons of the original page that are its (not tests)
+        public readonly List<string> RowLabels = new List<string>();     // its buttons by label key (not its tests)
         public readonly List<string> ReloadOptions = new List<string>(); // option ids that only apply after the save is loaded again
         public readonly List<PresetRule> Presets = new List<PresetRule>();
         public readonly List<string> DataKeys = new List<string>();      // modData keys (or prefixes) it writes
         public readonly List<string> ContactIds = new List<string>();    // phone contacts it adds
         public readonly List<string> ObjectNames = new List<string>();   // GameObjects of its own that are not under the mod's root
         public readonly List<TestAction> Tests = new List<TestAction>();
-        public readonly List<ModOption> ExtraRows = new List<ModOption>(); // rows that are not on the original page
+        public readonly List<ModOption> ExtraRows = new List<ModOption>(); // rows it adds to the page itself
         public readonly List<KeyAction> DiagnosticKeys = new List<KeyAction>();
         public readonly Dictionary<string, Func<string>> Facts = new Dictionary<string, Func<string>>();
-        public readonly Dictionary<string, Func<bool>> RowPresent = new Dictionary<string, Func<bool>>();   // option id: whether its row is on the page at all
+        public readonly Dictionary<string, Func<bool>> RowPresent = new Dictionary<string, Func<bool>>();   // option id: whether its row is on the page
         public readonly List<string> AsideOptions = new List<string>();   // option ids that do nothing while AsideWhy says so
         public Func<string> AsideWhy;           // the sentence that says why, or null while they work
 
@@ -96,7 +94,7 @@ namespace RealLifeOverhaul.Meta
             TitleKey = titleKey;
         }
 
-        /// <summary>The header of its options group as the page is built in RealLifeOverhaulMod.cs: rows under it are this feature's.</summary>
+        /// <summary>An options header (as RealLifeOverhaulMod.cs adds it) whose rows are this feature's.</summary>
         public Feature Group(string headerKey)
         {
             Groups.Add(headerKey);
@@ -143,10 +141,7 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>
-        /// What the presets set this option to. Standard is not given: it is the option's default.
-        /// A toggle is 0 or 1; a slider its value. The option becomes this feature's.
-        /// </summary>
+        /// <summary>What the presets set an option to (Standard is its default; a toggle is 0 or 1). The option becomes this feature's.</summary>
         public Feature Preset(string optionId, int relaxed, int realistic, int hardcore)
         {
             Presets.Add(new PresetRule(optionId, relaxed, realistic, hardcore));
@@ -190,7 +185,7 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>A test button that is on the original page: only its label, the action is taken from the page.</summary>
+        /// <summary>Test buttons already on the page, by label key; their actions are taken from the page.</summary>
         public Feature Test(params string[] labelKeys)
         {
             foreach (string key in labelKeys)
@@ -256,10 +251,7 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>
-        /// A row that is on the options page only while something is true (another author's mod is switched on):
-        /// asked each time the page is drawn. The option keeps its saved value while its row is away.
-        /// </summary>
+        /// <summary>A row on the page only while <paramref name="present"/> is true, asked each time the page is drawn; its option keeps its value.</summary>
         public Feature Present(string optionId, Func<bool> present)
         {
             RowPresent[optionId] = present;
@@ -267,9 +259,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// Options that do nothing for a while (another mod has what they steer). While <paramref name="why"/>
-        /// answers a sentence, their rows are drawn as the game draws a control that cannot be used, and the
-        /// section's button says the sentence after its name. Asked each time the page is drawn.
+        /// Options that do nothing while <paramref name="why"/> returns a sentence (another mod has what they steer): their rows
+        /// are drawn disabled and the section's button says why. Asked each time the page is drawn.
         /// </summary>
         public Feature StandsAside(Func<string> why, params string[] optionIds)
         {
@@ -285,19 +276,13 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// Put on a class that has a <c>static void DescribeFeature()</c>: it is called once at game start, so a feature
-    /// can register itself from its own file instead of from Meta/FeatureList.cs.
-    /// </summary>
+    /// <summary>On a class with a <c>static void DescribeFeature()</c>, called once at start-up, so a feature can register itself.</summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class DescribesFeatureAttribute : Attribute
     {
     }
 
-    /// <summary>
-    /// The one list of the mod's features. The options page, the presets, the guide, the save tools and the
-    /// diagnostics switch all read it, so a feature that registers here appears in each of them.
-    /// </summary>
+    /// <summary>The one list of the mod's features: the options page, the presets, the Guide and the save tools all read it.</summary>
     public static class Features
     {
         private static readonly List<Feature> List = new List<Feature>();

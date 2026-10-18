@@ -159,30 +159,24 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// THE STRUCTURE OF THE OPTIONS PAGE, and nothing else: which groups there are, which sections each opens to,
-    /// which rows stand in each section and in what order, what a row needs to be on before it does anything.
-    /// The page itself is still built by RealLifeOverhaulMod.cs and the features (ids, defaults and handlers are
-    /// theirs); <see cref="OptionsLayout"/> arranges the finished rows by this table, and
-    /// <see cref="OptionsPlan"/> is the arithmetic of it. No Unity or game types: CatalogueCheck reads this file
-    /// as it ships and fails if an option of Settings.cs is in no section, a section is too long or empty, a
-    /// need points nowhere or in a circle, or a label is too long or uses one of the mod's own words.
+    /// The structure of the options page and nothing else: its groups, the sections each opens to, the rows of each section
+    /// in order, and what a row needs on before it does anything. RealLifeOverhaulMod.cs and the features still build the
+    /// rows (ids, defaults, handlers); <see cref="OptionsLayout"/> arranges them by this table and <see cref="OptionsPlan"/>
+    /// does the arithmetic. No Unity or game types: CatalogueCheck reads it as it ships. A new feature adds one S(...) line:
     ///
-    /// TO ADD A FEATURE: one S(...) line in the group it belongs to (or its option ids in a section that is
-    /// there). A row no line claims is shown in a section called "Other" and named in Player.log.
+    ///     S("fuel").For("fuel")                 // section id (its title is reallife_opt_sec_ and the id), the feature's id
+    ///         .Main("fuel")                     // its main switch: first row, the others greyed while it is off
+    ///         .Opts("fuel_price", "fuel_gauge") // more options by saved id, in the page's order
+    ///         .Opt("fuel_cans", "car_ownership")// an option that needs another one on
+    ///         .Buttons("<reallife_fuel_page>")  // a button of the player's (not a test), by label key
     ///
-    ///     S("fuel").For("fuel")                 // section id (its title is the en.json key reallife_opt_sec_fuel), the feature id of Meta/FeatureList
-    ///         .Main("fuel")                     // its main switch: first row, the others are greyed while it is off
-    ///         .Opts("fuel_price", "fuel_gauge") // more options, by saved id, in the order of the page
-    ///         .Opt("fuel_cans", "car_ownership")// an option that needs another one on ("Needs: Owning a car")
-    ///         .Buttons("<reallife_fuel_page>")  // a button that is the player's (not a test), by label key
-    ///
-    /// Every option row also needs one sentence in en.json: the key is the tip prefix below and its id.
-    /// (The example's key is inside angle brackets only so that the locale check does not take it for a real one.)
-    /// Cost: built once when the class is first used (about 60 small objects); nothing runs per frame.
+    /// Every option row needs its sentence in en.json under <see cref="TipPrefix"/> and its id (the example's key is in
+    /// angle brackets so that the locale check does not take it for a real one). A row no line claims goes to "Other" and is
+    /// named in Player.log. Built once on first use; nothing per frame.
     /// </summary>
     public static class OptionsTree
     {
-        private const string Mod = "reallife";                 // (apart, so that the locale check does not take a prefix for a key)
+        private const string Mod = "reallife";                 // apart, so that the locale check does not take a prefix for a key
         public const int MostRows = 10;                       // rows in one section: more than a screenful is a wall again
         public const string GroupPrefix = Mod + "_opt_group_";    // a group's title is this and its id
         public const string SectionPrefix = Mod + "_opt_sec_";    // a section's title
@@ -374,8 +368,6 @@ namespace RealLifeOverhaul.Meta
                     "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_phone_dump", "reallife_keys_character_report")
                     .Also("benchmark fps developer keys")),
         };
-
-        // ---------------------------------------------------------------- looking things up
 
         private static Dictionary<string, TreeSection> _byRow;
         private static Dictionary<string, TreeRow> _rows;

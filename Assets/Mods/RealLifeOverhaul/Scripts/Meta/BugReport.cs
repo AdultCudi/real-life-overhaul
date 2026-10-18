@@ -10,29 +10,15 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// "Report a bug": the button under Start here on the options page, which the Settings app on the phone shows too. The mod
-    /// is public, so it holds no token or webhook and sends nothing itself: it gathers what a report needs into one folder
-    /// on the player's disk, zips it, and hands it to the player to post in the mod's Discord.
-    ///
-    ///   the press      in a city, the game's own text box for what went wrong (it may be left empty); while a menu of the
-    ///                  game's is up (the options) a notification says it opens when the menu is closed, and it does; in
-    ///                  the main menu, where the game has no text box, the game's question box asks first and the words
-    ///                  are said in the post instead
-    ///   the facts      read on the main thread as the player confirms (BugReportGame.Facts): versions, platform, language,
-    ///                  Going Public, the preset and every option changed from it, the day, the money, the mod's last 50
-    ///                  warnings and errors (kept as they were logged, BugReportGame.Listen), the game contract
-    ///   the screen     in a city, a frame after the text box closed, at the end of that frame (BugReportGame.TakeShot)
-    ///   the files      on a worker thread: Application.persistentDataPath/RealLifeOverhaul/Reports/(date time)/ with
-    ///                  report.txt, Player.log and Player-prev.log (read with sharing, their tails when large, the user
-    ///                  folder taken out), settings.txt (the options page's export) and screenshot.jpg; then one zip beside
-    ///                  the folder
-    ///   handing over   a short summary on the clipboard, the reports' folder in the file explorer, the mod's Discord in the
-    ///                  browser, and a notification of what to post where
-    ///
-    /// Per frame: nothing while no report is being made (no component, no timer). While one is made, a coroutine waits a
-    /// frame for the screen and then a tenth of a second at a time for the worker. The main thread's share is the facts
-    /// (one pass over the options per preset), one read of the screen and one copy of its pixels; the encoding, the copies
-    /// of the logs and the zip are the worker's. A fault anywhere is logged and said in a notification; the game goes on.
+    /// "Report a bug", the button under Start here (the Settings app shows it too). The mod is public, so it holds no token or
+    /// webhook and sends nothing: it gathers what a report needs into a folder on the player's disk, zips it and hands it over
+    /// to post in the mod's Discord. The press asks for the player's words in the game's text box (once a menu of the game's
+    /// has closed; in the main menu a question asks first); the facts are read on the main thread
+    /// (<see cref="BugReportGame.Facts"/>), the screen a frame after the box closed, and the files (report.txt, both logs with
+    /// the user folder taken out, settings.txt, screenshot.jpg) and the zip are written on a worker thread under
+    /// Presets.Folder/Reports. Then a summary goes on the clipboard, the folder opens in the explorer and the Discord in the
+    /// browser. Nothing per frame while no report is made; while one is, a coroutine looks at the worker every tenth of a
+    /// second.
     /// </summary>
     public static class BugReport
     {
@@ -75,7 +61,7 @@ namespace RealLifeOverhaul.Meta
             }
             catch (Exception e)
             {
-                Fail(e);   // (said to the player: a press that does nothing would look like no button at all)
+                Fail(e);   // said: a press that did nothing would look like no button at all
             }
         }
 
@@ -112,8 +98,6 @@ namespace RealLifeOverhaul.Meta
                 Make(null);
             }
         }
-
-        // ---------------------------------------------------------------- making it
 
         /// <summary>What the worker is given and gives back.</summary>
         private sealed class Job
