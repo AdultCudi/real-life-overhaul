@@ -243,6 +243,19 @@ namespace RealLifeOverhaul
             return day > 0 && (days & (1 << ((day - 1) % 7))) != 0;
         }
 
+        /// <summary>The first of <see cref="Rotas"/> that works on a day; the first rota if none does.</summary>
+        public static CareerRota FirstRotaOn(int day)
+        {
+            for (int i = 0; i < Rotas.Length; i++)
+            {
+                if (RotaDay(Rotas[i].Days, day))
+                {
+                    return Rotas[i];
+                }
+            }
+            return Rotas[0];
+        }
+
         /// <summary>The next day on or after a day that a rota works; -1 for an empty rota.</summary>
         public static int NextRotaDay(int days, int from)
         {
@@ -274,6 +287,16 @@ namespace RealLifeOverhaul
         {
             float factor = 1f - 0.15f * (businesses < 0 ? 0 : businesses);
             return factor < 0.55f ? 0.55f : factor;
+        }
+
+        /// <summary>
+        /// A booked set's venue fee at the pay option (25 to 300 %) for someone who runs so many businesses: <see cref="GigFee"/>
+        /// cut by <see cref="OwnerFactor"/>, as every other pay is. <see cref="GigFee"/> is at the city's price level already.
+        /// </summary>
+        public static int VenueFee(int payOption, int businesses)
+        {
+            int option = payOption < 25 ? 25 : payOption > 300 ? 300 : payOption;
+            return (int)Math.Round(GigFee * (option / 100f) * OwnerFactor(businesses));
         }
 
         /// <summary>Rota shifts credited to the first review for levels in the employer's gig (two each above the first) and a related one (one each).</summary>

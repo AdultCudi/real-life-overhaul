@@ -567,7 +567,12 @@ namespace RealLifeOverhaul
         {
             reasonKey = null;
             JobDef def = JobCatalogue.Find(JobCatalogue.Busker);
-            if (_broken || !Settings.Jobs || !JobState.Loaded || _job != null || def == null)
+            if (_broken || !Settings.Jobs || !JobState.Loaded || def == null)
+            {
+                reasonKey = "reallife_job_no_off";
+                return false;
+            }
+            if (_job != null)
             {
                 reasonKey = "reallife_job_no_busy";
                 return false;

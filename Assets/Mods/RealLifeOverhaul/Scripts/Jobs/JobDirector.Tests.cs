@@ -38,7 +38,7 @@ namespace RealLifeOverhaul
 
         private int _testEmployer = -1;
 
-        /// <summary>Options page: signs on with the next employer in turn (leaving the current one with no mark), on a rota that works today.</summary>
+        /// <summary>Options page: signs on with the next employer in turn (leaving the current one with no mark), on the first rota that works tomorrow.</summary>
         public void TestSignOn()
         {
             if (!CareerTestReady())
@@ -46,15 +46,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _testEmployer = (_testEmployer + 1) % CareerCatalogue.All.Length;
-            int day = TimeHelper.CurrentDay;
-            CareerRota rota = CareerCatalogue.Rotas[0];
-            for (int i = 0; i < CareerCatalogue.Rotas.Length; i++)
-            {
-                if (CareerCatalogue.RotaDay(CareerCatalogue.Rotas[i].Days, day + 1))
-                {
-                    rota = CareerCatalogue.Rotas[i];   // the first shift is tomorrow
-                }
-            }
+            CareerRota rota = CareerCatalogue.FirstRotaOn(TimeHelper.CurrentDay + 1);   // the first shift is tomorrow
             _career.SignOn(_testEmployer, rota, true);
         }
 

@@ -291,6 +291,7 @@ namespace RealLifeOverhaul
             CheckCrimes(src, locale);
             CheckContacts(src);
             GigCheck.Run(Fail, locale);
+            GigCheck.Sources(Fail, locale, src);
             SavedShiftCheck.Run(Fail, locale, src);
             JobOfficeCheck.Run(Fail, src);
             OptionsCheck.Run(Fail, locale, src);

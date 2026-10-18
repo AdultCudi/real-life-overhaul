@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
             {
                 Venue = spot.Front,
                 VenueName = JobSites.NameOf(spot),
-                Fee = Mathf.RoundToInt(CareerCatalogue.GigFee * Mathf.Clamp(Settings.JobPay, 25, 300) / 100f)
+                Fee = VenueFee()
             };
             _gigDay = TimeHelper.CurrentDay;
             if (!test)
@@ -72,7 +72,10 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        public int GigFee => _gig != null ? _gig.Fee : Mathf.RoundToInt(CareerCatalogue.GigFee * Mathf.Clamp(Settings.JobPay, 25, 300) / 100f);
+        /// <summary>The booked set's fee, or what a set booked now would pay.</summary>
+        public int GigFee => _gig != null ? _gig.Fee : VenueFee();
+
+        private static int VenueFee() => CareerCatalogue.VenueFee(Settings.JobPay, BusinessGame.RevenueBusinesses());
 
         // The player has come to the venue on foot: the set begins, where they stand.
         private void Gig(Vector3 player, bool free)
