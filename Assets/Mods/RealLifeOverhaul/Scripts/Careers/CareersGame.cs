@@ -9,15 +9,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Everything education and careers read from or do to the game, in one place.
-    ///
-    /// READ: the day, hour and minute; the player's cash and energy; where the player is (inside the game's school, a
-    /// hospital or clinic, a home of their own, a building at an address); whether the game's own activity panel or time
-    /// skip is busy.
-    ///
-    /// DONE, each the game's own way: money is the mod's own dated transactions (GameManager.ChangeMoneySafe); a class or
-    /// homework spends energy as the game's own studying does (EnergyHelper's spender, at the game's "low" rate, for as
-    /// long as it runs); the mood is one of the mod's happiness modifiers. Nothing here runs by itself.
+    /// Everything education and careers read from or do to the game, in one place: the clock, the player's cash and energy,
+    /// where the player is, whether the game's activity panel or time skip is busy; money as the mod's own dated
+    /// transactions, a class's energy spent at the game's own studying rate, the mood as one of the mod's happiness
+    /// modifiers. Nothing here runs by itself.
     /// </summary>
     internal static class CareersGame
     {
@@ -50,8 +45,6 @@ namespace RealLifeOverhaul.Careers
                 return 0;
             }
         }
-
-        // ---------------------------------------------------------------- where the player is
 
         private static Building Inside()
         {
@@ -195,8 +188,6 @@ namespace RealLifeOverhaul.Careers
             number = _schoolNumber;
             return !string.IsNullOrEmpty(street);
         }
-
-        // ---------------------------------------------------------------- money, energy and mood
 
         /// <summary>A charge of whole money with a line of the bank history naming what for. False if there was not the money.</summary>
         public static bool Charge(int whole, string key, string name)

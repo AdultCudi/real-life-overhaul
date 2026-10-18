@@ -187,8 +187,6 @@ namespace RealLifeOverhaul.Careers
 
         private static string Bp(int bp) => (bp / 100f).ToString("0.#", Inv) + "%";
 
-        // ---------------------------------------------------------------- shared
-
         /// <summary>The courses of the kinds given, each with its fee at today's prices: "First aid (120), Barista (150)".</summary>
         private static string Courses(params CourseKind[] kinds)
         {

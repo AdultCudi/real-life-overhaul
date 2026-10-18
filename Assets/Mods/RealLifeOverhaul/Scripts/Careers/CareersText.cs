@@ -45,8 +45,6 @@ namespace RealLifeOverhaul.Careers
 
         public static string Day(int day) => FinanceText.Day(day);
 
-        // ---------------------------------------------------------------- studying
-
         public static string Course(int id)
         {
             CourseDef c = StudyCatalogue.Find(id);
@@ -109,8 +107,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>Points of a skill kept in thousandths, whole: "42".</summary>
         public static string Points(int thousandths) => (thousandths / 1000).ToString(Inv);
-
-        // ---------------------------------------------------------------- working
 
         /// <summary>An employer's name as kept: a name of the city's, or "@" and a locale key for one of the mod's (the public sector), which follows the language.</summary>
         public static string Employer(string kept)
