@@ -12,6 +12,7 @@ namespace RealLifeOverhaul
         public string[] Match;         // parts of the game's business type names that will do as the venue; null = anywhere
         public int Cost;               // per head
         public int Minutes;            // game minutes spent inside
+        public bool SeatedRest;        // rested as in the game's own cinema seat through the time skip (before the settlement)
         public int From, To;           // hours of the day it can be agreed for (To may be past midnight: 27 = 3 in the morning)
         public float Energy;           // of the game's hundred, to the player
         public float Familiarity, Affection, Trust;   // points it is worth, before liking and how it went
@@ -289,6 +290,7 @@ namespace RealLifeOverhaul
             new OutingDef
             {
                 Kind = PlanKind.Cinema, Name = "reallife_social_outing_cinema", Offer = "reallife_social_offer_cinema", Match = new[] { "cinema", "theater" },
+                SeatedRest = true,
                 Cost = 18, Minutes = 130, From = 12, To = 24, Energy = 2f, Familiarity = 7f, Affection = 6f, Trust = 2f,
                 Caption = "reallife_social_tm_cinema", Transaction = "reallife_transaction_social_cinema", Memory = MemoryCode.Cinema,
                 After = new[] { "reallife_social_after_cinema_1", "reallife_social_after_cinema_2", "reallife_social_after_cinema_3" }, Invite = "reallife_social_invite_cinema"
