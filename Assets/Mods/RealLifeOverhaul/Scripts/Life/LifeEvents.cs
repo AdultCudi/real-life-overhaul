@@ -159,14 +159,17 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True when nothing else is demanding the player's attention.</summary>
-        public static bool IsSafeForEvent()
+        /// <summary>
+        /// True when nothing else is demanding the player's attention. A paused game counts as busy unless
+        /// <paramref name="pausedIsFine"/>: an event must not start while the clock stands, but the player may open a list.
+        /// </summary>
+        public static bool IsSafeForEvent(bool pausedIsFine = false)
         {
             var uis = InstanceBehavior<UIs>.Instance;
             return uis != null && !LoadScene.isLoading && !GameMembers.PlayerDead && !EnergyHelper.goingToHospital
                    && !uis.timeMachine.isRunning && !PlayerActivityUI.IsPanelOpen && !HudConfirm.isOpen
                    && DialogController.current == null && !CasinoBoatManager.IsOnCasinoBoat && !SubwaySystem.IsRiding
-                   && !uis.gameSpeed.Paused;
+                   && (pausedIsFine || !uis.gameSpeed.Paused);
         }
 
         /// <summary>Options-menu test button: fires one event right away, ignoring the hourly roll.</summary>

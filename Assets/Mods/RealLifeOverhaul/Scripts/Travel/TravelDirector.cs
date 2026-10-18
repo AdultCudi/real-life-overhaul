@@ -320,7 +320,7 @@ namespace RealLifeOverhaul
             save.modData[TravelState.SaveKey] = TravelState.Write();
         }
 
-        public bool CanSeclude(out TestRefusal why)
+        public bool CanSeclude(out TestRefusal why, bool pausedIsFine = false)
         {
             why = TestRefusal.None;
             if (!_loaded || _failed || SaveGameManager.Current == null || PlayerHelper.PlayerController == null)
@@ -331,7 +331,7 @@ namespace RealLifeOverhaul
             {
                 why = TestRefusal.Indoors;
             }
-            else if (PlayerHelper.IsUsingVehicle || JobDirector.OnShift || !LifeEvents.IsSafeForEvent() || _skipping)
+            else if (PlayerHelper.IsUsingVehicle || JobDirector.OnShift || !LifeEvents.IsSafeForEvent(pausedIsFine) || _skipping)
             {
                 why = TestRefusal.SceneActive;
             }
