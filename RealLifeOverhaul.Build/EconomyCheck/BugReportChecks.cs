@@ -319,7 +319,7 @@ internal static partial class Program
             "bug report: the mod's lines are heard once, on any thread, through the one listener");
         string layout = File.ReadAllText(System.IO.Path.Combine(root, @"Meta\OptionsLayout.cs"));
         string tree = File.ReadAllText(System.IO.Path.Combine(root, @"Meta\OptionsTree.cs"));
-        string captions = File.ReadAllText(System.IO.Path.Combine(root, @"Meta\OptionsCaptions.cs"));
+        string captions = File.ReadAllText(System.IO.Path.Combine(root, @"Meta\OptionsLayout.Captions.cs"));
         string guide = File.ReadAllText(System.IO.Path.Combine(root, @"Meta\Guide.cs"));
         string start = Between(tree, "G(StartId,", ").Flat(),");
         Check(layout.Contains("new ButtonOption(\"reallife_meta_bug_button\", BugReport.Press)") && start.Contains("S(\"help\").Buttons(\"reallife_meta_bug_button\")")
