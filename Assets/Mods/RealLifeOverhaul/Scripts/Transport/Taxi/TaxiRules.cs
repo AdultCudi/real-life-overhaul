@@ -3,16 +3,12 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The rules of a taxi called from the phone, in plain numbers: what the call-out costs by the hour and the
-    /// weather, what a cancelled call and a taxi nobody came to cost, how far off a taxi starts, how long it is
-    /// said to take, when a call is refused and when a taxi that is getting nowhere is planned again or given up.
-    /// Nothing of the game or the engine in it, so every rule is also run in a console test
-    /// (RealLifeOverhaul.Build/NavCheck/TaxiCheck.cs). The Guide states these numbers from here
-    /// (Meta/FeatureList.cs), and nothing else in the feature holds a number of its own for them.
+    /// The rules of a taxi called from the phone, in plain numbers: fees, start distances, waits, refusals and when a taxi
+    /// getting nowhere is planned again or given up. Nothing of the game in it, so NavCheck's TaxiCheck runs every rule;
+    /// the Guide states these numbers from here.
     /// </summary>
     public static class TaxiRules
     {
-        // ---------------------------------------------------------------- money
         public static float CallOut => Prices.At(12f);            // the call-out by day
         public static float NightCallOut => Prices.At(18f);       // ...and by night
         public const int NightFrom = 22;             // the night rate runs from 22:00
@@ -21,15 +17,14 @@ namespace RealLifeOverhaul
         public const float CancelShare = 0.5f;       // of the call-out, for a cancel once the taxi is close
         public const float NoShowShare = 0.5f;       // of the call-out, when nobody got in
 
-        // ---------------------------------------------------------------- distances and times
         public const float RoadWithin = 60f;         // metres from the caller within which there must be a lane a car can use
         public const float RoadLevel = 4f;           // ...and no more than this above or below them (a bridge overhead is not their street)
         public const float StartLeast = 250f;        // metres from the caller a taxi starts from, at least
         public const float StartMost = 450f;         // ...and at most
         public const float WetStartLeast = 400f;     // in rain or a storm fewer cabs are about: the nearest is further off
-        public const float WetStartMost = 650f;
+        public const float WetStartMost = 650f;      // metres
         public const float TestStartLeast = 70f;     // the test that brings one at once: far enough not to appear beside the player
-        public const float TestStartMost = 160f;
+        public const float TestStartMost = 160f;     // metres
         public const float RouteMost = 2.2f;         // a way round that is this many times the furthest start is no way: no taxi comes
         public const float CancelFreeBeyond = 100f;  // metres of road still to drive above which a cancel costs nothing
         public const float FarFromStop = 80f;        // metres from where it stands beyond which the caller is told where it waits
@@ -38,7 +33,6 @@ namespace RealLifeOverhaul
         public const float GraceWithin = 15f;        // metres from the taxi that count as close
         public const float Pace = 8f;                // m/s a taxi makes over a street with its junctions and lights (it cruises at 11)
 
-        // ---------------------------------------------------------------- a taxi that is getting nowhere (the bus's rules)
         public const float ReplanAfter = 40f;        // seconds without a metre gained, out of view, before it is planned again
         public const float ReplanBeyond = 110f;      // ...and only with more than this much road still to drive
         public const float GiveUpAfter = 150f;       // seconds without a metre gained before it is given up
@@ -120,10 +114,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The wait as the dispatcher says it: minutes of the game's clock, rounded up, never less than one. The
-        /// game's clock runs a minute a real second at its own setting (GameManager.RunMainGameTick), so a taxi that
-        /// takes 40 s is 40 minutes away by the clock the player sees, as a bus is on its stop's panel.
-        /// <paramref name="gameMinutesPerSecond"/> is that setting (1 at its default; what cannot be read counts as 1).
+        /// The wait as the dispatcher says it: game minutes, rounded up, at least one. The game's clock runs
+        /// <paramref name="gameMinutesPerSecond"/> minutes a real second (1 by default, and when it cannot be read).
         /// </summary>
         public static int Minutes(float metres, float gameMinutesPerSecond)
         {
@@ -133,8 +125,7 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether a call is taken, from what is known before any road is looked at: the first of these that holds
-        /// is the one said. The road and the taxi are asked after them, and only if they all pass (that costs a search).
+        /// Whether a call is taken, from what is known before any road is searched; the first reason that holds is the one said.
         /// </summary>
         public static Refusal Refuse(bool on, bool riding, bool held, bool onItsWay, bool inVehicle, bool indoors)
         {
