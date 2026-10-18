@@ -5,15 +5,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger in a Going Public session (Core/SharedCity, part L; the lines are LedgerShare's): one paper for the
-    /// city. The host prints the morning's edition as alone and it goes to every guest whole when it is printed (and to a
-    /// guest that says hello); a guest that follows prints none of its own and reads the host's. What would be news on a
-    /// guest's street (a crash, an arrest, a crime) is reported to the host's paper as it happens, and a guest's own pieces
-    /// of the morning (their day in court, a graduation, their business, Flare) go to the host for that day's edition,
-    /// which the host prints again with them (once in twenty seconds at most). So the paper has every player's stories.
-    ///
-    /// COST: nothing per frame. The host: the edition's text when it is printed (some ten kilobytes, deflated by the shared
-    /// city). A guest: a line for each report as it happens; its pieces once a morning.
+    /// The director's Going Public part (Core/SharedCity, part L): one paper for the city. The host prints the edition
+    /// and sends it whole; a guest that follows prints none and reads the host's. A guest sends the host what would be
+    /// news on its street as it happens, and its own pieces of the morning, which the host prints again into today's
+    /// edition (at most once in twenty seconds). The cost: nothing per frame; the host's edition, some ten kilobytes,
+    /// each time it is printed.
     /// </summary>
     public sealed partial class LedgerDirector
     {
@@ -24,7 +20,7 @@ namespace RealLifeOverhaul.Ledger
         private int _guestPiecesDay = -1, _sentPiecesDay = -1;
         private float _reprintAt = -1f;
         private bool _hostEdition;                 // a guest: the edition shown is the host's
-        private LedgerEdition _ownToday;           // ...and this player's own of the same day, kept for when it stops following that day
+        private LedgerEdition _ownToday;           // and its own of that day, back if it stops following
 
         private void ShareRegister()
         {
@@ -38,7 +34,7 @@ namespace RealLifeOverhaul.Ledger
             });
         }
 
-        // A guest: the host's edition is this player's paper; the one it replaces is kept to be read again.
+        // A guest: the host's edition becomes this player's paper; the one it replaces is kept to be read again.
         private bool GuestApply(string text, bool whole)
         {
             if (!Running)
@@ -52,11 +48,11 @@ namespace RealLifeOverhaul.Ledger
             }
             if (_state.Edition != null && e.Day < _state.Edition.Day)
             {
-                return true;   // an older one than this player has: nothing to do
+                return true;   // older than the one this player has
             }
             if (_state.Edition != null && _state.Edition.Day == e.Day && !_hostEdition)
             {
-                _ownToday = _state.Edition;   // this player's own of today, printed before it followed: back if it stops following today
+                _ownToday = _state.Edition;   // back if it stops following today
             }
             _hostEdition = true;
             KeepEarlier(_state.Edition, e.Day);
@@ -67,7 +63,7 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        // The host: a guest's report for the city's paper, and a guest's own pieces for today's edition.
+        // The host: a guest's report for the city's paper, or a guest's own piece for today's edition.
         private void HostRequest(string text, string who)
         {
             if (!Running || Save == null || string.IsNullOrEmpty(text))
@@ -109,7 +105,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // No longer following: this player's own edition of today back, if the host's took its place today.
+        // No longer following: this player's own edition of today comes back.
         private void OwnAgain(int day)
         {
             if (!_hostEdition)
@@ -139,7 +135,6 @@ namespace RealLifeOverhaul.Ledger
             Print(day, hour, true);
         }
 
-        // The guests' pieces of the day in the edition being put together.
         private void GuestPiecesInto(LedgerEdition e, int day)
         {
             if (_guestPiecesDay != day || _guestPieces.Count == 0)
@@ -151,7 +146,7 @@ namespace RealLifeOverhaul.Ledger
             e.Pieces.AddRange(_taken);
         }
 
-        // A guest, once a morning: its own pieces about its player (from its own paper and the features' extras) to the host.
+        // A guest, once a morning: its own pieces about its player go to the host.
         private void GuestPieces(int day, int hour)
         {
             if (_sentPiecesDay == day || hour < LedgerCatalogue.DeliveryHour)
@@ -187,15 +182,15 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// Something the paper would print happened here (Social/News, through the wiring): on a guest that follows the host's
-        /// paper it goes to the host's, so that the city's one paper has it. Nothing otherwise. A line, as it happens.
+        /// Something the paper would print happened here: on a guest following the host's paper it goes to the host.
+        /// Called as it happens.
         /// </summary>
         public void GuestReport(int kind, float x, float z, string detail, int amount)
         {
             string line = Running && SharedCity.Follows(LedgerShare.Part) ? LedgerShare.AskReport(kind, x, z, detail, amount) : null;
             if (line != null)
             {
-                SharedCity.Ask(LedgerShare.Part, line);   // (the city's kinds only: the player's own go as pieces about them)
+                SharedCity.Ask(LedgerShare.Part, line);   // the city's kinds only: the player's own go as pieces
             }
         }
     }

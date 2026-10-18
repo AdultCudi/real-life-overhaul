@@ -120,10 +120,10 @@ internal static partial class Program
     {
         // Taken out at ten in the morning on day 5, after that morning's round: the first paper comes on day 6.
         var s = new LedgerState { LastMorning = 5 };
-        Check(LedgerRules.CanSubscribe(s) && LedgerRules.Subscribe(s, 5, 10, out bool pay) && pay, "a subscription can be taken out, and the first week is paid for at once");
+        Check(LedgerRules.CanSubscribe(s) && LedgerRules.Subscribe(s, out bool pay) && pay, "a subscription can be taken out, and the first week is paid for at once");
         LedgerRules.Start(s, 5, 10);
         Check(s.Subscribed && !s.Cancelled && s.PaidUntil == 12 && s.Weeks == 1 && s.Since == 5, "taken out on day 5 after the round: seven papers, days 6 to 12 (paid until " + s.PaidUntil + ")");
-        Check(!LedgerRules.Subscribe(s, 5, 11, out pay) && !pay, "a second subscription is not taken out on top of one that runs");
+        Check(!LedgerRules.Subscribe(s, out pay) && !pay, "a second subscription is not taken out on top of one that runs");
         int charged = 0;
         Func<bool> payWeek = () => { charged++; return true; };
         int delivered = 0;
@@ -153,7 +153,7 @@ internal static partial class Program
         var again = new LedgerState { LastMorning = 30 };
         LedgerRules.Start(again, 30, 9);
         LedgerRules.Cancel(again);
-        Check(LedgerRules.Subscribe(again, 32, 9, out pay) && !pay && !again.Cancelled && again.Subscribed, "a cancelled subscription is taken up again with nothing to pay until its week is over");
+        Check(LedgerRules.Subscribe(again, out pay) && !pay && !again.Cancelled && again.Subscribed, "a cancelled subscription is taken up again with nothing to pay until its week is over");
 
         // Before the round: the first paper is this morning's.
         var early = new LedgerState { LastMorning = 39 };

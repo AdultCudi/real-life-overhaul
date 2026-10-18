@@ -8,21 +8,23 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The copy at home as a thing the player can point at, the way the game's own objects are (as Transport/TransitPointer
-    /// and Home/HomeOffers do it): a trigger box on the game's layer for interactive items with this component on it. The
-    /// game's pointer outlines the paper, shows "The City Ledger" with the call to action in the game's blue under it, and
-    /// a left click opens the page. The box is a trigger, so it is hit by the pointer's ray and by nothing else. It has no
-    /// Update: the game asks it only when the pointer comes onto it, leaves it or clicks.
+    /// The copy at home as a thing the player can point at, as the game's own objects are (and
+    /// Transport/TransitPointer): a trigger box on the game's layer for interactive items. The game's pointer outlines
+    /// the paper with its call to action, and a left click opens the page. The cost: nothing per frame; the game calls
+    /// it only when the pointer comes onto it, leaves it or clicks.
     /// </summary>
     public sealed class LedgerPointer : EntityController
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerPointer", typeof(LedgerPointer));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerPointer", typeof(LedgerPointer));
 
         public const string Header = "reallife_ledger_cta_header";
 
         private int[] _layers;
 
-        /// <summary>A pointer under the paper: a trigger box of the given middle and size in the paper's own axes. Null if the game has no layer for it.</summary>
+        /// <summary>
+        /// A pointer under the paper: a trigger box of the given middle and size in the paper's own axes. Null if the
+        /// game has no layer for it.
+        /// </summary>
         public static LedgerPointer Make(Transform paper, Vector3 centre, Vector3 size)
         {
             int layer = LayerMask.NameToLayer("InteractiveItems");
@@ -58,8 +60,8 @@ namespace RealLifeOverhaul.Ledger
             return pointer;
         }
 
-        // The game's own Awake puts the object on the interactive layer (it is there already) and its Start reads places to
-        // walk to that an object placed by the game has; neither is wanted here.
+        // The game's own Awake puts the object on the interactive layer (it is there already) and its Start reads
+        // places to walk to that an object placed by the game has; neither is wanted here.
         public override void Awake()
         {
         }
@@ -117,7 +119,7 @@ namespace RealLifeOverhaul.Ledger
 
         public override void OnDestroy()
         {
-            OverlayGuard.Release(this);   // (the game's own lets the card go only while it is on screen)
+            OverlayGuard.Release(this);   // the game's own lets the card go only while it is on screen
             if (!GameManager.isCitySceneBeingUnloaded && MouseController.currentTargetEntity == this)
             {
                 MouseController.ResetCurrentEntitySelected(this);
@@ -126,9 +128,8 @@ namespace RealLifeOverhaul.Ledger
     }
 
     /// <summary>
-    /// The one entry the paper adds to the game's list of calls to action (CtaManager.CtaBehaviors, private: reached by
-    /// reflection as Home/HomeOffers does). Asked by the game for whatever the pointer is on: a type test, unless it is the
-    /// paper's pointer. Taken out again when the paper stands down.
+    /// The paper's entry in the game's list of calls to action (CtaManager.CtaBehaviors, private: reached by reflection
+    /// as Home/HomeOffers does). It answers only for the paper's pointer; taken out when the wiring is taken down.
     /// </summary>
     public static class LedgerCta
     {
@@ -136,7 +137,7 @@ namespace RealLifeOverhaul.Ledger
 
         private sealed class Behaviour : ICtaBehavior
         {
-            private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerCta.Behaviour", typeof(Behaviour));   // the game's calls of it (Core/Guard)
+            private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerCta.Behaviour", typeof(Behaviour));
 
             public override bool ShouldShow(EntityController entityController)
             {
@@ -176,7 +177,10 @@ namespace RealLifeOverhaul.Ledger
         private static List<ICtaBehavior> _list;
         private static bool _failed;
 
-        /// <summary>Adds the entry, once. False if the game's list could not be reached (said once in Player.log): the copy is then not a click away.</summary>
+        /// <summary>
+        /// Adds the entry, once. False if the game's list could not be reached (said once in Player.log): the copy is
+        /// then not a click away.
+        /// </summary>
         public static bool Install()
         {
             if (_behaviour != null)
@@ -189,7 +193,7 @@ namespace RealLifeOverhaul.Ledger
             }
             try
             {
-                FieldInfo field = GameContract.CtaBehaviours.Field;   // (resolved once: Core/GameContract)
+                FieldInfo field = GameContract.CtaBehaviours.Field;
                 _list = field != null ? field.GetValue(null) as List<ICtaBehavior> : null;
                 if (_list == null)
                 {

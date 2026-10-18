@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Ledger
 {
+    /// <summary>The director's test buttons.</summary>
     public sealed partial class LedgerDirector
     {
-        // ---------------------------------------------------------------- the test buttons
 
-        /// <summary>Test button: today's paper opened whatever copy the player has (if there is no edition yet, one is put together now).</summary>
+        /// <summary>Test button: today's paper opened whatever copy the player has; an edition is put together if there is none yet.</summary>
         public void TestOpen()
         {
             const string Test = "Open the City Ledger";
@@ -29,10 +29,7 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info(Test + " test: the edition of day " + _state.Edition.Day + " is open (" + _state.Edition.Pieces.Count + " pieces, " + _state.Edition.Quotes.Count + " companies).");
         }
 
-        /// <summary>
-        /// Test button: today's paper written again (the city's paper has just been written again by the button's other half,
-        /// Social) and a copy left inside the door of the home, as a subscriber's is: nothing is charged.
-        /// </summary>
+        /// <summary>Test button: today's paper written again (Social has just written the city's again) and left at the door, free.</summary>
         public void TestDeliver()
         {
             const string Test = "Deliver the City Ledger";
@@ -52,11 +49,7 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info(Test + " test: the edition of day " + _state.Edition.Day + " is at the door of " + HomeName + " (" + _state.Edition.Pieces.Count + " pieces).");
         }
 
-        /// <summary>
-        /// Test button: today's edition of every Newsstand title comes to the phone now, whatever the subscriptions and the
-        /// connection (nothing is charged), and the app opens on the City Ledger. If there is no edition yet, one is put
-        /// together now.
-        /// </summary>
+        /// <summary>Test button: today's edition of every title comes to the phone free, and Newsstand opens on the City Ledger.</summary>
         public void TestOnline()
         {
             const string Test = "Newsstand's editions";
@@ -92,7 +85,7 @@ namespace RealLifeOverhaul.Ledger
                          + " pieces); Newsstand is open on the City Ledger.");
         }
 
-        /// <summary>Test button: a newspaper kiosk on the nearest stretch of shopfront round the player (not kept in the save).</summary>
+        /// <summary>Test button: a kiosk on the nearest shopfront round the player, not kept in the save.</summary>
         public void TestKiosk()
         {
             const string Test = "Place a newspaper kiosk";
@@ -133,7 +126,7 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info(Test + " test: the kiosks near the home are looked for again over the next seconds.");
         }
 
-        /// <summary>Test button: what the tests put in the street goes (the test kiosk).</summary>
+        /// <summary>Test button: the test kiosk goes.</summary>
         public void TestBack()
         {
             if (_kiosks != null && _kiosks.TestBack())

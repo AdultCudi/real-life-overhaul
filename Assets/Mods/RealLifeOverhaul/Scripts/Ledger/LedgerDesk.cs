@@ -7,11 +7,9 @@ using Localizor;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger's subscriptions desk: what a call to the phone's City Ledger contact is (Social/SocialPhone asks for
-    /// its first line through the wiring). It offers home delivery at today's price, a week at a time, to the player's home;
-    /// takes it out (the first week paid at once), says how it stands, cancels it (the paper still comes until the last day
-    /// paid for) and takes a cancelled one up again. Without a home there is nothing to deliver to, and it says so. The
-    /// game's own dialogue with its own buttons; the money goes through the director.
+    /// The City Ledger's subscriptions desk: a call to the phone's City Ledger contact (Social/SocialPhone asks for its
+    /// first line through the wiring). It offers home delivery a week at a time, takes it out, says how it stands,
+    /// cancels it and takes a cancelled one up again, in the game's own dialogue; the money goes through the director.
     /// </summary>
     public static class LedgerDesk
     {

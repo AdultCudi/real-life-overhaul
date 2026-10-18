@@ -4,13 +4,12 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger's rules: what kind of piece a key is, how a piece's words divide into a kicker, a headline and its
-    /// story, the subscription's round (a payment a week, a paper every morning), the copy the player has and where it can
-    /// be read, and which pieces go where on the page. Game-free: the checks run it as it ships.
+    /// The City Ledger's rules: what kind of piece a key is, how a piece's words divide into a kicker, a headline and
+    /// its story, the subscription's round (a payment a week, a paper every morning), the copy the player has and where
+    /// it can be read, and which pieces go where on the page. Game-free: the checks run it as it ships.
     /// </summary>
     public static class LedgerRules
     {
-        // ---------------------------------------------------------------- what a piece is
 
         /// <summary>The kind a key is, from the catalogue's table; a key it does not know is a piece for the city's pages.</summary>
         public static LedgerCatalogue.Kind KindOf(string key)
@@ -29,7 +28,7 @@ namespace RealLifeOverhaul.Ledger
             return new LedgerCatalogue.Kind(key ?? string.Empty, LedgerSection.City, LedgerCatalogue.UnknownWeight, null);
         }
 
-        /// <summary>A piece for a key and its names, sorted into its section with its weight and headline; null for one the page leaves out.</summary>
+        /// <summary>A piece for a key and its names, in its section with its weight and headline; null for one the page leaves out.</summary>
         public static LedgerPiece Piece(string key, string[] data, int extraWeight = 0)
         {
             LedgerCatalogue.Kind kind = KindOf(key);
@@ -40,13 +39,11 @@ namespace RealLifeOverhaul.Ledger
             return new LedgerPiece(kind.Section, kind.Weight + extraWeight, key, kind.Head, data);
         }
 
-        // ---------------------------------------------------------------- a piece's words
-
         /// <summary>
-        /// Divides the words of a piece (already filled in) the way the paper writes them: a kicker in capitals ending with a
-        /// colon ("COURT:", "WEATHER:", "ON THIS DAY:"), then a headline that opens with a word in capitals and ends at the
-        /// first full stop ("SERIOUS CRASH ON Elm Street."), then the story. A piece without them is a brief: all of it is the
-        /// story. The headline comes back as written; the page shows headlines in capitals.
+        /// Divides the words of a piece (already filled in) the way the paper writes them: a kicker in capitals ending
+        /// with a colon ("COURT:", "WEATHER:", "ON THIS DAY:"), then a headline that opens with a word in capitals and
+        /// ends at the first full stop ("SERIOUS CRASH ON Elm Street."), then the story. A piece without them is a
+        /// brief: all of it is the story. The headline comes back as written; the page shows headlines in capitals.
         /// </summary>
         public static void Split(string text, out string kicker, out string headline, out string body)
         {
@@ -164,8 +161,6 @@ namespace RealLifeOverhaul.Ledger
             return words;
         }
 
-        // ---------------------------------------------------------------- the subscription
-
         /// <summary>The first morning a subscription taken out now is delivered: today if the round has not been yet, else tomorrow.</summary>
         public static int FirstDelivery(LedgerState s, int day, int hour)
         {
@@ -179,10 +174,10 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// A subscription is taken out, its first week paid for (by the caller, before this): seven mornings from the first
-        /// delivery. A cancelled one that still runs is taken up again instead, with nothing to pay now. True if it changed.
+        /// Whether a subscription can be taken out now; a cancelled one that still runs is taken up again with nothing
+        /// to pay (payNow false). True if it changed.
         /// </summary>
-        public static bool Subscribe(LedgerState s, int day, int hour, out bool payNow)
+        public static bool Subscribe(LedgerState s, out bool payNow)
         {
             payNow = false;
             if (s.Subscribed && s.Cancelled)
@@ -209,7 +204,10 @@ namespace RealLifeOverhaul.Ledger
             s.Weeks++;
         }
 
-        /// <summary>The subscription is cancelled: the paper still comes until the last day paid for. False if there is none, or it is cancelled already.</summary>
+        /// <summary>
+        /// The subscription is cancelled: the paper still comes until the last day paid for. False if there is none, or
+        /// it is cancelled already.
+        /// </summary>
         public static bool Cancel(LedgerState s)
         {
             if (!s.Subscribed || s.Cancelled)
@@ -221,10 +219,10 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// The morning's round, once a day when the paper is out. A morning the round did not come (the paper was switched
-        /// off, or days went by at once) is never charged: the days paid for move on by as many. When the days paid for are
-        /// over, a cancelled subscription ends; any other pays a week (<paramref name="payWeek"/>, which charges the player and
-        /// says whether it could) or lapses.
+        /// The morning's round, once a day when the paper is out. A morning the round did not come (the paper off, days
+        /// gone by at once) is never charged: the days paid for move on by as many. When they are over a cancelled
+        /// subscription ends; any other pays a week (<paramref name="payWeek"/> charges the player and says whether it
+        /// could) or lapses.
         /// </summary>
         public static LedgerMorning Morning(LedgerState s, int day, Func<bool> payWeek)
         {
@@ -266,8 +264,6 @@ namespace RealLifeOverhaul.Ledger
         {
             return s.Subscribed && !s.Cancelled ? s.PaidUntil + 1 : 0;
         }
-
-        // ---------------------------------------------------------------- the copy
 
         /// <summary>Today's paper is left inside the door of the home.</summary>
         public static void Deliver(LedgerState s, int day)
@@ -315,11 +311,9 @@ namespace RealLifeOverhaul.Ledger
             return hour >= LedgerCatalogue.KioskOpenHour && hour < LedgerCatalogue.KioskCloseHour;
         }
 
-        // ---------------------------------------------------------------- the page
-
         /// <summary>
-        /// The pieces of a section, the heaviest first (in the order they came where two weigh the same), leaving out one
-        /// piece (the lead, printed on its own) and any already printed elsewhere.
+        /// The pieces of a section, the heaviest first (as they came where two weigh the same), leaving out one piece
+        /// (the lead, printed on its own).
         /// </summary>
         public static void Of(LedgerEdition e, LedgerSection section, LedgerPiece except, List<LedgerPiece> into)
         {
@@ -335,7 +329,10 @@ namespace RealLifeOverhaul.Ledger
             Heaviest(into);
         }
 
-        /// <summary>The front page's lead: the heaviest piece of the news sections (the city, the economy, business, the markets); null if there is none.</summary>
+        /// <summary>
+        /// The front page's lead: the heaviest piece of the news sections (the city, the economy, business, the
+        /// markets); null if there is none.
+        /// </summary>
         public static LedgerPiece Lead(LedgerEdition e)
         {
             LedgerPiece best = null;
@@ -370,7 +367,10 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>The companies that rose most (up) or fell most (down) on the session, at most so many, the largest move first; ties by name.</summary>
+        /// <summary>
+        /// The companies that rose most (up) or fell most (down) on the session, at most so many, the largest move
+        /// first; ties by name.
+        /// </summary>
         public static void Movers(LedgerEdition e, bool up, int most, List<LedgerQuote> into)
         {
             into.Clear();

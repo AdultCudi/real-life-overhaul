@@ -6,13 +6,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// Newsstand, the City Ledger online: the paper and three other titles read on the phone by subscription
-    /// (NewsstandApp), each written from the same morning's edition with its own focus (NewsstandCatalogue). Once a
-    /// second, while today's edition is out and a subscription still has today to settle, the round looks at the
-    /// internet at the player's homes (Utilities, through the wiring): with a working connection today's editions come
-    /// to the phone and a week that is over is paid for; without one nothing comes and nothing is charged until it is
-    /// back (NewsstandRules.Morning). The editions of the last few mornings are kept in the save to be read again; what
-    /// came can be read anywhere, connection or not. Nothing here runs per frame.
+    /// The director's Newsstand part: the online subscriptions, today's editions coming over the home's connection
+    /// (<see cref="NewsstandRules.Morning"/>) and the editions kept to be read again. Nothing here runs per frame.
     /// </summary>
     public sealed partial class LedgerDirector
     {
@@ -98,7 +93,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The edition that is no longer the latest is kept to be read again (Print, before today's takes its place).
+        // The edition being replaced is kept to be read again.
         private void KeepEarlier(LedgerEdition old, int day)
         {
             if (_online != null && old != null && old.Day != day)
@@ -106,8 +101,6 @@ namespace RealLifeOverhaul.Ledger
                 NewsstandRules.Keep(_online, old, day);
             }
         }
-
-        // ---------------------------------------------------------------- the morning's editions
 
         private void OnlineRound(int day, int hour)
         {
@@ -194,8 +187,6 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        // ---------------------------------------------------------------- the connection
-
         /// <summary>How the internet stands at the best of the player's homes, and that home's name (null for none).</summary>
         public NetState Net(out string home)
         {
@@ -237,12 +228,10 @@ namespace RealLifeOverhaul.Ledger
             return LedgerBridges.OpenUtilities != null && LedgerBridges.OpenUtilities();
         }
 
-        // ---------------------------------------------------------------- taking one out, cancelling it
-
         /// <summary>
-        /// A subscription taken out in the app: the first week paid now, today's edition the first (it comes at once if it
-        /// is out). A cancelled one is taken up again with nothing to pay (resumed). Refused without a working connection
-        /// at a home of the player's, for a title the pass already covers, or without the money.
+        /// A subscription from the app: the first week paid now and today's edition the first. A cancelled one is taken
+        /// up again with nothing to pay (<paramref name="resumed"/>). Refused without a working connection at home, for
+        /// a title the pass covers, or without the money.
         /// </summary>
         public OnlineRefusal SubscribeOnline(int sub, out bool resumed)
         {
@@ -289,8 +278,6 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info("Newsstand: the subscription to " + NewsstandCatalogue.NameKeys[sub] + " is cancelled; the last edition is on day " + _online.Subs[sub].PaidUntil + ".");
             return true;
         }
-
-        // ---------------------------------------------------------------- reading
 
         /// <summary>The edition of a day: today's (the paper's own) or one kept; null if there is none.</summary>
         public LedgerEdition OnlineEdition(int day)

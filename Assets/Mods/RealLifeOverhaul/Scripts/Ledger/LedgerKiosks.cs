@@ -9,38 +9,30 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The newspaper kiosks near the player's home: the modelled <c>newspaper_kiosk</c> on the pavement with its back a
-    /// step off a building's wall and its counter to the street, two of them within a few minutes' walk of the home's door.
-    /// They are looked for once for each home (the buildings round it, the nearest first, a few a second; the places are
-    /// kept in the save, so they stand in the same spots every time), on the pavement in front of a stretch of real wall a
-    /// few metres aside from a door (CitySpots.Shopfront, as the help-wanted boards are placed), with room for the booth and
-    /// for a customer at its sill, clear of lamp posts, benches and doors and of the other features' fixtures.
-    ///
-    /// At the counter, on foot, the game's own panel over a place (GameUi.WorldPanel) names the kiosk and has one button on
-    /// the game's interact key: buy today's paper, or read the copy already bought. It is open from 06:00 to 20:00. A kiosk
-    /// is one object with a shared mesh and material and no script; near the player on foot it is cut out of the pavement's
-    /// navigation mesh (SolidFootprint), so nobody walks through it. On the city map each is a place of the "Newspaper
-    /// kiosks" row (World/MapLinks), and the building it stands in front of lights up.
-    ///
-    /// The cost: once a second, a distance to each kiosk (two) and, while the search for a new home's kiosks is under way,
-    /// three buildings looked at (a few dozen physics and navigation queries); per frame nothing at all unless the player
-    /// was within 15 m of a kiosk at the last second's look, and then the distance to two counters and, at a counter, the
-    /// game's panel kept up to date (it rewrites nothing unless what it offers has changed). Nothing is allocated per frame.
+    /// The newspaper kiosks near the player's home: two modelled <c>newspaper_kiosk</c>s on the pavement, back to a
+    /// wall a few metres aside from a door (CitySpots.Shopfront, as the help-wanted boards are placed), within a few
+    /// minutes' walk. They are looked for once for each home, a few buildings a second, and their places kept in the
+    /// save. At the counter the game's panel over a place (GameUi.WorldPanel) sells today's paper on the interact key;
+    /// near the player on foot the booth is cut out of the navigation mesh (SolidFootprint). On the city map each is a
+    /// place (World/MapLinks).
+    /// The cost: once a second, a distance to each kiosk and, during a search, three buildings looked at (a few dozen
+    /// physics and navigation queries); per frame nothing unless the player was within 15 m of a kiosk at the last
+    /// look, then the distance to two counters and the panel kept up to date. Nothing is allocated per frame.
     /// </summary>
     public sealed class LedgerKiosks
     {
         private const string PropId = "newspaper_kiosk";
-        private const float WallGap = 0.80f;       // the wall to the kiosk's middle: its back stands 0.2 m off the wall
-        private const float CounterOut = 1.25f;    // its middle to where a customer stands: the sill reaches 0.79 m out, then a person's toes
-        private const float HalfWidth = 0.70f;     // the booth along the wall (the open shutters are thin and clear of the ground)
-        private const float HalfDepth = 0.60f;
+        private const float WallGap = 0.80f;       // metres from the wall to the kiosk's middle: its back stands 0.2 m off
+        private const float CounterOut = 1.25f;    // metres from its middle to where a customer stands
+        private const float HalfWidth = 0.70f;     // metres along the wall
+        private const float HalfDepth = 0.60f;     // metres
         private const float Aside = 4.5f;          // metres along the frontage from a building's door
-        private const float Reach = 1.3f;          // how near the customer's place the player must be for the counter's panel
-        private const float CloseBy = 15f;         // within this, at the last second's look, the counter is looked at every frame
-        private const float PanelUp = 2.05f;
-        private const int TriesPerSecond = 3;
-        private const int CandidatesMost = 80;
-        private const float RetrySeconds = 300f;
+        private const float Reach = 1.3f;          // metres from the customer's place for the counter's panel
+        private const float CloseBy = 15f;         // metres: within this at the last look, the counter is looked at every frame
+        private const float PanelUp = 2.05f;       // metres over the ground
+        private const int TriesPerSecond = 3;      // buildings looked at a second during a search
+        private const int CandidatesMost = 80;     // the nearest buildings a search looks at
+        private const float RetrySeconds = 300f;   // real seconds before a search that found nothing begins again
 
         private readonly LedgerDirector _director;
         private readonly List<Transform> _props = new List<Transform>(LedgerCatalogue.KiosksWanted);
@@ -63,8 +55,10 @@ namespace RealLifeOverhaul.Ledger
         private int _offer = -1;        // what the panel offers: 0 closed, 1 not in yet, 2 buy, 3 read, 4 too little money
         private int _keyFrame = -1;
         private bool _toldNoProp;
-        private Transform _test;        // the test button's kiosk (not in the save), while it stands
+        private Transform _test;        // the test button's kiosk, not in the save
         private float _retryAt;         // a search that found nothing is not begun again before this
+        private string _homeKey, _homeKeyStreet;   // the home's key, and the street and number it was made from
+        private int _homeKeyNumber;
 
         public LedgerKiosks(LedgerDirector director)
         {
@@ -73,12 +67,11 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// True while the counter's panel is up with its button on the game's interact key (it sells or shows the paper),
-        /// and in the frame it ran. A kiosk that is shut, or has no paper yet, leaves the key to the doors nearby.
+        /// True while the counter's panel sells or shows the paper on the interact key, and in the frame it was
+        /// pressed; a shut kiosk leaves the key to the doors nearby.
         /// </summary>
         public bool TakesInteractKey => (_offer >= 2 && _panel.Showing) || _keyFrame == Time.frameCount;
 
-        /// <summary>How many kiosks stand now.</summary>
         public int Count => _props.Count;
 
         /// <summary>A number that changes whenever the kiosks standing change (for the city map).</summary>
@@ -92,8 +85,6 @@ namespace RealLifeOverhaul.Ledger
 
         /// <summary>A kiosk's place in words: the address of the building it stands in front of.</summary>
         public string Address(int i) => _names[i];
-
-        // ---------------------------------------------------------------- once a second
 
         public void Slow(BuildingRegistration home, bool skipping)
         {
@@ -158,8 +149,6 @@ namespace RealLifeOverhaul.Ledger
             }
             _close = onFoot && nearest < CloseBy * CloseBy;
         }
-
-        // ---------------------------------------------------------------- every frame, only near a kiosk
 
         public void Frame()
         {
@@ -270,8 +259,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // ---------------------------------------------------------------- finding the places, once for a home
-
         private void Search(BuildingRegistration home, string key, LedgerState state)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -303,7 +290,7 @@ namespace RealLifeOverhaul.Ledger
             }
             if (_found.Count == 0)
             {
-                // Nowhere fits (or the walkways were not there to be asked): looked for again in a few minutes, not kept.
+                // Nowhere fits (or the walkways were not there to be asked): nothing kept, looked for again later.
                 LedgerDirector.Logger?.Info("City Ledger: no place for a newspaper kiosk was found near the home at " + home.Address.ToFormattedString() + "; looked for again later.");
                 _searchFor = null;
                 _retryAt = Time.unscaledTime + RetrySeconds;
@@ -344,24 +331,30 @@ namespace RealLifeOverhaul.Ledger
                 {
                     continue;
                 }
-                int place = _distances.Count;
-                while (place > 0 && _distances[place - 1] > sqr)
-                {
-                    place--;
-                }
-                if (place >= CandidatesMost)
-                {
-                    continue;
-                }
-                _distances.Insert(place, sqr);
-                _candidates.Insert(place, b);
-                if (_candidates.Count > CandidatesMost)
-                {
-                    _distances.RemoveAt(CandidatesMost);
-                    _candidates.RemoveAt(CandidatesMost);
-                }
+                Candidate(b, sqr, CandidatesMost);
             }
             return true;
+        }
+
+        // A building into the candidates, kept by distance, the nearest first and at most so many.
+        private void Candidate(CityBuildingController b, float sqr, int most)
+        {
+            int place = _distances.Count;
+            while (place > 0 && _distances[place - 1] > sqr)
+            {
+                place--;
+            }
+            if (place >= most)
+            {
+                return;
+            }
+            _distances.Insert(place, sqr);
+            _candidates.Insert(place, b);
+            if (_candidates.Count > most)
+            {
+                _distances.RemoveAt(most);
+                _candidates.RemoveAt(most);
+            }
         }
 
         // True once the pavement can be found at the home's door: the city's walkways are there to be asked.
@@ -431,8 +424,8 @@ namespace RealLifeOverhaul.Ledger
             return false;
         }
 
-        // The booth's footprint: its front on the pavement, its back on level ground, nothing standing in it (a lamp post, a
-        // bench, a tree), no door within reach, and nothing overhead where its roof will be (an awning, a balcony).
+        // The booth's footprint: its front on the pavement, its back on level ground, nothing standing in it (a lamp
+        // post, a bench), no door within reach, and nothing overhead where its roof will be (an awning, a balcony).
         private static bool Fits(Vector3 middle, Vector3 outward, float ground)
         {
             Vector3 right = Vector3.Cross(Vector3.up, outward);
@@ -455,8 +448,6 @@ namespace RealLifeOverhaul.Ledger
             return !Physics.CheckCapsule(middle + Vector3.up * 1.95f, middle + Vector3.up * 2.5f, 0.55f, overhead, QueryTriggerInteraction.Ignore);
         }
 
-        // ---------------------------------------------------------------- standing them, taking them away
-
         private void Stand(LedgerState state, string key)
         {
             Clear();
@@ -464,9 +455,8 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;
             }
-            // A place kept in the save is looked at once more: if its counter is no longer on the pavement (the city has
-            // changed under it), the kiosks are looked for again. Only while the pavement can be found at all (at the
-            // home's own door): before the city's walkways are there, nothing would seem to be on them.
+            // A kept place whose counter is no longer on the pavement (the city changed) starts a new search; asked
+            // only once the walkways can be found at the home's door, or nothing would seem to be on them.
             for (int i = 0; i < state.Kiosks.Count && WalkwaysThere(); i++)
             {
                 KioskSpot k = state.Kiosks[i];
@@ -533,9 +523,10 @@ namespace RealLifeOverhaul.Ledger
             _names.RemoveAt(i);
         }
 
-        // ---------------------------------------------------------------- the test button's kiosk
-
-        /// <summary>A kiosk on the nearest stretch of shopfront round a place, at once (not kept in the save). False if none fits; metres says how far was looked.</summary>
+        /// <summary>
+        /// A kiosk on the nearest shopfront round a place, at once, not kept in the save. False if none fits; metres is
+        /// how far was looked.
+        /// </summary>
         public bool TestHere(Vector3 at, out float metres)
         {
             metres = 70f;
@@ -560,13 +551,7 @@ namespace RealLifeOverhaul.Ledger
                 {
                     continue;
                 }
-                int place = _distances.Count;
-                while (place > 0 && _distances[place - 1] > sqr)
-                {
-                    place--;
-                }
-                _distances.Insert(place, sqr);
-                _candidates.Insert(place, b);
+                Candidate(b, sqr, int.MaxValue);
             }
             bool placed = false;
             for (int i = 0; i < _candidates.Count && i < 30 && !placed; i++)
@@ -580,7 +565,7 @@ namespace RealLifeOverhaul.Ledger
             }
             _candidates.Clear();
             _distances.Clear();
-            _searchFor = null;   // (a search under way for the home starts again)
+            _searchFor = null;   // a search under way starts again
             Stamp++;
             Look();
             return placed;
@@ -656,9 +641,6 @@ namespace RealLifeOverhaul.Ledger
             }
             return _homeKey;
         }
-
-        private string _homeKey, _homeKeyStreet;   // the home's key, and the street and number it was made from
-        private int _homeKeyNumber;
 
         /// <summary>A building by its address, as the mod's other features write a place: the street, a tilde, the number.</summary>
         public static string Place(string street, int number)
