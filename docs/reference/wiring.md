@@ -150,6 +150,8 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 | `TravelBridges.Transport`, `Leisure` | nobody | there is no coach and no staged golf or dinner |
 | `GarageBridges.RoadIsWet` | `Wiring.LifeLinks` | the game's rain or `Events.Weather.Sky` |
 | `DrivingBridges.LiftParts`, `LayParts` | `Wiring.DrivingLinks` | `GarageCar.LiftHandling` and `LayHandling`: the parts off before the handling changes a car, back on top after (nothing with no build) |
+| `HomeBridges.Sheltered` | `Wiring.LifeLinks` | up in a hotel room (`TravelState.InRoom`) counts as indoors for the rain and the cold it brings |
+| `HomeBridges.SleepingAway` | `Wiring.LifeLinks` | a night or a nap in a hotel room (`HotelStay.SleepingBed`) counts as sleep, in a bed of 50 plus the room's sleep bonus |
 | `GarageBridges.WearOf`, `InsuranceOf` | `Transport/CarOwnership`, `CarPhone` | tyres and brakes wear `1 + WearOf` times as fast; the premium is `1 + InsuranceOf` times `CarRules.Premium`, on the bill and on the Garage page |
 | `GarageBridges.ValueAdded`, `GarageSummary.Lines` | nobody | Transport has no resale; `Lines` lists every car at once, the Garage page shows one (it needs a one-car form) |
 | `GarageBridges.HasMotorcycleLicence`; `Licences.Driving.TwoWheelerOf`, `OwnsMotorbike` | `Wiring.LicenceLinks` | the motorcycle class: held or not at the sale; a motorbike is the class and a bicycle none; a save that owns one is given the licence once |

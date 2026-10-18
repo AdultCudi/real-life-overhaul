@@ -342,9 +342,15 @@ namespace RealLifeOverhaul
 
             bool atHome = HomeTidy.AtHome();
             bool inside = BuildingManager.IsInsideBuilding;
-            bool onFootOutside = !inside && !PlayerHelper.IsUsingVehicle && !UndergroundParkingManager.IsInsideParking;
+            bool sheltered = HomeBridges.Sheltered != null && HomeBridges.Sheltered();   // up in a hotel room, stood at its door
+            bool onFootOutside = !inside && !sheltered && !PlayerHelper.IsUsingVehicle && !UndergroundParkingManager.IsInsideParking;
             Doing doing = ReadDoing(player);
-            Sleep(doing, minutes, atHome);
+            int awayBed = HomeBridges.SleepingAway != null ? HomeBridges.SleepingAway() : -1;
+            if (awayBed >= 0 && doing == Doing.Nothing)
+            {
+                doing = Doing.Sleeping;   // a hotel night: the time skip is sleep, though no bed of the game's is in use
+            }
+            Sleep(doing, minutes, atHome, awayBed);
             _doing = doing;
             HomeHealth.Advance(minutes, doing, atHome, onFootOutside, _run.Active ? _run.Boost : 1f);
             _lastHunger = save.Hunger;
@@ -433,7 +439,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void Sleep(Doing doing, float minutes, bool atHome)
+        private void Sleep(Doing doing, float minutes, bool atHome, int awayBed)
         {
             if (doing == Doing.Sleeping)
             {
@@ -444,19 +450,26 @@ namespace RealLifeOverhaul
                     _bedCar = PlayerHelper.IsUsingVehicle;
                     _bedHome = atHome;
                     _bedQuality = 50;
-                    try
+                    if (awayBed >= 0)
                     {
-                        PlayerController player = PlayerHelper.PlayerController;
-                        var bed = (MouseController.currentTargetEntity as BedController)
-                                  ?? (player != null && player.Character != null ? player.Character.CurrentEntityController as BedController : null);
-                        if (bed != null && !string.IsNullOrEmpty(bed.itemName))
-                        {
-                            _bedQuality = ItemsGetter.GetByName(bed.itemName).quality;
-                        }
+                        _bedQuality = awayBed;   // no bed of the game's to read: the room says what it is
                     }
-                    catch (Exception)
+                    else
                     {
-                        _bedQuality = 50;   // a bed the game has no data for is an ordinary bed
+                        try
+                        {
+                            PlayerController player = PlayerHelper.PlayerController;
+                            var bed = (MouseController.currentTargetEntity as BedController)
+                                      ?? (player != null && player.Character != null ? player.Character.CurrentEntityController as BedController : null);
+                            if (bed != null && !string.IsNullOrEmpty(bed.itemName))
+                            {
+                                _bedQuality = ItemsGetter.GetByName(bed.itemName).quality;
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            _bedQuality = 50;   // a bed the game has no data for is an ordinary bed
+                        }
                     }
                 }
                 _slept += minutes;
