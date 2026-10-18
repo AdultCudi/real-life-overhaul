@@ -7,6 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>What a unit is dressed as.</summary>
     public enum UnitKind
     {
         Plain,      // an ordinary car driven by the mod: no lights, no siren (a fleeing suspect)
@@ -15,13 +16,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One traffic car taken out of the traffic AI and driven by the mod: an ambulance, a patrol
-    /// car, or a suspect's car. It is either spawned from the pool at the start of a route or
-    /// taken over where it stands, gets the lights, siren and body its kind calls for, has its
-    /// own EmergencyDriver, and is handed back or removed cleanly when released. The object is
-    /// created once and reused; while idle it holds nothing and costs nothing.
-    /// The unit is only the vehicle. Its crew are put on the road by whoever owns it, at the
-    /// moment it parks (see AccidentCast and RoadsideStop).
+    /// One traffic car taken from the traffic AI and driven by the mod (an ambulance, a patrol car, a suspect's car): put on the
+    /// road from the pool at the start of a route, or taken over where it stands; dressed for its kind; driven by its own
+    /// EmergencyDriver; handed back or removed cleanly. Made once and reused; idle it holds nothing. Its crew is its owner's.
     /// </summary>
     public sealed class ResponseUnit
     {
@@ -64,11 +61,7 @@ namespace RealLifeOverhaul
         /// <summary>True if the unit's car was taken away: removed by the game, or already reused by the pool.</summary>
         public bool IsLost => InUse && !TrafficTools.IsHeld(Car);
 
-        /// <summary>
-        /// Puts a vehicle of the given kind on the road some way back from the anchor waypoint
-        /// and fills Path with the road from there to the anchor. Does not start driving.
-        /// </summary>
-        /// <returns>False if there was no road, no free vehicle, or the spawn point was occupied.</returns>
+        /// <summary>Puts a vehicle of the kind on the road some way back from the anchor and fills Path to it. False with no road, no car, or no free start.</summary>
         public bool Spawn(UnitKind kind, Waypoint anchor, float routeLength, float minimumLength)
         {
             Refusal = null;
@@ -78,8 +71,7 @@ namespace RealLifeOverhaul
                 return false;
             }
 
-            // Walk the road graph backwards from the anchor, so the route there is guaranteed drivable. The walk
-            // takes a turn at random at every junction and gives up at a dead end, so a short one is tried again.
+            // Walked back from the anchor so the route is drivable; a walk turns at random and may hit a dead end, so it is tried again.
             float walked = 0f;
             for (int attempt = 0; attempt < RouteTries && walked < minimumLength; attempt++)
             {
@@ -148,8 +140,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // We drive it ourselves. A scripted route (even an empty one) also stops the game
-        // despawning it by distance and sweeping it away with ordinary traffic.
+        // A scripted route, even an empty one, stops the game despawning it by distance or sweeping it away with traffic.
         private void Hold(VehicleComponent car, UnitKind kind)
         {
             Car = car;
@@ -164,7 +155,6 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotDress = HotSpots.Slot("Traffic: ResponseUnit.Dress");
-        // Lights, siren and (police) the body. False if the vehicle cannot be made to look its part.
         private bool Dress()
         {
             using var hotSpot = HotSpots.Time(HotDress);
@@ -195,12 +185,8 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// The unit has stopped where it will stay for a while: the car is pinned in place (so
-        /// holding it costs nothing) and the siren goes quiet; the lights stay on.
-        /// This is the moment its crew steps out; the owner sees to that.
-        /// </summary>
-        /// <param name="keepSiren">Standing only for a moment with its work not done (backed away from the tape, waiting to pull out): the siren stays on.</param>
+        /// <summary>The unit stops where it will stay a while: pinned (kinematic), siren quiet, lights on; the moment its crew steps out.</summary>
+        /// <param name="keepSiren">Standing only for a moment with its work not done: the siren stays on.</param>
         public void Park(bool keepSiren = false)
         {
             if (!InUse)
@@ -251,14 +237,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Lets the car go and takes off everything that was put on it. Safe to call in any
-        /// state, including when the car has already been removed or reused by the game.
-        /// </summary>
+        /// <summary>Lets the car go and takes off everything put on it; safe in any state, even with the car removed or reused by the game.</summary>
         /// <param name="resumeTraffic">False when traffic itself has been shut down (indoors, fast-forward).</param>
         /// <param name="remove">Take the car off the road instead of letting it drive away.</param>
-        /// <param name="quiet">Drive away with the lights on but the siren off (a chase called off).</param>
-        /// <param name="rolling">It goes back to traffic at the speed it has, instead of from rest (TrafficTools.ReturnToTraffic says when that is sound).</param>
+        /// <param name="quiet">Drive away with the lights on but the siren off.</param>
+        /// <param name="rolling">Back to traffic at the speed it has (TrafficTools.ReturnToTraffic says when that is sound).</param>
         public void Release(bool resumeTraffic, bool remove, bool quiet = false, bool rolling = false)
         {
             if (!InUse)
@@ -271,30 +254,7 @@ namespace RealLifeOverhaul
             // (Read before the driver is stopped, which leaves the body with no motion at all.)
             Vector3 carry = rolling && drivesOff && car != null && car.rb != null && !car.rb.isKinematic ? car.rb.velocity : Vector3.zero;
 
-            if (held)
-            {
-                Driver.Stop();
-            }
-            else
-            {
-                Driver.Forget();
-            }
-
-            if (car != null)
-            {
-                if (Parked)
-                {
-                    car.rb.isKinematic = _wasKinematic;
-                }
-                if (car.presetPath == _preset)
-                {
-                    car.presetPath = null;
-                }
-            }
-            if (_rescue != null)
-            {
-                _rescue.enabled = true;
-            }
+            Unhold(car, held);
 
             // A unit that drives away keeps its lights and siren for a few seconds, and a patrol
             // car keeps its police body until the game takes the car off the road (the body
@@ -334,30 +294,15 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    // Towed, no longer needed, or traffic has shut down around it: a car left
-                    // behind here would sit on the road for good.
+                    // Towed, not needed or traffic shut down: a car left here would sit on the road for good.
                     TrafficTools.Remove(car, Label());
                 }
             }
 
-            Car = null;
-            _kit = null;
-            _body = null;
-            _siren = null;
-            _rescue = null;
-            InUse = false;
-            Parked = false;
-            Path.Clear();
+            Clear();
         }
 
-        /// <summary>
-        /// Lets go of the car where it stands for another holder to take in the same moment (an accident scene
-        /// takes a car that has just crashed as one of its wrecks). The driver is stopped, what this unit put on the
-        /// car comes off, and the car is left exactly as a holder finds any car it takes: still out of the traffic
-        /// system's hands, able to move, with no scripted route of ours. Nothing is handed back to traffic and
-        /// nothing is taken off the road: whoever is given the car must do one or the other.
-        /// </summary>
-        /// <returns>The car, or null if it was no longer ours to give (the pool had reused it).</returns>
+        /// <summary>Lets go of the car where it stands for another holder to take at once, still out of traffic; null if it was no longer ours.</summary>
         public VehicleComponent HandOver()
         {
             if (!InUse)
@@ -366,6 +311,25 @@ namespace RealLifeOverhaul
             }
             VehicleComponent car = Car;
             bool held = TrafficTools.IsHeld(car);
+            Unhold(car, held);
+            if (_body != null)
+            {
+                Object.Destroy(_body);
+            }
+            if (_kit != null)
+            {
+                Object.Destroy(_kit);
+            }
+            if (held)
+            {
+                TrafficTools.Touch(car, "handed from a unit to a scene");
+            }
+            Clear();
+            return held ? car : null;
+        }
+
+        private void Unhold(VehicleComponent car, bool held)
+        {
             if (held)
             {
                 Driver.Stop();
@@ -389,18 +353,10 @@ namespace RealLifeOverhaul
             {
                 _rescue.enabled = true;
             }
-            if (_body != null)
-            {
-                Object.Destroy(_body);
-            }
-            if (_kit != null)
-            {
-                Object.Destroy(_kit);
-            }
-            if (held)
-            {
-                TrafficTools.Touch(car, "handed from a unit to a scene");
-            }
+        }
+
+        private void Clear()
+        {
             Car = null;
             _kit = null;
             _body = null;
@@ -409,7 +365,6 @@ namespace RealLifeOverhaul
             InUse = false;
             Parked = false;
             Path.Clear();
-            return held ? car : null;
         }
 
         private string Label()
@@ -417,10 +372,9 @@ namespace RealLifeOverhaul
             return Kind == UnitKind.Ambulance ? "an ambulance released" : Kind == UnitKind.Police ? "a patrol car released" : "a car the mod was driving released";
         }
 
-        // The game's traffic includes an ambulance, and nothing else will do: a van with a beacon is not one. An idle one
-        // of the pool; else one driving as plain traffic out of sight, which is taken off the road there first, that very
-        // car. Never by its model: with none idle the game's LoadVehicle would take the first ambulance of the pool whatever
-        // it is doing, the other unit's at its scene or one driving in view (TrafficTools.Load).
+        // The game's traffic has an ambulance, and nothing else will do: an idle one of the pool, else one driving as plain
+        // traffic out of sight, that very car taken off the road first. Never by its model: LoadVehicle would take any
+        // ambulance of the pool, whatever it is doing (TrafficTools.Load).
         private static GameObject PickAmbulancePrefab()
         {
             List<VehicleComponent> pool = Manager.GetVehicleList();
@@ -451,9 +405,7 @@ namespace RealLifeOverhaul
             return driving.gameObject.activeInHierarchy ? null : driving.prefab;
         }
 
-        // There is no police car in the traffic pool. The Crown-Victoria-style sedan stands in,
-        // then any other idle car that is not a taxi, ambulance, limo or truck. Only idle
-        // instances are considered, so a second patrol car never steals the first one's vehicle.
+        // No police car in the traffic pool: the TiaraVic sedan stands in, else another idle car, so two patrol cars never share one.
         private static GameObject PickPatrolPrefab()
         {
             List<VehicleComponent> pool = Manager.GetVehicleList();

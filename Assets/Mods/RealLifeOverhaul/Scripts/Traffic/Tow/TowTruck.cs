@@ -1,33 +1,19 @@
 using System.Collections.Generic;
 using GleyTrafficSystem;
-using Helpers;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city tow truck the mod sends for a wreck: a vehicle of its own, as the city bus is (<see cref="BusVehicle"/>), and
-    /// driven by the same driver (<see cref="BusDriver"/>). A cab-over rollback 8.3 m long and 2.40 m wide over its bed, on
-    /// two axles 4.6 m apart (the city bus's wheels, drawn at 0.45 m), in the livery of a firm of the city's own, with an amber
-    /// light bar on its cab. Its body, subframe, bed and lamps are the modelled ones (PropAssets, props_tow.py); without them
-    /// there is no truck (<see cref="Make"/> says so) and the wreck goes as it always has.
-    ///
-    /// IT IS SOLID, as the bus is: one box from 0.3 m over the road to its cab roof, a kinematic body on the layer
-    /// 'Vehicles', and traffic is told when it goes (Manager.TriggerColliderRemovedEvent).
-    ///
-    /// IT SHOWS WHAT IT DOES. Its wheels roll and steer, its body leans and dips on its springs, the brake lamps come on as it
-    /// slows and while it stands, from dusk its head and tail lamps are lit. At work its light bar flashes (the bar's two lit
-    /// halves in turn, with two amber lights over it so that it lights the street at night) and its hazard lamps blink. The
-    /// bed (<see cref="Deck"/>) turns and slides as TowRules.DeckPose says, the ram under it following; the winch's cable
-    /// (<see cref="Cable"/>) runs from the drum to whatever it is hooked to.
-    ///
-    /// One per <see cref="TowService"/>, made the first time a truck is sent and switched off in between. Its Update runs only
-    /// while it is out (a few transform writes; the lamps are touched only when one of them changes).
+    /// The city tow truck: a vehicle of its own, as the city bus is (<see cref="BusVehicle"/>), driven by the bus's driver
+    /// (<see cref="BusDriver"/>), its body, bed and lamps modelled (props_tow.py); without them there is no truck. One solid
+    /// kinematic box; wheels, springs, lamps, light bar, bed (<see cref="Deck"/>) and cable (<see cref="Cable"/>) all shown.
+    /// Cost: its Update runs only while it is out, a few transform writes a frame; a lamp is touched only as it changes.
     /// </summary>
     public sealed class TowTruck : MonoBehaviour, IDrivenVehicle
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TowTruck", typeof(TowTruck));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TowTruck", typeof(TowTruck));
 
         public const float AxleFront = TowRules.AxleFront;
         public const float AxleRear = TowRules.AxleRear;
@@ -49,13 +35,13 @@ namespace RealLifeOverhaul
         private static readonly Vector3 RamFoot = new Vector3(0f, 0.60f, -1.00f);     // the ram's mount on the chassis...
         private static readonly Vector3 RamHead = new Vector3(0f, 0.84f, -2.50f);     // ...and under the subframe, at rest
 
-        private const float SolidFrom = 0.30f;
-        private const float TrackFront = 0.98f;
-        private const float TrackRear = 0.90f;
-        private const float BusWheel = 0.48f;
+        private const float SolidFrom = 0.30f;      // metres over the road the solid box starts
+        private const float TrackFront = 0.98f;     // metres from the middle to a front wheel's
+        private const float TrackRear = 0.90f;      // ...and to a rear pair's
+        private const float BusWheel = 0.48f;       // metres: the city bus wheel's own radius
         private const float BlinkEvery = 0.68f;     // an indicator's cycle, seconds
         private const float BarEvery = 0.35f;       // the light bar's halves, seconds each
-        private const float CableThick = 0.018f;
+        private const float CableThick = 0.018f;    // metres
 
         private enum Light { Head, Tail, Brake, Left, Right, BarA, BarB, Count }
 
@@ -99,15 +85,10 @@ namespace RealLifeOverhaul
         /// <summary>The bed: a point of it in the truck's own space at rest, through this, is where that point of the bed is now.</summary>
         public Transform Bed => _slide;
 
-        /// <summary>The bed's pose, 0 at rest and 1 down (TowRules.DeckPose).</summary>
-        public float DeckAt => _deck;
-
         /// <summary>True when the bundle has every part of the truck: there is no truck of plain shapes.</summary>
         public static bool Available =>
             Shapes.Available && PropLibrary.Has("tow_truck") && PropLibrary.Has("tow_truck_bed") && PropLibrary.Has("tow_truck_tilt")
             && PropLibrary.Has("city_bus_wheel") && PropLibrary.Has("tow_bar_lens");
-
-        // ---------------------------------------------------------------- making it
 
         /// <summary>A tow truck, switched off, under <paramref name="parent"/>. Null if the modelled truck cannot be had.</summary>
         public static TowTruck Make(Transform parent, string name)
@@ -194,8 +175,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The city bus's wheels, drawn at the truck's size: each on a pivot that spins it, the front two on one more that
-        // steers them; the left ones turned round so that their hubs face out.
+        // The bus's wheels at the truck's size, each on a spin pivot, the front two on steering ones; the left ones turned to face out.
         private void Wheels()
         {
             PropLibrary.TryGet("city_bus_wheel", out Mesh wheel, out Material paint);
@@ -229,8 +209,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The lamps lit, each group a mesh of the glow material over its lamps in the body; the light bar's two lit halves,
-        // and the two amber lights over it, switched on only while it is at work.
+        // The lamps lit, each group one glow mesh over its lamps; the light bar's halves and amber lights only at work.
         private void Lamps()
         {
             Lamp(Light.Head, "tow_truck_light_head");
@@ -257,8 +236,6 @@ namespace RealLifeOverhaul
                 _lights[(int)which].Add(Shapes.Piece(model, _shell, mesh, paint, Vector3.zero, Vector3.one).GetComponent<Renderer>());
             }
         }
-
-        // ---------------------------------------------------------------- on the street
 
         /// <summary>Puts it on the street with its front axle at <paramref name="frontAxle"/> facing along <paramref name="heading"/>, its bed at rest.</summary>
         public void Place(Vector3 frontAxle, Vector3 heading)
@@ -340,10 +317,7 @@ namespace RealLifeOverhaul
             _hazards = on;
         }
 
-        /// <summary>
-        /// The bed to its pose t, 0 at rest and 1 down (TowRules.DeckPose): the subframe turned about its pivot, the bed slid
-        /// back along it, the ram between the chassis and the subframe stretched to reach.
-        /// </summary>
+        /// <summary>The bed to its pose t, 0 at rest and 1 down (TowRules.DeckPose): the subframe turned, the bed slid back, the ram stretched to reach.</summary>
         public void Deck(float t)
         {
             _deck = Mathf.Clamp01(t);
@@ -404,7 +378,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try

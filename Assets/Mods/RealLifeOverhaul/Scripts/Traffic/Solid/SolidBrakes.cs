@@ -4,33 +4,14 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The foot on the brake of the few traffic cars that have somebody ahead of them. The traffic system
-    /// itself knows only one way to stop for an obstacle: once its sensor box touches it, from whatever
-    /// speed, within 1.25 m (DrivingAI.GetActionValue gives StopInDistance 1.25; DriveJob.StopInDistance
-    /// multiplies the braking until that is enough). That holds a car, but it is no driver braking for
-    /// somebody they have seen from 30 m. So for at most eight cars (named by SolidStreets eight times a
-    /// second, each with the person it has ahead) the approach is shaped here, every physics step: the
-    /// braking that stops the car a gap short of the person (SolidRules.Brake), taken off its speed.
-    ///
-    /// HOW, WITHOUT TAKING THE CAR OVER. The car stays the traffic system's in every respect. Each step
-    /// that system reads the body's velocity, adds its own acceleration step to it and applies the
-    /// difference as a change of velocity (TrafficManager.FixedUpdate: AddForce(vehicleBodyForce,
-    /// VelocityChange), from DriveJob.ComputeBodyForce). Here a second change of velocity is added the
-    /// same way: the braking for one step, and the acceleration step it would otherwise add back
-    /// (VehicleComponent.GetPowerStep), never more than the speed the car has. The two add up whichever
-    /// runs first. Nothing on the car is set, so there is nothing to put back: a car that is no longer
-    /// named simply gathers speed again as the traffic system has it, and a fault here leaves every car
-    /// driving. While the traffic system is itself stopping the car (its sensor has the person, or a car,
-    /// or a wall) nothing is added: that stop is the game's, and it is what holds the car at rest.
-    ///
-    /// COST. Switched off (no physics callback at all) while no car is named. Otherwise, for each named
-    /// car each physics step: its action (a field), its velocity, rotation and position, a dozen
-    /// multiplications and one AddForce: about half a microsecond a car, four at the most for all eight.
-    /// Nothing allocated.
+    /// The foot on the brake of the few cars with somebody ahead: the traffic system stops for an obstacle only within 1.25 m
+    /// of its sensor touching it. For up to eight cars named by SolidStreets the braking that stops them a gap short
+    /// (SolidRules.Brake) is added each physics step as a change of velocity, the traffic system's own step taken back;
+    /// nothing on the car is set. Cost: disabled while none is named; else about half a microsecond a car a physics step.
     /// </summary>
     internal sealed class SolidBrakes : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "SolidBrakes", typeof(SolidBrakes));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "SolidBrakes", typeof(SolidBrakes));
 
         private struct Slot
         {
@@ -38,7 +19,7 @@ namespace RealLifeOverhaul
             public Rigidbody Body;
             public float X, Z;           // the person
             public float Nose;           // metres from the car's origin to its nose
-            public float Gap;
+            public float Gap;            // metres
             public float Power;          // the traffic system's acceleration step for this car, m/s a physics step
             public bool Owed;            // an accident is owed, and this is the car: only what the tyres give
             public bool Braking;         // the driver has begun to brake for this person
@@ -131,7 +112,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -181,8 +162,7 @@ namespace RealLifeOverhaul
                 }
                 if (speed <= 0.02f)
                 {
-                    // At rest at the gap with nothing but this holding it (the game's sensor does not have the person):
-                    // the step the traffic system is about to add is taken off, so that it stays at rest and does not creep.
+                    // At rest at the gap with only this holding it: the traffic system's next step is taken off, so it does not creep.
                     if (forward && slot.Braking && speed > -0.02f && distance <= slot.Gap + 0.5f)
                     {
                         float hold = speed + slot.Power;
@@ -201,9 +181,8 @@ namespace RealLifeOverhaul
                 {
                     off = speed;
                 }
-                // Driving on, the traffic system adds its acceleration step in the same physics step: that is taken off
-                // as well, so the two come to exactly the braking wanted (and to rest, when that is where it leads).
-                // In any other state it may be braking a little itself: then never more is taken than the car has.
+                // Driving on, the traffic system adds its acceleration step in the same physics step: that is taken off too,
+                // so the two come to exactly the braking wanted; in any other state never more is taken than the car has.
                 float change = forward ? off + slot.Power : Mathf.Min(off + slot.Power, speed);
                 body.AddForce(new Vector3(-fx * change, 0f, -fz * change), ForceMode.VelocityChange);
             }

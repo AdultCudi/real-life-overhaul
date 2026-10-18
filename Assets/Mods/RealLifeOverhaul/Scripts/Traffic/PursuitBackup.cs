@@ -5,14 +5,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The second patrol car of a long pursuit of the player. It joins once the pursuit has gone on for
-    /// a while (PursuitPace.BackupAfter), if the traffic system has a car to give: put on the road the
-    /// player has just driven, some way behind them, it follows their trail like the first and keeps a
-    /// little further back. Whoever runs the pursuit (PolicePursuit, Crime/PoliceAttention) owns one of
-    /// these, tells it of every trail point, asks it which of the two cars is nearer the player (that
-    /// one is the one that must be lost or that makes the stop) and lets it go when the pursuit ends.
-    /// It writes no fine and makes no stop of its own. Nothing here runs unless a pursuit is on, and then
-    /// it is a time comparison until the car is due.
+    /// The second patrol car of a long pursuit of the player: it joins after PursuitPace.BackupAfter if the traffic system has
+    /// a car, follows the trail a little further back, and says which of the two is nearer the player. No fine and no stop of
+    /// its own; a time comparison until it is due.
     /// </summary>
     internal sealed class PursuitBackup
     {
@@ -39,11 +34,7 @@ namespace RealLifeOverhaul
             _tried = 0;
         }
 
-        /// <summary>
-        /// Brings the second car out when it is due. Call while the first car is in pursuit; a time
-        /// comparison until then, and nothing once it is out or cannot be had.
-        /// </summary>
-        /// <returns>True at the moment it comes out, for the owner's log line.</returns>
+        /// <summary>Brings the second car out when it is due; true at the moment it does. A time comparison until then.</summary>
         public bool Tick(float now, Rigidbody quarry, float pace, float gap)
         {
             if (_unit.InUse)

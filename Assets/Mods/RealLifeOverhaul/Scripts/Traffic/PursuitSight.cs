@@ -3,17 +3,14 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Whether a patrol car still has the car it is after in sight, and for how long it has
-    /// not. Shared by both pursuits of the player (Crime/PoliceAttention after a traffic stop,
-    /// PolicePursuit after a hit-and-run), so that the same driving loses both: put buildings
-    /// between you and the patrol car and keep them there, or leave it far behind.
-    /// One line test against the buildings per look, and none while the two are close.
+    /// Whether a patrol car still has the car it is after in sight, and for how long it has not; shared by both pursuits of the
+    /// player, so the same driving loses both (buildings in between, or far behind). One line test a look, none when close.
     /// </summary>
     internal struct PursuitSight
     {
         public const float OutOfSight = 10f;   // seconds without line of sight to lose them
-        public const float FarAway = 150f;     // this far behind counts as out of sight
-        private const float Near = 30f;        // closer than this nothing is asked: they are in sight
+        public const float FarAway = 150f;     // metres behind that count as out of sight
+        private const float Near = 30f;        // metres: closer than this nothing is asked, they are in sight
 
         private static int _buildings;
         private static bool _maskRead;

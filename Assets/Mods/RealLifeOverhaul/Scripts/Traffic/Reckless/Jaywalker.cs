@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using BigAmbitions.Characters;
 using GleyTrafficSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -11,27 +9,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Somebody who steps into the road away from a crossing, in front of a car: one of the game's own
-    /// pedestrians, borrowed the way a casualty borrows one (PedestrianTakeover: its own scripts off, the
-    /// ground it may walk on widened to the road), walked across to the far pavement and given back
-    /// walking. The car is ordinary traffic and is not touched: its own sensor sees somebody in the road
-    /// and its driver brakes. Mostly that is all: a horn, a cross look, and they are across. Only if the
-    /// car really reaches them while it is still moving (CarStrikes watches that one car) are they hit,
-    /// at whatever speed it still had.
-    /// They can also be made to wait at the kerb and set off at the moment that leaves the driver a
-    /// chosen amount of road (Step.Close: a hard brake; Step.Late: none to speak of), measured from the
-    /// car's speed as it comes, or to stop in the lane and walk on when the car that stands behind them
-    /// sounds its horn (Step.Dawdle).
-    /// One for the director's own use and ten more for a test that sends a crowd across; each owned and
-    /// ticked (four times a second, a few subtractions; every frame only while one waits at the kerb for
-    /// its moment) by RecklessDrivers.
-    ///
-    /// GIVING THEM BACK. The one thing changed on the pedestrian is the kind of ground it may walk on, and
-    /// PedestrianTakeover puts that back on each of its three ways out, all of which are used here:
-    /// across, or out of time: HandBack (on the pavement again, walking on as the game's);
-    /// put away by the game meanwhile (the player went indoors, the pool took it): Forget;
-    /// hit by the car: Yield (Forget), and the casualty takes it over from there as it would any pedestrian.
-    /// The option switched off, traffic stopped, the city unloaded: End, which is one of the first two.
+    /// Somebody who steps into the road off a crossing in front of a car: one of the game's pedestrians borrowed through
+    /// PedestrianTakeover, walked to the far pavement and given back walking. The car is ordinary traffic and brakes by its
+    /// own sensor; only if it still reaches them (CarStrikes watches) are they hit. A Step can hold them at the kerb for a
+    /// chosen moment or in the lane. Ticked by RecklessDrivers four times a second, every frame while one waits at the kerb.
     /// </summary>
     internal sealed class Jaywalker
     {
@@ -40,7 +21,7 @@ namespace RealLifeOverhaul
         private const float KerbLeast = 2.5f;        // metres from the lane's middle: nearer than this they are not on a pavement
         private const float KerbMost = 7f;           // ...and further than this the road is not theirs to cross
         private const float LaneKeeps = 1.8f;        // metres a car may be off the lane's line and still be in that lane
-        private const float AngryFor = 3f;
+        private const float AngryFor = 3f;           // seconds the angry face shows
 
         private static readonly float[] Widths = { 3f, 6.5f, 10f, 13.5f };   // metres beyond the first lane's middle at which the far pavement is looked for
 
@@ -87,7 +68,6 @@ namespace RealLifeOverhaul
             return Having(pedestrian) != null;
         }
 
-        // Whoever of ours has that pedestrian in the road, or null. Twelve places at the most.
         private static Jaywalker Having(Pedestrian pedestrian)
         {
             if (pedestrian == null)
@@ -105,10 +85,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// A car that stands behind this pedestrian has sounded its horn at them: somebody who was dawdling in the
-        /// lane walks on to the far pavement. True if they were ours and did.
-        /// </summary>
+        /// <summary>A car standing behind this pedestrian has hooted: one dawdling in the lane walks on. True if they were ours and did.</summary>
         public static bool Hooted(Pedestrian pedestrian)
         {
             Jaywalker one = Having(pedestrian);
@@ -126,10 +103,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// The car has reached them: they are the game's again from this call on (ground and scripts as they were),
-        /// so that whoever throws them down takes over an ordinary pedestrian. True if this was the one in the road.
-        /// </summary>
+        /// <summary>The car has reached them: the game's again from here, so whoever throws them down takes an ordinary pedestrian.</summary>
         public static bool Yield(Pedestrian pedestrian)
         {
             Jaywalker current = null;
@@ -150,14 +124,9 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Looks for somebody walking a pavement beside a lane, away from any crossing, with a car coming up that
-        /// lane at the distance wanted (StreetRules.JaywalkCarDistance), and a pavement across the road for them to
-        /// make for. One pass over the pedestrians out and, for each who stands right, one over the traffic: on a
-        /// 20 s look or a test button only.
-        /// </summary>
+        /// <summary>Somebody on a pavement beside a lane, off any crossing, a car coming up it at the distance wanted and a pavement across. On a look only.</summary>
         /// <param name="late">They are due to be hit: the car is as near as it can be.</param>
-        /// <param name="mode">0: as it comes. 1: a test, a car up to twice as far off will do. 2: a test in which they stand in the lane: any car coming up it within 120 m.</param>
+        /// <param name="mode">0: as it comes; 1: a test, a car up to twice as far off will do; 2 and up: a test, any car well up the lane.</param>
         /// <param name="across">The pavement over the road they make for.</param>
         /// <param name="lane">The middle of the lane the car is coming up, straight across from them.</param>
         public static bool Find(Vector3 player, float nearest, float furthest, bool late, int mode, out Pedestrian walker, out VehicleComponent car, out Vector3 across, out Vector3 lane)
@@ -196,10 +165,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// The same without a car: anybody walking a pavement beside a lane, away from a crossing, with a pavement
-        /// across the road, who is not in the road for us already. For a test that sends a crowd over.
-        /// </summary>
+        /// <summary>The same without a car: anybody beside a lane, away from a crossing, with a pavement across, not ours already.</summary>
         public static bool FindCrosser(Vector3 player, float nearest, float furthest, out Pedestrian walker, out Vector3 across, out Vector3 lane)
         {
             walker = null;
@@ -228,8 +194,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // True if that pedestrian is walking a pavement beside a lane, away from any crossing and at the distance wanted
-        // from the player: where they are, the way straight across to the lane's middle, how far that is, and the way the lane runs.
+        // A pedestrian on a pavement beside a lane, off any crossing, at the distance wanted: where, the way across to the lane, how far, its run.
         private static bool Kerbside(Pedestrian candidate, Vector3 player, float nearest, float furthest, out Vector3 at, out Vector3 over, out float toLane, out Vector3 runs)
         {
             at = default;
@@ -264,7 +229,6 @@ namespace RealLifeOverhaul
             return !Crossings.At(at + over * toLane, out _);   // a lane that is a crossing's there: stepping out on it is not jaywalking
         }
 
-        // An ordinary car in that lane, coming, at about the distance that leaves the driver the room wanted.
         private static VehicleComponent Coming(List<VehicleComponent> pool, Vector3 lane, Vector3 runs, float toLane, bool late, int mode)
         {
             for (int i = 0; i < pool.Count; i++)
@@ -371,14 +335,13 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // At the kerb, waiting for their moment: the car's distance up the lane against what it must be for the road
-        // the driver is to be left (SolidRules.StepOutAt, from its speed as it comes). A few subtractions.
+        // At the kerb: the car's distance up the lane against what leaves the driver the road wanted (SolidRules.StepOutAt).
         private void Wait()
         {
             VehicleComponent car = _car;
             if (car == null || !car.gameObject.activeInHierarchy)
             {
-                PutBack(_takeover.Character != null ? _takeover.Character.transform.position : _lane);
+                PutBack(Where);
                 Over("the car they waited for left the road");
                 return;
             }
@@ -389,7 +352,7 @@ namespace RealLifeOverhaul
             float speed = car.GetCurrentSpeed() / 3.6f;
             if (ahead < 2f)
             {
-                PutBack(_takeover.Character != null ? _takeover.Character.transform.position : _lane);
+                PutBack(Where);
                 Over("the car went by before they stepped out");
                 return;
             }
@@ -403,12 +366,14 @@ namespace RealLifeOverhaul
             _pending = false;
             if (!_takeover.WalkTo(_across))
             {
-                PutBack(_takeover.Character != null ? _takeover.Character.transform.position : _lane);
+                PutBack(Where);
                 Over("no way across");
                 return;
             }
             Logger?.Info($"Jaywalker: steps out now, {ahead:F0} m ahead of the car's middle at {speed * 3.6f:F0} km/h ({_step}).");
         }
+
+        private Vector3 Where => _takeover.Character != null ? _takeover.Character.transform.position : _lane;
 
         public void Tick(float now)
         {
@@ -445,7 +410,7 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
-            // (With "Traffic sees people in the road" on, the car's horn is that feature's: it is sounded there, once, for whoever is in its way.)
+            // With "Traffic sees people in the road" on, the horn is that feature's, sounded once for whoever is in its way.
             if (!_honked && !SolidStreets.Working && car != null && car.gameObject.activeInHierarchy)
             {
                 Vector3 to = at - car.transform.position;
@@ -493,8 +458,7 @@ namespace RealLifeOverhaul
             Over(why);
         }
 
-        // Back to the game as an ordinary walker heading somewhere along the pavements (or, standing where a pedestrian
-        // cannot walk, put away through the pool, which is PedestrianTakeover's own rule).
+        // Back to the game as an ordinary walker along the pavements (or, where nobody can walk, put away through the pool).
         private void PutBack(Vector3 here)
         {
             try

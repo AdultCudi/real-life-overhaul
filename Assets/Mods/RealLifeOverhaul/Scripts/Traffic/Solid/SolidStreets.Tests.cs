@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using GleyTrafficSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UI.Notification;
 using UnityEngine;
@@ -9,14 +8,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The test buttons of "traffic sees people in the road" (Options, Tests). Five of them put somebody
-    /// in the road in front of ordinary traffic, so that what the cars do about it can be watched without
-    /// waiting for it: they are staged by the reckless drivers' director, which owns the people the mod
-    /// sends into the road (RecklessDrivers.Test), and it says in a notice why not if one cannot start.
-    /// The sixth reads what the cars sense again and says which way the cars are made to see people.
-    /// On a button press only.
+    /// Traffic sees people: its test buttons. Five put somebody in the road in front of ordinary traffic through the reckless
+    /// drivers' director (RecklessDrivers.Test); the sixth reads what the cars sense again.
     /// </summary>
-    public partial class SolidStreets
+    public sealed partial class SolidStreets
     {
         public enum TestKind { Room, Close, Dawdle, Late, Crowd, Senses }
 
@@ -48,8 +43,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Reads a traffic car and a walking pedestrian again, says what was found in Player.log (one line) and which
-        // way the cars are made to see people in a notice.
+        // Reads the cars' senses again: one line in Player.log, and a notice of the mode.
         private void ShowSenses()
         {
             TestRefusal why = TestRefusals.Street();

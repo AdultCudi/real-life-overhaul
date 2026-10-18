@@ -10,33 +10,29 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What happens after the player's car hits a traffic car. They get a few seconds to stop
-    /// near the scene and settle it. If they drive off it is a hit-and-run: a patrol car comes
-    /// up the road behind them and follows the trail their car leaves. Stopping with the patrol
-    /// car close means being caught (damages plus a fine); getting away means a bigger fine
-    /// some hours later, which is kept in the savegame until it is charged.
-    /// Injuring or killing someone on foot goes the same way with its own, much larger fines
-    /// and a lasting weight on the player's mood; nobody goes to jail and the game goes on.
-    /// One pursuit at a time. Each frame of a pursuit reads the car's position and speed and
-    /// compares a few distances; everything else happens on events.
+    /// What happens after the player's car hits a traffic car or somebody on foot: a few seconds to stop near the scene and
+    /// settle it; drive off and it is a hit-and-run, a patrol car coming up behind along the trail the car leaves. Caught: the
+    /// damages and a fine; away: a bigger fine some hours later, kept in the save until charged. People hurt carry far larger
+    /// fines and weigh on the mood. One pursuit at a time. Cost: idle, a time comparison a frame; in a pursuit, a position, a
+    /// speed and a few distances a frame.
     /// </summary>
     public class PolicePursuit : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "PolicePursuit", typeof(PolicePursuit));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "PolicePursuit", typeof(PolicePursuit));
 
         private const float StopWindow = 12f;           // seconds to stop after the crash
         private const float StopRadius = 40f;           // ...within this far of it
         private const float StoppedSpeedSqr = 1f;       // (m/s) squared
         private const float CrumbSpacing = 6f;          // metres between recorded trail points
         private const int MaxCrumbs = 900;
-        private const float PursuitTime = 90f;
+        private const float PursuitTime = 90f;          // seconds
         private const float PursuitMost = 240f;         // seconds in all, however close the patrol car still is
-        private const float EscapeDistance = 230f;
-        private const float CatchDistance = 25f;
+        private const float EscapeDistance = 230f;      // metres
+        private const float CatchDistance = 25f;        // metres
         private const float CatchHold = 3f;             // seconds stopped with the patrol car close
-        private const float PatrolGap = 9f;
+        private const float PatrolGap = 9f;             // metres
         private const int SpawnAttempts = 5;
-        private const float FineCheckInterval = 5f;
+        private const float FineCheckInterval = 5f;     // seconds
         private const float StopAllowance = 26f;        // extra seconds the patrol car waits while its officer is out
 
         public static int CaughtFine => Prices.At(600);              // on top of the damages
@@ -61,7 +57,7 @@ namespace RealLifeOverhaul
         /// <summary>Raised when the player is caught after driving off; Crime/PoliceAttention adds the hours in custody.</summary>
         public static event Action CaughtAfterFleeing;
 
-        /// <summary>Raised when the player is charged for people hit with their car: injured, killed, and whether they stayed at the scene. For Licences.</summary>
+        /// <summary>Raised when the player is charged for people hit with their car (injured, killed, stayed at the scene); for Licences.</summary>
         public static event Action<int, int, bool> PeopleCharged;
 
         private readonly List<Vector3> _trail = new List<Vector3>(256);   // where the car went before the patrol car existed
@@ -113,11 +109,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Called when the player's car has hit a traffic car hard enough to owe damages.
-        /// Returns false if this is not being handled here, in which case the caller charges
-        /// the damages on the spot as before.
-        /// </summary>
+        /// <summary>The player's car hit a traffic car hard enough to owe damages. False if not handled here: the caller charges them at once.</summary>
         public bool ReportCollision(Rigidbody playerCar, int liability, Vector3 position)
         {
             // Already being pulled over or chased for a traffic offence: one pursuit, one bill. It goes on that one.
@@ -131,7 +123,6 @@ namespace RealLifeOverhaul
             }
             if (_state != State.Idle)
             {
-                // Hitting more cars while deciding, or while being chased, adds to the bill.
                 _owed += liability;
                 return true;
             }
@@ -142,14 +133,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Called when the player's car has injured or killed someone on foot. The same choice as
-        /// after hitting a car, with more at stake: stop near the scene and it is an accident (a
-        /// fine and a bad conscience); drive off and it is a hit-and-run, with a patrol car after
-        /// them and a far larger fine whether or not it catches them.
-        /// Returns false if this is not being handled here, in which case the caller settles it
-        /// as an accident on the spot.
-        /// </summary>
+        /// <summary>The player's car hurt someone on foot: stop and it is an accident, drive off and a hit-and-run. False if the caller is to settle it.</summary>
         public bool ReportPedestrian(Rigidbody playerCar, bool fatal, Vector3 position)
         {
             if (PoliceAttention.TakeCasualty(fatal))
@@ -170,7 +154,6 @@ namespace RealLifeOverhaul
             }
             if (_state != State.Idle)
             {
-                // Already deciding, or already being chased: one more on the charge sheet.
                 Notifications.Show(NotificationType.Error, "reallife_pedhit_another", null, 6f);
                 return true;
             }
@@ -179,7 +162,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The few seconds in which stopping near the scene settles it.
         private void OpenWindow(Rigidbody playerCar, Vector3 position)
         {
             _body = playerCar;
@@ -191,12 +173,9 @@ namespace RealLifeOverhaul
             _stateEnd = Time.time + StopWindow;
         }
 
-        /// <summary>
-        /// Fines the player for the people they hit and weighs on their mood, more for a death.
-        /// Public for the case where pursuits are switched off and it is settled where it happened.
-        /// </summary>
+        /// <summary>Fines the player for the people they hit and weighs on their mood; public for when pursuits are off.</summary>
         /// <param name="stopped">True for an accident (they stayed); false for leaving the scene.</param>
-        /// <returns>What was actually taken at the roadside (see Roadside): the rest of a fine too large for the cash in hand is the court's.</returns>
+        /// <returns>What was taken at the roadside (Roadside): the rest of a fine too large for the cash in hand is the court's.</returns>
         public static int ChargeForPeople(int hurt, int killed, bool stopped)
         {
             int nominal = stopped ? hurt * InjuryFine + killed * DeathFine : hurt * InjuryRunFine + killed * DeathRunFine;
@@ -218,7 +197,9 @@ namespace RealLifeOverhaul
                 {
                     Notifications.Show(NotificationType.Error, killed > 0 ? "reallife_pedhit_fled_dead" : "reallife_pedhit_fled_injured", data, 10f);
                 }
-                Logger?.Info(FormattableString.Invariant($"Pedestrian hit settled ({(stopped ? "stopped" : "left the scene")}): {hurt} injured, {killed} killed, charged {fine} at the roadside of {nominal} (at most {JusticeLaw.FineShareOfCash:P0} of the cash in hand, never bounded below {JusticeLaw.FineFloor}); {rest} left to the court."));
+                Logger?.Info(FormattableString.Invariant($"Pedestrian hit settled ({(stopped ? "stopped" : "left the scene")}): {hurt} injured, {killed} killed, ")
+                             + FormattableString.Invariant($"charged {fine} at the roadside of {nominal} (at most {JusticeLaw.FineShareOfCash:P0} of the cash in hand, ")
+                             + FormattableString.Invariant($"never bounded below {JusticeLaw.FineFloor}); {rest} left to the court."));
                 JusticeReport report = JusticeReports.Struck(hurt, killed, stopped, fine);
                 SayRest(rest, report != null);
                 Justice.Summon(report);   // a death, or leaving the scene, goes to court (Scripts/Justice), where what was paid here is credited
@@ -232,12 +213,7 @@ namespace RealLifeOverhaul
             return fine;
         }
 
-        /// <summary>
-        /// What of a fine for people struck is taken at the roadside: no more than the share of the cash in hand
-        /// that a court's own fines are bounded to (Justice: 35 %, never bounded below 250), so that one accident
-        /// does not empty the player's pocket on the spot. The rest is left to the court case that follows, where
-        /// what was paid here is credited (JusticeReport.PaidAtScene) and the sentence is bounded the same way.
-        /// </summary>
+        /// <summary>The part of a fine for people struck taken at the roadside, bounded as a court's fines are; the rest goes to the court case.</summary>
         internal static int Roadside(int nominal, out int rest)
         {
             int taken = nominal <= 0 ? 0 : Mathf.Min(nominal, JusticeLaw.Bound(nominal, Crime.Cash, JusticeLaw.FineShareOfCash, JusticeLaw.FineFloor));
@@ -245,7 +221,6 @@ namespace RealLifeOverhaul
             return taken;
         }
 
-        // Said when less than the whole fine was taken: where the rest goes.
         private static void SayRest(int rest, bool toCourt)
         {
             if (rest <= 0)
@@ -256,7 +231,6 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Info, toCourt ? "reallife_fine_rest_court" : "reallife_fine_rest_waived", data, 10f);
         }
 
-        // What it does to the player to have hurt someone: a rough day, or something that stays for days.
         internal static void Weigh(bool killed)
         {
             ModState.AddModifier(killed ? ModState.Remorse : ModState.MoodDownBig);
@@ -268,14 +242,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -308,8 +282,7 @@ namespace RealLifeOverhaul
         {
             if (_state == State.Caught)
             {
-                // The patrol car sits behind the player for a moment (longer while its officer
-                // is out of it), then goes back on patrol.
+                // The patrol car sits behind the player a moment (longer while its officer is out), then goes back on patrol.
                 _stop.Tick(now);
                 if (!TrafficTools.Ready || _patrol.IsLost || now >= _stateEnd || (now >= _caughtMin && _stop.Finished)
                     || (_lawHolds && !Law.Custody.OnScene))
@@ -362,8 +335,7 @@ namespace RealLifeOverhaul
             }
             if (now >= _stateEnd)
             {
-                // Time is up. A patrol car that is right behind them with the car in sight does not turn
-                // round and go home: it carries on a little at a time, up to the longest a pursuit may last.
+                // Time is up, but a patrol car right behind them with the car in sight carries on, a little at a time, up to PursuitMost.
                 if (!_patrol.InUse || _patrol.IsLost || now - _pursuitFrom >= PursuitMost || !StillOn(position))
                 {
                     Escape(announce: true);
@@ -394,9 +366,8 @@ namespace RealLifeOverhaul
                 Logger?.Info($"Pursuit: a second patrol car has joined after {now - _pursuitFrom:F0} s.");
             }
 
-            // Left far behind, or kept out of its sight for long enough (behind buildings): they have lost it.
-            // With two cars out it is the nearer one that has to be lost. A fast patrol car is given a moment
-            // to get up to speed first: it starts from rest well behind a car that is already going.
+            // Left far behind, or out of sight long enough: they have lost it (with two cars out, the nearer one). A fast patrol
+            // car gets a moment to reach speed first, starting from rest behind a car that is already going.
             Vector3 patrolAt = _backup.Nearer(_patrol.Car.transform.position, position);
             float gapSqr = (patrolAt - position).sqrMagnitude;
             if (now >= _graceUntil && (gapSqr > EscapeDistance * EscapeDistance || _sight.Lost(patrolAt, position, now)))
@@ -421,7 +392,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // True while a patrol car is close behind the player with their car in sight (one line test, asked when the time runs out).
         private bool StillOn(Vector3 position)
         {
             Vector3 patrolAt = _backup.Nearer(_patrol.Car.transform.position, position);
@@ -494,7 +464,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Puts a patrol car on the road the player came along, some way back from the crash.
         private bool TrySpawnPatrol(Vector3 playerPosition)
         {
             Waypoint anchor = TrafficTools.ClosestWaypointAlong(_crashSite, playerPosition - _crashSite, 40f);
@@ -575,11 +544,7 @@ namespace RealLifeOverhaul
             CaughtAfterFleeing?.Invoke();
         }
 
-        /// <summary>
-        /// The player has been stopped and the patrol car is parked behind them. This is the one
-        /// place that knows it, so this is where an officer gets out and walks up to their door.
-        /// Nothing about the fine depends on it: that has already been charged.
-        /// </summary>
+        /// <summary>The player is stopped with the patrol car parked behind: an officer walks up to their door. The fine is charged already.</summary>
         private void OnPlayerPulledOver(Rigidbody stopped, float now)
         {
             try
@@ -619,12 +584,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The bill for a crash the player got away from, sent a few in-game hours later: the
-        /// damages, and the fines for anyone hurt (or, with nobody hurt, the fine for running).
-        /// Also used by Crime/PoliceAttention when a driver who crashed while fleeing a stop gets away.
-        /// </summary>
-        /// <returns>False if nothing is owed or there is no game to owe it in.</returns>
+        /// <summary>The bill for a crash the player got away from, a few game hours later (also Crime/PoliceAttention's). False if nothing is owed.</summary>
         internal static bool BillLater(int owed, int people, bool killed, int runningFine)
         {
             if ((owed <= 0 && people <= 0) || !ModState.Loaded || SaveGameManager.Current == null)
@@ -654,7 +614,6 @@ namespace RealLifeOverhaul
             _trail.Clear();
         }
 
-        // Polled every few seconds: the fine for an earlier escape arrives once its time has come.
         private static void CheckPendingFine()
         {
             if (!ModState.Loaded || ModState.PendingFine <= 0 || SaveGameManager.Current == null)

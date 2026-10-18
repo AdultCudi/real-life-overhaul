@@ -8,28 +8,18 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A self-check on the traffic: finds a vehicle that is hopping up and down on the spot and stops it.
-    /// The traffic system's springs have no damper; what steadies a car is the traffic system replacing
-    /// its whole velocity every physics step, which it does not do for a car it has been told to ignore,
-    /// nor for one whose wheels have lost the road (standing on something). So a car the mod holds and
-    /// neither drives nor freezes, or a car that has ended up on top of something solid, bounces for as
-    /// long as it is left. The mod is written never to leave one like that; this is what notices if it
-    /// does. Five times a second it reads the height of every vehicle on the road (one position each, no
-    /// physics queries, nothing allocated); a vehicle that has gone up and down without going anywhere
-    /// for two windows running (three seconds) is reported once, with what the mod last did to it and
-    /// what it is standing on, and taken off the road if nobody is looking that way, or else frozen where
-    /// it stands until nobody is. Ticked from TrafficAccidents.Update.
-    /// It also watches the response vehicles it is told must not stand (Guard): an ambulance or a patrol car
-    /// with its crew aboard, or one whose scene has ended. One of those that does not move a metre in 25 s is
-    /// reported once and got off the road. One position a second per vehicle, and only while there is one.
+    /// A self-check on the traffic: a car the mod holds without driving or freezing it bounces on the spot (the springs have no
+    /// damper; the traffic system steadies only its own cars). Five times a second each vehicle's height is read; one bouncing
+    /// in place for 3 s is reported and taken off the road unseen, or frozen until it is. It also watches the response
+    /// vehicles that must not stand (Guard). Cost: a position a vehicle a look, nothing allocated.
     /// </summary>
     public static class TrafficWatch
     {
-        private const float Interval = 0.2f;
+        private const float Interval = 0.2f;     // seconds
         private const float Window = 1.5f;       // seconds a vehicle is watched before it is judged
         private const int Windows = 2;           // ...and how many in a row must say "bouncing"
         private const float MinTravel = 0.06f;   // metres up and down within a window
-        private const float MinStep = 0.008f;    // a change of height smaller than this between two looks is no movement
+        private const float MinStep = 0.008f;    // metres: a smaller change of height between two looks is no movement
         private const float MaxDrift = 1f;       // metres along the ground within a window: further than this it is driving, not hopping
         private const int MinTurns = 2;          // changes between rising and falling within a window
 
@@ -88,8 +78,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- response vehicles that must not stand
-
         private const float StandsFor = 25f;     // seconds without moving a metre after which a guarded vehicle is reported
         private const float GuardFor = 90f;      // seconds a vehicle stays guarded after it was last named (it is named again on every transition)
 
@@ -107,20 +95,10 @@ namespace RealLifeOverhaul
         private static int _guards;
         private static float _nextGuard;
 
-        /// <summary>
-        /// What is done about a guarded vehicle that a scene of the mod's still holds and that has stood too long:
-        /// the scene's own way of getting it off the road (TrafficAccidents.Unstick). Called once a second until it has gone.
-        /// </summary>
+        /// <summary>The scene's own way of getting a guarded vehicle it still holds off the road (TrafficAccidents.Unstick), once a second until gone.</summary>
         public static Action<VehicleComponent> Stuck;
 
-        /// <summary>
-        /// Names a response vehicle of the mod's (an ambulance, a patrol car) that from now on must not stand: its
-        /// crew is aboard, or its scene has ended. Once a second it is looked at (one position); if it has not
-        /// moved a metre in 25 s that is reported once and put right: a vehicle the mod still holds through its
-        /// scene (Stuck), one the traffic system has back by taking it off the road as soon as nobody is looking
-        /// that way. Naming it again starts the count afresh. It is forgotten when it leaves the road, and 90 s
-        /// after it was last named.
-        /// </summary>
+        /// <summary>Names a response vehicle that must not stand: if it does not move a metre in 25 s it is reported once and got off the road.</summary>
         public static void Guard(VehicleComponent car, string what)
         {
             if (car == null)
@@ -294,8 +272,7 @@ namespace RealLifeOverhaul
                 TrafficTools.Remove(car, "the traffic watch: bouncing on the spot");
                 return;
             }
-            // In view, or a car one of the mod's scenes still counts on (that scene takes it off the road itself):
-            // held still at the middle of its bounce, which is where its springs carry it.
+            // In view, or still a scene's: held still at the middle of its bounce, where its springs carry it.
             body.velocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
             body.isKinematic = true;
@@ -305,7 +282,6 @@ namespace RealLifeOverhaul
             Frozen.Add(new Held { Car = car, Ours = ours });
         }
 
-        // What is under a bouncing vehicle besides the road: a person or a body, a parked vehicle, another car.
         private static string Standing(VehicleComponent car, Rigidbody body)
         {
             if (_underMask == 0)

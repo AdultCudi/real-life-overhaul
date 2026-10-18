@@ -265,6 +265,11 @@ internal static partial class Program
     {
         string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string cordon = Source(scripts, @"Traffic\SceneCordon.cs");
+        foreach (string part in Directory.GetFiles(Path.Combine(scripts, "Traffic"), "SceneCordon.*.cs"))
+        {
+            string name = Path.GetFileName(part);
+            cordon += name == "SceneCordon.cs" ? "" : Source(scripts, Path.Combine("Traffic", name));   // its partial parts, read as one
+        }
         if (cordon.Length == 0)
         {
             Check(false, "cordon: the mod's sources are at " + scripts);
@@ -292,7 +297,7 @@ internal static partial class Program
         foreach (string path in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
         {
             string name = Path.GetFileName(path);
-            if (name == "SceneCordon.cs")
+            if (name.StartsWith("SceneCordon.", StringComparison.Ordinal))
             {
                 continue;
             }
