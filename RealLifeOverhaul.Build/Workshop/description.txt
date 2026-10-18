@@ -11,7 +11,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [h1]What it adds[/h1]
 [list]
 [*][b]A living street.[/b] People chat, eat, queue and busk. Accidents with ambulances and police, fires, crimes, street events and weather. Police stations with officers at work.
-[*][b]Getting around.[/b] The mod's own city buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
+[*][b]Getting around.[/b] City buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
 [*][b]Driving.[/b] Cars that handle by their kind, chase and third person cameras, a garage for paint, parts and tuning, running costs and a driving school.
 [*][b]Police, courts and the council.[/b] Fines, arrests, bail, hearings and prison. A council and a mayor you vote for, or stand yourself: a campaign, a debate, the count by district and the city's policies if you win.
 [*][b]Street talk.[/b] Talk to anybody on the pavement: ask the way, swap numbers, invite them out or type your own words.
@@ -20,7 +20,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*][b]Standing.[/b] The city knows how rich, how known and how well thought of you are: reporters, a night show, promises remembered, invitations, lobbying, and bribes that can come out.
 [*][b]Money and credit.[/b] A credit rating from 300 to 850, and a Finance app with loans, an overdraft, a card, car finance and a mortgage, with real consequences for not paying.
 [*][b]The city's economy.[/b] A bank rate, prices that rise and fall, booms and recessions, districts with their own income and a district view on the map. The game's statements and taxes count what the mod charges and pays.
-[*][b]Bills and the internet.[/b] Power and water from a utilities office, auto debit, rival internet providers, and late on a broadband company of your own.
+[*][b]Bills and the internet.[/b] Power and water from a utilities office, auto debit, rival internet providers, and a broadband company of your own.
 [*][b]Markets and news.[/b] A stock market of some 136 companies with charts and orders, and your own company listed on it: results, dividends, a shareholders' meeting and takeover bids. The City Ledger and online papers. Flare, a social network with influencers.
 [*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing, a quarterly tax return, licences and a rota planner. Professional staff with skills, and a jobs board your rivals hire from too.
 [*][b]Growing a business.[/b] Brands and franchises that keep their prices, online shops, investors, selling a business, your own bank and your own car dealership.
