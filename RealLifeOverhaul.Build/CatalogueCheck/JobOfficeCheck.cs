@@ -91,7 +91,7 @@ namespace RealLifeOverhaul
             // ---- the sources
             string jobs = Path.Combine(src, "Scripts", "Jobs");
             string director = File.ReadAllText(Path.Combine(jobs, "CareerDirector.cs"));
-            string phone = File.ReadAllText(Path.Combine(jobs, "CareerPhone.cs"));
+            string phone = File.ReadAllText(Path.Combine(jobs, "CareerDialog.cs"));
             string jobDirector = File.ReadAllText(Path.Combine(jobs, "JobDirector.Tests.cs"));
             string links = File.ReadAllText(Path.Combine(src, "Scripts", "World", "MapLinks.cs"));
             foreach (string key in new[] { "reallife_career_review_due", "reallife_career_text_review_due", "reallife_career_reminder", "reallife_career_text_reminder" })
