@@ -54,6 +54,8 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `OfficeLinks.cs` | empty shops made offices, once the other features' buildings are chosen |
 | `StreetLinks.cs`, `StreetTexts.cs` | street talk with the rest of the mod, and its words from RLO Texts |
 | `TextsLinks.cs`, `TextsPhone.cs`, `Wiring.TextsCalls.cs` | RLO Texts with Flare, the phone's texts and the answers to what the player types on a call |
+| `Wiring.TextsMemory.cs` | RLO Texts data v6: what people remember of the player, from street talk, texts, calls, Flare messages and the social life's own memories |
+| `Wiring.TextsCity.cs` | RLO Texts data v6: the city's new talk with the features it reads (the staff's files, family life, a graduation, the court, the stock market, the books, the social life's people and texts) |
 
 ## Who does what at an arrest
 
@@ -161,3 +163,6 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 | `Economy.EconomyBridges.OtherAccounts` | `Wiring.CareersLinks` | the student loan as a credit account, registered on the rating each time the credit side starts (its ledger forgets every account when it stands down) |
 | the Planner's Finance rows | `Wiring.EconomyLinks` (`PlannerDirector.AddSource`) | tomorrow's payments over every credit account, a missed payment, a change of grade: read from `CreditLedger` |
 | `News` (the City Ledger) | `Wiring.Paper.Print(key)` | a finished story: verdicts (`JusticeDirector`), fires (`EventDirector.Begin`), election results and scandals (civic life) |
+| `Texts.TextsBridges.Staff`, `Life`, `People`, `PersonSay`, `BigFloor` | `Wiring.TextsCity` | the player's staff from running a business, the player's life from the features' public state, the social life's people, a text through the social life's own (its switch, daily cap and quiet hours), the least big win or loss at today's prices. Read once a game hour, only with a pack of data 6 |
+| `Flare.FlareBridges.TextReview` | `Wiring.TextsLinks` | a review of the player's own business: its satisfaction figures in words and how busy it was, from the game's insight page |
+| `Street.StreetDirector.Spoken` | `Wiring.StreetTexts` | each line a stranger says, however its words came: what they will remember of it (data v6) |
