@@ -5,8 +5,9 @@ using RealLifeOverhaul.Careers;
 
 // Checks for the desk a professional job is worked at (Scripts/Careers/Work/DeskRules.cs): the kind of the game's station
 // each profession and workplace works at, the preset fitted out where there is none, the station picked from the save's seed
-// and the job (stable, in range, spread), the work panel's state and words by the time and the day, the boss's text when
-// the player is away, and that the pay and the counted share of a day are as they were.
+// and the job (stable, in range, spread), the work panel's state and words by the time and the day, the home computer's
+// button for a day from home, the boss's text when the player is away, and that the pay and the counted share of a day are
+// as they were.
 internal static partial class Program
 {
     private static void Desks()
@@ -14,6 +15,7 @@ internal static partial class Program
         DeskKinds();
         DeskPicks();
         DeskStates();
+        DeskHome();
         DeskAway();
         DeskPay();
         DeskWords();
@@ -171,6 +173,61 @@ internal static partial class Program
         Check(watch.Elapsed.TotalMilliseconds < 200, "desk panel: a state is worked out quickly (" + watch.Elapsed.TotalMilliseconds.ToString("F1") + " ms for 100,000)");
     }
 
+    // The home computer's button for the job, beside the game's Pass Time (DeskRules.AtComputer): for every state the work
+    // panel can be in, with overtime open and not; then for real jobs at real hours, as the computer asks it.
+    private static void DeskHome()
+    {
+        var want = new Dictionary<DeskState, HomeWork>
+        {
+            { DeskState.NoJob, HomeWork.None }, { DeskState.Open, HomeWork.Start }, { DeskState.StartsSoon, HomeWork.Start },
+            { DeskState.NotYet, HomeWork.NotYet }, { DeskState.TooLate, HomeWork.Why }, { DeskState.DayOff, HomeWork.None },
+            { DeskState.NotHired, HomeWork.None }, { DeskState.Done, HomeWork.Why }, { DeskState.HomeDay, HomeWork.None },
+            { DeskState.OfficeDay, HomeWork.None }
+        };
+        var wrong = new List<string>();
+        foreach (DeskState s in Enum.GetValues(typeof(DeskState)))
+        {
+            if (!want.TryGetValue(s, out HomeWork without))
+            {
+                wrong.Add(s + " (not decided)");
+                continue;
+            }
+            HomeWork with = s == DeskState.Done ? HomeWork.Late : without;
+            if (DeskRules.AtComputer(s, false) != without || DeskRules.AtComputer(s, true) != with)
+            {
+                wrong.Add(s + ": " + DeskRules.AtComputer(s, false) + "/" + DeskRules.AtComputer(s, true) + ", not " + without + "/" + with);
+            }
+        }
+        Check(wrong.Count == 0, "home computer: the job's button for every state of the work panel, without and with overtime open (" + string.Join("; ", wrong) + ")");
+        bool agrees = true, words = true;
+        foreach (DeskState s in Enum.GetValues(typeof(DeskState)))
+        {
+            agrees &= (DeskRules.AtComputer(s, false) == HomeWork.Start) == DeskRules.Startable(s) && (DeskRules.AtComputer(s, true) == HomeWork.Late) == (s == DeskState.Done);
+            string key = DeskRules.Label(s);
+            words &= DeskRules.AtComputer(s, false) != HomeWork.Why || (key != null && key.StartsWith("reallife_", StringComparison.Ordinal));
+        }
+        Check(agrees, "home computer: Start the working day only where the desk's panel offers Start, Work late only once the day is done");
+        Check(words, "home computer: a greyed button says what the desk's panel says, in the mod's own words (too late, worked already)");
+
+        Job remote = DeskJob(WorkMode.Remote);   // weekdays 09:00 for 8 hours; day 1 a Monday
+        HomeWork At(Job j, int day, int minute, bool canLate) => DeskRules.AtComputer(DeskRules.State(j, day, minute, true, out _, out _), canLate);
+        Check(At(remote, 2, 7 * 60 + 30, true) == HomeWork.NotYet && At(remote, 2, 8 * 60 + 30, true) == HomeWork.Start && At(remote, 2, 9 * 60 + 20, true) == HomeWork.Start,
+            "home computer: a remote job's day greyed with its hours at 07:30, Start the working day from 08:30 and while late");
+        Check(At(remote, 2, 11 * 60 + 30, true) == HomeWork.Why && At(remote, 6, 10 * 60, true) == HomeWork.None,
+            "home computer: greyed when it is too late to begin with nothing worked; no button on a Saturday");
+        Job worked = DeskJob(WorkMode.Remote);
+        ProRules.Worked(worked, 2, worked.Def.Hours * 60);
+        Check(At(worked, 2, 17 * 60, true) == HomeWork.Late && At(worked, 2, 17 * 60, false) == HomeWork.Why,
+            "home computer: once the day is worked, Work late while overtime can be worked, else greyed");
+        Job part = DeskJob(WorkMode.Remote);
+        ProRules.Worked(part, 3, 300);
+        Check(At(part, 3, 14 * 60, false) == HomeWork.Start, "home computer: a day begun is carried on with from the same button");
+        Job hybrid = DeskJob(WorkMode.Hybrid);
+        Check(At(hybrid, 1, 9 * 60, true) == HomeWork.Start && At(hybrid, 2, 9 * 60, true) == HomeWork.None && At(DeskJob(WorkMode.OnSite), 2, 9 * 60, true) == HomeWork.None
+              && At(DeskJob(WorkMode.Remote, 5), 2, 9 * 60, true) == HomeWork.None && At(null, 2, 9 * 60, true) == HomeWork.None,
+            "home computer: no button on a hybrid job's day at the employer's, for a job worked on site, before the job begins, or with no job");
+    }
+
     private static void DeskAway()
     {
         Job j = DeskJob(WorkMode.OnSite);
@@ -217,7 +274,9 @@ internal static partial class Program
             "reallife_desk_label_taken", "reallife_desk_label_hours", "reallife_desk_label_late", "reallife_desk_cta_header", "reallife_career_desk_title", "reallife_career_desk_at",
             "reallife_career_desk_how", "reallife_career_desk_home", "reallife_career_desk_none", "reallife_career_desk_closed", "reallife_career_desk_no_computer", "reallife_career_why_route", "reallife_work_interview_entrance",
             "reallife_work_text_away", "reallife_work_text_warning", "reallife_work_text_sacked", "reallife_contact_boss_desc", "reallife_work_test_desk",
-            "reallife_work_test_desk_none", "reallife_work_test_desk_here", "reallife_work_test_desk_route"
+            "reallife_work_test_desk_none", "reallife_work_test_desk_here", "reallife_work_test_desk_route",
+            "reallife_career_button_work", "reallife_life_button_late",   // (the home computer's button: CareersDirector.ComputerWork)
+            "reallife_work_test_computer", "reallife_work_test_no_computer"
         };
         foreach (DeskState s in Enum.GetValues(typeof(DeskState)))
         {
@@ -260,5 +319,19 @@ internal static partial class Program
             "desk: \"any hospital\" is gone: a nurse's desk is at the one hospital of the post");
         Check(langs[0]["reallife_guide_careers_jobs"].Contains("click your desk") && langs[0]["reallife_guide_careers_life"].Contains("Work late"),
             "desk: the Guide says how a working day is worked now, and where overtime is");
+        var unnamed = new List<string>();
+        for (int l = 0; l < langs.Length; l++)
+        {
+            langs[l].TryGetValue("reallife_guide_careers_jobs", out string jobs);
+            langs[l].TryGetValue("reallife_guide_careers_life", out string life);
+            langs[l].TryGetValue("reallife_career_button_work", out string work);
+            langs[l].TryGetValue("reallife_life_button_late", out string late);
+            if (jobs == null || life == null || work == null || late == null || !jobs.Contains("<b>" + work + "</b>") || !life.Contains("<b>" + late + "</b>"))
+            {
+                unnamed.Add(codes[l]);
+            }
+        }
+        Check(unnamed.Count == 0, "home computer: the Guide names the computer's Start the working day and Work late buttons in their own words, in every language ("
+                                  + string.Join(", ", unnamed) + ")");
     }
 }

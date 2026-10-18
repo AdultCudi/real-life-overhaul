@@ -170,6 +170,7 @@ internal static partial class Program
         CartQueue();
         Work();
         Desks();
+        SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)
         Life();
         Own();
         FamilyStudy();
