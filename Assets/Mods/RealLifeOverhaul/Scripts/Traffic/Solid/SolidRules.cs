@@ -3,25 +3,20 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The rules of "traffic sees people in the road" in plain numbers: how much road a driver needs to
-    /// stop in, the strip of road ahead of a car that somebody must be in to be in its way, how hard the
-    /// driver brakes for them and when that is a hard brake with the horn, when somebody about to step
-    /// out waits at the kerb instead, when a car that stands behind somebody sounds its horn and when the
-    /// person is moved on, what counts as a bump and what as a hit, the grid the people near the player
-    /// are put in once a tick, and which of them get one of the few stand-ins the cars' own sensors read.
-    /// Nothing of the game or the engine in it, so every rule is also run in a console test
-    /// (RealLifeOverhaul.Build/NavCheck/SolidCheck.cs). Traffic/Solid holds no number of its own.
+    /// The rules of "traffic sees people in the road" in plain numbers: stopping distances, the strip ahead of a car, how hard
+    /// the driver brakes and when the horn sounds, when somebody waits at the kerb, when a held car's person is moved on, a
+    /// bump against a hit, the grid of people and who gets a stand-in. Game-free, so NavCheck's SolidCheck runs every rule.
     /// </summary>
     public static class SolidRules
     {
-        // ---------------------------------------------------------------- when and where it looks
+        // When and where it looks.
         public const float TickSeconds = 0.125f;     // the street is looked at eight times a second
         public const float IdleSeconds = 0.5f;       // ...and twice a second while there is nothing to look at (indoors, the option off)
         public const float Near = 90f;               // metres from the player inside which cars and people are looked at (the game puts neither further out than that)
         public const int MostPeople = 160;           // people the grid holds; the game has about 60 out
         public const int MostCars = 96;              // cars looked at in one tick
 
-        // ---------------------------------------------------------------- the driver
+        // The driver.
         public const float Reaction = 0.4f;          // seconds before a driver's foot is on the brake (a tick and a physics step are inside it)
         public const float Comfort = 3.5f;           // m/s2 of an ordinary stop: the strip ahead is as long as that takes
         public const float EaseFrom = 2.2f;          // m/s2 needed to stop short of them at which the driver begins to brake
@@ -37,27 +32,27 @@ namespace RealLifeOverhaul
         public const float SightMost = 60f;          // metres: no strip is longer
         public const float SightLeast = 4.5f;        // ...or shorter (a car that stands still has somebody 4 m ahead in its way)
 
-        // ---------------------------------------------------------------- the strip and the people in it
+        // The strip and the people in it.
         public const float StripMargin = 0.5f;       // metres beyond the car's side that are still in its way
         public const float StripWidest = 1.5f;       // metres from the car's line at which that margin ends (a lane's kerb is a little further out)
         public const float StripLeast = 0.15f;       // ...but always this much beyond the side of a vehicle that is wider than that
         public const float MovingFrom = 0.3f;        // m/s from which somebody is on the move
-        public const float PersonRadius = 0.3f;
+        public const float PersonRadius = 0.3f;      // metres
         public const float StepBand = 1.2f;          // metres outside the strip from which somebody walking in is about to step out
         public const float StepSpeed = 0.5f;         // m/s across the car's line that makes it a step out and not a drift along the kerb
         public const float StepWithin = 1f;          // seconds inside which they would be in the strip
         public const float WaitMost = 4f;            // seconds somebody waits at the kerb for a car at the most
         public const float SafetyStep = 0.5f;        // metres added to what the car needs before somebody may step out
 
-        // ---------------------------------------------------------------- stand-ins, brakes, watched cars
+        // Stand-ins, brakes, watched cars.
         public const int Proxies = 16;               // stand-ins the cars' sensors read, at the most
         public const float ProxyRadius = 0.6f;       // metres: a little more than the strip's margin, so that whoever is in the strip is in the sensor
-        public const float ProxyHeight = 1.8f;
+        public const float ProxyHeight = 1.8f;       // metres
         public const int Brakes = 8;                 // cars braked for somebody at once
         public const int Watched = 6;                // cars whose bodies are compared with people every other physics step
         public const float WatchWithin = 1f;         // seconds from a person at which a car is watched
 
-        // ---------------------------------------------------------------- the horn and the hold
+        // The horn and the hold.
         public const float HornEvery = 4f;           // seconds between two horns from one car (the game's own least is 2)
         public const float DawdleAfter = 3f;         // seconds a car stands behind somebody before it sounds its horn
         public const float HeldBeyondGap = 3.5f;     // metres beyond its gap inside which somebody ahead of a standing car is holding it up
@@ -65,7 +60,7 @@ namespace RealLifeOverhaul
         public const float HoldMost = 12f;           // seconds a car is held before the person is moved on
         public const float RemoveAfter = 16f;        // ...and before somebody nobody can see is put somewhere else by the game
 
-        // ---------------------------------------------------------------- contact
+        // Contact.
         public const float BumpFrom = 0.6f;          // m/s: slower than this the car has only come to rest against them
         public const float StrikeFrom = 2.2f;        // m/s, 8 km/h: from here it is a hit; below it a bump, and nobody falls
 
@@ -74,8 +69,6 @@ namespace RealLifeOverhaul
 
         /// <summary>What a car's body meeting a person is.</summary>
         public enum Contact { None, Bump, Strike }
-
-        // ---------------------------------------------------------------- stopping
 
         /// <summary>Metres a car at that speed covers while it stops with that braking.</summary>
         public static float StoppingDistance(float speed, float braking)
@@ -87,10 +80,7 @@ namespace RealLifeOverhaul
             return speed * speed / (2f * (braking < 0.1f ? 0.1f : braking));
         }
 
-        /// <summary>
-        /// How far ahead of its nose a car looks: what it covers before the driver's foot is down, an
-        /// ordinary stop with a third to spare, and the gap it leaves. Never under 4.5 m or over 60.
-        /// </summary>
+        /// <summary>How far ahead of its nose a car looks: its reaction, an ordinary stop with a third to spare, and the gap; 4.5 to 60 m.</summary>
         public static float Sight(float speed)
         {
             if (speed < 0f)
@@ -102,10 +92,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The gap a car aims to leave when the game's own sensor is to hold it: where the far end of its
-        /// sensor box is half a metre into the person's stand-in. Nearer than that it could not come anyway (the
-        /// game stops a car within 1.25 m of its sensor touching something, from any speed), and arriving there
-        /// already slow is what makes the stop a driver's and not a dead halt. Between 0.8 m and 8 m.
+        /// The gap a car aims to leave when the game's own sensor is to hold it: its sensor box half a metre into the person's
+        /// stand-in (the game stops a car within 1.25 m of that from any speed, so it must arrive slow). Between 0.8 m and 8 m.
         /// </summary>
         public static float GapFor(float sensorBeyondNose)
         {
@@ -119,11 +107,7 @@ namespace RealLifeOverhaul
             return Sight(speed) + (gap > Gap ? gap - Gap : 0f);
         }
 
-        /// <summary>
-        /// The braking, in m/s2, that stops a car <paramref name="gap"/> short of somebody <paramref name="distance"/>
-        /// metres ahead of its nose. A car that is at its gap already, or inside it, and still moving needs more
-        /// than any limit (Overrun): it is braked with all it may be, and does not creep on.
-        /// </summary>
+        /// <summary>The braking (m/s2) that stops a car gap short of somebody distance metres ahead; inside its gap and moving, Overrun.</summary>
         public static float Need(float speed, float distance, float gap)
         {
             if (speed <= 0f)
@@ -139,10 +123,7 @@ namespace RealLifeOverhaul
             return need > Overrun ? Overrun : need;
         }
 
-        /// <summary>
-        /// What the driver makes of them: nothing yet, an ordinary stop, a hard one, or too late to stop at all.
-        /// At a crawl it is never more than an ordinary stop: the last half metre of one is not a hard brake.
-        /// </summary>
+        /// <summary>What the driver makes of them: nothing yet, an ordinary stop, a hard one, or too late; at a crawl never more than ordinary.</summary>
         public static Driver Judge(float speed, float distance, float gap)
         {
             float need = Need(speed, distance, gap);
@@ -154,12 +135,10 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The braking to apply now, in m/s2. Nothing while there is room and the driver has not begun; once
-        /// begun, exactly what stops the car at the gap (so it does not let go and come on again). A careful
-        /// driver may use whatever it takes; one with an accident owed has only what the tyres give.
+        /// The braking to apply now, in m/s2: nothing while there is room and the driver has not begun; once begun, exactly what
+        /// stops the car at the gap. A careful driver may use whatever it takes; one an accident is owed to only what tyres give.
         /// </summary>
         /// <param name="braking">The car was being braked for this person at the last look.</param>
-        /// <param name="owed">An accident is owed, and this is the car it may come to.</param>
         public static float Brake(float speed, float distance, float gap, bool braking, bool owed)
         {
             if (speed <= 0f)
@@ -175,11 +154,7 @@ namespace RealLifeOverhaul
             return need > most ? most : need;
         }
 
-        /// <summary>
-        /// How far ahead of a car's nose somebody must be to step into its way: what it covers before it is seen
-        /// (a tick) and before the foot is down, a firm stop, the least gap and a step to spare. Nearer than this
-        /// they wait at the kerb or step back, when nothing is owed.
-        /// </summary>
+        /// <summary>How far ahead of a car's nose somebody must be to step into its way: a tick and a reaction, a firm stop, the least gap, a step.</summary>
         public static float SafeToStep(float speed)
         {
             if (speed < 0f)
@@ -202,16 +177,11 @@ namespace RealLifeOverhaul
             return wait > WaitMost ? WaitMost : wait;
         }
 
-        /// <summary>
-        /// True if the driver cannot stop and an accident is owed: the one case in which a car reaches somebody
-        /// while it is still moving. With nothing owed this is never true, whatever the distance.
-        /// </summary>
+        /// <summary>True if the driver cannot stop and an accident is owed: the one case in which a car reaches somebody still moving.</summary>
         public static bool MayStrike(bool owed, float speed, float distance, float gap)
         {
             return owed && Judge(speed, distance, gap) == Driver.Late;
         }
-
-        // ---------------------------------------------------------------- the strip
 
         /// <summary>Where a point is from a car: metres ahead of its middle along the way it faces (a flat unit vector), and to its right.</summary>
         public static void Local(float px, float pz, float cx, float cz, float fx, float fz, out float ahead, out float side)
@@ -223,9 +193,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Half the width of the strip ahead of a vehicle of that half width: half a metre beyond its side, but no
-        /// further out than 1.5 m from its line (so that somebody walking along the kerb of its lane is not in a
-        /// car's way), and always a hand's width beyond the side of something wider.
+        /// Half the width of the strip ahead of a vehicle: half a metre beyond its side, but no more than 1.5 m from its line
+        /// (somebody along the kerb is not in its way), and always a hand's width beyond the side of something wider.
         /// </summary>
         public static float HalfStrip(float halfWidth)
         {
@@ -238,9 +207,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True if somebody that far to the side of a car's line is in its way. Somebody on the move is, anywhere in
-        /// the strip. Somebody who stands still (at a kerb, waiting for their light) is only if the car's own body
-        /// would touch them: a driver does not stop for a person standing beside the lane.
+        /// True if somebody that far to the side of a car's line is in its way: anywhere in the strip if on the move; if standing
+        /// still, only where the car's own body would touch them.
         /// </summary>
         public static bool InWay(float side, float halfWidth, bool moving)
         {
@@ -254,10 +222,7 @@ namespace RealLifeOverhaul
             return ahead >= from && ahead <= to && side >= -halfWidth && side <= halfWidth;
         }
 
-        /// <summary>
-        /// True if somebody beside the strip is about to step into it: within a step and a bit of its edge,
-        /// walking in across the car's line at more than a drift, and inside it within a second.
-        /// </summary>
+        /// <summary>True if somebody beside the strip is about to step into it: within a step of its edge, walking in, inside it within a second.</summary>
         /// <param name="side">Metres to the right of the car's line.</param>
         /// <param name="sideSpeed">Their speed towards positive side, in m/s.</param>
         /// <param name="halfStrip">Half the strip's width (the car's half width and the margin).</param>
@@ -271,8 +236,6 @@ namespace RealLifeOverhaul
             float inwards = side > 0f ? -sideSpeed : sideSpeed;
             return inwards >= StepSpeed && aside - inwards * StepWithin <= halfStrip;
         }
-
-        // ---------------------------------------------------------------- the horn and the hold
 
         /// <summary>True if the car sounds its horn at somebody who has just stepped out close: on the look at which it became a hard brake, and not within four seconds of its last.</summary>
         public static bool HornDue(Driver now, Driver before, float sinceLastHorn)
@@ -312,7 +275,7 @@ namespace RealLifeOverhaul
             return speed >= BumpFrom && distance <= speed * WatchWithin + 1f;
         }
 
-        // ---------------------------------------------------------------- stepping out at a chosen moment
+        // Stepping out at a chosen moment.
 
         public const float KerbToStrip = 1.5f;       // metres from a lane's middle at which somebody walking in is in a car's strip
         public const float NoseFromMiddle = 2.3f;    // metres from a car's middle to its nose, near enough
@@ -320,11 +283,10 @@ namespace RealLifeOverhaul
         public const float SeenAfter = 0.3f;         // seconds of the car's travel allowed for their being seen
 
         /// <summary>
-        /// How far up the lane a car's middle is at the moment somebody at the kerb sets off, for them to be in
-        /// its way with a chosen amount of road left: what the car covers while they walk to its strip, and then a
-        /// hard stop's worth with the gap (close), or a third of a second's travel and a metre (late: it cannot stop).
+        /// How far up the lane a car's middle is as somebody at the kerb sets off, for them to be in its way with the road wanted
+        /// left: what it covers while they walk to its strip, then a hard stop and the gap (close) or a third of a second's travel
+        /// and a metre (late). walkPace is in m/s, an ordinary one if not given.
         /// </summary>
-        /// <param name="walkPace">The pace they walk at, in m/s; an ordinary one if not given.</param>
         public static float StepOutAt(float carSpeed, float metresToLane, bool late, float walkPace = StreetRules.WalkPace)
         {
             if (carSpeed < 0f)
@@ -336,27 +298,19 @@ namespace RealLifeOverhaul
             return carSpeed * walk + left + NoseFromMiddle;
         }
 
-        // ---------------------------------------------------------------- how often somebody is hit
-
-        /// <summary>
-        /// People hit by ordinary traffic per hour at the most: the same bank the reckless drivers draw on
-        /// (StreetRules.PerHour, an hour of play, times the pedestrians' share), since a hit can only happen while one is owed.
-        /// </summary>
+        /// <summary>People hit by ordinary traffic per hour at the most: the reckless drivers' bank, as a hit happens only while one is owed.</summary>
         public static float StrikesPerHourMost(int frequency, float weather)
         {
             return StreetRules.PerHour(frequency, weather) * StreetRules.PeopleShare;
         }
 
-        // ---------------------------------------------------------------- the grid of people
-
         /// <summary>
-        /// The people near the player, put in a grid of 8 m squares once a tick so that each car looks only
-        /// at the squares its strip covers. A counting sort into arrays made once: a few operations a
-        /// person, one pass over the squares, nothing allocated after the constructor.
+        /// The people near the player in a grid of 8 m squares, built once a tick so that each car looks only at the squares its
+        /// strip covers: a counting sort into arrays made once, nothing allocated after the constructor.
         /// </summary>
         public sealed class PeopleGrid
         {
-            public const float Cell = 8f;
+            public const float Cell = 8f;            // metres
             public const int Side = 24;              // squares each way: 192 m, the window round the player
             private const float Slack = 0.05f;       // metres the squares looked at reach beyond the strip's corners
 
@@ -432,10 +386,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>
-            /// Everybody in a strip ahead of a car, into <paramref name="found"/> (their numbers), with how far
-            /// ahead and to the side each is. Only the squares the strip's corners span are looked at.
-            /// </summary>
+            /// <summary>Everybody in a strip ahead of a car into found, with how far ahead and aside; only the squares its corners span are looked at.</summary>
             /// <returns>How many were found (never more than the arrays hold).</returns>
             public int Strip(float cx, float cz, float fx, float fz, float from, float to, float halfWidth, int[] found, float[] ahead, float[] side)
             {
@@ -445,8 +396,8 @@ namespace RealLifeOverhaul
                 float ax = cx + fx * from, az = cz + fz * from;
                 float bx = cx + fx * to, bz = cz + fz * to;
                 float wx = Math.Abs(rx) * halfWidth, wz = Math.Abs(rz) * halfWidth;
-                // (A hand's width more each way: the squares are picked with other arithmetic than the test below, and
-                // somebody exactly on the strip's edge must not fall between the two.)
+                // A hand's width more each way: the squares are picked by other arithmetic than the test below, and somebody
+                // exactly on the strip's edge must not fall between the two.
                 float minX = (ax < bx ? ax : bx) - wx - Slack, maxX = (ax > bx ? ax : bx) + wx + Slack;
                 float minZ = (az < bz ? az : bz) - wz - Slack, maxZ = (az > bz ? az : bz) + wz + Slack;
                 int c0 = (int)Math.Floor((minX - _minX) / Cell), c1 = (int)Math.Floor((maxX - _minX) / Cell);
@@ -482,13 +433,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- who gets a stand-in
-
         /// <summary>
-        /// The few stand-ins shared out among the people who are in some car's way: the most pressing first
-        /// (the least time before a car reaches them), never more than there are, and whoever had one at the
-        /// last look and still needs one keeps the same one, so that none jumps from person to person.
-        /// Arrays made once; an insertion into a short list for each person wanted.
+        /// The few stand-ins shared among the people in some car's way, the most pressing first; whoever had one and still needs
+        /// it keeps the same one, so that none jumps from person to person. Arrays made once.
         /// </summary>
         public sealed class ProxyPool
         {
@@ -525,11 +472,7 @@ namespace RealLifeOverhaul
                 _wantedCount = 0;
             }
 
-            /// <summary>
-            /// Somebody needs a stand-in. <paramref name="id"/> is theirs from look to look and never 0;
-            /// <paramref name="urgency"/> is the seconds before a car reaches them (less is more pressing).
-            /// Only the most pressing few are remembered. Asking twice for one person keeps the more pressing.
-            /// </summary>
+            /// <summary>Somebody needs a stand-in: id is theirs from look to look, never 0; urgency the seconds before a car reaches them.</summary>
             public void Want(int id, float urgency, int tag)
             {
                 if (id == 0)
@@ -581,10 +524,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// Shares the stand-ins out. Afterwards Holder says who has each; <paramref name="freed"/> is set
-            /// for each that was taken from somebody (who no longer needs it, or is less pressing than the
-            /// pool has room for) and <paramref name="given"/> for each that has a new holder. A stand-in can
-            /// be both: taken from one person and given to another at the same look.
+            /// Shares the stand-ins out: freed is set for each taken from somebody, given for each with a new holder (both, when it
+            /// changes hands at the same look).
             /// </summary>
             public void Share(bool[] freed, bool[] given, int[] tags)
             {
