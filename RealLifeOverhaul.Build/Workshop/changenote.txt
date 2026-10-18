@@ -1,4 +1,4 @@
-0.38.1
+0.39.2
 
 Fixed
-- The driving test, above all in the school's van, marked collisions that never happened, often as you stopped. The road under the van as its nose dipped, a kerb under the wheels or its load counted as a hit. Now only hitting a car, a person, a post, a building or a wall counts, by how hard you hit it, and the same rule judges crashes on the road, on jobs and on outings.
+- A building that is no longer yours is let go within the hour. Its power and water get their last bill, and the mod never closes it or bills it again. An underground car park that another mod sells as a business gets no power or water bills, and anything billed for one is written off.

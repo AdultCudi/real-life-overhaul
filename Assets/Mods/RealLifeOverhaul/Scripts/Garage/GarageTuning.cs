@@ -320,7 +320,9 @@ namespace RealLifeOverhaul
         /// <summary>
         /// What this car does with a build on it, by the model: 0-100 and top speed when the car model is
         /// driving it (the player is in it and CarTuning has tuned it), and the distance it stops in from
-        /// 100 km/h from its brakes, tyres and weight. Runs the sums: for a click in the shop, never per frame.
+        /// 100 km/h from its brakes, tyres and weight: with car handling on the car, by the handling's own model of it (the
+        /// axles' brake shares, the tyres' grip along and the eased pedal's rise). Runs the sums: for a click in the shop,
+        /// never per frame.
         /// </summary>
         public static GarageFigures Figures(CarController car, GarageBuild build)
         {
@@ -368,29 +370,38 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                // Stopping: the brakes' torque at the tyre, or what the tyres hold, whichever is less.
-                float grip = 0f;
-                float brake = 0f;
-                int wheels = 0;
-                foreach (WheelComponent component in vehicle.powertrain.wheels)
+                // Stopping: with car handling on this car, as its handling stops it (Driving/HandlingModel.ShopStop, the same
+                // sums the car's brakes are set by); else the brakes' torque at the tyre, or what the tyres hold, whichever is less.
+                float handled = CarTuning.HandlingStop(car, m.Brakes, m.Mass, m.Grip);
+                if (handled > 0f)
                 {
-                    WheelUAPI wheel = component != null ? component.wheelUAPI : null;
-                    if (wheel == null || !(wheel.Radius > 0.05f))
-                    {
-                        continue;
-                    }
-                    float surface = wheel.FrictionPreset != null ? wheel.FrictionPreset.BCDE.z : 1f;
-                    grip += surface * 1.35f;   // the tyre's own grip factor is left out: it may carry this build already
-                    brake += 1f / wheel.Radius;
-                    wheels++;
+                    figures.StopMetres = handled;
                 }
-                if (wheels > 0 && mass > 1f && torque > 0f)
+                else
                 {
-                    float held = grip / wheels * 9.81f * m.Grip;
-                    float braked = torque * m.Brakes * brake / (mass * m.Mass);
-                    float slowing = Mathf.Min(held, braked);
-                    const float speed = 27.7778f;
-                    figures.StopMetres = speed * speed / (2f * slowing) + speed * 0.12f;   // and the brakes coming on
+                    float grip = 0f;
+                    float brake = 0f;
+                    int wheels = 0;
+                    foreach (WheelComponent component in vehicle.powertrain.wheels)
+                    {
+                        WheelUAPI wheel = component != null ? component.wheelUAPI : null;
+                        if (wheel == null || !(wheel.Radius > 0.05f))
+                        {
+                            continue;
+                        }
+                        float surface = wheel.FrictionPreset != null ? wheel.FrictionPreset.BCDE.z : 1f;
+                        grip += surface * 1.35f;   // the tyre's own grip factor is left out: it may carry this build already
+                        brake += 1f / wheel.Radius;
+                        wheels++;
+                    }
+                    if (wheels > 0 && mass > 1f && torque > 0f)
+                    {
+                        float held = grip / wheels * 9.81f * m.Grip;
+                        float braked = torque * m.Brakes * brake / (mass * m.Mass);
+                        float slowing = Mathf.Min(held, braked);
+                        const float speed = 27.7778f;
+                        figures.StopMetres = speed * speed / (2f * slowing) + speed * 0.12f;   // and the brakes coming on
+                    }
                 }
             }
             catch (Exception e)

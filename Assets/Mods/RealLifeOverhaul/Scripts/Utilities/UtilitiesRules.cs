@@ -10,6 +10,15 @@ namespace RealLifeOverhaul.Utilities
         Cut = 2             // ...and the days of grace have run out: the supply is cut
     }
 
+    /// <summary>What becomes of an account as the player's places are read again (UtilitiesRules.Fate).</summary>
+    public enum AccountFate
+    {
+        Keep = 0,           // a place of the player's, or a last bill still owed
+        LastBill = 1,       // the place is no longer the player's: its last bill now, and closed
+        WriteOff = 2,       // a place the utilities never supply (an underground car park): nothing owed, taken out
+        TakeOut = 3         // closed and settled: off the books
+    }
+
     /// <summary>
     /// The rules of the city's power and water (UtilitiesCatalogue), game-free and checked by EconomyCheck: a day's use
     /// and what it costs, the month's bill and when it falls due, what follows a bill left unpaid, deposits, and the
@@ -240,6 +249,77 @@ namespace RealLifeOverhaul.Utilities
         public static Account Rented(string place, Service service, PlaceKind kind, int day)
         {
             return new Account { Place = place, Service = service, Kind = kind, State = SupplyState.Active, Owned = false, OpenedDay = day, AutoDebit = true };
+        }
+
+        // ---------------------------------------------------------------- places never supplied
+
+        public const string CarParkStreet = "ba:street_parking";     // the game's street of its underground car parks (UndergroundParkingEntrance.Address)
+        public const string CarParkSize = "ba:buildingsize_parking";  // ...and their size (UndergroundParkingManager.ParkingBuildingSize)
+
+        /// <summary>
+        /// True for a place the city's utilities supply: every one but an underground car park. The game gives a car
+        /// park's address no registration of its own (BuildingHelper.CanTheAddressHaveARegistration) and its layout no
+        /// floor, dirt or furniture (BuildingManager.LoadBuildingInternal), so a car park another mod sells as a
+        /// business has no premises to light or plumb.
+        /// </summary>
+        public static bool Serves(string street, string size)
+        {
+            return !string.Equals(street, CarParkStreet, StringComparison.Ordinal) && !string.Equals(size, CarParkSize, StringComparison.Ordinal);
+        }
+
+        /// <summary>True for an account's place (an escaped street, a tilde and a number) that is an underground car park's.</summary>
+        public static bool CarParkPlace(string place)
+        {
+            int at = place != null ? place.LastIndexOf('~') : -1;
+            return at > 0 && !Serves(Uri.UnescapeDataString(place.Substring(0, at)), null);
+        }
+
+        /// <summary>
+        /// What becomes of an account as the player's places are read again (each hour, each morning, as the app or the
+        /// desk opens): one at a place never supplied is written off, the player's or not (<paramref name="unserved"/>: a
+        /// place of theirs that is no premises; an account's own car park address says so too); one at a place the player
+        /// no longer holds (<paramref name="held"/>) has its last bill; one closed with nothing left owed is taken out.
+        /// </summary>
+        public static AccountFate Fate(Account a, bool held, bool unserved)
+        {
+            if (a == null)
+            {
+                return AccountFate.TakeOut;
+            }
+            if (unserved || CarParkPlace(a.Place))
+            {
+                return AccountFate.WriteOff;
+            }
+            if (a.State != SupplyState.Closed && !held)
+            {
+                return AccountFate.LastBill;
+            }
+            return a.State == SupplyState.Closed && a.Owed <= 0 && a.Accrued <= 0 ? AccountFate.TakeOut : AccountFate.Keep;
+        }
+
+        /// <summary>
+        /// An account of a place the utilities never supply, written off: nothing owed, used or due, and closed, so that
+        /// it is taken out and never billed. Returns the deposit to give back.
+        /// </summary>
+        public static int WriteOff(Account a)
+        {
+            if (a == null)
+            {
+                return 0;
+            }
+            int back = Math.Max(0, a.Deposit);
+            a.Deposit = 0;
+            a.Owed = 0;
+            a.Accrued = 0;
+            a.Units = 0;
+            a.DueDay = 0;
+            a.LateCharged = false;
+            a.CutForDebt = false;
+            a.State = SupplyState.Closed;
+            a.TemporaryUntil = 0;
+            a.ContractUntil = 0;
+            a.OutageFrom = a.OutageUntil = 0;
+            return back;
         }
     }
 }

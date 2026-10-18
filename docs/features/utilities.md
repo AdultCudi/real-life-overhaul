@@ -20,7 +20,8 @@ The rules are game-free and checked by EconomyCheck (`UtilitiesCatalogue`, `Util
   A bought place (`BuildingOwnedByPlayer`) is supplied for three days at half as much again (the temporary supply) and then cut, unless an account is applied for in person at the office's desk; it connects the next morning.
 
   A poor credit rating (Economy's grade, through `UtilitiesBridges.Grade`) asks for a deposit of one or two months' estimate, never a refusal; it comes back after six bills paid by their due day in a row, or with the last bill.
-  A place given up has its last bill at once, the deposit set against it.
+  A place given up has its last bill at once, the deposit set against it. The places are read again each game hour as well as each morning, so a place whose lease ended, or that was sold with it, is let go within the hour and never closed or billed again (`UtilitiesRules.Fate`, `UtilitiesDirector.Gone.cs`).
+  An underground car park (the game's street `ba:street_parking`, size `ba:buildingsize_parking`) is never a place, even when another mod sells one as a business: the game gives its address no registration of its own and its layout no floor, dirt or furniture, so it has no premises to supply (`UtilitiesRules.Serves`). An account a save holds for one is written off, its deposit given back.
 
 - **Use.** Each morning yesterday's use is added to the month's, at that day's prices (`Prices.Level`): a home by its floor (`Building.totalSqm`) and the people in it (the player, a partner who moved in, children at home, a roommate: `UtilitiesBridges.Household`).
   A business by its floor and its kind (the game's business types, from offices to industry), a quarter of it on a day it does not open (its week of opening hours).

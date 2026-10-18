@@ -11,9 +11,19 @@ namespace RealLifeOverhaul
     /// <summary>Sleep, rest and a beach walk, each through the game's time skip.</summary>
     public sealed partial class HotelStay
     {
+        /// <summary>
+        /// The bed's quality (0 to 100, as the game rates its own beds) while the player sleeps or naps in a room through the
+        /// time skip, and -1 at any other time. A night here is never the game's own sleep, so home and health ask this.
+        /// </summary>
+        public static int SleepingBed { get; private set; } = -1;
+
+        // A room's bed against the game's own: an ordinary bed is 50, and each tenth of the room's sleep bonus is 10 more.
+        private static int BedQuality(RoomType room) => Mathf.Clamp(Mathf.RoundToInt(50f + room.BedBonus * 100f), 0, 100);
+
         /// <summary>Puts the game's energy regeneration back as it was. Safe at any time; the watchdog calls it on every forced exit.</summary>
         public static void EndSleepEffects()
         {
+            SleepingBed = -1;
             try
             {
                 EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.None);
@@ -79,6 +89,7 @@ namespace RealLifeOverhaul
             EnergyHelper.RemoveEnergySpender("move");
             EnergyHelper.SetCurrentEnergyRegen(room.Bed == 0 ? EnergyRegen.Bench : room.Bed == 1 ? EnergyRegen.Car : EnergyRegen.Bed);
             EnergyHelper.energyRegenMultiplier = Mathf.Max(0.5f, EnergyHelper.DefaultEnergyRegenMultiplier + room.BedBonus);
+            SleepingBed = BedQuality(room);
             yield return _director.Skip(goal, night ? "reallife_travel_tm_sleep" : "reallife_travel_tm_nap");
             EndSleepEffects();
             _sleeping = false;
