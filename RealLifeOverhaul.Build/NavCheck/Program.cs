@@ -74,6 +74,7 @@ internal static partial class Program
         CameraYields();  // when the mod's camera stands aside for the game's own camera moments and what it gives back, the highway's bridges among them (CameraYieldCheck.cs)
         Bikes();         // bicycles and motorbikes: the pull-away, the pose, the lean, the boxes the world meets, and their names (BikeCheck.cs)
         LeisureReaches(); // leisure's reaches in metres against squares of flat distances, and every such comparison in the sources (LeisureReachCheck.cs)
+        StationReaches(); // a police station's door and desk: from the doorstep, as the game's own door, never from the road; JobSpots.Flat never squared (StationReachCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();
