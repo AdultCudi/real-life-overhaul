@@ -47,7 +47,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\CordonRules.cs" Link="Mod\CordonRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\CarExitRules.cs" Link="Mod\CarExitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\TestRouteRules.cs" Link="Mod\TestRouteRules.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationPlan.cs" Link="Mod\StationPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationGrid.cs" Link="Mod\StationGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationReach.cs" Link="Mod\StationReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Tow\TowRules.cs" Link="Mod\TowRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\SitePlan.cs" Link="Mod\SitePlan.cs" />

@@ -3,10 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Law
 {
-    /// <summary>
-    /// A piece of floor in a room's own frame: aside (A, to the right of somebody walking in from the door) and depth (D,
-    /// along the way in), with half its width and half its depth. Plain numbers: nothing of the game or the engine.
-    /// </summary>
+    /// <summary>A piece of floor in a room's frame: aside A (to the right of somebody walking in) and depth D, with half its sizes.</summary>
     public struct FloorRect
     {
         public float A, D, HalfA, HalfD;
@@ -33,12 +30,9 @@ namespace RealLifeOverhaul.Law
     }
 
     /// <summary>
-    /// The floor of a station's room as a grid of square cells, each walkable or not (the station measures that on the
-    /// game's navigation mesh, once, under the fade), and the walkway rule every furnished room keeps: from the door, each
-    /// place that has to be reached (the front of the counter, the sergeant's side of it, the cell, every seat somebody is
-    /// sent to) can still be walked to once the furniture stands, with a body's width to spare round every piece. Pieces
-    /// that would close a way are taken out again, the ones in the way first. No engine type in it, so it is checked in a
-    /// console test (RealLifeOverhaul.Build/NavCheck/StationCheck.cs).
+    /// A station room's floor as a grid of square cells, walkable or not, and the walkway rule every furnished room keeps:
+    /// from the door, every place that must be reached can still be walked to with the furniture standing, a body's width
+    /// to spare round each piece. Game-free, so NavCheck checks it (StationCheck.cs).
     /// </summary>
     public sealed class StationGrid
     {
@@ -71,7 +65,6 @@ namespace RealLifeOverhaul.Law
         public int Cols { get; }
         public int Rows { get; }
 
-        /// <summary>The middle of a cell in the room's frame.</summary>
         public void Centre(int col, int row, out float a, out float d)
         {
             a = MinA + (col + 0.5f) * Cell;
@@ -86,20 +79,6 @@ namespace RealLifeOverhaul.Law
         public bool Walkable(int col, int row)
         {
             return col >= 0 && row >= 0 && col < Cols && row < Rows && _walkable[row * Cols + col];
-        }
-
-        /// <summary>How many cells are walkable.</summary>
-        public int WalkableCount
-        {
-            get
-            {
-                int count = 0;
-                for (int i = 0; i < _walkable.Length; i++)
-                {
-                    count += _walkable[i] ? 1 : 0;
-                }
-                return count;
-            }
         }
 
         private bool CellOf(float a, float d, out int col, out int row)
@@ -144,7 +123,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The open cell nearest a point within a reach, or -1.
         private int Nearest(float a, float d, float reach)
         {
             int best = -1;
@@ -171,7 +149,7 @@ namespace RealLifeOverhaul.Law
             return best;
         }
 
-        // Breadth first over the open cells from one cell; every cell reached keeps the one it was reached from. The count reached.
+        // Breadth first over the open cells from one cell; each cell reached keeps the one it was reached from. The count reached.
         private int Spread(int start)
         {
             for (int i = 0; i < _from.Length; i++)
@@ -209,9 +187,8 @@ namespace RealLifeOverhaul.Law
         }
 
         /// <summary>
-        /// True if somebody can walk from one point to another with the kept pieces standing (each grown by
-        /// <paramref name="margin"/>). Each end may be up to <paramref name="reach"/> from an open cell (a seat stands on
-        /// furniture; the counter's front is a step from it).
+        /// True if somebody can walk from one point to another with the kept pieces standing, each grown by
+        /// <paramref name="margin"/>; each end may be up to <paramref name="reach"/> from an open cell.
         /// </summary>
         public bool Reachable(float fromA, float fromD, float toA, float toD, IList<FloorRect> pieces, IList<bool> keep, float margin, float reach)
         {
@@ -226,10 +203,7 @@ namespace RealLifeOverhaul.Law
             return _from[goal] != -2;
         }
 
-        /// <summary>
-        /// The middle of the open cell nearest a point, within a reach, with the kept pieces standing (each grown by the
-        /// margin) and reachable from the door: where somebody stands to sit down on a seat, or stands beside a piece.
-        /// </summary>
+        /// <summary>Where somebody stands to sit down: the open cell nearest a point, within a reach, reachable from the door.</summary>
         public bool NearestOpen(float doorA, float doorD, float a, float d, float reach, IList<FloorRect> pieces, IList<bool> keep, float margin,
             out float openA, out float openD)
         {
@@ -267,10 +241,9 @@ namespace RealLifeOverhaul.Law
         }
 
         /// <summary>
-        /// Takes pieces out (sets their keep to false) until every target can be walked to from the door, and returns how
-        /// many were taken out. A target that cannot be reached even with nothing in the room is left (the room itself closes
-        /// it off). For each target still cut off: the way to it in the empty room, and every kept piece on that way, out.
-        /// Pieces marked fixed are never taken out (the counter, the cell). At most a few rounds: the room is small.
+        /// Takes pieces out (their keep set to false) until every target can be walked to from the door; returns how many.
+        /// For each target cut off, every kept piece on its way in the empty room goes; fixed pieces never do, and a target
+        /// the room itself cuts off is left.
         /// </summary>
         public int KeepWaysOpen(float doorA, float doorD, IList<float> targetsA, IList<float> targetsD, IList<FloorRect> pieces, IList<bool> keep,
             IList<bool> isFixed, float margin, float reach)
@@ -295,7 +268,7 @@ namespace RealLifeOverhaul.Law
                     Spread(start);
                     if (_from[goal] == -2)
                     {
-                        break;   // cut off by the room or the fixed pieces themselves: nothing to take out helps
+                        break;   // cut off by the room or the fixed pieces: taking anything out does not help
                     }
                     int took = 0;
                     for (int at = goal; at >= 0; at = _from[at])
@@ -334,11 +307,11 @@ namespace RealLifeOverhaul.Law
         }
     }
 
-    /// <summary>How many people a furnished station has, and where: kept modest, and within what the mod's pool hands out.</summary>
+        /// <summary>How many people a furnished station has, and where: modest, and within what the mod's pool hands out.</summary>
     public struct StationCrew
     {
         public const int MostAtDesks = 2;
-        public const int MostPresence = 4;   // People/ActorPool.MaxPresence: the people only there to be seen
+        public const int MostPresence = 4;   // People/ActorPool.MaxPresence: those only there to be seen
         public const int Most = 6;
 
         public int AtDesks;      // officers seated at a desk, typing (presence)
@@ -350,7 +323,7 @@ namespace RealLifeOverhaul.Law
         public int Total => AtDesks + OnBreak + Walking + Visitors + Sergeant;
         public int Presence => AtDesks + Walking + Visitors;
 
-        /// <summary>The cast for a room with these places: seats at desks, seats in a break area, seats to wait on, how deep the room is.</summary>
+        /// <summary>The cast for a room with these seats at desks, in a break area and to wait on, this deep in metres.</summary>
         public static StationCrew For(int deskSeats, int breakSeats, int waitingSeats, float depth, bool furnished)
         {
             var crew = new StationCrew { Sergeant = 1 };

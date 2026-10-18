@@ -4,19 +4,7 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Law
 {
-    // The rooms of a furnished station, in the game's own furniture, each where the measured room has the floor and the wall
-    // for it (the room's frame: depth along the way in, "aside" to the right of somebody walking in):
-    //
-    //   the public front   a row of the game's waiting-room chairs along a side wall by the entrance (the visitors' seats),
-    //                      and the queue to the counter between two belt barriers
-    //   the office         the game's own desk and office chair at each officer's desk, in place of the plain stand-in
-    //   the briefing room  a large screen on a side wall behind the counter and a row of folding chairs facing it
-    //   the break room     a table and two chairs behind the counter, near the coffee machine where there is one
-    //
-    // These, and the pieces of the game's own design for the unit (StationInterior.Design.cs), are staged: placed but
-    // switched off until the walkway check (StationGrid.KeepWaysOpen) has made sure that from the door the player can still
-    // walk to the counter, round it to the sergeant's side and to the front of the cell, and that everybody sent to a seat
-    // can reach it. Whatever closes such a way is left out, and what stands on it or at it goes with it.
+    /// <summary>The furnished station's rooms, staged with the game's design until the walkway check has kept every way open.</summary>
     internal sealed partial class StationInterior
     {
         private const string StandInName = "Stand-in";
@@ -32,15 +20,14 @@ namespace RealLifeOverhaul.Law
             public Vector3 At;
             public Quaternion Facing;
             public bool Solid;
-            public bool Floor;        // it stands on the floor and is in the way of anybody walking
+            public bool Floor;        // it stands on the floor, in the way of anybody walking
             public FloorRect Rect;
             public int Anchor;        // the piece it stands on or at (a computer on a desk, a chair at a table), or -1
             public SeatUse Use;
-            public bool Design;       // from the game's own design for the unit
             public bool Dropped;
         }
 
-        /// <summary>A place to sit in the furnished station, where somebody stands to sit on it, and what it is for.</summary>
+        // A seat of the furnished station, where somebody stands to sit on it, and what it is for.
         private struct SeatPlace
         {
             public Transform Seat;
@@ -63,11 +50,10 @@ namespace RealLifeOverhaul.Law
 
         private StationGrid _grid;
         private int _benchSide;
-        private bool _cast;               // the furnished station's people are in charge (StationInterior.Cast.cs)
+        private bool _cast;               // the furnished station's people are in charge (Cast)
         private bool _designLamps;
         private bool _designCarpet;
         private Transform _lastWall;
-        private int _lastStaged = -1;
         private SeatUse _stageWall;
         private bool _hasCoffee;
         private Vector3 _coffeeFront;
@@ -87,14 +73,13 @@ namespace RealLifeOverhaul.Law
             _designLamps = false;
             _designCarpet = false;
             _lastWall = null;
-            _lastStaged = -1;
             _stageWall = SeatUse.None;
             _hasCoffee = false;
             _hasBriefing = false;
             _designName = null;
         }
 
-        // The plain stand-ins of the office desks shown (the bare station) or hidden (the game's desk stands there instead).
+        // The office desks' plain stand-ins shown (the bare station) or hidden (the game's desk stands there instead).
         private void StandIns(bool on)
         {
             for (int i = 0; i < _desks.Length; i++)
@@ -107,7 +92,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // A piece that stands where it is whatever the walkway check finds: the counter, the cell, the bench, what stands along the walls.
+        // A piece that stands whatever the walkway check finds: the counter, the cell, the bench, what stands along the walls.
         private void Fixed(float aside, float depth, float halfA, float halfD)
         {
             _fixedRects.Add(new FloorRect(aside, depth, halfA, halfD));
@@ -129,9 +114,7 @@ namespace RealLifeOverhaul.Law
 
         private float DepthOf(Vector3 world) => Vector3.Dot(world - _origin, _in);
 
-        // ---------------------------------------------------------------- the floor, measured once
-
-        // The room's floor as a grid of cells, walkable or not, sampled on the navigation mesh before anything is cut out of it.
+        // The room's floor as a grid of cells, walkable or not, sampled before anything is cut out of the mesh.
         private void MeasureGrid()
         {
             float left = 0.5f, right = 0.5f;
@@ -155,9 +138,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // ---------------------------------------------------------------- staging
-
-        // The floor a piece takes, in the room's frame: its drawn bounds turned as it stands, squared to the room.
         private FloorRect RectOf(Vector3 at, Quaternion facing, Bounds size)
         {
             float minA = float.MaxValue, maxA = float.MinValue, minD = float.MaxValue, maxD = float.MinValue;
@@ -175,7 +155,7 @@ namespace RealLifeOverhaul.Law
         }
 
         // A piece placed, switched off, for the walkway check to keep or leave out. Its index.
-        private int Stage(Transform piece, Bounds size, Vector3 at, Quaternion facing, bool solid, int anchor, SeatUse use, bool design)
+        private int Stage(Transform piece, Bounds size, Vector3 at, Quaternion facing, bool solid, int anchor, SeatUse use)
         {
             FloorRect rect = RectOf(at, facing, size);
             bool floor = solid && at.y - _floor < 0.15f && rect.HalfA * rect.HalfD * 4f > 0.04f;
@@ -189,8 +169,7 @@ namespace RealLifeOverhaul.Law
                 Floor = floor,
                 Rect = rect,
                 Anchor = anchor,
-                Use = use,
-                Design = design
+                Use = use
             });
             return _staged.Count - 1;
         }
@@ -198,7 +177,7 @@ namespace RealLifeOverhaul.Law
         private int Stage(string prefab, Vector3 at, Quaternion facing, bool solid, int anchor, SeatUse use)
         {
             Transform piece = Piece(prefab, out Bounds size);
-            return piece == null ? -1 : Stage(piece, size, at, facing, solid, anchor, use, false);
+            return piece == null ? -1 : Stage(piece, size, at, facing, solid, anchor, use);
         }
 
         private bool OverlapsStaged(FloorRect rect, float margin)
@@ -225,10 +204,7 @@ namespace RealLifeOverhaul.Law
             return false;
         }
 
-        // ---------------------------------------------------------------- the office desks
-
-        // The game's own office desk where the plain stand-in stood, and an office chair at it (staged, a seat at a desk).
-        // True, with the desk's bounds in the holder's space, if the game's desk went in.
+        // The game's own office desk in place of the stand-in, and a chair at it. True, with its bounds, if the desk went in.
         private bool GameDesk(Transform desk, out Bounds size)
         {
             size = default;
@@ -240,7 +216,7 @@ namespace RealLifeOverhaul.Law
                 if (made != null)
                 {
                     standIn.gameObject.SetActive(false);
-                    Put(made, b, desk.position, desk.rotation, false, desk);   // (the holder is already cut out of the mesh)
+                    Put(made, b, desk.position, desk.rotation, false, desk);   // the holder is already cut out of the mesh
                     size = b;
                     placed = true;
                 }
@@ -250,9 +226,6 @@ namespace RealLifeOverhaul.Law
             return placed;
         }
 
-        // ---------------------------------------------------------------- the public front
-
-        // A row of the game's waiting-room chairs along a side wall by the entrance: the wall across from the bench first.
         private void PlanWaitingChairs(int benchSide, float limit)
         {
             for (int attempt = 0; attempt < 2; attempt++)
@@ -273,7 +246,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The queue to the counter: a belt barrier either side of the way up to it, where the floor there is clear.
         private void PlanQueue(bool desk)
         {
             if (!desk)
@@ -289,9 +261,8 @@ namespace RealLifeOverhaul.Law
             float run = Mathf.Max(size.size.x, size.size.z);
             if (run < 0.8f || run > 3.5f)
             {
-                return;   // not a length of belt between posts as expected: no queue line
+                return;   // not a length of belt between posts: no queue
             }
-            // Its length along the way in.
             Quaternion facing = size.size.x >= size.size.z ? Quaternion.LookRotation(_right, Vector3.up) : Quaternion.LookRotation(_in, Vector3.up);
             float service = DepthOf(ServiceSpot), aside = AsideOf(ServiceSpot);
             float depth = service - 0.3f - run * 0.5f;
@@ -321,9 +292,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // ---------------------------------------------------------------- behind the counter
-
-        // The briefing room: a large screen on a side wall behind the counter and three folding chairs facing it.
         private void PlanBriefing(float from, float to)
         {
             const int Chairs = 3;
@@ -352,7 +320,8 @@ namespace RealLifeOverhaul.Law
                     {
                         return;
                     }
-                    int screenAt = Stage(screen, tv, surface + Vector3.up * 1.45f - _right * side * 0.004f, Quaternion.LookRotation(_right * -side, Vector3.up), false, -1, SeatUse.None, false);
+                    int screenAt = Stage(screen, tv, surface + Vector3.up * 1.45f - _right * side * 0.004f,
+                        Quaternion.LookRotation(_right * -side, Vector3.up), false, -1, SeatUse.None);
                     _hung.Add(surface + Vector3.up * 1.45f);
                     Quaternion facing = Quaternion.LookRotation(_right * side, Vector3.up);   // the chairs face the screen
                     for (int i = 0; i < Chairs; i++)
@@ -372,7 +341,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The break room: a table with a chair at either end behind the counter, near the coffee machine where there is one.
         private void PlanBreak(float from, float to)
         {
             Transform table = Piece("Table1", out Bounds t);
@@ -382,7 +350,7 @@ namespace RealLifeOverhaul.Law
             }
             Unuse("Table1");
             float tableLong = t.size.x, tableWide = t.size.z;
-            float halfD = tableLong * 0.5f + 0.75f;                 // the table and a chair at each end, along the way in
+            float halfD = tableLong * 0.5f + 0.75f;   // the table and a chair at each end, along the way in
             float halfA = Mathf.Max(tableWide * 0.5f, 0.35f) + 0.1f;
             bool found = false;
             float bestSqr = float.MaxValue, bestA = 0f, bestD = 0f;
@@ -434,8 +402,6 @@ namespace RealLifeOverhaul.Law
             _fitted.Append("break table; ");
         }
 
-        // ---------------------------------------------------------------- the walkway check, and switching on
-
         // Every way that has to stay open, checked on the measured floor with the furniture standing; what closes one is left out.
         private void KeepWays(bool cell)
         {
@@ -461,7 +427,7 @@ namespace RealLifeOverhaul.Law
                 AddTarget(_coffeeFront);
             }
             int removed = _grid.KeepWaysOpen(0f, 0.4f, _targetA, _targetD, _blocks, _blockKeep, _blockFixed, margin, 0.9f);
-            // Then to every seat somebody may be sent to: up to a step and a half away from it.
+            // Then to every seat somebody may be sent to, up to a step and a half from it.
             _targetA.Clear();
             _targetD.Clear();
             for (int i = 0; i < _staged.Count; i++)
@@ -480,7 +446,6 @@ namespace RealLifeOverhaul.Law
                     Drop(s);
                 }
             }
-            // What stands on or at a piece left out goes with it (a computer on a desk, the chairs at a table).
             for (int pass = 0; pass < 3; pass++)
             {
                 for (int i = 0; i < _staged.Count; i++)
@@ -511,7 +476,6 @@ namespace RealLifeOverhaul.Law
             _staged[index] = s;
         }
 
-        // The pieces in everybody's way: the fixed ones, and every staged one on the floor not left out.
         private void Blocks()
         {
             _blocks.Clear();
@@ -537,7 +501,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // Every staged piece not left out switched on; then the seats among them, each with the place somebody stands to sit on it.
+        // Every staged piece not left out switched on; then the seats among them, each with where somebody stands to sit.
         private void Activate()
         {
             for (int i = 0; i < _staged.Count; i++)
@@ -545,7 +509,7 @@ namespace RealLifeOverhaul.Law
                 Staged s = _staged[i];
                 if (!s.Dropped && s.Piece != null)
                 {
-                    Put(s.Piece, s.Size, s.At, s.Facing, s.Floor);   // (one left out stays off, in the pool, for this visit)
+                    Put(s.Piece, s.Size, s.At, s.Facing, s.Floor);   // one left out stays off, in the pool, for this visit
                 }
             }
             if (_grid == null)

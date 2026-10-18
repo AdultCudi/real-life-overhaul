@@ -5,16 +5,13 @@ using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul.Law
 {
-    /// <summary>Where a piece's own origin is: the middle of its footprint on the ground, the middle of the face that goes against a wall, or wherever the model has it (a flag pole: the foot of the pole).</summary>
+    /// <summary>A piece's own origin: the middle of its footprint, the middle of its face against a wall, or the model's own.</summary>
     internal enum Pivot { Floor, Wall, Own }
 
     /// <summary>
-    /// The things a police station is made of, outside and in: each one the modelled prop from the
-    /// prop library where the bundle has it, otherwise a stand-in put together from the shared
-    /// plain shapes. A piece is always handed back as a holder whose origin is where the code
-    /// places it (ground centre, or the middle of the wall face) whatever the model's own pivot is:
-    /// the model is fitted under the holder by its bounds, so a prop only has to face +Z.
-    /// Nothing here keeps a piece; whoever asks owns it, builds it once and switches it on and off.
+    /// The pieces of a police station, outside and in: the modelled prop where the bundle has it, otherwise a stand-in of
+    /// plain shapes. A piece is a holder whose origin is where the code places it, the model fitted under it by its bounds,
+    /// so a prop only has to face +Z. Nothing here keeps a piece: whoever asks builds it once and owns it.
     /// </summary>
     internal static class StationProps
     {
@@ -28,8 +25,8 @@ namespace RealLifeOverhaul.Law
         public const string Emblem = "police_shield_emblem";
         public const string Awning = "station_awning";
         public const string Bollard = "bollard";
-        public const string OfficeDesk = "office_desk";          // wished for (docs/features/law.md)
-        public const string EvidenceDoor = "evidence_door";      // wished for (docs/features/law.md)
+        public const string OfficeDesk = "office_desk";          // not in the bundle yet: a stand-in is built
+        public const string EvidenceDoor = "evidence_door";      // not in the bundle yet: a stand-in is built
 
         public static readonly Color PoliceBlue = new Color(0.06f, 0.17f, 0.45f);
         public static readonly Color Steel = new Color(0.16f, 0.17f, 0.19f);
@@ -42,10 +39,9 @@ namespace RealLifeOverhaul.Law
         private static Mesh _star;
 
         /// <summary>
-        /// One piece under a parent, switched off: the modelled prop if the library has it (fitted so that the holder's
-        /// origin is the pivot asked for), otherwise nothing but the empty holder, for the caller's stand-in.
+        /// One piece under a parent, switched off: the modelled prop fitted to the pivot asked for, or an empty holder for the
+        /// caller's stand-in. <paramref name="size"/> is the model's size, or the stand-in's as given.
         /// </summary>
-        /// <param name="size">The model's width, height and depth; the stand-in's size as given if there is no model.</param>
         public static Transform Holder(string name, Transform parent, string id, Pivot pivot, Vector3 standInSize, out Vector3 size, out bool modelled)
         {
             var holder = new GameObject(name);
@@ -80,8 +76,6 @@ namespace RealLifeOverhaul.Law
             cut.carving = true;
             cut.carveOnlyStationary = true;
         }
-
-        // ---------------------------------------------------------------- stand-ins (plain shapes)
 
         /// <summary>The front counter: 2.4 wide, 1.1 high, 0.8 deep; the public stand at +Z.</summary>
         public static void DeskStandIn(Transform root)
@@ -199,7 +193,7 @@ namespace RealLifeOverhaul.Law
             return socket.transform;
         }
 
-        /// <summary>The blue lamp itself, standing on its origin: a dark cap over a glass 0.17 across and 0.24 high. Returns the glass (its paint is changed at dusk and dawn).</summary>
+        /// <summary>The blue lamp on its origin: a cap over a glass 0.17 across, 0.24 high. Returns the glass, repainted at dusk.</summary>
         public static MeshRenderer LampStandIn(Transform socket)
         {
             Shapes.Piece("Cap", socket, Shapes.Drum, Shapes.Paint(Steel), new Vector3(0f, 0.24f, 0f), new Vector3(0.20f, 0.03f, 0.20f));
@@ -238,12 +232,7 @@ namespace RealLifeOverhaul.Law
             Shapes.Piece("Plate", root, Shapes.Cube, Shapes.Paint(PoliceBlue), new Vector3(0f, 1.62f, 0.047f), new Vector3(0.62f, 0.13f, 0.006f));
         }
 
-        // ---------------------------------------------------------------- lettering and the star
-
-        /// <summary>
-        /// Words in the game's own font on a piece, read from the piece's +Z. Null if no font could be borrowed: the
-        /// piece then goes without.
-        /// </summary>
+        /// <summary>Words in the game's own font on a piece, read from its +Z. Null if no font could be borrowed.</summary>
         public static TextMeshPro Letter(Transform parent, string word, Vector3 at, float width, float height)
         {
             TMP_FontAsset font = GameUi.GameFont.Asset;
@@ -301,7 +290,7 @@ namespace RealLifeOverhaul.Law
                 normals[10] = Vector3.forward;
                 for (int i = 0; i < 10; i++)
                 {
-                    // Clockwise as seen from +Z (x runs to the left from there), which is the side it is looked at from.
+                    // Clockwise as seen from +Z (x runs to the left from there), the side it is looked at from.
                     triangles[i * 3] = 10;
                     triangles[i * 3 + 1] = i;
                     triangles[i * 3 + 2] = (i + 1) % 10;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Law;
 
-// The game-free parts of a furnished police station (Law/StationPlan.cs): pieces of floor in the room's frame, the walkway
+// The game-free parts of a furnished police station (Law/StationGrid.cs): pieces of floor in the room's frame, the walkway
 // rule (from the door the counter, the cell and every seat stay reachable, pieces in the way are taken out, fixed ones never),
 // the place somebody stands to sit down, and how many people the station has.
 internal static partial class Program
