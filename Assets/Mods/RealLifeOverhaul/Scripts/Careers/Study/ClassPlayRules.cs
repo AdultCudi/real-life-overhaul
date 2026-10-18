@@ -29,10 +29,9 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// The minutes of one class, piece of homework or exam at a desk or a computer, from the moment the player sits down
-    /// until it is over, counted to the enrolment once whichever way it ends: the end of the time, Stop, fast forward to
-    /// the end, the game's skip time, energy running out, the game's panel letting it go (a phone call, a click
-    /// elsewhere, the building left), the city unloading. Game-free; a few integer sums a minute of the game's clock.
+    /// The minutes of one class, homework or exam at a desk or a computer, from the moment the player sits down, counted to
+    /// the enrolment once however it ends (the time up, Stop, a skip, energy out, the game's panel letting it go, the city
+    /// unloading). Game-free; a few integer sums a minute of the game's clock.
     /// </summary>
     public sealed class ClassTally
     {
@@ -100,9 +99,8 @@ namespace RealLifeOverhaul.Careers
     public static class ClassPlayRules
     {
         /// <summary>
-        /// The one rule for how a desk's panel is opened for a class, an exam or homework of the mod's: the game's own study
-        /// panel when alone; in a Going Public session the desk's own panel, since Going Public takes every StudyActivity the
-        /// game's panel is asked to show, for its own training window of the game's course (its "Requires ... first").
+        /// The one rule for how a desk's panel is opened for a class of the mod's: the game's study panel alone; in a Going Public
+        /// session the desk's own panel, since Going Public takes every StudyActivity for its own training window.
         /// </summary>
         public static DeskWay WayToDesk(bool inSession)
         {
@@ -110,9 +108,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// True if a click on a classroom door of the university is the mod's (room from 1; 0 for none): in a Going Public
-        /// session only, where the game's click would reach Going Public's training window for the game's course the door
-        /// was laid with. Alone the game's click opens its study panel, which the room's desk takes.
+        /// True if a click on a university classroom door (room from 1; 0 for none) is the mod's: in a Going Public session only,
+        /// where the game's click would reach Going Public's training window. Alone the game's click opens its study panel.
         /// </summary>
         public static bool TakesRoomClick(bool inSession, int room)
         {
@@ -120,9 +117,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// True if the school's classes and exams are offered by the panel where the player stands inside the school: in a
-        /// Going Public session, where a click on one of its desks is Going Public's (the game's course), so the desks
-        /// cannot carry the class's button. Alone they are offered at the desks.
+        /// True if the school's classes and exams are offered by the panel where the player stands: in a Going Public session,
+        /// where a click on one of its desks is Going Public's. Alone they are offered at the desks.
         /// </summary>
         public static bool SchoolInPlace(bool inSession)
         {

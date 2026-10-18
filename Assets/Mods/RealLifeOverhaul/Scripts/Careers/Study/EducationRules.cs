@@ -53,10 +53,9 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// The Persona app's education box beyond the game's own courses (Careers/PersonaEducation shows it): every course of
-    /// the mod's that is offered or that the player has taken, in the groups the mod's schools hold them in, each with its
-    /// standing. Within a group the courses under way come first, then those passed, then those failed or left, then the
-    /// rest, each in the catalogue's order; a group with nothing to list has no heading. Game-free: EconomyCheck runs it.
+    /// The Persona app's education box beyond the game's own courses (Careers/PersonaEducation shows it): every course of the
+    /// mod's offered or taken, in its school's group, under way first, then passed, then failed or left, then the rest, each
+    /// in the catalogue's order. Game-free: EconomyCheck runs it.
     /// </summary>
     public static class EducationRules
     {
@@ -73,11 +72,9 @@ namespace RealLifeOverhaul.Careers
         public const float CountRoom = 220f;
 
         /// <summary>
-        /// The education box's height for its rows. The game's box is a fixed height (a LayoutElement and the size it was
-        /// drawn at) made for the game's own rows, and Persona's left column lays it out by that size, so rows added to it
-        /// are drawn past its white and past the end of the column's scroll. The box is given the height its rows need:
-        /// from its top to the rows' top, the rows, and under them the white the game's own rows leave in the game's box
-        /// (at least <see cref="LeastMargin"/>). Never less than the game's own height.
+        /// The education box's height for its rows: the game's box is a fixed height made for its own rows, so rows added to it
+        /// would be drawn past its white and its column's scroll. Its top to the rows, the rows, and under them the game's own
+        /// margin (at least <see cref="LeastMargin"/>); never less than the game's own height.
         /// </summary>
         public static float BoxHeight(float baseHeight, float rowsTop, float gameRows, float allRows)
         {
@@ -99,9 +96,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// Whether a heading's words stay on one line in a name <paramref name="width"/> wide, at the row's 28 points in
-        /// bold: about 17 for a letter of the Latin alphabet and 30 for a Chinese character (a generous measure, so a
-        /// heading that passes has room to spare).
+        /// Whether a heading's words stay on one line in a name <paramref name="width"/> wide, at the row's 28 points in bold:
+        /// about 17 for a Latin letter and 30 for a Chinese character, a generous measure.
         /// </summary>
         public static bool HeadingFits(string words, float width)
         {
