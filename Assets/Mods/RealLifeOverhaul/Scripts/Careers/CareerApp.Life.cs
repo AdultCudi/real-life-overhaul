@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed partial class CareerApp
     {
-        partial void JobMore(InfoBox box, WorkFile w, StudyFile f, Job j, int day)
+        private void JobMore(InfoBox box, WorkFile w, StudyFile f, Job j, int day)
         {
             box.Section("reallife_meta_title_careers_life");
             int next = j.ReviewDay + LifeRules.ReviewEvery(GameCalendar.DaysPerYear);
@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Careers
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
         }
 
-        partial void JobButtons(Transform buttons, Job j, int day)
+        private void JobButtons(Transform buttons, Job j, int day)
         {
             string late = _director.CanWorkLate();
             if (late == null && _director.DeskFallback(j))   // (overtime is worked at the desk, as the day is)
@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        partial void NoJobMore(InfoBox box, WorkFile w, int day)
+        private void NoJobMore(InfoBox box, WorkFile w, int day)
         {
             box.Section("reallife_ibox_sec_money");
             if (w.BenefitUntil >= day && w.BenefitWeek > 0)
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        partial void CvMore(InfoBox box, WorkFile w, StudyFile f, int day)
+        private void CvMore(InfoBox box, WorkFile w, StudyFile f, int day)
         {
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired > 0)

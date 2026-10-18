@@ -714,15 +714,5 @@ namespace RealLifeOverhaul.Careers
             Meta.Guide.Point(box, JobsGuide);
             return CareerColumns.Cv;
         }
-
-        // ---------------------------------------------------------------- what working life adds (CareerApp.Life.cs)
-
-        partial void NoJobMore(InfoBox box, WorkFile w, int day);
-
-        partial void JobMore(InfoBox box, WorkFile w, StudyFile f, Job j, int day);
-
-        partial void JobButtons(Transform buttons, Job j, int day);
-
-        partial void CvMore(InfoBox box, WorkFile w, StudyFile f, int day);
     }
 }

@@ -7,10 +7,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The family and the others: a grown child of the family's offered a place at the university (the college fund pays
-    /// what it can, the player the rest) and graduating with a class of their own; tutoring sessions given from home; the
-    /// player's own training academy (Careers/AcademyType), whose staff teach the city's students for fees each day and
-    /// whose courses the player's professional staff take at half the fee.
+    /// The family and the others: a grown child offered a place at the university (the college fund pays what it can, the
+    /// player the rest), tutoring given from home, and the player's own training academy (Careers/AcademyType), whose staff
+    /// teach the city's students for fees and whose courses the player's professional staff take at half the fee.
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -24,23 +23,13 @@ namespace RealLifeOverhaul.Careers
 
         public static bool FamilyOn => Settings.CareersStudy && Settings.CareersFamily;
 
-        // ---------------------------------------------------------------- the family's children
-
         private void FamilyDay(int day)
         {
             if (!FamilyOn)
             {
                 return;
             }
-            _kids.Clear();
-            try
-            {
-                CareersBridges.Children?.Invoke(_kids);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
+            Kids();
             for (int i = 0; i < _kids.Count; i++)
             {
                 ChildView k = _kids[i];
@@ -147,8 +136,6 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        // ---------------------------------------------------------------- tutoring
-
         public string CanTutor(out int skill)
         {
             skill = _study != null ? StudyRules.TutorSkill(_study) : Skills.Teaching;
@@ -173,7 +160,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_study_why_not_home";
             }
-            return StudyRules.NoNetWhy(CareersBridges.HomeNetNow());   // (tutoring has no hour it must be given in: nothing to excuse)
+            return StudyRules.NoNetWhy(CareersBridges.HomeNetNow());   // tutoring has no set hour: nothing to excuse
         }
 
         public string Tutor()
@@ -211,8 +198,6 @@ namespace RealLifeOverhaul.Careers
             Tell(NotificationType.Success, "reallife_family_note_tutored", Data("amount", CareersText.Money((long)Math.Round(pay))), TabSkills, null);
         }
 
-        // ---------------------------------------------------------------- the player's own academy
-
         /// <summary>The player's academies (one pass over their businesses).</summary>
         private void Academies(List<BuildingRegistration> into)
         {
@@ -235,11 +220,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
-            if (_mineDay != Save.Day)
-            {
-                _mineDay = Save.Day;
-                TalentGame.Businesses(_mine);
-            }
+            ReadMine();
             for (int i = 0; i < _mine.Count; i++)
             {
                 if (AcademyType.Is(_mine[i].businessTypeName))
@@ -282,6 +263,5 @@ namespace RealLifeOverhaul.Careers
             }
             return n;
         }
-
     }
 }

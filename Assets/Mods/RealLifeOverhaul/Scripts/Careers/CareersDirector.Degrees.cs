@@ -5,10 +5,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The university's part: degrees and what follows them at Hudson City University (Careers/CampusBuilding) and on the
-    /// wards of the city's hospitals, the professional certificates studied at home, the student loan (on the credit file,
-    /// through Wiring/CareersLinks), and graduation day: a ceremony at the university on the Saturday after a degree is
-    /// passed, in the Planner, with a story in the City Ledger and a post to make on Flare.
+    /// The university's part: degrees at Hudson City University (Careers/CampusBuilding) and on the hospitals' wards, the
+    /// certificates studied at home, the student loan on the credit file, and graduation day: a ceremony on the Saturday
+    /// after a degree is passed, with a story in the City Ledger.
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -45,7 +44,7 @@ namespace RealLifeOverhaul.Careers
 
         private void CampusGone()
         {
-            CampusBuilding.Pretend = 0;   // (a test's pretence ends with the city)
+            CampusBuilding.Pretend = 0;   // a test's pretence ends with the city
             InteriorGone();
             _campus?.Dispose();
             _campus = null;
@@ -67,10 +66,8 @@ namespace RealLifeOverhaul.Careers
             return CareersText.Campus(campus);
         }
 
-        // ---------------------------------------------------------------- graduation
-
         /// <summary>A degree or a master's passed: the graduation ceremony is set for the Saturday after.</summary>
-        partial void PassedMore(Enrolment e, int day)
+        private void PassedMore(Enrolment e, int day)
         {
             CourseDef c = e.Def;
             if (c == null || !c.Higher || !UniversityOpen)
@@ -146,7 +143,7 @@ namespace RealLifeOverhaul.Careers
                 CareersText.Course(_study.GraduationCourse)));
         }
 
-        partial void OtherEndedMore(Sitting sitting, int minutes, bool whole)
+        private void OtherEndedMore(Sitting sitting, int minutes, bool whole)
         {
             if (sitting.Kind == SittingKind.Tutoring && _studyOn)
             {
@@ -178,9 +175,6 @@ namespace RealLifeOverhaul.Careers
             return Save != null && _graduatedToday == Save.Day ? _graduatedName : null;
         }
 
-
-        // ---------------------------------------------------------------- for the obituary (Permadeath, through Wiring/CareersLinks)
-
         /// <summary>The player's best qualification in words ("LLB Law, First"), or empty: a degree first, then a certificate, then a diploma.</summary>
         public string ObituaryDegree()
         {
@@ -205,7 +199,7 @@ namespace RealLifeOverhaul.Careers
                     bestRank = rank;
                 }
             }
-            return best == null ? string.Empty : CareersText.T("reallife_study_degree_with", "course", CareersText.Course(best.Course), "grade", CareersText.Grade(best.Def, best.Grade));
+            return best == null ? string.Empty : Degree(best);
         }
 
         /// <summary>The player's career in words ("Partner at Elm Street Law"): the job now, else the highest post held, or empty.</summary>
@@ -232,14 +226,13 @@ namespace RealLifeOverhaul.Careers
             }
             return top == null ? string.Empty : CareersText.T("reallife_study_post_at", "title", CareersText.Title(top.Prof, top.Top), "employer", CareersText.Employer(top.Employer));
         }
-        // ---------------------------------------------------------------- the student loan on the credit file
 
-        partial void Borrowed(int whole)
+        private void Borrowed(int whole)
         {
             CareersBridges.Credit?.Invoke(0, whole);
         }
 
-        partial void LoanCleared()
+        private void LoanCleared()
         {
             CareersBridges.Credit?.Invoke(1, 0);
             Tell(NotificationType.Success, "reallife_study_note_loan_cleared", null, TabStudying, null);

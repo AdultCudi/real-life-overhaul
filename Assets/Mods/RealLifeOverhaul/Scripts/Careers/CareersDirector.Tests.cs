@@ -4,26 +4,16 @@ using UI.Notification;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The test buttons of education and careers (Troubleshooting on the options page): each puts the player where a part
-    /// can be seen at once, without waiting for the timetable or walking to the school. A test changes the save as the real
-    /// thing would; each says what it did in a notification and in Player.log.
+    /// The test buttons of education and careers (options page, Tests): each puts the player where a part can be seen at
+    /// once. A test changes the save as the real thing would, and says what it did in a notification and in Player.log.
     /// </summary>
     public sealed partial class CareersDirector
     {
-        private bool TestReady(out string why)
+        private bool TestReady()
         {
-            why = null;
-            if (_broken)
+            if (_broken || !_studyOn || Save == null)
             {
-                why = "reallife_study_test_off";
-            }
-            else if (!_studyOn || Save == null)
-            {
-                why = "reallife_study_test_off";
-            }
-            if (why != null)
-            {
-                Notifications.Show(NotificationType.Warning, why, null, 8f);
+                Notifications.Show(NotificationType.Warning, "reallife_study_test_off", null, 8f);
                 return false;
             }
             return true;
@@ -32,8 +22,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A class of the first course under way, now and here (first aid is enrolled on free if there is none).</summary>
         public void TestClass()
         {
-            string why;
-            if (!TestReady(out why))
+            if (!TestReady())
             {
                 return;
             }
@@ -69,8 +58,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The exam of the first course under way, marked now as if it had been sat.</summary>
         public void TestExam()
         {
-            string why;
-            if (!TestReady(out why))
+            if (!TestReady())
             {
                 return;
             }
@@ -98,12 +86,9 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- the working life
-
         private bool WorkReady()
         {
-            string why;
-            if (!TestReady(out why))
+            if (!TestReady())
             {
                 return false;
             }
@@ -187,8 +172,8 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // The job the working day tests use: the player's own, or the city's first vacancy given now (null, said, if the city
-        // has none); today a working day of it, not counted yet.
+        // The job the working day tests use: the player's own, or the city's first vacancy given now (null, said, if there is
+        // none); today a working day of it, not counted yet.
         private Job TestJob()
         {
             WorkFile w = _study.Work;
@@ -241,10 +226,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The test button: the rest of a working day begun now at the player's computer at home, whatever the hour and the
-        /// job's days from home, as its Start the working day there begins it (a job is given for it if there is none).
-        /// </summary>
+        /// <summary>The rest of a working day begun now at the computer at home, whatever the hour and the job's days from home (a job is given if there is none).</summary>
         public void TestComputerWork()
         {
             if (!WorkReady())
@@ -254,11 +236,11 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 ComputerController computer = CareersGame.AtHome() ? DeskGame.HomeComputer() : null;
-                string why = computer == null ? "reallife_work_test_no_computer" : SeatBusy();   // (away from home there is none)
+                string why = computer == null ? "reallife_work_test_no_computer" : SeatBusy();   // away from home there is none
                 Job j = why == null ? TestJob() : null;
                 if (why == null && j == null)
                 {
-                    return;   // (no vacancy in the city: said)
+                    return;   // no vacancy in the city: said
                 }
                 if (why == null)
                 {
@@ -291,10 +273,7 @@ namespace RealLifeOverhaul.Careers
                 w.OpeningsDay = -1;
                 _employersDay = -1;
                 Vacancies(Save.Day);
-                Notifications.Show(NotificationType.Success, "reallife_work_test_vacancies_done", new System.Collections.Generic.Dictionary<string, string>
-                {
-                    { "count", w.Openings.Count.ToString() }, { "employers", _employers.Count.ToString() }
-                }, 8f);
+                Notifications.Show(NotificationType.Success, "reallife_work_test_vacancies_done", Data("count", w.Openings.Count.ToString(), "employers", _employers.Count.ToString()), 8f);
                 Logger?.Info("Careers test: " + w.Openings.Count + " vacancies made from " + _employers.Count + " employers, " + _offices.Count + " office buildings.");
                 Changed();
             }
@@ -303,7 +282,6 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
-        // ---------------------------------------------------------------- working life
 
         private Job LifeReady()
         {
@@ -383,7 +361,6 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
-        // ---------------------------------------------------------------- working for oneself
 
         /// <summary>A freelance contract offered now, in the profession the player works in or is best qualified for.</summary>
         public void TestContract()
@@ -447,14 +424,12 @@ namespace RealLifeOverhaul.Careers
             }
         }
         /// <summary>
-        /// The university away from its permanent building, without an older save (CampusBuilding.Pretend): each press goes
-        /// on to the next, its own building and every office taken (the door of Manhattan Business School), its own building
-        /// taken (the largest free office), and the test over (back home). The university chooses again at once, with its
-        /// notice and its map row, as on a load. Nothing of the city is changed; the pretence ends with the city.
+        /// The university away from its permanent building without an older save (CampusBuilding.Pretend): each press goes on to
+        /// the next of every office taken, its own building taken, and back home; it chooses again at once, as on a load.
         /// </summary>
         public void TestAway()
         {
-            if (!TestReady(out _))
+            if (!TestReady())
             {
                 return;
             }
@@ -485,8 +460,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A degree passed now with a first (the first one under way, else law), and its ceremony set for today.</summary>
         public void TestGraduate()
         {
-            string why;
-            if (!TestReady(out why))
+            if (!TestReady())
             {
                 return;
             }
@@ -524,8 +498,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A tutoring session now, here, whatever the hour (the skill to tutor is given if there is too little).</summary>
         public void TestTutor()
         {
-            string why;
-            if (!TestReady(out why))
+            if (!TestReady())
             {
                 return;
             }
@@ -559,8 +532,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Twenty points more in four of the player's skills, one of the trades among them.</summary>
         public void TestSkills()
         {
-            string why;
-            if (!TestReady(out why))
+            if (!TestReady())
             {
                 return;
             }
@@ -582,13 +554,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The test button: a class of the first online course under way (the coding bootcamp, enrolled on free, if there is
-        /// none) begun now at the computer at home, whatever the timetable says, as its button there begins it.
-        /// </summary>
+        /// <summary>A class of the first online course under way (the coding bootcamp, enrolled on free, if none) begun now at the computer at home.</summary>
         public void TestComputer()
         {
-            if (!TestReady(out _))
+            if (!TestReady())
             {
                 return;
             }
@@ -615,7 +584,7 @@ namespace RealLifeOverhaul.Careers
                 Logger?.Info("Careers test: a class at the computer at home " + (why == null ? "begun (" + e.Def.Key + ")." : "not begun (" + why + ")."));
                 if (why != null)
                 {
-                    UI.Notification.Notifications.Show(UI.Notification.NotificationType.Warning, why, null, 8f);
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
                 }
             }
             catch (Exception ex)
@@ -625,14 +594,12 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// The test button: with the home's internet down for an outage now (Utilities' "Internet: an outage now"), today's
-        /// class of the first online course under way (the coding bootcamp, enrolled on free, if there is none) and today's
-        /// working day from home, if the job has one not yet worked, go by now as if their windows had just shut, read over
-        /// this minute: each is excused, as the real ones are, and says so where they do.
+        /// With the home's internet down for an outage now (Utilities' "Internet: an outage now"), today's online class and a
+        /// working day from home not yet worked go by as if their windows had just shut: each is excused, as the real ones are.
         /// </summary>
         public void TestOutage()
         {
-            if (!TestReady(out _))
+            if (!TestReady())
             {
                 return;
             }

@@ -6,39 +6,21 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A class, homework or an exam played the way the game's own studying is (a press of learn takes the player to a
-    /// room, where the game's fast-forward or skip comes up), each where it is done, in one press:
-    ///
-    ///   the university  the Campus app's Attend, Sit or Homework takes the player to the course's floor and opens its
-    ///                   classroom door's study panel, as a click on the door does; the class is begun there for them
-    ///                   (Careers/SchoolDesk.Begin): the walk to the room's desk with the game's routing, the chair, the
-    ///                   screen, the game's panel with fast forward, skip time and Stop
-    ///   the school      the same at the nearest of Manhattan Business School's own desks
-    ///   at home         an online or distance class, and homework, at the player's computer: its own buttons beside the
-    ///                   game's Pass the time (Careers/ComputerButtons), or the Campus app's Attend and Homework at home,
-    ///                   walk the player to it and sit them there as the game's computer passes the time
-    ///                   (Careers/ComputerSitting). A home with no computer, or no working internet for an online class, says so.
-    ///
-    /// In a Going Public session the school's and the university's desks open the desk's own panel of the mod's, never the
-    /// game's study panel, which Going Public takes for its own training window (<see cref="OpenDesk"/>).
-    ///
-    /// Where nothing in the world fits (a hospital's ward, the university while its floors are not there) the game's panel
-    /// where the player stands, as before (<see cref="Offer"/>). The minutes count to the enrolment once, however it ends
-    /// (Study/ClassPlayRules: ClassTally); nothing new is saved, and nothing is sent: classes are the local player's own.
-    ///
-    /// The cost: on a press, one look through the building's items (the desk or the computer); while a desk is wanted, the
-    /// course and a frame number held; nothing per frame.
+    /// A class, homework or an exam where it is done, in one press, as the game's own studying is: the Campus app takes the
+    /// player to the university's classroom or the school's nearest desk and begins it there (Careers/SchoolDesk), or walks
+    /// them to the computer at home (Careers/ComputerSitting); where nothing fits (a ward, the university without its
+    /// floors), the game's panel where they stand (<see cref="Offer"/>). In a Going Public session a desk opens the mod's own
+    /// panel, never the game's study panel (<see cref="OpenDesk"/>). The minutes count once (ClassPlayRules.ClassTally);
+    /// nothing is saved or sent. The cost: one look through the building's items on a press; nothing per frame.
     /// </summary>
     public sealed partial class CareersDirector
     {
         private const int BeginFrames = 3;   // frames a desk's panel opened for the player may take to be seen by the watch on the game's panel
 
         private ComputerSitting _computer;   // a class, homework or a working day at the computer at home, from its press until it is over
-        private int _beginCourse = -1;       // the course whose class (exam, homework) is to be begun at its desk for the player...
+        private int _beginCourse = -1;       // the course whose class (exam, homework) is to be begun at its desk...
         private SittingKind _beginKind;      // ...which
-        private int _beginFrame = -1;        // ...and the frame its desk's panel was opened in (-1: not yet)
-
-        // ---------------------------------------------------------------- the desks: begun for the player
+        private int _beginFrame = -1;        // ...and the frame its desk's panel was opened in, -1 for not yet
 
         // Why not now, as every press of a class says it: a sitting under way, the game busy, too tired.
         private string SeatBusy()
@@ -63,8 +45,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// Called as a classroom door's panel is opened for a course the player was sent to (Careers/CampusInterior.GoToRoom):
-        /// true if its class is to be begun for them, and the watch on the game's panel is then looking this frame.
+        /// As a classroom door's panel opens for a course the player was sent to (CampusInterior.GoToRoom): true if its class is
+        /// to be begun for them, with the watch on the game's panel looking this frame.
         /// </summary>
         internal bool BeginHere(int course)
         {
@@ -73,17 +55,12 @@ namespace RealLifeOverhaul.Careers
                 return false;
             }
             _beginFrame = Time.frameCount;
-            if (_activityUi == null)
-            {
-                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
-                _activityUi = uis != null ? uis.playerActivityUI : null;
-            }
-            _deskWatch = _activityUi != null;   // (until the timer looks again: the panel is seen this frame)
+            _deskWatch = ActivityUi() != null;   // until the timer looks again: the panel is seen this frame
             return _deskWatch;
         }
 
-        // The panel the watch has just seen is the one opened for the player: the offer made the class (exam, homework) of
-        // the course they were sent for, to begin. course: the room's course, or -1 at the school (any desk will do).
+        // The panel just seen is the one opened for the player: the offer is made the course's sitting, to begin.
+        // course: the room's course, or -1 at the school (any desk will do).
         private bool TakeBegin(int course, SchoolDesk.DeskOffer offer)
         {
             bool fresh = _beginCourse >= 0 && _beginFrame >= 0 && Time.frameCount - _beginFrame <= BeginFrames;
@@ -104,11 +81,10 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// A study desk's panel opened for the player as a click on its door opens it, at the school (room 0) or a classroom
-        /// of the university, by ClassPlayRules.WayToDesk: alone the game's study panel (StartLearning), given the class by
-        /// the watch on it; in a Going Public session the desk's own panel (SchoolDesk.Own), never a StudyActivity, which
-        /// Going Public would take for its training window. begin: the caller's <see cref="BeginHere"/> said yes. Null if the
-        /// panel is open or the game has said why not; else the reason key. One self-check line a call.
+        /// Opens a study desk's panel as a click on its door does, at the school (room 0) or a university classroom, by
+        /// ClassPlayRules.WayToDesk: alone the game's study panel, given the class by the watch; in a Going Public session the
+        /// desk's own panel (SchoolDesk.Own), never a StudyActivity, which Going Public would take for its training window.
+        /// Null if the panel is open or the game has said why not, else the reason key. One self-check line a call.
         /// </summary>
         internal string OpenDesk(EducationDoorController door, int room, bool begin)
         {
@@ -117,7 +93,7 @@ namespace RealLifeOverhaul.Careers
             string where = room > 0 ? "room " + room + " on floor " + (_interior != null ? _interior.Floor : 0) + " of the university" : "a desk of the school";
             if (way == DeskWay.GameStudy)
             {
-                bool refused = DeskGame.StudyDoorRefuses(false);   // (asked first, unsaid: the door says it itself)
+                bool refused = DeskGame.StudyDoorRefuses(false);   // asked first, unsaid: the door says it itself
                 door.StartLearning();   // the game's study panel (its own refusals: closed, something in hand), its class given by the watch
                 bool study = ShowsStudy();
                 DeskCheck(session, way, where, begin, study || refused ? null : PlayerActivityUI.IsPanelOpen ? "the game's panel shows another activity"
@@ -130,7 +106,7 @@ namespace RealLifeOverhaul.Careers
             if (room == 0 && !begun)
             {
                 DeskCheck(session, way, where, begin, "no class of the school's was to be begun there", null);
-                return "reallife_study_why_no_class";   // (a desk of the school is opened only to begin: its own click is Going Public's)
+                return "reallife_study_why_no_class";   // a school desk is opened only to begin: its own click is Going Public's
             }
             if (room == 0)
             {
@@ -157,11 +133,7 @@ namespace RealLifeOverhaul.Careers
                 DeskCheck(session, way, where, begin, null, "the game's panel refused it in its own words (no energy, or a vehicle)");
                 return null;
             }
-            if (_activityUi == null)
-            {
-                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
-                _activityUi = uis != null ? uis.playerActivityUI : null;
-            }
+            ActivityUi();
             _desk = desk;
             _deskSeen = desk;
             if (begun)
@@ -237,7 +209,7 @@ namespace RealLifeOverhaul.Careers
             string why = OpenDesk(door, 0, true);   // the desk's panel: alone the game's study panel, in a session the desk's own
             if (why != null || !PlayerActivityUI.IsPanelOpen)
             {
-                _beginCourse = -1;   // (refused: the game has said why, or why is the reason key)
+                _beginCourse = -1;   // refused: the game has said why, or why is the reason key
                 _beginFrame = -1;
                 return why;
             }
@@ -251,7 +223,7 @@ namespace RealLifeOverhaul.Careers
             return minutes;
         }
 
-        // An exam where the player stands (the school without a desk to sit it at): its retake's fee, then the panel.
+        // An exam where the player stands: its retake's fee, then the panel.
         private string SitInPlace(Enrolment e)
         {
             CourseDef c = e.Def;
@@ -267,8 +239,6 @@ namespace RealLifeOverhaul.Careers
             return Offer(ExamSitting(e));
         }
 
-        // ---------------------------------------------------------------- the computer at home
-
         /// <summary>What the computer at home offers now (Careers/ComputerButtons): the class button and the homework button.</summary>
         internal ComputerOffer ComputerOfferNow()
         {
@@ -280,9 +250,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// An online or distance class, or a piece of homework, at a computer of the player's home: the one pressed, or
-        /// (from the Campus app) the first the game would pass the time at. The player walks there and sits, and the game's
-        /// panel runs it (Careers/ComputerSitting). Null if under way; else the reason key.
+        /// An online or distance class, or homework, at a home computer: the one pressed, or (from the Campus app) the first the
+        /// game would pass the time at; the player walks there and sits. Null if under way, else the reason key.
         /// </summary>
         internal string AtComputer(int course, SittingKind kind, ComputerController computer)
         {
@@ -309,7 +278,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (PlayerHelper.ItemInstanceInHands != null && !PlayerHelper.IsHoldingBag)
             {
-                return "notification_need_empty_hands_to_interact";   // (the game's own words, as its computer says them)
+                return "notification_need_empty_hands_to_interact";   // the game's own words, as its computer says them
             }
             return StartAtComputer(computer, kind == SittingKind.Class ? ClassSitting(e, minutes) : HomeworkSitting(e), e.Def.Key);
         }
