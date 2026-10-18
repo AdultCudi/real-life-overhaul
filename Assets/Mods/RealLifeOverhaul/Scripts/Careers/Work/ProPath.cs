@@ -23,16 +23,13 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// The way to an offer, in plain numbers (Careers/Work/ProRules): the chance an application brings one, how many
-    /// points short the player is, and what to do first in each profession (a course and where it is taught, more
-    /// skill, or a vacancy to wait for). An employer turns down anyone it cannot score high enough with the best luck of
-    /// both steps, so a post is open to the player only where an offer can come. Game-free: EconomyCheck runs every one.
+    /// The way to an offer in plain numbers (Careers/Work/ProRules): the chance an application brings one, how far short
+    /// the player is, and the first step in each profession. A post is open to the player only where an offer can come.
+    /// Game-free: EconomyCheck runs every one.
     /// </summary>
     public static class ProPath
     {
         private const int Never = 101;
-
-        // ---------------------------------------------------------------- the chance of an offer
 
         /// <summary>
         /// The chance, per cent, that an application with this score brings an offer: the screening's luck and the
@@ -108,8 +105,6 @@ namespace RealLifeOverhaul.Careers
             return Never;
         }
 
-        // ---------------------------------------------------------------- with one course more
-
         /// <summary>True if a course is taught with the options as they are: the school's always, the university's and the certificates while the university is open.</summary>
         public static bool Taught(CourseDef c, bool university)
         {
@@ -175,7 +170,7 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        /// <summary>What an employer would read of the player for a rung, once a course is passed too (null: as they are). The rest (references, name, economy) is the game's, from the template.</summary>
+        /// <summary>What an employer would read of the player for a rung, with a course passed too (null: as they are); the rest from the template.</summary>
         public static Candidate With(StudyFile f, Profession p, int rank, CourseDef c, Candidate template)
         {
             Candidate x = template;
@@ -196,8 +191,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>How long a course takes to finish, roughly, as a number to compare: its classes and homework first, then its fee.</summary>
         public static long Cost(CourseDef c) => (c.Sessions + c.Homework) * 100000L + c.Fee;
-
-        // ---------------------------------------------------------------- a profession's next step
 
         /// <summary>The next step to an offer at a rung of a profession: ready, a course under way, a course or a certificate to take, more skill, or closed.</summary>
         public static PathView For(StudyFile f, Profession p, int rank, Candidate template, bool university)
@@ -322,8 +315,6 @@ namespace RealLifeOverhaul.Careers
             }
             return ready >= 0 ? ready : most;
         }
-
-        // ---------------------------------------------------------------- the first step of all
 
         /// <summary>
         /// The quickest way to a first offer from where the player is: a profession they could be offered now (course -1),

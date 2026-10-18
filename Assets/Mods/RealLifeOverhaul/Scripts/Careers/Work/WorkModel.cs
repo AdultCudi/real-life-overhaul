@@ -172,7 +172,6 @@ namespace RealLifeOverhaul.Careers
         public bool RetiredEarly;     // retired before the age: the pension pays less
         public bool StartTold;        // the Career app has said once what the first step to an offer is
         public int AgencyTold;        // the last day of a registration whose ending has been told (ProRules.AgencyEnds); 0 none
-        // ---- working for oneself (Careers/Work/OwnRules)
         public readonly List<Contract> Contracts = new List<Contract>(8);
         public readonly Practice Practice = new Practice();
         public int FounderDay, FounderProf = -1, FounderTop;   // the player left a profession to found a company

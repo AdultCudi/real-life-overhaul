@@ -18,12 +18,10 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// What the working life reads of the city: its employers (every business of a type a profession works in that is not
-    /// the player's or, in a Going Public session, another player's, a rival's among them; the office buildings the city's
-    /// tech companies are given; the hospitals, the school and the council's offices), a rival's name, and whether the
-    /// player is at their place of work. The lists are
-    /// made once a game day (one pass over the save's buildings) and on the first look of a city (one walk over its
-    /// buildings for the public ones); nothing here runs by itself.
+    /// What the working life reads of the city: its employers (the businesses of a type a profession works in that are not
+    /// a player's, the tech companies' office buildings, the hospitals, the school and the council's offices), a rival's
+    /// name, and whether the player is at work. The lists are made once a game day and on a city's first look; nothing
+    /// here runs by itself.
     /// </summary>
     internal static class WorkGame
     {
@@ -191,8 +189,6 @@ namespace RealLifeOverhaul.Careers
         {
             return CivicCity.AddressText(street, number);
         }
-
-        // ---------------------------------------------------------------- at work
 
         /// <summary>
         /// True if the player is at their place of work: inside it, or by its door. A hospital's or the school's job is the

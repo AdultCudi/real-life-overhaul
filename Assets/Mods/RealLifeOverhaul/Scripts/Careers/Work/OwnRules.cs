@@ -41,9 +41,8 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// The rules of working for oneself, in plain numbers: leaving to found a startup or open a practice, what a founder's
-    /// record is worth to the venture firms, bringing former colleagues along, a restraint clause and the claim a former
-    /// employer files over it, freelance contracts, side work and an exclusive contract, and a practice's name. Game-free:
+    /// The rules of working for oneself in plain numbers: leaving to found a startup or open a practice, a founder's record,
+    /// former colleagues, a restraint clause and its claim, freelance contracts, side work and a practice's name. Game-free:
     /// EconomyCheck runs every one.
     /// </summary>
     public static class OwnRules
@@ -73,9 +72,8 @@ namespace RealLifeOverhaul.Careers
 
         public const int PracticeStart = 20;
         public const int PracticeOnTime = 3, PracticeLate = -6;
-        public static int RegisterFee(Profession p) => p.Id == ProCatalogue.Lawyer ? 1500 : p.Id == ProCatalogue.Accountant ? 900 : p.Id == ProCatalogue.Architect || p.Id == ProCatalogue.CivilEngineer ? 700 : 300;
-
-        // ---------------------------------------------------------------- leaving to found
+        public static int RegisterFee(Profession p) =>
+            p.Id == ProCatalogue.Lawyer ? 1500 : p.Id == ProCatalogue.Accountant ? 900 : p.Id == ProCatalogue.Architect || p.Id == ProCatalogue.CivilEngineer ? 700 : 300;
 
         /// <summary>True for a profession whose people can leave to found a tech company.</summary>
         public static bool CanFound(Profession p)
@@ -128,8 +126,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The chance (per mille) a former employer files a claim: for colleagues taken, or for work in the same field.</summary>
         public static int ClaimChance(bool colleagues) => colleagues ? ClaimColleagues : ClaimSameField;
-
-        // ---------------------------------------------------------------- freelance contracts
 
         /// <summary>A contract's fee, whole money at the start's prices: the hours at the rank's rate, by the freelance premium, a practice's and an office's.</summary>
         public static long Fee(int rateCents, int hours, bool practice, bool office)

@@ -3,10 +3,7 @@ using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The kind of the game's own station a profession works at (the game's EmployeeStationController and its kinds): the
-    /// saved number is never kept.
-    /// </summary>
+    /// <summary>The kind of the game's own station a profession works at (EmployeeStationController's kinds); never saved.</summary>
     public enum StationKind
     {
         None = 0,
@@ -19,10 +16,7 @@ namespace RealLifeOverhaul.Careers
         Booth = 7       // a cloakroom (CoatCheckController)
     }
 
-    /// <summary>
-    /// What is fitted out for the player where an employer's building has no station of the game's that suits the job
-    /// (FitOut's presets, FitKind): the saved number is never kept.
-    /// </summary>
+    /// <summary>What is fitted out where an employer's building has no station that suits the job (FitOut's presets); never saved.</summary>
     public enum DeskPreset
     {
         None = 0,
@@ -59,12 +53,9 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// Where a professional job is worked and what the work panel says, in plain numbers (Careers/Work). The game's own job
-    /// (El Gato Food Market's till) is worked at one of the employer's stations: the player goes in, clicks the station,
-    /// and the game's work panel (PlayerActivity.WorkActivity) says whether the shift can be started. The mod's jobs are
-    /// worked the same way at a station of the right kind for the profession, the same one every working day, chosen from
-    /// the save's seed and the job; where the building has none, a desk is fitted out for the player (FitOut's presets).
-    /// Game-free: EconomyCheck runs every rule.
+    /// Where a professional job is worked and what the work panel says, in plain numbers: at a station of the employer's of
+    /// the profession's kind, the same every day from the save's seed and the job, as the game's own job at El Gato's till,
+    /// or at a desk fitted out where there is none. Game-free: EconomyCheck runs every rule.
     /// </summary>
     public static class DeskRules
     {
@@ -188,10 +179,9 @@ namespace RealLifeOverhaul.Careers
         public static bool Startable(DeskState s) => s == DeskState.Open || s == DeskState.StartsSoon;
 
         /// <summary>
-        /// The home computer's button for the job, by what the work panel would say there (<see cref="State"/> at home):
-        /// Start on a day that can be begun or carried on with, Work late once it is done and overtime can be worked;
-        /// greyed with the hours before it, and with the panel's words when it is too late to begin or worked already;
-        /// none on a day off, a day at the employer's, or before the job begins.
+        /// The home computer's button for the job, by what the work panel would say there (<see cref="State"/> at home): Start,
+        /// Work late once the day is done, greyed with the hours before it or the panel's words after; none on a day off, a day
+        /// at the employer's or before the job begins.
         /// </summary>
         public static HomeWork AtComputer(DeskState state, bool canLate)
         {
