@@ -342,7 +342,8 @@ namespace RealLifeOverhaul
 
             bool atHome = HomeTidy.AtHome();
             bool inside = BuildingManager.IsInsideBuilding;
-            bool onFootOutside = !inside && !PlayerHelper.IsUsingVehicle && !UndergroundParkingManager.IsInsideParking;
+            bool sheltered = HomeBridges.Sheltered != null && HomeBridges.Sheltered();   // up in a hotel room, stood at its door
+            bool onFootOutside = !inside && !sheltered && !PlayerHelper.IsUsingVehicle && !UndergroundParkingManager.IsInsideParking;
             Doing doing = ReadDoing(player);
             Sleep(doing, minutes, atHome);
             _doing = doing;

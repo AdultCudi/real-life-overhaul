@@ -4,7 +4,8 @@ using System.IO;
 using IoPath = System.IO.Path;
 
 // Faults found in Scripts/Home: the roommate's talk test read the player's character without testing it, inside the tick
-// whose fault switches roommates off; and a door to social life (RoommateBridges.Friend) was filled but never read.
+// whose fault switches roommates off; a door to social life (RoommateBridges.Friend) was filled but never read; and the
+// rain reached a player up in a hotel room.
 internal static partial class Program
 {
     private static void HomeFixes()
@@ -32,6 +33,19 @@ internal static partial class Program
         Check(FixLineEverywhere("roommate no longer goes quiet", "colega de casa não fica mais calado", "室友不会再因此", "Mitbewohner verstummt nicht mehr",
                                 "colocataire ne se tait plus", "compañero de piso ya no se queda callado", "сосед по квартире больше не замолкает"),
             "home fix: What's new has the roommate's line, with its fix mark, in some row of every language");
+
+        // Up in a hotel room the player stands at the hotel's door in the street, so the rain reached them there.
+        string director = ModSource(@"Home\HomeDirector.cs");
+        Check(director.Contains("bool sheltered = HomeBridges.Sheltered != null && HomeBridges.Sheltered();")
+              && director.Contains("bool onFootOutside = !inside && !sheltered &&"),
+            "home fix: the rain and the cold it brings miss a player the bridges say is sheltered");
+        string life = ModSource(@"Wiring\LifeLinks.cs");
+        Check(life.Contains("HomeBridges.Sheltered = () => TravelState.InRoom;") && life.Contains("HomeBridges.Sheltered = null;"),
+            "home fix: up in a hotel room counts as sheltered, and the wiring takes that back on disconnect");
+        Check(FixLineEverywhere("hotel room no longer gives you a cold", "quarto de hotel já não te dá uma constipação", "酒店房间里休息或睡觉不会再让你感冒",
+                                "Hotelzimmer ruht oder schläft, erkältet sich nicht mehr", "chambre d'hôtel ne donne plus de rhume",
+                                "habitación de hotel ya no te resfría", "номере отеля больше не вызывает простуду"),
+            "home fix: What's new has the hotel room's rain line, with its fix mark, in some row of every language");
     }
 
     // A fix's line, by a piece of it in each language (en, pt, zh-cn, de, fr, es, ru), in some What's new row of each with the
