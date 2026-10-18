@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Flare
 
         private static string MyId => GoingPublicLink.MyId;
 
-        private void Shared_Changed(FlarePost p)
+        private void ShareChanged(FlarePost p)
         {
             if (!GoingPublic.IsHost)
             {
@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private void Shared_CaseChanged(FlareCase c)
+        private void ShareCaseChanged(FlareCase c)
         {
             if (GoingPublic.IsHost && c != null)
             {
@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private void Shared_WatchesChanged()
+        private void ShareWatchesChanged()
         {
             _watchesChanged = GoingPublic.IsHost;
         }
@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         // A post of the player's goes to the others: a guest's through the host, the host's with its next update.
-        private void Shared_Own(FlarePost p)
+        private void ShareOwn(FlarePost p)
         {
             if (!GoingPublic.InSession || !FlareLiveRules.ToSession(Settings.FlareSharePosts, p.Source))
             {
@@ -356,7 +356,7 @@ namespace RealLifeOverhaul.Flare
             }
             else
             {
-                Shared_Changed(p);
+                ShareChanged(p);
             }
         }
 
@@ -411,11 +411,11 @@ namespace RealLifeOverhaul.Flare
             {
                 KeepPicture(id, Convert.ToBase64String(packed));
                 _newPics.Add(id);
-                Shared_Changed(_file.Post(post));
+                ShareChanged(_file.Post(post));
             }
         }
 
-        private void Shared_Like(FlarePost p, bool on)
+        private void ShareLike(FlarePost p, bool on)
         {
             if (!GoingPublic.InSession)
             {
@@ -427,11 +427,11 @@ namespace RealLifeOverhaul.Flare
             }
             else if (GoingPublic.IsHost && FlareNetShare.IsShared(_file, p, true) && FlareNetShare.Count(p, new FlareAsk { Kind = 'L', On = on }, MyId, _likedBy, _sharedBy))
             {
-                Shared_Changed(p);
+                ShareChanged(p);
             }
         }
 
-        private void Shared_Repost(FlarePost p)
+        private void ShareRepost(FlarePost p)
         {
             if (Following && p.Shared && p.NetId > 0)
             {
@@ -440,11 +440,11 @@ namespace RealLifeOverhaul.Flare
             else if (GoingPublic.IsHost)
             {
                 _sharedBy.Add((p.NetId > 0 ? p.NetId : p.Id) + "|" + MyId);
-                Shared_Changed(p);
+                ShareChanged(p);
             }
         }
 
-        private void Shared_Going(FlarePost p)
+        private void ShareGoing(FlarePost p)
         {
             if (Following && p.Shared && p.NetId > 0)
             {
@@ -470,7 +470,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private void Shared_Dm(string to, string text)
+        private void ShareDm(string to, string text)
         {
             if (Following)
             {

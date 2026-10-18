@@ -112,7 +112,7 @@ internal static partial class Program
               && live.IndexOf("MentionAnswer(p)", StringComparison.Ordinal) > live.LastIndexOf("if (!hostAnswers)", StringComparison.Ordinal),
               "Flare review: the guest makes no city replies and no account's answer to a post the host answers (none come twice)");
         Check(FlareLiveRules.ToSession(false, FlareSource.Report) && !FlareLiveRules.ToSession(false, FlareSource.Life) && FlareLiveRules.ToSession(true, FlareSource.Life)
-              && FlareMethod((ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")), "private void Shared_Own(FlarePost p)").Contains("FlareLiveRules.ToSession(Settings.FlareSharePosts, p.Source)"),
+              && FlareMethod((ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")), "private void ShareOwn(FlarePost p)").Contains("FlareLiveRules.ToSession(Settings.FlareSharePosts, p.Source)"),
               "Flare review: with posts not shared, a following guest's report still goes to the host's City Office (and its other posts do not)");
     }
 

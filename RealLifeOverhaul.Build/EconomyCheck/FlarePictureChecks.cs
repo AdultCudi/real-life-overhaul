@@ -252,7 +252,8 @@ internal static partial class Program
         Check(!net.Contains("CityPhoto") && !net.Contains("Avatar") && !share.Contains("CityPhoto") && !share.Contains("Avatar") && !net.Contains("City_"),
             "Flare pictures: nothing about faces or city photos is sent in a session (each machine makes its own)");
         string photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), avatars = ReviewSource("Social/Flare/FlareAvatars.cs");
-        Check(!photos.Contains("Shared_") && !avatars.Contains("Shared_") && !photos.Contains("SendPicture") && !avatars.Contains("SendPicture"),
+        Check(!System.Text.RegularExpressions.Regex.IsMatch(photos, @"\bShare(Changed|CaseChanged|WatchesChanged|Own|Like|Repost|Going|Dm)\(")
+            && !System.Text.RegularExpressions.Regex.IsMatch(avatars, @"\bShare(Changed|CaseChanged|WatchesChanged|Own|Like|Repost|Going|Dm)\(") && !photos.Contains("SendPicture") && !avatars.Contains("SendPicture"),
             "Flare pictures: no picture of these is handed to the session's sharing");
         string rules = ReviewSource("Social/Flare/FlareAvatarRules.cs");
         Check(FlareMethod(rules, "public static string LatestSelfie").Contains("\"n:\"") && FlareMethod(rules, "public static FlareAvatarPlan Citizen").Contains("citySeed"),

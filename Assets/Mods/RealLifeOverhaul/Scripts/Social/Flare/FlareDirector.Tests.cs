@@ -354,7 +354,7 @@ namespace RealLifeOverhaul.Flare
                 };
                 FlareLiveRules.SetAt(p, Now);
                 _file.Posts.Add(p);
-                Shared_Changed(p);
+                ShareChanged(p);
                 Changed();
                 OpenPost(id);
             });

@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Flare
             EnsureCitizens(_file);
             if (FlareLiveRules.WatchDay(_file.Net, day))
             {
-                Shared_WatchesChanged();
+                ShareWatchesChanged();
             }
             for (int i = _file.Net.Stories.Count - 1; i >= 0; i--)
             {
@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Flare
             {
                 Logger?.Info("Flare: the city's posts of day " + day + ": " + made + " (" + _made.Count + " reports and reviews among them), at its own minute each; the feed's busyness "
                              + _facts.Busy + ".");
-                Shared_Changed(null);
+                ShareChanged(null);
             }
             Recount();
             TextsAhead();   // the day's posts: their words asked now, each by its own minute
@@ -299,7 +299,7 @@ namespace RealLifeOverhaul.Flare
                     c.State = FlareCaseState.Done;
                     Logger?.Info("Flare: the City Office's works for case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ") are done.");
                     FlareBridges.FaultDone?.Invoke(c.Id);   // a real fault the works were for is mended
-                    Shared_CaseChanged(c);
+                    ShareCaseChanged(c);
                 }
             }
         }

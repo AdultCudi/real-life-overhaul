@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.Flare
                         Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 8000, Likes = 60 + FlareRules.Roll(_file.Seed, id, 5) / 8
                     });
                 }
-                Shared_Changed(null);
+                ShareChanged(null);
                 FlareRules.Prune(_file);
             }
             FollowedNotice(day, hour);

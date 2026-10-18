@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Flare
                 MentionAnswer(p);
             }
             FlareRules.Prune(_file);
-            Shared_Own(p);
+            ShareOwn(p);
             TextsFriends(p);   // the friends' replies and the city's: their words asked now
             TextsAhead();
         }
@@ -261,7 +261,7 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             p.Liked = !p.Liked;
-            Shared_Like(p, p.Liked);
+            ShareLike(p, p.Liked);
             Changed();
         }
 
@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Flare
             }
             p.Reposted = true;
             p.Reposts++;
-            Shared_Repost(p);
+            ShareRepost(p);
             Changed();
         }
 
@@ -321,7 +321,7 @@ namespace RealLifeOverhaul.Flare
             if (_file.Net.Going.Count < FlareNet.GoingMost)
             {
                 _file.Net.Going.Add(postId);
-                Shared_Going(p);
+                ShareGoing(p);
             }
             Changed();
         }
@@ -340,7 +340,7 @@ namespace RealLifeOverhaul.Flare
             FlareLiveRules.Dm(_file.Net, with, AccountName(with), now, true, text, null, null);
             if (with.StartsWith("p:", StringComparison.Ordinal))
             {
-                Shared_Dm(with.Substring(2), text);
+                ShareDm(with.Substring(2), text);
             }
             else
             {

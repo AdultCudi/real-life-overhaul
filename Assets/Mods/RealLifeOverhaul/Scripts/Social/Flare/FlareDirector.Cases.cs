@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Flare
                 FlareLiveRules.Complained(_file.Net, kind, p.District, Save.Day, c.State == FlareCaseState.Acting);
                 Escalation(c, Save.Day);
             }
-            Shared_CaseChanged(c);
+            ShareCaseChanged(c);
             return c;
         }
 
@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Flare
             };
             FlareLiveRules.SetAt(a, Math.Max(report.At, Now) + FlareLiveRules.ReplyLeast);
             _file.Posts.Add(a);
-            Shared_Changed(a);
+            ShareChanged(a);
         }
 
         // A case's answer is due: what the City Office does, its answer, the tally and the mood.
@@ -138,7 +138,7 @@ namespace RealLifeOverhaul.Flare
                 Tell(NotificationType.Info, "reallife_flare_note_case", () => OpenPost(id), "account", FlareText.OfficialName(reply.Who));
             }
             Escalation(c, day);
-            Shared_CaseChanged(c);
+            ShareCaseChanged(c);
         }
 
         private static bool FaultsReal => FlareBridges.FaultsReal != null && FlareBridges.FaultsReal();
@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Flare
                 Tell(answer == FlareAnswer.Nothing ? NotificationType.Info : NotificationType.Warning,
                     answer == FlareAnswer.Barred ? "reallife_flare_note_barred" : answer == FlareAnswer.Warned ? "reallife_flare_note_warned" : "reallife_flare_note_nothing", () => OpenPost(id));
             }
-            Shared_CaseChanged(c);
+            ShareCaseChanged(c);
         }
 
         /// <summary>One of the city's people reports a real fault of the city's: a post naming where, and a case. False when Flare cannot take it.</summary>
@@ -201,7 +201,7 @@ namespace RealLifeOverhaul.Flare
             _file.Posts.Add(p);
             FileCase(p, "c" + who.Index, x, z);
             FlareRules.Prune(_file);
-            Shared_Changed(p);
+            ShareChanged(p);
             Recount();
             Changed();
             return true;
@@ -243,7 +243,7 @@ namespace RealLifeOverhaul.Flare
             _file.Posts.Add(p);
             c.Answer = id;
             FlareRules.Prune(_file);
-            Shared_Changed(p);
+            ShareChanged(p);
             return p;
         }
 
@@ -401,7 +401,7 @@ namespace RealLifeOverhaul.Flare
             }
             FlareLiveRules.SetAt(a, p.At + 30 + FlareRules.Roll(_file.Seed, id, 4) % 90);
             _file.Posts.Add(a);
-            Shared_Changed(a);
+            ShareChanged(a);
         }
     }
 }
