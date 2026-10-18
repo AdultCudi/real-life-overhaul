@@ -6,11 +6,7 @@ using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The words of education and careers: every figure they show is written here, the same way in the apps, the
-    /// notifications, the Planner and the Guide. Every text is a key of en.json; money as the game writes it. Called when
-    /// something is shown, never otherwise.
-    /// </summary>
+    /// <summary>The words of education and careers, the same in the apps, notifications, Planner and Guide; called only when something is shown.</summary>
     public static class CareersText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;

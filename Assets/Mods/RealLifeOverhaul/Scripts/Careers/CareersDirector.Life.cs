@@ -5,11 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// Working life (Careers/Work/LifeRules): reviews, rises, bonuses and promotion, overtime and burnout, office matters,
-    /// search firms, redundancy and benefit, share options, the pension, a seat at the top of a rival's company and a
-    /// conflict of interest with the player's own businesses; on the game's day and after each working stint.
-    /// </summary>
+    /// <summary>Working life (Careers/Work/LifeRules): reviews, promotion, burnout, office matters, search firms, redundancy, options, the pension and conflicts.</summary>
     public sealed partial class CareersDirector
     {
         private const string BonusKey = "reallife_transaction_work_bonus";

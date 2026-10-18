@@ -265,8 +265,7 @@ namespace RealLifeOverhaul.Careers
             StudyRules.Learn(_study, skill, thousandths, day);
         }
 
-        /// <summary>After a class is counted or missed: the course moves on to its exam (a short course's is sat at
-        /// once, at its last class), or the student is barred. True if anything changed.</summary>
+        /// <summary>After a class is counted or missed: on to the exam (a short course's at its last class) or barred; true if anything changed.</summary>
         private bool AfterClass(Enrolment e, int day, bool attended)
         {
             CourseDef c = e.Def;

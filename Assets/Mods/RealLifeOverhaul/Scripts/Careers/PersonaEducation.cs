@@ -13,14 +13,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The Persona app's EDUCATION box with the mod's courses after the game's own (Careers/Study/EducationRules). The game
-    /// fills the box each time it is switched on, one copy of its row template for each of its courses; a frame later this
-    /// component makes more copies the same way: a heading for each group of the mod's courses (its count where the status
-    /// mark would be), then its courses with their standing, in keys the game's localiser fills. The box is a fixed height
-    /// made for the game's rows, so it is then given the height the rows need and Persona's column laid out again; if the
-    /// layout is not as expected only the courses begun are listed. The game's private pieces are looked up once; without
-    /// them the box keeps the game's rows. Nothing is sent. The cost: nothing per frame; a null test once a second, and
-    /// about fifty row copies each time the app opens.
+    /// The Persona app's education box with the mod's courses after the game's own (Careers/Study/EducationRules), copies of
+    /// the game's row template made a frame after the game fills it, and the box made tall enough. The cost: nothing per
+    /// frame; a null test once a second and about fifty rows each time the app opens.
     /// </summary>
     public sealed class PersonaEducation : MonoBehaviour
     {
@@ -223,9 +218,7 @@ namespace RealLifeOverhaul.Careers
             return _baseHeight;
         }
 
-        // The box made the height its rows need (below 0: the game's own), and Persona's column laid out again to it, so
-        // its white holds every row and its scroll reaches the last. The column's layout sizes the box by its rectangle
-        // (it does not control its children's heights), and the box's LayoutElement says the same height.
+        // The box made the height its rows need (below 0: the game's own) and Persona's column laid out again, so its scroll reaches the last row.
         private void Size(float height)
         {
             if (!(_box != null && _box.transform is RectTransform r))
@@ -250,8 +243,7 @@ namespace RealLifeOverhaul.Careers
             LayoutRebuilder.MarkLayoutForRebuild(r);   // (up to the column's own list, whose fitter sets how far it scrolls)
         }
 
-        // A heading row: no status mark (the grey ring is the mark's background, the tick inside it), the count where the
-        // mark stood, and the name given the width the count does not need, so a long group name stays on one line.
+        // A heading row: no status mark, the count where it stood, and the name given the rest of the width, so a long name stays on one line.
         private static void Heading(RectTransform row, TextLocalizationComponent header, TextLocalizationComponent status, GameObject check)
         {
             Transform mark = check != null ? check.transform.parent : null;

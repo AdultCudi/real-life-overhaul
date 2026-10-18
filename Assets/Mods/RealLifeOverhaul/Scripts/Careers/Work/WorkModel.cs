@@ -149,10 +149,7 @@ namespace RealLifeOverhaul.Careers
         public long Earned;
     }
 
-    /// <summary>
-    /// Everything of the player's working life in the save: the vacancies seen, the applications, the job now and the jobs
-    /// before. Kept in the same line as their studies (Careers/CareersStore). Game-free.
-    /// </summary>
+    /// <summary>The player's working life in the save: vacancies seen, applications, the job now and before; in the careers line (CareersStore). Game-free.</summary>
     public sealed class WorkFile
     {
         public int NextId = 1, LastDay = -1, OpeningsDay = -1;
@@ -225,11 +222,7 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        /// <summary>
-        /// The application the employer turned down that still bars the same post there (matched on the post, not the vacancy,
-        /// so a new vacancy for it is barred too), the latest if several; null if the player may apply. One pass over at most
-        /// <see cref="ApplicationsMost"/> applications, run when the player applies or the vacancy is shown, never per frame.
-        /// </summary>
+        /// <summary>The latest no still barring the same post (matched on the post, not the vacancy); null if the player may apply. One pass over the applications.</summary>
         public Application TurnedDown(Opening o, int day)
         {
             Application last = null;

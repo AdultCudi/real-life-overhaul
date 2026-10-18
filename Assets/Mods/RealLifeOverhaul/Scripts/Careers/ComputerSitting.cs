@@ -12,12 +12,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// An online class, homework or a working day at the player's computer at home, done the way the game's own computer
-    /// passes the time (EntertainActivity): the player walks to its chair and sits with their hands on it, its screen shows
-    /// the work video, and the game's panel shows the progress, fast forward, "skip time" and Stop. One press goes the whole
-    /// way, setting off as the game's activities do ("Setting off" in docs/features/careers.md). However it ends, the
-    /// minutes count once (<see cref="ClassTally"/>) and the player stands up free. One object per press; a few integer sums
-    /// a game minute while it runs, nothing per frame of its own.
+    /// An online class, homework or a working day at the computer at home, as the game's computer passes the time: one press
+    /// walks the player there and sits them; the minutes count once (<see cref="ClassTally"/>). Nothing per frame of its own.
     /// </summary>
     internal sealed class ComputerSitting : IPlayerActivity
     {
@@ -158,8 +154,7 @@ namespace RealLifeOverhaul.Careers
             End(false, true);
         }
 
-        // Every way out. settle: the minutes are told to the director (else it has let the sitting go itself); walking:
-        // the walk is called off here (else the game has given the player another walk order already).
+        // Every way out. settle: the minutes go to the director (else it has let the sitting go); walking: the walk is called off here.
         private void End(bool settle, bool walking)
         {
             if (_state == PlayerActivityState.Finished)
@@ -202,8 +197,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // Up from the chair as the game's computer stands its user up. The study blocker goes whatever the game's calls
-        // before it do, so that nothing can leave the player held at the computer.
+        // Up from the chair as the game's computer stands its user up; the study blocker goes in a finally, whatever fails before it.
         private void StandUp(PlayerController player)
         {
             try
@@ -229,8 +223,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // A class or homework ends when the player's energy runs out, as the game's studying does; a working day does not, as
-        // it does not at the desk (Careers/DeskWork) or on the Career app's panel (Jobs/ShiftSkip), so that it counts the same.
+        // A class or homework ends when the energy runs out, as the game's studying does; a working day does not, as at the desk.
         public bool RequiresEnergy() => !_work;
 
         public bool BlocksAutoSave() => true;

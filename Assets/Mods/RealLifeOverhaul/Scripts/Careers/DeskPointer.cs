@@ -6,11 +6,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The player's desk on a fitted-out floor (FitOut/FitDesks) as a thing to point at, as the game's own items are (and
-    /// Ledger/LedgerPointer): a trigger box over the desk on the game's interactive layer. The game's pointer outlines the
-    /// desk and its chair and shows "Your desk" with its own "Click to work" (DeskGame's entry); a click walks the player to
-    /// the chair and opens the work panel. No Update, nothing per frame: the game asks it only as the pointer comes, goes or
-    /// clicks. It goes with the desk.
+    /// The player's desk on a fitted-out floor as a thing to point at: a trigger box on the game's interactive layer, outlined
+    /// with the game's "Click to work". No Update, nothing per frame: the game asks it as the pointer comes, goes or clicks.
     /// </summary>
     public sealed class DeskPointer : EntityController
     {
@@ -67,8 +64,7 @@ namespace RealLifeOverhaul.Careers
             return pointer;
         }
 
-        // The game's own Awake puts the object on the interactive layer (it is there already) and its Start reads places to
-        // walk to that an object placed by the game has; neither is wanted here.
+        // The game's own Awake and Start set up a layer and walk-to places this object does not need.
         public override void Awake()
         {
         }

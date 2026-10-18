@@ -9,12 +9,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The player's courses and job as buttons of the game's own computer panel, beside its Pass the time: copies of the
-    /// panel's button template (CustomizableButtonsOverlay.buttonTemplate), made once a city and put after the game's own
-    /// buttons, which it makes again at each filling. The class button ("Attend {course}", or greyed with the next class),
-    /// the homework button, and at a computer with its chair the job's button on a day from home (Study/ClassPlayRules and
-    /// Work/DeskRules, AtComputer). This component sits on the panel's object, so the game switching the panel on enables
-    /// it. The cost: nothing between two openings of the panel; on an opening, one look through the courses and the job.
+    /// The player's courses and job as buttons of the game's own computer panel beside Pass the time, copies of its button
+    /// template made once a city. The cost: nothing between two openings of the panel; on one, a look through courses and job.
     /// </summary>
     public sealed class ComputerButtons : MonoBehaviour
     {
@@ -33,16 +29,10 @@ namespace RealLifeOverhaul.Careers
 
         public static bool Installed => _instance != null;
 
-        /// <summary>
-        /// True if the game's computer panel was not built as expected, or the buttons stood down after a fault
-        /// (Core/Guard): online classes are then begun from the Campus app, a day from home from the Career app.
-        /// </summary>
+        /// <summary>True if the computer panel was not as expected or the buttons stood down after a fault: classes and days from home start from the apps.</summary>
         public static bool Failed => _failed || FrameGuard.Off;
 
-        /// <summary>
-        /// Puts the buttons in the game's computer panel, once a city. False if the panel is not there yet (asked again on the
-        /// next look) or not built as expected (said once: classes and a day from home are then begun from the apps).
-        /// </summary>
+        /// <summary>Puts the buttons in the game's computer panel, once a city; false if it is not there yet (asked again) or not as expected (said once).</summary>
         public static bool Install()
         {
             if (_instance != null)

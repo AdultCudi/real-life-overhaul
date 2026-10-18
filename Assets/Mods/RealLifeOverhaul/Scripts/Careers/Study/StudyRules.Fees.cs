@@ -112,11 +112,7 @@ namespace RealLifeOverhaul.Careers
             return bits;
         }
 
-        /// <summary>
-        /// The share of the fee taken off, thousandths: a merit grant for a student whose last result was the top grade, a
-        /// bursary for one with little money, and the council's policy on education (+1 a subsidy, -1 a surcharge, which
-        /// adds). Never more than <see cref="StudyCatalogue.GrantMost"/> off; a short course has no grants but the council's.
-        /// </summary>
+        /// <summary>The share of the fee taken off, thousandths: a merit grant, a bursary and the council's policy; at most <see cref="StudyCatalogue.GrantMost"/>.</summary>
         public static int Grant(StudyFile f, CourseDef c, int cashWhole, int priceLevel, int council)
         {
             int off = 0;
@@ -157,10 +153,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>How many instalments a course's fee is paid in: a degree's thirds, every other course's at once.</summary>
         public static int Instalments(CourseDef c) => c != null && c.Higher ? StudyCatalogue.InstalmentsHigher : 1;
 
-        /// <summary>
-        /// The instalment of the fee that falls due now, whole money at the start's prices, or 0: the first at enrolment,
-        /// a degree's others once a third and two thirds of its classes have gone by.
-        /// </summary>
+        /// <summary>The fee instalment due now, whole money at the start's prices, or 0: the first at enrolment, a degree's others a third and two thirds through.</summary>
         public static int InstalmentDue(Enrolment e)
         {
             CourseDef c = e.Def;
@@ -186,10 +179,7 @@ namespace RealLifeOverhaul.Careers
             return owed <= 0 ? 0 : owed * StudyCatalogue.LoanRateBp / 10000 / Math.Max(60, daysPerYear);
         }
 
-        /// <summary>
-        /// What the student loan takes from a day's pay: <see cref="StudyCatalogue.LoanShareBp"/> of what an hour pays over
-        /// the threshold, for the hours paid; never more than is owed.
-        /// </summary>
+        /// <summary>What the loan takes from a day's pay: <see cref="StudyCatalogue.LoanShareBp"/> of an hour's pay over the threshold, for the hours paid; never more than owed.</summary>
         public static long LoanRepayment(long owed, int centsAnHour, int hours, int priceLevel)
         {
             int threshold = PriceRules.At(StudyCatalogue.LoanThreshold, priceLevel);
@@ -213,10 +203,7 @@ namespace RealLifeOverhaul.Careers
             return c == null ? 0 : Math.Max(0, c.Fee - Math.Max(0, fundWhole));
         }
 
-        /// <summary>
-        /// The class a child graduates with (a degree's 1 to 4): by how close they are to the player (0 to 100), a private
-        /// school, and their own luck (-15 to 15).
-        /// </summary>
+        /// <summary>The class a child graduates with (1 to 4): by how close they are to the player (0 to 100), a private school and their luck (-15 to 15).</summary>
         public static int ChildGrade(float closeness, bool privateSchool, int luck)
         {
             int mark = 40 + (int)(Math.Max(0f, Math.Min(100f, closeness)) * 0.3f) + (privateSchool ? 8 : 0) + TalentCatalogue.Clamp(luck, -15, 15);

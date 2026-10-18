@@ -18,11 +18,7 @@ namespace RealLifeOverhaul.Careers
         public int Rank;
     }
 
-    /// <summary>
-    /// The rules of working in a profession in plain numbers (Careers/Work/ProCatalogue): what a rank asks, an employer's
-    /// score, the interview, the offer and haggling, the working day and its pay, notice, references and experience.
-    /// Game-free: EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The rules of working in a profession in plain numbers: what a rank asks, the application, interview and offer, the working day, notice and references. Game-free.</summary>
     public static class ProRules
     {
         public const int SelfTaughtExtra = 20;    // points more a rank asks of someone without its qualification, where a profession takes people self-taught
@@ -106,10 +102,7 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>
-        /// True if the player holds what a rank needs: one of its courses (or comes to it self-taught where the profession
-        /// allows), its certificate, and what each rank below it needs, for one who comes in at the rank from outside.
-        /// </summary>
+        /// <summary>True if the player holds what a rank needs: one of its courses (or self-taught where allowed), its certificate, and each rank's below it.</summary>
         public static bool Qualified(StudyFile f, Profession p, int rank)
         {
             int certs = StudyRules.Certs(f);
@@ -163,11 +156,7 @@ namespace RealLifeOverhaul.Careers
             return days / 2;   // (half the time of rising inside: a move is how people climb faster)
         }
 
-        /// <summary>
-        /// How an employer scores an application, 0 to 100: half for turning up qualified, then the skills against the rank
-        /// (up to 20 for being over it, three a point off for being under), experience, references, the player's name,
-        /// a friend's word or the recruitment office, honours and a master's, a record, and the city's economy.
-        /// </summary>
+        /// <summary>How an employer scores an application, 0 to 100: half for turning up qualified, then skills, experience, references, name and the economy.</summary>
         public static int HireScore(Candidate c)
         {
             if (!c.Qualified)
@@ -192,11 +181,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True if the interview brings an offer.</summary>
         public static bool Offered(int score, int luck) => score > 0 && score + TalentCatalogue.Clamp(luck, -InterviewLuck, InterviewLuck) >= OfferPass;
 
-        /// <summary>
-        /// The points of score an application was short of what the employer wanted at the step that turned it down
-        /// (<see cref="ScreenPass"/> at the screening, <see cref="OfferPass"/> after the interview), before luck: 0 when the
-        /// score was enough on average and the day's luck turned it down (it was close).
-        /// </summary>
+        /// <summary>The points of score short of the step that turned an application down, before luck; 0 when it was enough on average (close).</summary>
         public static int ScoreShort(int score, bool interview)
         {
             return Math.Max(0, (interview ? OfferPass : ScreenPass) - Math.Max(0, score));
@@ -208,10 +193,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The first day the player may apply again for a post an employer turned them down for on <paramref name="refused"/>.</summary>
         public static int ReapplyFrom(int refused) => refused + ReapplyDays;
 
-        /// <summary>
-        /// The day an application was turned down, for a save from before that day was kept: from what it holds, or -1 (it then
-        /// bars nothing): the answer's day at the screening, the interview's after it; an offer withdrawn is not kept, so -1.
-        /// </summary>
+        /// <summary>The day an application was turned down, for a save from before that day was kept, or -1 (it then bars nothing).</summary>
         public static int RefusedDay(Application a)
         {
             if (a.Stage != (int)ApplyStep.Rejected || a.Offer > 0)
@@ -317,10 +299,7 @@ namespace RealLifeOverhaul.Careers
             to = start + ClockLateMinutes;
         }
 
-        /// <summary>
-        /// True if a working day not worked is excused for the home's internet: a day worked from home, with the internet
-        /// down over its start window for an outage (StudyRules.Excuses). No pay, no missed day, no warning, like a sick day.
-        /// </summary>
+        /// <summary>True if a day not worked from home is excused: the internet was down for an outage over its start window; like a sick day.</summary>
         public static bool DayExcused(WorkMode mode, int day, HomeNet net)
         {
             return FromHome(mode, day) && StudyRules.Excuses(net);
@@ -444,11 +423,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// True if the reminder that the registration with the recruitment office ends today is due: on its last day
-        /// (<paramref name="until"/>), from <see cref="AgencyNoteHour"/>, and not yet sent for that registration
-        /// (<paramref name="told"/>: the last day it was sent for, kept in the save, so a reload does not send it again).
-        /// </summary>
+        /// <summary>True if the reminder that the agency registration ends today is due: its last day, from <see cref="AgencyNoteHour"/>, not yet sent (<paramref name="told"/>, saved).</summary>
         public static bool AgencyEnds(int until, int told, int day, int hour)
         {
             return until > 0 && until == day && told != until && hour >= AgencyNoteHour;

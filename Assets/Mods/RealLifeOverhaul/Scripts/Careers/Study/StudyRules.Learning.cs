@@ -6,10 +6,7 @@ namespace RealLifeOverhaul.Careers
     /// <summary>What a class and homework teach, homework set and open, and how skills are learnt, used and fade.</summary>
     public static partial class StudyRules
     {
-        /// <summary>
-        /// The thousandths of a point one class adds to a skill that stands at <paramref name="points"/> (whole points): the
-        /// course's gain over its classes, less the nearer the top, by how well the player learns (the schooling they hold).
-        /// </summary>
+        /// <summary>Thousandths of a point one class adds to a skill at <paramref name="points"/>: the course's gain over its classes, less near the top, by the learning.</summary>
         public static int ClassGain(int gain, int classes, int points, int learning)
         {
             if (gain <= 0 || classes <= 0)
@@ -94,11 +91,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// A day gone by: every skill unused for more than <see cref="StudyCatalogue.FadeAfterDays"/> days fades by
-        /// <see cref="StudyCatalogue.FadePerDay"/> thousandths, never below <see cref="StudyCatalogue.FadeFloor"/> of its best
-        /// nor below <see cref="StudyCatalogue.FadeLeast"/> points. Returns the thousandths lost in all.
-        /// </summary>
+        /// <summary>A day gone by: a skill unused for over <see cref="StudyCatalogue.FadeAfterDays"/> days fades, within its floors; returns the thousandths lost.</summary>
         public static int Fade(StudyFile f, int day)
         {
             int lost = 0;

@@ -3,10 +3,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The test buttons of education and careers (options page, Tests): each puts the player where a part can be seen at
-    /// once. A test changes the save as the real thing would, and says what it did in a notification and in Player.log.
-    /// </summary>
+    /// <summary>The test buttons of education and careers (options page, Tests): each changes the save as the real thing would and says what it did.</summary>
     public sealed partial class CareersDirector
     {
         private bool TestReady()
@@ -172,8 +169,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // The job the working day tests use: the player's own, or the city's first vacancy given now (null, said, if there is
-        // none); today a working day of it, not counted yet.
+        // The job the working day tests use: the player's own, or the city's first vacancy given now (null, said, if none); today not yet counted.
         private Job TestJob()
         {
             WorkFile w = _study.Work;
@@ -423,10 +419,7 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
-        /// <summary>
-        /// The university away from its permanent building without an older save (CampusBuilding.Pretend): each press goes on to
-        /// the next of every office taken, its own building taken, and back home; it chooses again at once, as on a load.
-        /// </summary>
+        /// <summary>The university away from home without an older save (CampusBuilding.Pretend): each press the next of every office taken, its own taken, home.</summary>
         public void TestAway()
         {
             if (!TestReady())
@@ -593,10 +586,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// With the home's internet down for an outage now (Utilities' "Internet: an outage now"), today's online class and a
-        /// working day from home not yet worked go by as if their windows had just shut: each is excused, as the real ones are.
-        /// </summary>
+        /// <summary>With the home's internet in an outage now, today's online class and a day from home not yet worked go by now, each excused.</summary>
         public void TestOutage()
         {
             if (!TestReady())

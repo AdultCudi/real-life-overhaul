@@ -148,10 +148,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// Settles a working day: a missed one is a warning, the third the sack. Off sick, on leave, or a day from home lost to
-        /// an outage over its start window, it is excused: no pay, no missed day, no warning.
-        /// </summary>
+        /// <summary>Settles a working day: a missed one is a warning, the third the sack; off sick, on leave or lost to an outage from home, excused.</summary>
         private void SettleDay(Job j, int day)
         {
             ProRules.StartWindow(j.Def, day, out int from, out int to);
@@ -214,10 +211,7 @@ namespace RealLifeOverhaul.Careers
             return excused;
         }
 
-        /// <summary>
-        /// Moves a video interview lost to an outage over its window to the first weekday from <paramref name="first"/>, at the
-        /// same hour; true if moved. Asks Utilities only for a remote post.
-        /// </summary>
+        /// <summary>Moves a video interview lost to an outage to the first weekday from <paramref name="first"/>, at the same hour; true if moved.</summary>
         private bool InterviewMoved(Application a, int first)
         {
             if (a.Post.Work != (int)WorkMode.Remote)

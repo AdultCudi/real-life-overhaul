@@ -2,10 +2,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Career app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, what its rows
-    /// can be filtered by and the sentence shown when a filter leaves nothing.
-    /// </summary>
+    /// <summary>The Career app's tables as data (GameUi.TableSpec): each tab's columns, sorts, filters and empty sentence.</summary>
     public static class CareerColumns
     {
         public const int Open = 0, Short = 1, Applied = 2;

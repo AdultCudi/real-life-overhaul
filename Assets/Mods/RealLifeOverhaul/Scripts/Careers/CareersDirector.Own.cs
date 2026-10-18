@@ -4,11 +4,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// Working for oneself (Careers/Work/OwnRules): leaving to found a tech company or open a practice, the founder's record
-    /// the venture firms read, former colleagues brought along, a restraint clause and the former employer's claim over it
-    /// (Justice), freelance contracts, side work under an exclusive contract, and a practice whose name grows with each delivery.
-    /// </summary>
+    /// <summary>Working for oneself (Careers/Work/OwnRules): founding or a practice, former colleagues, a restraint clause, freelance contracts and side work.</summary>
     public sealed partial class CareersDirector
     {
         public const int TabOwn = 5;

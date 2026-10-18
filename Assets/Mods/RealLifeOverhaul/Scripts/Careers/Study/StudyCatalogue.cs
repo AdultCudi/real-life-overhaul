@@ -29,11 +29,7 @@ namespace RealLifeOverhaul.Careers
         Distance = 2      // the same timetable followed online from home (a course that allows it)
     }
 
-    /// <summary>
-    /// The player's own skills: the 29 specialisms of the professions (Tech/People, the same numbers, so a role's two
-    /// specialisms are read straight from the player's), then fourteen of the trades, care and everyday work that no role
-    /// of the professions has. Each is 0 to 100 points, kept in thousandths.
-    /// </summary>
+    /// <summary>The player's own skills: the professions' 29 specialisms (Tech/People, the same numbers), then fourteen of the trades and care; 0 to 100 points, in thousandths.</summary>
     public static class Skills
     {
         public const int Electrical = 29, Plumbing = 30, Joinery = 31, Cooking = 32, Hair = 33, Beauty = 34, Care = 35, Clinical = 36, Teaching = 37,
@@ -106,10 +102,8 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// Every course of the city's schools and every figure of studying: the timetable, fees, grants, the student loan,
-    /// homework, exams and grades, and how skills are learnt and fade; game-free (the checkers compile it). The game's own
-    /// seven courses at Manhattan Business School stay as they are; these are the city's other learning. One game hour is a
-    /// minute of play: a class is three or four of them, and a degree about two dozen classes, three a week.
+    /// Every course of the city's schools and every figure of studying, game-free (the checkers compile it). The game's own
+    /// seven courses stay as they are. One game hour is a minute of play; a degree is about two dozen classes, three a week.
     /// </summary>
     public static class StudyCatalogue
     {

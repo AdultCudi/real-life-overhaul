@@ -10,11 +10,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Campus app, in the game's frame (GameUi.AppShell, copied from MyEmployees): tabs over the table on the right
-    /// (courses on offer, the courses under way, results, skills and the family's schooling), and on the left the box with
-    /// the row picked. Nothing runs while it is closed; the rows are made when it opens, a tab is picked or something changes.
-    /// </summary>
+    /// <summary>The Campus app in the game's frame (GameUi.AppShell): its tabs' tables and the box with the row picked, written only when it opens or changes.</summary>
     public sealed partial class CampusApp
     {
         public const string CourseRow = "course:";

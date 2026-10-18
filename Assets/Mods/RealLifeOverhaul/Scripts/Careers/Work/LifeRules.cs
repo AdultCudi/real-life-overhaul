@@ -30,11 +30,7 @@ namespace RealLifeOverhaul.Careers
         }
     }
 
-    /// <summary>
-    /// The rules of working life in plain numbers: reviews, rises, bonuses and promotion, overtime and burnout, office
-    /// matters, search firms, redundancy and benefit, share options, the pension, the top of a rival's company and a
-    /// conflict of interest. Game-free: EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The rules of working life in plain numbers: reviews, promotion, burnout, office matters, search firms, redundancy, options, the pension. Game-free.</summary>
     public static class LifeRules
     {
         public const int ReviewDays = 182;          // between reviews, written for a year of 365 days (two a year)
@@ -104,11 +100,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Days between reviews in a year of the game's length.</summary>
         public static int ReviewEvery(int year) => TalentCatalogue.Scaled(ReviewDays, year);
 
-        /// <summary>
-        /// A review's score, 0 to 100: half for attendance (lateness costing a little), up to 20 for skills over the rank and
-        /// three a point off for under it, overtime (up to 8, twice with a driver), standing with colleagues, the boss's
-        /// manner, and burnout.
-        /// </summary>
+        /// <summary>A review's score, 0 to 100: half for attendance, skills against the rank, overtime, standing with colleagues, the boss's manner and burnout.</summary>
         public static int ReviewScore(Job j, int points, int need, BossKind boss)
         {
             int attended = ProRules.Attendance(j);

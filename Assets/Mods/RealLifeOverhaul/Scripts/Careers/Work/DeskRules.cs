@@ -52,11 +52,7 @@ namespace RealLifeOverhaul.Careers
         Why = 4       // greyed, with what the desk's panel says (DeskRules.Label): too late to begin it, or worked already
     }
 
-    /// <summary>
-    /// Where a professional job is worked and what the work panel says, in plain numbers: at a station of the employer's of
-    /// the profession's kind, the same every day from the save's seed and the job, as the game's own job at El Gato's till,
-    /// or at a desk fitted out where there is none. Game-free: EconomyCheck runs every rule.
-    /// </summary>
+    /// <summary>Where a professional job is worked and what the work panel says: a station of the profession's kind from the save's seed, or a fitted desk. Game-free.</summary>
     public static class DeskRules
     {
         public const int SoonMinutes = ProRules.ClockEarlyMinutes;   // the panel says "starts soon" and offers Start this long before the hour
@@ -73,10 +69,7 @@ namespace RealLifeOverhaul.Careers
         private static readonly StationKind[] WarehouseKinds = { StationKind.Desk, StationKind.Machine, StationKind.Register };
         private static readonly StationKind[] TradeKinds = { StationKind.Machine, StationKind.Desk };
 
-        /// <summary>
-        /// The kinds of the game's stations a profession works at, the best first; empty where none of the game's suits it
-        /// (a teacher: the school's computers are its students' study desks, so a teacher's desk is fitted out instead).
-        /// </summary>
+        /// <summary>The kinds of the game's stations a profession works at, the best first; empty where none suits (a teacher's desk is fitted out).</summary>
         public static StationKind[] Kinds(Profession p)
         {
             if (p == null)
@@ -126,10 +119,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The job's own number for the dice: its post and the day it began, the same on every load.</summary>
         public static int JobKey(Job j) => j == null ? 0 : j.Post.Id * 7919 + j.Hired;
 
-        /// <summary>
-        /// What the panel at a desk says at a minute of a day: at the employer's (<paramref name="atHome"/> false) or at the
-        /// home computer. Minutes is what is left of the day to work; late if it starts after the late allowance.
-        /// </summary>
+        /// <summary>What the panel at a desk, or at the home computer, says at a minute of a day; the minutes left to work, and late if past the allowance.</summary>
         public static DeskState State(Job j, int day, int minute, bool atHome, out int minutes, out bool late)
         {
             minutes = 0;
@@ -178,11 +168,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True for the states whose panel offers Start work.</summary>
         public static bool Startable(DeskState s) => s == DeskState.Open || s == DeskState.StartsSoon;
 
-        /// <summary>
-        /// The home computer's button for the job, by what the work panel would say there (<see cref="State"/> at home): Start,
-        /// Work late once the day is done, greyed with the hours before it or the panel's words after; none on a day off, a day
-        /// at the employer's or before the job begins.
-        /// </summary>
+        /// <summary>The home computer's button for the job by what the panel would say at home: Start, Work late, greyed hours or words, or none.</summary>
         public static HomeWork AtComputer(DeskState state, bool canLate)
         {
             switch (state)
@@ -196,10 +182,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The words of the panel's state: the game's own where it has them (its job's day off, shift not yet started, starts
-        /// soon), the mod's for the rest. Null for a state that says nothing of its own (the day can be worked).
-        /// </summary>
+        /// <summary>The words of the panel's state: the game's own where it has them, the mod's for the rest; null where the day can be worked.</summary>
         public static string Label(DeskState s)
         {
             switch (s)
@@ -248,10 +231,7 @@ namespace RealLifeOverhaul.Careers
             return What(kinds.Length > 0 ? kinds[0] : StationKind.None, Preset(p));
         }
 
-        /// <summary>
-        /// The hour of the day the boss texts an absent player: an hour into the working day, as the game's own job checks on
-        /// the hour once the shift is under way; -1 on a day with nothing to text about.
-        /// </summary>
+        /// <summary>The hour the boss texts an absent player: an hour into the working day, as the game's own job checks; -1 for none.</summary>
         public static int AwayHour(Profession p) => p == null ? -1 : Math.Min(23, p.Hour + 1);
 
         /// <summary>True if the boss texts at this hour: a working day of the job, begun, not yet counted, nothing of it worked.</summary>

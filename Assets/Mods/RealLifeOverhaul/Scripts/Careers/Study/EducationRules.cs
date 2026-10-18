@@ -52,11 +52,7 @@ namespace RealLifeOverhaul.Careers
         public EducationStatus Status;
     }
 
-    /// <summary>
-    /// The Persona app's education box beyond the game's own courses (Careers/PersonaEducation shows it): every course of the
-    /// mod's offered or taken, in its school's group, under way first, then passed, then failed or left, then the rest, each
-    /// in the catalogue's order. Game-free: EconomyCheck runs it.
-    /// </summary>
+    /// <summary>The Persona app's education box beyond the game's courses: the mod's courses offered or taken, in groups, those under way first. Game-free.</summary>
     public static class EducationRules
     {
         /// <summary>The groups in the order the box lists them.</summary>
@@ -71,11 +67,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The room a heading's row keeps at its right for the count of its courses.</summary>
         public const float CountRoom = 220f;
 
-        /// <summary>
-        /// The education box's height for its rows: the game's box is a fixed height made for its own rows, so rows added to it
-        /// would be drawn past its white and its column's scroll. Its top to the rows, the rows, and under them the game's own
-        /// margin (at least <see cref="LeastMargin"/>); never less than the game's own height.
-        /// </summary>
+        /// <summary>The education box's height for its rows (a fixed height the game made for its own), with the game's margin under them; never less than its own.</summary>
         public static float BoxHeight(float baseHeight, float rowsTop, float gameRows, float allRows)
         {
             float margin = baseHeight - rowsTop - gameRows;
@@ -86,19 +78,13 @@ namespace RealLifeOverhaul.Careers
             return Math.Max(baseHeight, rowsTop + allRows + margin);
         }
 
-        /// <summary>
-        /// A heading's name width in a row <paramref name="rowWidth"/> wide: from where the name starts to the room kept
-        /// for the count, which stands at the row's right where a course's status mark would be (a heading has none).
-        /// </summary>
+        /// <summary>A heading's name width in a row <paramref name="rowWidth"/> wide: from the name's start to the room kept on the right for its count.</summary>
         public static float HeadingNameWidth(float rowWidth, float nameLeft, float rightMargin)
         {
             return Math.Max(0f, rowWidth - nameLeft - rightMargin - CountRoom);
         }
 
-        /// <summary>
-        /// Whether a heading's words stay on one line in a name <paramref name="width"/> wide, at the row's 28 points in bold:
-        /// about 17 for a Latin letter and 30 for a Chinese character, a generous measure.
-        /// </summary>
+        /// <summary>Whether a heading's words fit one line in a name <paramref name="width"/> wide at the row's 28 points bold (a generous measure).</summary>
         public static bool HeadingFits(string words, float width)
         {
             if (string.IsNullOrEmpty(words))
@@ -140,11 +126,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// Where a course stands: the enrolment under way if there is one, else its best pass, else its latest result, else
-        /// not started. The next class is the Campus app's (<see cref="StudyRules.NextClass(Enrolment, int, int, int)"/> at this
-        /// minute of the day; <paramref name="sitting"/> the course whose class is being sat, -1 for none).
-        /// </summary>
+        /// <summary>Where a course stands: the enrolment under way, else its best pass, else its latest result, else not started, with the next class.</summary>
         public static EducationStatus Status(StudyFile f, CourseDef c, int today, int minuteOfDay, int sitting)
         {
             var s = new EducationStatus();
@@ -216,10 +198,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True for a standing the player has begun (under way or finished).</summary>
         public static bool Started(EducationState state) => state != EducationState.NotStarted;
 
-        /// <summary>
-        /// The key of a standing's words. Not started is the game's own words for its courses ("Not started yet"); a
-        /// course under way says its classes and, if one is set, the next.
-        /// </summary>
+        /// <summary>The key of a standing's words: the game's own "Not started yet", and for a course under way its classes and the next.</summary>
         public static string StatusKey(EducationStatus s)
         {
             const string mod = "reallife";
@@ -243,11 +222,7 @@ namespace RealLifeOverhaul.Careers
 
         public static string CountKey(int count) => count == 1 ? "reallife_persona_edu_count_one" : "reallife_persona_edu_count";
 
-        /// <summary>
-        /// The rows after the game's own: each group in <see cref="Order"/> with a heading and its courses. A course is
-        /// listed if <paramref name="listed"/> says so (offered with the options as they are) or the player has begun it;
-        /// with <paramref name="startedOnly"/> (a box that cannot scroll) only those begun. Returns the courses listed.
-        /// </summary>
+        /// <summary>The rows after the game's own: each group's heading and courses, those <paramref name="listed"/> or begun (only begun with <paramref name="startedOnly"/>).</summary>
         public static int Rows(StudyFile f, Func<CourseDef, bool> listed, bool startedOnly, int today, int minuteOfDay, int sitting, List<EducationRow> into)
         {
             into.Clear();

@@ -4,10 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Family tab of the Campus app: the family's children with their age, schooling and college fund, and for a grown
-    /// one their place at the university (paid by the fund and the player) and how they did; and tutoring on the Skills tab.
-    /// </summary>
+    /// <summary>The Campus app's Family tab: the children's schooling and college fund, a grown one's university, and tutoring on the Skills tab.</summary>
     public sealed partial class CampusApp
     {
         private const string ChildRow = "child:";

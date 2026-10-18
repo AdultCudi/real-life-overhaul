@@ -130,10 +130,7 @@ namespace RealLifeOverhaul.Careers
             ReachVacancies(w, day, referrals);
         }
 
-        /// <summary>
-        /// With no job, keeps a few first posts open in the professions the player could be offered now: drawn blind, one would
-        /// come about once a month, and a player who just passed its course would wait weeks.
-        /// </summary>
+        /// <summary>With no job, keeps a few first posts open in the professions the player could be offered now; drawn blind, one would come about once a month.</summary>
         private void ReachVacancies(WorkFile w, int day, bool referrals)
         {
             if (w.Job != null)
@@ -328,10 +325,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// Today's vacancies when the Career app opens: made now if the day has not made them (the same ones, by the seed), and
-        /// the first posts within reach topped up for a course passed since the morning.
-        /// </summary>
+        /// <summary>Today's vacancies when the Career app opens: made now if the day has not (the same, by the seed), and the first posts within reach topped up.</summary>
         internal void VacanciesNow()
         {
             if (!_workOn || _study == null || Save == null)

@@ -104,12 +104,8 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// Every profession the player can work in, with its ranks, pay and what each rank needs; game-free (the checkers compile
-    /// it), every amount at the start's prices. An employer of the city (one of its businesses, a rival's, a tech company or
-    /// the public sector) takes the player on at a rank, judged on their skills and qualifications, and pays by the hour of
-    /// a working day. Against the game's cashier at 25 an hour and its van at about 100 an hour of play, a newcomer earns 16
-    /// to 40, a senior 40 to 90 and the top of a ladder 70 to 260: a way to start and to rise, not a better use of a day
-    /// than a busy business of one's own.
+    /// Every profession the player can work in, with its ranks, pay and needs, at the start's prices; game-free. A newcomer earns
+    /// 16 to 40 an hour, a senior 40 to 90, the top of a ladder 70 to 260, against the game's cashier at 25.
     /// </summary>
     public static class ProCatalogue
     {
@@ -292,11 +288,7 @@ namespace RealLifeOverhaul.Careers
 
         public static Profession Find(int id) => id >= 0 && id < All.Length ? All[id] : null;
 
-        /// <summary>
-        /// True if a business type employs a profession (<see cref="Employs"/>), from a set kept for each type: the day's
-        /// vacancies ask this tens of thousands of times of a few dozen types. A dictionary hit after a type's first time; on
-        /// the game's thread only.
-        /// </summary>
+        /// <summary>True if a business type employs a profession (<see cref="Employs"/>), from a set kept per type: a dictionary hit after its first time. Game thread only.</summary>
         public static bool EmploysKept(Profession p, string type)
         {
             int bit = p != null ? p.Id : -1;
@@ -387,10 +379,7 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>
-        /// The profession an ad of a family of the jobs board is for: one of the professions of that family, by the roll (the
-        /// infrastructure family's are IT support's); -1 for a family that has none here.
-        /// </summary>
+        /// <summary>The profession an ad of a jobs board family is for, by the roll; -1 for a family with none here.</summary>
         public static int OfFamily(int family, int roll)
         {
             if (family == (int)Tech.Family.Infrastructure)

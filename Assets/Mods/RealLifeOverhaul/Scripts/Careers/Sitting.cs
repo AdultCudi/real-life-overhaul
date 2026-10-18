@@ -18,12 +18,7 @@ namespace RealLifeOverhaul.Careers
         Ceremony = 8    // a graduation day
     }
 
-    /// <summary>
-    /// A class, homework, an exam or a working day left to the game's own clock on its activity panel, where the player
-    /// stands (<see cref="ShiftSkip"/>) or at the desk or computer it is done at (Careers/SchoolDesk, DeskWork,
-    /// ComputerSitting). Energy is spent while it runs, as studying spends it; however it ends, the director is told the
-    /// minutes that passed, or that it was called off before it began (<see cref="CalledOff"/>).
-    /// </summary>
+    /// <summary>A class, homework, an exam or a working day left to the game's clock on its activity panel; the director is told its minutes, or that it was called off.</summary>
     public sealed class Sitting : ISkippableShift
     {
         private readonly CareersDirector _director;

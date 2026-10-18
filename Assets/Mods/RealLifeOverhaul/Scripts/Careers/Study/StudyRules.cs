@@ -27,10 +27,7 @@ namespace RealLifeOverhaul.Careers
         public HomeNet Net;       // ...and if not, why not: an outage is said apart from the rest
     }
 
-    /// <summary>
-    /// The home's internet as careers reads it (Utilities, through CareersBridges): up, or why it is down. Only an outage
-    /// is the city's doing; no plan, one being put in and one cut for a bill not paid are the player's own. Never saved.
-    /// </summary>
+    /// <summary>The home's internet as careers reads it: up, or why it is down; only an outage is the city's doing. Never saved.</summary>
     public enum HomeNet
     {
         Online = 0,       // up, or no utilities to ask (a home is then taken to be connected)
@@ -81,10 +78,7 @@ namespace RealLifeOverhaul.Careers
             return AtClass(c, mode, here);
         }
 
-        /// <summary>
-        /// What the panel where the player stands offers for a course, from whether its class can be joined and its exam sat
-        /// here and now (null: yes; else the reason key): a class first, then an exam, and nothing while the player is busy.
-        /// </summary>
+        /// <summary>What the panel where the player stands offers for a course (classWhy, examWhy null when possible): a class first, then an exam, nothing while busy.</summary>
         public static StudyPrompt Prompt(string classWhy, string examWhy, bool busy)
         {
             if (busy)
@@ -94,10 +88,7 @@ namespace RealLifeOverhaul.Careers
             return classWhy == null ? StudyPrompt.Class : examWhy == null ? StudyPrompt.Exam : StudyPrompt.None;
         }
 
-        /// <summary>
-        /// The notice when a class's hour comes: none if it cannot be joined at all now (no class, a fee owed is said by its
-        /// own notice); "press the key" if it can be joined where the player is; "go there" if only the place is wrong.
-        /// </summary>
+        /// <summary>The notice as a class's hour comes: 0 none (no class), 1 "press the key" (it can be joined here), 2 "go there" (only the place is wrong).</summary>
         public static int ClassNotice(string why)
         {
             if (why == null)
@@ -111,10 +102,7 @@ namespace RealLifeOverhaul.Careers
             return 2;       // elsewhere, or another reason the mod knows: why, where, and for how long
         }
 
-        /// <summary>
-        /// The one rule for what the home's internet being down excuses: only a provider's outage, which is not the
-        /// player's doing. No home, no plan, one not yet connected or one cut for an unpaid bill excuses nothing.
-        /// </summary>
+        /// <summary>The one rule for what the home's internet being down excuses: only a provider's outage, never the player's own doing.</summary>
         public static bool Excuses(HomeNet net) => net == HomeNet.Outage;
 
         /// <summary>Why something done at the home's computer cannot be done now (a reason key), or null with the internet up: the one reason every such activity gives.</summary>
@@ -123,11 +111,7 @@ namespace RealLifeOverhaul.Careers
             return net == HomeNet.Online ? null : net == HomeNet.Outage ? "reallife_study_why_outage" : "reallife_study_why_no_internet";
         }
 
-        /// <summary>
-        /// The minutes of the save (day * 1440 + minute) a day's class can be joined in: from
-        /// <see cref="StudyCatalogue.ArriveEarlyMinutes"/> before its start to <see cref="StudyCatalogue.LateMinutes"/> after.
-        /// False on a day it has no class.
-        /// </summary>
+        /// <summary>The save's minutes (day * 1440 + minute) a day's class can be joined in, from ArriveEarlyMinutes before to LateMinutes after; false on a day without.</summary>
         public static bool JoinWindow(CourseDef c, StudyMode mode, int day, out int from, out int to)
         {
             from = to = 0;
@@ -201,10 +185,7 @@ namespace RealLifeOverhaul.Careers
             return week <= 0 ? 0 : (c.Sessions + week - 1) / week * 7;
         }
 
-        /// <summary>
-        /// Whether a class can be joined at this minute of this day (from <see cref="StudyCatalogue.ArriveEarlyMinutes"/>
-        /// before its start until <see cref="StudyCatalogue.LateMinutes"/> after), with the minutes it still has to run.
-        /// </summary>
+        /// <summary>Whether a class can be joined at this minute (ArriveEarlyMinutes before its start to LateMinutes after), with the minutes it still runs.</summary>
         public static bool Joinable(CourseDef c, StudyMode mode, int day, int minuteOfDay, out int minutesLeft)
         {
             minutesLeft = 0;
@@ -221,11 +202,7 @@ namespace RealLifeOverhaul.Careers
             return minutesLeft > 0;
         }
 
-        /// <summary>
-        /// The next class of a course that can still be joined, from now on (today's if its window is still open), as
-        /// day * 1440 + its starting minute; -1 if none in the next four weeks. <paramref name="fromDay"/>: the first day it
-        /// may be on (the course's start, the day after the last one settled).
-        /// </summary>
+        /// <summary>The next class still joinable from now, as day * 1440 + its start, from <paramref name="fromDay"/> on; -1 if none in four weeks.</summary>
         public static int NextClass(CourseDef c, StudyMode mode, int today, int minuteOfDay, int fromDay)
         {
             if (c == null || !c.Timetabled)
@@ -255,11 +232,7 @@ namespace RealLifeOverhaul.Careers
 
         public const int HeldLookBack = 28;   // days: classes gone by but not yet counted are looked for this far back (the hour and the day count them sooner)
 
-        /// <summary>
-        /// The classes of an enrolment held so far: those counted, those whose window has shut since but are not counted yet,
-        /// and the one being sat now (<paramref name="sitting"/>: its course, or -1). At most the course's classes; a loop of
-        /// at most four weeks, run when a page is written.
-        /// </summary>
+        /// <summary>The classes held so far: counted, gone by but not yet counted, and the one being sat (<paramref name="sitting"/>, or -1); at most the course's.</summary>
         public static int Held(Enrolment e, int today, int minuteOfDay, int sitting)
         {
             CourseDef c = e != null ? e.Def : null;
@@ -283,11 +256,7 @@ namespace RealLifeOverhaul.Careers
             return held;
         }
 
-        /// <summary>
-        /// The next class of an enrolment that can still be joined, as day * 1440 + its starting minute, or -1: none while
-        /// it is not at its classes, and none once every class of the course has been held (<see cref="Held"/>). The one rule
-        /// every page that names the next class reads: the Campus app, Persona, the desks and doors, the notices.
-        /// </summary>
+        /// <summary>The next joinable class of an enrolment (day * 1440 + its start), or -1 once every class is held: the one rule every page naming it reads.</summary>
         public static int NextClass(Enrolment e, int today, int minuteOfDay, int sitting)
         {
             CourseDef c = e != null ? e.Def : null;
@@ -299,11 +268,7 @@ namespace RealLifeOverhaul.Careers
             return NextClass(c, (StudyMode)e.Mode, today, minuteOfDay, sitting == e.Course ? Math.Max(from, today + 1) : from);
         }
 
-        /// <summary>
-        /// True if "your class starts now" is due for an enrolment at this minute: its next class (<see cref="NextClass(Enrolment, int, int, int)"/>,
-        /// so a class beyond the course's last, or one being sat, never) begins now, and it has not been told for that class
-        /// (<paramref name="told"/>: <see cref="Enrolment.StartTold"/>, kept in the save, so a reload does not tell it again).
-        /// </summary>
+        /// <summary>True if "your class starts now" is due: the next class begins now and <paramref name="told"/> (kept in the save) is before it.</summary>
         public static bool StartsNow(Enrolment e, int today, int minuteOfDay, int sitting, int told)
         {
             int next = NextClass(e, today, minuteOfDay, sitting);
@@ -357,10 +322,7 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        /// <summary>
-        /// A class gone by without the player, excused (<see cref="ClassExcused"/>): held, so the course moves on, but left
-        /// out of the classes that count (<see cref="Counted"/>), neither attended nor missed. True if it was one.
-        /// </summary>
+        /// <summary>A class excused (<see cref="ClassExcused"/>): held, so the course moves on, but left out of those that count (<see cref="Counted"/>); true if one.</summary>
         public static bool Excuse(Enrolment e, int day)
         {
             if (!Miss(e, day))
@@ -387,10 +349,7 @@ namespace RealLifeOverhaul.Careers
             return c == null || !c.Timetabled ? 1000 : counted <= 0 ? 1000 : Math.Min(1000, e.Done * 1000 / counted);
         }
 
-        /// <summary>
-        /// After a class is counted, or a certificate's last piece of study: the course moves on to its exam, or the student
-        /// is barred for having missed too much. True if the stage changed.
-        /// </summary>
+        /// <summary>After a class is counted, or a certificate's last homework: on to the exam, or barred for missing too much; true if the stage changed.</summary>
         public static bool Advance(Enrolment e, int today)
         {
             CourseDef c = e.Def;
@@ -437,12 +396,7 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        /// <summary>
-        /// The exam's mark out of 100: a fifth for turning up, then by the share of classes attended (four tenths), the
-        /// homework done (a quarter), how far the course's first skill has come against what the course takes it to (three
-        /// twentieths), two for each piece of revision, five off for sitting it tired, and the day's own luck
-        /// (<paramref name="luck"/>, -<see cref="StudyCatalogue.ExamNoise"/> to +).
-        /// </summary>
+        /// <summary>The exam's mark out of 100: 20 for turning up, 40 by attendance, 25 by homework, 15 by skill, 2 a revision, 5 off tired, and the day's luck.</summary>
         public static int ExamScore(Enrolment e, int skillPoints, bool tired, int luck)
         {
             CourseDef c = e.Def;
@@ -466,10 +420,7 @@ namespace RealLifeOverhaul.Careers
             return TechRandom.Range(seed, 7101, e.Course, e.Start * 8 + e.Retakes, -StudyCatalogue.ExamNoise, StudyCatalogue.ExamNoise);
         }
 
-        /// <summary>
-        /// The grade a mark earns. A course: 0 fail, 1 pass, 2 merit, 3 distinction. A degree or a master's: 0 fail, 1 a
-        /// third, 2 a lower second, 3 an upper second, 4 a first.
-        /// </summary>
+        /// <summary>The grade a mark earns: a course 0 fail to 3 distinction; a degree 0 fail, 1 third, 2 lower second, 3 upper second, 4 first.</summary>
         public static int Grade(CourseDef c, int score)
         {
             if (c == null || score < c.Pass)

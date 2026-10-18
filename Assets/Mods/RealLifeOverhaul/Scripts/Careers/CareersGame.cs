@@ -8,12 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// Everything education and careers read from or do to the game, in one place: the clock, the player's cash and energy,
-    /// where the player is, whether the game's activity panel or time skip is busy; money as the mod's own dated
-    /// transactions, a class's energy spent at the game's own studying rate, the mood as one of the mod's happiness
-    /// modifiers. Nothing here runs by itself.
-    /// </summary>
+    /// <summary>Everything education and careers read from or do to the game: the clock, cash, energy, where the player is, money, energy spent and mood.</summary>
     internal static class CareersGame
     {
         public const string SchoolType = "ba:businesstype_school";
@@ -141,10 +136,7 @@ namespace RealLifeOverhaul.Careers
         private static string _schoolStreet;
         private static int _schoolNumber;
 
-        /// <summary>
-        /// The university's permanent building's address as the game writes one ("26 2nd Avenue": the game's own street
-        /// name), for the Guide's degrees page; the street's name as the mod has it where the game's streets are not loaded.
-        /// </summary>
+        /// <summary>The university's permanent building's address as the game writes it ("26 2nd Avenue"), for the Guide's degrees page.</summary>
         public static string HomeAddress()
         {
             try

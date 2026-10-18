@@ -5,11 +5,7 @@ using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The figures the Guide's pages on education and careers print: every {name} in their text is filled from the
-    /// catalogues here, so a page can never say anything the rules do not do. Called once, when the feature list is built
-    /// (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The figures the Guide's careers pages print: every {name} filled from the catalogues, worked out as the page opens (Meta/FeatureList).</summary>
     public static class CareersGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;

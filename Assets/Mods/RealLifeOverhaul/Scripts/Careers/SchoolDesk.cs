@@ -13,13 +13,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A class or exam of the mod's at a study desk of Manhattan Business School or a classroom of Hudson City University,
-    /// through the game's own study flow. The game's study activity for the desk is handed to this one, which leaves all of
-    /// it to the game and adds one button ("Attend {course}", "Sit the {course} exam" or, greyed, the next class); at the
-    /// university the panel is the class's alone (<see cref="DeskOffer.Only"/>). Pressed, the player walks to the desk and
-    /// studies as the game's studying does, setting off as its activities do (<see cref="Walk"/>); the minutes count once to
-    /// the mod's enrolment (<see cref="ClassTally"/>), never to a diploma of the game's. In a Going Public session the desk
-    /// is made with <see cref="Own"/> and is no StudyActivity, which Going Public would take. One object per press of Study.
+    /// A class or exam of the mod's at a school desk or a university classroom, through the game's study flow: the game's
+    /// activity for the desk is handed to this one, which adds the class's button (<see cref="DeskOffer.Only"/>: the class's
+    /// panel alone). In a Going Public session made with <see cref="Own"/>, never a StudyActivity. One object per press of Study.
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
@@ -117,10 +113,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The game's panel has just opened its study activity at a school desk: it is handed to a desk of ours with the offer.
-        /// Null if the game's activity is not as expected (nothing changed); a desk without its chair or way out is refused alone.
-        /// </summary>
+        /// <summary>The game's study panel just opened at a school desk: handed to a desk of ours with the offer; null if not as expected (nothing changed).</summary>
         public static SchoolDesk Take(PlayerActivityUI ui, StudyActivity game, CareersDirector director, DeskOffer offer)
         {
             if (ui == null || game == null || offer == null || !Resolve())
@@ -149,11 +142,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// A desk of ours made from a study door without the game's panel (a Going Public session): the door's study activity
-        /// is made as the door makes it but not handed to the panel, which gets the class's alone. Null if the desk lacks its
-        /// chair or its way out, or the door's activity is not a study one.
-        /// </summary>
+        /// <summary>A desk of ours from a study door without the game's panel (a Going Public session); null if it lacks its chair or way out.</summary>
         public static SchoolDesk Own(EducationDoorController door, CareersDirector director, DeskOffer offer)
         {
             StudyDiploma place = door != null ? door.StudyDiploma : null;
@@ -216,8 +205,7 @@ namespace RealLifeOverhaul.Careers
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
-        // Set off as the game's own activities are ("Setting off" in docs/features/careers.md): on its way once every script of
-        // the press's frame has run, the walk order in the next frame; then at the desk the chair, the screen and the energy.
+        // Set off as the game's activities are ("Setting off" in docs/features/careers.md), then the chair, the screen and the energy.
         private IEnumerator Walk()
         {
             yield return null;
@@ -262,8 +250,7 @@ namespace RealLifeOverhaul.Careers
             }));
         }
 
-        // Called off before the class began (no way to the desk, or the walk stopped by a click elsewhere): the sitting goes
-        // with nothing counted and nothing said.
+        // Called off before the class began: the sitting goes with nothing counted and nothing said.
         private void Off()
         {
             _before = _state;
@@ -428,8 +415,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // Up at the desk's exit, as the game's studying stands its player up. The study blocker goes whatever the game's
-        // calls before it do, so that nothing can leave the player held at the desk.
+        // Up at the desk's exit, as the game's studying stands its player up; the study blocker goes in a finally, whatever fails before it.
         private void StandUp()
         {
             GameManager game = InstanceBehavior<GameManager>.Instance;
@@ -457,8 +443,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // The class's panel alone, closed: before its button, with nothing of the game's; after, the class is called off,
-        // or ended with its minutes counted.
+        // The class's panel alone closed: before its button, nothing of the game's; after, called off or ended with its minutes counted.
         private void Close()
         {
             if (_mine)

@@ -6,11 +6,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Own work tab: freelance contracts (offers to take, work to do, what was delivered), the player's practice, the
-    /// way out of a job to found a company or open a practice, former colleagues waiting to join a firm of the player's, and
-    /// a restraint clause that still binds.
-    /// </summary>
+    /// <summary>The Own work tab: freelance contracts, the practice, leaving to found or practise, former colleagues and a restraint clause.</summary>
     public sealed partial class CareerApp
     {
         public const string ContractRow = "contract:";

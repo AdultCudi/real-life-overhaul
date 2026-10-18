@@ -6,10 +6,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The working life on the My job tab: reviews, the boss and colleagues, burnout, an office matter, share options, the
-    /// pension, the contract's clauses and a conflict of interest, with their buttons.
-    /// </summary>
+    /// <summary>The working life on the My job tab: reviews, burnout, office matters, options, the pension, the clauses and a conflict of interest.</summary>
     public sealed partial class CareerApp
     {
         private void JobMore(InfoBox box, WorkFile w, Job j)

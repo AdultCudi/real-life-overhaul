@@ -3,11 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// What the game's computer at home offers beside its own Play a game and Pass the time (Careers/ComputerButtons):
-    /// the class button for an online or distance class (<see cref="Class"/>), to attend now or greyed with when its next
-    /// class is, and the homework button for a piece of homework that is open (<see cref="Homework"/>). Game-free.
-    /// </summary>
+    /// <summary>What the computer at home offers beside Pass the time: the class button (<see cref="Class"/>, now or greyed) and the homework button.</summary>
     public struct ComputerOffer
     {
         public int Class;      // the course whose online class the class button is for; -1 for no class button
@@ -28,11 +24,7 @@ namespace RealLifeOverhaul.Careers
         Counted = 2      // it had begun: its minutes are counted, once
     }
 
-    /// <summary>
-    /// The minutes of one class, homework or exam at a desk or a computer, from the moment the player sits down, counted to
-    /// the enrolment once however it ends (the time up, Stop, a skip, energy out, the game's panel letting it go, the city
-    /// unloading). Game-free; a few integer sums a minute of the game's clock.
-    /// </summary>
+    /// <summary>The minutes of one class, homework or exam at a desk or computer from the moment the player sits, counted once however it ends. Game-free.</summary>
     public sealed class ClassTally
     {
         public readonly int Length;   // game minutes the sitting is for
@@ -98,39 +90,25 @@ namespace RealLifeOverhaul.Careers
     /// <summary>Game-free rules for classes played as the game's own studying: which button a computer shows, and where a class is held.</summary>
     public static class ClassPlayRules
     {
-        /// <summary>
-        /// The one rule for how a desk's panel is opened for a class of the mod's: the game's study panel alone; in a Going Public
-        /// session the desk's own panel, since Going Public takes every StudyActivity for its own training window.
-        /// </summary>
+        /// <summary>The one rule for how a desk's panel is opened: the game's study panel alone; in a Going Public session the desk's own, as Going Public takes every StudyActivity.</summary>
         public static DeskWay WayToDesk(bool inSession)
         {
             return inSession ? DeskWay.OwnPanel : DeskWay.GameStudy;
         }
 
-        /// <summary>
-        /// True if a click on a university classroom door (room from 1; 0 for none) is the mod's: in a Going Public session only,
-        /// where the game's click would reach Going Public's training window. Alone the game's click opens its study panel.
-        /// </summary>
+        /// <summary>True if a click on a university classroom door (room from 1) is the mod's: in a Going Public session only.</summary>
         public static bool TakesRoomClick(bool inSession, int room)
         {
             return inSession && room > 0;
         }
 
-        /// <summary>
-        /// True if the school's classes and exams are offered by the panel where the player stands: in a Going Public session,
-        /// where a click on one of its desks is Going Public's. Alone they are offered at the desks.
-        /// </summary>
+        /// <summary>True if the school's classes are offered by the panel where the player stands: in a Going Public session, where its desks' clicks are Going Public's.</summary>
         public static bool SchoolInPlace(bool inSession)
         {
             return inSession;
         }
 
-        /// <summary>
-        /// Whether the panel where the player stands offers a course's class (<paramref name="classHere"/>) and its exam
-        /// (<paramref name="examHere"/>): not where the school's desks (<see cref="SchoolInPlace"/>), the computer at home
-        /// or a classroom of the university offer them. classAtSchool and examAtSchool: held at the school; online: its
-        /// classes from home; inRooms: in a classroom of the university.
-        /// </summary>
+        /// <summary>Whether the panel where the player stands offers a course's class and exam: not where a school desk, the home computer or a classroom offers them.</summary>
         public static void InPlace(bool classAtSchool, bool online, bool examAtSchool, bool inRooms, bool inSession, out bool classHere, out bool examHere)
         {
             bool desks = !SchoolInPlace(inSession);
@@ -144,11 +122,7 @@ namespace RealLifeOverhaul.Careers
             return c != null && (mode == StudyMode.Distance || c.Campus == Campus.Online);
         }
 
-        /// <summary>
-        /// True if the class of an enrolment can be attended at this minute (wherever it is held), with the minutes it
-        /// still runs: the course at its classes, no fee owed, today's class not yet counted, inside its window
-        /// (<see cref="StudyRules.Joinable"/>). The one rule the Campus app, the desks and the computer read.
-        /// </summary>
+        /// <summary>True if the enrolment's class can be attended at this minute, with the minutes it still runs: the one rule the Campus app, desks and computer read.</summary>
         public static bool ClassNow(Enrolment e, int day, int minuteOfDay, out int minutes)
         {
             minutes = 0;
@@ -160,11 +134,7 @@ namespace RealLifeOverhaul.Careers
             return StudyRules.Joinable(c, (StudyMode)e.Mode, day, minuteOfDay, out minutes);
         }
 
-        /// <summary>
-        /// What the computer at home offers now: the first online or distance class that can be attended now, else the
-        /// one whose next class comes soonest (greyed); and the first course with homework open. In the order of the
-        /// courses, so the same on every look. <paramref name="sitting"/>: the course whose class is being sat, or -1.
-        /// </summary>
+        /// <summary>What the home computer offers now: the first online class open now, else the soonest (greyed), and the first homework open; the same on every look.</summary>
         public static ComputerOffer AtComputer(IList<Enrolment> courses, int day, int minuteOfDay, int sitting)
         {
             ComputerOffer offer = ComputerOffer.None;

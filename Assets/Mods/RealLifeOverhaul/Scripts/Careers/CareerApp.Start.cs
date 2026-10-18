@@ -5,10 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Career app's first tab, Professions: how offers come, what the player can apply for now and the first step; then
-    /// every profession with what its first post still needs, and, picked, its whole ladder (Careers/Work/ProPath, ProRules).
-    /// </summary>
+    /// <summary>The Career app's Professions tab: the first step, and every profession with what its first post needs and its ladder (ProPath, ProRules).</summary>
     public sealed partial class CareerApp
     {
         private readonly int[] _vacancies = new int[ProCatalogue.Count];

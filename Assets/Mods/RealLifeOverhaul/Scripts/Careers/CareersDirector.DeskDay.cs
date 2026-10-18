@@ -92,10 +92,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// Start working or Work late pressed at the desk: the Career app's checks but for the place, and the day's clock-in.
-        /// Null with the sitting, or the reason key.
-        /// </summary>
+        /// <summary>Start working or Work late pressed at the desk: the Career app's checks but the place's, and the clock-in; null with the sitting, or the reason key.</summary>
         internal string DeskBegin(bool overtime, out Sitting sitting)
         {
             sitting = null;
@@ -179,10 +176,7 @@ namespace RealLifeOverhaul.Careers
                 CareersText.T("reallife_work_skip_pay", "pay", CareersText.Rate(Prices.At(j.Pay))));
         }
 
-        /// <summary>
-        /// The home computer's button for the job beside Pass the time, or null for none: Start the working day, Work late, or,
-        /// greyed, the hours before it can begin and the desk's words after (too late, worked already).
-        /// </summary>
+        /// <summary>The home computer's button for the job beside Pass the time, or null: Start, Work late, or greyed the hours or the desk's words.</summary>
         internal string ComputerWork(out bool can, out bool overtime)
         {
             can = false;
@@ -212,10 +206,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The working day or overtime at a home computer, from its own button: the desk's checks and clock-in
-        /// (<see cref="DeskBegin"/>), then the walk and the sitting (Careers/ComputerSitting). Null if under way, else the reason key.
-        /// </summary>
+        /// <summary>The working day or overtime at a home computer from its own button (<see cref="DeskBegin"/>, then the walk); null if under way, else the reason key.</summary>
         internal string WorkAtComputer(ComputerController computer, bool overtime)
         {
             Job j = Work != null ? Work.Job : null;

@@ -212,8 +212,7 @@ namespace RealLifeOverhaul.Careers
                     TMP_Text shown = card.openStateLabel.TextContainer;
                     if (turned || hours != _cardHours || shown == null || !ReferenceEquals(shown.text, _cardText))
                     {
-                        // written again when the card turned to it, the hours changed, or the game wrote its own line over it (on the hour and
-                        // when a building changes hands: BuildingResume.UpdateDetails)
+                        // written again when the card turned to it, the hours changed, or the game wrote its own line over it (BuildingResume.UpdateDetails)
                         card.openStateLabel.Prefix = string.Empty;
                         card.openStateLabel.SetData(LanguageChangeEventDataHolder.Create("reallife_campus_card_state", new { state = HoursLine(open) }, "common_closed"));
                         card.openStateLabel.TextContainer.color = open ? WorldPanel.Green() : WorldPanel.Red();

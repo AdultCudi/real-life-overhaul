@@ -12,10 +12,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Education and careers: the city's courses and the player's skills (Careers/Study), each later part behind its own
-    /// option in a partial file of this class. No Update, so nothing per frame: a one-second timer on the real clock starts
-    /// and stops the parts, installs the apps and keeps the handlers of the game's hour, day and save in place (the game
-    /// empties its events on every load). A fault switches it off for the session; the game's hour and day are left alone.
+    /// Education and careers, each part behind its own option in a partial file of this class. No Update, nothing per frame: a
+    /// one-second timer starts and stops the parts and keeps the game's hour, day and save handlers in place (the game empties
+    /// its events on every load). A fault switches it off for the session.
     /// </summary>
     public sealed partial class CareersDirector : MonoBehaviour
     {

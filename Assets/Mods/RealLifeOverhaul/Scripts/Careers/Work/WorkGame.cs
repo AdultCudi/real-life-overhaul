@@ -17,12 +17,7 @@ namespace RealLifeOverhaul.Careers
         public long Professions;   // the professions its type employs (ProCatalogue.EmployedBy), read once a day
     }
 
-    /// <summary>
-    /// What the working life reads of the city: its employers (the businesses of a type a profession works in that are not
-    /// a player's, the tech companies' office buildings, the hospitals, the school and the council's offices), a rival's
-    /// name, and whether the player is at work. The lists are made once a game day and on a city's first look; nothing
-    /// here runs by itself.
-    /// </summary>
+    /// <summary>What the working life reads of the city: its employers, a rival's name and whether the player is at work; lists made once a game day.</summary>
     internal static class WorkGame
     {
         private const string Office = "ba:buildingtype_office";
@@ -34,11 +29,7 @@ namespace RealLifeOverhaul.Careers
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        /// <summary>
-        /// The city's businesses that employ a profession, not the player's own. One pass over the save's buildings; whether
-        /// a type employs anyone is a dictionary hit (ProCatalogue.AnyEmploys), and the employers are the same objects every
-        /// day, filled again (they are good until the next call).
-        /// </summary>
+        /// <summary>The city's businesses that employ a profession, not the player's own: one pass over the save's buildings; the same objects refilled each day.</summary>
         public static void Employers(List<EmployerRef> into, List<EmployerRef> offices)
         {
             into.Clear();
@@ -190,11 +181,7 @@ namespace RealLifeOverhaul.Careers
             return CivicCity.AddressText(street, number);
         }
 
-        /// <summary>
-        /// True if the player is at their place of work: inside it, or by its door. A hospital's or the school's job is the
-        /// post's own building too, where the player's desk is (Careers/CareersDirector.Desk.cs); for a post of one written
-        /// without an address, any hospital or the school.
-        /// </summary>
+        /// <summary>True if the player is at work: inside the post's building or by its door (any hospital or the school for a post without an address).</summary>
         public static bool AtWork(Profession p, Opening post)
         {
             try

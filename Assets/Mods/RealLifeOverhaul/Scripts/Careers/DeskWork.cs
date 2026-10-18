@@ -11,12 +11,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A working day of a professional job at the player's own desk, on the game's own work panel: what WorkActivity is to
-    /// the game's job at El Gato Food Market. The panel says, in the game's labels where it has them, whether the business is
-    /// open, the shift not yet started, the day done, the desk taken and what it pays, with Cancel and Start working (or Work
-    /// late). Started, the player sets off as the game's activities do (<see cref="Walk"/>) and is put to work, seated at a
-    /// desk or on their feet at a till; the minutes worked are the director's to settle, and the player stands up free
-    /// whatever fails. One object per click; nothing runs unless the game's panel has it.
+    /// A working day of a professional job at the player's own desk on the game's work panel, as WorkActivity is to the game's
+    /// own job: its labels, Start working or Work late, the walk and the pose; the minutes are the director's to settle.
     /// </summary>
     internal sealed class DeskWork : IPlayerActivity
     {
@@ -87,8 +83,7 @@ namespace RealLifeOverhaul.Careers
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
-        // Set off as the game's own activities are ("Setting off" in docs/features/careers.md): on its way once every script of
-        // the press's frame has run, the walk order in the next frame; then the last step to the station, as WorkActivity's.
+        // Set off as the game's activities are ("Setting off" in docs/features/careers.md), then the last step to the station.
         private IEnumerator Walk()
         {
             yield return null;
@@ -257,8 +252,7 @@ namespace RealLifeOverhaul.Careers
             End(false, true);
         }
 
-        // Every way out. settle: the minutes are told to the director (else it has let the sitting go itself); walking:
-        // the walk is called off here (else the game has given the player another walk order already).
+        // Every way out. settle: the minutes go to the director (else it has let the sitting go); walking: the walk is called off here.
         private void End(bool settle, bool walking)
         {
             if (_state == PlayerActivityState.Finished)

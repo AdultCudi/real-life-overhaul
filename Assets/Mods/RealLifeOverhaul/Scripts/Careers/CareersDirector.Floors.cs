@@ -4,11 +4,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The university's floors and classrooms (Careers/CampusInterior) as study sees them: what the university has for the
-    /// player now, a classroom's panel, the way from the Campus app to the room, a classroom door's click in a Going Public
-    /// session, and the address the save keeps so that a move is said once.
-    /// </summary>
+    /// <summary>The university's floors as study sees them: what it has for the player now, a classroom's panel and door, and its address kept so a move is said once.</summary>
     public sealed partial class CareersDirector
     {
         private CampusInterior _interior;
@@ -113,8 +109,7 @@ namespace RealLifeOverhaul.Careers
         private string _campusNow, _campusNowStreet;   // the building as the save writes it, and the street it was made from...
         private int _campusNowNumber;                  // ...and the number
 
-        // The building against the save's: a move is logged and told once; and once a save, or when it changes, why the
-        // university is away from its permanent building and where it is meanwhile (CampusRules.AwayMark).
+        // The building against the save's: a move logged and told once; and once a save, or when it changes, why it is away (CampusRules.AwayMark).
         private void CampusMoved()
         {
             if (_campus == null || !_campus.Usable || Save == null)
@@ -255,10 +250,7 @@ namespace RealLifeOverhaul.Careers
             return offer;
         }
 
-        /// <summary>
-        /// True if a click on this study door is the mod's (DeskGame's "Click to learn"): a classroom door of the player's floor,
-        /// in a Going Public session (ClassPlayRules.TakesRoomClick). Out of a session one flag; in one, the floor's five doors.
-        /// </summary>
+        /// <summary>True if a click on this study door is the mod's: a classroom door of the player's floor in a Going Public session (ClassPlayRules.TakesRoomClick).</summary>
         internal bool TakesRoomClick(EducationDoorController door)
         {
             bool session = GoingPublic.InSession;
@@ -281,10 +273,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The game's mark over a classroom door for its room's course (CampusRules.MarkOf). Once a second for five rooms, while
-        /// the player is on a floor.
-        /// </summary>
+        /// <summary>The game's mark over a classroom door for its room's course (CampusRules.MarkOf); once a second for five rooms on a floor.</summary>
         internal RoomMark RoomMarkOf(int course)
         {
             if (course < 0 || !_studyOn || _study == null || Save == null)
@@ -336,8 +325,7 @@ namespace RealLifeOverhaul.Careers
             return CareersText.T("reallife_campus_hours_span", "from", CareersText.Hour(CampusRules.Opens(day)), "to", CareersText.Hour(CampusRules.Closes(day)));
         }
 
-        // A university class, exam or homework in person: to its floor and room, and begun at the room's desk once there
-        // (WantBegin, then CampusInterior.GoToRoom). Null if on the way, else the reason key.
+        // A university class, exam or homework in person: to its floor and room, begun there (WantBegin, then GoToRoom). Null if on the way, else the reason key.
         private string ToRoom(Enrolment e, string why, SittingKind kind)
         {
             if (why != null && why != "reallife_study_why_not_university")

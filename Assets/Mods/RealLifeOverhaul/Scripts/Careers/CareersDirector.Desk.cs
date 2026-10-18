@@ -12,12 +12,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The desk a professional job is worked at, as the game's own job is at its till: on coming into the employer's
-    /// building, one of the game's stations of the profession's kind (DeskRules.Kinds, the seed's pick, kept free of the
-    /// game's people), a desk of a floor the mod fits out (FitOut/FitDesks), or a preset fitted out round the game's
-    /// furniture (DeskRules.Preset); the same desk every visit, never at a player's own business. Nothing is saved.
-    /// The cost: one look at the building's items behind the black screen at a door (and FitOut's measure for a preset);
-    /// once a second a few comparisons; nothing per frame.
+    /// The desk a professional job is worked at: a station of the game's of the profession's kind, a desk of a floor the mod
+    /// fits out, or a preset fitted out (DeskRules), the same every visit, never at a player's business; nothing saved. The
+    /// cost: one look at the building's items behind the black screen at a door; once a second a few comparisons.
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -427,10 +424,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True where the Career app starts the working day itself (<see cref="DeskFallbackWhy"/>).</summary>
         internal bool DeskFallback(Job j) => DeskFallbackWhy(j) != null;
 
-        /// <summary>
-        /// Why the Career app starts the working day itself, as a key; null where the desk or the home computer does. A day from
-        /// home with no computer and chair or without its buttons, no clicks, no desk this visit, or the building closed now.
-        /// </summary>
+        /// <summary>Why the Career app starts the working day itself, as a key; null where the desk or the home computer does.</summary>
         internal string DeskFallbackWhy(Job j)
         {
             if (j == null)

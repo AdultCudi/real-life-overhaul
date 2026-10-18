@@ -40,11 +40,7 @@ namespace RealLifeOverhaul.Careers
         public bool Open => Prof >= 0;
     }
 
-    /// <summary>
-    /// The rules of working for oneself in plain numbers: leaving to found a startup or open a practice, a founder's record,
-    /// former colleagues, a restraint clause and its claim, freelance contracts, side work and a practice's name. Game-free:
-    /// EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The rules of working for oneself in plain numbers: founding, a practice, colleagues, a restraint clause, contracts and side work. Game-free.</summary>
     public static class OwnRules
     {
         public const int FoundLeastRank = 1;        // the second rung up may leave to found a company
@@ -82,10 +78,7 @@ namespace RealLifeOverhaul.Careers
                    || p.Family == (int)Tech.Family.Product || p.Family == (int)Tech.Family.Support;
         }
 
-        /// <summary>
-        /// True for a profession that can be practised on one's own (a practice and its clients): law, accountancy,
-        /// architecture, engineering, design, marketing, HR, the trades. The regulated ones need their certificate.
-        /// </summary>
+        /// <summary>True for a profession that can be practised on one's own (law, accounts, architecture, design, the trades...); the regulated need their certificate.</summary>
         public static bool CanPractise(Profession p, StudyFile f)
         {
             switch (p.Id)
@@ -108,10 +101,7 @@ namespace RealLifeOverhaul.Careers
 
         private static bool HasCert(StudyFile f, int cert) => (StudyRules.Certs(f) & (1 << cert)) != 0;
 
-        /// <summary>
-        /// What a founder's record adds to a pitch, thousandths (VentureMeeting starts a pitch at 500): twenty for each rung
-        /// reached in a tech profession, ten a year of it, three a point of the player's name; at most <see cref="FounderMost"/>.
-        /// </summary>
+        /// <summary>What a founder's record adds to a pitch, thousandths: 20 a rung of a tech profession, 10 a year of it, 3 a point of name; at most <see cref="FounderMost"/>.</summary>
         public static int FounderScore(int topRank, int yearsDays, int reputation)
         {
             int s = Math.Max(0, topRank) * 20 + Math.Max(0, yearsDays) / 365 * 10 + reputation * 3;

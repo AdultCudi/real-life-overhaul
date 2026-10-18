@@ -6,11 +6,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The family and the others: a grown child offered a place at the university (the college fund pays what it can, the
-    /// player the rest), tutoring given from home, and the player's own training academy (Careers/AcademyType), whose staff
-    /// teach the city's students for fees and whose courses the player's professional staff take at half the fee.
-    /// </summary>
+    /// <summary>The family and the others: a grown child's university, tutoring from home, and the player's own academy (Careers/AcademyType).</summary>
     public sealed partial class CareersDirector
     {
         public const int TabFamily = 4;

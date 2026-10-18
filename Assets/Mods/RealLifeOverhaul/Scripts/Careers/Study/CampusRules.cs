@@ -3,11 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The game's mark over a classroom door of the university (the icon the game puts over its own classroom doors):
-    /// an action (a class or an exam of the room's course to begin now, or its next class within the hour), enrolled
-    /// (on it in person, nothing soon), completed (passed), or none (a free room, a course not taken, one followed online).
-    /// </summary>
+    /// <summary>The game's mark over a university classroom door: a class or exam to begin within the hour, enrolled in person, passed, or none.</summary>
     public enum RoomMark
     {
         None = 0,
@@ -37,11 +33,8 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// Hudson City University's building as numbers (Careers/CampusBuilding and CampusInterior hold the game's side);
-    /// game-free, EconomyCheck runs every rule. Its permanent building, 26 2nd Avenue, is taken whenever it is free, else
-    /// the largest free office building meanwhile (ties broken by address), the same on every machine of a session. Inside,
-    /// each floor is the game's school with five of the university's courses in its rooms, in the catalogue's order. Open
-    /// Monday to Friday 08:00 to 22:00 and Saturday 09:00 to 14:00 (graduation day); shut on Sunday.
+    /// Hudson City University's building as numbers, game-free: its permanent building, the place meanwhile, its floors of
+    /// five rooms in the catalogue's order, and its hours (Monday to Friday 08:00 to 22:00, Saturday 09:00 to 14:00).
     /// </summary>
     public static class CampusRules
     {
@@ -123,11 +116,7 @@ namespace RealLifeOverhaul.Careers
             return room > 0 ? CourseAt(floor, room) : -1;
         }
 
-        /// <summary>
-        /// Which way a room's sign faces, along the door's own forward (x, z): +1 forward, -1 back. Out of the room: away
-        /// from the room's chair (the game's school puts each classroom's chair, named like its door, inside the room).
-        /// With no chair the door's forward, which in the game's school layout is out of the room.
-        /// </summary>
+        /// <summary>Which way a room's sign faces along the door's forward (+1, -1): away from the room's chair, else the door's forward (out of the room).</summary>
         public static int SignSide(float forwardX, float forwardZ, float doorX, float doorZ, float chairX, float chairZ, bool chair)
         {
             if (!chair)
@@ -140,13 +129,7 @@ namespace RealLifeOverhaul.Careers
 
         public const int SoonMinutes = 60;   // a class this close is marked as an action, as the game marks a course to study
 
-        /// <summary>The game's mark over a classroom door, as the mod's course of the room has it (<see cref="RoomMark"/>).</summary>
-        /// <param name="course">The room holds a course.</param>
-        /// <param name="live">The player is on it now.</param>
-        /// <param name="inPerson">...in person, in its classroom (not online from home).</param>
-        /// <param name="held">The player has passed it.</param>
-        /// <param name="canNow">Its class can be joined, or its exam sat, now.</param>
-        /// <param name="minutesToNext">Minutes until its next class begins; negative for none.</param>
+        /// <summary>The game's mark over a classroom door for the room's course (<see cref="RoomMark"/>); <paramref name="minutesToNext"/> negative for none.</summary>
         public static RoomMark MarkOf(bool course, bool live, bool inPerson, bool held, bool canNow, int minutesToNext)
         {
             if (!course)
@@ -167,10 +150,8 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The id the university's building has in the book of the mod's buildings (Core/SpecialBuildings), and its reservation.</summary>
         public const string BookId = "campus";
 
-        // The university's permanent building, 26 2nd Avenue, chosen from the game's own data: the city's one office building of
-        // size C version 2 (5,971 sqm on a busy avenue), a size in none of the rivals' office sizes and of no office business's
-        // layout, so the game's city leaves it empty in every new game and no rival or business of the game's can open in it.
-        // Only a player could take it: the mod refuses it to the player (Core/ClaimedOffers).
+        // The permanent building, 26 2nd Avenue, chosen from the game's data: the city's one office of size C version 2, a size no
+        // rival or office business of the game's can have, so only a player could take it, and the mod refuses it to the player.
         public const string HomeStreet = "ba:street_secondavenue";
         public const int HomeNumber = 26;
         public const string HomeSize = "ba:buildingsize_c";
@@ -185,19 +166,15 @@ namespace RealLifeOverhaul.Careers
         public static string HomeAddress(string streetName) =>
             HomeNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + (string.IsNullOrEmpty(streetName) ? HomeStreetName : streetName);
 
-        /// <summary>
-        /// The permanent building found in the city is the one chosen from the game's data: an office of the size and
-        /// version that no rival and no business of the game's can take. False after a change of the game's city.
-        /// </summary>
+        /// <summary>True if the permanent building found is the one chosen from the game's data (an office no rival can take); false after a change of the city.</summary>
         public static bool HomeIsAsChosen(string type, string size, int version, bool specialService)
         {
             return !specialService && type == HomeType && size == HomeSize && version == HomeVersion;
         }
 
         /// <summary>
-        /// What keeps the university out of its permanent building now, <see cref="HomeBlock.None"/> when it is free: a player's
-        /// first (rented or owned), then another of the mod's services filed there (<paramref name="heldByOther"/>), then a
-        /// business (any type but the game's empty one), then a layout left inside; Missing: not in this city as chosen, or no door.
+        /// What keeps the university out of its permanent building, <see cref="HomeBlock.None"/> when free: a player's first, then
+        /// another service filed there (<paramref name="heldByOther"/>), then a business, then a layout left inside.
         /// </summary>
         public static HomeBlock HomeBlockOf(bool homeServes, string businessType, bool rentedByPlayer, bool ownedByPlayer, string businessOwner, bool layoutLeft, bool heldByOther = false)
         {
@@ -220,10 +197,7 @@ namespace RealLifeOverhaul.Careers
             return layoutLeft ? HomeBlock.Left : HomeBlock.None;
         }
 
-        /// <summary>
-        /// Where the university is: its permanent building when free, else the largest office building with no business in it,
-        /// else at the door of the game's own Manhattan Business School, which always stands and is nobody's; None only without it.
-        /// </summary>
+        /// <summary>Where the university is: home when free, else the largest office with no business, else the door of the game's school; None without it.</summary>
         public static CampusPlace Choose(bool homeFree, bool officeFree, bool schoolThere)
         {
             if (homeFree)
@@ -237,10 +211,7 @@ namespace RealLifeOverhaul.Careers
             return schoolThere ? CampusPlace.School : CampusPlace.None;
         }
 
-        /// <summary>
-        /// True while the university has a row and a marker on the city map (World/MapLinks): whenever it stands somewhere,
-        /// its permanent building or a place meanwhile (an office, the game's school's door); never while it has none.
-        /// </summary>
+        /// <summary>True while the university has a row and a marker on the city map: whenever it stands somewhere, at home or meanwhile.</summary>
         public static bool OnMap(bool usable, bool hasBuilding, CampusPlace place)
         {
             return usable && hasBuilding && place != CampusPlace.None;
@@ -249,12 +220,7 @@ namespace RealLifeOverhaul.Careers
         public const float DoorReach = 3f;        // metres: the university's place at its own door, with no board
         public const float PanelGap = 0.2f;       // metres kept between two places' reaches, so the game's panels never both show
 
-        /// <summary>
-        /// How near the door the player stands to be at the university when it has no board: <see cref="DoorReach"/>, but at
-        /// the door of Manhattan Business School no further than leaves <see cref="PanelGap"/> before the driving school's
-        /// desk (<paramref name="deskAside"/> metres along the wall from the door, reached within <paramref name="deskReach"/>),
-        /// so the class panel and the desk's panel never both show.
-        /// </summary>
+        /// <summary>How near the door the player must be at the university with no board: <see cref="DoorReach"/>, less at the school so the driving desk's panel never also shows.</summary>
         public static float DoorReachAt(CampusPlace place, float deskAside, float deskReach)
         {
             return place == CampusPlace.School ? Math.Max(0.5f, Math.Min(DoorReach, deskAside - deskReach - PanelGap)) : DoorReach;
@@ -286,10 +252,7 @@ namespace RealLifeOverhaul.Careers
             return place == CampusPlace.Office ? "reallife_campus_note_away_office" : place == CampusPlace.School ? "reallife_campus_note_away_school" : null;
         }
 
-        /// <summary>
-        /// What the save keeps of the notice last told about where the university is ("place|street|number|block"), so that
-        /// it is told once and again only when something changes; null at its permanent building (nothing to tell).
-        /// </summary>
+        /// <summary>The notice last told of where the university is, as the save keeps it ("place|street|number|block"); null at home.</summary>
         public static string AwayMark(CampusPlace place, string street, int number, HomeBlock block)
         {
             if (place != CampusPlace.Office && place != CampusPlace.School)
@@ -300,10 +263,7 @@ namespace RealLifeOverhaul.Careers
                    + "|" + ((int)block).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        /// <summary>
-        /// True if a move of the university is written to the log: its building differs from the one the save had, and the
-        /// save had one (a new game's first choice, against the earlier rule's guess, is no move).
-        /// </summary>
+        /// <summary>True if a move is written to the log: the building differs from the save's and the save had one (a first choice is no move).</summary>
         public static bool SaysMove(bool moved, bool saveHadAddress) => moved && saveHadAddress;
 
         /// <summary>True if the notice of where the university is is to be told now: it is away from home and the save has not been told this.</summary>
@@ -312,10 +272,7 @@ namespace RealLifeOverhaul.Careers
             return mark != null && !string.Equals(mark, told, StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// True if the university, standing elsewhere, moves to its permanent building now: it is free, and nothing of the
-        /// player's is under way at the old one (the player inside it, a class or exam being sat). It moves once, for good.
-        /// </summary>
+        /// <summary>True if the university, standing elsewhere, moves home now: home is free, the player is not inside the old one and nothing is being sat.</summary>
         public static bool MovesHome(bool atHome, bool homeFree, bool playerInside, bool sitting)
         {
             return !atHome && homeFree && !playerInside && !sitting;
@@ -343,10 +300,7 @@ namespace RealLifeOverhaul.Careers
             return OpenDay(day) && minute >= Opens(day) * 60 && minute < Closes(day) * 60;
         }
 
-        /// <summary>
-        /// When it opens next, from a minute of a game day: the day and the hour (today's later opening, else the next day
-        /// that opens). False only if no day of the week opens.
-        /// </summary>
+        /// <summary>When it opens next from a minute of a game day (today's later opening, else the next open day); false only if no day opens.</summary>
         public static bool NextOpening(int day, int minute, out int openDay, out int openHour)
         {
             for (int d = day; d < day + 8; d++)
@@ -364,10 +318,7 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>
-        /// True if every class of a course, in every way it is followed in person, falls inside the opening hours from the
-        /// moment it can be joined until it ends (the checker runs it over the whole catalogue).
-        /// </summary>
+        /// <summary>True if every class of a course followed in person falls inside the opening hours from when it can be joined until it ends.</summary>
         public static bool ClassesInside(CourseDef c)
         {
             for (int m = 0; m < 2; m++)

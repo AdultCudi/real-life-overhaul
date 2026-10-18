@@ -161,8 +161,7 @@ namespace RealLifeOverhaul.Careers
             return c;
         }
 
-        // The floor's five classroom doors by room, and each room's chair as the game's door finds its own (the first seat
-        // named like the door: EducationDoorController.SetStudyDiploma), so the sign and the class are the room's own.
+        // The floor's classroom doors by room, and each room's chair found as the game's door finds its own (the first seat named like it).
         private void Rooms(BuildingManager manager)
         {
             Array.Clear(_rooms, 0, _rooms.Length);
@@ -233,8 +232,7 @@ namespace RealLifeOverhaul.Careers
         private const float SignHeight = 2.45f;   // metres over the door's foot: above the doorway
         private const float SignOut = 0.2f;       // metres out from the door's plane, clear of its frame
 
-        // The room's sign over its door: lettering on a plaque facing out of the room (away from its chair, CampusRules.SignSide),
-        // drawn from its front only, so it reads from the corridor and never shows mirrored. It goes with the game's door.
+        // The room's sign over its door, facing out of the room (CampusRules.SignSide) and drawn from the front only, so never mirrored.
         private static GameObject Sign(Transform door, Transform chair, TMP_FontAsset font, int room, IModLogger logger)
         {
             Vector3 forward = door.forward;

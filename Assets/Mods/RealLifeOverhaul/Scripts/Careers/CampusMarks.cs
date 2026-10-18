@@ -9,12 +9,8 @@ using UnityEngine.Pool;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The game's own mark over each classroom door of the university, for the room's course (CampusRules.MarkOf). The
-    /// game's icon manager would mark a classroom door for the game's course its custom value names, so the doors are told
-    /// not to be marked (alwaysShowWarningIcon, which it reads first) and the mod puts in the game's own icon from its pool:
-    /// the green "i" for a class or exam within the hour, the plain "i" while enrolled, the tick for a course passed. The
-    /// game moves and clears them as its own. Its private pool and pictures are looked up once; without them the doors go
-    /// unmarked. The cost: once a second on a floor, five lookups; an icon taken or let go only when a mark changes.
+    /// The game's own icon over each university classroom door for its room's course (CampusRules.MarkOf), from the game's pool,
+    /// the doors told not to mark the game's courses. The cost: once a second on a floor, five lookups.
     /// </summary>
     internal sealed class CampusMarks
     {

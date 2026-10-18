@@ -28,17 +28,10 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Inside Hudson City University: the game's own Manhattan Business School interior on several floors. The school is the
-    /// city's one building of size D, version 1: its structure (BuildingStructureD1: five classrooms and the entrance) and its
-    /// business layout (GarmentDistrictSchool: five classroom doors, each with a desk, a computer and a chair). Going in, the
-    /// university's building is read as D1 for the few frames until the game has loaded that structure (put back on the
-    /// game's "entered" event, or by a watch), the layout is laid in over the frames the screen stays dark, and the building
-    /// manager is given a registration of the mod's own, kept nowhere, with the university's hours, so the doors open as it
-    /// does. Each floor holds five of the university's courses (CampusRules), chosen at the door outside or the lift inside;
-    /// each classroom door is named and signed with its course and opens its panel with that course alone (Careers/SchoolDesk).
-    /// Everything here is the machine's own; nothing is sent. The cost: per frame (CareersDirector.LateUpdate) the building
-    /// card's target compared with the last, and near the open door one flag read; once a second the panels, the doors and
-    /// five rooms' marks; the furniture over four frames when a floor is entered.
+    /// Inside Hudson City University: the game's own school interior (structure D1, layout GarmentDistrictSchool) on several
+    /// floors, the building read as D1 while the game loads it and given a registration of the mod's own, kept nowhere. Each
+    /// floor's five rooms hold five of the university's courses. The cost: per frame (CareersDirector.LateUpdate) the building
+    /// card's target compared, near the open door one flag; once a second the panels and marks; the furniture over four frames.
     /// </summary>
     internal sealed partial class CampusInterior
     {
@@ -369,9 +362,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// To a course's classroom from wherever the player is: the floor first if need be, then the room. With
-        /// <paramref name="begin"/> (the Campus app) the door's panel is opened at once and its class begun for the player;
-        /// without (a floor button), a walk to the door, whose panel offers the class. Null if under way, else a reason key.
+        /// To a course's classroom from wherever the player is, the floor first; with <paramref name="begin"/> its panel opened and
+        /// its class begun at once, else a walk to its door. Null if under way, else a reason key.
         /// </summary>
         public string GoToRoom(int course, bool begin = false)
         {

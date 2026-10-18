@@ -17,12 +17,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Everything a working day's desk reads from or does to the game, following the game's own job (El Gato's till:
-    /// EmployeeStationController.Work and WorkActivity): the station (one of the employer's of the profession's kind, kept
-    /// free of the game's people and given back if the job ends while the player is there), the click (one entry at the
-    /// front of the game's list of calls to action, its own "Click to work"; in a Going Public session also "Click to learn"
-    /// over a university classroom door), the pose (seated at a desk computer, standing at a till, held by the game's work
-    /// blocker), the boss's texts and the destination marker. Nothing runs by itself; the pointer costs a reference comparison.
+    /// Everything a working day's desk reads from or does to the game, as its own job at El Gato's till: the station, the click
+    /// (an entry at the front of the game's calls to action), the pose, the boss's texts and the destination marker.
     /// </summary>
     internal static class DeskGame
     {
@@ -219,10 +215,7 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        /// <summary>
-        /// A home computer the game itself would pass the time at (as CustomizableButtonsOverlay.ShouldShow has it), one with its
-        /// chair first, in the order of the building's items; null if none. Looked for on a press.
-        /// </summary>
+        /// <summary>A home computer the game itself would pass the time at, one with its chair first; null if none. Looked for on a press.</summary>
         public static ComputerController UsableComputer()
         {
             if (!Inside(out BuildingManager manager, out BuildingRegistration reg) || !GoingPublic.Mine(reg))
@@ -279,10 +272,7 @@ namespace RealLifeOverhaul.Careers
             return best;
         }
 
-        /// <summary>
-        /// A study door's own refusals before its panel (closed, something in hand, a vehicle in use): true if refused, and with
-        /// <paramref name="say"/> said in the game's words, for a desk panel of the mod's that does not go through the door.
-        /// </summary>
+        /// <summary>A study door's own refusals before its panel: true if refused, said in the game's words with <paramref name="say"/>.</summary>
         public static bool StudyDoorRefuses(bool say)
         {
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
@@ -558,10 +548,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The player sits on a desk's chair seat (<see cref="SeatOf"/>, or a fitted desk's), held by the work blocker; a
-        /// station is kept the player's while they sit. <paramref name="stood"/> is where they stood, to stand up on.
-        /// </summary>
+        /// <summary>The player sits on a desk's chair seat, held by the work blocker; <paramref name="stood"/> is where to stand up.</summary>
         public static void SitOn(Transform seat, EmployeeStationController station, out Vector3 stood)
         {
             PlayerController player = Player;
@@ -645,9 +632,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// The self-check of an activity's walk to its place ("Setting off" in docs/features/careers.md), with Developer
-        /// diagnostics on: PASS when it got there with the panel holding it; FAIL when the panel called it off in the frame its
-        /// walk order was given (<paramref name="orderFrame"/>). A later call-off is the player's own click and says nothing.
+        /// The self-check of a walk to its place ("Setting off" in docs/features/careers.md), with Developer diagnostics on: PASS
+        /// when it got there; FAIL when the panel called it off in the frame its walk order was given (<paramref name="orderFrame"/>).
         /// </summary>
         public static void SetOffSeen(string what, bool there, int orderFrame)
         {

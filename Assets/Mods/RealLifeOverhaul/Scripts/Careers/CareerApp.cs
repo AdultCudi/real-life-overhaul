@@ -10,12 +10,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Career app, in the game's frame (GameUi.AppShell, copied from MyEmployees): tabs over the table on the right (the
-    /// professions and the first step, the city's vacancies, applications, the job now, the CV and the player's own work),
-    /// and on the left the box with the row picked. Nothing runs while it is closed; the rows are made when it opens, a tab
-    /// is picked or something changes.
-    /// </summary>
+    /// <summary>The Career app in the game's frame (GameUi.AppShell): its tabs' tables and the box with the row picked, written only when it opens or changes.</summary>
     public sealed partial class CareerApp
     {
         public const string OpeningRow = "post:", ApplicationRow = "app:", ProfessionRow = "prof:";

@@ -30,10 +30,7 @@ namespace RealLifeOverhaul.Careers
     /// <summary>Going into the university: its building read as the school while the game loads it, and the floor's registration.</summary>
     internal sealed partial class CampusInterior
     {
-        /// <summary>
-        /// Goes in to a floor, and on to a course's classroom (or -1), its class begun there with <paramref name="begin"/>.
-        /// Null if the game was asked to go in, else a reason key, logged with why.
-        /// </summary>
+        /// <summary>Goes in to a floor and on to a course's room (or -1), begun there with <paramref name="begin"/>; null if asked, else a reason key, logged.</summary>
         public string Enter(int floor, int course, string how, bool begin = false)
         {
             CampusBuilding campus = Campus;

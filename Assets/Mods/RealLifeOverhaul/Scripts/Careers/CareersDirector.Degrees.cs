@@ -4,11 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The university's part: degrees at Hudson City University (Careers/CampusBuilding) and on the hospitals' wards, the
-    /// certificates studied at home, the student loan on the credit file, and graduation day: a ceremony on the Saturday
-    /// after a degree is passed, with a story in the City Ledger.
-    /// </summary>
+    /// <summary>The university's part: degrees, certificates at home, the student loan on the credit file, and graduation day.</summary>
     public sealed partial class CareersDirector
     {
         public const int CeremonyHour = 11, CeremonyMinutes = 120;

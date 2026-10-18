@@ -7,11 +7,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The study part: the courses the player is on and has done, and their skills (Careers/Study/StudyRules). On the hour a
-    /// class gone by unattended is missed and one about to start reminded of; on the day, classes missed while the game was
-    /// elsewhere are counted, a lapsed exam fails, a fee falls due, the loan's interest is added and unused skills fade.
-    /// </summary>
+    /// <summary>The study part: the courses under way and done and the skills; classes missed and reminded of on the hour, fees, exams and fading on the day.</summary>
     public sealed partial class CareersDirector
     {
         public const int TabCourses = 0, TabStudying = 1, TabResults = 2, TabSkills = 3;
@@ -145,10 +141,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// A day's class gone by without the player: excused if held online and the home's internet was down for an outage over
-        /// its join window (StudyRules.ClassExcused), else missed; decided once, when the window has shut. True if counted.
-        /// </summary>
+        /// <summary>A class gone by without the player: excused if held online through an outage over its join window, else missed; true if counted.</summary>
         private bool GoneBy(Enrolment e, int day)
         {
             CourseDef c = e.Def;
