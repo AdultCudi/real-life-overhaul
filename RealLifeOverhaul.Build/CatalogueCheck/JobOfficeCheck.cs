@@ -92,7 +92,7 @@ namespace RealLifeOverhaul
             string jobs = Path.Combine(src, "Scripts", "Jobs");
             string director = File.ReadAllText(Path.Combine(jobs, "CareerDirector.cs"));
             string phone = File.ReadAllText(Path.Combine(jobs, "CareerPhone.cs"));
-            string jobDirector = File.ReadAllText(Path.Combine(jobs, "JobDirector.cs"));
+            string jobDirector = File.ReadAllText(Path.Combine(jobs, "JobDirector.Tests.cs"));
             string links = File.ReadAllText(Path.Combine(src, "Scripts", "World", "MapLinks.cs"));
             foreach (string key in new[] { "reallife_career_review_due", "reallife_career_text_review_due", "reallife_career_reminder", "reallife_career_text_reminder" })
                 Check(Regex.IsMatch(director, "OfficeKey\\(\"" + key + "\""), $"{key} is raised through OfficeKey, which fills the address");
