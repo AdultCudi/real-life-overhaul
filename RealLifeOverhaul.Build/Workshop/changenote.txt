@@ -1,4 +1,4 @@
-0.38.0
+0.38.1
 
-New
-- Cars sound real: each kind of car has a recorded engine, and the custom shop's exhausts and turbos change it, with pops when you lift off, a turbo's whistle and flutter, and a recorded tyre squeal. Hold the throttle key in the shop to hear a build before you pay.
+Fixed
+- The driving test, above all in the school's van, marked collisions that never happened, often as you stopped. The road under the van as its nose dipped, a kerb under the wheels or its load counted as a hit. Now only hitting a car, a person, a post, a building or a wall counts, by how hard you hit it, and the same rule judges crashes on the road, on jobs and on outings.
