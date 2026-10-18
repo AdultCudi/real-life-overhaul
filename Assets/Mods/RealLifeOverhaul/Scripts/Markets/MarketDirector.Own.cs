@@ -5,24 +5,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The player's own company and the city's market, in the game (Markets/Listing; the rules are game-free: ListingRules,
-    /// ListingBook, ListingVotes, MarketEngine.Own). What it does here:
-    ///
-    ///   who the player is   a hash of their save (MarketState.Me), at every start: a company whose founder it is, is theirs
-    ///   the way to market   the advisers engaged, the audit ordered and signed, the prospectus published (the book is then
-    ///                       priced and the company listed by the market itself, at its opens), or the offer withdrawn
-    ///   the books           each new day, the statement days since the last into the company's quarters (MarketBridges.Books:
-    ///                       the player's own businesses only)
-    ///   the year            once a game year while listed: the exchange's fee and the year's audit, whose findings the market hears
-    ///   what the founder    a deal in their shares, a buy-back, new shares, a dividend proposed, their pay, taking it private:
-    ///   asks for            checked here (and the cash for it) and put on the tape, so that every market plays it at the same moment
-    ///   a takeover          a bid that wins: the company's businesses pass to the buyer (MarketBridges.HandOver), a few an hour
-    ///                       as the game lets them go, and what cannot be handed over in time is paid for
-    ///   the news            told to the founder in the game's notifications whether or not they watch their company
-    ///   tax on dividends    withheld from every dividend the player is paid (ListingVotes.DividendTax)
-    ///
-    /// The cost: a comparison of the day and the hour once a second; a day's work on a new day (one look at the day's
-    /// statements); nothing per frame.
+    /// Part of the market director: the player's own company on the market (the rules are ListingRules, ListingBook,
+    /// ListingVotes and MarketEngine.Own). A comparison of the day and hour once a second; a day's work on a new day.
     /// </summary>
     public sealed partial class MarketDirector
     {
@@ -30,7 +14,7 @@ namespace RealLifeOverhaul.Markets
         private readonly List<string> _places = new List<string>(16);
         private readonly Requirement[] _requirements = new Requirement[ListingBook.NeedCount];
 
-        /// <summary>Who the player of a save is, as the market knows its founders: never nothing.</summary>
+        /// <summary>Who the player of a save is, as the market knows its founders; never nothing.</summary>
         public static ulong OwnerOf(GameInstance save)
         {
             string who = save == null ? string.Empty : (save.characterId ?? string.Empty) + "|" + (save.seed ?? string.Empty);
@@ -42,22 +26,20 @@ namespace RealLifeOverhaul.Markets
 
         private int Year => _engine != null ? Math.Max(8, _engine.State.YearDays) : 60;
 
-        /// <summary>The player's own listed company; null if they have none on this market now.</summary>
         public Stock MyCompany => Running ? _engine.MineListed() : null;
 
-        /// <summary>The player's way to the market and their company's books; null while the market is not running.</summary>
         public ListingFile Listing => Running ? _engine.State.Listing : null;
 
-        /// <summary>True while the player's company is set aside (they are a guest in another player's city).</summary>
+        /// <summary>True while the player's company is set aside: they are a guest in another player's city.</summary>
         public bool CompanyAside => Running && (_following || !string.IsNullOrEmpty(_engine.State.Listing.Suspended));
 
-        /// <summary>The Stocks app opened on the player's own company's page (the Company app's button).</summary>
+        /// <summary>For the Company app's button.</summary>
         public void OpenListing()
         {
             OpenCompany(MarketApp.OwnPage);
         }
 
-        /// <summary>One line on where the player's company stands with the market, for the Company app; null for nothing to say.</summary>
+        /// <summary>For the Company app; null for nothing.</summary>
         public string ListingSummary()
         {
             ListingFile f = Listing;
@@ -92,8 +74,6 @@ namespace RealLifeOverhaul.Markets
             return MarketText.Fill("reallife_lst_summary_way", "stage", ListingText.Stage(f.Stage));
         }
 
-        // ---------------------------------------------------------------- starting, following, alone
-
         private void OwnStarted(GameInstance save)
         {
             MarketState s = _engine.State;
@@ -101,7 +81,7 @@ namespace RealLifeOverhaul.Markets
             s.Following = false;
             _ownDay = -1;
             _ownHour = -1;
-            int moved = _engine.Alone();   // (a save made as a guest: the host's company leaves, the player's own is back)
+            int moved = _engine.Alone();   // a save made as a guest: the host's company leaves, the player's own is back
             if (moved > 0)
             {
                 Logger?.Info("Stock market: playing alone, " + moved + " company or companies of another player's or the player's own set aside came or went.");
@@ -117,8 +97,6 @@ namespace RealLifeOverhaul.Markets
                 Queue(NotificationType.Info, "reallife_lst_note_back");
             }
         }
-
-        // ---------------------------------------------------------------- once a second: the day, the hour
 
         private void OwnSecond()
         {
@@ -137,7 +115,7 @@ namespace RealLifeOverhaul.Markets
             ProceedsHeard();
         }
 
-        /// <summary>A business of the player's sold (Economy/Services): while their company is listed its price is the company's, every holder's by their shares.</summary>
+        /// <summary>A business of the player's sold (Economy/Services): while listed, its price is every holder's by their shares.</summary>
         public void BusinessSold(int price)
         {
             FinishMoment();
@@ -151,7 +129,7 @@ namespace RealLifeOverhaul.Markets
             ProceedsHeard();
         }
 
-        // Money from businesses sold, put on the tape for the market (it waits while the market is catching up or held).
+        // Money from businesses sold, put on the tape for the market; it waits while the market is behind or held.
         private void ProceedsHeard()
         {
             ListingFile f = _engine.State.Listing;
@@ -170,8 +148,7 @@ namespace RealLifeOverhaul.Markets
             f.Proceeds -= thousands * 1000;
         }
 
-        // Once a game year while listed: the exchange's fee and the year's audit, whose findings the market hears (an event
-        // on the tape, so it waits while the market is catching up or held after a load). A year comparison otherwise.
+        // Once a game year while listed: the exchange's fee and the year's audit, whose findings the market hears as a tape event.
         private void YearlyFees(int day)
         {
             ListingFile f = _engine.State.Listing;
@@ -188,31 +165,30 @@ namespace RealLifeOverhaul.Markets
             ListingFacts facts = Facts();
             ListingBook.Last(f, day, Year, 4, out long turnover, out long _, out int _);
             long exchange = ListingBook.YearlyFee(own.MarketValue, Level), audit = ListingBook.AuditFee(turnover, Level);
-            _engine.Wallet.Cover(exchange + audit);   // (both fees' give-back from worked orders' money in one, never one for each)
+            _engine.Wallet.Cover(exchange + audit);   // one give-back from worked orders' money for both
             _engine.Wallet.Force(exchange, ListingMoney.Exchange, own.Name);
             _engine.Wallet.Force(audit, ListingMoney.Audit, own.Name);
             f.Fees += exchange + audit;
             f.FeeYear = year;
             f.Findings = ListingBook.Findings(facts);
             f.AuditDay = day;
-            _engine.Event(MarketInputs.EventOwn + (int)OwnAction.Audit, own.Id, f.Findings);   // (the market hears what the auditors found: MarketEngine.Own)
+            _engine.Event(MarketInputs.EventOwn + (int)OwnAction.Audit, own.Id, f.Findings);   // the market hears what the auditors found
             bool qualified = (f.Findings & ListingBook.Qualifying) != 0;
             Queue(qualified ? NotificationType.Warning : NotificationType.Info, qualified ? "reallife_lst_note_year_qualified" : "reallife_lst_note_year", "amount", MarketText.Money(exchange + audit),
                 "found", ListingText.Findings(f.Findings));
             Logger?.Info("Listing: the year's fees for " + own.Name + ": the exchange " + exchange + ", the audit " + audit + "; findings " + f.Findings + ".");
         }
 
-        // A new day: the books, the audit at its end, the year's fees and audit while listed, a hand-over's last day.
         private void OwnDay(int day)
         {
             ListingFile f = _engine.State.Listing;
             if (_following)
             {
-                return;   // (the player's own company waits while they are a guest)
+                return;   // the player's own company waits while they are a guest
             }
             if (f.TestBooks && !f.OnTheWay && _engine.MineListed() == null)
             {
-                TestBooksGone(f);   // (the test company is gone: the books are the game's statements again)
+                TestBooksGone(f);   // the test company is gone: the books are the game's statements again
             }
             Books(f, day);
             ListingFacts facts = Facts();
@@ -223,7 +199,8 @@ namespace RealLifeOverhaul.Markets
                 f.AuditDay = day;
                 bool clean = (f.Findings & ListingBook.Qualifying) == 0;
                 f.Stage = clean ? ListingStage.Audited : ListingStage.Advised;
-                Queue(clean ? NotificationType.Success : NotificationType.Warning, clean ? "reallife_lst_note_audit_clean" : "reallife_lst_note_audit_qualified", "found", ListingText.Findings(f.Findings));
+                Queue(clean ? NotificationType.Success : NotificationType.Warning, clean ? "reallife_lst_note_audit_clean" : "reallife_lst_note_audit_qualified", "found",
+                    ListingText.Findings(f.Findings));
                 Logger?.Info("Listing: the audit is signed on day " + day + ", findings " + f.Findings + (clean ? " (clean)." : " (qualified: no listing until another clean audit)."));
             }
             if (f.HandOver.Count > 0 && day > f.HandOverBy)
@@ -237,8 +214,8 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The statement days since the last counted into the company's quarters (as far back as the game keeps them). The
-        // day that has just ended waits a day: the mod's own costs of it are put into its statement after the game's run.
+        // The statement days since the last into the company's quarters. The day just ended waits a day: the mod's own costs
+        // of it go into its statement after the game's nightly run.
         private void Books(ListingFile f, int day)
         {
             Func<int, int, OwnBooks> books = MarketBridges.Books;
@@ -258,7 +235,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>What the advisers and the auditors read of the player now.</summary>
         public ListingFacts Facts()
         {
             Func<ListingFacts> facts = MarketBridges.Facts;
@@ -276,223 +252,6 @@ namespace RealLifeOverhaul.Markets
             return new ListingFacts { Standing = -1 };
         }
 
-        // ---------------------------------------------------------------- the way to the market
-
-        /// <summary>Every requirement for coming to the market as it stands now; true when all are met.</summary>
-        public bool Requirements(out Requirement[] requirements)
-        {
-            requirements = _requirements;
-            ListingFile f = Listing;
-            if (f == null)
-            {
-                return false;
-            }
-            return ListingBook.Requirements(f, Facts(), Save.Day, Year, Level, _requirements);
-        }
-
-        /// <summary>What the company looks worth to the advisers now, from its books (before any offer).</summary>
-        public double Worth()
-        {
-            ListingFile f = Listing;
-            if (f == null)
-            {
-                return 0.0;
-            }
-            Named(f);
-            return ListingBook.Worth(f, _engine.State.Me, Save.Day, Year, _engine.State.Env, Facts().Debt);
-        }
-
-        // The company's name and trade to begin with, until the prospectus gives it its own.
-        private void Named(ListingFile f)
-        {
-            if (string.IsNullOrEmpty(f.Name))
-            {
-                f.Name = MarketBridges.Name != null ? MarketBridges.Name() ?? string.Empty : string.Empty;
-                f.Ticker = ListingRules.TickerOf(f.Name);
-            }
-            if (f.Trade < 0 && MarketBridges.Trade != null)
-            {
-                f.Trade = MarketBridges.Trade();
-                f.Sector = (int)SectorFor(f.Trade);
-            }
-        }
-
-        // The sector of the first listed company in a trade (as the market answers news of a trade), else business services.
-        private MarketSector SectorFor(int trade)
-        {
-            if (trade >= 0 && trade < MarketInputs.Trades.Length)
-            {
-                List<Stock> stocks = _engine.State.Stocks;
-                for (int i = 0; i < stocks.Count; i++)
-                {
-                    if (stocks[i].Listed && stocks[i].Own == null && stocks[i].Def.Trade == MarketInputs.Trades[trade])
-                    {
-                        return stocks[i].Sector;
-                    }
-                }
-            }
-            return MarketSector.Services;
-        }
-
-        /// <summary>The advisers' retainer now.</summary>
-        public long Retainer()
-        {
-            return ListingBook.Retainer(Worth(), Level);
-        }
-
-        /// <summary>The auditors' fee now.</summary>
-        public long AuditFee()
-        {
-            ListingFile f = Listing;
-            if (f == null)
-            {
-                return 0;
-            }
-            ListingBook.Last(f, Save.Day, Year, 4, out long turnover, out long _, out int _);
-            return ListingBook.AuditFee(turnover, Level);
-        }
-
-        // Why nothing of the way to the market can be done now (None: it can).
-        private OwnWhy WayBlocked()
-        {
-            if (!Running)
-            {
-                return OwnWhy.NotListed;
-            }
-            if (_following || GoingPublic.IsGuest)
-            {
-                return OwnWhy.Suspended;
-            }
-            if (!Settings.MarketsListing)
-            {
-                return OwnWhy.Off;
-            }
-            return OwnWhy.None;
-        }
-
-        /// <summary>The advisers taken on: every requirement but the audit must be met, and their retainer is paid now.</summary>
-        public OwnWhy Engage()
-        {
-            FinishMoment();
-            OwnWhy why = WayBlocked();
-            ListingFile f = Listing;
-            if (why != OwnWhy.None)
-            {
-                return why;
-            }
-            if (f.Stage != ListingStage.None || _engine.MineListed() != null)
-            {
-                return OwnWhy.TooMuch;
-            }
-            Requirements(out Requirement[] r);
-            if (!ListingBook.ReadyForAdvisers(r))
-            {
-                return OwnWhy.NotReady;
-            }
-            long fee = Retainer();
-            Named(f);
-            if (!_engine.Wallet.Take(fee, ListingMoney.Advisers, f.Name))
-            {
-                return OwnWhy.NoMoney;
-            }
-            f.Stage = ListingStage.Advised;
-            f.AdvisedDay = Save.Day;
-            f.Fees += fee;
-            Logger?.Info("Listing: advisers engaged on day " + Save.Day + " for " + fee + " (the company looks worth " + Worth().ToString("F0") + ").");
-            Moved();
-            return OwnWhy.None;
-        }
-
-        /// <summary>The audit ordered: its fee now, signed some days on.</summary>
-        public OwnWhy OrderAudit()
-        {
-            FinishMoment();
-            OwnWhy why = WayBlocked();
-            ListingFile f = Listing;
-            if (why != OwnWhy.None)
-            {
-                return why;
-            }
-            if (f.Stage != ListingStage.Advised && f.Stage != ListingStage.Audited)
-            {
-                return OwnWhy.NotReady;
-            }
-            long fee = AuditFee();
-            if (!_engine.Wallet.Take(fee, ListingMoney.Audit, f.Name))
-            {
-                return OwnWhy.NoMoney;
-            }
-            f.Stage = ListingStage.Auditing;
-            f.AuditFrom = Save.Day;
-            f.AuditDone = Save.Day + ListingCatalogue.AuditDays;
-            f.Fees += fee;
-            Logger?.Info("Listing: the audit ordered on day " + Save.Day + " for " + fee + ", to be signed on day " + f.AuditDone + ".");
-            Moved();
-            return OwnWhy.None;
-        }
-
-        /// <summary>
-        /// The prospectus published: the company's name, the share of it offered and the least price the founder takes.
-        /// Every requirement must be met (a clean audit among them). The book is open from today and priced at the open
-        /// after its last day; the company trades from the market day after.
-        /// </summary>
-        public OwnWhy Publish(string name, int floatBp, int walkCents)
-        {
-            FinishMoment();
-            OwnWhy why = WayBlocked();
-            ListingFile f = Listing;
-            if (why != OwnWhy.None)
-            {
-                return why;
-            }
-            if (f.Stage != ListingStage.Audited || !Requirements(out Requirement[] _))
-            {
-                return OwnWhy.NotReady;
-            }
-            Named(f);
-            if (!string.IsNullOrEmpty(name))
-            {
-                f.Name = MarketStore.Clean(name.Trim());
-                f.Ticker = ListingRules.TickerOf(f.Name);
-            }
-            ListingFacts facts = Facts();
-            MarketEnv env = _engine.State.Env;
-            int day = Save.Day;
-            double worth = ListingBook.Worth(f, _engine.State.Me, day, Year, env, facts.Debt);
-            f.OldShares = ListingBook.FounderShares(worth, Level);
-            f.NewShares = ListingBook.NewShares(f.OldShares, ListingBook.FloatStep(floatBp));
-            ListingBook.Prospectus(f, floatBp, ListingBook.FairCents(f, _engine.State.Me, day, Year, env, facts.Debt), walkCents);
-            f.Stage = ListingStage.Building;
-            f.BookFrom = day;
-            f.BookEnd = MarketTrading.MarketDays(day, ListingCatalogue.BookDays);
-            f.PriceCents = 0;
-            f.ListDay = 0;
-            Logger?.Info("Listing: the prospectus of " + f.Name + " (" + f.Ticker + ") on day " + day + ": " + f.NewShares + " new shares (" + f.FloatBp + " bp) beside the founder's " + f.OldShares
-                         + ", a share worth " + f.FairCents + " cents by the books, the range " + f.LowCents + " to " + f.HighCents + ", the least taken " + f.WalkCents + "; the book is priced at the open of day "
-                         + f.BookEnd + ".");
-            Moved();
-            return OwnWhy.None;
-        }
-
-        /// <summary>The offer withdrawn before it is priced: the audit stands while it is good, what was paid is not returned.</summary>
-        public bool Withdraw()
-        {
-            FinishMoment();
-            ListingFile f = Listing;
-            if (f == null || !f.OnTheWay || f.Stage == ListingStage.Priced || _following)
-            {
-                return false;
-            }
-            f.Stage = f.Stage == ListingStage.Building ? ListingStage.Audited : ListingStage.None;
-            f.BookEnd = 0;
-            Logger?.Info("Listing: the offer withdrawn on day " + Save.Day + ".");
-            Moved();
-            return true;
-        }
-
-        // ---------------------------------------------------------------- what the founder asks for
-
-        /// <summary>What an action of the founder's would come to now (nothing is changed).</summary>
         public OwnQuote Quote(OwnAction action, long value)
         {
             Stock own = MyCompany;
@@ -508,7 +267,7 @@ namespace RealLifeOverhaul.Markets
             return q;
         }
 
-        // Why a quote cannot be acted on now beyond the market's own rules: the market behind or held, the player a guest, the cash.
+        // Why a quote cannot be acted on now beyond the market's rules: behind or held, a guest, or the cash.
         private OwnWhy Hold(in OwnQuote q)
         {
             if (Behind || _engine.Held)
@@ -526,10 +285,7 @@ namespace RealLifeOverhaul.Markets
             return OwnWhy.None;
         }
 
-        /// <summary>
-        /// An action of the founder's asked for: checked as the market will check it at its moment, and the cash for it,
-        /// then put on the tape for the next moment of the market (every machine of a session plays it then).
-        /// </summary>
+        /// <summary>A founder's action, checked as the market will at its moment, and the cash for it, put on the tape for the next moment.</summary>
         public OwnWhy Ask(OwnAction action, long value)
         {
             FinishMoment();
@@ -553,14 +309,12 @@ namespace RealLifeOverhaul.Markets
             return OwnWhy.None;
         }
 
-        // ---------------------------------------------------------------- a takeover: the businesses pass to the buyer
-
         private void HandOverStart(Stock own)
         {
             ListingFile f = _engine.State.Listing;
             if (own.Own.Test)
             {
-                return;   // (a test's company hands nothing over)
+                return;   // a test's company hands nothing over
             }
             f.HandOver.Clear();
             _places.Clear();
@@ -571,12 +325,12 @@ namespace RealLifeOverhaul.Markets
             f.HandOverTo = bidder != null ? bidder.Name : ListingText.PrivateBuyer();
             f.HandOverBy = Save.Day + ListingCatalogue.HandOverDays;
             f.HandOverOwed = MarketTrading.Value(own.Shares, Math.Max(1, own.GoneCents), true);
-            Logger?.Warn("Listing: " + own.Name + " was taken over at " + own.GoneCents + " cents a share by " + f.HandOverTo + "; its " + f.HandOverCount + " business(es) pass to the buyer by day " + f.HandOverBy + ".");
+            Logger?.Warn("Listing: " + own.Name + " was taken over at " + own.GoneCents + " cents a share by " + f.HandOverTo + "; its " + f.HandOverCount
+                         + " business(es) pass to the buyer by day " + f.HandOverBy + ".");
             HandOverNow(Save.Day);
         }
 
-        // As many of the businesses as the game lets go now (not while the player stands in one, keeps a vehicle at one,
-        // or is in a Going Public session, as for any sale).
+        // As many of the businesses as the game lets go now; not in a Going Public session.
         private void HandOverNow(int day)
         {
             ListingFile f = _engine != null ? _engine.State.Listing : null;
@@ -616,9 +370,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- the news, told to the founder
-
-        // News of the player's own company or of their way to it: the founder's notifications (true: told here).
+        // News of the player's own company or way to it, told to the founder; true when told here.
         private bool OwnHeard(in MarketNews news)
         {
             MarketState s = _engine.State;
@@ -641,7 +393,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     Queue(NotificationType.Info, "reallife_lst_note_away", "name", k.Name, "price", MarketText.Price(news.A));
                 }
-                return k != null && k.Own != null && news.Kind >= MarketNewsKind.OwnPriced;   // (another player's company's founder news is theirs)
+                return k != null && k.Own != null && news.Kind >= MarketNewsKind.OwnPriced;   // another player's company's founder news is theirs
             }
             OwnListing o = k.Own;
             switch (news.Kind)
@@ -650,13 +402,15 @@ namespace RealLifeOverhaul.Markets
                     Queue(NotificationType.Success, "reallife_lst_note_listed", "name", k.Name, "price", MarketText.Price(news.A), "amount", MarketText.Money(s.Listing.Raised));
                     break;
                 case MarketNewsKind.Results:
-                    Queue(NotificationType.Info, news.A >= news.B ? "reallife_lst_note_results_beat" : "reallife_lst_note_results_miss", "eps", MarketText.PerShare(news.A), "consensus", MarketText.PerShare(news.B));
+                    Queue(NotificationType.Info, news.A >= news.B ? "reallife_lst_note_results_beat" : "reallife_lst_note_results_miss", "eps", MarketText.PerShare(news.A),
+                        "consensus", MarketText.PerShare(news.B));
                     break;
                 case MarketNewsKind.Dividend:
                     Queue(NotificationType.Info, "reallife_lst_note_dividend", "amount", MarketText.Price(news.A), "day", news.C.ToString());
                     break;
                 case MarketNewsKind.Bid:
-                    Queue(NotificationType.Warning, "reallife_lst_note_bid", "price", MarketText.Price(news.A), "day", news.B.ToString(), "bidder", news.C > 0 && s.Stock(news.C) != null ? s.Stock(news.C).Name : ListingText.PrivateBuyer(),
+                    Queue(NotificationType.Warning, "reallife_lst_note_bid", "price", MarketText.Price(news.A), "day", news.B.ToString(),
+                        "bidder", news.C > 0 && s.Stock(news.C) != null ? s.Stock(news.C).Name : ListingText.PrivateBuyer(),
                         "threshold", MarketText.Percent(ListingCatalogue.TakeoverThresholdBp), "stake", MarketText.Percent(o.StakeBp(k)));
                     break;
                 case MarketNewsKind.BidDone:
@@ -709,10 +463,8 @@ namespace RealLifeOverhaul.Markets
             return n.ToString("N0");
         }
 
-        // ---------------------------------------------------------------- tax on dividends
-
-        // A dividend the player was paid: the tax withheld from it, at the rate the council's business tax sets. With
-        // 'cash' it was paid into the player's cash whatever the account (a trading bot's). What was withheld.
+        // A dividend paid to the player, taxed by the council's business tax; with 'cash' it went into the cash whatever the
+        // account (a bot's). Returns what was withheld.
         private long DividendTax(Stock stock, long amount, bool cash = false)
         {
             MarketState s = _engine != null ? _engine.State : null;
@@ -727,7 +479,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (s.Account.Margin && !cash)
             {
-                s.Account.Cash -= tax;   // (paid into the account, withheld from it)
+                s.Account.Cash -= tax;   // paid into the account, withheld from it
             }
             else
             {
@@ -736,10 +488,8 @@ namespace RealLifeOverhaul.Markets
             return tax;
         }
 
-        // ---------------------------------------------------------------- the save tools
-
-        // Before the mod is removed: the player's own listed company is taken private at its last price (shares do not exist
-        // in the plain game), the other holders paid less the reserve kept for them. Returns the money (under nothing: paid).
+        // Before the mod is removed: the player's listed company taken private at its last price, the others paid less their
+        // reserve. Returns the money, negative when paid.
         private long OwnSettled(System.Text.StringBuilder log)
         {
             Stock own = _engine.MineListed();

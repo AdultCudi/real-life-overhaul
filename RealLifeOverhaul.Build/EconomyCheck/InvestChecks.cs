@@ -1634,7 +1634,7 @@ internal static partial class Program
         float exact = InvestRules.PieceMost, wide = int.MaxValue;
         Check((long)exact == InvestRules.PieceMost && (long)wide != int.MaxValue && (double)(float)(InvestRules.PieceMost * 4) == InvestRules.PieceMost * 4,
             "money: a piece is a sum a float holds exactly (2^30), where int.MaxValue becomes 2^31 as a float");
-        string game = ModSource(@"Markets\MarketGame.cs");
+        string game = ModSource(@"Markets\MarketWallet.cs");
         int at = game.IndexOf("public sealed class MarketWallet", StringComparison.Ordinal), end = at >= 0 ? game.IndexOf("public static long Wealth()", at, StringComparison.Ordinal) : -1;
         string wallet = at >= 0 && end > at ? game.Substring(at, end - at) : string.Empty;
         Check(wallet.Contains("InvestRules.Piece(ref left)") && !wallet.Contains("Math.Min(amount, int.MaxValue)") && !wallet.Contains("amount <= int.MaxValue") && wallet.Contains("Move(-1, amount")

@@ -4,21 +4,16 @@ using UI.Notification;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The player's trading bots in the game (MarketBots, MarketEngine.Bots.cs): hiring and letting go, their settings,
-    /// and what they do told as the game's notifications once the frame's work is done. Nothing here runs per frame:
-    /// the bots trade on the market's own steps, and the option is looked at once a second.
-    ///
-    /// IN A GOING PUBLIC SESSION a player's bots are theirs, as their holdings are: they live in their own save's line,
-    /// a guest's come with them into the host's market (MarketShare.Adopt) and nothing of them is sent. Their trades
-    /// move the city's prices as the player's own do, through the same messages a player's trade already uses.
+    /// Part of the market director: the player's trading bots, and what they do told once the frame's work is done. Never
+    /// sent in a Going Public session; their trades move prices as the player's do. Nothing per frame.
     /// </summary>
     public sealed partial class MarketDirector
     {
-        private int _botsSelling = -1;          // with the option off: bots still selling shares of the player's own company (told when it changes)
-        private DividendTally _paid;            // dividends paid since the player was last told (one notification for them all)
+        private int _botsSelling = -1;          // with the option off: bots still selling the player's company's shares
+        private DividendTally _paid;            // dividends paid since the player was last told, for one notification
 
-        // Once a second: with the option off, every bot is let go (its shares become the player's own); one holding shares
-        // of the player's own company sells them up by its founder's rules first, and is let go once it has.
+        // Once a second with the option off every bot is let go, its shares the player's own; one holding the player's own
+        // company's shares sells them up by its founder's rules first.
         private void BotsSecond()
         {
             if (Settings.MarketsBots || _engine.State.Bots.Count == 0 || Behind || _engine.Held)
@@ -37,7 +32,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 else if (why == BotWhy.OwnShares && b.Status != BotStatus.SellingUp)
                 {
-                    changed |= _engine.SellUp(b.Firm, out _);   // (shares of the player's own company: sold by its rules, then let go here)
+                    changed |= _engine.SellUp(b.Firm, out _);
                 }
                 selling += why == BotWhy.OwnShares ? 1 : 0;
             }
@@ -50,17 +45,17 @@ namespace RealLifeOverhaul.Markets
             }
             if (changed)
             {
-                Moved();   // (only when a bot went or began to sell up: a bot still selling, as it was, changes nothing the app shows)
+                Moved();   // a bot still selling, as it was, changes nothing the app shows
             }
         }
 
-        // What every ask of a bot needs: the market running, caught up and not held after a load.
+        // Every ask of a bot needs the market running, caught up and not held after a load.
         private BotWhy BotReady()
         {
             return !Running ? BotWhy.Closed : Behind ? BotWhy.Behind : _engine.Held ? BotWhy.Held : BotWhy.None;
         }
 
-        /// <summary>A firm's bot hired with so much of the player's cash to trade and its settings. Null with the reason when it cannot be.</summary>
+        /// <summary>Null with the reason when it cannot be hired.</summary>
         public Bot HireBot(int firm, long capital, int size, int stop, int loss, out BotWhy why)
         {
             FinishMoment();
@@ -95,25 +90,35 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>More of the player's cash given to a running bot to trade (MarketEngine.AddCapital). False with the reason.</summary>
         public bool AddBotCapital(int firm, long amount, out BotWhy why)
+        {
+            return ChangeCapital(firm, amount, true, out why);
+        }
+
+        public bool TakeBotCapital(int firm, long amount, out BotWhy why)
+        {
+            return ChangeCapital(firm, amount, false, out why);
+        }
+
+        private bool ChangeCapital(int firm, long amount, bool add, out BotWhy why)
         {
             FinishMoment();
             why = !Settings.MarketsBots ? BotWhy.Off : BotReady();
             Bot b = why == BotWhy.None ? MarketBots.Hired(_engine.State, firm) : null;
             long worth = b != null ? MarketBots.Worth(_engine.State, b, _engine.State.Phase) : 0, cash = _engine.Wallet.Cash, mark = b != null ? b.HighWater : 0;
-            bool done = why == BotWhy.None && _engine.AddCapital(firm, amount, out why);
+            bool done = why == BotWhy.None && (add ? _engine.AddCapital(firm, amount, out why) : _engine.TakeCapital(firm, amount, out why));
             if (done)
             {
-                Logger?.Info("Stock market: " + amount + " added to " + b.Def.Name + "'s capital, now " + b.Capital + " (nothing sold; it stops under " + MarketBots.Floor(b) + ").");
-                CapitalCheck(b, amount, worth, cash, mark);
+                Logger?.Info("Stock market: " + amount + (add ? " added to " : " taken out of ") + b.Def.Name + "'s capital, now " + b.Capital + " (nothing sold; it stops under "
+                             + MarketBots.Floor(b) + ").");
+                CapitalCheck(b, add ? amount : -amount, worth, cash, mark);
             }
             Moved();
             return done;
         }
 
-        // Developer diagnostics: capital added or taken out (less than nothing) moved the bot's worth and its high-water
-        // mark by the sum and the player's cash not at all.
+        // Developer diagnostics: capital added or taken out (negative) moved the bot's worth and high-water mark by the sum
+        // and the player's cash not at all.
         private void CapitalCheck(Bot b, long amount, long worth, long cash, long mark)
         {
             if (!Verbose)
@@ -127,24 +132,6 @@ namespace RealLifeOverhaul.Markets
                          + (pass ? "PASS" : "the bot's figures and the player's books do not agree"));
         }
 
-        /// <summary>Capital taken out of a running bot's money not in shares (MarketEngine.TakeCapital). False with the reason.</summary>
-        public bool TakeBotCapital(int firm, long amount, out BotWhy why)
-        {
-            FinishMoment();
-            why = !Settings.MarketsBots ? BotWhy.Off : BotReady();
-            Bot b = why == BotWhy.None ? MarketBots.Hired(_engine.State, firm) : null;
-            long worth = b != null ? MarketBots.Worth(_engine.State, b, _engine.State.Phase) : 0, cash = _engine.Wallet.Cash, mark = b != null ? b.HighWater : 0;
-            bool done = why == BotWhy.None && _engine.TakeCapital(firm, amount, out why);
-            if (done)
-            {
-                Logger?.Info("Stock market: " + amount + " taken out of " + b.Def.Name + "'s capital, now " + b.Capital + " (nothing sold; it stops under " + MarketBots.Floor(b) + ").");
-                CapitalCheck(b, -amount, worth, cash, mark);
-            }
-            Moved();
-            return done;
-        }
-
-        /// <summary>The least added to a running bot or taken out at a time, and the most that can be taken out of one now; 0 while the market is not running.</summary>
         public long BotChangeLeast => Running ? _engine.BotChangeLeast : 0;
 
         public long BotMostOut(int firm) => Running ? _engine.BotMostOut(firm) : 0;
@@ -176,7 +163,6 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>The shares a bot trades: its strategy's market, the companies picked for it, or those the player holds.</summary>
         public bool SetBotScope(int firm, BotScope scope, out BotWhy why)
         {
             FinishMoment();
@@ -186,7 +172,6 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>A company picked for a bot, or taken off its picks.</summary>
         public bool PickForBot(int firm, int stockId, bool on, out BotWhy why)
         {
             FinishMoment();
@@ -196,7 +181,6 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>A bot's payouts to the player: the share of its new profit and how often.</summary>
         public bool SetBotPayout(int firm, int pct, BotPayEvery every, out BotWhy why)
         {
             FinishMoment();
@@ -206,10 +190,7 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>The least a bot may be given now; 0 while the market is not running.</summary>
         public long BotCapitalLeast => Running ? _engine.BotCapitalLeast : 0;
-
-        // ---------------------------------------------------------------- what the bots tell
 
         private void BotHeard(BotNote n)
         {
@@ -262,7 +243,7 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case BotNoteKind.Dividend:
                     {
-                        // The player's dividend: taxed as their own (from their cash, and so from the bot's money), without a notification for each.
+                        // The player's dividend, taxed as their own from their cash and so from the bot's money, told with the others.
                         long tax = DividendTax(k, n.A, true);
                         Bot b = MarketBots.Hired(s, n.Firm);
                         if (b != null)
@@ -279,8 +260,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The dividends paid since the last frame, told in one notification: the one with its company (and its bot), or
-        // how many and how much in all. The market news has a line for each (MarketNewsKind.Paid).
+        // The dividends paid since the last frame in one notification; the market news has a line for each.
         private void TellPaid()
         {
             if (_paid.Count == 0)
@@ -311,9 +291,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- the save tools and the tests
-
-        // Leaving a save: every bot's shares settled at the bid with no commission (as the player's are); what that comes to.
+        // Leaving a save: every bot's shares settled at the bid with no commission, as the player's are; what that comes to.
         private long BotsSettled(System.Text.StringBuilder log)
         {
             MarketState s = _engine.State;
@@ -338,7 +316,6 @@ namespace RealLifeOverhaul.Markets
             return total;
         }
 
-        /// <summary>Test button: every bot's month closed now, as at a month's end: its statement, its fee and its share of any profit.</summary>
         public void TestBotMonth()
         {
             FinishMoment();

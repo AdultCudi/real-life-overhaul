@@ -4,22 +4,14 @@ using UI.Notification;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// A large investor's tools in the game (InvestRules, MarketEngine.Invest.cs): worked orders placed from a company's
-    /// page and told as they work (a day's part at the close, done or stopped as it comes), the share of each dividend a
-    /// holding puts back, what the player is worth for the most of one bond purchase (MarketDirector.Bonds.cs), the options
-    /// looked at once a second (one switched off: what is open of it is cancelled, what it bought or sold kept), and the
-    /// tests. Nothing here runs per frame: the orders work on the market's own steps.
-    ///
-    /// IN A GOING PUBLIC SESSION worked orders and dividends put back are the player's own orders: they fill on the
-    /// player's own machine as the market's steps are played, their moves of the city's prices go to the host as every
-    /// fill's do (MarketEngine.TradeSink), nothing new is sent, and what the player is worth is read from their own game.
+    /// Part of the market director: a large investor's tools, worked orders, dividends put back and the options looked at
+    /// once a second. They are the player's own orders, filled on their own machine; nothing new is sent. Nothing per frame.
     /// </summary>
     public sealed partial class MarketDirector
     {
         private Action<InvestNote> _investTold;
 
-        // Every market engine made (a load, or a Going Public host's market taken on) tells its worked orders here, and
-        // follows the options.
+        // Every engine made, at a load or a host's market taken on, tells its worked orders here and follows the options.
         private void HookInvest()
         {
             if (_investTold == null)
@@ -30,7 +22,6 @@ namespace RealLifeOverhaul.Markets
             FollowOptions();
         }
 
-        // The options the engine follows: worked orders and larger bond purchases, dividends put back, bonds rolling over.
         private void FollowOptions()
         {
             _engine.LargeOn = Settings.MarketsLarge;
@@ -38,7 +29,7 @@ namespace RealLifeOverhaul.Markets
             _engine.BondsOn = Settings.MarketsBonds;
         }
 
-        // Once a second: the options; one switched off, what is open of it is cancelled (once the market is caught up).
+        // Once a second: the options; one switched off, what is open of it is cancelled once the market is caught up.
         private void InvestSecond()
         {
             FollowOptions();
@@ -54,9 +45,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- what the player does
-
-        /// <summary>Whether a worked order could be placed now (nothing is changed): None, or the reason.</summary>
         public OrderWhy WorkedWhy(int stockId, OrderSide side, long qty)
         {
             if (!Running)
@@ -73,12 +61,11 @@ namespace RealLifeOverhaul.Markets
             }
             if (!Settings.MarketsMargin && _engine.State.Account.Margin && !Closes(stockId, side, qty))
             {
-                return OrderWhy.NoMargin;   // (with margin trading off an account that is open is only wound down)
+                return OrderWhy.NoMargin;   // with margin trading off an open account is only wound down
             }
             return _engine.WorkedWhy(_engine.State.Stock(stockId), side, qty, _engine.Held);
         }
 
-        /// <summary>A worked order placed: its first slice at the market's next step. Null with the reason when it cannot be.</summary>
         public Order PlaceWorked(int stockId, OrderSide side, long qty, out OrderWhy why)
         {
             FinishMoment();
@@ -106,7 +93,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The share of each dividend a holding of shares puts back into the same company at the next open, from its next one on.</summary>
+        /// <summary>The share of each dividend put back into the same company at the next open, from its next one.</summary>
         public bool SetReinvest(int stockId, int pct, out OrderWhy why)
         {
             FinishMoment();
@@ -116,13 +103,7 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>
-        /// What the player is worth, in money: the net worth the Finance app shows (MarketBridges.NetWorth: the game's own
-        /// figure of cash, its investment funds, vehicles, boats and property less its loans, less what the player owes on
-        /// the mod's own accounts and other debts; the game's figure alone without it), which counts nothing on the market,
-        /// and what they hold on the market with the money with the broker for worked orders (InvestRules.MarketWorth).
-        /// Read on a click, never per frame.
-        /// </summary>
+        /// <summary>The Finance app's net worth, which counts nothing on the market, plus what is held on the market. Read on a click.</summary>
         public long PlayerWorth()
         {
             if (!Running)
@@ -133,10 +114,7 @@ namespace RealLifeOverhaul.Markets
             return (net != null ? net() : MarketWallet.Wealth()) + InvestRules.MarketWorth(_engine.State, _engine.State.Phase);
         }
 
-        /// <summary>The player's cash in hand, as the market reads it (the Portfolio tab's box).</summary>
         public long Cash => Running ? _world.Wallet.Cash : 0L;
-
-        // ---------------------------------------------------------------- what worked orders tell
 
         private void InvestHeard(InvestNote n)
         {
@@ -150,8 +128,8 @@ namespace RealLifeOverhaul.Markets
             if (Verbose)
             {
                 // One line an event: its day's largest slice against the share of a step's trading one order may take.
-                Logger?.Info("Stock market check (worked order " + n.Order + ", day " + s.Day + "): " + n.Kind + ", " + n.Qty + " today, " + n.Done + " of " + n.Total + " in all; the day's largest slice "
-                             + n.SlicePct + "% of its step's trading, at most " + MarketCatalogue.OrderShareOfVolumePct + "% wanted: "
+                Logger?.Info("Stock market check (worked order " + n.Order + ", day " + s.Day + "): " + n.Kind + ", " + n.Qty + " today, " + n.Done + " of " + n.Total
+                             + " in all; the day's largest slice " + n.SlicePct + "% of its step's trading, at most " + MarketCatalogue.OrderShareOfVolumePct + "% wanted: "
                              + (n.SlicePct <= MarketCatalogue.OrderShareOfVolumePct && n.Done <= n.Total ? "PASS" : "a slice over the limit"));
             }
             switch (n.Kind)
@@ -170,15 +148,12 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The average price of so much money for so many shares, in cents.
         private static int Average(long money, long shares)
         {
             return shares > 0 ? (int)Math.Min(int.MaxValue, Math.Abs(money) * 100L / shares) : 0;
         }
 
-        // ---------------------------------------------------------------- the tests
-
-        /// <summary>Test button: a market day's slices of every open worked order played now, and each order's day told as at a close.</summary>
+        /// <summary>Test button: a market day's slices of every open worked order played now, each order's day told as at a close.</summary>
         public void TestWorkedDay()
         {
             FinishMoment();
@@ -202,11 +177,7 @@ namespace RealLifeOverhaul.Markets
             Moved();
         }
 
-        /// <summary>
-        /// Test button: the next dividend owed on a holding of the player's that puts a share of it back, paid now as on its
-        /// day, and that share bought (at once while the market trades). Refused, with nothing paid, when none is owed or none
-        /// owed is on a holding that puts any back.
-        /// </summary>
+        /// <summary>Test button: the next dividend owed on a holding that puts some back, paid now and that share bought.</summary>
         public void TestPutBack()
         {
             FinishMoment();
@@ -223,7 +194,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (stock < 0)
             {
-                TestRefusals.TellKey(Logger, Test, "reallife_mkt_inv_test_no_share");   // (a dividend is owed, but on no holding that puts any back: none is paid early)
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_inv_test_no_share");   // owed, but on no holding that puts any back: none is paid early
                 return;
             }
             Stock k = State.Stock(stock);
