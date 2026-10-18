@@ -1,8 +1,10 @@
-0.35.0
+0.36.0
 
 Fixed
-- The first road accident in a city no longer makes the game stutter for a moment.
-- The fee a venue pays for a booked set is now cut for business owners, as every other pay is. With jobs switched off, a booked set no longer says you are busy.
-- A canvasser for your own council campaign hands out your leaflet, not another candidate's, and a donation can no longer take a campaign past what it may take from one person.
-- Once you have met many people, someone you know no longer sometimes has a face that differs from their picture in your contacts.
-- A police station is never furnished in front of you any more, only while the screen is dark or the game is paused, and furnishing it takes less time.
+- A roommate no longer goes quiet for the rest of the session when the game has no player character for a moment, as it can while a scene changes.
+- The City Ledger delivered to your door no longer gives free mornings after a spell with no home: only the mornings you had paid for wait, as on Newsstand.
+- A kiosk no longer charges for today's paper when the paper cannot be opened.
+- When you are the one expecting and miss a scan or a class, the clinic now books it again for the next day, as its message says.
+- A family errand you have paid for or kept (a scan, a dinner, counselling, a school event, the honeymoon) is no longer lost when another scene is under way: it happens at once instead.
+- Load my choices from the file no longer fails when the copy of your current settings cannot be written first; it goes ahead without the copy, as a preset or a reset does.
+- Report a bug no longer says it is busy for the rest of the session after a report was cut off part of the way.
