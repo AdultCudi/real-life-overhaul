@@ -22,6 +22,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
 | `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people; for running for office the economy's cycle, Standing's influence, recognition and integrity, a conviction or a case, a let building, Standing's notice, a summons); `Wiring.Paper.Print`: a finished story for the City Ledger |
 | `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet` |
+| `Wiring.DrivingLinks.cs` | `DrivingBridges`: the custom shop's parts lifted off the driven car and laid back on top of its handling |
 | `EconomyLinks.cs` | `Economy.EconomyBridges` (the record the credit rating reads, the fines and court debts the Finance app lists), the Finance rows of the Planner, and the banks' own terms put back on unload |
 | `FamilyLinks.cs` | `FamilyBridges.Social`, `Home`, `Law` and `SocialLinks.PartnerChanged` |
 | `RoommateLinks.cs` | `RoommateBridges`: whether the partner lives in, the friends who could move in |
@@ -148,6 +149,7 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 | `TravelBridges.Social` | `Wiring.LifeLinks`, only with the social life on at city load | partner and close friends as companions, a trip together, souvenirs for friends |
 | `TravelBridges.Transport`, `Leisure` | nobody | there is no coach and no staged golf or dinner |
 | `GarageBridges.RoadIsWet` | `Wiring.LifeLinks` | the game's rain or `Events.Weather.Sky` |
+| `DrivingBridges.LiftParts`, `LayParts` | `Wiring.DrivingLinks` | `GarageCar.LiftHandling` and `LayHandling`: the parts off before the handling changes a car, back on top after (nothing with no build) |
 | `HomeBridges.Sheltered` | `Wiring.LifeLinks` | up in a hotel room (`TravelState.InRoom`) counts as indoors for the rain and the cold it brings |
 | `GarageBridges.WearOf`, `InsuranceOf` | `Transport/CarOwnership`, `CarPhone` | tyres and brakes wear `1 + WearOf` times as fast; the premium is `1 + InsuranceOf` times `CarRules.Premium`, on the bill and on the Garage page |
 | `GarageBridges.ValueAdded`, `GarageSummary.Lines` | nobody | Transport has no resale; `Lines` lists every car at once, the Garage page shows one (it needs a one-car form) |
