@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ledger
         private readonly List<CityBuildingController> _candidates = new List<CityBuildingController>(CandidatesMost);
         private readonly List<float> _distances = new List<float>(CandidatesMost);
         private readonly List<KioskSpot> _found = new List<KioskSpot>(LedgerCatalogue.KiosksWanted);
-        private readonly WorldPanel _panel = new WorldPanel();
+        private readonly WorldPanel _panel = new WorldPanel { Name = "newspaper kiosk" };
         private readonly Action _onUse;
         private Transform _root;
         private string _searchFor;      // the home the search under way is for
@@ -58,6 +58,17 @@ namespace RealLifeOverhaul.Ledger
         {
             _director = director;
             _onUse = Use;
+            PanelPlaces.Set("newspaper kiosk", KiosksNear);   // somebody waiting for the player is stood clear of them
+        }
+
+        // The kiosks standing near a point, with the reach of the counter's panel from where a customer stands (Core/GameUi/PanelPlaces).
+        private int KiosksNear(Vector3 around, float within, float[] x, float[] z, float[] reach, int count)
+        {
+            for (int i = 0; i < _fronts.Count; i++)
+            {
+                count = PanelPlaces.Add(around, within, _fronts[i], Reach, x, z, reach, count);
+            }
+            return count;
         }
 
         /// <summary>True while the counter's panel sells or shows the paper on the interact key, and in the frame it was pressed.</summary>
@@ -222,6 +233,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 over = player + Vector3.up * 2.1f;
             }
+            _panel.For(_props[kiosk].position);
             _panel.Position = over;
             _panel.Show();
         }

@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
         private bool _cutting;
         private bool _hazards;
         private bool _lowFuelTold;
-        private readonly GameUi.WorldPanel _help = new GameUi.WorldPanel();
+        private readonly GameUi.WorldPanel _help = new GameUi.WorldPanel { Name = "roadside help" };
         private Action _onHelp;
         private RoadsideJob _helpJob;
         private int _helpKey = int.MinValue;

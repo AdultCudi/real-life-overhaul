@@ -87,6 +87,7 @@ namespace RealLifeOverhaul
             {
                 over = at + Vector3.up * 2.1f;
             }
+            _doctor.For(_doctorAt);
             _doctor.Position = over;
             int state = _doctor.Show() ? 1 : 2;
             if (state != _doctorState)

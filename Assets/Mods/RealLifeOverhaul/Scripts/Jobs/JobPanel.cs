@@ -28,6 +28,7 @@ namespace RealLifeOverhaul
         public JobPanel(string name, Action<string> run = null, Action second = null)
         {
             _name = name;
+            _panel.Name = name;
             _run = run;
             _second = second;
             _press = Press;
@@ -65,6 +66,7 @@ namespace RealLifeOverhaul
         public bool Show(Vector3 over, PlayerController player)
         {
             _panel.Follow = null;
+            _panel.For(over);   // measured from the place itself when another panel wants the game's box
             _panel.Position = Fit(over, player);
             return Note(_panel.Show());
         }
@@ -73,6 +75,7 @@ namespace RealLifeOverhaul
         public bool Show(Transform over, float lift, PlayerController player)
         {
             Vector3 at = over.position + Vector3.up * lift;
+            _panel.For(over.position);
             Vector3 fitted = Fit(at, player);
             if (fitted == at)
             {
@@ -106,7 +109,7 @@ namespace RealLifeOverhaul
                 if (Meta.Dev.Verbose)
                 {
                     JobDirector.Logger?.Info("Jobs check (" + _name + "): " + (up == 1 ? "the game's own panel is up: PASS"
-                        : "FAIL (the game's panel is showing another place; it is tried again five times a second while the job wants it)") + ".");
+                        : "FAIL (another panel has the game's box and keeps it by the rule; it is tried again five times a second while the job wants it)") + ".");
                 }
             }
             return shown;

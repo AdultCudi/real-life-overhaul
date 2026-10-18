@@ -17,8 +17,10 @@ namespace RealLifeOverhaul.GameUi
     /// its key (GameManager routes Interact, SecondaryInteract and SpecialInteract to OverlayUI.OnPlayerActionPressed)
     /// or on a click.
     ///
-    /// The game has one such box. If it is showing one of its own (a filling station, a lift) or another of the
-    /// mod's, <see cref="Show"/> does nothing and says so: the one that was there first keeps the place.
+    /// The game has one such box, and sends its keys to whatever is in it. Which of two places that want it has it is
+    /// one rule for every panel (<see cref="PanelPickRules"/>, applied in WorldPanel.Pick.cs): the nearer place the
+    /// player faces, a person the player came to meet first of all within talking range, with a margin so that the box
+    /// never goes to and fro; the game's own panels (a filling station, a lift) keep it while the player stands there.
     ///
     /// The game's building box (the card over a shop's door while the pointer is on the shop) is another object, and
     /// the two would cover each other where a panel's place is in front of a shop. The other half of this class
@@ -169,7 +171,7 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>
         /// Puts the panel in the game's box, or brings the box up to date with what was set since. False when the
-        /// game's interface is not there or the box is taken by another panel.
+        /// game's interface is not there, or another panel has the box and keeps it by the rule (WorldPanel.Pick.cs).
         /// </summary>
         public bool Show()
         {
@@ -213,9 +215,9 @@ namespace RealLifeOverhaul.GameUi
                 Watch(false);
             }
             Waiting = false;
-            if (OverlayUI.IsVisible)
+            if (OverlayUI.IsVisible && !Contest(box))
             {
-                return false;
+                return false;   // another panel has the box, and the rule leaves it there: asked again by the owner's timer
             }
             if (Held())
             {
@@ -234,6 +236,7 @@ namespace RealLifeOverhaul.GameUi
         public void Hide()
         {
             Waiting = false;
+            Untell();
             if (_current != this)
             {
                 return;

@@ -59,7 +59,7 @@ namespace RealLifeOverhaul
         private readonly float[] _best = new float[JobCast.Size];   // metres: the nearest a walking customer has been to their place
         private readonly float[] _bestAt = new float[JobCast.Size]; // ...and when (CartQueueRules.Walking)
         private readonly HeldProp _cupHeld = new HeldProp();
-        private readonly WorldPanel _panel = new WorldPanel();
+        private readonly WorldPanel _panel = new WorldPanel { Name = "drinks cart" };
         private readonly SolidFootprint _solid = new SolidFootprint();
         private readonly Action[] _onDrink = new Action[JobKeys.Choices];
         private readonly string[] _items = new string[JobKeys.Choices];

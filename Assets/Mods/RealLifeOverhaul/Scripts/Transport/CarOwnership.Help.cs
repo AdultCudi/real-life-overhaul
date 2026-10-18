@@ -25,6 +25,7 @@ namespace RealLifeOverhaul
             {
                 over = camera.transform.position + camera.transform.forward * 6f;   // a camera inside the car: the panel stands ahead of it
             }
+            _help.For(_car.transform.position);
             _help.Position = over;
             int state = _help.Show() ? 1 : 2;
             if (state != _helpState)
