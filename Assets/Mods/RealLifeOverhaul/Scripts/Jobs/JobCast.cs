@@ -14,11 +14,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The people a job puts on the street, a passenger or a customer: two characters at most, the jobs' own (never the
-    /// accident pool's), made on first need and reused. One costs what a game pedestrian costs while drawn, nothing on the
-    /// shelf. Someone who has been seen gets a new look while shelved, when People/Looks allows one (a mesh merge), so the
-    /// next fare has another face; a seeded person (a boss, a colleague) keeps their look. Nothing runs by itself: the
-    /// director calls <see cref="Cull"/> while somebody is out, and the new looks' coroutine tests a flag a frame while it waits.
+    /// The people a job puts on the street: two characters at most, the jobs' own, made on first need and reused. A person seen
+    /// gets a new look while shelved (People/Looks), so the next fare has another face; a seeded one keeps theirs. Nothing runs
+    /// by itself: the director calls <see cref="Cull"/> while somebody is out.
     /// </summary>
     public sealed class JobCast
     {

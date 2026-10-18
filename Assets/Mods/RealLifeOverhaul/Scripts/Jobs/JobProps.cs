@@ -4,11 +4,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The things jobs put on the street and in hands: flyers, parcels, the roof sign, the cart, a guitar case. One object a
-    /// prop, made on first want and shelved switched off between uses, so nothing is built or destroyed during a shift. A prop
-    /// is asked for by its id in the prop bundle (PropAssets/README.md); where the bundle lacks it, its <see cref="Alias"/>
-    /// stands in, else a plain shape from <see cref="Shapes"/>, else Take says no. A stand-in is replaced the next time the
-    /// prop is taken after the modelled one has arrived.
+    /// The things jobs put on the street and in hands, one object a prop, made on first want and shelved between uses. Where the
+    /// prop bundle lacks one, its <see cref="Alias"/> or a plain shape stands in until the modelled one arrives.
     /// </summary>
     public sealed class JobProps
     {
@@ -213,11 +210,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// One prop in one hand at the grip of the clip it belongs to. The grip is never made up here: it is read from the clip
-    /// catalogue (<see cref="ClipLibrary"/>), measured on the game's hand bones, and the prop is the one the clip was made
-    /// with. Of several clips, best first, the first the bundle has with a tool decides; with none, nothing is held.
-    /// </summary>
+    /// <summary>One prop in one hand at the grip measured for its clip (<see cref="ClipLibrary"/>): the first of the clips the bundle has with a tool.</summary>
     public sealed class HeldProp
     {
         private readonly HeldTool _hold = new HeldTool();

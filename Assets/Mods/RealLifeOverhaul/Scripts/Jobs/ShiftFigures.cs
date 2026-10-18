@@ -3,11 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A job's lines on the shift card (<see cref="ShiftCard"/>): the title and employer once, then the objective, the units
-    /// done and what can end the shift early, the earnings, and the time on shift and left. Each line is rebuilt only when
-    /// its figures change, so a job may call every tick. Without a card every call does nothing.
-    /// </summary>
+    /// <summary>A job's lines on the shift card (<see cref="ShiftCard"/>), each rebuilt only when its figures change, so a job may call every tick.</summary>
     public sealed class ShiftFigures
     {
         private readonly ShiftCard _card;

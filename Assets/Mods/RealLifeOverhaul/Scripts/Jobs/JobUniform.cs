@@ -6,12 +6,9 @@ using BigAmbitions.Characters.Appearance;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Work clothes over the player's own for a shift, the way the game dresses them for a while (its swimwear, its till
-    /// uniform): <c>AppearanceSetter.UpdateVisuals(list)</c> draws the listed pieces over the character's own and writes
-    /// nothing into their appearance data, so a save never holds the uniform. The outfit is one of the living city's
-    /// (CityLife/CityOutfits); recoloured garments are put back before the own clothes are drawn, and the detailed double
-    /// (Character/PlayerDouble) is dressed through its own hook. Owned by <see cref="JobDirector"/>, which takes it off on
-    /// every way a job stops. Each change is one mesh merge, twice a shift.
+    /// Work clothes over the player's own, drawn as the game draws its swimwear (<c>AppearanceSetter.UpdateVisuals(list)</c>), so
+    /// nothing is written into their appearance data and no save holds the uniform. Owned by <see cref="JobDirector"/>, which
+    /// takes it off on every way a job stops; one mesh merge each way.
     /// </summary>
     public sealed class JobUniform
     {

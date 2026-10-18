@@ -4,10 +4,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The motions played with the mod's own clips (CityAssets, through the shared ActivityAnimator) where the bundle has
-    /// one, and with the game's nearest gesture (<see cref="GameJobAnimations"/>) where it does not, per clip and per call.
-    /// The table is the only place a motion is tied to a clip name. A gesture takes the upper body only, on the masked
-    /// layer, so the legs stay the game's; what moves the whole body (a car, a boot, a shelf, a counter) is played whole.
+    /// The motions played with the mod's clips where the bundle has one, else the game's nearest gesture, per clip and call. A
+    /// gesture takes the upper body only, so the legs stay the game's; what moves the whole body is played whole.
     /// </summary>
     public sealed class ClipJobAnimations : IJobAnimations
     {

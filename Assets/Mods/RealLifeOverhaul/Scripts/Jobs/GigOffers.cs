@@ -82,12 +82,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The one place the variation between shifts of a gig is decided; game-free, so CatalogueCheck draws thousands of
-    /// offers and tests the ranges and averages. Every draw is seeded by the day, hour and gig, so the offer quoted on the
-    /// phone is the one worked; the day's board by the day and gig alone. Over many shifts a gig's pay averages the table's
-    /// figure (<see cref="JobCatalogue"/>): the client's and the day's factors each average 1, the size is symmetrical, the
-    /// crowd averages 1, and the events' expected money is taken off the fee (<see cref="Calibration"/>). Only weather pay is
-    /// extra, and only when it is bad.
+    /// The one place shifts of a gig are varied; game-free, so CatalogueCheck draws thousands of offers. Every draw is seeded
+    /// by the day, hour and gig, so the offer quoted is the one worked. Over many shifts a gig's pay averages the table's figure
+    /// (<see cref="Calibration"/> takes the events' expected money off the fee); only bad-weather pay is extra.
     /// </summary>
     public static class GigOffers
     {

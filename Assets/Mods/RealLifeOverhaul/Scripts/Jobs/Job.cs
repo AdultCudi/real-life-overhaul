@@ -113,10 +113,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A job the player can take, one class per kind: steps the director ticks five times a second. It shows everything in
-    /// the game's own interface and takes back what it put out in <see cref="End"/>, which the director calls exactly once
-    /// however the job stops. A new kind is a row in <see cref="JobCatalogue"/>, a class in Kinds and a case in
-    /// <see cref="JobDirector.Create"/>.
+    /// A job the player can take, one class per kind, ticked by the director. What it puts out it takes back in <see cref="End"/>,
+    /// called exactly once however it stops. A new kind is a row in <see cref="JobCatalogue"/> and a case in <see cref="JobDirector.Create"/>.
     /// </summary>
     public abstract class Job
     {

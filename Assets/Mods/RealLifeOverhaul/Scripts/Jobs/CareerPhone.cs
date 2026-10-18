@@ -8,11 +8,7 @@ using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The career on the phone: the Work contact, whose call carries the rota, clocking on, sick calls, notice, booked sets
-    /// and the CV (<see cref="CareerDialog"/>), and whose texts carry reminders and letters. The same conversation face to
-    /// face with a boss is where the player signs on and is reviewed.
-    /// </summary>
+    /// <summary>The Work contact: its call (<see cref="CareerDialog"/>) carries the career, its texts the reminders and letters.</summary>
     public static class CareerPhone
     {
         public const string ContactId = "reallife-career";

@@ -8,12 +8,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player's own body at work: held still for a beat, mopping, strumming, tool in hand. One for the session, owned by
-    /// the director, which undoes everything on every way out (<see cref="Release"/>), so a faulting job cannot leave the
-    /// player rooted or holding a mop. The body is moved by one of the mod's clips over the game's controller, with the
-    /// clip's tool at its grip, or else by one of the game's own loops with its hand object. A clip replaces every layer,
-    /// legs included, so the player is held first (<see cref="Hold"/>, the game's navigation blocker) and nothing here plays
-    /// while they walk; only <see cref="Over"/> leaves the legs to the game.
+    /// The player's own body at work, owned by the director, which undoes everything on every way out (<see cref="Release"/>).
+    /// Moved by one of the mod's clips with its tool, or one of the game's loops; a clip takes every layer, legs included, so the
+    /// player is held first (<see cref="Hold"/>), and only <see cref="Over"/> leaves the legs to the game.
     /// </summary>
     public sealed class JobBody
     {

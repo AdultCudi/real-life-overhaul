@@ -9,10 +9,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The shift's figures on the HUD: a copy of the game's job panel (<c>Canvases/PlayerHUD/CurrentJobUI/Panel</c>, top
-    /// right), made asleep (GameUi/UiClone) without its script and buttons: a headline and five lines, each written only
-    /// when it changes. It stands under the game's own panel while that shows, and takes no clicks. Made once a city on
-    /// first need and destroyed with the HUD; <see cref="Make"/> returns null, with one "Game UI:" line, if it cannot be.
+    /// The shift's figures on a copy of the game's job panel (top right), made asleep without its script: a headline and five
+    /// lines, each written only on a change, under the game's own panel while that shows. <see cref="Make"/> gives null if it cannot.
     /// </summary>
     public sealed class ShiftCard
     {

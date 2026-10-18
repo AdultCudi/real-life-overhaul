@@ -20,11 +20,7 @@ namespace RealLifeOverhaul
         void ClockEnded(int count, int pay, float away);
     }
 
-    /// <summary>
-    /// The rest of a job's shift left to the game's clock (<see cref="ShiftSkip"/>), for every job but the drinks cart, which
-    /// does it inline: the offer, the panel's texts, the rate (<see cref="ShiftRates"/>), the pay slip and a log line a
-    /// step. The job gives the numbers through <see cref="IClockedShift"/> and asks <see cref="Hold"/> first on its tick.
-    /// </summary>
+    /// <summary>The rest of a shift left to the game's clock (<see cref="ShiftSkip"/>), for every job but the cart, which does it inline.</summary>
     public sealed class ShiftClock : ISkippableShift
     {
         private readonly JobContext _ctx;
@@ -43,9 +39,6 @@ namespace RealLifeOverhaul
         private bool _closed;
 
         /// <param name="name">What the log calls the job ("flyers").</param>
-        /// <param name="unitKey">Locale key of one unit ("flyer").</param>
-        /// <param name="unitsKey">Locale key of the units ("flyers").</param>
-        /// <param name="slipKey">Locale key of the pay slip's title.</param>
         /// <param name="asTips">The clock's pay goes on the slip as tips (a busker lives on the hat), not as base pay.</param>
         public ShiftClock(JobContext ctx, Job job, IClockedShift shift, string name, string unitKey, string unitsKey, string slipKey, bool asTips = false)
         {

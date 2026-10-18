@@ -7,10 +7,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Help-wanted boards: the <c>job_board</c> prop against the wall a step aside from the door of the first building of
-    /// each kind of special service, so the same places in every game; at one, the interact key opens the Gig Line's list.
-    /// The places are looked for once a city load, a few buildings a second while no job is on, and only when the prop
-    /// bundle has the board. A board has no collider and no script; the director calls this once a second.
+    /// Help-wanted boards beside the door of the first building of each kind of special service, the same places in every game;
+    /// at one, the interact key opens the Gig Line's list. Looked for once a city load, a few buildings a second.
     /// </summary>
     public sealed class JobBoards
     {

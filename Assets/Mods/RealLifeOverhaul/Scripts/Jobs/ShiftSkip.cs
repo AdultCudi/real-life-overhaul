@@ -31,13 +31,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The rest of a shift left to the clock, as the game's own employer job does it (<c>PlayerActivity.WorkActivity</c>):
-    /// one of the game's activities on its panel (<c>PlayerActivityUI</c>), with Start and Cancel while paused, then a
-    /// progress bar, the game's skip-time button and Stop, the time machine running to the end of the shift, and the minutes
-    /// worked settled in <c>Finish</c> whichever way it ends. The player is already held at their place, so no walk order is
-    /// given (the panel calls an activity off if one comes after it allowed cancelling: see Home/HomeActivity); the panel
-    /// must still see it on its way for one frame, the step in which it lets the clock run. One object per offer; nothing
-    /// runs unless the game's panel is open.
+    /// The rest of a shift left to the clock as the game's own employer job does it (<c>PlayerActivity.WorkActivity</c>): one of
+    /// its activities on its panel, with Start, the skip-time button, a progress bar and Stop. No walk order is given (the panel
+    /// would call it off); it is seen on its way for one frame, the step in which the panel lets the clock run.
     /// </summary>
     public sealed class ShiftSkip : IPlayerActivity
     {

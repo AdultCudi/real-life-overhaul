@@ -4,11 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The motions played with animations the game's street characters and the player already have, each the nearest the
-    /// mod found (an arrest's reach, a traffic officer's wave, an argument's gesture). Whether an animator has a trigger is
-    /// asked once per controller and remembered.
-    /// </summary>
+    /// <summary>The motions played with the game's own animations, the nearest the mod found; whether an animator has a trigger is asked once.</summary>
     public sealed class GameJobAnimations : IJobAnimations
     {
         private static readonly int AnimationSpeedId = Animator.StringToHash("AnimationSpeed");

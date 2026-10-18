@@ -14,11 +14,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The drinks cart's queue (Kinds/VendorJob) as rules with no game types, checked offline. A customer who cannot
-    /// get to the cart (a route cut or ending short, no nearer for seconds) or is no longer the cart's leaves the queue at
-    /// once. That is never a walk-off, which only a customer kept waiting at the counter is (decided by VendorJob). Only one
-    /// who gave up waiting makes the shift one shorter; the others go back among those still to come, unless that has
-    /// happened <see cref="RetriesMost"/> times in a row. A few comparisons a customer a tick; nothing allocated.
+    /// The drinks cart's queue as rules with no game types, checked offline. A customer who cannot reach the cart leaves the queue
+    /// at once, never as a walk-off; only one who gave up waiting makes the shift shorter, the rest go back among those to come
+    /// unless <see cref="RetriesMost"/> in a row could not. A few comparisons a customer a tick.
     /// </summary>
     public static class CartQueueRules
     {

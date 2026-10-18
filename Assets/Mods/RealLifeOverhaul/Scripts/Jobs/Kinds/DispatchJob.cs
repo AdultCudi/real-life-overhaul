@@ -8,11 +8,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The dispatcher's sums: what a plan costs, and the best and worst plan for a batch. A van drives from the depot to its
-    /// nearest parcel, on to the nearest of the rest and home, and costs a fixed amount for going out at all. Six parcels on
-    /// three vans are 729 ways, so the bounds are found by trying every one, once a batch.
-    /// </summary>
+    /// <summary>The dispatcher's sums: a plan's cost, and a batch's best and worst found by trying all 729 ways to load six parcels on three vans.</summary>
     internal static class DispatchPlan
     {
         public const int Parcels = 6;

@@ -43,10 +43,8 @@ namespace RealLifeOverhaul
         private float _hawkWordsUntil;
 
         /// <summary>
-        /// Calls out to the street: each pedestrian within <see cref="HawkWithin"/> m (six at most) is tempted, annoyed or
-        /// unmoved by chance. Tempting scales with the hour, the crowd, the customer service skill and the queue, and fades with
-        /// recent calls; a tempted one may stop to look and brings a customer more (<see cref="HawkExtraMost"/> at most).
-        /// With police about, many recent calls may bring an officer's warning; the second ends calling out for the shift.
+        /// Calls out to the street: each pedestrian within <see cref="HawkWithin"/> m is tempted, annoyed or unmoved by chance, by the
+        /// hour, the crowd, skill, the queue and recent calls. Too much of it with police about brings a warning, then a ban.
         /// </summary>
         private void Hawk(float now)
         {

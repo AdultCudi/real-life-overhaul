@@ -7,11 +7,7 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Where the jobs that go indoors are worked: a client, one of the city's open businesses that is not the player's,
-    /// entered through its door like any customer. Every place handed out is a point on the interior's navigation mesh,
-    /// with room round it, that the player can walk to, or none. Asked when a shift is set up or a task wanted.
-    /// </summary>
+    /// <summary>Where indoor jobs are worked: a client's floor, every place a reachable point on its navigation mesh with room round it.</summary>
     public static class JobSites
     {
         private const float Room = 0.6f;         // metres of clear floor wanted round a place somebody works at

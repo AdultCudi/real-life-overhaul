@@ -8,11 +8,8 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A place of work the player takes by walking on to it (behind a cart, at a desk, on a pitch): stepping into the zone
-    /// draws them the last step, turns them to the work, holds them there (<see cref="JobBody.Hold"/>) and puts on the
-    /// working pose. <see cref="StepAway"/> or the director's <see cref="Clear"/> lets them go; having stepped away they
-    /// must leave the zone before it takes them again. Cost: a distance and a few comparisons on the job's tick; only the
-    /// last step, half a second, is per frame.
+    /// A place of work taken by walking on to it: the zone draws the player the last step, holds them (<see cref="JobBody.Hold"/>)
+    /// and puts on the working pose until <see cref="StepAway"/> or <see cref="Clear"/>. A distance a tick; the last step per frame.
     /// </summary>
     public sealed class JobStand
     {

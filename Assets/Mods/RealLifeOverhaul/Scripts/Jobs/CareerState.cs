@@ -22,11 +22,7 @@ namespace RealLifeOverhaul
         Dismissed
     }
 
-    /// <summary>
-    /// The player's career as a save remembers it: employer, rank, rota, marks, the review's counts and the history, as one
-    /// line in the save's modData, which the game carries without reading. A shift in progress is not saved. Game-free: the
-    /// caller says what day it is.
-    /// </summary>
+    /// <summary>The career as a save remembers it, one line in the save's modData; a shift in progress is not saved. Game-free.</summary>
     public static class CareerState
     {
         private const string Key = "reallife:career";

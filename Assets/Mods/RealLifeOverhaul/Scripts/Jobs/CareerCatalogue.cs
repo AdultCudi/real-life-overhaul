@@ -108,11 +108,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Employers, ranks, rotas and every figure of the career ladder; game-free. A rota shift is about four game hours (a
-    /// game hour is a minute of play), and an employer adds a basic hourly wage to what the work pays, so a rota shift is
-    /// worth a fifth to a third more than the same work freelance. The game takes no tax from wages, so the payslip's tax
-    /// line reads zero. Owners of businesses are paid less (<see cref="OwnerFactor"/>). The balance table, rank by rank and
-    /// against the game's own jobs, is in docs/features/careers.md.
+    /// Employers, ranks, rotas and every figure of the career ladder; game-free. An employer adds a basic hourly wage to what
+    /// the work pays, so a rota shift is worth a fifth to a third more than freelance (docs/features/careers.md).
     /// </summary>
     public static class CareerCatalogue
     {

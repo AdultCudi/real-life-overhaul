@@ -5,11 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The cleaner's fallback where the game's dirt cannot be had: the mod's own spills (<c>floor_patch</c>, a bucket by the
-    /// first), mopped one at a time from a panel over each, held on the spot with the mop clip or the game's cleaning
-    /// animation. The shift is then so many spills, paid per spill.
-    /// </summary>
+    /// <summary>The cleaner's fallback without the game's dirt: the mod's own spills, mopped one at a time from a panel over each, paid per spill.</summary>
     public sealed partial class CleanerJob
     {
         private const float PatchReach = 1.1f;         // metres

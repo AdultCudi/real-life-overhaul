@@ -5,11 +5,7 @@ using Helpers;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A box in the player's arms with the game's own two-handed carry: the sealed box its van job delivers, which cannot be
-    /// opened, shelved or sold. The game animates the carry, stows the box in a car the player gets into and clears sealed
-    /// boxes with its own call. <see cref="Take"/> is safe in any state, for every way out.
-    /// </summary>
+    /// <summary>The game's sealed box in the player's arms with its own carry; the game stows it in a car and clears it. <see cref="Take"/> is always safe.</summary>
     public sealed class JobCarry
     {
         private const string SealedBox = "ba:itemname_sealedcardboardbox";

@@ -4,11 +4,7 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The player's jobs as a save remembers them: experience, strikes and sackings per job, and what was earned today and
-    /// this week, as one line in the save's modData, which the game carries without reading. A job in progress is not
-    /// saved. Game-free: the director says the day.
-    /// </summary>
+    /// <summary>The player's jobs as a save remembers them (experience, strikes, today's and the week's pay), one line in modData. Game-free.</summary>
     public static class JobState
     {
         private const string Key = "reallife:jobs";

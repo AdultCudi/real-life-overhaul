@@ -12,10 +12,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The career ladder (<see cref="CareerCatalogue"/>, <see cref="CareerState"/>) in the game: each employer's office at a
-    /// help-wanted board, the boss standing by it, the rota, clocking on, the payslip, reviews, notice, dismissal and the
-    /// agency's booked sets. Owned by <see cref="JobDirector"/> and called once a second: a few comparisons unless the hour
-    /// has changed or a depot is near. It has a cast of its own (a boss and a colleague), made on first need.
+    /// The career ladder in the game: offices at help-wanted boards, the boss, the rota, clocking on, payslips, reviews, notice
+    /// and booked sets. Called by <see cref="JobDirector"/> once a second: a few comparisons unless the hour has changed.
     /// </summary>
     public sealed partial class CareerDirector
     {

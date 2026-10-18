@@ -13,13 +13,10 @@ using Vehicles.VehicleTypes;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A hired van, so the driving jobs can be worked before the player owns a car. It is the game's own job van, made the
-    /// way its delivery job makes one (DeliveryJobStartController.OnAcceptJob): an unsellable <c>DeliveryVehicleInstance</c>
-    /// whose prefab carries <c>DeliveryJobVehicle</c>. That component takes the van off the save's list when it is
-    /// destroyed, and once an hour destroys a van that is in no mission, not driven and not in view; so a save made during a
-    /// hire and loaded without the mod loses the van within the hour. With the mod, the hire is one line in modData (the
-    /// van's id) and the van is taken back once the player is out of it. While a hire is on, that hourly check is unhooked
-    /// for this van. A prefab without the component is refused and deleted at once. No mission is created or touched.
+    /// A hired van: the game's own job van, made as its delivery job makes one. Its <c>DeliveryJobVehicle</c> takes it off the
+    /// save's list when destroyed and destroys an idle van each hour, so a save loaded without the mod loses it. The hire is one
+    /// line in modData; the van goes back once the player is out of it, the hourly check unhooked meanwhile. A prefab without
+    /// the component is refused at once. No mission is created or touched.
     /// </summary>
     public sealed class JobRental
     {

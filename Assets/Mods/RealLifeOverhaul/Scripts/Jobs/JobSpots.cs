@@ -13,11 +13,7 @@ namespace RealLifeOverhaul
         public string Name;                        // the address as the game writes it
     }
 
-    /// <summary>
-    /// Where jobs happen: door fronts of the city's own buildings, and the ground beside the player's car where a passenger
-    /// gets in or out. Every answer is a point on the navigation mesh tested for vehicles, or none. Asked when a job needs
-    /// a new place, never on a timer.
-    /// </summary>
+    /// <summary>Where jobs happen: door fronts, and the ground beside the player's car, each a point on the navigation mesh tested for vehicles.</summary>
     public static class JobSpots
     {
         private const int Picks = 48;               // random buildings looked at before giving up

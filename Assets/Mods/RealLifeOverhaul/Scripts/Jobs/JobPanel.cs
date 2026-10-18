@@ -5,10 +5,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A job's use of the game's panel over a place (<see cref="WorldPanel"/>), one for the shift: shown over the right place,
-    /// and said in the log once per change whether the game took it. <see cref="Offer"/> sets one action on the interact key
-    /// (named by its locale key) and the job's Let time pass; a job with other buttons sets them on <see cref="Panel"/>. The
-    /// game runs the buttons on its keys or a click, so the mod reads no key. Texts are made only when they change.
+    /// A job's use of the game's panel over a place (<see cref="WorldPanel"/>): <see cref="Offer"/> puts one action on the
+    /// interact key, or a job sets its own buttons on <see cref="Panel"/>; the game runs them on its keys or a click.
     /// </summary>
     public sealed class JobPanel
     {

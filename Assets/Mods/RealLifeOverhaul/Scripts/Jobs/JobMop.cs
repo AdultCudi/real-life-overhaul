@@ -7,11 +7,8 @@ using UnityEngine.Events;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own mop in the player's hands on a client's floor, given with the call its cleaning station makes
-    /// (<c>CleaningStationController.OnCleaningStationClick</c>), which brings the highlighting, the cursor and the stance.
-    /// The mop listens for floor clicks only in the player's own business, so its click method is hooked to the floor's
-    /// click event here. It is taken away with the game's own <c>PlayerHelper.RemoveItemsFromHands</c>; <see cref="Take"/>
-    /// is safe in any state, for every way out.
+    /// The game's own mop in the player's hands on a client's floor, given as its cleaning station gives it. Its click method is
+    /// hooked to the floor's click event, which it hears only in the player's own business. <see cref="Take"/> is always safe.
     /// </summary>
     public sealed class JobMop
     {

@@ -41,11 +41,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A job in progress across a save; game-free, so CatalogueCheck checks the round trip and the sums. A shift cannot be
-    /// taken up again where it was, so a save carries one line (<see cref="Key"/>) of what it was owed and a load settles it
-    /// at once as ended early through nobody's fault: the work owed by the job's own rule, a rota shift's basic wage for the
-    /// hours clocked, the units towards the level and the day; no strike, complaint or mark, and none taken off. Only
-    /// <see cref="SavedShift.Owed"/> is paid. The line is written on every save, empty with no shift on.
+    /// A job in progress across a save; game-free, checked by CatalogueCheck. A save carries one line (<see cref="Key"/>) of what
+    /// the shift was owed, and a load settles it at once as ended early through nobody's fault: only
+    /// <see cref="SavedShift.Owed"/> is paid, with no strike, complaint or mark.
     /// </summary>
     public static class JobSave
     {

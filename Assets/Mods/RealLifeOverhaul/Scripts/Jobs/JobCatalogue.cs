@@ -52,10 +52,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Every job and every number that balances one; game-free, like the event and crime catalogues. A shift played well
-    /// pays clearly more an hour than the game's cashier (25): about 40 to 55 on foot, about 85 with a car, a little under
-    /// the van job's 100. Offers (<see cref="GigOffers"/>) vary the size and fee around these figures. The game's own wages
-    /// they are set against are in docs/features/jobs.md.
+    /// Every job and every number that balances one; game-free. A shift played well pays about 40 to 55 an hour on foot and 85
+    /// with a car, against the game's cashier at 25 (docs/features/jobs.md); offers vary around these figures.
     /// </summary>
     public static class JobCatalogue
     {

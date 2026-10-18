@@ -8,13 +8,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own dirt on a client's floor for one cleaning job. A floor is a grid of <c>DirtSpotObject</c>s that read
-    /// their dirtiness (0 to 100) from the registration's <c>dirtSpots</c>, a list only the player's rented businesses are
-    /// given; the game's cleanliness is 100 less the mean dirtiness less the mean over the visible spots. This builds a list
-    /// for the client's floor (same cells, same order), dirties it with the game's own <c>SetDirtiness</c> and hangs it on
-    /// the registration while the player is inside, so the game draws, mops and counts it. Never a business the player
-    /// rents; the registration's own list is put back when the player leaves, when the job ends and while a save is written
-    /// (<see cref="Suspend"/>), so no job dirt reaches a save.
+    /// The game's own dirt on a client's floor: a list of the floor's cells, dirtied with the game's <c>SetDirtiness</c> and hung
+    /// on the client's registration while the player is inside, so the game draws, mops and counts it. Never a rented business;
+    /// the registration's own list is put back on leaving, at the end and during a save, so no job dirt is saved.
     /// </summary>
     public sealed class JobDirt
     {

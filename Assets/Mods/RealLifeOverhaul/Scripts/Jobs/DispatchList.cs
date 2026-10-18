@@ -7,10 +7,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The dispatcher's planning board in the window the game lists its subway stations in (<see cref="DeskList"/>): the
-    /// parcels waiting, with how far and which way from the depot, then each van's load and round with a button to load the
-    /// next parcel, and one to take the last back. The panel over the desk has the same choices. Opened with each batch; the
-    /// player may close it. Written when a parcel moves, never per frame; without the window the panel is all there is.
+    /// The dispatcher's board in the game's subway-station list window (<see cref="DeskList"/>): the parcels waiting, each van's
+    /// load and round, with buttons to load or take back. Written when a parcel moves; without it the panel is all there is.
     /// </summary>
     internal sealed class DispatchList
     {

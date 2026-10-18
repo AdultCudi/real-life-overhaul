@@ -1,10 +1,6 @@
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What leaving the rest of a shift to the game's clock (<see cref="ShiftSkip"/>) costs and pays, read by the jobs, the
-    /// Guide and the phone. A shift is four game hours split evenly over its units (a cart's twelve customers are twenty
-    /// minutes each); the clock pays <see cref="Share"/> of a unit's pay by hand, without tips or bonus.
-    /// </summary>
+    /// <summary>What leaving a shift to the game's clock costs and pays: four game hours over its units, at <see cref="Share"/> of the pay.</summary>
     public static class ShiftRates
     {
         /// <summary>The share of a unit's pay the shift earns when the clock does the unit.</summary>

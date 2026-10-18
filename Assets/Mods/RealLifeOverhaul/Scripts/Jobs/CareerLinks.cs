@@ -5,9 +5,6 @@ namespace RealLifeOverhaul
     {
         /// <summary>The player worked a shift alongside this person, or reports to them; at most once a shift per person.</summary>
         /// <param name="personId">Stable across games and saves: "career:courier:mate_1", "career:courier:boss".</param>
-        /// <param name="nameKey">A locale key for their name.</param>
-        /// <param name="employerNameKey">A locale key for where they work.</param>
-        /// <param name="isBoss">True for the employer's boss.</param>
         void Met(string personId, string nameKey, string employerNameKey, bool isBoss);
     }
 
