@@ -20,6 +20,7 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | `GarageTuning` | power, gearing and drag for a build through CarModel; the hook for Driving/CarTuning; the shop's before-and-after figures |
 | `GarageShop` | the repair bays, the turntable camera, the shop's pages in the game's list, the game's colour picker, the bill; GarageDragArea (the invisible drag surface of the turntable view) |
 | `GarageText` | a locale key in, the line out |
+| `Driving/Sound/*` | the recorded car sounds: engines by kind, the exhausts' and turbos' sounds, the turntable's revving (see "Recorded car sounds") |
 | `TwoWheelers` | bicycles and motorbikes as re-bodied scooters: making, removing, hiring, buying, energy, helmet, falls; the game's panel at a dock, rack or stand, the stand's list, the game's marker on one |
 | `BikeMount` | one scooter as a bicycle or motorbike: body, numbers, the rider's seat, hands and feet; LegIk |
 | `BikeBody` | the four models (BikeCatalogue) and their stand-in bodies built from tubes and rings (MeshMaker) |
@@ -129,6 +130,56 @@ The first call of `Claim` makes `GarageTuning` stand down for good, so the two n
 
 A straight-through exhaust driven above 36 km/h is noticed by the police now and then (a look every 30 s, 8 %, once a day at most): `GarageBridges.PoliceNotice("exhaust", 120)` if a Crime feature has set it, otherwise a fine of 120 through `Crime.Fine`.
 For a Transport feature: `GarageBridges.WearOf(id)`, `InsuranceOf(id)`, `ValueAdded(id)`, `LoudnessOf(id)`, `IsTwoWheeler(id)`, and `GarageSummary.Lines` for a garage page of its own.
+
+## Recorded car sounds
+
+The option "Recorded car sounds" (`garage_sounds`, on by default) gives the car the player drives, and the car on the shop's turntable, real recorded engines; everything else keeps the game's own sound.
+The code is in [`Scripts/Driving/Sound`](../../Assets/Mods/RealLifeOverhaul/Scripts/Driving/Sound/), the files in [`Sounds`](../../Assets/Mods/RealLifeOverhaul/Sounds/) with [`SOURCES.md`](../../Assets/Mods/RealLifeOverhaul/Sounds/SOURCES.md) (every file's recording, author, licence, cut, changes and measurements).
+
+| File | What it is |
+| --- | --- |
+| `CarSoundRules` | the engines' loops and their revs, the crossfade, load, the exhausts' and turbos' sounds, the shop's revs, the squeal (game-free; NavCheck's CarSoundCheck) |
+| `CarSoundBank` | reads the 33 clips once a session from the mod's folder (UnityWebRequestMultimedia, in the background as the mod starts) |
+| `CarSoundCar` | one car playing its recorded engine on sources of the mod's own on the car's own sound holders |
+| `CarSoundGame` | the one place that meets NWH: the SoundManager, the engine, the wheels, the throttle key |
+| `CarSoundDirector` | which car plays, every way back to the game's own sound, the self-check lines, the test button |
+| `CarSoundBridges` | what it asks of the Garage (Wiring/CarSoundLinks): the build's exhaust and turbo, the turntable's car |
+
+**The engines** (`CarSoundRules.VoiceFor`): economy cars and saloons a small petrol four (a Ford Ranger's 2.5, recorded at the engine), luxury cars, SUVs, pickups and the two muscle cars (Vord Pony, the Mustang GT of another mod) a V8 (a Chevrolet 350), the other sports cars a sports engine (an Audi R8's V10), vans and trucks a diesel (a four-cylinder diesel recorded under the bonnet while driven).
+Each is a set of loops cut from steady holds of a real engine: idle, low, mid and high (the petrol has idle, low and high: its recording holds three speeds), each above idle with an off-throttle loop beside it.
+
+| engine | loops at (rpm, from each recording's firing frequency) |
+| --- | --- |
+| petrol | 855, 2 076, 2 928 |
+| V8 | 996, 2 177, 2 766, 3 611 |
+| sports | 804, 1 970, 2 767, 4 062 |
+| diesel | 783, 1 227, 1 650, 2 577 |
+
+**How it plays.** The game's NWH sound system has one engine source (`EngineRunningComponent`: one clip, pitched by `RPMPercent * pitchRange + pitchOffset`, its volume by load, its distortion set on the whole engine mixer group) and cannot cross between recordings.
+So the loops play on audio sources of the mod's own, added to the car's own NWH source holders (`SoundManager.engineSourceGO`, `exhaustSourceGO`, `otherSourceGO`) on its own mixer groups (`engineMixerGroup`, `surfaceNoiseMixerGroup`), with its spatial blend, Doppler level and master volume, so the game's volume, the in-car muffling and the falloff apply as to its own.
+Meanwhile the game's engine note, pops, turbo whistle and flutter and skid sources on that car are muted (`AudioSource.mute`, nothing else of them changed) and the note's distortion (`maxDistortion`) is 0; both are given back.
+Once a frame, from the powertrain (`engine.OutputRPM`, `ThrottlePosition`, `idleRPM`, `revLimiterRPM`): the loops keep their recordings' ratios to each other, with the idle loop at the car's idle (moved up together if the top loop would be pitched past 1.6 at the rev limit, the idle never deeper than 0.75); two neighbours cross over equal-power across the middle half of their span on a scale of ratios, each pitched by the revs over its own; on and off the throttle cross equal-power by the throttle.
+A loop with nothing to play is stopped.
+
+**The parts.** The exhaust and turbo of the Garage's parts page are heard (on the turntable the cart, else the build, and stock with the Garage's performance parts off):
+
+| part | price (x part base) | trade-off | sound |
+| --- | --- | --- | --- |
+| stock exhaust | | | the engine as recorded |
+| Sports exhaust | 0.5 | | 1.25 times as loud, a little lower, rawer off the throttle, the odd pop after lifting off from high revs |
+| Straight-through exhaust | 0.9 | not street legal (fines) | 1.6 times as loud, lower, raw off the throttle, pops and bangs after lifting off |
+| Turbocharger | 2.5 | wears 10 % faster | whistles as boost builds (spool 0.6 s), flutters on lifting off with boost |
+| Big turbo | 4.5 | wears 22 % faster, insurance +10 % | slower (1.0 s), lower and louder whistle, bigger flutter |
+
+The parts page says how each sounds, and the shop's lines say to hold the throttle key: on the turntable the revs are the sound's own, rising towards 85 % of the rev limit while the key (the player's own throttle binding, through NWH's input providers) is held and falling back to idle when it is let go, so a build is heard before it is paid for.
+Tyres: a recorded squeal, as loud as the game's own skid sound reckons the slip of the loudest wheel, on the surfaces where the game plays a skid.
+
+**Every way back.** The game's own sound comes back the frame it is no longer wanted: getting out or into another car, the shop closing on a car nobody drives, a load (`LoadScene.isLoading`), the city going (the director's end), the option or the Garage off, a fault (logged; off for the session); a car that is gone takes the mod's sources with it.
+Only the local player's own car is ever held (`GoingPublic.MineVehicle`); traffic (Gley's `EngineSoundComponent`), the bus, the tow truck and the two-wheelers are never touched. Nothing is saved and nothing is sent.
+
+With Developer diagnostics on: `Car sound check (entering a car)` (the engine, clips in memory of 33, the mod's sources, the game's sources quieted) and `Car sound check (leaving a car)` (the game's sources back as they were).
+Options, Tests: "Check the recorded car sounds".
+Not verified in the game: the loudness against the game's own engine (`EngineVolume` 0.55), the game's cars' idle and rev limit (read live; the loops are placed on them), how the turntable's revving sounds with the car frozen.
 
 ## Two-wheelers
 

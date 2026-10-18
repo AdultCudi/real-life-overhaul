@@ -16,6 +16,7 @@ The car the player drives gets the performance of its kind (power, gearing and d
 | `CarTuning` | reads the driven car, applies what CarModel found, puts every value back; the eased pedal |
 | `CarDrag` | air drag on the driven car, one force per physics step, only while a tuned car is driven |
 | `CarMeasure` | the "Measure this car" button: times a full-throttle run, off otherwise |
+| `Sound/*` | the recorded car sounds of the Garage's option: see [Garage](garage.md#recorded-car-sounds) |
 
 ## How it talks to other features
 
