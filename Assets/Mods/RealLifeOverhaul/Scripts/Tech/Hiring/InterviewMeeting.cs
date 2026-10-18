@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (_over || id == Close)
                 {
-                    End();
+                    Stop(true);
                     return;
                 }
                 if (id == Leave)
@@ -201,23 +201,31 @@ namespace RealLifeOverhaul.Tech
             _director.Changed();
         }
 
+        // The player closed the window: the interview ends as they left it.
         private void Closed()
         {
             if (Active && !_leaving)
             {
-                Free();
+                Free(true);
             }
         }
 
+        // Another of the game's windows took its place: cut short, not held.
         public void Watch()
         {
             if (Active && !_window.OpenFor(this))
             {
-                Free();
+                Free(false);
             }
         }
 
+        /// <summary>Ends an interview the player did not end (the hiring part stopping, a fault): nothing says it was held.</summary>
         public void End()
+        {
+            Stop(false);
+        }
+
+        private void Stop(bool held)
         {
             _leaving = true;
             if (_window.OpenFor(this))
@@ -225,10 +233,11 @@ namespace RealLifeOverhaul.Tech
                 _window.Close();
             }
             _leaving = false;
-            Free();
+            Free(held);
         }
 
-        private void Free()
+        // Gives the player back; "interviewed" is said only of one the player ended themselves.
+        private void Free(bool held)
         {
             bool was = Active;
             Active = false;
@@ -245,9 +254,13 @@ namespace RealLifeOverhaul.Tech
             {
                 TechDirector.Logger?.Error(e);
             }
-            if (was)
+            if (!was)
             {
-                _director.Changed();
+                return;
+            }
+            _director.Changed();
+            if (held)
+            {
                 Notifications.Show(NotificationType.Info, "reallife_hire_note_interviewed", TechDirector.Data("name", _s != null ? _s.P.Name : "?"), 6f, null, null, false, false);
             }
         }

@@ -208,10 +208,14 @@ namespace RealLifeOverhaul.Tech
                 Notifications.ShowError("reallife_vc_none_to_meet");
                 return false;
             }
-            c.Meetings++;
             long mrr = FirmMrr(place);
             long growth = c.LastMrr > 0 ? Math.Max(0, (mrr * 1000 / Math.Max(1, Prices.Level) - c.LastMrr) * 1000 / c.LastMrr) : 100;
-            return _pitch.Player(place, vc, mrr, growth, firm.People);
+            if (!_pitch.Player(place, vc, mrr, growth, firm.People))
+            {
+                return false;   // the meeting never opened: none of the raise's meetings is used
+            }
+            c.Meetings++;
+            return true;
         }
 
         /// <summary>The term sheet a meeting earned, and the words for the meeting's last page.</summary>

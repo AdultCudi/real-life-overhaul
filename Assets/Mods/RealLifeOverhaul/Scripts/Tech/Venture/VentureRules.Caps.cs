@@ -99,6 +99,13 @@ namespace RealLifeOverhaul.Tech
             return 2;
         }
 
+        /// <summary>The board meant to replace the chief executive and could hire nobody: a warning, and the next target missed replaces them.</summary>
+        public static void ChiefKept(Cap c)
+        {
+            c.Pressure = 1;
+            c.Misses = VentureCatalogue.MissesToReplace - 1;
+        }
+
         /// <summary>A bridge loan from the last lead: months of the burn, owed with interest until the next round converts it.</summary>
         public static long BridgeFor(long burnPerDay) => Math.Max(0, burnPerDay) * 30 * VentureCatalogue.BridgeMonths;
 

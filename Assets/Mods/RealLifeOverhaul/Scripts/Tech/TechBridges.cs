@@ -62,6 +62,45 @@ namespace RealLifeOverhaul.Tech
 
         public static int NetDaysNow() => Ask(NetDays, 0, int.MaxValue, 2);
 
+        /// <summary><see cref="Supplied"/> asked: true with no answer, or if the utilities fault.</summary>
+        public static bool SuppliedAt(BuildingRegistration reg, int service)
+        {
+            try
+            {
+                return Supplied == null || Supplied(reg, service);
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
+        /// <summary>True if a building's internet gives at least <paramref name="mbps"/>; true with no answer, or if the utilities fault.</summary>
+        public static bool FastEnough(BuildingRegistration reg, int mbps)
+        {
+            try
+            {
+                return Mbps == null || Mbps(reg) >= mbps;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
+        /// <summary><see cref="UtilityCents"/> asked; <paramref name="otherwise"/> with no answer, or if the utilities fault.</summary>
+        public static long UtilityCentsAt(int service, long thousandths, long otherwise)
+        {
+            try
+            {
+                return UtilityCents != null ? UtilityCents(service, thousandths) : otherwise;
+            }
+            catch (Exception)
+            {
+                return otherwise;
+            }
+        }
+
         public static int NetOf(BuildingRegistration reg, out int when)
         {
             when = 0;

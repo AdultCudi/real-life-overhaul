@@ -327,9 +327,17 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        // The board, with a majority, lays off the chief executive and puts one of its choosing on the payroll.
+        // The board, with a majority, lays off the chief executive and puts one of its choosing on the payroll. With the
+        // payroll full it can hire nobody: it keeps the one it has, warns, and replaces them at the next target missed.
         private void ReplaceChief(Cap c, FirmPlace firm, int day)
         {
+            if (_talent.People.Count >= TalentStore.PeopleMost)
+            {
+                VentureRules.ChiefKept(c);
+                TellTech(NotificationType.Warning, "reallife_vc_note_target_missed", Data("firm", firm.File.Name, "target", TechText.Cents(Level(c.TargetMrr))),
+                    TabFunding, TechApp.CapRow + c.Place);
+                return;
+            }
             string was = c.Ceo;
             if (!string.IsNullOrEmpty(was))
             {
@@ -342,11 +350,8 @@ namespace RealLifeOverhaul.Tech
             chief.Work = (int)Arrangement.Hybrid;
             chief.Wage = TalentRules.Going(TalentGame.GameRate(TalentCatalogue.RateSkill, chief.Main / 1000), chief.Def, 1000, 0);
             chief.ReviewDay = TalentRules.FirstReview(day, Year);
-            if (_talent.People.Count < TalentStore.PeopleMost)
-            {
-                _talent.People.Add(chief);
-                c.Ceo = chief.Id;
-            }
+            _talent.People.Add(chief);
+            c.Ceo = chief.Id;
             TellTech(NotificationType.Error, string.IsNullOrEmpty(was) ? "reallife_vc_note_chief_appointed" : "reallife_vc_note_chief_replaced",
                 Data("firm", firm.File.Name, "name", chief.Name), TabFunding, TechApp.CapRow + c.Place);
             Story("reallife_tech_news_chief", "firm", firm.File.Name, "name", chief.Name);

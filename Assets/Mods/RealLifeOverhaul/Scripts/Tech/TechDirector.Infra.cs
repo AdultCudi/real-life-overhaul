@@ -59,8 +59,8 @@ namespace RealLifeOverhaul.Tech
                     Profile f = _people[p].File;
                     d.Technicians += f.Place == d.Place && f.Def.Family == Family.Infrastructure && f.NoticeEnd == 0 ? 1 : 0;
                 }
-                d.Power = TechBridges.Supplied == null || TechBridges.Supplied(reg, 0);
-                d.Net = TechBridges.Mbps == null || TechBridges.Mbps(reg) >= InfraCatalogue.NetNeeded;
+                d.Power = TechBridges.SuppliedAt(reg, 0);
+                d.Net = TechBridges.FastEnough(reg, InfraCatalogue.NetNeeded);
             }
         }
 
@@ -245,11 +245,7 @@ namespace RealLifeOverhaul.Tech
         // A utility's day at the tariff of the city's utilities (power 0, water 1), cents at today's prices.
         private static long Utility(int service, long thousandths)
         {
-            if (TechBridges.UtilityCents != null)
-            {
-                return TechBridges.UtilityCents(service, thousandths);
-            }
-            return thousandths * (service == 0 ? 15 : 200) / 1000 * Prices.Level / 1000;
+            return TechBridges.UtilityCentsAt(service, thousandths, thousandths * (service == 0 ? 15 : 200) / 1000 * Prices.Level / 1000);
         }
 
         // The cloud's day: the AI labs' training and running compute first, the player's own firms, then the city.

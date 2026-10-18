@@ -162,7 +162,7 @@ namespace RealLifeOverhaul.Tech
                 if (f.Closed)
                 {
                     f.Net = TechBridges.NetOf(reg, out f.NetWhen);
-                    f.Dark = TechBridges.Supplied != null && !TechBridges.Supplied(reg, 0);
+                    f.Dark = !TechBridges.SuppliedAt(reg, 0);
                 }
                 DayOfWeekOrdered yesterday = TimeHelper.GetDayOfWeek(day - 1);
                 List<ScheduleDay> week = reg.scheduleDays;
