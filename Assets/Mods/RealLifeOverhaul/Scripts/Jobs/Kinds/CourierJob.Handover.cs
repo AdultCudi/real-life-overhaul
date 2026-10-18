@@ -27,9 +27,7 @@ namespace RealLifeOverhaul
         private readonly HeldProp _handed = new HeldProp();   // the parcel in the last recipient's arms
         private Transform _onStep;          // ...or on the step in front of them
         private ActivityAnimator _carrying; // the recipient's clip player carrying the box...
-
         private bool _carryingOver;         // ...on the masked layer (arms only), not as a whole-body walk
-
         private float _carryMade;           // m/s the whole-body walk was made for
         private StreetActor _passTo;        // whoever is reaching for the parcel: theirs at the clip's grip...
         private float _passHoldAt = -1f;    // ...and their arms settle into carrying it at this time
