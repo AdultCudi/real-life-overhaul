@@ -1,6 +1,6 @@
 # `Scripts/Driving`
 
-The car the player drives: performance by kind of car, the eased throttle, speedometer (a reading in the game's vehicle panel, SpeedReading), towing (VehicleTow).
+The car the player drives: performance by kind of car, the eased throttle, speedometer (a reading in the game's vehicle panel, SpeedReading), towing (VehicleTow), and (in `Sound`) the recorded car sounds of the Garage's option: engines by kind, exhausts, turbos, tyres.
 
 ## Read first
 

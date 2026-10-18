@@ -42,6 +42,8 @@ namespace RealLifeOverhaul
     /// springs and dampers, <see cref="Mass"/> the weight. <see cref="Ride"/> is metres of ride height.
     /// The costs: <see cref="Wear"/> is how much faster the car wears (for a servicing feature to read),
     /// <see cref="Insurance"/> what it adds to a premium, <see cref="Loud"/> 2 is not street legal.
+    /// How it sounds with the recorded car sounds (Driving/Sound): <see cref="Loud"/> is the exhaust's sound, <see cref="Boost"/>
+    /// the turbo's, and <see cref="Sound"/> the line the shop says it with.
     /// </summary>
     public sealed class PartDef
     {
@@ -62,6 +64,8 @@ namespace RealLifeOverhaul
         public int Loud;
         public float Pitch;          // added to the engine note's pitch
         public bool UtilityOnly;     // a lift kit is for SUVs, pickups and vans
+        public int Boost;            // a turbo's size for its sound: 1 a turbocharger, 2 a big turbo (Driving/Sound/CarSoundRules.Turbo)
+        public string Sound;         // locale key: how the part sounds, on the shop's parts page
     }
 
     /// <summary>Everything fitted to one car, added up. Neutral when nothing is.</summary>
@@ -315,11 +319,15 @@ namespace RealLifeOverhaul
             new PartDef { Id = "engine_2", Slot = PartSlot.Engine, Name = "reallife_garage_part_engine_2", Price = 2.2f, Accel = 1.12f, Top = 1.04f, Wear = 0.12f },
             new PartDef { Id = "engine_3", Slot = PartSlot.Engine, Name = "reallife_garage_part_engine_3", Price = 4.0f, Accel = 1.20f, Top = 1.07f, Wear = 0.25f, Insurance = 0.10f },
 
-            new PartDef { Id = "exhaust_sport", Slot = PartSlot.Exhaust, Name = "reallife_garage_part_exhaust_sport", Price = 0.5f, Accel = 1.03f, Top = 1.01f, Loud = 1, Pitch = 0.05f },
-            new PartDef { Id = "exhaust_straight", Slot = PartSlot.Exhaust, Name = "reallife_garage_part_exhaust_straight", Price = 0.9f, Accel = 1.05f, Top = 1.02f, Loud = 2, Pitch = 0.12f },
+            new PartDef { Id = "exhaust_sport", Slot = PartSlot.Exhaust, Name = "reallife_garage_part_exhaust_sport", Price = 0.5f, Accel = 1.03f, Top = 1.01f, Loud = 1, Pitch = 0.05f,
+                Sound = "reallife_garage_sound_exhaust_sport" },
+            new PartDef { Id = "exhaust_straight", Slot = PartSlot.Exhaust, Name = "reallife_garage_part_exhaust_straight", Price = 0.9f, Accel = 1.05f, Top = 1.02f, Loud = 2, Pitch = 0.12f,
+                Sound = "reallife_garage_sound_exhaust_straight" },
 
-            new PartDef { Id = "turbo_1", Slot = PartSlot.Turbo, Name = "reallife_garage_part_turbo_1", Price = 2.5f, Accel = 1.10f, Top = 1.05f, Wear = 0.10f },
-            new PartDef { Id = "turbo_2", Slot = PartSlot.Turbo, Name = "reallife_garage_part_turbo_2", Price = 4.5f, Accel = 1.18f, Top = 1.08f, Wear = 0.22f, Insurance = 0.10f },
+            new PartDef { Id = "turbo_1", Slot = PartSlot.Turbo, Name = "reallife_garage_part_turbo_1", Price = 2.5f, Accel = 1.10f, Top = 1.05f, Wear = 0.10f,
+                Boost = 1, Sound = "reallife_garage_sound_turbo_1" },
+            new PartDef { Id = "turbo_2", Slot = PartSlot.Turbo, Name = "reallife_garage_part_turbo_2", Price = 4.5f, Accel = 1.18f, Top = 1.08f, Wear = 0.22f, Insurance = 0.10f,
+                Boost = 2, Sound = "reallife_garage_sound_turbo_2" },
 
             new PartDef { Id = "gear_short", Slot = PartSlot.Gearbox, Name = "reallife_garage_part_gear_short", Price = 1.2f, Accel = 1.07f, Top = 0.92f },
             new PartDef { Id = "gear_long", Slot = PartSlot.Gearbox, Name = "reallife_garage_part_gear_long", Price = 1.2f, Accel = 0.94f, Top = 1.06f },
