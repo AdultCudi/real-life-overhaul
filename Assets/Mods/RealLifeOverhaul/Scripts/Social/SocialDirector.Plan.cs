@@ -141,11 +141,17 @@ namespace RealLifeOverhaul
         {
             if (_ringPerson == null || real > _ringUntil || !Settings.Social)
             {
-                // Not answered: a text instead, and what they wanted still stands.
+                // Not answered: a text instead, and what they wanted still stands. With no text (the day's are used up) the
+                // player never heard what it was, so it lapses at no cost, as an offer whose text is refused does.
                 _ringing = false;
-                if (_ringPerson != null && Settings.Social)
+                if (_ringPerson != null && Settings.Social
+                    && !SocialLife.SendText(_ringPerson, SocialLines.Pick(SocialCatalogue.TextMissedCall), SocialLife.Data(_ringPerson)))
                 {
-                    SocialLife.SendText(_ringPerson, SocialLines.Pick(SocialCatalogue.TextMissedCall), SocialLife.Data(_ringPerson));
+                    SocialOffer offer = SocialState.Offer;
+                    if (offer.Active && offer.Person == _ringPerson.Index)
+                    {
+                        offer.Clear();
+                    }
                 }
                 _ringPerson = null;
             }

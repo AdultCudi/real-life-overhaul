@@ -92,6 +92,7 @@ namespace RealLifeOverhaul
         /// <param name="detail">An id or a name that already exists as a string (never one built for this call).</param>
         public static void Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)
         {
+            where = InCity(where);
             Action<NewsKind, Vector3, string, int> forward = Forward;
             if (forward != null && Ledger.LedgerShare.CityKind((int)kind) && SaveGameManager.Current != null)
             {
@@ -121,7 +122,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    placed(kind, BuildingManager.IsInsideBuilding && where != Vector3.zero ? SocialPlaces.OnStreet(where) : where);
+                    placed(kind, where);
                 }
                 catch (Exception e)
                 {
@@ -137,10 +138,6 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (BuildingManager.IsInsideBuilding)
-            {
-                where = SocialPlaces.OnStreet(where);   // at the shop's door
-            }
             ref Entry entry = ref Log[_next];
             entry.Kind = kind;
             entry.Day = save.Day;
@@ -155,6 +152,18 @@ namespace RealLifeOverhaul
             {
                 _count++;
             }
+        }
+
+        // A report made where the player stands indoors goes to the building's door; any other place is the city's already.
+        private static Vector3 InCity(Vector3 where)
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            if (!BuildingManager.IsInsideBuilding || where == Vector3.zero || player == null)
+            {
+                return where;
+            }
+            Vector3 at = player.transform.position;
+            return SocialRules.AtPlayer(where.x, where.z, at.x, at.z) ? SocialPlaces.OnStreet(where) : where;
         }
 
         /// <summary>The newest report of a kind within so many days; false if there is none.</summary>

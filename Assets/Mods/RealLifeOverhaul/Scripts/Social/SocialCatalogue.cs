@@ -204,6 +204,27 @@ namespace RealLifeOverhaul
                 FixLook(p);   // after the rolls, so the rest of the cast is dealt the same for a seed
                 people[i] = p;
             }
+            OneTrainer(people, jobs);
+        }
+
+        // A gym person who trains people is the one trainer: whoever else was dealt it has the job the gym person was dealt.
+        // No roll is made here, so the rest of the cast is the same for a seed.
+        private static void OneTrainer(SocialPerson[] people, int[] jobs)
+        {
+            int gym = (int)SocialOrigin.Gym;
+            int trainer = Array.IndexOf(Jobs, "reallife_social_job_trainer");
+            if (gym >= people.Length || gym >= jobs.Length || people[gym] == null || people[gym].Job != trainer || jobs[gym] == trainer)
+            {
+                return;
+            }
+            for (int i = 0; i < people.Length; i++)
+            {
+                SocialPerson p = people[i];
+                if (i != gym && p != null && p.Origin != SocialOrigin.Family && p.Job == trainer)
+                {
+                    p.Job = jobs[gym];
+                }
+            }
         }
 
         /// <summary>Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks). True if anything changed.</summary>

@@ -300,7 +300,8 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                if (p.Loan > 0 && day >= p.LoanDue)
+                LoanStep loanStep = SocialRules.Loan(p.Loan, p.LoanDue, day);
+                if (loanStep == LoanStep.Due)
                 {
                     bool repays = p.Has(SocialTrait.Reliable) || p.Remembers(MemoryCode.NotRepaid) == false && Random.value < (p.Has(SocialTrait.Flaky) ? 0.55f : 0.9f);
                     if (repays)
@@ -312,21 +313,13 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        // An excuse; the second miss writes it off.
+                        // An excuse and a few more days; at their end they pay or it is written off (below).
                         Dictionary<string, string> data = SocialLife.Data(p, "amount", SocialLife.Money(p.Loan));
                         SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanExcuse), data, true);
-                        if (p.LoanDue < 0)
-                        {
-                            p.Loan = 0;
-                            SocialLife.Remember(p, MemoryCode.NotRepaid);
-                        }
-                        else
-                        {
-                            p.LoanDue = -(day + 4);   // negative: the excuse has been made
-                        }
+                        p.LoanDue = SocialRules.GraceUntil(day);
                     }
                 }
-                else if (p.Loan > 0 && p.LoanDue < 0 && day >= -p.LoanDue)
+                else if (loanStep == LoanStep.GraceOver)
                 {
                     bool repays = !p.Has(SocialTrait.Flaky) || Random.value < 0.5f;
                     Dictionary<string, string> data = SocialLife.Data(p, "amount", SocialLife.Money(p.Loan));

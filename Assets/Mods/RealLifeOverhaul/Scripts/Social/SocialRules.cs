@@ -2,6 +2,9 @@ using System;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>What a loan to a friend asks of the day: nothing, the day they said they would pay it back, or the end of the days more they asked for.</summary>
+    public enum LoanStep { None, Due, GraceOver }
+
     /// <summary>The relationship model's rules: what each thing is worth in points of 0 to 100, when a stage is reached and lost, neglect.</summary>
     public static class SocialRules
     {
@@ -27,6 +30,8 @@ namespace RealLifeOverhaul
         public const int AsksAllowed = 2;
         public const float NotRepaidTrust = -10f;     // the player kept their money
         public const int RepayDays = 10;
+        public const int LoanGraceDays = 4;           // days more a friend asks for, once, when they cannot pay a loan back on the day
+        public const float ReportAtPlayer = 3f;       // metres: a report made indoors this near the player was made where they stand
         public const int LateMinutes = 20;            // game minutes after the agreed time that count as late
         public const int StoodUpMinutes = 75;         // ...and as not coming at all
         public const int EarlyMinutes = 60;           // the plan is shown from this long before
@@ -212,6 +217,36 @@ namespace RealLifeOverhaul
                 odds *= 0.5f;
             }
             return odds;
+        }
+
+        /// <summary>
+        /// A loan's step today. <paramref name="due"/> is the day they said they would pay, or, once they have asked for more
+        /// days (<see cref="GraceUntil"/>), the end of those days as a negative number.
+        /// </summary>
+        public static LoanStep Loan(int loan, int due, int day)
+        {
+            if (loan <= 0)
+            {
+                return LoanStep.None;
+            }
+            if (due >= 0)
+            {
+                return day >= due ? LoanStep.Due : LoanStep.None;
+            }
+            return day >= -due ? LoanStep.GraceOver : LoanStep.None;
+        }
+
+        /// <summary>The loan's due day once they have asked for a few more days on <paramref name="day"/>: negative, so the excuse is made once.</summary>
+        public static int GraceUntil(int day) => -(day + LoanGraceDays);
+
+        /// <summary>
+        /// Whether a report made indoors names the player's own place: an interior's coordinates say nothing of the city, so it
+        /// is moved to the building's door. Any other place (a parked car's break-in, a crash down the street) is in the city.
+        /// </summary>
+        public static bool AtPlayer(float x, float z, float playerX, float playerZ)
+        {
+            float dx = x - playerX, dz = z - playerZ;
+            return dx * dx + dz * dz <= ReportAtPlayer * ReportAtPlayer;
         }
 
         /// <summary>Game minutes from the agreed time at which they turn up; negative is early. <paramref name="roll"/> is 0 to 1.</summary>
