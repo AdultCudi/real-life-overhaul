@@ -11740,7 +11740,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "Mesas, armários, sala de reunião, sala de descanso, paredes e piso do jogo, policiais trabalhando e escritórios no piso vazio de uma delegacia grande. Desligado, fica vazia como antes.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Os carros soam de verdade: cada tipo de carro tem um motor gravado, e os escapamentos e turbos da oficina de personalização o mudam, com estouros ao tirar o pé, o assobio e o alívio do turbo e um chiado de pneu gravado. Segure a tecla do acelerador na oficina para ouvir uma montagem antes de pagar.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -19817,5 +19817,7 @@
   "reallife_garage_sound_exhaust_sport": "Soa mais grave e mais alto, com um estouro de vez em quando ao tirar o pé",
   "reallife_garage_sound_exhaust_straight": "Soa alto e cru, com estouros e pipocos ao tirar o pé",
   "reallife_garage_sound_turbo_1": "Assobia enquanto ganha pressão e faz a válvula de alívio soar ao tirar o pé",
-  "reallife_garage_sound_turbo_2": "Um assobio mais grave e mais alto, e um alívio maior ao tirar o pé"
+  "reallife_garage_sound_turbo_2": "Um assobio mais grave e mais alto, e um alívio maior ao tirar o pé",
+  "reallife_changes_038_0_title": "0.38.0",
+  "reallife_changes_038_0": "Os carros soam de verdade: cada tipo de carro tem um motor gravado, e os escapamentos e turbos da oficina de personalização o mudam, com estouros ao tirar o pé, o assobio e o alívio do turbo e um chiado de pneu gravado. Segure a tecla do acelerador na oficina para ouvir uma montagem antes de pagar."
 }
