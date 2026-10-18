@@ -10,36 +10,23 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Police who are simply there. Near the player there is, most of the time, a patrol car
-    /// parked at the kerb with one or two officers standing by it, and now and then an officer
-    /// standing at a junction. Both are placed where the camera is not looking and taken away
-    /// the same way once the player has left them behind or they have stood long enough.
-    /// It costs next to nothing: the car is one copy of the game's own police car prop, built
-    /// once and moved (a box collider and a cut in the navigation mesh make it solid; nothing
-    /// on it moves), and the officers are standing people from the pool, who cost nothing
-    /// while out of view. One car and one junction post at a time. The officers are people the
-    /// pool may take back at any moment for a scene (ActorRole.EnterPresence); the car then
-    /// simply stands empty.
-    /// A place for the car must pass every test or there is none: beside a plain stretch of lane
-    /// (never in a junction), far enough from the lane's middle that traffic clears it, in no
-    /// other lane, on the road and not on a pavement or a crossing, and overlapping no vehicle
-    /// and no street furniture, with room to spare.
-    /// Idle, this is one time comparison per frame; a site is looked at twice a second.
+    /// Police who are simply there: a patrol car parked near the player with an officer or two by it, and now and then an
+    /// officer at a junction, put out and taken away out of view. Cost: one time comparison a frame while idle.
     /// </summary>
     public class PolicePresence : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("people", "PolicePresence", typeof(PolicePresence));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "PolicePresence", typeof(PolicePresence));
 
-        private const float CheckInterval = 4f;
-        private const float TickInterval = 0.5f;
-        private const float MinDistance = 45f;
-        private const float MaxDistance = 95f;
-        private const float LostDistance = 175f;     // the player has left a site this far behind: it goes
+        private const float CheckInterval = 4f;      // seconds
+        private const float TickInterval = 0.5f;     // seconds
+        private const float MinDistance = 45f;       // metres from the player a site is put, at least...
+        private const float MaxDistance = 95f;       // ...and at most
+        private const float LostDistance = 175f;     // metres: a site the player has left this far behind goes
         private const float LaneGap = 2.0f;          // metres from a lane's middle to the near side of the parked car, at least
-        private const float OtherLane = 2.2f;        // no other lane's road point may be this near the car's middle
+        private const float OtherLane = 2.2f;        // metres: no other lane's road point may be this near the car's middle
         private const float Room = 0.45f;            // metres clear of every vehicle and all street furniture, all round
         private const float SecondOfficerChance = 0.6f;
-        private const int Attempts = 2;              // places tried per look (each asks the lane grid for its nearest point: TrafficTools.ClosestWaypoint); the next look tries again
+        private const int Attempts = 2;              // places tried per look, each a lane grid query; the next look tries again
 
         private const PermanentAnimationType RadioPose = PermanentAnimationType.TalkingPhone;
         private const string RadioProp = "PhoneOff";
@@ -90,10 +77,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while a patrol car of ours is parked at the kerb.</summary>
-        public bool CarOut => _carOut;
 
-        /// <summary>True if that parked patrol car is within so many metres of a place: its officers hear and see what goes on there.</summary>
+        /// <summary>True if that patrol car is within <paramref name="metres"/> of a place, so its officers see what goes on there.</summary>
         public bool CarWithin(Vector3 place, float metres)
         {
             return _carOut && (_carAt - place).sqrMagnitude < metres * metres;
@@ -107,14 +92,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -143,8 +128,8 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // Clear leaves nothing out, so a fault cannot repeat; after three there is no presence this session, and
-                // after the first on a game that lacks something it names (that one would come back at every look).
+                // Clear leaves nothing out, so a fault cannot repeat; three faults, or one on a game that lacks something it
+                // names, end the presence for the session.
                 Logger?.Error(e);
                 Clear();
                 if (Guard.StandsDown(e, "police presence on the street"))
@@ -159,7 +144,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every few seconds: put out what is missing, one thing (and one new character at most) at a time.
+        // One thing put out per look, and one new character at most.
         private void Look(float now)
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -210,11 +195,10 @@ namespace RealLifeOverhaul
                 }
                 else if (now >= _nextRadio && _driver.Settled)
                 {
-                    // Now and then one of them is on the radio for a while.
                     _nextRadio = now + Random.Range(20f, 45f);
                     if (Random.value < 0.5f)
                     {
-                        _driver.Work(SceneClips.RadioTalk, RadioPose, RadioProp);   // a hand to the radio on the collar; a phone to the ear where that clip cannot be had
+                        _driver.Work(SceneClips.RadioTalk, RadioPose, RadioProp);   // a hand to the collar radio; a phone to the ear without the clip
                     }
                     else
                     {
@@ -233,8 +217,6 @@ namespace RealLifeOverhaul
                 }
             }
         }
-
-        // ---------------------------------------------------------------- the parked patrol car
 
         private void PlaceCar(Vector3 origin, float now)
         {
@@ -304,7 +286,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Beside a lane, on its kerb side: the nearest place out from the lane's middle that passes every test.
         private bool FindKerbPlace(TrafficManager traffic, Waypoint point, out Vector3 at, out Quaternion facing, out Vector3 kerb)
         {
             at = default;
@@ -340,7 +321,6 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // And a pavement beside it for the officers to stand on.
                 if (!StreetSpots.OnPavement(place + right * (_halfWidth + 1.3f), 1.6f, out kerb))
                 {
                     continue;
@@ -356,7 +336,6 @@ namespace RealLifeOverhaul
             return NavMesh.SamplePosition(point, out _, 0.3f, StreetSpots.Pavement);
         }
 
-        // Once: the game's police car prop with a box round it, kept switched off between sites.
         private bool BuildCar()
         {
             _car = new GameObject("RealLifeOverhaul Parked Patrol");
@@ -380,7 +359,7 @@ namespace RealLifeOverhaul
                 body.transform.localPosition = Quaternion.Euler(0f, 90f, 0f) * body.transform.localPosition;
             }
 
-            // Solid for the player's car and for anything that looks for parked vehicles, and for people on foot.
+            // Solid for the player's car, for anything that looks for parked vehicles, and for people on foot.
             int layer = LayerMask.NameToLayer("ParkedVehicles");
             if (layer >= 0)
             {
@@ -411,8 +390,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the officer at a junction
-
         private void PlacePost(Vector3 origin, float now)
         {
             TrafficManager traffic = TrafficManager.Instance;
@@ -422,7 +399,7 @@ namespace RealLifeOverhaul
                 float distance = Random.Range(MinDistance * 0.8f, MaxDistance * 0.85f);
                 Vector3 probe = origin + new Vector3(Mathf.Cos(angle) * distance, 0f, Mathf.Sin(angle) * distance);
                 Waypoint point = TrafficTools.ClosestWaypoint(probe, 25f, InJunction);
-                // A corner of the junction: the pavement nearest a point a few metres out from its middle, towards the player's side.
+                // A corner of the junction: the pavement nearest a point a few metres out from its middle, on the player's side.
                 if (point == null)
                 {
                     continue;
@@ -442,8 +419,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _post.Stand(point.position);
-                // On watch at the corner, facing the junction. The lights are working and the traffic obeys them, so nobody
-                // is waved on: directing traffic is for an accident scene (People/SceneOfficer). Some are on the radio.
+                // On watch at the corner, facing the junction: the lights work, so nobody is waved on. Some are on the radio.
                 if (Random.value < 0.4f)
                 {
                     _post.Work(SceneClips.RadioTalk, RadioPose, RadioProp);
@@ -463,7 +439,6 @@ namespace RealLifeOverhaul
             return point.IsInIntersection();
         }
 
-        // Everything off the street at once. Safe at any time, any number of times.
         private void Clear()
         {
             try

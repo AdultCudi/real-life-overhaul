@@ -5,14 +5,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The two uniforms: what every officer and every paramedic wears, the same each time.
-    /// The game has no police or paramedic clothing, so each uniform is a fixed set of the
-    /// game's own garments, named here, in service colours: a shirt, long trousers and boots,
-    /// with every accessory slot emptied. A garment is found by its name on the character
-    /// (the names are the same for men and women; the ids are not) and recoloured through the
-    /// colour entry the game itself reads when it builds the look.
-    /// Colour entries belong to the one character, but they outlive the outfit, so each change
-    /// is recorded and put back before that character is dressed as anyone else.
+    /// The officer's and the paramedic's uniforms: fixed sets of the game's own garments, found by name and recoloured; every
+    /// colour change is recorded and put back before the character is dressed as anyone else.
     /// </summary>
     internal static class Uniforms
     {
@@ -66,7 +60,6 @@ namespace RealLifeOverhaul
         private static readonly Color HiVisYellow = new Color(0.980f, 0.840f, 0.040f);   // yellow, not the yellow-green that reads as a green shirt
         private static readonly Color HiVisBand = new Color(0.780f, 0.780f, 0.760f);
 
-        // Dark navy from cap to trouser, black boots.
         private static readonly Garment[] Officer =
         {
             new Garment(AppearanceElementType.Torso, "UniformShirt", Navy, Navy, NavyDark),
@@ -79,7 +72,6 @@ namespace RealLifeOverhaul
             new Garment(AppearanceElementType.FeetAccessory, Nothing)
         };
 
-        // White shirt with green trim over green work trousers, black boots, bare-headed.
         private static readonly Garment[] Paramedic =
         {
             new Garment(AppearanceElementType.Torso, "UniformShirt", MedicWhite, MedicWhite, MedicGreen),
@@ -101,17 +93,10 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Chooses the uniform's garments on a character whose look has already been rolled, and
-        /// records what it recolours. The caller rebuilds the visuals afterwards. A garment the
-        /// game no longer ships is logged once and that slot keeps what was rolled.
+        /// Puts the uniform on a character whose look was rolled, recording what it recolours and keeping the shirt for
+        /// <see cref="HiVis"/>; bare-headed when the officer wears the modelled cap. The caller rebuilds the visuals. A garment
+        /// the game no longer ships is logged once, and that slot keeps its roll.
         /// </summary>
-        public static void Wear(AppearanceSetter appearance, ActorLook look, List<Dye> dyes)
-        {
-            var shirt = default(Shirt);
-            Wear(appearance, look, dyes, false, ref shirt);
-        }
-
-        /// <summary>The same, remembering the shirt (for HiVis), and bare-headed if the officer is to wear the modelled cap instead of the game's hat.</summary>
         internal static void Wear(AppearanceSetter appearance, ActorLook look, List<Dye> dyes, bool bareHeaded, ref Shirt shirt)
         {
             Garment[] uniform = look == ActorLook.Officer ? Officer : Paramedic;
@@ -141,11 +126,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Turns an officer's shirt hi-vis yellow (the one working traffic at a cordon), or back to
-        /// the uniform's own colour. The reflective bands that make it read as a vest are equipment
-        /// (ServiceKit.Vest): a shirt has no part of its own to paint them on. The colour is written to the shirt's own materials, which the
-        /// drawn character normally shares, so nothing is rebuilt; only if it does not share them
-        /// is the look built again (one mesh merge). Does nothing if it is already so.
+        /// Turns an officer's shirt hi-vis yellow (traffic duty) or back. The colour goes to the shirt's materials, which the
+        /// drawn character normally shares; only when it does not is the look rebuilt (one mesh merge).
         /// </summary>
         internal static void HiVis(AppearanceSetter appearance, ref Shirt shirt, bool on)
         {
@@ -190,7 +172,6 @@ namespace RealLifeOverhaul
         private static readonly List<Material> Drawn = new List<Material>(8);
         private static bool _mergeLogged;
 
-        /// <summary>Puts back every colour a uniform changed on this character.</summary>
         public static void Restore(List<Dye> dyes)
         {
             for (int i = dyes.Count - 1; i >= 0; i--)

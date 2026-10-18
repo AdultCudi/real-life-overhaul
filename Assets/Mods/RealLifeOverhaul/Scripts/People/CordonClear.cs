@@ -9,29 +9,9 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A cordon's tape goes up with nobody inside it but the scene's own people. Called by Traffic/SceneCordon on the one
-    /// frame its tape goes up (or is run again round the ambulance crew's way), for every scene that puts one up: an
-    /// accident, somebody knocked down, a fire, a street event. Whoever is then inside the tape or against it is put at
-    /// the nearest place outside it (Traffic/CordonRules: straight out through the nearest side, clear of the wall cut
-    /// along it, a body's width from anybody else put there), on the ground their own navigation agent walks, and
-    /// carries on: somebody who was walking somewhere walks on to it, by a way worked out again round the tape once its
-    /// walls are cut; somebody who was standing stands where they were put. From then on the walls (and the bars across
-    /// any opening a walkway runs through) keep them out for as long as the tape is up.
-    ///
-    /// Who is looked at: the game's walking pedestrians (its own list), the living city's people (CityLife), and the
-    /// mod's officers who are only there to be seen (ActorPool's Yields: on the beat, at a junction). Who is never
-    /// moved: the scene's own people (the casualty, the crews, the officers and drivers of an accident, a fire's or a
-    /// street event's people, whom their scenes place and send to the kerb themselves); a pedestrian the mod has
-    /// borrowed (a casualty, somebody stepping out: its own scripts are off); anybody lying in the road or sitting;
-    /// the player and the player's own company (family, friends, the roommate), who go where the player goes; and
-    /// the game's standing and sitting figures, whose places are all on pavements, which a cordon never covers.
-    /// Somebody for whom no place outside has walkable ground is left where they are and said in the log; a game
-    /// pedestrian nobody is looking at is then given back to the game's pool instead, as the game does when it
-    /// moves one on. Going Public: every one of these people is this machine's own, and nothing is sent.
-    ///
-    /// COST. Nothing runs by itself and nothing per frame: one pass over some sixty pedestrians and twenty of the
-    /// mod's people (a subtraction and two dot products each) on the frame the tape goes up, and for each who is
-    /// inside a navigation mesh sample or two. Nothing is allocated.
+    /// Clears a cordon as its tape goes up (called by Traffic/SceneCordon): the game's pedestrians, the living city's people
+    /// and the officers only there to be seen who stand inside are put at the nearest place outside (Traffic/CordonRules),
+    /// on ground their own agent walks. The scene's own people are never moved. Cost: one pass, on that frame only.
     /// </summary>
     internal static class CordonClear
     {
@@ -44,15 +24,13 @@ namespace RealLifeOverhaul
         private static readonly float[] PutAlong = new float[MostPut];
         private static readonly float[] PutAcross = new float[MostPut];
 
-        // The cordon being cleared, in its road's frame.
         private static CordonBox _box;
         private static Vector3 _scene, _forward, _right;
 
-        // What this raising found.
         private static int _put, _walkers, _city, _presence, _left, _returned;
         private static float _furthest;
 
-        /// <summary>Puts everybody but the scene's own people outside a cordon whose tape has just gone up, and says so in the log.</summary>
+        /// <summary>Puts everybody but the scene's own people outside a cordon whose tape has just gone up, and logs it.</summary>
         public static void Out(SceneCordon cordon, IModLogger logger)
         {
             if (cordon == null || !cordon.Frame(out _scene, out _forward, out _right, out float back, out float front, out float left, out float right))
@@ -85,7 +63,7 @@ namespace RealLifeOverhaul
                          + (_left > 0 ? $"; {_left} with no walkable ground outside within reach, left where they stand: FAIL." : ": PASS."));
         }
 
-        // The game's walking pedestrians: its own list. One the mod has borrowed is switched off (PedestrianTakeover).
+        // One the mod has borrowed is switched off (PedestrianTakeover).
         private static void Walkers()
         {
             var city = InstanceBehavior<CityManager>.Instance;
@@ -117,7 +95,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The living city's people (joggers, people at its sites). Whoever the casualty system has is not theirs any more.
+        // Whoever the casualty system has is not the living city's any more.
         private static void CityLife()
         {
             CityLifeDirector director = CityLifeDirector.Instance;
@@ -141,7 +119,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The mod's officers who are only there to be seen. Everyone else in the pool is a scene's, and the scene's to place.
+        // Everyone else in the pool is a scene's, and the scene's to place.
         private static void Presence()
         {
             ActorPool pool = ActorPool.Instance;
@@ -170,7 +148,6 @@ namespace RealLifeOverhaul
             return CordonRules.Inside(_box, Vector3.Dot(offset, _forward), Vector3.Dot(offset, _right));
         }
 
-        // The nearest place outside with ground under it that this person's own agent walks, and the person put there.
         private static bool Put(ThirdPersonCharacter body)
         {
             Vector3 at = body.transform.position;
@@ -216,9 +193,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Somebody walking is put there on their agent and sent on to where they were going (the way there worked out again,
-        // round the tape once its walls are cut), held still if they were held (at a crossing's lights, by a horn); somebody
-        // standing with their agent off is put there as they stand.
+        // Somebody walking is sent on to where they were going, held still if they were held (lights, a horn).
         private static bool Shift(ThirdPersonCharacter body, Vector3 spot)
         {
             NavMeshAgent agent = body.navmeshAgent;

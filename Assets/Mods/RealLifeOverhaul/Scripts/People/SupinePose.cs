@@ -3,17 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Someone laid flat on their back along a bed: trunk straight, legs together, arms at their
-    /// sides, head on the pillow. The game has no such animation, and a ragdoll at rest lies
-    /// however it fell, so this is a pose set by hand (BonePose), worked out from where the
-    /// joints are and never from how a bone is rolled. It works on an animated character (its
-    /// animator is switched off for as long as the pose is held, and switched on again by
-    /// Clear) and on a ragdoll that has come to rest (its bones are then held by bodies that
-    /// no longer move; nothing of the ragdoll's is changed but where the bones point).
-    /// Begin works out the whole pose once; Set then takes the body from how it lay to the
-    /// pose (a blend of some twenty rotations, for the moment the lift lasts) and Hold keeps it
-    /// on the bed afterwards by moving its root alone. Nothing here runs by itself: the
-    /// stretcher calls it, and only while it is being wheeled.
+    /// Someone laid flat on their back along a bed, posed by hand from where the joints are (<see cref="BonePose"/>), on an
+    /// animated character or a ragdoll at rest. Called by the stretcher only while it is wheeled.
     /// </summary>
     internal sealed class SupinePose
     {
@@ -48,19 +39,13 @@ namespace RealLifeOverhaul
         private ThirdPersonCharacter _character;   // whose animator it is, if it is one of the game's characters
         private bool _ownsAnimator;            // the body is animated, not a ragdoll: its animator is kept off while the pose is held
 
-        /// <summary>True from Begin to Clear.</summary>
         public bool Active { get; private set; }
 
         /// <summary>
-        /// Works out the pose for a body that is to lie on a bed: head towards the bed's forward,
-        /// face up, hips at a place given in the bed's own frame. The body is left exactly as it
-        /// was; Set moves it. False, with nothing changed, if the skeleton is not one this can pose.
+        /// Works out the pose for a body to lie on a bed, head to the bed's forward, hips at <paramref name="hipsOnBed"/> in
+        /// the bed's frame; the body is left as it was. False, with nothing changed, if the skeleton cannot be posed.
+        /// <paramref name="animated"/>: not a ragdoll, so its animator is kept off until <see cref="Clear"/>.
         /// </summary>
-        /// <param name="animated">
-        /// The body is an animated character, not a ragdoll: its animator is kept switched off from
-        /// here to Clear, whoever switches it on meanwhile (it may be off already, for someone the
-        /// pool has out of view).
-        /// </param>
         public bool Begin(Transform root, Animator animator, Transform bed, Vector3 hipsOnBed, bool animated)
         {
             Clear();
@@ -110,10 +95,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Puts the body part of the way from how it lay to lying on the bed (0 to 1), wherever
-        /// the bed now is. For the moment the lift lasts; after that, Hold.
-        /// </summary>
+        /// <summary>Puts the body part of the way (0 to 1) from how it lay to lying on the bed, wherever the bed now is.</summary>
         public void Set(Transform bed, float progress)
         {
             if (!Active || _root == null)
@@ -139,7 +121,7 @@ namespace RealLifeOverhaul
             _root.SetPositionAndRotation(position, rotation);
         }
 
-        /// <summary>Keeps the laid body on the bed as the bed moves: its root alone, unless something woke the animator.</summary>
+        /// <summary>Keeps the laid body on the bed as it moves, by its root alone unless something woke the animator.</summary>
         public void Hold(Transform bed)
         {
             if (!Active || _root == null)
@@ -159,11 +141,7 @@ namespace RealLifeOverhaul
             _root.SetPositionAndRotation(bed.TransformPoint(_rootOnBed), bed.rotation * _rootOnBedRotation);
         }
 
-        /// <summary>
-        /// Lets the body go. An animated character gets its animator back (which poses it again);
-        /// a ragdoll is left as it is, for whoever ends the ragdoll to restore. Safe at any time,
-        /// and when the body no longer exists.
-        /// </summary>
+        /// <summary>Lets the body go: an animated character gets its animator back; a ragdoll is left as it is. Safe at any time.</summary>
         public void Clear()
         {
             if (!Active)
@@ -185,7 +163,7 @@ namespace RealLifeOverhaul
             Forget();
         }
 
-        // The pool shows someone who had been out of view by switching their animator on: off again. True if it had been.
+        // The pool switches the animator of someone coming into view back on: off again. True if it was on.
         private bool Quiet()
         {
             if (!_ownsAnimator || _animator == null || !_animator.enabled)
@@ -217,7 +195,6 @@ namespace RealLifeOverhaul
             Turn(_root, pivot, Quaternion.FromToRotation(_bones[Head].position - pivot, along));
             Turn(_root, pivot, FaceUp(_bones[ThighL], _bones[ThighR], along, up));
 
-            // The trunk in one line, as far as the neck.
             int last = Hips;
             for (int i = 1; i < Trunk.Length - 1; i++)
             {
@@ -235,7 +212,6 @@ namespace RealLifeOverhaul
             // Then the head, a little raised on the pillow: after the turns above, so that the rise is straight up.
             BonePose.Aim(_bones[last], _bones[Head], along + up * 0.16f);
 
-            // To the body's own right, as it now lies.
             Vector3 right = _bones[ThighR].position - _bones[ThighL].position;
             right -= along * Vector3.Dot(right, along);
             right = right.sqrMagnitude < 0.0001f ? Vector3.Cross(up, along) : right.normalized;
@@ -256,15 +232,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Down the side, the forearm coming in to rest the hand on the hip: nothing hangs over the edge of the bed.
+        // Down the side, the hand resting on the hip: nothing hangs over the edge of the bed.
         private void Arm(int upper, int forearm, int hand, Vector3 along, Vector3 up, Vector3 side)
         {
             BonePose.Aim(_bones[upper], _bones[forearm], -along + side * 0.12f - up * 0.06f);
             BonePose.Aim(_bones[forearm], _bones[hand], -along - side * 0.06f + up * 0.07f);
         }
 
-        // The turn about the bed's long axis that brings the front of the body (worked out from a left and a
-        // right joint) to face up.
+        // The turn about the bed's long axis that brings the body's front (from a left and a right joint) face up.
         private static Quaternion FaceUp(Transform left, Transform right, Vector3 along, Vector3 up)
         {
             Vector3 front = Vector3.Cross(right.position - left.position, along);

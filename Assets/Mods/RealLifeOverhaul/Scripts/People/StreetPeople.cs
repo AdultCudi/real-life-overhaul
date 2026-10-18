@@ -8,25 +8,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Who counts as a person on the street, besides the game's walking pedestrians (those are
-    /// <c>pedestrianSpawner.activePedestrians</c>, which the game keeps itself). The others
-    /// stand and sit about: the groups at hangout spots (StationaryAiSpawner), people on
-    /// benches and at tables, chess boards and exercise machines, street performers and the
-    /// homeless. The game holds them in private lists on hundreds of spawners, but every one is
-    /// a pooled object and lives under its pool's parent, beside the pedestrians' own. So the
-    /// registry is those few parents: once a second, and only while somebody asks, their
-    /// switched-on children are listed. No scene search, no physics (standing people have their
-    /// colliders switched off), nothing allocated after the first look at each person. The game's
-    /// pools destroy the people they overflow with and make new ones, so the record of who is who
-    /// starts again once it has outgrown the pools (CacheRules): a destroyed person is not kept.
-    ///
-    /// Left out on purpose: the pedestrians' own pool (use the game's list), customers and
-    /// staff (their pools are only in use indoors, and seen through a doorway they are not on
-    /// the street), and the mod's own people, who are in no pool of the game's.
+    /// Who counts as a person on the street besides the walking pedestrians: the game's standing and sitting figures, listed
+    /// once a second, while somebody asks, from the few pool parents they live under. No scene search and no physics.
     /// </summary>
     public static class StreetPeople
     {
-        private const float RefreshEvery = 1f;
+        private const float RefreshEvery = 1f;   // seconds
 
         private static readonly List<BaseHuman> People = new List<BaseHuman>(64);
         private static readonly List<Transform> Pools = new List<Transform>(8);
@@ -37,9 +24,8 @@ namespace RealLifeOverhaul
         private static bool _logged;
 
         /// <summary>
-        /// The standing and sitting street people who are out right now. The list is the
-        /// registry's own: read it, do not keep or change it, and expect entries to be switched
-        /// off again by the game at any moment (check activeInHierarchy before use).
+        /// The standing and sitting street people out now. The list is the registry's own: read it, never keep or change
+        /// it, and check activeInHierarchy before use, as the game can switch an entry off at any moment.
         /// </summary>
         public static List<BaseHuman> Standing(IModLogger logger)
         {
@@ -70,7 +56,7 @@ namespace RealLifeOverhaul
             }
             if (CacheRules.Stale(Known.Count, live))
             {
-                Known.Clear();   // people the pools destroyed since: what is still out is looked up again below
+                Known.Clear();   // the pools destroyed people since: what is still out is looked up again below
             }
             for (int p = 0; p < Pools.Count; p++)
             {

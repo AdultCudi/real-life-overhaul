@@ -3,21 +3,13 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The line an ambulance crew wheels its stretcher along, as plain geometry on the ground plane (x and z in
-    /// metres; no engine types, so that it can be checked outside the game). It is given the places whoever
-    /// pushes walks through, the last of them where the middle of the bed ends up; the corners are rounded to
-    /// a radius the stretcher can be turned at, and the whole is laid out by distance walked.
-    /// At any distance along it the crew's pose is fixed: whoever pushes on the line, the middle of the bed
-    /// on the same line an arm and half a bed further on (so the bed always points from the one to the other
-    /// and follows a corner as a rigid thing does), the second of the crew beside its leading end. Because the
-    /// last stretch is kept straight for at least that far, the bed ends exactly on the last place, pointing
-    /// exactly along the last stretch. Clearance says how near a point comes to everything the crew sweeps
-    /// over on the way: the bed, whoever pushes, whoever walks beside it.
-    /// Nothing here runs by itself and nothing is allocated after it has been made.
+    /// The line an ambulance crew wheels its stretcher along, as plain geometry on the ground (x and z in metres, no engine
+    /// types, so NavCheck can test it): corners rounded, laid out by distance, the crew's pose fixed at every point, and
+    /// <see cref="Clearance"/> to anything the crew sweeps. Nothing is allocated after construction.
     /// </summary>
     public sealed class CrewPath
     {
-        public const float Lead = 1.55f;            // from whoever pushes to the middle of the bed
+        public const float Lead = 1.55f;            // metres from whoever pushes to the middle of the bed
         public const float BedHalfLength = 1.16f;   // the bed with its push bars
         public const float BedHalfWidth = 0.33f;
         public const float SecondAhead = 1.05f;     // from the middle of the bed to the second of the crew, the way it goes...
@@ -32,9 +24,8 @@ namespace RealLifeOverhaul
         private const int MostPoses = 400;
         private const float FarOff = 5f;            // metres from the whole way beyond which a clearance is only said to be "at least"
 
-        // Metres from the middle of the bed to the furthest of the crew in any pose: whoever pushes is an arm and half a
-        // bed behind it along the way (no further in a straight line, however the way bends) and as wide as somebody
-        // walking; the bed's own corners and whoever walks beside its leading end are nearer.
+        // Metres from the bed's middle to the furthest of the crew in any pose: the pusher, an arm and half a bed behind it
+        // (no further however the way bends), or the second; the bed's own corners are nearer.
         private static readonly float Extent = Math.Max(Lead + Body, Math.Max(Hypot(BedHalfLength, BedHalfWidth), Hypot(SecondAhead, SecondOut) + Body));
 
         private readonly float[] _x = new float[Most];
@@ -47,17 +38,14 @@ namespace RealLifeOverhaul
         private readonly float[] _fineZ = new float[MostFine];
         private int _fine;
 
-        // The poses along it: whoever pushes, the middle of the bed, the way it points.
         private readonly float[] _poseP = new float[(MostPoses + Extra) * 2];
         private readonly float[] _poseC = new float[(MostPoses + Extra) * 2];
         private readonly float[] _poseH = new float[(MostPoses + Extra) * 2];
         private int _poses;
         private float _minX, _maxX, _minZ, _maxZ;
 
-        /// <summary>True once a line has been made (Build).</summary>
         public bool Built => _count >= 2;
 
-        /// <summary>Metres from the first place to the last, round the corners.</summary>
         public float Length { get; private set; }
 
         /// <summary>Metres whoever pushes walks: the bed's middle is at the end of the line when they have.</summary>
@@ -66,7 +54,7 @@ namespace RealLifeOverhaul
         /// <summary>1 or -1: the side of the way it goes that the second of the crew walks on (right or left).</summary>
         public float Side { get; private set; } = 1f;
 
-        /// <summary>The corners it was given, rounded or not, for a log line.</summary>
+        /// <summary>The corners it was given, for a log line.</summary>
         public int Corners { get; private set; }
 
         /// <summary>How many points the line is kept as, for whoever gives each its ground height.</summary>
@@ -96,10 +84,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Makes the line through the places given (at least two, further apart than a hand's breadth), each
-        /// corner rounded to the radius, or to less where a stretch is too short for it. The last stretch keeps
-        /// 'keep' metres straight before its end whatever the corner before it would take. False (and no line)
-        /// if the places do not make one.
+        /// Makes the line through the places, each corner rounded to the radius or less, the last <paramref name="keep"/>
+        /// metres straight. False, with no line, if the places do not make one.
         /// </summary>
         public bool Build(float[] px, float[] pz, int count, float radius, float keep, float side)
         {
@@ -112,7 +98,6 @@ namespace RealLifeOverhaul
             _fine = 0;
             float lastX = px[0], lastZ = pz[0];
             Emit(lastX, lastZ);
-            // The places that are really apart, in order.
             int n = 0;
             for (int i = 0; i < count && n < Scratch; i++)
             {
@@ -155,7 +140,6 @@ namespace RealLifeOverhaul
                 }
                 float round = tangent / (float)Math.Tan(angle * 0.5f);
                 float cross = inX * outZ - inZ * outX;
-                // The side the corner turns to, as a unit vector across the stretch coming in.
                 float towardsX = cross > 0f ? -inZ : inZ;
                 float towardsZ = cross > 0f ? inX : -inX;
                 float fromX = _sx[i] - inX * tangent, fromZ = _sz[i] - inZ * tangent;
@@ -176,7 +160,6 @@ namespace RealLifeOverhaul
             }
             Emit(_sx[n - 1], _sz[n - 1]);
 
-            // Laid out by distance: a point every step, and the last one exactly at the end.
             float total = 0f;
             for (int i = 1; i < _fine; i++)
             {
@@ -215,7 +198,6 @@ namespace RealLifeOverhaul
             _y[_count] = 0f;
             _count++;
 
-            // The poses a clearance is measured against, and the box they all lie in.
             _poses = 0;
             _minX = _minZ = float.MaxValue;
             _maxX = _maxZ = float.MinValue;
@@ -263,7 +245,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One of the points the line is kept as.</summary>
         public void Sample(int index, out float x, out float z)
         {
             index = Math.Max(0, Math.Min(_count - 1, index));
@@ -271,7 +252,6 @@ namespace RealLifeOverhaul
             z = _z[index];
         }
 
-        /// <summary>The ground height at one of those points, given by whoever knows the ground.</summary>
         public void SetHeight(int index, float height)
         {
             if (index >= 0 && index < _count)
@@ -280,7 +260,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The point of the line so far along it.</summary>
         public void At(float along, out float x, out float z)
         {
             Locate(along, out int index, out float t);
@@ -288,7 +267,6 @@ namespace RealLifeOverhaul
             z = _z[index] + (_z[index + 1] - _z[index]) * t;
         }
 
-        /// <summary>The ground height there.</summary>
         public float Height(float along)
         {
             Locate(along, out int index, out float t);
@@ -311,10 +289,7 @@ namespace RealLifeOverhaul
             t = span > 1e-6f ? Math.Max(0f, Math.Min(1f, (along - from) / span)) : 0f;
         }
 
-        /// <summary>
-        /// The crew when whoever pushes has walked so far (0 to Travel): where they are, where the middle of the
-        /// bed is, and the way it points (a unit vector from the one to the other).
-        /// </summary>
+        /// <summary>The crew when the pusher has walked so far (0 to Travel): pusher, bed's middle, and the unit way it points.</summary>
         public void Pose(float along, out float pusherX, out float pusherZ, out float bedX, out float bedZ, out float headingX, out float headingZ)
         {
             along = Math.Max(0f, Math.Min(Travel, along));
@@ -334,35 +309,29 @@ namespace RealLifeOverhaul
             headingZ /= length;
         }
 
-        /// <summary>Where the second of the crew walks when whoever pushes has walked so far.</summary>
         public void Second(float along, out float x, out float z)
         {
             Pose(along, out _, out _, out float bedX, out float bedZ, out float headingX, out float headingZ);
-            // (Right of the way it goes: z, -x.)
+            // Right of the way it goes is (z, -x).
             x = bedX + headingX * SecondAhead + headingZ * (Side * SecondOut);
             z = bedZ + headingZ * SecondAhead - headingX * (Side * SecondOut);
         }
 
-        /// <summary>
-        /// Metres from a point to the nearest thing the crew is at any moment of the way: the bed, whoever pushes
-        /// it, whoever walks beside its leading end. 0 if the point is in one of them at some moment.
-        /// </summary>
+        /// <summary>Metres from a point to the nearest of the crew at any moment of the way; 0 if the point is ever inside them.</summary>
         public float Clearance(float x, float z)
         {
             if (_poses == 0)
             {
                 return float.MaxValue;
             }
-            // Far from the whole of it (nothing of the crew is further than 1.5 m from where whoever pushes or the bed's
-            // middle is): at least this far, which is all anybody asking about something five metres off needs.
+            // Far from the whole of it (nothing of the crew is over 1.5 m from the pusher or the bed's middle): at least this far.
             float outside = Math.Max(Math.Max(_minX - x, x - _maxX), Math.Max(_minZ - z, z - _maxZ));
             if (outside > FarOff)
             {
                 return outside - 1.5f;
             }
-            // The nearest middle of the bed first. The crew in a pose comes no nearer than its bed's middle less Extent, and
-            // the bed itself no further than its middle: only the poses with the middle within Extent of the nearest one
-            // can be the nearest, and only those are measured. (A millimetre more, for the rounding of the two.)
+            // Only the poses whose bed middle is within Extent of the nearest one can hold the nearest point, so only those
+            // are measured (with a millimetre more for rounding).
             float nearest = float.MaxValue;
             for (int i = 0; i < _poses; i++)
             {
@@ -390,7 +359,7 @@ namespace RealLifeOverhaul
             return least;
         }
 
-        /// <summary>The same for the crew in one pose: whoever pushes, the middle of the bed, the way it points, the side the second walks on.</summary>
+        /// <summary>The same for the crew in one pose, the second walking on <paramref name="side"/>.</summary>
         public static float PoseClearance(float pusherX, float pusherZ, float bedX, float bedZ, float headingX, float headingZ, float side, float x, float z)
         {
             float dX = x - bedX, dZ = z - bedZ;
@@ -404,11 +373,7 @@ namespace RealLifeOverhaul
             return Math.Max(0f, Math.Min(bed, Math.Min(pusher, second)));
         }
 
-        /// <summary>
-        /// Adds a swing to what the crew sweeps over: the bed turned and moved from one pose to another with the
-        /// crew at its ends (the move that lays it alongside someone, or brings it round square to the rear doors),
-        /// so that Clearance and Crossing count it. A pose is the bed's middle and the way it points.
-        /// </summary>
+        /// <summary>Adds a swing to what the crew sweeps: the bed turned and moved from one pose to another, crew at its ends.</summary>
         public void AddSwing(float fromX, float fromZ, float fromHeadingX, float fromHeadingZ, float toX, float toZ, float toHeadingX, float toHeadingZ)
         {
             for (int i = 0; i <= SwingPoses && _poses < MostPoses + Extra; i++)
@@ -435,12 +400,8 @@ namespace RealLifeOverhaul
         private const int Extra = (SwingPoses + 1) * 2;
 
         /// <summary>
-        /// The part of a straight line (a length of tape, say) that the crew comes within a distance of, as
-        /// fractions of it from its first end to its second: from the first such place to the last. False if no part
-        /// of it is that near. Worked out, not looked for: in each pose the crew is the bed and two people, and the part
-        /// of a line within a distance of a box or of a person is found exactly, so a pose costs a few sums and a pose
-        /// too far from the line costs one test. (It was asked point by point, every 10 cm of the line against every pose
-        /// of the way: some 60,000 askings a way, and the crew's planning tries hundreds of ways in one frame.)
+        /// The part of a straight line (a length of tape) the crew comes within <paramref name="within"/> of, as fractions of
+        /// it; false if none. Worked out exactly per pose, so a pose costs a few sums and one too far off a single test.
         /// </summary>
         public bool Crossing(float fromX, float fromZ, float toX, float toZ, float within, out float low, out float high)
         {
@@ -448,7 +409,7 @@ namespace RealLifeOverhaul
             high = 0f;
             if (_poses == 0 || within <= 0f)
             {
-                return false;   // (nothing of the crew is nearer than no distance at all)
+                return false;   // nothing of the crew is nearer than no distance
             }
             float runX = toX - fromX, runZ = toZ - fromZ;
             float lengthSqr = runX * runX + runZ * runZ;
@@ -461,7 +422,6 @@ namespace RealLifeOverhaul
                 }
                 return high >= low;
             }
-            // Nowhere near the whole way: no part of it.
             float reach = Extent + within;
             if (Math.Max(fromX, toX) < _minX - reach || Math.Min(fromX, toX) > _maxX + reach
                 || Math.Max(fromZ, toZ) < _minZ - reach || Math.Min(fromZ, toZ) > _maxZ + reach)
@@ -483,7 +443,6 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 float headingX = _poseH[at], headingZ = _poseH[at + 1];
-                // The bed, grown by the distance: lengthened, widened, and a disc at each of its corners.
                 Box(fromX, fromZ, runX, runZ, bedX, bedZ, headingX, headingZ, BedHalfLength + within, BedHalfWidth, ref low, ref high);
                 Box(fromX, fromZ, runX, runZ, bedX, bedZ, headingX, headingZ, BedHalfLength, BedHalfWidth + within, ref low, ref high);
                 for (int c = 0; c < 4; c++)
@@ -492,7 +451,6 @@ namespace RealLifeOverhaul
                     float across = (c & 2) == 0 ? BedHalfWidth : -BedHalfWidth;
                     Disc(fromX, fromZ, runX, runZ, lengthSqr, bedX + headingX * along + headingZ * across, bedZ + headingZ * along - headingX * across, within, ref low, ref high);
                 }
-                // Whoever pushes, and whoever walks beside the leading end.
                 Disc(fromX, fromZ, runX, runZ, lengthSqr, _poseP[at], _poseP[at + 1], person, ref low, ref high);
                 Disc(fromX, fromZ, runX, runZ, lengthSqr, bedX + headingX * SecondAhead + headingZ * (Side * SecondOut), bedZ + headingZ * SecondAhead - headingX * (Side * SecondOut),
                     person, ref low, ref high);
@@ -500,8 +458,7 @@ namespace RealLifeOverhaul
             return high >= low;
         }
 
-        // The part of the line from (fromX, fromZ) by (runX, runZ) that is inside a box on the ground (its middle, the way
-        // its length runs, half its length and half its width), as fractions of the line, taken into low and high.
+        // The part of the line inside a box on the ground, as fractions of the line, taken into low and high.
         private static void Box(float fromX, float fromZ, float runX, float runZ, float midX, float midZ, float alongX, float alongZ,
             float halfLength, float halfWidth, ref float low, ref float high)
         {
@@ -516,7 +473,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Narrows first..last to where start + t * run lies within half of nothing. False if that leaves nothing.
+        // Narrows first..last to where start + t * run lies within half either side of 0. False if that leaves nothing.
         private static bool Slab(float start, float run, float half, ref float first, ref float last)
         {
             if (Math.Abs(run) < 1e-9f)
@@ -535,7 +492,7 @@ namespace RealLifeOverhaul
             return first < last;
         }
 
-        // The part of the line that is nearer a point than the radius, as fractions of the line, taken into low and high.
+        // The part of the line nearer a point than the radius, as fractions of the line, taken into low and high.
         private static void Disc(float fromX, float fromZ, float runX, float runZ, float lengthSqr, float x, float z, float radius, ref float low, ref float high)
         {
             float offX = fromX - x, offZ = fromZ - z;
@@ -555,57 +512,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Metres from the crew's swept way to a box on the ground (a vehicle's footprint): its middle, the way it
-        /// points and its half length and half width. 0 if they overlap at some moment.
-        /// </summary>
-        public float ClearanceToBox(float centreX, float centreZ, float forwardX, float forwardZ, float halfLength, float halfWidth)
-        {
-            float norm = Math.Max(1e-5f, Hypot(forwardX, forwardZ));
-            forwardX /= norm;
-            forwardZ /= norm;
-            float least = float.MaxValue;
-            // Round its edge a hand's breadth at a time, and its middle (for a box wholly inside what is swept).
-            int along = Math.Max(2, (int)Math.Ceiling(halfLength * 2f / 0.15f));
-            int across = Math.Max(2, (int)Math.Ceiling(halfWidth * 2f / 0.15f));
-            for (int i = 0; i <= along; i++)
-            {
-                float a = -halfLength + halfLength * 2f * i / along;
-                for (int j = 0; j <= across; j++)
-                {
-                    if (i != 0 && i != along && j != 0 && j != across && (i != along / 2 || j != across / 2))
-                    {
-                        continue;
-                    }
-                    float b = -halfWidth + halfWidth * 2f * j / across;
-                    least = Math.Min(least, Clearance(centreX + forwardX * a + forwardZ * b, centreZ + forwardZ * a - forwardX * b));
-                }
-            }
-            return least;
-        }
 
-        /// <summary>How far whoever pushes has walked when the middle of the bed is nearest a point: for saying when it passes somewhere.</summary>
-        public float Nearest(float x, float z)
-        {
-            float best = float.MaxValue;
-            int found = 0;
-            for (int i = 0; i < _count; i++)
-            {
-                float distance = Hypot(_x[i] - x, _z[i] - z);
-                if (distance < best)
-                {
-                    best = distance;
-                    found = i;
-                }
-            }
-            float along = found == _count - 1 ? Length : found * _step;
-            return Math.Max(0f, Math.Min(Travel, along - Lead));
-        }
-
-        /// <summary>
-        /// A pose part of the way from one to another, for the last small move that puts the bed exactly where
-        /// it belongs: the middle straight across, the heading turned the short way round. t from 0 to 1.
-        /// </summary>
+        /// <summary>A pose part of the way (t, 0 to 1) from one to another: the middle straight across, the heading turned the short way.</summary>
         public static void Blend(float fromX, float fromZ, float fromHeadingX, float fromHeadingZ, float toX, float toZ, float toHeadingX, float toHeadingZ,
             float t, out float x, out float z, out float headingX, out float headingZ)
         {
@@ -621,7 +529,7 @@ namespace RealLifeOverhaul
             headingZ /= length;
         }
 
-        /// <summary>The angle from one direction on the ground to another, in radians, the short way round (-pi to pi).</summary>
+        /// <summary>The angle from one direction on the ground to another, in radians, the short way round.</summary>
         public static float Turn(float fromX, float fromZ, float toX, float toZ)
         {
             return (float)Math.Atan2(fromX * toZ - fromZ * toX, fromX * toX + fromZ * toZ);

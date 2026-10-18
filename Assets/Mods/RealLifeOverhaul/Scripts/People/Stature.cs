@@ -4,17 +4,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How tall a character stands, and the scale that gives an officer or a paramedic the height their
-    /// service wants. The game has no height: a character has a build and a strength (CharacterData) on one
-    /// skeleton per sex, so an officer came out whatever height that skeleton is, often shorter than the
-    /// player. The height is set by scaling the whole character about its feet (StreetActor.Resize): the
-    /// skeleton, the drawn body, the equipment on the bones, the capsule and the navigation agent all follow,
-    /// and poses, clips and a ragdoll are in the bones' own space, so they do too.
-    /// The height is measured, never assumed: the lengths of the leg and of the spine joint by joint (which
-    /// do not depend on how the character is standing), the ankle above the sole, and the crown above the
-    /// head joint as ServiceKit measured it on the drawn head. An officer is scaled to the service's height,
-    /// or to the player's if the player is taller, within limits; a paramedic only ever up, and only if they
-    /// would be short. Someone who cannot be measured keeps the size the game gave them.
+    /// How tall a character stands, and the scale that gives an officer or a paramedic their service's height. The game
+    /// has no height (one skeleton per sex), so the whole character is scaled about its feet (StreetActor.Resize). The
+    /// height is measured from the joints, which do not depend on the pose, plus the crown ServiceKit measured.
     /// </summary>
     internal static class Stature
     {
@@ -22,7 +14,7 @@ namespace RealLifeOverhaul
         public const float OfficerWoman = 1.76f;
         public const float MedicMan = 1.72f;       // a paramedic shorter than this is brought up to it
         public const float MedicWoman = 1.66f;
-        public const float Least = 0.97f;          // an officer is never scaled outside these
+        public const float Least = 0.97f;          // scale: an officer is never scaled outside these
         public const float Most = 1.10f;
 
         private const float Ankle = 0.09f;         // metres from the sole of a boot to the ankle joint
@@ -32,15 +24,13 @@ namespace RealLifeOverhaul
             HumanBodyBones.Hips, HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest, HumanBodyBones.Neck, HumanBodyBones.Head
         };
 
-        private static float _player;   // the player's height, measured once per session (the player has one skeleton too)
+        private static float _player;   // the player's height, measured once a session
 
         /// <summary>
-        /// The scale for a uniformed character that has just been dressed and stands at the size the game
-        /// built it. 1 if it cannot be measured.
+        /// The scale for a uniformed character just dressed at the game's size: an officer to the service's height or the
+        /// player's if taller, a paramedic only ever up; 1 if it cannot be measured. <paramref name="crown"/> is metres
+        /// above the head joint (0: not measured); the outs are heights in metres, <paramref name="player"/> 0 if unknown.
         /// </summary>
-        /// <param name="crown">Metres from the head joint to the top of the head (ServiceKit.Crown); 0 if not measured.</param>
-        /// <param name="height">How tall the character is before scaling, in metres.</param>
-        /// <param name="player">How tall the player is by the same measure; 0 if that could not be had.</param>
         public static float For(Animator animator, ActorLook look, bool man, float crown, out float height, out float player)
         {
             player = 0f;
@@ -58,8 +48,7 @@ namespace RealLifeOverhaul
             return Mathf.Clamp(wanted / height, Least, Most);
         }
 
-        // The player's height with the same crown (the game's heads are one size). Kept once it has been had:
-        // while the player is in a car the game shrinks their character to nothing, and nothing can be measured.
+        // Kept once had: while the player is in a car the game shrinks their character to nothing.
         private static float Player(float crown)
         {
             if (_player > 0f)
@@ -81,11 +70,7 @@ namespace RealLifeOverhaul
             return _player;
         }
 
-        /// <summary>
-        /// A humanoid's standing height in metres at the scale it has now, from its joints: sole to ankle,
-        /// shin, thigh, the hip joints up to the base of the spine, the spine joint by joint to the head,
-        /// and the crown. The same whatever pose it is in. 0 if the skeleton lacks a leg or a head.
-        /// </summary>
+        /// <summary>A humanoid's standing height in metres at its present scale, whatever its pose; 0 without a leg or a head.</summary>
         public static float Of(Animator animator, float crown)
         {
             if (animator == null || !animator.isHuman)
