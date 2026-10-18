@@ -1,4 +1,4 @@
-0.33.1
+0.34.0
 
-Fixed
-- In a Going Public session, classes, exams and homework at Manhattan Business School and the university no longer stop with a message that another course is needed first. Inside the school, join a class or an exam with the key where you stand; at the university, click the classroom door.
+New
+- Calls with people you know: with an RLO Texts pack, when they bring something up you type your own reply and they answer in their own words. It counts the same as the friendly answer; plans, favours and gifts stay buttons. Without a pack, for Mom, or with Type your own words in calls off, you pick from two answers as before.
