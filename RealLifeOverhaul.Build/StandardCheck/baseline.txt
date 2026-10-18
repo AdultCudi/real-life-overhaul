@@ -238,7 +238,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareApp.Pictures.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareLiveModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDialogs.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Tech/Firms/FirmsModel.cs	1
@@ -335,7 +334,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/LifeStory.cs	3
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/PermadeathRules.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Phone/Contacts/ContactPainter.cs	4
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalText.cs	9
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDialogs.cs	15
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Transport/Taxi/TaxiDirector.cs	18
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/RoommateLinks.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDirector.cs	1

@@ -4,22 +4,12 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The social life's side of the phone: a contact for everybody the player has met (Mom and
-    /// Alex keep the contacts they always had and get the new conversation), a "People" contact
-    /// that reads out how things stand with each of them, and the "City Ledger", the paper's
-    /// subscriptions desk when called (the paper itself is a newspaper the player has delivered to
-    /// their home or buys at a kiosk: Scripts/Ledger, through Wiring/LedgerLinks).
-    ///
-    /// Contacts are made exactly as Phone/PhoneContacts makes its own: the game's own Contact,
-    /// in the save's own contact list, with an id and a description key and nothing else. A
-    /// save made with them loads without the mod (the names of people are their contact ids, so
-    /// they still read as names). The call dialog is not saved by the game, so it is set again
-    /// on every load.
+    /// The social life's contacts: everybody met, the "People" page and the City Ledger's desk. Made as Phone/PhoneContacts
+    /// makes its own, so a save loads without the mod; the game does not save a call dialog, so it is set on every load.
     /// </summary>
     public static class SocialPhone
     {
@@ -28,22 +18,17 @@ namespace RealLifeOverhaul
         private const string MomId = "reallife-mom";
         private const string FriendId = "reallife-friend";
 
-        // One call dialog type per person of the cast: the game's factory hands out a dialog per type, and each must know who it is.
+        // One per person: the game's factory makes a dialog by its type, and each must know who it is.
         private static readonly string[] DialogTypes =
         {
             "reallife_socialp0_calldialogtype", "reallife_socialp1_calldialogtype", "reallife_socialp2_calldialogtype", "reallife_socialp3_calldialogtype",
             "reallife_socialp4_calldialogtype", "reallife_socialp5_calldialogtype", "reallife_socialp6_calldialogtype", "reallife_socialp7_calldialogtype"
         };
 
-        // Kept alive for the whole session: the game caches contact icons by sprite name.
-
-        /// <summary>Who is ringing the player right now (their index), or -1. Read by the dialog the call opens.</summary>
+        /// <summary>The index of whoever is ringing the player now, or -1, for the dialog the call opens.</summary>
         public static int Incoming = -1;
 
-        /// <summary>True once this save's contacts have been set up with the social life on.</summary>
-        public static bool On { get; private set; }
-
-        /// <summary>The City Ledger's desk: the first line of a call to its contact (set by Wiring/LedgerLinks; null says the desk is not open).</summary>
+        /// <summary>Set by Wiring/LedgerLinks; null while the desk is shut.</summary>
         public static Func<DialogEntry> LedgerDesk;
 
         public static string IdOf(SocialPerson person)
@@ -51,14 +36,9 @@ namespace RealLifeOverhaul
             return person.Origin == SocialOrigin.Family ? MomId : person.Origin == SocialOrigin.OldFriend ? FriendId : person.Name;
         }
 
-        /// <summary>
-        /// Called once the cast is loaded, and again whenever the option changes: icons for the
-        /// whole cast (the game reads its icon list once, so all of them go in before the phone
-        /// is first opened), a contact for whoever has been met, the two pages.
-        /// </summary>
+        /// <summary>Once the cast is loaded, and when an option changes: every picture before the phone is first opened.</summary>
         public static void Setup(IModLogger logger)
         {
-            On = false;
             Incoming = -1;
             if (!SocialState.Loaded || SaveGameManager.Current == null)
             {
@@ -68,7 +48,6 @@ namespace RealLifeOverhaul
             {
                 if (!Settings.Social)
                 {
-                    // Mom and Alex go back to the short calls they had before.
                     Restore(PhoneContacts.Mom, "reallife_mom_calldialogtype");
                     Restore(PhoneContacts.Friend, "reallife_friend_calldialogtype");
                 }
@@ -81,7 +60,7 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
-                        ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);   // their own face, as SocialCast.Dress builds them
+                        ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);   // their own face, as SocialCast dresses them
                         if (person.Met)
                         {
                             Add(person, person.Origin > SocialOrigin.OldFriend);
@@ -89,7 +68,6 @@ namespace RealLifeOverhaul
                     }
                     ContactPictures.Add(PeopleId);
                     Page(PeopleId, "reallife_social_people_desc", "reallife_people_calldialogtype", () => new PeopleDialog(), "reallife_social_people_welcome");
-                    On = true;
                 }
                 if (Settings.SocialNewspaper)
                 {
@@ -106,7 +84,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The contact of somebody who has been met, made if the player deleted it. Null for a stranger.</summary>
+        /// <summary>The contact of somebody who has been met, made again if the player deleted it. Null for a stranger.</summary>
         public static Contact ContactOf(SocialPerson person)
         {
             if (person == null || !person.Met || SaveGameManager.Current == null)
@@ -116,12 +94,12 @@ namespace RealLifeOverhaul
             return Add(person, false);
         }
 
-        /// <summary>Puts somebody in the phone, callable, with the first message of their thread if it is empty.</summary>
+        /// <summary>Callable, with the first message of their thread if it is empty.</summary>
         public static Contact Add(SocialPerson person, bool welcome)
         {
             Contact contact = Contact.GetContact(IdOf(person), ContactCategoryName.General, SocialCatalogue.OriginDesc[(int)person.Origin], null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypes[person.Index]);
-            contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
+            contact.callDialogTypeOverride = dialogType;
             int index = person.Index;
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new PersonDialog(index)));
             if (welcome && (contact.messagesQueue == null || contact.messagesQueue.Count == 0))
@@ -131,7 +109,7 @@ namespace RealLifeOverhaul
             return contact;
         }
 
-        /// <summary>A message from the City Ledger (its subscriptions desk: a payment, a subscription that has stopped), with the game's notification.</summary>
+        /// <summary>A payment, a subscription stopped: with the game's notification.</summary>
         public static void LedgerMessage(string key, Dictionary<string, string> data)
         {
             try
@@ -150,7 +128,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Opens the phone on somebody's contact and starts the call, the game's own way. False if it could not.</summary>
+        /// <summary>The game's own way: the phone open on their contact. False if it could not.</summary>
         public static bool Call(SocialPerson person)
         {
             Contact contact = ContactOf(person);
@@ -162,7 +140,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The face-to-face conversation of a scene, in the game's own dialogue panel (the way its counters and desks open one).</summary>
+        /// <summary>In the game's own dialogue panel, as its counters and desks open one.</summary>
         public static void OpenInPerson(ThirdPersonCharacter with, Action onClosed)
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_socialscene_calldialogtype");
@@ -199,39 +177,24 @@ namespace RealLifeOverhaul
                 contact.callDialogTypeOverride = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             }
         }
+    }
 
-        /// <summary>The icon of a meeting place on the city map: a round marker as the map's own are (the People page's contact picture is the game's logo shape, Phone/Contacts).</summary>
-        public static Sprite Badge
+    /// <summary>A call to the City Ledger: its subscriptions desk (Scripts/Ledger, through <see cref="SocialPhone.LedgerDesk"/>).</summary>
+    public sealed class LedgerDialog : Dialog
+    {
+        public LedgerDialog()
         {
-            get
+            npcNameKey = SocialPhone.LedgerId;
+            DialogEntry first = null;
+            try
             {
-                if (_badge == null)
-                {
-                    const int size = 96;
-                    var colour = new Color(0.96f, 0.52f, 0.42f);
-                    var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                    var pixels = new Color[size * size];
-                    float radius = size / 2f - 2f;
-                    for (int y = 0; y < size; y++)
-                    {
-                        for (int x = 0; x < size; x++)
-                        {
-                            float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                            Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                            pixel.a = Mathf.Clamp01(radius - distance);
-                            pixels[y * size + x] = pixel;
-                        }
-                    }
-                    texture.SetPixels(pixels);
-                    texture.Apply();
-                    _badge = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                    _badge.name = "RealLife meeting place";   // (not a contact's id: the Contacts app must never take it for a picture)
-                }
-                return _badge;
+                first = Settings.SocialNewspaper && SocialPhone.LedgerDesk != null ? SocialPhone.LedgerDesk() : null;
             }
+            catch (Exception e)
+            {
+                SocialDirector.Logger?.Error(e);
+            }
+            DialogController.current.ShowEntry(Guard.Entry(first ?? PhoneContacts.Closing("reallife_ledger_desk_later")));
         }
-
-        private static Sprite _badge;   // kept for the session
-
     }
 }
