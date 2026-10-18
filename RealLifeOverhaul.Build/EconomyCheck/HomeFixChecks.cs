@@ -4,8 +4,8 @@ using System.IO;
 using IoPath = System.IO.Path;
 
 // Faults found in Scripts/Home: the roommate's talk test read the player's character without testing it, inside the tick
-// whose fault switches roommates off; a door to social life (RoommateBridges.Friend) was filled but never read; and the
-// rain reached a player up in a hotel room.
+// whose fault switches roommates off; a door to social life (RoommateBridges.Friend) was filled but never read; the rain
+// reached a player up in a hotel room; and a night there counted as hours awake.
 internal static partial class Program
 {
     private static void HomeFixes()
@@ -46,6 +46,22 @@ internal static partial class Program
                                 "Hotelzimmer ruht oder schläft, erkältet sich nicht mehr", "chambre d'hôtel ne donne plus de rhume",
                                 "habitación de hotel ya no te resfría", "номере отеля больше не вызывает простуду"),
             "home fix: What's new has the hotel room's rain line, with its fix mark, in some row of every language");
+
+        // A night in a hotel room is the room's own time skip, never the game's sleep, so it counted as hours awake.
+        Check(director.Contains("int awayBed = HomeBridges.SleepingAway != null ? HomeBridges.SleepingAway() : -1;")
+              && director.Contains("doing = Doing.Sleeping;") && director.Contains("Sleep(doing, minutes, atHome, awayBed);")
+              && director.Contains("_bedQuality = awayBed;"),
+            "home fix: sleep away from the game's beds counts as sleep, in the bed the bridges name");
+        string hotel = ModSource(@"Travel\HotelStay.Sleep.cs");
+        int set = hotel.IndexOf("SleepingBed = BedQuality(room);", StringComparison.Ordinal);
+        int skip = hotel.IndexOf("yield return _director.Skip(goal, night ?", StringComparison.Ordinal);
+        Check(set > 0 && skip > set && MemberText(hotel, "public static void EndSleepEffects()").Contains("SleepingBed = -1;")
+              && life.Contains("HomeBridges.SleepingAway = () => HotelStay.SleepingBed;") && life.Contains("HomeBridges.SleepingAway = null;"),
+            "home fix: a hotel room names its bed through the sleep's time skip and takes it back on every way out");
+        Check(FixLineEverywhere("hotel room now counts as sleep", "quarto de hotel conta agora como sono", "在酒店房间过夜或小睡现在算作睡眠",
+                                "Hotelzimmer zählt jetzt als Schlaf", "chambre d'hôtel compte maintenant comme du sommeil",
+                                "habitación de hotel ahora cuenta como sueño", "номере отеля теперь считаются сном"),
+            "home fix: What's new has the hotel night's sleep line, with its fix mark, in some row of every language");
     }
 
     // A fix's line, by a piece of it in each language (en, pt, zh-cn, de, fr, es, ru), in some What's new row of each with the

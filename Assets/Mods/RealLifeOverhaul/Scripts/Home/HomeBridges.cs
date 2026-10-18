@@ -11,5 +11,11 @@ namespace RealLifeOverhaul
         /// Default: no.
         /// </summary>
         public static Func<bool> Sheltered;
+
+        /// <summary>
+        /// The quality of the bed (0 to 100) the player sleeps in away from the game's own beds, such as a hotel room's
+        /// through its time skip, or -1 when not. While it is 0 or more the hours count as sleep. Default: never.
+        /// </summary>
+        public static Func<int> SleepingAway;
     }
 }

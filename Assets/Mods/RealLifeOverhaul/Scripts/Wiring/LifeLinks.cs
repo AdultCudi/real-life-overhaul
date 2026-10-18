@@ -20,6 +20,7 @@ namespace RealLifeOverhaul
         ///   TravelBridges.Social       the player's partner and close friends come along; souvenirs are for friends
         ///   GarageBridges.RoadIsWet    wet in the rain of Events/Weather as well as the game's
         ///   HomeBridges.Sheltered      up in a hotel room is indoors: no rain, no cold from it
+        ///   HomeBridges.SleepingAway   a night or a nap in a hotel room is sleep, in the room's bed
         ///
         /// Left at their defaults, each because the other side has nothing to answer with (see the list in docs/reference/wiring.md):
         /// CareerLinks.Social, TravelBridges.Transport and Leisure, Justice.Bridges.Transport,
@@ -45,6 +46,7 @@ namespace RealLifeOverhaul
                 }
                 GarageBridges.RoadIsWet = () => RainHelper.AreRainDropsFalling || Events.Weather.Sky >= Events.Sky.Rain;
                 HomeBridges.Sheltered = () => TravelState.InRoom;
+                HomeBridges.SleepingAway = () => HotelStay.SleepingBed;
             }
 
             internal static void Disconnect()
@@ -59,6 +61,7 @@ namespace RealLifeOverhaul
                 TravelBridges.Social = null;
                 GarageBridges.RoadIsWet = null;
                 HomeBridges.Sheltered = null;
+                HomeBridges.SleepingAway = null;
             }
 
             private static bool NeedsOn => HomeState.Loaded && Settings.HomeLife && Settings.HomeNeeds;
