@@ -23,9 +23,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyState.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeActivity.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomePhone.cs	2
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateRules.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobCatalogue.cs	1
@@ -136,7 +133,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeFridgeButton.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Ledger/NewsstandScroll.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
@@ -175,7 +171,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Fame/FameModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitRules.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeCooking.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobAnimations.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeBridges.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Law/LawBridges.cs	1
@@ -262,7 +257,6 @@ RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobBoards.cs	1
@@ -286,10 +280,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyState.cs	5
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/HomeLife.cs	3
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	4
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeHealth.cs	11
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomePhone.cs	8
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateFlat.cs	1
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateRules.cs	10
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventRunner.cs	22
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/LifeStory.cs	3
@@ -391,11 +381,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageBay.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/TwoWheelers.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeDirector.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomePhone.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Home/JogRun.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateDirector.Tests.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorDirector.cs	7
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1

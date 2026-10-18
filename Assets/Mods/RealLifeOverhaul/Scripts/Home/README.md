@@ -7,7 +7,7 @@ Home life and health: hygiene, stress and a tidy home, sleep debt, fitness, meal
 - `HomeDirector.cs`: the one component.
 - `HomeState.cs`: the save (game-free).
 - `HomeBalance.cs`: every number (game-free).
-- `HomeCooking.cs`: what can be made from what the fridges hold (game-free).
+- `Cooking.cs`: what can be made from what the fridges hold (game-free).
 
 ## Documentation
 
