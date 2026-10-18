@@ -59,6 +59,36 @@ internal static partial class Program
         MapRowUniversity(rows, links, en, pt, zh);
         MapRowTiming(scripts, places, links);
         MapRowNews(en, pt, zh);
+        MapRowUnload(scripts, places);
+    }
+
+    // The game's map filters are applied again (CityMapFilters.ApplyFilters) in one place of the whole mod, which skips
+    // them while the city unloads or with the city's map gone and keeps a fault of theirs to itself. ApplyFilters reads
+    // the map through CityManager, null while the game quits: on Save and exit with the map open, the police stations
+    // coming off the map from LawDirector's OnDestroy made it throw.
+    private static void MapRowUnload(string scripts, string places)
+    {
+        int calls = 0;
+        string where = string.Empty;
+        foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
+        {
+            int n = Regex.Matches(Code(File.ReadAllText(file)), @"\.ApplyFilters\(\)").Count;
+            if (n > 0)
+            {
+                calls += n;
+                where += " " + Path.GetFileName(file);
+            }
+        }
+        string refilter = Body(places, "internal static void Refilter(CityMapFilters filters)");
+        int unloading = refilter.IndexOf("GameManager.isCitySceneBeingUnloaded", StringComparison.Ordinal);
+        int map = refilter.IndexOf("city.cityMap != null", StringComparison.Ordinal);
+        int apply = refilter.IndexOf("filters.ApplyFilters()", StringComparison.Ordinal);
+        bool guarded = unloading >= 0 && map >= 0 && apply > unloading && apply > map && refilter.Contains("catch (Exception e)");
+        Check(calls == 1 && where == " MapPlaces.cs" && guarded,
+            "map rows: the game's map filters are applied again in one place of the mod (MapPlaces.Refilter; " + calls
+            + " call(s) of ApplyFilters, in" + where + "), never while the city unloads or with its map gone, a fault kept there");
+        Check(Regex.IsMatch(Body(places, "private static void Unmark(MapPlace place)"), @"Lights\.Remove\(place\)\)\s*\{\s*Refilter\(_filters\);"),
+            "map rows: a place taken off the map (a feature's OnDestroy as the city unloads among them) puts its light out through that one place");
     }
 
     // Every row the mod's sources declare: MapLinks' kinds, and every other feature's MapPlaces.Register.

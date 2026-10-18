@@ -256,9 +256,9 @@ namespace RealLifeOverhaul.Economy
                     controller.UpdatePoi();
                 }
                 UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
-                if (uis != null && uis.mapFilters != null)
+                if (uis != null)
                 {
-                    uis.mapFilters.ApplyFilters();
+                    MapPlaces.Refilter(uis.mapFilters);
                 }
                 GuidersManager.UpdateGuidersWithAddress(address);
                 GlobalEvents.onBuildingRegistrationChange?.Invoke(address);

@@ -161,9 +161,9 @@ namespace RealLifeOverhaul.Offices
                 return;
             }
             UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis != null && uis.mapFilters != null)
+            if (uis != null)
             {
-                uis.mapFilters.ApplyFilters();
+                MapPlaces.Refilter(uis.mapFilters);
             }
         }
 

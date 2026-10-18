@@ -341,9 +341,9 @@ namespace RealLifeOverhaul.Districts
         public static void GameFilters()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis != null && uis.mapFilters != null && CityMap.IsOpen)
+            if (uis != null)
             {
-                uis.mapFilters.ApplyFilters();
+                MapPlaces.Refilter(uis.mapFilters);
             }
         }
 
