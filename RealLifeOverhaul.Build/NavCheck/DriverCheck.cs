@@ -887,7 +887,7 @@ internal static partial class Program
     {
         string folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         var words = new Dictionary<string, Dictionary<string, string>>();
-        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru" })
+        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" })
         {
             var map = new Dictionary<string, string>();
             using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(folder, code + ".json")), new JsonDocumentOptions { AllowTrailingCommas = true }))
@@ -951,7 +951,8 @@ internal static partial class Program
         {
             ["en"] = "Traffic near you now brakes in good time", ["pt"] = "O trânsito perto de você agora freia com antecedência", ["zh-cn"] = "你附近的车流现在会提前平稳地刹车",
             ["de"] = "Der Verkehr in deiner Nähe bremst jetzt rechtzeitig", ["fr"] = "La circulation près de vous freine désormais à temps",
-            ["es"] = "El tráfico cerca de ti ahora frena a tiempo", ["ru"] = "Машины рядом с вами теперь тормозят заранее"
+            ["es"] = "El tráfico cerca de ti ahora frena a tiempo", ["ru"] = "Машины рядом с вами теперь тормозят заранее",
+            ["nl"] = "Verkeer om je heen remt nu op tijd", ["tr"] = "Çevrenizdeki trafik artık son anda sertçe değil, zamanında"
         };
         var without = new List<string>();
         foreach (KeyValuePair<string, string> line in whatsNew)

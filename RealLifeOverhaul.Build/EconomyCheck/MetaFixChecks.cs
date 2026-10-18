@@ -29,10 +29,12 @@ internal static partial class Program
               && MemberText(report, "private static IEnumerator WaitForMenus()").Contains("_waiting = null;"),
             "meta fix: a report that fails, and the wait for a menu, clear their state");
         Check(FixLineEverywhere("Load my choices from the file no longer fails", "Carregar minhas escolhas do arquivo não falha mais", "不再失败", "schlägt nicht mehr fehl",
-                                "n'échoue plus", "ya no falla", "больше не завершается ошибкой"),
+                                "n'échoue plus", "ya no falla", "больше не завершается ошибкой",
+                                "mislukt niet meer als de kopie van je huidige instellingen", "Seçimlerimi dosyadan yükle"),
             "meta fix: What's new has the import's line, with its fix mark, in some row of every language");
         Check(FixLineEverywhere("Report a bug no longer says it is busy", "Relatar um bug não diz mais", "不再在本次游戏的剩余时间里一直显示正忙", "Fehler melden sagt nicht mehr",
-                                "Signaler un bug ne dit plus", "Informar de un error ya no dice", "больше не пишет, что занято"),
+                                "Signaler un bug ne dit plus", "Informar de un error ya no dice", "больше не пишет, что занято",
+                                "zegt niet meer dat het bezig is", "meşgul olduğunu söylemiyor"),
             "meta fix: What's new has the report's line, with its fix mark, in some row of every language");
 
         string docs = IoPath.GetFullPath(IoPath.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\docs\features"));

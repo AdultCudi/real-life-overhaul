@@ -283,7 +283,9 @@ internal static partial class Program
             ["de"] = "Behoben: Eine Stunde, die du bis zum Ende besuchst, zählt jetzt immer",
             ["fr"] = "Corrigé : une séance suivie jusqu'au bout compte désormais toujours",
             ["es"] = "Corregido: una clase a la que asistes hasta el final ahora siempre cuenta",
-            ["ru"] = "Исправлено: занятие, которое вы досидели до конца, теперь всегда засчитывается"
+            ["ru"] = "Исправлено: занятие, которое вы досидели до конца, теперь всегда засчитывается",
+            ["nl"] = "Opgelost: een les die je volgt telt nu altijd, ook na het versnellen van de tijd",
+            ["tr"] = "Düzeltildi: katıldığınız bir ders, zamanı atladıktan sonra da artık her zaman sayılıyor"
         };
         var lacking = new List<string>();
         for (int l = 0; l < codes.Length; l++)

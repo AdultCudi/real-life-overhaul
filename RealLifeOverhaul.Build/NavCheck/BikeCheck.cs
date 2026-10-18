@@ -196,7 +196,7 @@ internal static partial class Program
 
         // ---- no page of the Guide says the game calls a bicycle or a motorbike an electric scooter, in any language.
         string locales = Path.Combine(scripts, "..", "Locales");
-        foreach (string language in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru" })
+        foreach (string language in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" })
         {
             string file = Path.Combine(locales, language + ".json");
             if (!File.Exists(file))

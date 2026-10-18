@@ -21,7 +21,7 @@ internal static partial class Program
     {
         string folder = LocalesFolder();
         var languages = new List<(string code, Dictionary<string, string> words)>();
-        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru" })
+        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" })
         {
             languages.Add((code, LoadWords(System.IO.Path.Combine(folder, code + ".json"))));
         }
