@@ -145,13 +145,13 @@ namespace RealLifeOverhaul
                         Loud();
                     }
                     else if (walker != null && walker.enabled && walker.isActiveAndEnabled
-                             && SolidRules.Remove(heldFor, StreetSpots.IsInView(new Vector3(_grid.X(person), _height[person], _grid.Z(person)))))
+                             && SolidRules.Remove(heldFor, StreetSpots.IsInView(new Vector3(_grid.X(person), _height[person], _grid.Z(person))))
+                             && SolidRules.Queue(_putAway, ref _putAways, walker))
                     {
                         // Out of view and still there: back to the game's pool after this look, which reads the pool's list.
                         _heldSince[index] = 0f;
                         _movedOn[index] = false;
                         _reachedIn[person] = float.MaxValue;
-                        _putAway = walker;
                         Quiet();
                         Logger?.Info($"Traffic check (held too long): '{TrafficTools.Name(car)}' was still held after {heldFor:F0} s by somebody nobody can see: the game puts them elsewhere: PASS");
                         Loud();

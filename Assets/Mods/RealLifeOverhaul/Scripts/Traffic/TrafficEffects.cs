@@ -31,7 +31,6 @@ namespace RealLifeOverhaul
 
         private static Transform _holder;
         private static GameObject _smokeTemplate;
-        private static bool _smokeSearched;
         private static bool _smokeGenuine;   // the template is the game's engine smoke, not a stand-in
 
         private static GameObject _policeTemplate;
@@ -58,7 +57,6 @@ namespace RealLifeOverhaul
             _yelpClip = null;
             _holder = null;
             _smokeTemplate = null;
-            _smokeSearched = false;
             _smokeGenuine = false;
             _smokeTries = 0;
             _policeTemplate = null;
@@ -76,11 +74,7 @@ namespace RealLifeOverhaul
                 return true;
             }
             _smokeTries++;
-            GetSmokeTemplate();
-            if (_smokeTemplate == null)
-            {
-                _smokeSearched = false;   // no smoke of any kind in memory yet: the first accident looks once more, as it always did
-            }
+            FindSmoke();
             return _smokeGenuine || _smokeTries >= SmokeTries;
         }
 

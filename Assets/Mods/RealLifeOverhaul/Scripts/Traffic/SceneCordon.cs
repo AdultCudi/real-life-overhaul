@@ -217,9 +217,6 @@ namespace RealLifeOverhaul
         /// <summary>Where the officer directing traffic stands: just outside the tape, facing what is coming.</summary>
         public Vector3 DirectorPost { get; private set; }
 
-        /// <summary>Where the officer on the traffic post stands while a unit leaves by the open lane: out of it, before the near barriers.</summary>
-        public Vector3 PassPost { get; private set; }
-
         /// <summary>Outside the tape by the near entry, on the pavement if there is one: where bystanders are sent to wait.</summary>
         public Vector3 Kerbside { get; private set; }
 

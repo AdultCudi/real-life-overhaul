@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
         public const float HeldSpeed = 0.5f;         // m/s below which a car stands
         public const float HoldMost = 12f;           // seconds a car is held before the person is moved on
         public const float RemoveAfter = 16f;        // ...and before somebody nobody can see is put somewhere else by the game
+        public const int PutAwayMost = 8;            // people sent back to the game's pool after one look; a car past these waits for the next
 
         // Contact.
         public const float BumpFrom = 0.6f;          // m/s: slower than this the car has only come to rest against them
@@ -250,6 +251,27 @@ namespace RealLifeOverhaul
 
         /// <summary>True once somebody who would not move, and whom nobody can see, is put somewhere else by the game.</summary>
         public static bool Remove(float heldFor, bool inView) => heldFor >= RemoveAfter && !inView;
+
+        /// <summary>
+        /// Adds somebody to this look's list of people to send back to the game's pool, once however many cars they hold.
+        /// False if the list is full: the car is left as it is and tries again at the next look.
+        /// </summary>
+        public static bool Queue<T>(T[] queue, ref int count, T item) where T : class
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (ReferenceEquals(queue[i], item))
+                {
+                    return true;
+                }
+            }
+            if (count >= queue.Length)
+            {
+                return false;
+            }
+            queue[count++] = item;
+            return true;
+        }
 
         /// <summary>What the car's body meeting a person at that speed is.</summary>
         public static Contact Touch(float speed)

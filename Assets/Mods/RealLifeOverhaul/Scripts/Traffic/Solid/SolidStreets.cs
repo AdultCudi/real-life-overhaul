@@ -92,7 +92,8 @@ namespace RealLifeOverhaul
         private VehicleComponent _striker;
         private int _strikerId;          // the person's number from look to look (Human)
         private float _strikerUntil;
-        private Pedestrian _putAway;     // somebody to go back to the game's pool when this look is over (its list is not changed under the look)
+        private readonly Pedestrian[] _putAway = new Pedestrian[SolidRules.PutAwayMost];   // to go back to the game's pool when this look is over (its list is not changed under the look)
+        private int _putAways;
 
         // A hit that somebody else of the mod has arranged (somebody stepping out too late): this car may reach this pedestrian.
         private VehicleComponent _oweCar;
@@ -326,16 +327,17 @@ namespace RealLifeOverhaul
             Phase(2);
             Share(walkers, now);
             _game.TickFade(now);
-            if ((object)_putAway != null)
+            for (int i = 0; i < _putAways; i++)
             {
-                Pedestrian away = _putAway;
-                _putAway = null;
+                Pedestrian away = _putAway[i];
+                _putAway[i] = null;
                 if (away != null && away.isActiveAndEnabled && InstanceBehavior<CityManager>.IsInitialized)
                 {
                     HornReactions.LetGo(away);
                     away.Release();
                 }
             }
+            _putAways = 0;
 
             Phase(3);
             _carsMost = Mathf.Max(_carsMost, cars);
@@ -387,7 +389,8 @@ namespace RealLifeOverhaul
                 _striker = null;
                 _oweCar = null;
                 _oweWalker = null;
-                _putAway = null;
+                Array.Clear(_putAway, 0, _putAway.Length);
+                _putAways = 0;
                 _spawner = null;
                 _proxiesSaid = -1;
                 bool was = _active;

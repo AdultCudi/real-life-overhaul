@@ -33,11 +33,11 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotCreateSmoke = HotSpots.Slot("Traffic: TrafficEffects.CreateSmoke");
-        /// <summary>A column of smoke rising from a car's engine bay however the car lies (heavy: dark). Null if the game has no smoke loaded.</summary>
+        /// <summary>A column of smoke rising from a car's engine bay however the car lies (heavy: dark). Null until the prewarm has found smoke.</summary>
         public static GameObject CreateSmoke(VehicleComponent car, bool heavy)
         {
             using var hotSpot = HotSpots.Time(HotCreateSmoke);
-            GameObject template = GetSmokeTemplate();
+            GameObject template = _smokeTemplate;
             if (template == null)
             {
                 return null;
@@ -191,16 +191,15 @@ namespace RealLifeOverhaul
             return gradient;
         }
 
-        // The game's own smoke effect copied whole, so it renders as the game's does; found once, kept as a disabled template.
-        private static GameObject GetSmokeTemplate()
+        // The game's own smoke effect copied whole, so it renders as the game's does, kept as a disabled template. The engine
+        // smoke is in memory only while a player car is; until then any other smoke stands in. The search goes through everything
+        // in memory (a long frame), so only the prewarm makes it, behind a screen: in play an accident takes what there is.
+        private static void FindSmoke()
         {
-            // The engine smoke is in memory only while a player car is; until then a stand-in is used. The search goes through
-            // everything in memory (a long frame), so it is made only behind a screen: in play an accident takes what there is.
-            if (_smokeSearched && (_smokeGenuine || _smokeTemplate == null || !SceneFinds.Hidden))
+            if (_smokeGenuine || !SceneFinds.Hidden)
             {
-                return _smokeTemplate;
+                return;
             }
-            _smokeSearched = true;
 
             ParticleSystemRenderer source = null;
             bool genuine = false;
@@ -226,14 +225,14 @@ namespace RealLifeOverhaul
             }
             if (source == null)
             {
-                Logger?.Info("Accident: the game has no smoke effect loaded; accidents will have no smoke.");
-                return null;
+                Logger?.Info("Accident: the game has no smoke effect loaded; accidents have no smoke until one is found behind a screen.");
+                return;
             }
             if (_smokeTemplate != null)
             {
                 if (!genuine)
                 {
-                    return _smokeTemplate;   // still only the stand-in
+                    return;   // still only the stand-in
                 }
                 Object.Destroy(_smokeTemplate);
             }
@@ -253,7 +252,6 @@ namespace RealLifeOverhaul
                          + FormattableString.Invariant(
                              $"material {source.sharedMaterial.name}, mode {source.renderMode}, size {main.startSize.constantMax:F2}, life {main.startLifetime.constantMax:F2}, ")
                          + $"space {main.simulationSpace}, scale {source.transform.lossyScale}");
-            return _smokeTemplate;
         }
 
         private static readonly int HotCreateDebris = HotSpots.Slot("Traffic: TrafficEffects.CreateDebris");
