@@ -1,18 +1,14 @@
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
-using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The wider family. Mom (the mod's own phone contact) reacts to every milestone, sends
-    /// small presents and drops by; the in-laws arrive with the engagement as a contact of their
-    /// own, to chat with, to ask for advice, and now and then to ask a favour; four times a
-    /// year (on the game's own calendar) there is a family dinner, at home if there is a
-    /// household, at Mom's otherwise. A next of kin is kept as a line of text and nothing more.
+    /// The wider family: Mom's texts, presents and visits; the in-laws, from the engagement on, with chats, advice and favours;
+    /// four family dinners a year on the game's calendar, at home or at Mom's; and a next of kin, as a line of text.
     /// </summary>
     internal static class Relatives
     {
@@ -31,7 +27,7 @@ namespace RealLifeOverhaul.Family
         private static readonly string[] InLawThanks = { null, "reallife_family_inlaws_thanks_lift", "reallife_family_inlaws_thanks_loan", "reallife_family_inlaws_thanks_move" };
 
         internal static int HostCost => Prices.At(120);
-        private const int LoanAmount = 300;
+        private const int LoanAmount = 300;   // lent to the in-laws for a week, not at today's prices
 
         private static int _lastInvite = -1, _lastDinner = -1, _lastMissed = -1, _lastVisit = -1, _lastChat = -1;
 
@@ -71,8 +67,6 @@ namespace RealLifeOverhaul.Family
         {
             return HolidayNames[Mathf.Clamp(which, 0, 3)];
         }
-
-        // ---------------------------------------------------------------- the calendar
 
         public static void Daily(int day)
         {
@@ -156,8 +150,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // ---------------------------------------------------------------- the holiday dinner
-
         public static void Dinner(Errand errand)
         {
             FamilyDirector director = FamilyDirector.Instance;
@@ -211,8 +203,6 @@ namespace RealLifeOverhaul.Family
             return FamilyTalk.Close("reallife_family_holiday_going", Args.Us.With(FamilyText.T(HolidayName(which))));
         }
 
-        // ---------------------------------------------------------------- the in-laws
-
         public static bool InLawFavourOpen => FamilyState.S.InLaws && FamilyState.S.InLawAsk > 0;
 
         public static DialogEntry InLawChat()
@@ -262,8 +252,6 @@ namespace RealLifeOverhaul.Family
             Partner.Tell(FamilyEvent.SharedTime, 2f, 3f);
             return FamilyTalk.Close(InLawThanks[ask], Args.Us.Cost(LoanAmount));
         }
-
-        // ---------------------------------------------------------------- next of kin (words only)
 
         public static string NextOfKin()
         {

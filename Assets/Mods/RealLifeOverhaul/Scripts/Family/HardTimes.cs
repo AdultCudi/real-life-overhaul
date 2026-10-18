@@ -7,11 +7,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The hard times, handled with care and always optional (one switch turns friction off
-    /// altogether): small arguments with a choice of how to answer, counselling, time apart, a
-    /// way back, and if it comes to that a divorce. A settlement is a share of the cash in hand,
-    /// capped, and never touches a business; children stay with the player and spend weekends
-    /// with the other parent. Nothing here harms a child, and nothing is ever a dead end.
+    /// The hard times, each optional: arguments with two answers, counselling, time apart, a way back, and a divorce, whose
+    /// settlement is a capped share of cash in hand and never a business; the children stay with the player.
     /// </summary>
     internal static class HardTimes
     {
@@ -155,8 +152,6 @@ namespace RealLifeOverhaul.Family
             Relatives.MomSays("reallife_family_mom_arrest");
         }
 
-        // ---------------------------------------------------------------- counselling
-
         public static bool CanCounsel => FamilyState.HasPartner && (FamilyState.S.Harmony < 60f || FamilyState.Bond == Bond.Separated)
                                          && FamilyState.FindErrand(Errands.Counselling) == null && TimeHelper.CurrentDay - FamilyState.S.LastCounselDay >= 3;
 
@@ -200,8 +195,6 @@ namespace RealLifeOverhaul.Family
             Partner.Tell(FamilyEvent.BrokenPromise, -3f, -5f);
             FamilyText.Message(FamilyPhone.PartnerContact, "reallife_family_counselling_missed", Args.Us);
         }
-
-        // ---------------------------------------------------------------- apart, and back
 
         public static DialogEntry AskApart()
         {
@@ -278,8 +271,6 @@ namespace RealLifeOverhaul.Family
             return FamilyTalk.Close(movedBack ? "reallife_family_reconciled_home" : "reallife_family_reconciled");
         }
 
-        // ---------------------------------------------------------------- the end of it
-
         public static bool CanEnd => FamilyState.Bond == Bond.Separated && TimeHelper.CurrentDay - FamilyState.S.SeparatedDay >= FamilyBalance.DivorceAfterDays;
 
         public static int Settlement()
@@ -331,7 +322,7 @@ namespace RealLifeOverhaul.Family
             FamilyDirector.Logger?.Info($"Family: {(married ? "divorced" : "parted")} ({(theirs ? "their" : "the player's")} decision), settlement {settlement}.");
             if (married && FamilyState.AtHome() > 0)
             {
-                // The children live with the player. How often they are at the other parent's is the one thing to settle.
+                // The children live with the player; how often they are at the other parent's is the one thing to settle.
                 s.Custody = 1;
                 FamilyDirector.Instance.Ask("reallife_family_custody_header", "reallife_family_custody_body", new Args { Name = name },
                     "reallife_family_custody_alternate", "reallife_family_custody_every", () => s.Custody = 1, () => s.Custody = 2);

@@ -12,9 +12,10 @@ namespace RealLifeOverhaul.Family
     /// <summary>Who looks after the small children in the day.</summary>
     public enum Care { You = 0, Partner = 1, Nursery = 2, Nanny = 3 }
 
+    /// <summary>A child on the way: by a pregnancy or an adoption.</summary>
     public enum ProcessKind { None = 0, Pregnancy = 1, Adoption = 2 }
 
-    /// <summary>One child. Shown as state, props and events, never as a walking character (see docs/features/family.md).</summary>
+    /// <summary>One child: state, props and events, never a walking character.</summary>
     public sealed class ChildRecord
     {
         public string Name;
@@ -24,7 +25,7 @@ namespace RealLifeOverhaul.Family
         public int ArrivedDay;
         public float Closeness = 60f;   // 0..100: how close the player is to them
         public int School;           // 0 not yet, 1 public, 2 private
-        public int Fund;             // college fund
+        public int Fund;             // the college fund, in money
         public int Pocket;           // index into FamilyBalance.PocketMoney
         public int Seen;             // bit per milestone already remembered
         public int Birthdays;        // the last birthday kept
@@ -57,6 +58,7 @@ namespace RealLifeOverhaul.Family
         public int Number;
     }
 
+    /// <summary>A wedding booked: where, how grand, what was paid for, and what has happened since.</summary>
     public sealed class WeddingPlan
     {
         public bool Active;
@@ -79,12 +81,12 @@ namespace RealLifeOverhaul.Family
         public bool TheirColdFeet;
     }
 
-    /// <summary>Everything family life remembers about one save. Plain data: written as one JSON string in the save's modData.</summary>
+    /// <summary>Everything family life remembers about one save, written as one JSON string in the save's modData.</summary>
     public sealed class FamilySave
     {
         public int Version = 1;
 
-        // the partner the default bridge keeps (when Social is present it owns who they are; the name is mirrored here)
+        // The partner the default bridge keeps; with Social, it owns who they are and the name is mirrored here.
         public string PName;
         public int PSeed;
         public bool PFemale;
@@ -150,7 +152,7 @@ namespace RealLifeOverhaul.Family
         public int BirthHour;
         public int Walks;
 
-        // the month's money, and all of it since the beginning
+        // The month's money, and all of it since the beginning.
         public int MonthStart;
         public int MIn, MChildcare, MSchool, MPocket, MFund, MOther;
         public int TIn, TOut;
@@ -184,9 +186,8 @@ namespace RealLifeOverhaul.Family
     }
 
     /// <summary>
-    /// The per-save state of family life. Kept in the save's modData under one key as JSON, so a
-    /// save made with the mod loads without it and nothing the base game does not know is in the
-    /// save proper. Loaded after Core/ModState, written on the game's save event.
+    /// The per-save state of family life, as JSON under one key of the save's modData, so that a save made with the mod loads
+    /// without it. Loaded after Core/ModState, written on the game's save event.
     /// </summary>
     public static class FamilyState
     {
@@ -234,18 +235,33 @@ namespace RealLifeOverhaul.Family
                 Logger?.Error(e);
                 Logger?.Warn("Family: the saved family state could not be read and starts afresh.");
                 S = new FamilySave();
-                SaveLines.Unreadable(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
+                SaveLines.Unreadable(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null, Key, "it could not be read");   // the line is kept as it is
             }
             // Whatever an older or a hand-edited save left out.
-            if (S.Wedding == null) S.Wedding = new WeddingPlan();
-            if (S.Children == null) S.Children = new List<ChildRecord>();
-            if (S.Memories == null) S.Memories = new List<Memory>();
-            if (S.Errands == null) S.Errands = new List<Errand>();
-            if (S.SeenArguments == null) S.SeenArguments = new List<int>();
+            if (S.Wedding == null)
+            {
+                S.Wedding = new WeddingPlan();
+            }
+            if (S.Children == null)
+            {
+                S.Children = new List<ChildRecord>();
+            }
+            if (S.Memories == null)
+            {
+                S.Memories = new List<Memory>();
+            }
+            if (S.Errands == null)
+            {
+                S.Errands = new List<Errand>();
+            }
+            if (S.SeenArguments == null)
+            {
+                S.SeenArguments = new List<int>();
+            }
             S.Children.RemoveAll(c => c == null);
             S.Memories.RemoveAll(m => m == null || string.IsNullOrEmpty(m.Key));
             S.Errands.RemoveAll(e => e == null || string.IsNullOrEmpty(e.Kind));
-            // A save from before the honeymoon had its own flag: "asked" then meant taken or put off. The trip is in the memories if it was made.
+            // In an older save "asked" meant taken or put off: the trip is in the memories if it was made.
             if (S.HoneymoonAsked && !S.HoneymoonTaken && S.Memories.Exists(m => m.Key == "reallife_family_memory_honeymoon"))
             {
                 S.HoneymoonTaken = true;
@@ -289,8 +305,6 @@ namespace RealLifeOverhaul.Family
                 save.modData.Remove(Key);
             }
         }
-
-        // ---------------------------------------------------------------- small helpers every part uses
 
         public static void Harmony(float change)
         {
@@ -370,8 +384,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // ---------------------------------------------------------------- the budget
-
         public static void MoneyIn(int amount)
         {
             S.MIn += amount;
@@ -392,6 +404,7 @@ namespace RealLifeOverhaul.Family
             S.TOut += amount;
         }
 
+        /// <summary>Starts the month's figures afresh once a month of the player's calendar has gone by.</summary>
         public static void RollMonth(int day)
         {
             if (S.MonthStart <= 0)

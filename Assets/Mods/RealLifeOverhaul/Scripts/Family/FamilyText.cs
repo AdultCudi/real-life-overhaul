@@ -29,14 +29,9 @@ namespace RealLifeOverhaul.Family
         public Args On(string day) { Day = day; return this; }
         public Args With(string text) { Text = text; return this; }
         public Args Count(int n) { N = n.ToString(); return this; }
-        public Args Named(string name) { Name = name; return this; }
     }
 
-    /// <summary>
-    /// Text for family life: a key and what fills it become a line for a toast, a phone message,
-    /// a conversation or the HUD. Everything here builds strings and is called when something
-    /// happens, never on a timer that runs while nothing does.
-    /// </summary>
+    /// <summary>A key and what fills it, as a line for a toast, a phone message, a conversation or the HUD. Called on events only.</summary>
     public static class FamilyText
     {
         public static string Money(int amount)
@@ -107,29 +102,24 @@ namespace RealLifeOverhaul.Family
             Notifications.Show(type, key, Data(a), seconds);
         }
 
-        public static void Toast(string key)
-        {
-            Notifications.Show(NotificationType.Info, key, Data(Args.Us), 9f);
-        }
 
         public static void Good(string key, in Args a)
         {
             Notifications.Show(NotificationType.Success, key, Data(a), 9f);
         }
 
-        /// <summary>A text message from one of the phone's contacts. Safe with a contact that does not exist.</summary>
         /// <summary>
-        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
-        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
-        /// words, or the written line). Null or false: sent now, as written.
+        /// Set by RLO Texts (Wiring/TextsPhone): given who a text is from, its key, its values and a way to send it, true when it
+        /// holds the text for the model's words and sends it later; null or false and it goes now, as written.
         /// </summary>
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
+        /// <summary>A text message from one of the phone's contacts; without the contact, said on screen instead.</summary>
         public static void Message(Contact contact, string key, in Args a)
         {
             if (contact == null)
             {
-                Toast(NotificationType.Info, key, a);   // no phone contact: said on screen instead, so nothing is lost
+                Toast(NotificationType.Info, key, a);
                 return;
             }
             Dictionary<string, string> data = Data(a);

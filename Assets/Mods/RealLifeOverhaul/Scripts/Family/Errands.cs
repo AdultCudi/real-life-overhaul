@@ -6,12 +6,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// Somewhere to be: a scan at the clinic, dinner at a restaurant, a school play, the wedding
-    /// itself, a cot to buy. Each is a line in the save with a day and hours (or none: shopping
-    /// waits), and a real building of a kind the city has. While one is due there is a line under
-    /// the top bar and the game's own destination marker; at the door, or inside, a key prompt
-    /// does it. One that is missed is handled by its own rule, gently, and never left hanging.
-    /// Costs nothing while there are none, and a few comparisons a second while there are.
+    /// Somewhere to be (a scan, a dinner, a school play, the wedding) or something to buy: a line in the save with a day and
+    /// hours (none for shopping), at a real building of a kind the city has, shown as the objective and the game's destination
+    /// marker and done by a key prompt there. A missed one has its own rule. Cost: a few comparisons a second while any are due.
     /// </summary>
     internal static class Errands
     {
@@ -49,24 +46,42 @@ namespace RealLifeOverhaul.Family
 
         private static readonly Spec[] Specs =
         {
-            new Spec { Kind = Wedding, Title = "reallife_family_errand_wedding", Prompt = "reallife_family_prompt_wedding", Do = e => WeddingDay.Begin(), Missed = e => WeddingDay.Missed() },
-            new Spec { Kind = Birth, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_birth", Prompt = "reallife_family_prompt_birth", Do = Children.Birth, Missed = Children.BirthMissed },
-            new Spec { Kind = Dinner, Places = FamilyPlaces.Restaurant, Title = "reallife_family_errand_dinner", Prompt = "reallife_family_prompt_dinner", Do = HomeLife.Dinner, Missed = e => HomeLife.StoodThemUp() },
-            new Spec { Kind = Scan, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_scan", Prompt = "reallife_family_prompt_scan", Cost = () => FamilyBalance.ScanPrice, Do = Children.Appointment, Missed = Children.AppointmentMissed },
-            new Spec { Kind = BirthClass, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_class", Prompt = "reallife_family_prompt_class", Do = Children.Appointment, Missed = Children.AppointmentMissed },
-            new Spec { Kind = Checkup, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_checkup", Prompt = "reallife_family_prompt_checkup", Do = Children.Checkup, Missed = Children.CheckupMissed },
-            new Spec { Kind = AdoptFile, Places = FamilyPlaces.Agency, Title = "reallife_family_errand_adopt_file", Prompt = "reallife_family_prompt_adopt_file", Do = Children.AdoptFile },
-            new Spec { Kind = HomeVisit, AtHome = true, Title = "reallife_family_errand_home_visit", Prompt = "reallife_family_prompt_home_visit", Do = Children.HomeVisit, Missed = Children.HomeVisitMissed },
-            new Spec { Kind = AdoptMeet, Places = FamilyPlaces.Agency, Title = "reallife_family_errand_adopt_meet", Prompt = "reallife_family_prompt_adopt_meet", Do = Children.AdoptArrive, Missed = Children.AdoptMeetMissed },
-            new Spec { Kind = SchoolRun, Places = FamilyPlaces.School, Title = "reallife_family_errand_school_run", Prompt = "reallife_family_prompt_school_run", Do = Children.SchoolRun, Missed = Children.SchoolRunMissed },
-            new Spec { Kind = ParentsEvening, Places = FamilyPlaces.School, Title = "reallife_family_errand_parents_evening", Prompt = "reallife_family_prompt_parents_evening", Do = Children.ParentsEvening, Missed = Children.SchoolEventMissed },
-            new Spec { Kind = SchoolPlay, Places = FamilyPlaces.Theatre, Title = "reallife_family_errand_school_play", Prompt = "reallife_family_prompt_school_play", Do = Children.SchoolPlay, Missed = Children.SchoolEventMissed },
-            new Spec { Kind = Party, Places = FamilyPlaces.Restaurant, Title = "reallife_family_errand_party", Prompt = "reallife_family_prompt_party", Do = Children.VenueParty, Missed = Children.PartyMissed },
-            new Spec { Kind = Counselling, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_counselling", Prompt = "reallife_family_prompt_counselling", Do = HardTimes.Session, Missed = HardTimes.SessionMissed },
-            new Spec { Kind = Holiday, AtHome = true, Title = "reallife_family_errand_holiday", Prompt = "reallife_family_prompt_holiday", Cost = () => Relatives.HostCost, Do = Relatives.Dinner, Missed = Relatives.DinnerMissed },
-            new Spec { Kind = BuyCot, Places = FamilyPlaces.Furniture, Prompt = "reallife_family_prompt_buy_cot", Cost = () => FamilyBalance.CotPrice, Do = Children.Buy },
-            new Spec { Kind = BuyPushchair, Places = FamilyPlaces.BabyShop, Prompt = "reallife_family_prompt_buy_pushchair", Cost = () => FamilyBalance.PushchairPrice, Do = Children.Buy },
-            new Spec { Kind = BuySupplies, Places = FamilyPlaces.Supplies, Prompt = "reallife_family_prompt_buy_supplies", Cost = () => FamilyBalance.SuppliesPrice, Do = Children.Buy },
+            new Spec { Kind = Wedding, Title = "reallife_family_errand_wedding", Prompt = "reallife_family_prompt_wedding",
+                Do = e => WeddingDay.Begin(), Missed = e => WeddingDay.Missed() },
+            new Spec { Kind = Birth, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_birth", Prompt = "reallife_family_prompt_birth",
+                Do = Children.Birth, Missed = Children.BirthMissed },
+            new Spec { Kind = Dinner, Places = FamilyPlaces.Restaurant, Title = "reallife_family_errand_dinner", Prompt = "reallife_family_prompt_dinner",
+                Do = HomeLife.Dinner, Missed = e => HomeLife.StoodThemUp() },
+            new Spec { Kind = Scan, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_scan", Prompt = "reallife_family_prompt_scan", Cost = () => FamilyBalance.ScanPrice,
+                Do = Children.Appointment, Missed = Children.AppointmentMissed },
+            new Spec { Kind = BirthClass, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_class", Prompt = "reallife_family_prompt_class",
+                Do = Children.Appointment, Missed = Children.AppointmentMissed },
+            new Spec { Kind = Checkup, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_checkup", Prompt = "reallife_family_prompt_checkup",
+                Do = Children.Checkup, Missed = Children.CheckupMissed },
+            new Spec { Kind = AdoptFile, Places = FamilyPlaces.Agency, Title = "reallife_family_errand_adopt_file", Prompt = "reallife_family_prompt_adopt_file",
+                Do = Children.AdoptFile },
+            new Spec { Kind = HomeVisit, AtHome = true, Title = "reallife_family_errand_home_visit", Prompt = "reallife_family_prompt_home_visit",
+                Do = Children.HomeVisit, Missed = Children.HomeVisitMissed },
+            new Spec { Kind = AdoptMeet, Places = FamilyPlaces.Agency, Title = "reallife_family_errand_adopt_meet", Prompt = "reallife_family_prompt_adopt_meet",
+                Do = Children.AdoptArrive, Missed = Children.AdoptMeetMissed },
+            new Spec { Kind = SchoolRun, Places = FamilyPlaces.School, Title = "reallife_family_errand_school_run", Prompt = "reallife_family_prompt_school_run",
+                Do = Children.SchoolRun, Missed = Children.SchoolRunMissed },
+            new Spec { Kind = ParentsEvening, Places = FamilyPlaces.School, Title = "reallife_family_errand_parents_evening", Prompt = "reallife_family_prompt_parents_evening",
+                Do = Children.ParentsEvening, Missed = Children.SchoolEventMissed },
+            new Spec { Kind = SchoolPlay, Places = FamilyPlaces.Theatre, Title = "reallife_family_errand_school_play", Prompt = "reallife_family_prompt_school_play",
+                Do = Children.SchoolPlay, Missed = Children.SchoolEventMissed },
+            new Spec { Kind = Party, Places = FamilyPlaces.Restaurant, Title = "reallife_family_errand_party", Prompt = "reallife_family_prompt_party",
+                Do = Children.VenueParty, Missed = Children.PartyMissed },
+            new Spec { Kind = Counselling, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_counselling", Prompt = "reallife_family_prompt_counselling",
+                Do = HardTimes.Session, Missed = HardTimes.SessionMissed },
+            new Spec { Kind = Holiday, AtHome = true, Title = "reallife_family_errand_holiday", Prompt = "reallife_family_prompt_holiday", Cost = () => Relatives.HostCost,
+                Do = Relatives.Dinner, Missed = Relatives.DinnerMissed },
+            new Spec { Kind = BuyCot, Places = FamilyPlaces.Furniture, Prompt = "reallife_family_prompt_buy_cot", Cost = () => FamilyBalance.CotPrice,
+                Do = Children.Buy },
+            new Spec { Kind = BuyPushchair, Places = FamilyPlaces.BabyShop, Prompt = "reallife_family_prompt_buy_pushchair", Cost = () => FamilyBalance.PushchairPrice,
+                Do = Children.Buy },
+            new Spec { Kind = BuySupplies, Places = FamilyPlaces.Supplies, Prompt = "reallife_family_prompt_buy_supplies", Cost = () => FamilyBalance.SuppliesPrice,
+                Do = Children.Buy },
             new Spec { Kind = Flowers, Places = FamilyPlaces.Florist, Prompt = "reallife_family_prompt_flowers", Do = WeddingPlanner.OrderFlowers }
         };
 
@@ -114,7 +129,7 @@ namespace RealLifeOverhaul.Family
             return errand;
         }
 
-        public static bool DueNow(Errand e, int day, int hour)
+        private static bool DueNow(Errand e, int day, int hour)
         {
             return e.Day <= 0 || (e.Day == day && hour >= e.FromHour && hour < e.ToHour);
         }
@@ -165,7 +180,7 @@ namespace RealLifeOverhaul.Family
                 }
             }
 
-            // The first that is due now and dated is the one under the top bar; shopping only shows at the shop.
+            // The first dated one due now is the objective; shopping shows only at the shop.
             Errand due = null;
             for (int i = 0; i < Specs.Length && due == null; i++)
             {
@@ -235,7 +250,7 @@ namespace RealLifeOverhaul.Family
                 bool here = FamilyPlaces.Inside(spec.Places);
                 if (!here && e.Kind == AdoptFile)
                 {
-                    // An office that cannot be walked into is dealt with at its door. Looked up now and then, not every second.
+                    // An office that cannot be walked into is dealt with at its door; looked up every 20 seconds.
                     if (now >= _agencyNext)
                     {
                         _agencyNext = now + 20f;
@@ -249,7 +264,7 @@ namespace RealLifeOverhaul.Family
                             _agencyOpen = false;
                         }
                     }
-                    // (And a city with no such office at all: the papers go by post, from home.)
+                    // A city with no such office: the papers go by post, from home.
                     here = _agencyFound ? !_agencyOpen && FamilyPlaces.AtDoor(_agency, player, 5f) : FamilyPlaces.AtHome();
                 }
                 if (here)

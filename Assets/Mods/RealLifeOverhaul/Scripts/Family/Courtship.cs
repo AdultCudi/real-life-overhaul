@@ -9,10 +9,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The ring and the question. A ring is bought at a real jeweller's counter; the question is
-    /// asked wherever the player chooses, and where and when it is asked matters: an evening, a
-    /// dry sky, the end of a good night out, being dressed for it all help, and so does the
-    /// ring. They may say "not yet"; nothing is lost but a week.
+    /// The ring, bought at a real jeweller's counter, and the answer to the question: an evening, a dry sky, a good night out,
+    /// being dressed for it and the ring all help. A "not yet" costs a week.
     /// </summary>
     internal static class Courtship
     {
@@ -85,17 +83,35 @@ namespace RealLifeOverhaul.Family
                 odds += 0.08f;
             }
             float moment = 0f;
-            if (hour >= 17 && hour < 23) moment += 0.08f;
-            if (hour < 6) moment -= 0.15f;
-            if (TimeHelper.IsWeekend) moment += 0.04f;
+            if (hour >= 17 && hour < 23)
+            {
+                moment += 0.08f;
+            }
+            if (hour < 6)
+            {
+                moment -= 0.15f;
+            }
+            if (TimeHelper.IsWeekend)
+            {
+                moment += 0.04f;
+            }
             if (!indoors)
             {
                 moment += RainHelper.AreRainDropsFalling ? -0.08f : 0.04f;
             }
-            if (s.LastDateDay == day) moment += 0.10f;
-            if (DressedUp()) moment += 0.05f;
+            if (s.LastDateDay == day)
+            {
+                moment += 0.10f;
+            }
+            if (DressedUp())
+            {
+                moment += 0.05f;
+            }
             bool rough = s.LastArgueDay > 0 && day - s.LastArgueDay <= 2;
-            if (rough) odds -= 0.20f;
+            if (rough)
+            {
+                odds -= 0.20f;
+            }
             odds = Mathf.Clamp(odds + moment, 0.05f, 0.97f);
             if (test)
             {
@@ -174,17 +190,14 @@ namespace RealLifeOverhaul.Family
     }
 
     /// <summary>
-    /// The proposal, wherever the player chose. Out of doors the partner walks in from out of
-    /// view along the pavement; at home they are already there. They come to stand in front of
-    /// the player, the player goes down on one knee when they choose to, and the answer is
-    /// given face to face. Every way out gives the partner back (to the home, or off down the
-    /// street and out of view) and frees the player.
+    /// The proposal, wherever the player chose: the partner walks in from out of view (at home they are there already), the
+    /// player kneels when ready, and the answer is given face to face. Every way out gives the partner back and frees the player.
     /// </summary>
     internal sealed class ProposalScene : FamilyScene
     {
         private enum Step { Coming, Waiting, Stepping, GoingDown, Kneeling, Reacting, Answer, Parting }
 
-        private const float PartnerAhead = 1.25f;   // metres in front of the kneeler that the proposal's clips put the partner's face (CityAssets)
+        private const float PartnerAhead = 1.25f;   // metres in front of the kneeler that the proposal's clips put the partner
 
         private static readonly string[] Questions = { "reallife_family_propose_ask_1", "reallife_family_propose_ask_2", "reallife_family_propose_ask_3" };
         private static int _lastQuestion = -1;
@@ -204,8 +217,10 @@ namespace RealLifeOverhaul.Family
         private bool _talkClosed;
         private bool _answered;
         private bool _ringClips;         // kneeling with the proposal's own clips, the ring box in the hand
+        private float _leaveBy;
+        private bool _leaving;
 
-        private readonly System.Action _kneel;
+        private readonly System.Action _kneel;   // made once: the prompt is asked for every tick
 
         public ProposalScene(bool test)
         {
@@ -364,7 +379,7 @@ namespace RealLifeOverhaul.Family
                     }
                     break;
                 case Step.Stepping:
-                    // Come to a stop on the spot (an agent reads "arrived" a quarter of a metre early), or held up.
+                    // Stopped on the spot (an agent reads "arrived" a quarter of a metre early), or held up.
                     if ((_partner.Arrived && _partner.Near(_goal, 0.5f) && _partner.Speed < 0.05f) || now >= _until)
                     {
                         _partner.Stand();
@@ -394,8 +409,7 @@ namespace RealLifeOverhaul.Family
                 case Step.Reacting:
                     if (now >= _until)
                     {
-                        // Up off the knee with the box still in the hand (propose_kneel_up, from the loop's first pose to
-                        // standing); without that clip, a fade back to standing as before.
+                        // Up off the knee with the box in the hand; without that clip, a fade back to standing.
                         _step = Step.Answer;
                         if (_ringClips && ClipLibrary.Has("propose_kneel_up") && ClipLibrary.TryGet("propose_kneel_up", out CityClip up)
                             && _d.Body.Clip("propose_kneel_up", 0.25f))
@@ -412,7 +426,7 @@ namespace RealLifeOverhaul.Family
                 case Step.Answer:
                     if (now >= _until)
                     {
-                        _d.Body.Rest(0.3f);   // the box put away (nothing to do if they stood up by the fade)
+                        _d.Body.Rest(0.3f);   // the box put away
                         _d.Body.Free();
                         _partner.Work("talk_a", _d.Cast.Props, 0.3f);
                         if (_yes)
@@ -476,7 +490,7 @@ namespace RealLifeOverhaul.Family
 
         private void Down(float now, Vector3 player)
         {
-            // Facing each other: the partner has turned to the player; the player turns to them if they are not in front already.
+            // Facing each other: the player turns to the partner unless they are in front already.
             PlayerController controller = PlayerHelper.PlayerController;
             Vector3 to = _partner.Position - player;
             to.y = 0f;
@@ -484,11 +498,8 @@ namespace RealLifeOverhaul.Family
             {
                 controller.Character.transform.rotation = Quaternion.LookRotation(to);
             }
-            // Down on one knee with the ring box open on the right palm (it comes with the clips, at their grip, and stays
-            // in the hand from the first frame of going down to the last of getting up): propose_kneel_down once, held,
-            // then the kneeling loop the moment it is over (JobBody.Chain; the director ticks the body). The question is
-            // asked when the box has come up (the clip's "present" mark). A bundle without the way down fades into the
-            // loop from standing, as before; one without the loop uses the mod's working kneel, with nothing in the hand.
+            // Down on one knee with the ring box (it comes with the clips), then the kneeling loop; the question is asked at the
+            // way down's "present" mark. Without the way down, a fade into the loop; without the loop, the working kneel.
             _ringClips = _d.Body.Chain("propose_kneel_down", "propose_kneel", 0.3f);
             if (_ringClips)
             {
@@ -510,9 +521,6 @@ namespace RealLifeOverhaul.Family
             _step = Step.Kneeling;
             _until = now + 3.4f;
         }
-
-        private float _leaveBy;
-        private bool _leaving;
 
         private void Part(float now)
         {

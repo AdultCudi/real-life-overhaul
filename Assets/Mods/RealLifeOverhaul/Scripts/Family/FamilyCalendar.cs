@@ -1,10 +1,8 @@
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// What family life does by the clock: once an in-game hour and once an in-game day, the
-    /// director hands over to each part here. Everything that is "once a day at six" is written
-    /// as "today, at six or later, if not yet done today", so an hour skipped by the game's own
-    /// fast-forward is never an evening lost.
+    /// What family life does by the in-game hour and day. Anything "once a day at six" is written as "at six or later, if not
+    /// yet done today", so an hour skipped by the game's fast-forward is never an evening lost.
     /// </summary>
     internal static class FamilyCalendar
     {
@@ -29,7 +27,7 @@ namespace RealLifeOverhaul.Family
             Children.Hourly(day, hour);
             if (held)
             {
-                return;   // family life waits for somebody who is locked up
+                return;   // family life waits while the player is locked up
             }
             HomeLife.Chore(day, hour);
             HomeLife.Support(day, hour);

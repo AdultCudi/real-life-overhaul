@@ -26,63 +26,46 @@ namespace RealLifeOverhaul.Family
     }
 
     /// <summary>
-    /// What the Social feature implements so that the partner is one of ITS people. Until it does
-    /// (<see cref="FamilyBridges.Social"/> is the default), family life keeps one minimal partner
-    /// record of its own, reached through the "Someone special" phone contact.
-    ///
-    /// Social calls <c>FamilyBridges.Social = mine;</c> once its own state is loaded (and sets it
-    /// back to null when it unloads). From then on:
-    ///  - <see cref="TryGetPartner"/> returns the one person the player is dating or partnered
-    ///    with (Stage 4 or 5), or false. Family never creates, renames or removes that person.
-    ///  - <see cref="Changed"/> is how Family reports what happened to the two of them; Social
-    ///    moves its own affection/trust (the suggested change is in points of a hundred; Social
-    ///    may scale it) and may set flags of its own (moved in, engaged, married).
-    ///  - <see cref="StartOuting"/> starts an outing with them (kind: "dinner", "walk", "show");
-    ///    false if Social cannot start one now, and Family then runs its own short version.
-    ///    <c>done(true)</c> when it went well, <c>done(false)</c> when it was abandoned.
-    ///  - <see cref="ClosePeople"/> fills the list with the people close enough to ask to a
-    ///    wedding (friends and closer, family first), at most <c>most</c>, and returns how many.
-    ///  - Social tells Family about the other direction with <see cref="FamilyApi.PartnerChanged"/>
-    ///    (they broke up outside Family's own flows, or began dating somebody new).
+    /// What Social implements so that the partner is one of its people. Social sets <see cref="FamilyBridges.Social"/> once
+    /// its state is loaded and calls <see cref="FamilyApi.PartnerChanged"/> when the partner changes outside Family's own
+    /// flows; until then Family keeps one partner record of its own, met through the "Someone special" contact.
     /// </summary>
     public interface ISocialBridge
     {
-        /// <summary>True while Social supplies the partner (its option is on). When it is false, Family keeps its own stand-in as if there were no bridge.</summary>
+        /// <summary>True while Social supplies the partner (its option is on); false and Family keeps its own stand-in.</summary>
         bool Active { get; }
-        /// <summary>True once Social has read its people from the save. Until then Family waits to read who the partner is.</summary>
+        /// <summary>True once Social has read its people from the save: until then Family waits to read who the partner is.</summary>
         bool Ready { get; }
+        /// <summary>The one person the player is dating or partnered with (Stage 4 or 5); Family never makes, renames or removes them.</summary>
         bool TryGetPartner(out PersonInfo partner);
+        /// <summary>What happened to the two, with a suggested change in points of a hundred, which Social may scale.</summary>
         void Changed(FamilyEvent what, float affection, float trust);
+        /// <summary>An outing with them ("dinner", "walk", "show"): false if Social cannot start one now; done(true) when it went well.</summary>
         bool StartOuting(string kind, Action<bool> done);
+        /// <summary>Fills the list with the people close enough to ask to a wedding, family first, at most so many; returns how many.</summary>
         int ClosePeople(List<PersonInfo> into, int most);
     }
 
-    /// <summary>
-    /// What the Home feature implements. Each call returns true if Home did it its own way (its
-    /// own routine, its own sleep and health model); false and Family does its short default
-    /// (a few lines and a mood).
-    /// </summary>
+    /// <summary>What Home implements. Each call is true if Home did it its own way; false and Family does a short default (a few lines and a mood).</summary>
     public interface IHomeBridge
     {
-        /// <summary>Cook a meal together at home. Home runs its cooking routine with two at the stove.</summary>
         bool CookTogether(string partner);
-        /// <summary>An evening in front of the television together.</summary>
         bool WatchTogether(string partner);
         /// <summary>The player is ill and the partner looks after them: Home shortens or eases the illness.</summary>
         bool CareWhenSick(string partner);
         /// <summary>A night broken by a baby: Home takes so many wakings out of the night's sleep.</summary>
         bool BrokenNight(int wakings);
-        /// <summary>A health visit (a scan, a child's check-up) the player attends: Home may record it. reason is a locale key.</summary>
+        /// <summary>A health visit the player attends (a scan, a child's check-up); reason is a locale key.</summary>
         bool HealthVisit(string reason);
     }
 
-    /// <summary>What the Travel feature implements: a trip for two. False and Family skips a few days with a mood.</summary>
+    /// <summary>What Travel implements: a trip for two. False and Family skips a few days with a mood.</summary>
     public interface ITravelBridge
     {
         bool Honeymoon(string partner, int days, Action<bool> done);
     }
 
-    /// <summary>What the Leisure feature implements: an evening out at one of its venues. False and Family does dinner at a restaurant door.</summary>
+    /// <summary>What Leisure implements: an evening out at one of its venues. False and Family does dinner at a restaurant door.</summary>
     public interface ILeisureBridge
     {
         bool DateNight(string partner, Action<bool> done);
@@ -90,21 +73,14 @@ namespace RealLifeOverhaul.Family
         bool FamilyOuting(string kind, string child, Action<bool> done);
     }
 
-    /// <summary>
-    /// What Law / Justice implements: whether the player is locked up. An arrest itself is told with
-    /// <see cref="FamilyApi.PlayerArrested"/>, once, when it happens, so that its weight comes with it.
-    /// </summary>
+    /// <summary>What Law implements: whether the player is locked up. An arrest itself is told with <see cref="FamilyApi.PlayerArrested"/>.</summary>
     public interface ILawBridge
     {
         /// <summary>True while the player is held (custody, prison): family life waits.</summary>
         bool InCustody { get; }
     }
 
-    /// <summary>
-    /// The doors between family life and the features it leans on. Each is null until its owner
-    /// sets it; Family then uses its own stand-alone default. Setting one is a single assignment
-    /// from the owner's load, and setting it back to null on unload is good manners.
-    /// </summary>
+    /// <summary>The doors to the features family life leans on: each is null until its owner sets it, and Family uses its own default.</summary>
     public static class FamilyBridges
     {
         public static ISocialBridge Social;
@@ -123,10 +99,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>
-    /// What the rest of the mod may ask of family life or tell it. Safe to call at any time, with
-    /// or without a save loaded, with the feature on or off.
-    /// </summary>
+    /// <summary>What the rest of the mod may ask of family life or tell it: safe at any time, with or without a save, the feature on or off.</summary>
     public static class FamilyApi
     {
         public static bool Active => FamilyDirector.Instance != null && FamilyState.Loaded && Settings.Family;
@@ -141,9 +114,8 @@ namespace RealLifeOverhaul.Family
         public static bool WeddingToday => Active && FamilyState.S.Wedding.Active && FamilyState.S.Wedding.Day == TimeHelper.CurrentDay;
 
         /// <summary>
-        /// Law / Justice: the player has been arrested (or convicted). severity 1 a night in the
-        /// cells, 2 charged, 3 prison. The partner takes it hard; it never ends things by itself.
-        /// Call it once for each arrest or sentence, when it happens (Wiring.Arrests does).
+        /// The player was arrested or sentenced: severity 1 a night in the cells, 2 charged, 3 prison. Called once for each, when
+        /// it happens (Wiring.Arrests). The partner takes it hard; it never ends things by itself.
         /// </summary>
         public static void PlayerArrested(int severity)
         {
@@ -162,7 +134,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>Social / Leisure: time well spent with the partner that Family did not start itself.</summary>
+        /// <summary>Social or Leisure: time well spent with the partner that Family did not start itself.</summary>
         public static void SharedTime(float harmony)
         {
             if (Active && FamilyState.Together)
